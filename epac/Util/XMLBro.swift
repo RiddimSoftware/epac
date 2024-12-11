@@ -1,0 +1,164 @@
+//
+//  XMLBro.swift
+//  cabinetdoor
+//
+//  Created by Sunny on 2017-04-13.
+//  Copyright © 2017 Sunny. All rights reserved.
+//
+
+import Foundation
+import SWXMLHash
+
+class XMLBro {
+	private var xml: XMLIndexer
+	var ordersOfBusiness: [OrderOfBusiness] = []
+	var orderSubjects: [OrderOfBusiness:[SubjectOfBusiness]] = [:]
+
+	init(xml: String) {
+		self.xml = XMLHash.parse(xml)
+	}
+
+	func parseXML() {
+		for oob in xml["Hansard"]["HansardBody"]["OrderOfBusiness"].all {
+			guard let catchline = oob["CatchLine"].element?.text else {
+				continue
+			}
+			if catchline.lowercased() == NSLocalizedString("routine proceedings", comment:"") ||
+					catchline.lowercased() == NSLocalizedString("adjournment proceedings", comment:"") {
+				continue
+			}
+			let order = OrderOfBusiness(catchline: catchline)
+			for sob in oob["SubjectOfBusiness"].all {
+				guard let title = sob["SubjectOfBusinessTitle"].element?.text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines),
+							let id = sob.element?.attribute(by: "id")?.text else {
+					continue
+				}
+				let content = sob["SubjectOfBusinessContent"]
+				let subject = SubjectOfBusiness(title: title, id: id)
+				for intervention in content["Intervention"].all {
+					var personspeaking: String? = intervention["PersonSpeaking"]["Affiliation"].element?.text
+					if personspeaking == nil {
+						for affiliation in intervention["PersonSpeaking"]["Affiliation"].all {
+							if let namefragment = affiliation.element?.text {
+								if personspeaking == nil {
+									personspeaking = ""
+								}
+								personspeaking!.append(namefragment)
+							}
+						}
+					}
+					guard personspeaking != nil,
+								let id = intervention.element?.attribute(by: "id")?.text else {
+						continue
+					}
+					var speakername: String = ""
+					var partyname: String = ""
+					var ridingname: String = ""
+					var startspeaker: Bool?
+					var startparty: Bool?
+					var startriding: Bool?
+					personspeaking = personspeaking!.replacingOccurrences(of: "Mme ", with: "Mme. ")
+					let startindex = personspeaking!.startIndex
+					let endindex = personspeaking!.endIndex
+					for i in 0..<personspeaking!.count {
+						let index = personspeaking!.index(startindex, offsetBy: i)
+						let backindex = personspeaking!.index(endindex, offsetBy: -(i+1))
+						if let start = startspeaker, start {
+							if personspeaking![index] == "(" {
+								startspeaker = false
+							}
+							else {
+								speakername.append(personspeaking![index])
+							}
+						}
+						else {
+							if personspeaking![index] == "." && startspeaker == nil {
+								startspeaker = true
+							}
+						}
+						if let start = startparty, start {
+							if personspeaking![backindex] == "," {
+								startparty = false
+							}
+							else {
+								partyname.append(personspeaking![backindex])
+							}
+						}
+						else {
+							if personspeaking![backindex] == ")" && startparty == nil {
+								startparty = true
+							}
+						}
+						if let start = startriding, start {
+							if personspeaking![backindex] == "(" {
+								startriding = false
+							}
+							else {
+								ridingname.append(personspeaking![backindex])
+							}
+						}
+						else {
+							if personspeaking![backindex] == "," && startriding == nil {
+								startriding = true
+							}
+						}
+					}
+					partyname = String(partyname.trimmingCharacters(in: CharacterSet.letters.inverted).reversed())
+					speakername = speakername.trimmingCharacters(in: CharacterSet.whitespaces)
+					ridingname = String(ridingname.trimmingCharacters(in: CharacterSet.whitespaces).reversed())
+					let speaker = Speaker(name: speakername, riding: ridingname, party: partyname)
+					let content = paragraphArray(fromXML: intervention["Content"]["ParaText"])
+					let speech = Speech(id: id, speaker: speaker, content: content, date: Date())
+					subject.speeches.append(speech)
+				}
+				if subject.speeches.count > 0 {
+					order.subjectsofbusiness.append(subject)
+				}
+			}
+			if order.subjectsofbusiness.count > 0 {
+				ordersOfBusiness.append(order)
+			}
+		}
+	}
+
+	func paragraphArray(fromXML xml: XMLIndexer) -> [String] {
+		var content: [String] = []
+		for p in xml.all {
+			content.append(text(fromXMLIndexer: p))
+		}
+		return content
+	}
+
+	func text(fromXMLIndexer indexer: XMLIndexer) -> String {
+		var text = String()
+		var childcount = 0
+		for elchild in indexer.element!.children {
+			if elchild.description.contains("</") && indexer.element != nil {
+				text.append(self.text(fromXMLIndexer: indexer.children[childcount]))
+				childcount += 1
+			}
+			else {
+				text.append(elchild.description)
+			}
+		}
+		return text
+	}
+
+	func text(fromXMLElement element: XMLElement) -> String {
+		var text = String()
+		if element.children.count > 0 {
+			for child in element.children {
+				if child.description.contains("</") {
+					//                    text.append(self.text(fromXMLElement: ))
+				}
+				else {
+					text.append(child.description)
+				}
+			}
+		}
+		else {
+			text.append(element.text)
+		}
+		return text
+	}
+}
