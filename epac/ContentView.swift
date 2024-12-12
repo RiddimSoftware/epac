@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
 	var body: some View {
 		NavigationSplitView {
-			ParliamentDateView()
+			SittingCalendarView()
 				.navigationTitle("Parliament")
 		} detail: {
 			Text("Select a Date")

@@ -10,9 +10,9 @@ import Foundation
 import Kanna
 import SWXMLHash
 
-class Downloader {
+class Downloader: ObservableObject {
 	let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
-	let calendarPath: String = "/en/sitting-calendar/"
+	let calendarPath: String = "/en/sitting-calendar/%d"
 	let dailyPath: String = "/en/parliamentary-business/"
 	let xmlPath: String = "/Content/House/%@/Debates/%@/HAN%@-%@.XML"
 	var language: String
@@ -36,7 +36,7 @@ class Downloader {
 			print("xml from network")
 			let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
 			var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-			var (data, response) = try await URLSession.shared.data(for: request)
+			var (data, _) = try await URLSession.shared.data(for: request)
 			guard let htmlstring = String(data: data, encoding: .utf8),
 						let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 				throw NSError(domain: "", code: 1)
@@ -75,7 +75,7 @@ class Downloader {
 			)
 			let xmllink = hosturl.appending(path: xmllinkpath)
 			request = URLRequest(url: xmllink, cachePolicy: .reloadIgnoringLocalCacheData)
-			(data, response) = try await URLSession.shared.data(for: request)
+			(data, _) = try await URLSession.shared.data(for: request)
 			guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 				throw NSError(domain: "", code: 7)
 			}
@@ -85,13 +85,11 @@ class Downloader {
 		}
 	}
 
-	func downloadCalendar() async throws -> [Date] {
-		if let calendardates = UserDefaults.standard.value(forKey: "calendardates_v2") as? [Date] {
-			return calendardates
-		}
+	func downloadCalendar(year: Int) async throws -> [Date] {
 		print("Downloading calendar")
-		let request = URLRequest(url: hosturl.appending(path: calendarPath), cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, response) = try await URLSession.shared.data(for: request)
+		let path = String(format: calendarPath, year)
+		let request = URLRequest(url: hosturl.appending(path: path), cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await URLSession.shared.data(for: request)
 		print("Downloaded \(data.count) bytes")
 
 		if let htmlstring = String(data: data, encoding: .utf8),

@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import SwiftUI
 
 class Appearance {
     class func setup() {
@@ -17,7 +18,7 @@ class Appearance {
     }
 }
 
-class Font {
+extension Font {
     static var messageFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 17)!
     static var cellTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: 16)!
     static var cellSubtitleFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 12)!

@@ -24,10 +24,11 @@ struct epacApp: App {
 	}()
 
 	private var model = Model()
+	private var downloader = Downloader()
 	var body: some Scene {
 		WindowGroup {
 			ContentView()
-				.environmentObject(model)
+				.environmentObject(downloader)
 		}
 		.modelContainer(sharedModelContainer)
 	}
