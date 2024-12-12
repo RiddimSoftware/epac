@@ -16,9 +16,7 @@ struct ParliamentDateView: View {
 	var body: some View {
 		List {
 			ForEach(dates) { date in
-				if Calendar.current.isDateInToday(date) {
-					Text("Today")
-				} else if Calendar.current.isDateInYesterday(date) {
+				if Calendar.current.isDateInYesterday(date) {
 					Text("Yesterday")
 				} else {
 					Text(date.formatted(date: .complete, time: .omitted))
@@ -28,9 +26,10 @@ struct ParliamentDateView: View {
 		.task {
 			do {
 				let today = Calendar.current.startOfDay(for: .now)
-				let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today)!
-				let dates = try await model.getCalendar()
-				self.dates = dates.filter { $0 < tomorrow }
+				let dates = try await model.getCalendar().filter { $0 < today }.sorted(by: >)
+				self.dates = dates
+				let orders = try await model.getOrdersOfBusiness(forDate: dates.first!)
+				print(orders.first)
 			} catch {
 				print("Failed to get dates \(error.localizedDescription)")
 			}

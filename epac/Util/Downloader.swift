@@ -13,8 +13,8 @@ import SWXMLHash
 class Downloader {
 	let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
 	let calendarPath: String = "/en/sitting-calendar/"
-	let dailyurl: String = "/en/parliamentary-business/";
-	let xmlurl: NSString = "/Content/House/%@/Debates/%@/HAN%@-%@.XML";
+	let dailyPath: String = "/en/parliamentary-business/"
+	let xmlPath: String = "/Content/House/%@/Debates/%@/HAN%@-%@.XML"
 	var language: String
 
 	private var dateXMLString:      [Date:String] = [:]
@@ -28,76 +28,60 @@ class Downloader {
 		}
 	}
 
-	func downloadXML(forDate date: Date, completion: @escaping (String?)->()) {
+	func downloadXML(forDate date: Date) async throws -> String {
 		if let string = dateXMLString[date] {
 			print("xml from memory")
-			completion(string)
-		}
-		else if let string = UserDefaults.standard.string(forKey: "\(DateUtils.instance.getCSVStringFromDate(date))_\(Locale.current.identifier)_v2") {
-			print("xml from disk")
-			dateXMLString[date] = string
-			completion(string)
-		}
-		else {
+			return string
+		} else {
 			print("xml from network")
-			//			let datelink = hosturl.appending(dailyurl).appending(DateUtils.instance.getCSVStringFromDate(date))
-			//            Alamofire.request(datelink).responseString {
-			//                [weak self] response in
-			//                guard let `self` = self else {
-			//                    return
-			//                }
-			//                guard let htmlstring = response.result.value,
-			//                    let doc = HTML(html: htmlstring, url: nil, encoding: .utf8) else {
-			//                        completion(nil)
-			//                        return
-			//                }
-			//                var href: String?
-			//                for debatelink in doc.css("a.active-publication-link") {
-			//                    guard let text = debatelink.text?.lowercased() else {
-			//                        completion(nil)
-			//                        return
-			//                    }
-			//                    if text.contains("hansard") {
-			//                        href = debatelink["href"]
-			//                    }
-			//                    else if text.contains("projected") {
-			//                        completion(nil)
-			//                        return
-			//                    }
-			//                }
-			//                guard href != nil else {
-			//                    completion(nil)
-			//                    return
-			//                }
-			//                let pathcomponents = href!.components(separatedBy: "/")
-			//                guard pathcomponents.count == 7 else {
-			//                    completion(nil)
-			//                    return
-			//                }
-			//                let parlsession: String = pathcomponents[3].replacingOccurrences(of: "-", with: "")
-			//                let sittingcomponents = pathcomponents[5].components(separatedBy: "-")
-			//                guard sittingcomponents.count == 2 else {
-			//                    completion(nil)
-			//                    return
-			//                }
-			//                let sittingnumber = sittingcomponents[1]
-			//                let xmllinkpath: String = NSString(format: self.xmlurl,
-			//                                           parlsession,
-			//                                           sittingnumber,
-			//                                           sittingnumber,
-			//                                           self.language) as String
-			//                let xmllink: String = self.hosturl.appending(xmllinkpath)
-			//                Alamofire.request(xmllink).responseString { xmlresponse in
-			//                    guard let datavalue = xmlresponse.data,
-			//                        let utfstringvalue = String(data: datavalue, encoding: .utf8) else {
-			//                            completion(nil)
-			//                            return
-			//                    }
-			//                    UserDefaults.standard.set(utfstringvalue, forKey: "\(DateUtils.instance.getCSVStringFromDate(date))_\(Locale.current.identifier)_v2")
-			//                    self.dateXMLString[date] = utfstringvalue
-			//                    completion(utfstringvalue)
-			//                }
-			//            }
+			let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
+			var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+			var (data, response) = try await URLSession.shared.data(for: request)
+			guard let htmlstring = String(data: data, encoding: .utf8),
+						let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
+				throw NSError(domain: "", code: 1)
+			}
+			var href: String?
+			for debatelink in doc.css("a.active-publication-link") {
+				guard let text = debatelink.text?.lowercased() else {
+					throw NSError(domain: "", code: 2)
+				}
+				if text.contains("hansard") {
+					href = debatelink["href"]
+				}
+				else if text.contains("projected") {
+					throw NSError(domain: "", code: 3)
+				}
+			}
+			guard href != nil else {
+				throw NSError(domain: "", code: 4)
+			}
+			let pathcomponents = href!.components(separatedBy: "/")
+			guard pathcomponents.count == 7 else {
+				throw NSError(domain: "", code: 5)
+			}
+			let parlsession: String = pathcomponents[3].replacingOccurrences(of: "-", with: "")
+			let sittingcomponents = pathcomponents[5].components(separatedBy: "-")
+			guard sittingcomponents.count == 2 else {
+				throw NSError(domain: "", code: 6)
+			}
+			let sittingnumber = sittingcomponents[1]
+			let xmllinkpath = String(
+				format: self.xmlPath,
+				parlsession,
+				sittingnumber,
+				sittingnumber,
+				self.language
+			)
+			let xmllink = hosturl.appending(path: xmllinkpath)
+			request = URLRequest(url: xmllink, cachePolicy: .reloadIgnoringLocalCacheData)
+			(data, response) = try await URLSession.shared.data(for: request)
+			guard let utfstringvalue = String(data: data, encoding: .utf8) else {
+				throw NSError(domain: "", code: 7)
+			}
+			UserDefaults.standard.set(utfstringvalue, forKey: "\(DateUtils.getCSVStringFromDate(date))_\(Locale.current.identifier)_v2")
+			self.dateXMLString[date] = utfstringvalue
+			return utfstringvalue
 		}
 	}
 
@@ -122,7 +106,7 @@ class Downloader {
 				guard let datestring = classes.first else {
 					continue
 				}
-				let date = DateUtils.instance.getDate(forCSVDateString: datestring)
+				let date = DateUtils.getDate(forCSVDateString: datestring)
 				dates.append(date)
 			}
 			dates.sort(by: >)

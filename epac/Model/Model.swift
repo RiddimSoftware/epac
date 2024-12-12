@@ -65,22 +65,12 @@ class Model: ObservableObject {
 		return dates
 	}
 
-	func getOrdersOfBusiness(forDate date: Date, completion: @escaping ([OrderOfBusiness]?)->()) {
-		if let dateorders = dateorders[date] {
-			completion(dateorders)
-		}
-		else {
-			downloader.downloadXML(forDate: date) { [weak self] xmlstring in
-				guard let xmlstring = xmlstring else {
-					completion(nil)
-					return
-				}
-				let bro = XMLBro(xml: xmlstring)
-				bro.parseXML()
-				self?.dateorders[date] = bro.ordersOfBusiness
-				completion(bro.ordersOfBusiness)
-			}
-		}
+	func getOrdersOfBusiness(forDate date: Date) async throws -> [OrderOfBusiness] {
+		let xmlstring = try await downloader.downloadXML(forDate: date)
+		let bro = XMLBro(xml: xmlstring)
+		bro.parseXML()
+		dateorders[date] = bro.ordersOfBusiness
+		return bro.ordersOfBusiness
 	}
 }
 
