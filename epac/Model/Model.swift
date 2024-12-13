@@ -1,94 +1,162 @@
 //
-//  Model.swift
-//  cabinetdoor
+//  Calendar.swift
+//  epac
 //
-//  Created by Sunny on 2017-04-02.
-//  Copyright © 2017 Sunny. All rights reserved.
+//  Created by Sunny on 2024-12-11.
 //
 
+import SwiftData
 import Foundation
 import UIKit
 
-class Model: ObservableObject {
-	enum CSVHeaders: String {
-		case party          = "speakerparty"
-		case riding         = "speakerriding"
-		case name           = "speakername"
-		case website        = "speakerurl"
-		case content        = "speechtext"
-		case speechdate     = "speechdate"
-		case maintopic      = "maintopic"
-		case subtopic       = "subtopic"
-		case subsubtopic    = "subsubtopic"
-		case basepk         = "basepk"
-	}
-	private let minYear = 2016
-	private let maxYear = 2018
-	private let minMonth = 1
-	private let maxMonth = 13
-	private let calendar = Calendar(identifier: .gregorian)
-
-	private let downloader: Downloader = Downloader()
-	static let instance = Model()
-
-	var calendardates:          [Date]?
-	var dateSpeakerSpeeches:    [Date:[Speaker:[Speech]]] = [:]
-	var dateSpeakers:           [Date:[Speaker]] = [:]
-	var dateorders:             [Date:[OrderOfBusiness]] = [:]
-	var dateordersubjets:       [Date:[OrderOfBusiness:[SubjectOfBusiness]]] = [:]
-	var dateSubTopics:          [Date:[Topic]] = [:]
-	var dateSubTopicSpeeches:   [Date:[Topic:[Speech]]] = [:]
-	var dateMainTopics:         [Date:[Topic]] = [:]
-	var dateMainTopicSpeeches:  [Date:[Topic:[Speech]]] = [:]
-	var debateIndex:            [String:Int]
-	var debateProgress:         [String:Double]
-	var speakerImages:          [Speaker:UIImage] = [:]
-
-	private var files: [Date:URL] = [:]
-
-	init() {
-		if let savedIndexes = UserDefaults.standard.value(forKey: "debateindex") as? [String:Int],
-			 let savedProgress = UserDefaults.standard.value(forKey: "debateprogress") as? [String:Double] {
-			debateIndex = savedIndexes
-			debateProgress = savedProgress
-		}
-		else {
-			debateIndex = [:]
-			debateProgress = [:]
-		}
-		NotificationCenter.default.addObserver(self, selector: #selector(onDebateSpeak(_:)), name: Debate.speaknotification, object: nil)
-	}
-
-	func getCalendar() async throws -> [Date] {
-		let dates = try await downloader.downloadCalendar()
-		self.calendardates = dates
-		return dates
-	}
-
-	func getOrdersOfBusiness(forDate date: Date) async throws -> [OrderOfBusiness] {
-		let xmlstring = try await downloader.downloadXML(forDate: date)
-		let bro = XMLBro(xml: xmlstring)
-		bro.parseXML()
-		dateorders[date] = bro.ordersOfBusiness
-		return bro.ordersOfBusiness
+@Model
+final class SittingCalendar {
+	var year: Int
+	var sittings: [Date]
+	init(year: Int, sittings: [Date]) {
+		self.year = year
+		self.sittings = sittings
 	}
 }
 
-extension Model {
-	@objc func onDebateSpeak(_ notification:  Notification) {
-		guard let debate = notification.object as? Debate else {
-			return
-		}
-		if var index = debateIndex.removeValue(forKey: debate.subject.id) {
-			index += 1
-			debateIndex[debate.subject.id] = index
-			debateProgress[debate.subject.id] = Double(index+1) / Double(debate.length)
-		}
-		else {
-			debateIndex[debate.subject.id] = 0
-			debateProgress[debate.subject.id] = Double(1) / Double(debate.length)
-		}
-		UserDefaults.standard.set(debateIndex, forKey: "debateindex")
-		UserDefaults.standard.set(debateProgress, forKey: "debateprogress")
+@Model
+final class ParliamentMember {
+	var name:           String
+	var lastName:       String?
+	var firstName:      String?
+	var photoURL:       URL?
+	var websiteURL:     URL?
+	var riding:         String
+	var party:          Party
+	init(name: String, lastName: String? = nil, firstName: String? = nil, photoURL: URL? = nil, websiteURL: URL? = nil, riding: String, party: Party) {
+		self.name = name
+		self.lastName = lastName
+		self.firstName = firstName
+		self.photoURL = photoURL
+		self.websiteURL = websiteURL
+		self.riding = riding
+		self.party = party
 	}
+}
+
+@Model
+final class SubjectOfBusiness {
+	var title: String
+	var speeches: [Speech]
+	init(title: String, speeches: [Speech] = []) {
+		self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
+		self.speeches = speeches
+	}
+}
+
+@Model
+final class OrderOfBusiness {
+	var catchline: String
+	var subjects: [SubjectOfBusiness]
+	init(catchline: String, subjects: [SubjectOfBusiness] = []) {
+		self.catchline = catchline
+		self.subjects = subjects
+	}
+}
+
+@Model
+final class SpeechMessage {
+	var speaker: ParliamentMember
+	var content: String
+	var timestamp: Date
+	init(speaker: ParliamentMember, content: String, timestamp: Date) {
+		self.speaker = speaker
+		self.content = content
+		self.timestamp = timestamp
+	}
+}
+
+@Model
+final class Speech {
+	var messages: [SpeechMessage]
+	var currentMessage: SpeechMessage?
+	var date: Date
+	var length: Int
+	var title: String
+	init(messages: [SpeechMessage], currentMessage: SpeechMessage? = nil, date: Date, length: Int, title: String) {
+		self.messages = messages
+		self.currentMessage = currentMessage
+		self.date = date
+		self.length = length
+		self.title = title
+	}
+}
+
+//@Model
+//final class Debate {
+//	var speeches: [Speech]
+//	var speakers: [Member]
+//}
+
+enum Party: Codable {
+		case conservative
+		case liberal
+		case newdemocratic
+		case bloc
+		case green
+		case other
+
+		var abbreviation: String {
+				switch self {
+				case .conservative:     return "CPC"
+				case .liberal:          return "Lib"
+				case .newdemocratic:    return "NDP"
+				case .bloc:             return "BQ"
+				case .green:            return "GP"
+				case .other:            return ""
+				}
+		}
+
+		var localizedAbbreviation: String {
+				switch self {
+				case .conservative:     return NSLocalizedString("CPC", comment: "")
+				case .liberal:          return NSLocalizedString("Lib", comment: "")
+				case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
+				case .bloc:             return NSLocalizedString("BQ", comment: "")
+				case .green:            return NSLocalizedString("GP", comment: "")
+				case .other:            return ""
+				}
+		}
+
+		var fullName: String {
+				switch self {
+				case .conservative:     return NSLocalizedString("Conservative", comment: "")
+				case .liberal:          return NSLocalizedString("Liberal", comment: "")
+				case .newdemocratic:    return NSLocalizedString("New Democratic Party", comment: "")
+				case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
+				case .green:            return NSLocalizedString("Green Party", comment: "")
+				case .other:            return ""
+				}
+		}
+
+		var colour: UIColor {
+				switch self {
+				case .conservative:     return UIColor(rgb: 0x1A4782)
+				case .liberal:          return UIColor(rgb: 0xd71920)
+				case .newdemocratic:    return UIColor(rgb: 0xF37021)
+				case .bloc:             return UIColor(rgb: 0x33B2CC)
+				case .green:            return UIColor(rgb: 0x3D9B35)
+				case .other:            return UIColor.darkText
+				}
+		}
+
+		static func partyWithAbbreviation(_ name: String) -> Party {
+				if name == Party.conservative.localizedAbbreviation {
+						return .conservative
+				} else if name == Party.liberal.localizedAbbreviation {
+						return .liberal
+				} else if name == Party.newdemocratic.localizedAbbreviation {
+						return .newdemocratic
+				} else if name == Party.bloc.localizedAbbreviation {
+						return .bloc
+				} else if name == Party.green.localizedAbbreviation {
+						return .green
+				}
+				return .other
+		}
 }

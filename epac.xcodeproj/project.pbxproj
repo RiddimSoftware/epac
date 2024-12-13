@@ -35,9 +35,33 @@
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A3B351552D0B2D4C009864C6 /* Exceptions for "epac" folder in "epac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Model_Old/Committee.swift,
+				Model_Old/CommitteeEvidence.swift,
+				Model_Old/CommitteeModel.swift,
+				Model_Old/Debate.swift,
+				Model_Old/Parliament.swift,
+				Model_Old/Party.swift,
+				Model_Old/PhotoProvider.swift,
+				Model_Old/Speaker.swift,
+				Model_Old/Speech.swift,
+				Model_Old/Topic.swift,
+				Model_Old/XMLObjects.swift,
+				Util/CommitteeDownloader.swift,
+			);
+			target = A38427C22D062C8D00271C34 /* epac */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A38427C52D062C8D00271C34 /* epac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A3B351552D0B2D4C009864C6 /* Exceptions for "epac" folder in "epac" target */,
+			);
 			path = epac;
 			sourceTree = "<group>";
 		};

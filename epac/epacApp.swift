@@ -12,7 +12,7 @@ import SwiftData
 struct epacApp: App {
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([
-			Item.self,
+			SittingCalendar.self,
 		])
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -23,12 +23,9 @@ struct epacApp: App {
 		}
 	}()
 
-	private var model = Model()
-	private var downloader = Downloader()
 	var body: some Scene {
 		WindowGroup {
-			ContentView()
-				.environmentObject(downloader)
+			ContentView(modelContainer: sharedModelContainer)
 		}
 		.modelContainer(sharedModelContainer)
 	}

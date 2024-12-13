@@ -15,7 +15,7 @@ class Debate {
     private var speeches:       [Speech]
     private var speakers:       [Speaker]
     private var iterator:       IndexingIterator<[Speech]>
-    private var model:          Model = Model.instance
+//    private var model:          Model = Model.instance
     private var currentSpeech:  Speech?
     
     var messages:       [DebateSpeechMessage]

@@ -34,7 +34,7 @@ class XMLBro {
 					continue
 				}
 				let content = sob["SubjectOfBusinessContent"]
-				let subject = SubjectOfBusiness(title: title, id: id)
+				let subject = SubjectOfBusiness(title: title)
 				for intervention in content["Intervention"].all {
 					var personspeaking: String? = intervention["PersonSpeaking"]["Affiliation"].element?.text
 					if personspeaking == nil {
@@ -106,16 +106,19 @@ class XMLBro {
 					partyname = String(partyname.trimmingCharacters(in: CharacterSet.letters.inverted).reversed())
 					speakername = speakername.trimmingCharacters(in: CharacterSet.whitespaces)
 					ridingname = String(ridingname.trimmingCharacters(in: CharacterSet.whitespaces).reversed())
-					let speaker = Speaker(name: speakername, riding: ridingname, party: partyname)
+					let speaker = ParliamentMember(name: speakername, riding: ridingname, party: Party.partyWithAbbreviation(partyname))
 					let content = paragraphArray(fromXML: intervention["Content"]["ParaText"])
-					let speech = Speech(id: id, speaker: speaker, content: content, date: Date())
+					/// TODO: Use actual timestamp and dates
+					let messages = content.map { SpeechMessage(speaker: speaker, content: $0, timestamp: .now) }
+					let speech = Speech(messages: messages, date: .now, length: messages.count, title: title)
+//					let speech = Speech(id: id, speaker: speaker, content: content, date: Date())
 					subject.speeches.append(speech)
 				}
 				if subject.speeches.count > 0 {
-					order.subjectsofbusiness.append(subject)
+					order.subjects.append(subject)
 				}
 			}
-			if order.subjectsofbusiness.count > 0 {
+			if order.subjects.count > 0 {
 				ordersOfBusiness.append(order)
 			}
 		}
