@@ -42,44 +42,54 @@ final class ParliamentMember {
 @Model
 final class SubjectOfBusiness {
 	var title: String
+	var hansardID: String?
 	var speeches: [Speech]
-	init(title: String, speeches: [Speech] = []) {
+	init(title: String, hansardID: String?, speeches: [Speech] = []) {
 		self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
+		self.hansardID = hansardID
 		self.speeches = speeches
 	}
 }
 
 @Model
 final class OrderOfBusiness {
+	var hansardID: String?
 	var catchline: String
 	var subjects: [SubjectOfBusiness]
-	init(catchline: String, subjects: [SubjectOfBusiness] = []) {
+	init(hansardID: String?, catchline: String, subjects: [SubjectOfBusiness] = []) {
+		self.hansardID = hansardID
 		self.catchline = catchline
 		self.subjects = subjects
 	}
 }
 
 @Model
+// <ParaText>
 final class SpeechMessage {
 	var speaker: ParliamentMember
+	var hansardID: String?
 	var content: String
 	var timestamp: Date
-	init(speaker: ParliamentMember, content: String, timestamp: Date) {
+	init(speaker: ParliamentMember, hansardID: String?, content: String, timestamp: Date) {
 		self.speaker = speaker
+		self.hansardID = hansardID
 		self.content = content
 		self.timestamp = timestamp
 	}
 }
 
 @Model
+// <Intervention><Content>
 final class Speech {
 	var messages: [SpeechMessage]
+	var hansardID: String?
 	var currentMessage: SpeechMessage?
 	var date: Date
 	var length: Int
 	var title: String
-	init(messages: [SpeechMessage], currentMessage: SpeechMessage? = nil, date: Date, length: Int, title: String) {
+	init(messages: [SpeechMessage], hansardID: String?, currentMessage: SpeechMessage? = nil, date: Date, length: Int, title: String) {
 		self.messages = messages
+		self.hansardID = hansardID
 		self.currentMessage = currentMessage
 		self.date = date
 		self.length = length

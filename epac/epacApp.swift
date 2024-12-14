@@ -13,6 +13,12 @@ struct epacApp: App {
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([
 			SittingCalendar.self,
+			Hansard.self,
+			OrderOfBusiness.self,
+			SubjectOfBusiness.self,
+			ParliamentMember.self,
+			Speech.self,
+			SpeechMessage.self
 		])
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

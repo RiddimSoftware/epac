@@ -13,8 +13,9 @@ struct SittingCalendarView: View {
 	@EnvironmentObject var fetch: Fetch
 	@Environment(\.modelContext) private var modelContext
 	@Environment(\.isPresented) private var isPresented
+	@Environment(\.font) private var font
 	@State private var dates = Set<DateComponents>()
-	@State private var selectedDate: DateComponents?
+	@Binding var selectedDate: DateComponents?
 
 	var body: some View {
 		VStack {
@@ -23,6 +24,7 @@ struct SittingCalendarView: View {
 				.selectable(updatingOnChangeOf: selectedDate, canSelectDate: { c in
 					dates.contains(where: { $0.year == c.year && $0.month == c.month && $0.day == c.day })
 				})
+				.font(font)
 		}
 		.task {
 			let currentYear = Calendar.current.dateComponents([.year], from: .now).year!
@@ -36,11 +38,6 @@ struct SittingCalendarView: View {
 				print("Failed to fetch SittingCalendar count")
 			}
 		}
-		.onChange(of: selectedDate) { oldValue, newValue in
-			if let newValue {
-				print(newValue)
-			}
-		}
 	}
 }
 
@@ -48,9 +45,4 @@ extension Date: @retroactive Identifiable {
 	public var id: Date {
 		return self
 	}
-}
-
-#Preview {
-	SittingCalendarView()
-		.modelContainer(for: Item.self, inMemory: true)
 }

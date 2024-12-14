@@ -25,4 +25,20 @@ actor Fetch: ObservableObject {
 		modelContext.insert(calendar)
 		try modelContext.save()
 	}
+
+	func hansard(_ date: Date) async throws -> Hansard {
+		let fetched = try modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date }))
+		if let first = fetched.first {
+			return first
+		} else {
+			try await downloadHansard(date)
+			return try await hansard(date)
+		}
+	}
+	private func downloadHansard(_ date: Date) async throws {
+		let xml = try await Downloader.downloadXML(forDate: date)
+		let hansard = Hansard(xml: xml)
+		modelContext.insert(hansard)
+		try modelContext.save()
+	}
 }
