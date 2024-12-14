@@ -15,6 +15,7 @@ struct ContentView: View {
 	var fetch: Fetch
 	@State private var selectedDate: DateComponents?
 	@State private var selectedHansard: Hansard?
+	@State private var selectedSubject: SubjectOfBusiness?
 
 	init(modelContainer: ModelContainer) {
 		self.modelContainer = modelContainer
@@ -22,13 +23,18 @@ struct ContentView: View {
 	}
 
 	var body: some View {
-		NavigationSplitView {
+		NavigationStack {
 			SittingCalendarView(selectedDate: $selectedDate)
 				.navigationTitle("Parliament")
 				.environmentObject(fetch)
 				.navigationDestination(item: $selectedHansard) { hansard in
-					SittingView(hansard: hansard)
+					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
+						.navigationDestination(item: $selectedSubject, destination: { subject in
+							SpeechView(speech: subject.speeches.first!)
+								.navigationTitle(subject.speeches.first!.messages.first?.speaker.name ?? "Member")
+//								.navigationTitle("Shuvaloyiranri Majumdarioandiarian")
+						})
 				}
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
@@ -37,8 +43,6 @@ struct ContentView: View {
 						}
 					}
 				}
-		} detail: {
-			Text("Select a Date")
 		}
 		.fontDesign(.serif)
 	}

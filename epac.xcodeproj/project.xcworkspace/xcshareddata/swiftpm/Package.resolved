@@ -1,5 +1,5 @@
 {
-  "originHash" : "042392d358b43edb6de416ebf658e68701e038da2f6e0b3fe25245c7d2225d5e",
+  "originHash" : "b87c3dfa1b3f72115eff26fe652cb2c8a3d67398496cecb97255c9b72ae81f68",
   "pins" : [
     {
       "identity" : "horizoncalendar",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "41c3d28ea0eac07e4551b28def9de1ede702e739",
         "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "swiftygif",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alexiscreuzot/SwiftyGif",
+      "state" : {
+        "revision" : "4430cbc148baa3907651d40562d96325426f409a",
+        "version" : "5.4.5"
       }
     },
     {
