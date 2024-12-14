@@ -13,7 +13,7 @@ struct SpeechView: View {
 	@State private var index: Int = 0
 	@State private var messages = [SpeechMessage]()
 	@State private var loading = false
-
+	
 	var body: some View {
 		VStack {
 			ScrollViewReader { proxy in
@@ -24,6 +24,10 @@ struct SpeechView: View {
 								MessageCell(message: message)
 								Spacer(minLength: 40)
 							}
+						}
+						if index == speech.length {
+							Text("End")
+								.font(.caption)
 						}
 					}
 				}
@@ -64,7 +68,7 @@ struct SpeechView: View {
 			}
 		}
 	}
-
+	
 	//	var body: some View {
 	//		List {
 	//			Section {
@@ -108,7 +112,7 @@ struct AnimatedGifView: UIViewRepresentable {
 		imageView.contentMode = .scaleAspectFit
 		return imageView
 	}
-
+	
 	func updateUIView(_ uiView: UIImageView, context: Context) {
 		uiView.startAnimatingGif()
 	}
