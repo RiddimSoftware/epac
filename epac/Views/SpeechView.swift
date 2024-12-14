@@ -12,6 +12,7 @@ struct SpeechView: View {
 	let speech: Speech
 	@State private var index: Int = 0
 	@State private var messages = [SpeechMessage]()
+	@State private var loading = false
 
 	var body: some View {
 		VStack {
@@ -25,34 +26,41 @@ struct SpeechView: View {
 							}
 						}
 					}
-					HStack {
-						 AnimatedGifView()
-							 .padding(10)
-							 .background(Color(UIColor.systemGray6))
-							 .cornerRadius(10)
-					 }
 				}
 				.onChange(of: messages, { oldValue, newValue in
 					if let id = newValue.last?.id {
 						proxy.scrollTo(id, anchor: .bottom)
 					}
 				})
-			}.task {
-				do {
-					try await Task.sleep(nanoseconds: 700_000_000)
-					messages.append(speech.messages.first!)
-					index += 1
-				} catch {
-					print("Failed to sleep 0.7s \(error.localizedDescription)")
-				}
 			}
-			.defaultScrollAnchor(.bottom)
-			.padding()
-			.onTapGesture {
-				if speech.messages.count > index {
-					messages.append(speech.messages[index])
-					index += 1
+			.padding(.horizontal)
+			if index < speech.length {
+				TypingIndicator()
+			}
+		}
+		.task {
+			do {
+				try await Task.sleep(nanoseconds: 700_000_000)
+				withAnimation {
+					messages.append(speech.messages.first!)
 				}
+				index += 1
+			} catch {
+				print("Failed to sleep 0.7s \(error.localizedDescription)")
+			}
+		}
+		.onAppear {
+			withAnimation {
+				self.loading = true
+			}
+		}
+		.defaultScrollAnchor(.bottom)
+		.onTapGesture {
+			if speech.messages.count > index {
+				withAnimation {
+					messages.append(speech.messages[index])
+				}
+				index += 1
 			}
 		}
 	}
