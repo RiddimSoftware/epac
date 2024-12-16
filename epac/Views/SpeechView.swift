@@ -9,11 +9,17 @@ import SwiftUI
 import SwiftyGif
 
 struct SpeechView: View {
-	let speech: Speech
+	let subject: SubjectOfBusiness
 	@State private var index: Int = 0
 	@State private var messages = [SpeechMessage]()
 	@State private var loading = false
-	
+	@State private var currentSpeech: Speech
+
+	init(subject: SubjectOfBusiness) {
+		self.subject = subject
+		self.currentSpeech = subject.speeches.first!
+	}
+
 	var body: some View {
 		VStack {
 			ScrollViewReader { proxy in
@@ -24,8 +30,22 @@ struct SpeechView: View {
 								MessageCell(message: message)
 								Spacer(minLength: 40)
 							}
+							if message == messages.last, index < currentSpeech.length {
+								VStack(alignment: .leading) {
+									HStack {
+										TypingIndicator()
+											.padding(10)
+											.background(Color(UIColor.systemGray6))
+											.cornerRadius(10)
+										Spacer(minLength: 40)
+									}
+									Text("Tap anywhere to continue")
+										.font(.system(.footnote, design: .default, weight: .light))
+										.foregroundStyle(Color.gray)
+								}
+							}
 						}
-						if index == speech.length {
+						if index == currentSpeech.length {
 							Text("End")
 								.font(.caption)
 						}
@@ -38,15 +58,15 @@ struct SpeechView: View {
 				})
 			}
 			.padding(.horizontal)
-			if index < speech.length {
-				TypingIndicator()
-			}
+			//			if index < currentSpeech.length {
+			//				TypingIndicator()
+			//			}
 		}
 		.task {
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
 				withAnimation {
-					messages.append(speech.messages.first!)
+					messages.append(currentSpeech.messages.first!)
 				}
 				index += 1
 			} catch {
@@ -60,33 +80,14 @@ struct SpeechView: View {
 		}
 		.defaultScrollAnchor(.bottom)
 		.onTapGesture {
-			if speech.messages.count > index {
+			if currentSpeech.messages.count > index {
 				withAnimation {
-					messages.append(speech.messages[index])
+					messages.append(currentSpeech.messages[index])
 				}
 				index += 1
 			}
 		}
 	}
-	
-	//	var body: some View {
-	//		List {
-	//			Section {
-	//				ForEach(messages) { message in
-	//					Text(message.content)
-	//				}
-	//			} header: {
-	//				VStack(alignment: .center) {
-	//					Text(speech.messages.first!.speaker.name)
-	//						.font(.headline)
-	//					Text(speech.messages.first!.speaker.party.localizedAbbreviation)
-	//						.font(.subheadline)
-	//					Text(speech.messages.first!.speaker.riding)
-	//						.font(.caption)
-	//				}
-	//			}
-	//		}
-	//	}
 }
 
 struct MessageCell: View {
@@ -103,17 +104,5 @@ struct MessageCell: View {
 			.foregroundColor(colorScheme == .dark ? Color(UIColor.white) : Color(UIColor.darkText))
 			.background(Color(UIColor.systemGray6))
 			.cornerRadius(10)
-	}
-}
-
-struct AnimatedGifView: UIViewRepresentable {
-	func makeUIView(context: Context) -> UIImageView {
-		let imageView = UIImageView.init(gifImage: UIImage(named: "typing.gif")!)
-		imageView.contentMode = .scaleAspectFit
-		return imageView
-	}
-	
-	func updateUIView(_ uiView: UIImageView, context: Context) {
-		uiView.startAnimatingGif()
 	}
 }

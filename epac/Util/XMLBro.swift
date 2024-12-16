@@ -129,8 +129,8 @@ class XMLBro {
 					let speaker = ParliamentMember(name: speakername, riding: ridingname, party: Party.partyWithAbbreviation(partyname))
 					let content = paragraphArray(fromXML: intervention["Content"]["ParaText"])
 					/// TODO: Use actual timestamp and dates
-					let messages = content.map { SpeechMessage(speaker: speaker, hansardID: interventionID, content: $0, timestamp: .now) }
-					let speech = Speech(messages: messages, hansardID: nil, date: .now, length: messages.count, title: title)
+					let messages = content.map { SpeechMessage(speaker: speaker, hansardID: $0.id, content: $0.content, timestamp: .now) }
+					let speech = Speech(messages: messages, hansardID: interventionID, date: .now, length: messages.count, title: title)
 					//					let speech = Speech(id: id, speaker: speaker, content: content, date: Date())
 					subject.speeches.append(speech)
 				}
@@ -145,12 +145,20 @@ class XMLBro {
 		return self
 	}
 
-	func paragraphArray(fromXML xml: XMLIndexer) -> [String] {
-		var content: [String] = []
+	struct Paragraph {
+		var content: String
+		var id: String
+	}
+
+	func paragraphArray(fromXML xml: XMLIndexer) -> [Paragraph] {
+		var paras = [Paragraph]()
 		for p in xml.all {
-			content.append(text(fromXMLIndexer: p))
+			let text = text(fromXMLIndexer: p)
+			if let id = p.element?.attribute(by: "id")?.text {
+				paras.append(Paragraph(content: text, id: id))
+			}
 		}
-		return content
+		return paras
 	}
 
 	func text(fromXMLIndexer indexer: XMLIndexer) -> String {

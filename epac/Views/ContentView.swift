@@ -31,9 +31,7 @@ struct ContentView: View {
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
 						.navigationDestination(item: $selectedSubject, destination: { subject in
-							SpeechView(speech: subject.speeches.first!)
-								.navigationTitle(subject.speeches.first!.messages.first?.speaker.name ?? "Member")
-//								.navigationTitle("Shuvaloyiranri Majumdarioandiarian")
+							SpeechView2(subject: subject)
 						})
 				}
 				.onChange(of: selectedDate) { oldValue, newValue in

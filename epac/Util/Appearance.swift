@@ -14,7 +14,6 @@ class Appearance {
     class func setup() {
 			UINavigationBar.appearance().titleTextAttributes = [.font:UIFont(name: "CooperHewitt-Semibold", size: 17)!]
         UINavigationBar.appearance().tintColor = UIColor.black
-        
     }
 }
 

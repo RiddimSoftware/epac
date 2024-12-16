@@ -67,10 +67,10 @@ final class OrderOfBusiness {
 // <ParaText>
 final class SpeechMessage {
 	var speaker: ParliamentMember
-	var hansardID: String?
+	var hansardID: String
 	var content: String
 	var timestamp: Date
-	init(speaker: ParliamentMember, hansardID: String?, content: String, timestamp: Date) {
+	init(speaker: ParliamentMember, hansardID: String, content: String, timestamp: Date) {
 		self.speaker = speaker
 		self.hansardID = hansardID
 		self.content = content
