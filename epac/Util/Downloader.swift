@@ -12,9 +12,10 @@ import SWXMLHash
 
 class Downloader: ObservableObject {
 	private static let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
-	private static let calendarPath: String = "/en/sitting-calendar/%d"
-	private static let dailyPath: String = "/en/parliamentary-business/"
-	private static let xmlPath: String = "/Content/House/%@/Debates/%@/HAN%@-%@.XML"
+	private static let calendarPath: String = "en/sitting-calendar/%d"
+	private static let dailyPath: String = "en/parliamentary-business/"
+	private static let xmlPath: String = "Content/House/%@/Debates/%@/HAN%@-%@.XML"
+	private static let membersPath: String = "Members/en/search/XML"
 	private static var language: String = {
 		if Locale.current.identifier.contains("fr") {
 			return "F"
@@ -23,9 +24,7 @@ class Downloader: ObservableObject {
 		}
 	}()
 
-
 	static func downloadXML(forDate date: Date) async throws -> String {
-		print("xml from network")
 		let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
 		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		var (data, _) = try await URLSession.shared.data(for: request)
@@ -103,5 +102,16 @@ class Downloader: ObservableObject {
 			return []
 		}
 
+	}
+
+	static func downloadMembers() async throws -> [ParliamentMember] {
+		let url = hosturl.appending(path: membersPath)
+		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await URLSession.shared.data(for: request)
+		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
+			throw NSError(domain: "", code: 7)
+		}
+		let members = XMLBro.parseMembers(utfstringvalue)
+		return members
 	}
 }

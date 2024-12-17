@@ -22,20 +22,26 @@ final class SittingCalendar {
 @Model
 final class ParliamentMember {
 	var name:           String
-	var lastName:       String?
-	var firstName:      String?
-	var photoURL:       URL?
-	var websiteURL:     URL?
+	var lastName:       String
+	var firstName:      String
+	var photoURL: 			URL
 	var riding:         String
+	var province: Province
 	var party:          Party
-	init(name: String, lastName: String? = nil, firstName: String? = nil, photoURL: URL? = nil, websiteURL: URL? = nil, riding: String, party: Party) {
+	var websiteURL:     URL?
+	var imageData: Data?
+	init(name: String, lastName: String, firstName: String, photoURL: URL, riding: String, province: Province, party: Party, websiteURL: URL? = nil) {
 		self.name = name
 		self.lastName = lastName
 		self.firstName = firstName
 		self.photoURL = photoURL
-		self.websiteURL = websiteURL
 		self.riding = riding
+		self.province = province
 		self.party = party
+		self.websiteURL = websiteURL
+	}
+	var isCurrentUser: Bool {
+		return party == .liberal || party == .green || (party == .newdemocratic && (name == "Jenny K"))
 	}
 }
 
@@ -66,12 +72,14 @@ final class OrderOfBusiness {
 @Model
 // <ParaText>
 final class SpeechMessage {
-	var speaker: ParliamentMember
+	var firstName: String
+	var lastName: String
 	var hansardID: String
 	var content: String
 	var timestamp: Date
-	init(speaker: ParliamentMember, hansardID: String, content: String, timestamp: Date) {
-		self.speaker = speaker
+	init(firstName: String, lastName: String, hansardID: String, content: String, timestamp: Date) {
+		self.firstName = firstName
+		self.lastName = lastName
 		self.hansardID = hansardID
 		self.content = content
 		self.timestamp = timestamp
@@ -97,19 +105,29 @@ final class Speech {
 	}
 }
 
-//@Model
-//final class Debate {
-//	var speeches: [Speech]
-//	var speakers: [Member]
-//}
+enum Province: String, Codable {
+	case BC = "British Columbia"
+	case Alberta = "Alberta"
+	case Saskatchewan = "Saskatchewan"
+	case Manitoba = "Manitoba"
+	case Ontario = "Ontario"
+	case Quebec = "Quebec"
+	case NB = "New Brunswick"
+	case PEI = "Prince Edward Island"
+	case NS = "Nova Scotia"
+	case NL = "Newfoundland and Labrador"
+	case Yukon = "Yukon"
+	case NWT = "Northwest Territories"
+	case Nunavut = "Nunavut"
+}
 
-enum Party: Codable {
+enum Party: Codable, CaseIterable {
 	case conservative
 	case liberal
 	case newdemocratic
 	case bloc
 	case green
-	case other
+	case independent
 
 	var abbreviation: String {
 		switch self {
@@ -118,7 +136,7 @@ enum Party: Codable {
 			case .newdemocratic:    return "NDP"
 			case .bloc:             return "BQ"
 			case .green:            return "GP"
-			case .other:            return ""
+			case .independent:      return "Ind"
 		}
 	}
 
@@ -129,7 +147,7 @@ enum Party: Codable {
 			case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
 			case .bloc:             return NSLocalizedString("BQ", comment: "")
 			case .green:            return NSLocalizedString("GP", comment: "")
-			case .other:            return ""
+			case .independent:      return NSLocalizedString("Ind", comment: "")
 		}
 	}
 
@@ -144,7 +162,18 @@ enum Party: Codable {
 			case .newdemocratic:    return NSLocalizedString("New Democratic Party", comment: "")
 			case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
 			case .green:            return NSLocalizedString("Green Party", comment: "")
-			case .other:            return ""
+			case .independent:      return NSLocalizedString("Independent", comment: "")
+		}
+	}
+
+	var shortName: String {
+		switch self {
+			case .conservative:     return NSLocalizedString("Conservative", comment: "")
+			case .liberal:          return NSLocalizedString("Liberal", comment: "")
+			case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
+			case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
+			case .green:            return NSLocalizedString("Green Party", comment: "")
+			case .independent:      return NSLocalizedString("Independent", comment: "")
 		}
 	}
 
@@ -155,7 +184,7 @@ enum Party: Codable {
 			case .newdemocratic:    return UIColor(rgb: 0xF37021)
 			case .bloc:             return UIColor(rgb: 0x33B2CC)
 			case .green:            return UIColor(rgb: 0x3D9B35)
-			case .other:            return UIColor.darkText
+			case .independent:            return UIColor.darkText
 		}
 	}
 
@@ -171,6 +200,6 @@ enum Party: Codable {
 		} else if name == Party.green.localizedAbbreviation {
 			return .green
 		}
-		return .other
+		return .independent
 	}
 }

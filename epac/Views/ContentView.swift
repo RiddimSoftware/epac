@@ -16,9 +16,7 @@ struct ContentView: View {
 	@State private var selectedDate: DateComponents?
 	@State private var selectedHansard: Hansard?
 	@State private var selectedSubject: SubjectOfBusiness?
-#if DEBUG
-	@Query var subjects: [SubjectOfBusiness]
-#endif
+	@Query private var members: [ParliamentMember]
 
 	init(modelContainer: ModelContainer) {
 		self.modelContainer = modelContainer
@@ -37,9 +35,6 @@ struct ContentView: View {
 						SpeechView2(subject: subject)
 					})
 				}
-//				.navigationDestination(item: $selectedSubject, destination: { subject in
-//					SpeechView2(subject: subject)
-//				})
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
 						Task {
@@ -48,8 +43,16 @@ struct ContentView: View {
 					}
 				}
 		}
-		.onAppear {
-//			selectedSubject = subjects.randomElement()
+		.task {
+			if members.count == 0 {
+				do {
+					let downloadedMembers = try await Downloader.downloadMembers()
+					print("Downloaded \(downloadedMembers.count) members")
+					downloadedMembers.forEach { modelContext.insert($0) }
+				} catch {
+					print("Failed to download members \(error.localizedDescription)")
+				}
+			}
 		}
 		.fontDesign(.serif)
 	}

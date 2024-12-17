@@ -9,22 +9,21 @@
 import Foundation
 
 class PhotoProvider {
-    
-//    static var instance = PhotoProvider()
-//    private static let hostURL: String = "http://www.parl.gc.ca/Parliamentarians/Images/OfficialMPPhotos/42"
+
+	//    static var instance = PhotoProvider()
+	//    private static let hostURL: String = "http://www.parl.gc.ca/Parliamentarians/Images/OfficialMPPhotos/42"
 	private static let hostURL: URL = URL(string: "https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/44")!
 
-    static func getPhotoURL(lastName: String, firstName: String, partyAbbreviation: String) -> URL {
+	static func getPhotoURL(lastName: String, firstName: String, party: Party) -> URL {
 
-			let url = hostURL.appending(
-				path: "\(lastName.replacing(/\P{L}/, with: ""))\(firstName.replacing(/\P{L}/, with: ""))_\(partyAbbreviation).jpg"
-			)
-			print(url.absoluteString)
-			return url
+		let url = hostURL.appending(
+			path: "\(lastName.replacing(/\P{L}/, with: ""))\(firstName.replacing(/\P{L}/, with: ""))_\(party.abbreviation).jpg"
+		)
+		return url
 
-//        let unicodestring = "\(hostURL)/\(lastName)\(firstName)_\(partyAbbreviation).jpg"
-//        return unicodestring.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!
-    }
+		//        let unicodestring = "\(hostURL)/\(lastName)\(firstName)_\(partyAbbreviation).jpg"
+		//        return unicodestring.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!
+	}
 }
 
 //protocol AvatarProviderDelegate {
@@ -38,9 +37,9 @@ class PhotoProvider {
 //    private var _placeholderImage: UIImage!
 //    private var speaker: Speaker
 //    private var model: Model = Model.instance
-//    
+//
 //    var delegate: AvatarProviderDelegate?
-//    
+//
 //    init(speaker: Speaker) {
 //        self.speaker = speaker
 //        super.init()
@@ -69,17 +68,17 @@ class PhotoProvider {
 //            })
 //        }
 //    }
-//    
+//
 //    func avatarPlaceholderImage() -> UIImage {
 //        if _placeholderImage == nil {
 //        }
 //        return _placeholderImage
 //    }
-//    
+//
 //    func avatarImage() -> UIImage? {
 //        return _avatarImage
 //    }
-//    
+//
 //    func avatarHighlightedImage() -> UIImage? {
 //        return nil
 //    }

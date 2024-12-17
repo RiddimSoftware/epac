@@ -128,13 +128,25 @@ class XMLBro {
 						}
 					}
 					partyname = String(partyname.trimmingCharacters(in: CharacterSet.letters.inverted).reversed())
-					speakername = speakername.trimmingCharacters(in: CharacterSet.whitespaces)
+					let speakerNames = speakername.trimmingCharacters(in: CharacterSet.whitespaces).split(separator: " ")
 					ridingname = String(ridingname.trimmingCharacters(in: CharacterSet.whitespaces).reversed())
-					let speaker = ParliamentMember(name: speakername, riding: ridingname, party: Party.partyWithAbbreviation(partyname))
+//					let speaker = ParliamentMember(name: speakername, riding: ridingname, party: Party.partyWithAbbreviation(partyname))
 					let content = paragraphArray(fromXML: intervention["Content"]["ParaText"])
-					let messages = content.map { SpeechMessage(speaker: speaker, hansardID: $0.id, content: $0.content, timestamp: date) }
-					let speech = Speech(messages: messages, hansardID: interventionID, date: date, title: title)
-					subject.speeches.append(speech)
+					let firstName = speakerNames.dropLast().joined(separator: " ")
+					let lastName = speakerNames.last
+					if !firstName.isEmpty, let lastName {
+						let messages = content.map { p in
+							SpeechMessage(
+								firstName: String(firstName),
+								lastName: String(lastName),
+								hansardID: p.id,
+								content: p.content,
+								timestamp: date
+							)
+						}
+						let speech = Speech(messages: messages, hansardID: interventionID, date: date, title: title)
+						subject.speeches.append(speech)
+					}
 				}
 				if subject.speeches.count > 0 {
 					order.subjects.append(subject)
@@ -194,6 +206,44 @@ class XMLBro {
 			text.append(element.text)
 		}
 		return text
+	}
+}
+
+extension XMLBro {
+	static func parseMembers(_ xml: String) -> [ParliamentMember] {
+		let xml = XMLHash.parse(xml)
+		let membersXML = xml["ArrayOfMemberOfParliament"]["MemberOfParliament"].all
+		var members = [ParliamentMember]()
+		for member in membersXML {
+			let firstName = member["PersonOfficialFirstName"].element?.trimmedText()
+			let lastName = member["PersonOfficialLastName"].element?.trimmedText()
+			let constituencyName = member["ConstituencyName"].element?.trimmedText()
+			let provinceName = member["ConstituencyProvinceTerritoryName"].element?.trimmedText()
+			let caucus = member["CaucusShortName"].element?.trimmedText()
+			guard let firstName, let lastName, let constituencyName, let provinceName, let caucus else {
+				print("Member XML missing fields")
+				continue
+			}
+			guard let party = Party.allCases.first(where: { $0.shortName == caucus }) else {
+				print("Member XML invalid caucus")
+				continue
+			}
+			guard let province = Province(rawValue: provinceName) else {
+				print("Member XML invalid province")
+				continue
+			}
+			let mp = ParliamentMember(
+				name: "\(firstName) \(lastName)",
+				lastName: lastName,
+				firstName: firstName,
+				photoURL: PhotoProvider.getPhotoURL(lastName: lastName, firstName: firstName, party: party),
+				riding: constituencyName,
+				province: province,
+				party: party
+			)
+			members.append(mp)
+		}
+		return members
 	}
 }
 

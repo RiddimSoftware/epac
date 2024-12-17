@@ -1,5 +1,5 @@
 {
-  "originHash" : "07ac74ef5f44f75884c49edc53350657f7805d8ab787d99180874d821d926814",
+  "originHash" : "9f5b43a7cc2a2652dbf777e6c3f5afdaa3e4701ea8114f73cb2e10cd37122f52",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "9970fd0bb7a05dad0b6566ae1f56937716686b24",
         "version" : "1.1.1"
-      }
-    },
-    {
-      "identity" : "chat",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/exyte/Chat",
-      "state" : {
-        "revision" : "be0910b293ec8183c210a6014c93582764092d58",
-        "version" : "2.0.10"
       }
     },
     {
