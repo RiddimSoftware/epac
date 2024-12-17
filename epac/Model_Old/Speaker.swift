@@ -59,7 +59,7 @@ class Speaker: CustomDebugStringConvertible, Hashable, Equatable, NSCoding {
 		let partyAbbreviation = self.party.abbreviation
 		self.riding = riding
 		if let firstName = firstName, let lastName = lastName {
-			self.photoURL = URL(string: PhotoProvider.instance.getPhotoURL(lastName: lastName, firstName: firstName, partyAbbreviation: partyAbbreviation))
+			self.photoURL = URL(string: PhotoProvider.getPhotoURL(lastName: lastName, firstName: firstName, partyAbbreviation: partyAbbreviation))
 		}
 	}
 

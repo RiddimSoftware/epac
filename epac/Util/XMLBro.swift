@@ -45,14 +45,18 @@ class XMLBro {
 					catchline.lowercased() == NSLocalizedString("adjournment proceedings", comment:"") {
 				continue
 			}
-			let id: String? = oob.element?.attribute(by: "id")?.trimmedText()
-			let order = OrderOfBusiness(hansardID: id, catchline: catchline)
+			guard let oobID = oob.element?.attribute(by: "id")?.trimmedText() else {
+				continue
+			}
+			let order = OrderOfBusiness(hansardID: oobID, catchline: catchline)
 			for sob in oob["SubjectOfBusiness"].all {
 				let title = sob["SubjectOfBusinessTitle"].element?.trimmedText()
 				guard let title else {
 					continue
 				}
-				let sobID = sob.element?.attribute(by: "id")?.trimmedText()
+				guard let sobID = sob.element?.attribute(by: "id")?.trimmedText() else {
+					continue
+				}
 				let content = sob["SubjectOfBusinessContent"]
 				let subject = SubjectOfBusiness(title: title, hansardID: sobID)
 				for intervention in content["Intervention"].all {
@@ -128,10 +132,8 @@ class XMLBro {
 					ridingname = String(ridingname.trimmingCharacters(in: CharacterSet.whitespaces).reversed())
 					let speaker = ParliamentMember(name: speakername, riding: ridingname, party: Party.partyWithAbbreviation(partyname))
 					let content = paragraphArray(fromXML: intervention["Content"]["ParaText"])
-					/// TODO: Use actual timestamp and dates
-					let messages = content.map { SpeechMessage(speaker: speaker, hansardID: $0.id, content: $0.content, timestamp: .now) }
-					let speech = Speech(messages: messages, hansardID: interventionID, date: .now, length: messages.count, title: title)
-					//					let speech = Speech(id: id, speaker: speaker, content: content, date: Date())
+					let messages = content.map { SpeechMessage(speaker: speaker, hansardID: $0.id, content: $0.content, timestamp: date) }
+					let speech = Speech(messages: messages, hansardID: interventionID, date: date, title: title)
 					subject.speeches.append(speech)
 				}
 				if subject.speeches.count > 0 {

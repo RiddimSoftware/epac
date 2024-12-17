@@ -12,9 +12,9 @@ struct SittingView: View {
 	@Binding var selectedSubject: SubjectOfBusiness?
 	var body: some View {
 		List {
-			ForEach(hansard.orders.filter { !$0.subjects.isEmpty }) { order in
+			ForEach(hansard.orders.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.subjects.isEmpty }) { order in
 				Section {
-					ForEach(order.subjects.filter { !$0.speeches.isEmpty && !$0.speeches.first!.messages.isEmpty }) { subject in
+					ForEach(order.subjects.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.speeches.isEmpty && !$0.speeches.first!.messages.isEmpty }) { subject in
 						VStack {
 							Text(subject.title)
 						}

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftyGif
 
 struct SpeechView: View {
 	let subject: SubjectOfBusiness

@@ -10,12 +10,20 @@ import Foundation
 
 class PhotoProvider {
     
-    static var instance = PhotoProvider()
-    let hostURL: String = "http://www.parl.gc.ca/Parliamentarians/Images/OfficialMPPhotos/42"
-    
-    func getPhotoURL(lastName: String, firstName: String, partyAbbreviation: String) -> String {
-        let unicodestring = "\(hostURL)/\(lastName)\(firstName)_\(partyAbbreviation).jpg"
-        return unicodestring.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!
+//    static var instance = PhotoProvider()
+//    private static let hostURL: String = "http://www.parl.gc.ca/Parliamentarians/Images/OfficialMPPhotos/42"
+	private static let hostURL: URL = URL(string: "https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/44")!
+
+    static func getPhotoURL(lastName: String, firstName: String, partyAbbreviation: String) -> URL {
+
+			let url = hostURL.appending(
+				path: "\(lastName.replacing(/\P{L}/, with: ""))\(firstName.replacing(/\P{L}/, with: ""))_\(partyAbbreviation).jpg"
+			)
+			print(url.absoluteString)
+			return url
+
+//        let unicodestring = "\(hostURL)/\(lastName)\(firstName)_\(partyAbbreviation).jpg"
+//        return unicodestring.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!
     }
 }
 

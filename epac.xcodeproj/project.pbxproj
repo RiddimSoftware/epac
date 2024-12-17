@@ -45,7 +45,6 @@
 				Model_Old/Debate.swift,
 				Model_Old/Parliament.swift,
 				Model_Old/Party.swift,
-				Model_Old/PhotoProvider.swift,
 				Model_Old/Speaker.swift,
 				Model_Old/Speech.swift,
 				Model_Old/Topic.swift,

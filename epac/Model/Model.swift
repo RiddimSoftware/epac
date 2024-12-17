@@ -42,9 +42,9 @@ final class ParliamentMember {
 @Model
 final class SubjectOfBusiness {
 	var title: String
-	var hansardID: String?
+	var hansardID: String
 	var speeches: [Speech]
-	init(title: String, hansardID: String?, speeches: [Speech] = []) {
+	init(title: String, hansardID: String, speeches: [Speech] = []) {
 		self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
 		self.hansardID = hansardID
 		self.speeches = speeches
@@ -53,10 +53,10 @@ final class SubjectOfBusiness {
 
 @Model
 final class OrderOfBusiness {
-	var hansardID: String?
+	var hansardID: String
 	var catchline: String
 	var subjects: [SubjectOfBusiness]
-	init(hansardID: String?, catchline: String, subjects: [SubjectOfBusiness] = []) {
+	init(hansardID: String, catchline: String, subjects: [SubjectOfBusiness] = []) {
 		self.hansardID = hansardID
 		self.catchline = catchline
 		self.subjects = subjects
@@ -79,20 +79,20 @@ final class SpeechMessage {
 }
 
 @Model
-// <Intervention><Content>
+// <Intervention>
 final class Speech {
 	var messages: [SpeechMessage]
-	var hansardID: String?
+	var hansardID: String
 	var currentMessage: SpeechMessage?
 	var date: Date
 	var length: Int
 	var title: String
-	init(messages: [SpeechMessage], hansardID: String?, currentMessage: SpeechMessage? = nil, date: Date, length: Int, title: String) {
+	init(messages: [SpeechMessage], hansardID: String, currentMessage: SpeechMessage? = nil, date: Date, title: String) {
 		self.messages = messages
 		self.hansardID = hansardID
 		self.currentMessage = currentMessage
 		self.date = date
-		self.length = length
+		self.length = messages.count
 		self.title = title
 	}
 }
@@ -104,69 +104,73 @@ final class Speech {
 //}
 
 enum Party: Codable {
-		case conservative
-		case liberal
-		case newdemocratic
-		case bloc
-		case green
-		case other
+	case conservative
+	case liberal
+	case newdemocratic
+	case bloc
+	case green
+	case other
 
-		var abbreviation: String {
-				switch self {
-				case .conservative:     return "CPC"
-				case .liberal:          return "Lib"
-				case .newdemocratic:    return "NDP"
-				case .bloc:             return "BQ"
-				case .green:            return "GP"
-				case .other:            return ""
-				}
+	var abbreviation: String {
+		switch self {
+			case .conservative:     return "CPC"
+			case .liberal:          return "Lib"
+			case .newdemocratic:    return "NDP"
+			case .bloc:             return "BQ"
+			case .green:            return "GP"
+			case .other:            return ""
 		}
+	}
 
-		var localizedAbbreviation: String {
-				switch self {
-				case .conservative:     return NSLocalizedString("CPC", comment: "")
-				case .liberal:          return NSLocalizedString("Lib", comment: "")
-				case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
-				case .bloc:             return NSLocalizedString("BQ", comment: "")
-				case .green:            return NSLocalizedString("GP", comment: "")
-				case .other:            return ""
-				}
+	var localizedAbbreviation: String {
+		switch self {
+			case .conservative:     return NSLocalizedString("CPC", comment: "")
+			case .liberal:          return NSLocalizedString("Lib", comment: "")
+			case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
+			case .bloc:             return NSLocalizedString("BQ", comment: "")
+			case .green:            return NSLocalizedString("GP", comment: "")
+			case .other:            return ""
 		}
+	}
 
-		var fullName: String {
-				switch self {
-				case .conservative:     return NSLocalizedString("Conservative", comment: "")
-				case .liberal:          return NSLocalizedString("Liberal", comment: "")
-				case .newdemocratic:    return NSLocalizedString("New Democratic Party", comment: "")
-				case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
-				case .green:            return NSLocalizedString("Green Party", comment: "")
-				case .other:            return ""
-				}
-		}
+	var image: UIImage? {
+		return UIImage(named: self.abbreviation)
+	}
 
-		var colour: UIColor {
-				switch self {
-				case .conservative:     return UIColor(rgb: 0x1A4782)
-				case .liberal:          return UIColor(rgb: 0xd71920)
-				case .newdemocratic:    return UIColor(rgb: 0xF37021)
-				case .bloc:             return UIColor(rgb: 0x33B2CC)
-				case .green:            return UIColor(rgb: 0x3D9B35)
-				case .other:            return UIColor.darkText
-				}
+	var fullName: String {
+		switch self {
+			case .conservative:     return NSLocalizedString("Conservative", comment: "")
+			case .liberal:          return NSLocalizedString("Liberal", comment: "")
+			case .newdemocratic:    return NSLocalizedString("New Democratic Party", comment: "")
+			case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
+			case .green:            return NSLocalizedString("Green Party", comment: "")
+			case .other:            return ""
 		}
+	}
 
-		static func partyWithAbbreviation(_ name: String) -> Party {
-				if name == Party.conservative.localizedAbbreviation {
-						return .conservative
-				} else if name == Party.liberal.localizedAbbreviation {
-						return .liberal
-				} else if name == Party.newdemocratic.localizedAbbreviation {
-						return .newdemocratic
-				} else if name == Party.bloc.localizedAbbreviation {
-						return .bloc
-				} else if name == Party.green.localizedAbbreviation {
-						return .green
-				}
-				return .other
+	var colour: UIColor {
+		switch self {
+			case .conservative:     return UIColor(rgb: 0x1A4782)
+			case .liberal:          return UIColor(rgb: 0xd71920)
+			case .newdemocratic:    return UIColor(rgb: 0xF37021)
+			case .bloc:             return UIColor(rgb: 0x33B2CC)
+			case .green:            return UIColor(rgb: 0x3D9B35)
+			case .other:            return UIColor.darkText
 		}
+	}
+
+	static func partyWithAbbreviation(_ name: String) -> Party {
+		if name == Party.conservative.localizedAbbreviation {
+			return .conservative
+		} else if name == Party.liberal.localizedAbbreviation {
+			return .liberal
+		} else if name == Party.newdemocratic.localizedAbbreviation {
+			return .newdemocratic
+		} else if name == Party.bloc.localizedAbbreviation {
+			return .bloc
+		} else if name == Party.green.localizedAbbreviation {
+			return .green
+		}
+		return .other
+	}
 }

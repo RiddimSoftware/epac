@@ -16,6 +16,9 @@ struct ContentView: View {
 	@State private var selectedDate: DateComponents?
 	@State private var selectedHansard: Hansard?
 	@State private var selectedSubject: SubjectOfBusiness?
+#if DEBUG
+	@Query var subjects: [SubjectOfBusiness]
+#endif
 
 	init(modelContainer: ModelContainer) {
 		self.modelContainer = modelContainer
@@ -31,9 +34,12 @@ struct ContentView: View {
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
 						.navigationDestination(item: $selectedSubject, destination: { subject in
-							SpeechView2(subject: subject)
-						})
+						SpeechView2(subject: subject)
+					})
 				}
+//				.navigationDestination(item: $selectedSubject, destination: { subject in
+//					SpeechView2(subject: subject)
+//				})
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
 						Task {
@@ -41,6 +47,9 @@ struct ContentView: View {
 						}
 					}
 				}
+		}
+		.onAppear {
+//			selectedSubject = subjects.randomElement()
 		}
 		.fontDesign(.serif)
 	}
