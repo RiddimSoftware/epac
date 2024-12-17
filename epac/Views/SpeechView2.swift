@@ -49,58 +49,8 @@ struct SpeechView2: View {
 						}
 					}
 					if positionInGroup ==  .last || positionInGroup == .single {
-						HStack {
-							if message.user.isCurrentUser {
-								Spacer()
-							}
-							VStack {
-								HStack {
-									if message.user.isCurrentUser {
-										if let image = (message as? ChatMessage)?.speaker.party.image {
-											Image(uiImage: image)
-												.resizable()
-												.frame(width: 40, height: 40)
-										}
-									}
-									VStack {
-										if let name = (message as? ChatMessage)?.speaker.name {
-											Text(verbatim: name)
-										}
-										if let riding = (message as? ChatMessage)?.speaker.riding {
-											Text(verbatim: riding)
-										}
-										if let province = (message as? ChatMessage)?.speaker.province {
-											Text(verbatim: province.rawValue)
-										}
-									}
-									if !message.user.isCurrentUser {
-										if let image = (message as? ChatMessage)?.speaker.party.image {
-											Image(uiImage: image)
-												.resizable()
-												.frame(width: 40, height: 40)
-										}
-									}
-								}
-								HStack {
-									if let url = (message as? ChatMessage)?.speaker.photoURL {
-										AsyncImage(url: url) { image in
-											image
-												.resizable()
-												.scaledToFit()
-											//										.frame(width: 142, height: 230)
-												.frame(width: 46, height: 77)
-										} placeholder: {
-											Image(systemName: "person.circle.fill")
-										}
-									} else {
-										Image(systemName: "person.circle.fill")
-									}
-								}
-							}
-							.font(.system(.footnote, design: .default, weight: .regular))
-							if !message.user.isCurrentUser {
-								Spacer()
-							}
+						if let speaker = (message as? ChatMessage)?.speaker, let chatMessage = (message as? ChatMessage)?.message {
+							SpeakerView(speaker: speaker, message: chatMessage)
 						}
 					}
 				}
@@ -215,27 +165,3 @@ class ChatMessage: Message {
 		)
 	}
 }
-
-//#Preview {
-//	SpeechView2(
-//		subject: .init(
-//			title: "Government Policies",
-//			hansardID: "13061430",
-//			speeches: [
-//				Speech(
-//					messages: [
-//						.init(speaker: .init(name: "Shannon Stubbs", riding: "Lakeland", party: Party.partyWithAbbreviation("CPC")), hansardID: "8784879", content: "Mr. Speaker, after nine years, Canadians are paying the price for the NDP-Liberals' economic vandalism. The carbon tax and job-killing oil and gas cap hurt rural people and non-profits the most.", timestamp: .now),
-//						.init(speaker: .init(name: "Shannon Stubbs", riding: "Lakeland", party: Party.partyWithAbbreviation("CPC")), hansardID: "8784879", content: "The Dewberry Agricultural Society paid over $5,000 in carbon taxes in just six months and cannot afford to heat its hockey rink much longer. The NDP-Liberals said small business owners are tax cheats. The reckless capital gains tax hike and shameless, temporary two-month tax trick prove it.", timestamp: .now),
-//						.init(speaker: .init(name: "Shannon Stubbs", riding: "Lakeland", party: Party.partyWithAbbreviation("CPC")), hansardID: "8784879", content: "Sheryl, an accountant from Vegreville, says the tax hike will slash nearly 10% of savings when owners sell their life's work and the labours of love they rely on for their retirement. Ron from Glendon says the cost to switch his store's items to be GST-exempt and back could cripple his business at the most important time of year.", timestamp: .now),
-//						.init(speaker: .init(name: "Shannon Stubbs", riding: "Lakeland", party: Party.partyWithAbbreviation("CPC")), hansardID: "8784879", content: "Canada's promise is that anyone from anywhere can work hard for a powerful paycheque and pension, living in safe and healthy communities, but the NDP-Liberals broke it. Common-sense Conservatives will restore it, axe the tax, spike the hike and turn hurt into hope for all.", timestamp: .now)
-//					],
-//					hansardID: "13061431",
-//					date: .now,
-//					title: "Government Policies"
-//				)
-//			]
-//		),
-//		messages: [],
-//		index: 0
-//	)
-//}
