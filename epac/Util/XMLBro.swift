@@ -13,9 +13,9 @@ class XMLBro {
 	private var xml: XMLIndexer
 	var ordersOfBusiness: [OrderOfBusiness] = []
 	var date: Date!
-	var hansardID: String?
-	var parliamentNumber: Int?
-	var sessionNumber: Int?
+	var hansardID: String!
+	var parliamentNumber: Int!
+	var sessionNumber: Int!
 
 	init(xml: String) {
 		self.xml = XMLHash.parse(xml)
@@ -26,6 +26,8 @@ class XMLBro {
 	}
 
 	func parseXML() -> Self {
+		hansardID = xml["Hansard"].element?.attribute(by: "id")?.trimmedText()
+		
 		let info = xml["Hansard"]["ExtractedInformation"]["ExtractedItem"].all
 		let day = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("MetaDateNumDay") == .orderedSame })?.element?.text ?? "")
 		let month = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("MetaDateNumMonth") == .orderedSame })?.element?.text ?? "")

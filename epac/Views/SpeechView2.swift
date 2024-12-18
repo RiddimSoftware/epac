@@ -41,19 +41,37 @@ struct SpeechView2: View {
 				/// didSendMessage
 			}
 			messageBuilder: { message, positionInGroup, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
-				VStack {
-					HStack(alignment: .bottom) {
+				HStack(alignment: .bottom) {
+					if message.user.isCurrentUser {
+						Spacer()
+					}
+					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
+						SpeakerImageView(speaker: speaker)
+							.padding(.bottom, 20)
+					} else {
+						Spacer(minLength: 51)
+					}
+					VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
 						VStack(alignment: .leading) {
 							Text(verbatim: message.text)
 								.padding(10)
 								.background(Color(UIColor.systemGray6))
 								.cornerRadius(10)
 						}
-					}
-					if positionInGroup ==  .last || positionInGroup == .single {
-						if let speaker = (message as? ChatMessage)?.speaker, let chatMessage = (message as? ChatMessage)?.message {
-							SpeakerView(speaker: speaker, message: chatMessage)
+						if (positionInGroup == .last || positionInGroup == .single) {
+							if let speaker = (message as? ChatMessage)?.speaker {
+								SpeakerNameView(speaker: speaker, alignment: message.user.isCurrentUser ? .trailing : .leading)
+							}
 						}
+					}
+					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
+						SpeakerImageView(speaker: speaker)
+							.padding(.bottom, 20)
+					} else {
+						Spacer(minLength: 51)
+					}
+					if !message.user.isCurrentUser {
+						Spacer()
 					}
 				}
 				.padding()

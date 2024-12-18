@@ -67,6 +67,84 @@ struct SpeakerView: View {
 	}
 }
 
+struct SpeakerNameView: View {
+	let speaker: ParliamentMember
+	let alignment: HorizontalAlignment
+	init(speaker: ParliamentMember, alignment: HorizontalAlignment) {
+		self.speaker = speaker
+		self.alignment = alignment
+	}
+	var body: some View {
+		HStack(alignment: .bottom, spacing: 0) {
+			if alignment == .trailing {
+				if let image = speaker.party.image {
+					Image(uiImage: image)
+						.resizable()
+						.frame(width: 40, height: 40)
+						.padding(5)
+						.background(.white)
+				}
+			}
+			VStack(alignment: alignment, spacing: 1) {
+				Text(verbatim: speaker.name)
+				Text(verbatim: speaker.riding)
+				Text(verbatim: speaker.province.rawValue)
+			}
+			if alignment == .leading {
+				if let image = speaker.party.image {
+					Image(uiImage: image)
+						.resizable()
+						.frame(width: 40, height: 40)
+						.padding(5)
+						.background(.white)
+				}
+			}
+		}
+		.fontDesign(.rounded)
+		.font(.system(.footnote, weight: .regular))
+	}
+}
+
+struct SpeakerImageView: View {
+	let speaker: ParliamentMember
+	@State private var imageData: Data?
+	init(speaker: ParliamentMember) {
+		self.speaker = speaker
+		imageData = speaker.imageData
+	}
+	var body: some View {
+		VStack {
+			if let data = speaker.imageData, let image = UIImage(data: data) {
+				Image(uiImage: image)
+					.resizable()
+					.scaledToFit()
+					.frame(width: 46, height: 77)
+			} else {
+				Image(systemName: "person.circle")
+					.resizable()
+					.scaledToFit()
+					.frame(width: 46, height: 77)
+			}
+		}
+		.padding(0)
+		.task {
+			if speaker.imageData == nil {
+				do {
+					let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
+					if !data.isEmpty, UIImage(data: data) != nil {
+						speaker.imageData = data
+						withAnimation {
+							self.imageData = data
+						}
+					}
+				} catch {
+					print("Failed to download member image \(error.localizedDescription)")
+				}
+			}
+		}
+	}
+}
+
 #Preview {
 	SpeakerView(
 		speaker: ParliamentMember(name: "Justin Trudeau", lastName: "Trudeau", firstName: "Justin", photoURL: URL(string: "https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/44/TrudeauJustin_LIB.jpg")!, riding: "Papineau", province: .Quebec, party: .liberal),

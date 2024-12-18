@@ -11,11 +11,11 @@ import Foundation
 @Model
 final class Hansard {
 	var date: Date
-	var hansardID: String?
-	var parliamentNumber: Int?
-	var sessionNumber: Int?
+	var hansardID: String
+	var parliamentNumber: Int
+	var sessionNumber: Int
 	var orders: [OrderOfBusiness]
-	init(date: Date, hansardID: String?, parliamentNumber: Int?, sessionNumber: Int?, orders: [OrderOfBusiness] = []) {
+	init(date: Date, hansardID: String, parliamentNumber: Int, sessionNumber: Int, orders: [OrderOfBusiness] = []) {
 		self.date = date
 		self.hansardID = hansardID
 		self.parliamentNumber = parliamentNumber
