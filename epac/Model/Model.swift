@@ -50,6 +50,7 @@ final class SubjectOfBusiness: Hashable {
 	var title: String
 	var hansardID: String
 	var speeches: [Speech]
+	var currentSpeech: Speech?
 	init(title: String, hansardID: String, speeches: [Speech] = []) {
 		self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
 		self.hansardID = hansardID
@@ -101,10 +102,9 @@ final class Speech: Hashable {
 	var date: Date
 	var length: Int
 	var title: String
-	init(messages: [SpeechMessage], hansardID: String, currentMessage: SpeechMessage? = nil, date: Date, title: String) {
+	init(messages: [SpeechMessage], hansardID: String, date: Date, title: String) {
 		self.messages = messages
 		self.hansardID = hansardID
-		self.currentMessage = currentMessage
 		self.date = date
 		self.length = messages.count
 		self.title = title

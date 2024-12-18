@@ -12,6 +12,7 @@ import SwiftData
 struct SpeechView2: View {
 	@Environment(\.modelContext) var modelContext
 	let subject: SubjectOfBusiness
+	let length: Int
 	@State var speeches: [Speech]
 	@State private var index: Int = 0
 	@State var messages = [ChatMessage]()
@@ -19,11 +20,13 @@ struct SpeechView2: View {
 
 	init(subject: SubjectOfBusiness) {
 		self.subject = subject
-		self.speeches = subject.speeches.map { speech in
+		let speeches = subject.speeches.map { speech in
 			let speech = speech
 			speech.messages = speech.messages.sorted(by: { $0.hansardID < $1.hansardID })
 			return speech
 		}.sorted(by: { $0.hansardID < $1.hansardID })
+		self.speeches = speeches
+		self.length = speeches.map { $0.messages.count }.reduce(0, +)
 	}
 #if DEBUG
 	init(subject: SubjectOfBusiness, messages: [ChatMessage] = [], index: Int = 0) {
@@ -37,6 +40,9 @@ struct SpeechView2: View {
 		VStack {
 			Text(verbatim: subject.title)
 				.multilineTextAlignment(.center)
+			ProgressView(value: Float(messages.count), total: Float(length))
+				.progressViewStyle(.linear)
+				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
 			ChatView(messages: messages) { _ in
 				/// didSendMessage
 			}
