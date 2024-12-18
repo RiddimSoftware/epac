@@ -24,7 +24,7 @@ struct SpeakerView: View {
 						Image(uiImage: image)
 							.resizable()
 							.scaledToFit()
-						//							.frame(width: 142, height: 230)
+//							.frame(width: 142, height: 230)
 							.frame(width: 46, height: 77)
 					} else {
 						Image(systemName: "person.circle")
@@ -75,33 +75,26 @@ struct SpeakerNameView: View {
 		self.alignment = alignment
 	}
 	var body: some View {
-		HStack(alignment: .bottom, spacing: 0) {
-			if alignment == .trailing {
-				if let image = speaker.party.image {
-					Image(uiImage: image)
-						.resizable()
-						.frame(width: 40, height: 40)
-						.padding(5)
-						.background(.white)
-				}
-			}
+		HStack(spacing: 0) {
 			VStack(alignment: alignment, spacing: 1) {
 				Text(verbatim: speaker.name)
 				Text(verbatim: speaker.riding)
 				Text(verbatim: speaker.province.rawValue)
 			}
-			if alignment == .leading {
-				if let image = speaker.party.image {
-					Image(uiImage: image)
-						.resizable()
-						.frame(width: 40, height: 40)
-						.padding(5)
-						.background(.white)
-				}
-			}
 		}
 		.fontDesign(.rounded)
 		.font(.system(.footnote, weight: .regular))
+	}
+}
+
+struct PartyImageView: View {
+	let party: Party
+	var body: some View {
+		Image(uiImage: party.image!)
+			.resizable()
+			.frame(width: 16, height: 16)
+			.padding(5)
+			.background(.white)
 	}
 }
 
@@ -125,6 +118,7 @@ struct SpeakerImageView: View {
 					.scaledToFit()
 					.frame(width: 46, height: 77)
 			}
+			PartyImageView(party: speaker.party)
 		}
 		.padding(0)
 		.task {

@@ -52,7 +52,7 @@ struct SpeechView: View {
 				}
 				.onChange(of: messages, { oldValue, newValue in
 					if let id = newValue.last?.id {
-						proxy.scrollTo(id, anchor: .bottom)
+						proxy.scrollTo(id, anchor: .top)
 					}
 				})
 			}

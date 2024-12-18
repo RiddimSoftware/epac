@@ -53,7 +53,6 @@ struct SpeechView2: View {
 					}
 					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
 						SpeakerImageView(speaker: speaker)
-							.padding(.bottom, 20)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -61,7 +60,7 @@ struct SpeechView2: View {
 						VStack(alignment: .leading) {
 							Text(verbatim: message.text)
 								.padding(10)
-								.background(Color(UIColor.systemGray6))
+								.background(message.user.isCurrentUser ? Color(UIColor.systemGray2) : Color(UIColor.systemGray5))
 								.cornerRadius(10)
 						}
 						if (positionInGroup == .last || positionInGroup == .single) {
@@ -72,7 +71,6 @@ struct SpeechView2: View {
 					}
 					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
 						SpeakerImageView(speaker: speaker)
-							.padding(.bottom, 20)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -125,7 +123,11 @@ struct SpeechView2: View {
 									)
 								).first
 								if let speaker {
-									messages.append(ChatMessage(message, speaker))
+									var isCurrentUser = messages.last!.user.isCurrentUser
+									if speaker != messages.last!.speaker {
+										isCurrentUser.toggle()
+									}
+									messages.append(ChatMessage(message, speaker, isCurrentUser))
 									index = 1
 								}
 							}
@@ -146,7 +148,11 @@ struct SpeechView2: View {
 								)
 							).first
 							if let speaker {
-								messages.append(ChatMessage(message, speaker))
+								var isCurrentUser = messages.last!.user.isCurrentUser
+								 if speaker != messages.last!.speaker {
+									 isCurrentUser.toggle()
+								 }
+								messages.append(ChatMessage(message, speaker, isCurrentUser))
 								index += 1
 							}
 						}
@@ -166,7 +172,7 @@ struct SpeechView2: View {
 						)
 					).first
 					if let speaker {
-						messages.append(ChatMessage(message, speaker))
+						messages.append(ChatMessage(message, speaker, speaker.party == .liberal))
 						index += 1
 					}
 				}
@@ -178,12 +184,12 @@ struct SpeechView2: View {
 }
 
 class ChatUser: User {
-	init(_ speaker: ParliamentMember) {
+	init(_ speaker: ParliamentMember, isCurrentUser: Bool) {
 		super.init(
 			id: "\(speaker.persistentModelID)",
 			name: speaker.name,
 			avatarURL: speaker.photoURL,
-			isCurrentUser: speaker.party == .liberal
+			isCurrentUser: isCurrentUser
 		)
 	}
 	required init(from decoder: any Decoder) throws {
@@ -194,12 +200,12 @@ class ChatUser: User {
 class ChatMessage: Message {
 	var message: SpeechMessage
 	var speaker: ParliamentMember
-	init(_ message: SpeechMessage, _ speaker: ParliamentMember) {
+	init(_ message: SpeechMessage, _ speaker: ParliamentMember, _ isCurrentUser: Bool) {
 		self.message = message
 		self.speaker = speaker
 		super.init(
 			id: message.hansardID,
-			user: ChatUser(speaker),
+			user: ChatUser(speaker, isCurrentUser: isCurrentUser),
 			createdAt: message.timestamp,
 			text: message.content
 		)

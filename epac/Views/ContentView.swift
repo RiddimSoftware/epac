@@ -32,8 +32,12 @@ struct ContentView: View {
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
 						.navigationDestination(item: $selectedSubject, destination: { subject in
-						SpeechView2(subject: subject)
-					})
+							SpeechView2(subject: subject)
+								.onDisappear {
+									print("onDisappear")
+									
+								}
+						})
 				}
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
