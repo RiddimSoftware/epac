@@ -35,6 +35,8 @@ struct SpeechView2: View {
 
 	var body: some View {
 		VStack {
+			Text(verbatim: subject.title)
+				.multilineTextAlignment(.center)
 			ChatView(messages: messages) { _ in
 				/// didSendMessage
 			}

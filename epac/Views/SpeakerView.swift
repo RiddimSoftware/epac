@@ -34,16 +34,18 @@ struct SpeakerView: View {
 					}
 				}
 			}
-			VStack {
-				Text(verbatim: speaker.name)
-				Text(verbatim: speaker.riding)
-				Text(verbatim: speaker.province.rawValue)
-			}
+				VStack {
+					Text(verbatim: speaker.name)
+					Text(verbatim: speaker.riding)
+					Text(verbatim: speaker.province.rawValue)
+				}
 
 			if let image = speaker.party.image {
 				Image(uiImage: image)
 					.resizable()
 					.frame(width: 40, height: 40)
+					.padding(5)
+					.background(.white)
 			}
 		}
 		.font(.system(.footnote, design: .default, weight: .regular))

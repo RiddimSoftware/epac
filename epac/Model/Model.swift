@@ -46,7 +46,7 @@ final class ParliamentMember {
 }
 
 @Model
-final class SubjectOfBusiness {
+final class SubjectOfBusiness: Hashable {
 	var title: String
 	var hansardID: String
 	var speeches: [Speech]
@@ -54,6 +54,12 @@ final class SubjectOfBusiness {
 		self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
 		self.hansardID = hansardID
 		self.speeches = speeches
+	}
+	static func == (lhs: SubjectOfBusiness, rhs: SubjectOfBusiness) -> Bool {
+		return lhs.hansardID == rhs.hansardID
+	}
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(hansardID)
 	}
 }
 
@@ -88,7 +94,7 @@ final class SpeechMessage {
 
 @Model
 // <Intervention>
-final class Speech {
+final class Speech: Hashable {
 	var messages: [SpeechMessage]
 	var hansardID: String
 	var currentMessage: SpeechMessage?
@@ -102,6 +108,12 @@ final class Speech {
 		self.date = date
 		self.length = messages.count
 		self.title = title
+	}
+	static func == (lhs: Speech, rhs: Speech) -> Bool {
+		return lhs.hansardID == rhs.hansardID
+	}
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(hansardID)
 	}
 }
 

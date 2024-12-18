@@ -31,8 +31,8 @@ struct SittingView: View {
 								if subject.speeches.count == 1 {
 									SittingSpeakerView(member: member)
 								} else {
-									VStack(spacing: 5) {
-										ForEach(Array(Set(subject.speeches.compactMap { getMember($0.messages.first!.firstName, $0.messages.first!.lastName) }))) { member in
+									VStack(alignment: .trailing, spacing: 5) {
+										ForEach(Array(Set(subject.speeches.sorted(by: { $0.hansardID > $1.hansardID }).compactMap { getMember($0.messages.first!.firstName, $0.messages.first!.lastName) }))) { member in
 											SittingSpeakerView(member: member)
 										}
 									}
@@ -72,6 +72,8 @@ struct SittingSpeakerView: View {
 				Image(uiImage: image)
 					.resizable()
 					.frame(width: 12, height: 12)
+					.padding(2)
+					.background(.white)
 			}
 		}
 		.padding(0)
