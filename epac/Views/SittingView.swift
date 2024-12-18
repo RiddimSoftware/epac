@@ -39,8 +39,9 @@ struct SittingView: View {
 								}
 							}
 						}
+						.contentShape(Rectangle())
 						.onTapGesture {
-						 selectedSubject = subject
+							selectedSubject = subject
 					 }
 					}
 				} header: {

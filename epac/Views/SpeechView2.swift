@@ -62,6 +62,12 @@ struct SpeechView2: View {
 			.showMessageMenuOnLongPress(false)
 			.showMessageTimeView(false)
 			.showNetworkConnectionProblem(false)
+			.betweenListAndInputViewBuilder({
+				Text("Tap anywhere to continue")
+					.foregroundStyle(.gray)
+					.font(.system(.callout, design: .rounded, weight: .regular))
+					.opacity(messages.count < 2 ? 1 : 0)
+			})
 			.chatTheme(
 				colors: .init(
 					mainBackground: Color(UIColor.systemBackground),
@@ -71,11 +77,15 @@ struct SpeechView2: View {
 					textDarkContext: Color(UIColor.darkText)
 				)
 			)
+			if didFinish {
+				Text("End")
+					.font(.system(.callout, design: .rounded, weight: .regular))
+			}
 		}
 		.simultaneousGesture(
 			TapGesture()
 				.onEnded {
-					if index > 0, speeches.first!.messages.count == index {
+					if speeches.first!.messages.count == index {
 						if speeches.count > 1 {
 							_ = speeches.removeFirst()
 							let speech = speeches.first!
@@ -92,6 +102,10 @@ struct SpeechView2: View {
 									messages.append(ChatMessage(message, speaker))
 									index = 1
 								}
+							}
+						} else {
+							withAnimation {
+								didFinish = true
 							}
 						}
 					} else {
