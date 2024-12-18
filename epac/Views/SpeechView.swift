@@ -1,107 +1,215 @@
 //
-//  SpeechView.swift
+//  SpeechView2.swift
 //  epac
 //
-//  Created by Sunny on 2024-12-14.
+//  Created by Sunny on 2024-12-16.
 //
 
 import SwiftUI
+import ExyteChat
+import SwiftData
 
 struct SpeechView: View {
+	@Environment(\.modelContext) var modelContext
+	@Environment(\.colorScheme) var colorScheme
 	let subject: SubjectOfBusiness
+	let length: Int
+	@State var speeches: [Speech]
 	@State private var index: Int = 0
-	@State private var messages = [SpeechMessage]()
-	@State private var loading = false
-	@State private var currentSpeech: Speech
+	@State var messages = [ChatMessage]()
+	@State var didFinish = false
 
 	init(subject: SubjectOfBusiness) {
 		self.subject = subject
-		self.currentSpeech = subject.speeches.first!
+		let speeches = subject.speeches.map { speech in
+			let speech = speech
+			speech.messages = speech.messages.sorted(by: { $0.hansardID < $1.hansardID })
+			return speech
+		}.sorted(by: { $0.hansardID < $1.hansardID })
+		self.speeches = speeches
+		self.length = speeches.map { $0.messages.count }.reduce(0, +)
 	}
+#if DEBUG
+	init(subject: SubjectOfBusiness, messages: [ChatMessage] = [], index: Int = 0) {
+		self.init(subject: subject)
+		self.messages = messages
+		self.index = index
+	}
+#endif
 
 	var body: some View {
 		VStack {
-			ScrollViewReader { proxy in
-				ScrollView {
-					LazyVStack {
-						ForEach(messages) { message in
-							HStack {
-								MessageCell(message: message)
-								Spacer(minLength: 40)
-							}
-							if message == messages.last, index < currentSpeech.length {
-								VStack(alignment: .leading) {
-									HStack {
-										TypingIndicator()
-											.padding(10)
-											.background(Color(UIColor.systemGray6))
-											.cornerRadius(10)
-										Spacer(minLength: 40)
-									}
-									Text("Tap anywhere to continue")
-										.font(.system(.footnote, design: .default, weight: .light))
-										.foregroundStyle(Color.gray)
-								}
+			Text(verbatim: subject.title)
+				.multilineTextAlignment(.center)
+			ProgressView(value: Float(messages.count), total: Float(length))
+				.progressViewStyle(.linear)
+				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
+			ChatView(messages: messages) { _ in
+				/// didSendMessage
+			}
+			messageBuilder: { message, positionInGroup, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
+				HStack(alignment: .bottom) {
+					if message.user.isCurrentUser {
+						Spacer()
+					}
+					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
+						SpeakerImageView(speaker: speaker)
+					} else {
+						Spacer(minLength: 51)
+					}
+					VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
+						VStack(alignment: .leading) {
+							Text(verbatim: message.text)
+								.padding(10)
+								.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray) )
+								.cornerRadius(10)
+								.foregroundStyle(.white)
+						}
+						if (positionInGroup == .last || positionInGroup == .single) {
+							if let speaker = (message as? ChatMessage)?.speaker {
+								SpeakerNameView(speaker: speaker, alignment: message.user.isCurrentUser ? .trailing : .leading)
 							}
 						}
-						if index == currentSpeech.length {
-							Text("End")
-								.font(.caption)
+					}
+					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
+						SpeakerImageView(speaker: speaker)
+					} else {
+						Spacer(minLength: 51)
+					}
+					if !message.user.isCurrentUser {
+						Spacer()
+					}
+				}
+				.padding()
+			}
+			inputViewBuilder: { text, attachments, inputViewState, inputViewStyle, inputViewActionClosure, dismissKeyboardClosure in
+				EmptyView()
+			}
+			.showMessageMenuOnLongPress(false)
+			.showMessageTimeView(false)
+			.showNetworkConnectionProblem(false)
+			.betweenListAndInputViewBuilder({
+				Text("Tap anywhere to continue")
+					.foregroundStyle(.gray)
+					.font(.system(.callout, design: .rounded, weight: .regular))
+					.opacity(messages.count < 2 ? 1 : 0)
+			})
+			.chatTheme(
+				colors: .init(
+					mainBackground: Color(UIColor.systemBackground),
+					myMessage: Color(UIColor.systemBlue),
+					friendMessage: Color(UIColor.systemGray6),
+					textLightContext: Color(UIColor.lightText),
+					textDarkContext: Color(UIColor.darkText)
+				)
+			)
+			if didFinish {
+				Text("End")
+					.font(.system(.callout, design: .rounded, weight: .regular))
+			}
+		}
+		.simultaneousGesture(
+			TapGesture()
+				.onEnded {
+					if speeches.first!.messages.count == index {
+						if speeches.count > 1 {
+							_ = speeches.removeFirst()
+							let speech = speeches.first!
+							withAnimation {
+								let message = speech.messages.first!
+								let firstName = message.firstName
+								let lastName = message.lastName
+								let speaker = try? modelContext.fetch(
+									FetchDescriptor<ParliamentMember>(
+										predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
+									)
+								).first
+								if let speaker {
+									var isCurrentUser = messages.last!.user.isCurrentUser
+									if speaker != messages.last!.speaker {
+										isCurrentUser.toggle()
+									}
+									messages.append(ChatMessage(message, speaker, isCurrentUser))
+									index = 1
+								}
+							}
+						} else {
+							withAnimation {
+								didFinish = true
+							}
+						}
+					} else {
+						let speech = speeches.first!
+						withAnimation {
+							let message = speech.messages[index]
+							let firstName = message.firstName
+							let lastName = message.lastName
+							let speaker = try? modelContext.fetch(
+								FetchDescriptor<ParliamentMember>(
+									predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
+								)
+							).first
+							if let speaker {
+								var isCurrentUser = messages.last!.user.isCurrentUser
+								if speaker != messages.last!.speaker {
+									isCurrentUser.toggle()
+								}
+								messages.append(ChatMessage(message, speaker, isCurrentUser))
+								index += 1
+							}
 						}
 					}
 				}
-				.onChange(of: messages, { oldValue, newValue in
-					if let id = newValue.last?.id {
-						proxy.scrollTo(id, anchor: .top)
-					}
-				})
-			}
-			.padding(.horizontal)
-			//			if index < currentSpeech.length {
-			//				TypingIndicator()
-			//			}
-		}
+		)
 		.task {
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
 				withAnimation {
-					messages.append(currentSpeech.messages.first!)
+					let message = speeches.first!.messages.first!
+					let firstName = message.firstName
+					let lastName = message.lastName
+					let speaker = try? modelContext.fetch(
+						FetchDescriptor<ParliamentMember>(
+							predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
+						)
+					).first
+					if let speaker {
+						messages.append(ChatMessage(message, speaker, speaker.party == .liberal))
+						index += 1
+					}
 				}
-				index += 1
 			} catch {
 				print("Failed to sleep 0.7s \(error.localizedDescription)")
-			}
-		}
-		.onAppear {
-			withAnimation {
-				self.loading = true
-			}
-		}
-		.defaultScrollAnchor(.bottom)
-		.onTapGesture {
-			if currentSpeech.messages.count > index {
-				withAnimation {
-					messages.append(currentSpeech.messages[index])
-				}
-				index += 1
 			}
 		}
 	}
 }
 
-struct MessageCell: View {
-	@Environment(\.colorScheme) var colorScheme
-	var message: SpeechMessage
-	@State var content: String
-	init(message: SpeechMessage) {
-		self.message = message
-		self.content = message.content
+class ChatUser: User {
+	init(_ speaker: ParliamentMember, isCurrentUser: Bool) {
+		super.init(
+			id: "\(speaker.persistentModelID)",
+			name: speaker.name,
+			avatarURL: speaker.photoURL,
+			isCurrentUser: isCurrentUser
+		)
 	}
-	var body: some View {
-		Text(verbatim: content)
-			.padding(10)
-			.foregroundColor(colorScheme == .dark ? Color(UIColor.white) : Color(UIColor.darkText))
-			.background(Color(UIColor.systemGray6))
-			.cornerRadius(10)
+	required init(from decoder: any Decoder) throws {
+		fatalError("init(from:) has not been implemented")
+	}
+}
+
+class ChatMessage: Message {
+	var message: SpeechMessage
+	var speaker: ParliamentMember
+	init(_ message: SpeechMessage, _ speaker: ParliamentMember, _ isCurrentUser: Bool) {
+		self.message = message
+		self.speaker = speaker
+		super.init(
+			id: message.hansardID,
+			user: ChatUser(speaker, isCurrentUser: isCurrentUser),
+			createdAt: message.timestamp,
+			text: message.content
+		)
 	}
 }

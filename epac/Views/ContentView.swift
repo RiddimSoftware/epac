@@ -32,7 +32,7 @@ struct ContentView: View {
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
 						.navigationDestination(item: $selectedSubject, destination: { subject in
-							SpeechView2(subject: subject)
+							SpeechView(subject: subject)
 								.onDisappear {
 									print("onDisappear")
 									

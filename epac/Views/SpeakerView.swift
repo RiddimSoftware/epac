@@ -127,7 +127,8 @@ struct SpeakerImageView: View {
 				PhotoProvider.getPhotoURL3,
 				PhotoProvider.getPhotoURL4,
 				PhotoProvider.getPhotoURL5,
-				PhotoProvider.getPhotoURL6
+				PhotoProvider.getPhotoURL6,
+				PhotoProvider.getPhotoURL7
 			]
 			if speaker.imageData == nil {
 				do {

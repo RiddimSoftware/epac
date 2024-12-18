@@ -73,4 +73,15 @@ class PhotoProvider {
 		)
 		return url
 	}
+
+	static func getPhotoURL7(lastName: String, firstName: String, party: Party) -> URL {
+		let url = hostURL.appending(
+			path: "\(lastName)\(firstName.replacingOccurrences(of: "-", with: ""))_\(party.abbreviation)"
+				.replacingOccurrences(of: "'", with: "")
+				.replacingOccurrences(of: " ", with: "")
+				.replacingOccurrences(of: ".", with: "")
+				.appending(".jpg")
+		)
+		return url
+	}
 }

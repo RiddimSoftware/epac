@@ -51,6 +51,7 @@
 				Model_Old/Topic.swift,
 				Model_Old/XMLObjects.swift,
 				Util/CommitteeDownloader.swift,
+				Views/SpeechView2.swift,
 			);
 			target = A38427C22D062C8D00271C34 /* epac */;
 		};

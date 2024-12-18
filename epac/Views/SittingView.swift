@@ -47,7 +47,7 @@ struct SittingView: View {
 				} header: {
 					VStack {
 						Text(order.catchline)
-							.font(.system(size: 25, weight: .bold))
+							.font(.system(size: 30, weight: .bold))
 					}
 				}
 			}
