@@ -24,7 +24,7 @@ struct SpeakerView: View {
 						Image(uiImage: image)
 							.resizable()
 							.scaledToFit()
-//							.frame(width: 142, height: 230)
+						//							.frame(width: 142, height: 230)
 							.frame(width: 46, height: 77)
 					} else {
 						Image(systemName: "person.circle")
@@ -34,11 +34,11 @@ struct SpeakerView: View {
 					}
 				}
 			}
-				VStack {
-					Text(verbatim: speaker.name)
-					Text(verbatim: speaker.riding)
-					Text(verbatim: speaker.province.rawValue)
-				}
+			VStack {
+				Text(verbatim: speaker.name)
+				Text(verbatim: speaker.riding)
+				Text(verbatim: speaker.province.rawValue)
+			}
 
 			if let image = speaker.party.image {
 				Image(uiImage: image)
@@ -122,19 +122,48 @@ struct SpeakerImageView: View {
 		}
 		.padding(0)
 		.task {
+			var fns: [(String, String, Party) -> URL] = [
+				PhotoProvider.getPhotoURL2,
+				PhotoProvider.getPhotoURL3,
+				PhotoProvider.getPhotoURL4,
+				PhotoProvider.getPhotoURL5,
+				PhotoProvider.getPhotoURL6
+			]
 			if speaker.imageData == nil {
 				do {
-					let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
-					if !data.isEmpty, UIImage(data: data) != nil {
-						speaker.imageData = data
-						withAnimation {
-							self.imageData = data
+					try await updateImageData(speaker)
+				} catch {
+					print(error.localizedDescription)
+					while !fns.isEmpty {
+						let fn = fns.removeFirst()
+						speaker.photoURL = fn(speaker.lastName, speaker.firstName, speaker.party)
+						do {
+							try await updateImageData(speaker)
+							fns.removeAll()
+						} catch {
+							print(error.localizedDescription)
+							if fns.isEmpty {
+								print("Failed to download speaker image \(speaker.name)")
+							} else {
+								continue
+							}
 						}
 					}
-				} catch {
-					print("Failed to download member image \(error.localizedDescription)")
 				}
 			}
+		}
+	}
+
+	private func updateImageData(_ speaker: ParliamentMember) async throws {
+		print("Fetching \(speaker.photoURL.absoluteString)")
+		let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
+		if !data.isEmpty, UIImage(data: data) != nil {
+			speaker.imageData = data
+			withAnimation {
+				self.imageData = data
+			}
+		} else {
+			throw NSError(domain: "", code: 100)
 		}
 	}
 }

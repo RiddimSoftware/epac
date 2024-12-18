@@ -41,4 +41,36 @@ class PhotoProvider {
 		)
 		return url
 	}
+
+	static func getPhotoURL4(lastName: String, firstName: String, party: Party) -> URL {
+		let url = hostURL.appending(
+			path: "\(lastName.replacingOccurrences(of: "-", with: ""))\(firstName.replacingOccurrences(of: "-", with: ""))_\(party.abbreviation)"
+				.replacingOccurrences(of: "ç", with: "c")
+				.replacingOccurrences(of: "'", with: "")
+				.replacingOccurrences(of: " ", with: "")
+				.replacingOccurrences(of: ".", with: "")
+				.appending(".jpg")
+		)
+		return url
+	}
+
+	static func getPhotoURL5(lastName: String, firstName: String, party: Party) -> URL {
+		let url = hostURL.appending(
+			path: "\(lastName.replacingOccurrences(of: "-", with: ""))\(firstName)_\(party.abbreviation)"
+				.replacingOccurrences(of: "ç", with: "c")
+				.replacingOccurrences(of: "'", with: "")
+				.replacingOccurrences(of: " ", with: "")
+				.replacingOccurrences(of: ".", with: "")
+				.appending(".jpg")
+		)
+		return url
+	}
+
+	static func getPhotoURL6(lastName: String, firstName: String, party: Party) -> URL {
+		let url = hostURL.appending(
+			path: "\(lastName.replacing(/\P{L}/, with: ""))\(firstName.replacing(/\P{L}/, with: ""))_\(party.abbreviation).jpg"
+				.replacingOccurrences(of: "ç", with: "c")
+		)
+		return url
+	}
 }
