@@ -35,7 +35,6 @@ struct ContentView: View {
 							SpeechView(subject: subject)
 								.onDisappear {
 									print("onDisappear")
-									
 								}
 						})
 				}

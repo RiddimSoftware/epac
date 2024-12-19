@@ -18,6 +18,7 @@ struct SpeechView: View {
 	@State private var index: Int = 0
 	@State var messages = [ChatMessage]()
 	@State var didFinish = false
+	@State var isResuming = false
 
 	init(subject: SubjectOfBusiness) {
 		self.subject = subject
@@ -92,7 +93,7 @@ struct SpeechView: View {
 				Text("Tap anywhere to continue")
 					.foregroundStyle(.gray)
 					.font(.system(.callout, design: .rounded, weight: .regular))
-					.opacity(messages.count < 2 ? 1 : 0)
+					.opacity(messages.count < 2 || isResuming ? 1 : 0)
 			})
 			.chatTheme(
 				colors: .init(
@@ -111,76 +112,120 @@ struct SpeechView: View {
 		.simultaneousGesture(
 			TapGesture()
 				.onEnded {
-					if speeches.first!.messages.count == index {
-						if speeches.count > 1 {
-							_ = speeches.removeFirst()
-							let speech = speeches.first!
-							withAnimation {
-								let message = speech.messages.first!
-								let firstName = message.firstName
-								let lastName = message.lastName
-								let speaker = try? modelContext.fetch(
-									FetchDescriptor<ParliamentMember>(
-										predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
-									)
-								).first
-								if let speaker {
-									var isCurrentUser = messages.last!.user.isCurrentUser
-									if speaker != messages.last!.speaker {
-										isCurrentUser.toggle()
-									}
-									messages.append(ChatMessage(message, speaker, isCurrentUser))
-									index = 1
-								}
-							}
-						} else {
-							withAnimation {
-								didFinish = true
-							}
-						}
-					} else {
-						let speech = speeches.first!
-						withAnimation {
-							let message = speech.messages[index]
-							let firstName = message.firstName
-							let lastName = message.lastName
-							let speaker = try? modelContext.fetch(
-								FetchDescriptor<ParliamentMember>(
-									predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
-								)
-							).first
-							if let speaker {
-								var isCurrentUser = messages.last!.user.isCurrentUser
-								if speaker != messages.last!.speaker {
-									isCurrentUser.toggle()
-								}
-								messages.append(ChatMessage(message, speaker, isCurrentUser))
-								index += 1
-							}
-						}
-					}
+					nextMessage()
 				}
 		)
 		.task {
+			guard self.messages.isEmpty else {
+				return
+			}
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
 				withAnimation {
-					let message = speeches.first!.messages.first!
-					let firstName = message.firstName
-					let lastName = message.lastName
-					let speaker = try? modelContext.fetch(
-						FetchDescriptor<ParliamentMember>(
-							predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
-						)
-					).first
-					if let speaker {
-						messages.append(ChatMessage(message, speaker, speaker.party == .liberal))
-						index += 1
-					}
+					isResuming = true
+					nextMessage()
 				}
 			} catch {
 				print("Failed to sleep 0.7s \(error.localizedDescription)")
 			}
+		}
+		.onAppear {
+			if let currentSpeech = subject.currentSpeech {
+				index = 0
+				var speech: Speech!
+				while !speeches.isEmpty {
+					speech = speeches.first!
+					if speech != currentSpeech {
+						for _ in 0..<speech.messages.count {
+							nextMessage()
+						}
+					} else {
+						break
+					}
+					_ = speeches.removeFirst()
+					index = 0
+				}
+				var message: ChatMessage!
+				if let currentMessage = speech.currentMessage {
+					message = self.messages.last!
+					while index < speech.messages.count && message.message.hansardID != currentMessage.hansardID {
+						nextMessage()
+						message = messages.last!
+					}
+				}
+			}
+		}
+		.toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					withAnimation {
+						messages.removeAll()
+						index = 0
+						self.speeches = subject.speeches.map { speech in
+							let speech = speech
+							speech.messages = speech.messages.sorted(by: { $0.hansardID < $1.hansardID })
+							return speech
+						}.sorted(by: { $0.hansardID < $1.hansardID })
+					}
+					Task {
+						do {
+							try await Task.sleep(nanoseconds: 700_000_000)
+							nextMessage()
+						} catch {
+
+						}
+
+					}
+				} label: {
+					Image(systemName: "arrow.clockwise")
+				}
+
+			}
+		}
+	}
+
+	private func nextMessage() {
+		guard !speeches.isEmpty else {
+			return
+		}
+		let speech: Speech
+		if speeches.first!.messages.count == index {
+			// end of speech
+			if speeches.count > 1 {
+				index = 0
+				_ = speeches.removeFirst()
+				speech = speeches.first!
+			} else {
+				didFinish = true
+				subject.currentSpeech?.currentMessage = nil
+				subject.currentSpeech = nil
+				return
+			}
+		} else {
+			speech = speeches.first!
+		}
+		subject.currentSpeech = speech
+		let message = speech.messages[index]
+		speech.currentMessage = message
+		let firstName = message.firstName
+		let lastName = message.lastName
+		let speaker = try? modelContext.fetch(
+			FetchDescriptor<ParliamentMember>(
+				predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
+			)
+		).first
+		if let speaker {
+			var isCurrentUser: Bool
+			if let last = messages.last {
+				isCurrentUser = last.user.isCurrentUser
+			} else {
+				isCurrentUser = speaker.party == .liberal
+			}
+			if let last = messages.last, speaker != last.speaker {
+				isCurrentUser.toggle()
+			}
+			messages.append(ChatMessage(message, speaker, isCurrentUser))
+			index += 1
 		}
 	}
 }
