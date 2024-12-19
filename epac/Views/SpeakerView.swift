@@ -90,11 +90,13 @@ struct SpeakerNameView: View {
 struct PartyImageView: View {
 	let party: Party
 	var body: some View {
-		Image(uiImage: party.image!)
-			.resizable()
-			.frame(width: 16, height: 16)
-			.padding(5)
-			.background(.white)
+		if let image = party.image {
+			Image(uiImage: image)
+				.resizable()
+				.frame(width: 16, height: 16)
+				.padding(5)
+				.background(.white)
+		}
 	}
 }
 

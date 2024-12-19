@@ -70,16 +70,16 @@ struct SpeechView: View {
 									.cornerRadius(10)
 									.foregroundStyle(.white)
 							}
-							Button {
-								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
-									.uiImage {
-									self.item = ActivityItem(
-										items: image
-									)
-								}
-							} label: {
-								Image(systemName: "square.and.arrow.up")
-							}
+//							Button {
+//								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
+//									.uiImage {
+//									self.item = ActivityItem(
+//										items: image
+//									)
+//								}
+//							} label: {
+//								Image(systemName: "square.and.arrow.up")
+//							}
 						}
 						if (positionInGroup == .last || positionInGroup == .single) {
 							if let speaker = (message as? ChatMessage)?.speaker {
@@ -136,8 +136,10 @@ struct SpeechView: View {
 			}
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
+				guard self.messages.isEmpty else {
+				 return
+			 }
 				withAnimation {
-					isResuming = true
 					nextMessage()
 				}
 			} catch {
@@ -146,6 +148,9 @@ struct SpeechView: View {
 		}
 		.onAppear {
 			if let currentSpeech = subject.currentSpeech {
+				withAnimation {
+					isResuming = true
+				}
 				index = 0
 				var speech: Speech!
 				while !speeches.isEmpty {
@@ -160,10 +165,10 @@ struct SpeechView: View {
 					_ = speeches.removeFirst()
 					index = 0
 				}
-				var message: ChatMessage!
+				var message: ChatMessage?
 				if let currentMessage = speech.currentMessage {
-					message = self.messages.last!
-					while index < speech.messages.count && message.message.hansardID != currentMessage.hansardID {
+					message = self.messages.last
+					while index < speech.messages.count && message?.message.hansardID != currentMessage.hansardID {
 						nextMessage()
 						message = messages.last!
 					}
@@ -190,7 +195,6 @@ struct SpeechView: View {
 						} catch {
 
 						}
-
 					}
 				} label: {
 					Image(systemName: "arrow.clockwise")
@@ -204,6 +208,7 @@ struct SpeechView: View {
 		guard !speeches.isEmpty else {
 			return
 		}
+		isResuming = false
 		let speech: Speech
 		if speeches.first!.messages.count == index {
 			// end of speech
@@ -225,24 +230,33 @@ struct SpeechView: View {
 		speech.currentMessage = message
 		let firstName = message.firstName
 		let lastName = message.lastName
-		let speaker = try? modelContext.fetch(
+		var speaker = try? modelContext.fetch(
 			FetchDescriptor<ParliamentMember>(
 				predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
 			)
 		).first
-		if let speaker {
-			var isCurrentUser: Bool
-			if let last = messages.last {
-				isCurrentUser = last.user.isCurrentUser
-			} else {
-				isCurrentUser = speaker.party == .liberal
-			}
-			if let last = messages.last, speaker != last.speaker {
-				isCurrentUser.toggle()
-			}
-			messages.append(ChatMessage(message, speaker, isCurrentUser))
-			index += 1
+		if speaker == nil {
+			speaker = ParliamentMember(
+				name: message.firstName + " " + message.lastName,
+				lastName: message.lastName,
+				firstName: message.firstName,
+				photoURL: PhotoProvider.getPhotoURL(lastName: message.lastName, firstName: message.firstName, party: .independent),
+				riding: "",
+				province: .Ontario,
+				party: .independent
+			)
 		}
+		var isCurrentUser: Bool
+		if let last = messages.last {
+			isCurrentUser = last.user.isCurrentUser
+		} else {
+			isCurrentUser = speaker!.party == .liberal
+		}
+		if let last = messages.last, speaker != last.speaker {
+			isCurrentUser.toggle()
+		}
+		messages.append(ChatMessage(message, speaker!, isCurrentUser))
+		index += 1
 	}
 
 	private func createMessageView(_ message: ChatMessage, speaker: ParliamentMember) -> some View {

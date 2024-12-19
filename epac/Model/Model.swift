@@ -22,7 +22,7 @@ final class SittingCalendar {
 }
 
 @Model
-final class ParliamentMember {
+final class ParliamentMember: Hashable {
 	var name:           String
 	var lastName:       String
 	var firstName:      String
@@ -44,6 +44,12 @@ final class ParliamentMember {
 	}
 	var isCurrentUser: Bool {
 		return party == .liberal || party == .green || (party == .newdemocratic && (name == "Jenny K"))
+	}
+	static func == (lhs: ParliamentMember, rhs: ParliamentMember) -> Bool {
+		return lhs.name == rhs.name
+	}
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(name)
 	}
 }
 
