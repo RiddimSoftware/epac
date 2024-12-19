@@ -1,5 +1,5 @@
 {
-  "originHash" : "9f5b43a7cc2a2652dbf777e6c3f5afdaa3e4701ea8114f73cb2e10cd37122f52",
+  "originHash" : "5cdcef636323603b1bf98eaf5c06de313260a093b82913a265f66412cd7542b8",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "9970fd0bb7a05dad0b6566ae1f56937716686b24",
         "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "activityview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SwiftUI-Plus/ActivityView",
+      "state" : {
+        "revision" : "444ff3755e49b0284c12360b3db0d64d31f0c3f8",
+        "version" : "1.2.0"
       }
     },
     {

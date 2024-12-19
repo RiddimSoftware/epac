@@ -8,6 +8,8 @@
 import SwiftData
 import Foundation
 import UIKit
+import CoreTransferable
+import SwiftUI
 
 @Model
 final class SittingCalendar {

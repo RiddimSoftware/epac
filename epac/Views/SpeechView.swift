@@ -8,6 +8,7 @@
 import SwiftUI
 import ExyteChat
 import SwiftData
+import ActivityView
 
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
@@ -19,6 +20,8 @@ struct SpeechView: View {
 	@State var messages = [ChatMessage]()
 	@State var didFinish = false
 	@State var isResuming = false
+	@State private var item: ActivityItem?
+
 
 	init(subject: SubjectOfBusiness) {
 		self.subject = subject
@@ -59,12 +62,24 @@ struct SpeechView: View {
 						Spacer(minLength: 51)
 					}
 					VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
-						VStack(alignment: .leading) {
-							Text(verbatim: message.text)
-								.padding(10)
-								.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray) )
-								.cornerRadius(10)
-								.foregroundStyle(.white)
+						HStack {
+							VStack(alignment: .leading) {
+								Text(verbatim: message.text)
+									.padding(10)
+									.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray) )
+									.cornerRadius(10)
+									.foregroundStyle(.white)
+							}
+							Button {
+								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
+									.uiImage {
+									self.item = ActivityItem(
+										items: image
+									)
+								}
+							} label: {
+								Image(systemName: "square.and.arrow.up")
+							}
 						}
 						if (positionInGroup == .last || positionInGroup == .single) {
 							if let speaker = (message as? ChatMessage)?.speaker {
@@ -155,6 +170,7 @@ struct SpeechView: View {
 				}
 			}
 		}
+		.activitySheet($item)
 		.toolbar {
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
@@ -227,6 +243,30 @@ struct SpeechView: View {
 			messages.append(ChatMessage(message, speaker, isCurrentUser))
 			index += 1
 		}
+	}
+
+	private func createMessageView(_ message: ChatMessage, speaker: ParliamentMember) -> some View {
+		HStack(alignment: .bottom) {
+			Spacer()
+			VStack(alignment: .trailing) {
+				HStack {
+					VStack(alignment: .leading) {
+						Text(verbatim: message.text)
+							.padding(10)
+							.background(Color(UIColor.gray) )
+							.cornerRadius(10)
+							.foregroundStyle(.white)
+							.frame(width: 468)
+					}
+				}
+				SpeakerNameView(speaker: speaker, alignment: message.user.isCurrentUser ? .trailing : .leading)
+			}
+			SpeakerImageView(speaker: speaker)
+		}
+		.padding()
+		.background(.white)
+		.fixedSize()
+		.padding()
 	}
 }
 
