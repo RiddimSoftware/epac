@@ -70,16 +70,16 @@ struct SpeechView: View {
 									.cornerRadius(10)
 									.foregroundStyle(.white)
 							}
-//							Button {
-//								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
-//									.uiImage {
-//									self.item = ActivityItem(
-//										items: image
-//									)
-//								}
-//							} label: {
-//								Image(systemName: "square.and.arrow.up")
-//							}
+							Button {
+								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
+									.uiImage {
+									self.item = ActivityItem(
+										items: image
+									)
+								}
+							} label: {
+								Image(systemName: "square.and.arrow.up")
+							}
 						}
 						if (positionInGroup == .last || positionInGroup == .single) {
 							if let speaker = (message as? ChatMessage)?.speaker {
