@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A327A9182D18F75C00A2D292 /* epac-clip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = A327A9092D18F75B00A2D292 /* epac-clip.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A327A9342D18FA2F00A2D292 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A327A9332D18FA2F00A2D292 /* ExyteChat */; };
+		A327A9372D18FA7C00A2D292 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A327A9362D18FA7C00A2D292 /* ExyteChat */; };
+		A327A9392D18FA8D00A2D292 /* SWXMLHash in Frameworks */ = {isa = PBXBuildFile; productRef = A327A9382D18FA8D00A2D292 /* SWXMLHash */; };
+		A327A93B2D18FAA400A2D292 /* ActivityView in Frameworks */ = {isa = PBXBuildFile; productRef = A327A93A2D18FAA400A2D292 /* ActivityView */; };
+		A327A93D2D18FAAE00A2D292 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A327A93C2D18FAAE00A2D292 /* Kanna */; };
 		A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */ = {isa = PBXBuildFile; productRef = A34F7CD12D13ADD70004C905 /* ActivityView */; };
 		A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A366154A2D0A24DD00A3FBF7 /* Kanna */; };
 		A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */ = {isa = PBXBuildFile; productRef = A36615832D0A261300A3FBF7 /* SWXMLHash */; };
@@ -14,6 +20,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		A327A9162D18F75C00A2D292 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A38427BB2D062C8D00271C34 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A327A9082D18F75B00A2D292;
+			remoteInfo = "epac-clip";
+		};
 		A38427D72D062C8E00271C34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A38427BB2D062C8D00271C34 /* Project object */;
@@ -30,13 +43,61 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A327A9192D18F75C00A2D292 /* Embed App Clips */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
+			dstSubfolderSpec = 16;
+			files = (
+				A327A9182D18F75C00A2D292 /* epac-clip.app in Embed App Clips */,
+			);
+			name = "Embed App Clips";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		A327A9092D18F75B00A2D292 /* epac-clip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "epac-clip.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427C32D062C8D00271C34 /* epac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427D62D062C8E00271C34 /* epacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A327A91D2D18F75C00A2D292 /* Exceptions for "epac-clip" folder in "epac-clip" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				Info.plist,
+			);
+			target = A327A9082D18F75B00A2D292 /* epac-clip */;
+		};
+		A327A91F2D18F7C800A2D292 /* Exceptions for "epac" folder in "epac-clip" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				Model_Old/PhotoProvider.swift,
+				Model/Fetch.swift,
+				Model/Model.swift,
+				"Model/Model+Hansard.swift",
+				Model/ViewModel.swift,
+				Util/Appearance.swift,
+				Util/DateUtils.swift,
+				Util/Disk.swift,
+				Util/Downloader.swift,
+				Util/File.swift,
+				Util/XMLBro.swift,
+				Views/CalendarView.swift,
+				Views/SittingCalendarView.swift,
+				Views/SittingView.swift,
+				Views/SpeakerView.swift,
+				Views/SpeechView.swift,
+				Views/SubjectView.swift,
+				Views/TypingIndicator.swift,
+			);
+			target = A327A9082D18F75B00A2D292 /* epac-clip */;
+		};
 		A3B351552D0B2D4C009864C6 /* Exceptions for "epac" folder in "epac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -59,10 +120,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A327A90A2D18F75B00A2D292 /* epac-clip */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A327A91D2D18F75C00A2D292 /* Exceptions for "epac-clip" folder in "epac-clip" target */,
+			);
+			path = "epac-clip";
+			sourceTree = "<group>";
+		};
 		A38427C52D062C8D00271C34 /* epac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				A3B351552D0B2D4C009864C6 /* Exceptions for "epac" folder in "epac" target */,
+				A327A91F2D18F7C800A2D292 /* Exceptions for "epac" folder in "epac-clip" target */,
 			);
 			path = epac;
 			sourceTree = "<group>";
@@ -80,12 +150,24 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A327A9062D18F75B00A2D292 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A327A9392D18FA8D00A2D292 /* SWXMLHash in Frameworks */,
+				A327A93B2D18FAA400A2D292 /* ActivityView in Frameworks */,
+				A327A93D2D18FAAE00A2D292 /* Kanna in Frameworks */,
+				A327A9372D18FA7C00A2D292 /* ExyteChat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A38427C02D062C8D00271C34 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */,
 				A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */,
+				A327A9342D18FA2F00A2D292 /* ExyteChat in Frameworks */,
 				A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */,
 				A3A1027A2D11C73A002F3ACE /* ExyteChat in Frameworks */,
 			);
@@ -108,12 +190,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A327A9352D18FA7C00A2D292 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A38427BA2D062C8D00271C34 = {
 			isa = PBXGroup;
 			children = (
 				A38427C52D062C8D00271C34 /* epac */,
 				A38427D92D062C8E00271C34 /* epacTests */,
 				A38427E32D062C8E00271C34 /* epacUITests */,
+				A327A90A2D18F75B00A2D292 /* epac-clip */,
+				A327A9352D18FA7C00A2D292 /* Frameworks */,
 				A38427C42D062C8D00271C34 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -124,6 +215,7 @@
 				A38427C32D062C8D00271C34 /* epac.app */,
 				A38427D62D062C8E00271C34 /* epacTests.xctest */,
 				A38427E02D062C8E00271C34 /* epacUITests.xctest */,
+				A327A9092D18F75B00A2D292 /* epac-clip.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -131,6 +223,32 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A327A9082D18F75B00A2D292 /* epac-clip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A327A91C2D18F75C00A2D292 /* Build configuration list for PBXNativeTarget "epac-clip" */;
+			buildPhases = (
+				A327A9052D18F75B00A2D292 /* Sources */,
+				A327A9062D18F75B00A2D292 /* Frameworks */,
+				A327A9072D18F75B00A2D292 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A327A90A2D18F75B00A2D292 /* epac-clip */,
+			);
+			name = "epac-clip";
+			packageProductDependencies = (
+				A327A9362D18FA7C00A2D292 /* ExyteChat */,
+				A327A9382D18FA8D00A2D292 /* SWXMLHash */,
+				A327A93A2D18FAA400A2D292 /* ActivityView */,
+				A327A93C2D18FAAE00A2D292 /* Kanna */,
+			);
+			productName = "epac-clip";
+			productReference = A327A9092D18F75B00A2D292 /* epac-clip.app */;
+			productType = "com.apple.product-type.application.on-demand-install-capable";
+		};
 		A38427C22D062C8D00271C34 /* epac */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A38427EA2D062C8E00271C34 /* Build configuration list for PBXNativeTarget "epac" */;
@@ -138,10 +256,12 @@
 				A38427BF2D062C8D00271C34 /* Sources */,
 				A38427C02D062C8D00271C34 /* Frameworks */,
 				A38427C12D062C8D00271C34 /* Resources */,
+				A327A9192D18F75C00A2D292 /* Embed App Clips */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A327A9172D18F75C00A2D292 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A38427C52D062C8D00271C34 /* epac */,
@@ -152,6 +272,7 @@
 				A36615832D0A261300A3FBF7 /* SWXMLHash */,
 				A3A102792D11C73A002F3ACE /* ExyteChat */,
 				A34F7CD12D13ADD70004C905 /* ActivityView */,
+				A327A9332D18FA2F00A2D292 /* ExyteChat */,
 			);
 			productName = epac;
 			productReference = A38427C32D062C8D00271C34 /* epac.app */;
@@ -210,9 +331,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1610;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1610;
 				TargetAttributes = {
+					A327A9082D18F75B00A2D292 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					A38427C22D062C8D00271C34 = {
 						CreatedOnToolsVersion = 16.1;
 					};
@@ -238,8 +362,8 @@
 			packageReferences = (
 				A36615492D0A24DD00A3FBF7 /* XCRemoteSwiftPackageReference "Kanna" */,
 				A36615822D0A261300A3FBF7 /* XCRemoteSwiftPackageReference "SWXMLHash" */,
-				A3A102782D11C73A002F3ACE /* XCLocalSwiftPackageReference "../Chat" */,
 				A34F7CD02D13ADD70004C905 /* XCRemoteSwiftPackageReference "ActivityView" */,
+				A327A9322D18FA2F00A2D292 /* XCLocalSwiftPackageReference "../Chat" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -249,11 +373,19 @@
 				A38427C22D062C8D00271C34 /* epac */,
 				A38427D52D062C8E00271C34 /* epacTests */,
 				A38427DF2D062C8E00271C34 /* epacUITests */,
+				A327A9082D18F75B00A2D292 /* epac-clip */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A327A9072D18F75B00A2D292 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A38427C12D062C8D00271C34 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -278,6 +410,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A327A9052D18F75B00A2D292 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A38427BF2D062C8D00271C34 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -302,6 +441,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A327A9172D18F75C00A2D292 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A327A9082D18F75B00A2D292 /* epac-clip */;
+			targetProxy = A327A9162D18F75C00A2D292 /* PBXContainerItemProxy */;
+		};
 		A38427D82D062C8E00271C34 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A38427C22D062C8D00271C34 /* epac */;
@@ -315,6 +459,75 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A327A91A2D18F75C00A2D292 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "epac-clip/epac_clip.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"epac-clip/Preview Content\"";
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "epac-clip/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = epac;
+				INFOPLIST_KEY_NSCameraUsageDescription = a;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = b;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = c;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.Clip;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A327A91B2D18F75C00A2D292 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "epac-clip/epac_clip.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"epac-clip/Preview Content\"";
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "epac-clip/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = epac;
+				INFOPLIST_KEY_NSCameraUsageDescription = a;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = b;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = c;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.Clip;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		A38427E82D062C8E00271C34 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -349,6 +562,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -367,7 +581,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -410,6 +626,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -422,7 +639,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -436,7 +655,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = epac/epac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"epac/Preview Content\"";
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -445,7 +663,7 @@
 				INFOPLIST_FILE = epac/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = a;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = b;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = c;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "to save screenshots";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -456,11 +674,9 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -480,7 +696,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = epac/epac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"epac/Preview Content\"";
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -489,7 +704,7 @@
 				INFOPLIST_FILE = epac/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = a;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = b;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = c;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "to save screenshots";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -500,11 +715,9 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -522,12 +735,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riddimsoftware.epacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -545,12 +756,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riddimsoftware.epacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -567,12 +776,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riddimsoftware.epacUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -589,12 +796,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riddimsoftware.epacUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -610,6 +815,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A327A91C2D18F75C00A2D292 /* Build configuration list for PBXNativeTarget "epac-clip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A327A91A2D18F75C00A2D292 /* Debug */,
+				A327A91B2D18F75C00A2D292 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A38427BE2D062C8D00271C34 /* Build configuration list for PBXProject "epac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -649,7 +863,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A3A102782D11C73A002F3ACE /* XCLocalSwiftPackageReference "../Chat" */ = {
+		A327A9322D18FA2F00A2D292 /* XCLocalSwiftPackageReference "../Chat" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Chat;
 		};
@@ -683,6 +897,30 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A327A9332D18FA2F00A2D292 /* ExyteChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ExyteChat;
+		};
+		A327A9362D18FA7C00A2D292 /* ExyteChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A327A9322D18FA2F00A2D292 /* XCLocalSwiftPackageReference "../Chat" */;
+			productName = ExyteChat;
+		};
+		A327A9382D18FA8D00A2D292 /* SWXMLHash */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A36615822D0A261300A3FBF7 /* XCRemoteSwiftPackageReference "SWXMLHash" */;
+			productName = SWXMLHash;
+		};
+		A327A93A2D18FAA400A2D292 /* ActivityView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A34F7CD02D13ADD70004C905 /* XCRemoteSwiftPackageReference "ActivityView" */;
+			productName = ActivityView;
+		};
+		A327A93C2D18FAAE00A2D292 /* Kanna */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A36615492D0A24DD00A3FBF7 /* XCRemoteSwiftPackageReference "Kanna" */;
+			productName = Kanna;
+		};
 		A34F7CD12D13ADD70004C905 /* ActivityView */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A34F7CD02D13ADD70004C905 /* XCRemoteSwiftPackageReference "ActivityView" */;

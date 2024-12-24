@@ -1,15 +1,15 @@
 //
-//  Fetch.swift
+//  ClipFetch.swift
 //  epac
 //
-//  Created by Sunny on 2024-12-12.
+//  Created by Sunny on 2024-12-22.
 //
 
 import Foundation
 import SwiftData
 
 @ModelActor
-actor Fetch: ObservableObject {
+actor ClipFetch: ObservableObject {
 	func sittingCalendar(_ year: Int) async throws -> SittingCalendar {
 		let calendar = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
 		if let first = calendar.first {
@@ -35,10 +35,16 @@ actor Fetch: ObservableObject {
 			return try await hansard(date)
 		}
 	}
+
 	func downloadHansard(_ date: Date) async throws {
-		let xml = try await Downloader.downloadXML(forDate: date)
-		let hansard = Hansard(xml: xml)
-		modelContext.insert(hansard)
-		try modelContext.save()
+		let path = Bundle(for: ClipFetch.self).path(forResource: "2024-12-11", ofType: "xml")
+		if let path, let url = URL(string: path) {
+			let xml = try String(contentsOf: url, encoding: .utf8)
+			let hansard = Hansard(xml: xml)
+			modelContext.insert(hansard)
+			try modelContext.save()
+		} else {
+			throw NSError(domain: "downloadHansard", code: 1)
+		}
 	}
 }
