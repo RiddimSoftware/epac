@@ -16,10 +16,12 @@ struct SittingCalendarView: View {
 	@Environment(\.font) private var font
 	@State private var dates = Set<DateComponents>()
 	@Binding var selectedDate: DateComponents?
+//	@State private var currentYear: Int = Calendar.current.dateComponents([.year], from: .now).year!
+	private let currentYear: Int = 2024
 
 	var body: some View {
 		VStack {
-			CalendarView(selection: $selectedDate)
+			CalendarView(availableDateRange: DateInterval(start: .distantPast, end: ISO8601DateFormatter().date(from: "2024-12-31T23:59:59Z")!), selection: $selectedDate)
 				.decorating(dates, systemImage: "message", color: .gray, size: .large)
 				.selectable(updatingOnChangeOf: selectedDate, canSelectDate: { c in
 					dates.contains(where: { $0.year == c.year && $0.month == c.month && $0.day == c.day })
@@ -27,7 +29,6 @@ struct SittingCalendarView: View {
 				.font(font)
 		}
 		.task {
-			let currentYear = Calendar.current.dateComponents([.year], from: .now).year!
 			do {
 				let calendar = try await fetch.sittingCalendar(currentYear)
 				let today = Calendar.current.startOfDay(for: .now)
