@@ -33,7 +33,7 @@ struct ContentView: View {
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
 						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
 						.navigationDestination(item: $selectedSubject, destination: { subject in
-							SpeechView(subject: subject)
+							SpeechView(hansard: hansard, subject: subject)
 								.onDisappear {
 									print("onDisappear")
 								}
@@ -59,6 +59,35 @@ struct ContentView: View {
 					}
 				}
 		}
+		.onOpenURL { url in
+				print(url)
+				let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+				if let items = components.queryItems {
+					let date = items.first(where: { $0.name == "date" })?.value
+					let subjectID = items.first(where: { $0.name == "subjectID" })?.value
+					let speechID = items.first(where: { $0.name == "speechID" })?.value
+					let messageID = items.first(where: { $0.name == "messageID" })?.value
+					if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
+						Task {
+							do {
+								selectedHansard = try await fetch.hansard(d)
+								if let subjectID {
+									let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
+									if let speechID {
+										subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
+										if let messageID {
+											subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
+										}
+									}
+									selectedSubject = subject
+								}
+							} catch {
+								print(error.localizedDescription)
+							}
+						}
+					}
+				}
+			}
 		.task {
 			if members.count == 0 {
 				do {

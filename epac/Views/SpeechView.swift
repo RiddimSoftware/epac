@@ -13,6 +13,7 @@ import ActivityView
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.colorScheme) var colorScheme
+	let hansard: Hansard
 	let subject: SubjectOfBusiness
 	let length: Int
 	@State var speeches: [Speech]
@@ -23,7 +24,8 @@ struct SpeechView: View {
 	@State private var item: ActivityItem?
 
 
-	init(subject: SubjectOfBusiness) {
+	init(hansard: Hansard, subject: SubjectOfBusiness) {
+		self.hansard = hansard
 		self.subject = subject
 		let speeches = subject.speeches.map { speech in
 			let speech = speech
@@ -34,8 +36,8 @@ struct SpeechView: View {
 		self.length = speeches.map { $0.messages.count }.reduce(0, +)
 	}
 #if DEBUG
-	init(subject: SubjectOfBusiness, messages: [ChatMessage] = [], index: Int = 0) {
-		self.init(subject: subject)
+	init(hansard: Hansard, subject: SubjectOfBusiness, messages: [ChatMessage] = [], index: Int = 0) {
+		self.init(hansard: hansard, subject: subject)
 		self.messages = messages
 		self.index = index
 	}
@@ -199,7 +201,23 @@ struct SpeechView: View {
 				} label: {
 					Image(systemName: "arrow.clockwise")
 				}
-
+			}
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					if didFinish {
+						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)")!
+						self.item = ActivityItem(
+							items: url
+						)
+					} else {
+						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(speeches.first!.hansardID)&messageID=\(speeches.first!.messages.first!.hansardID)")!
+						self.item = ActivityItem(
+							items: url
+						)
+					}
+				} label: {
+					Image(systemName: "square.and.arrow.up")
+				}
 			}
 		}
 	}

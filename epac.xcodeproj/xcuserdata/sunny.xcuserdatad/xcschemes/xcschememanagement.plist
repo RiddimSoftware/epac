@@ -7,22 +7,37 @@
 		<key>SWXMLHashPlayground (Playground).xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>4</integer>
 		</dict>
 		<key>epac-clip.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>0</integer>
 		</dict>
 		<key>epac.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>A327A9082D18F75B00A2D292</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>A38427C22D062C8D00271C34</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>A38427D52D062C8E00271C34</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>A38427DF2D062C8E00271C34</key>
 		<dict>
 			<key>primary</key>
 			<true/>
