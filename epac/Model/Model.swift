@@ -43,13 +43,29 @@ final class ParliamentMember: Hashable {
 		self.websiteURL = websiteURL
 	}
 	var isCurrentUser: Bool {
-		return party == .liberal || party == .green || (party == .newdemocratic && (name == "Jenny K"))
+		return party == .liberal
 	}
 	static func == (lhs: ParliamentMember, rhs: ParliamentMember) -> Bool {
 		return lhs.name == rhs.name
 	}
 	func hash(into hasher: inout Hasher) {
 		hasher.combine(name)
+	}
+}
+
+@Model
+final class Constituency: Hashable {
+	var name: String
+	var province: Province
+	var currentMemberFirstName: String
+	var currentMemberLastName: String
+	var currentMemberParty: Party
+	init(name: String, province: Province, currentMemberFirstName: String, currentMemberLastName: String, currentMemberParty: Party) {
+		self.name = name
+		self.province = province
+		self.currentMemberFirstName = currentMemberFirstName
+		self.currentMemberLastName = currentMemberLastName
+		self.currentMemberParty = currentMemberParty
 	}
 }
 
@@ -89,12 +105,16 @@ final class OrderOfBusiness {
 final class SpeechMessage {
 	var firstName: String
 	var lastName: String
+	var partyAbbreviation: String
+	var ridingName: String
 	var hansardID: String
 	var content: String
 	var timestamp: Date
-	init(firstName: String, lastName: String, hansardID: String, content: String, timestamp: Date) {
+	init(firstName: String, lastName: String, partyAbbreviation: String, ridingName: String, hansardID: String, content: String, timestamp: Date) {
 		self.firstName = firstName
 		self.lastName = lastName
+		self.partyAbbreviation = partyAbbreviation
+		self.ridingName = ridingName
 		self.hansardID = hansardID
 		self.content = content
 		self.timestamp = timestamp

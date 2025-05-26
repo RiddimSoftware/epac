@@ -16,7 +16,9 @@ struct ContentView: View {
 	@State private var selectedDate: DateComponents?
 	@State private var selectedHansard: Hansard?
 	@State private var selectedSubject: SubjectOfBusiness?
+	@State private var selectedHansardID: PersistentIdentifier?
 	@Query private var members: [ParliamentMember]
+	@Query private var constituencies: [Constituency]
 
 	init(modelContainer: ModelContainer) {
 		self.modelContainer = modelContainer
@@ -26,7 +28,6 @@ struct ContentView: View {
 	var body: some View {
 		NavigationStack {
 			SittingCalendarView(selectedDate: $selectedDate)
-				.navigationTitle("Parliament")
 				.environmentObject(fetch)
 				.navigationDestination(item: $selectedHansard) { hansard in
 					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
@@ -34,30 +35,54 @@ struct ContentView: View {
 						.navigationDestination(item: $selectedSubject, destination: { subject in
 							SpeechView(hansard: hansard, subject: subject)
 								.onDisappear {
-									print("onDisappear")
+									Log.debug("onDisappear")
 								}
 						})
 				}
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
-						Task {
-							selectedHansard = try await fetch.hansard(date)
+						if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
+							selectedHansard = fetched
+						} else {
+							Task {
+								do {
+									try await fetch.downloadHansard(date)
+									selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
+								} catch {
+									Log.debug("Failed to fetch hansard \(date)")
+								}
+							}
 						}
 					}
 				}
 		}
+		.environmentObject(fetch)
 		.onOpenURL { url in
-				print(url)
-				let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-				if let items = components.queryItems {
-					let date = items.first(where: { $0.name == "date" })?.value
-					let subjectID = items.first(where: { $0.name == "subjectID" })?.value
-					let speechID = items.first(where: { $0.name == "speechID" })?.value
-					let messageID = items.first(where: { $0.name == "messageID" })?.value
-					if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
+			Log.debug("\(url.absoluteString)")
+			let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+			if let items = components.queryItems {
+				let date = items.first(where: { $0.name == "date" })?.value
+				let subjectID = items.first(where: { $0.name == "subjectID" })?.value
+				let speechID = items.first(where: { $0.name == "speechID" })?.value
+				let messageID = items.first(where: { $0.name == "messageID" })?.value
+				if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
+					if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == d })).first {
+						selectedHansard = fetched
+						if let subjectID {
+							let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
+							if let speechID {
+								subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
+								if let messageID {
+									subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
+								}
+							}
+							selectedSubject = subject
+						}
+					} else {
 						Task {
 							do {
-								selectedHansard = try await fetch.hansard(d)
+								try await fetch.downloadHansard(d)
+								selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == d })).first
 								if let subjectID {
 									let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
 									if let speechID {
@@ -69,24 +94,30 @@ struct ContentView: View {
 									selectedSubject = subject
 								}
 							} catch {
-								print(error.localizedDescription)
+								Log.debug("Failed to fetch hansard \(error.localizedDescription)")
 							}
 						}
 					}
 				}
 			}
+		}
 		.task {
 			if members.count == 0 {
 				do {
-					let downloadedMembers = try await Downloader.downloadMembers()
-					print("Downloaded \(downloadedMembers.count) members")
-					downloadedMembers.forEach { modelContext.insert($0) }
+					try await fetch.downloadMembers()
 				} catch {
-					print("Failed to download members \(error.localizedDescription)")
+					Log.debug("Failed to download members \(error.localizedDescription)")
+				}
+			}
+			if constituencies.count == 0 {
+				do {
+					try await fetch.downloadConstituencies()
+				} catch {
+					Log.debug("Failed to download members \(error.localizedDescription)")
 				}
 			}
 		}
-		.fontDesign(.serif)
+		//		.fontDesign(.serif)
 	}
 }
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A31E10452DD3A19E00C423AE /* HorizonCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = A31E10442DD3A19E00C423AE /* HorizonCalendar */; };
 		A327A9182D18F75C00A2D292 /* epac-clip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = A327A9092D18F75B00A2D292 /* epac-clip.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A327A9342D18FA2F00A2D292 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A327A9332D18FA2F00A2D292 /* ExyteChat */; };
 		A327A9372D18FA7C00A2D292 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A327A9362D18FA7C00A2D292 /* ExyteChat */; };
@@ -16,7 +17,11 @@
 		A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */ = {isa = PBXBuildFile; productRef = A34F7CD12D13ADD70004C905 /* ActivityView */; };
 		A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A366154A2D0A24DD00A3FBF7 /* Kanna */; };
 		A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */ = {isa = PBXBuildFile; productRef = A36615832D0A261300A3FBF7 /* SWXMLHash */; };
+		A38138C52DD39D6F0062421F /* HorizonCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = A38138C42DD39D6F0062421F /* HorizonCalendar */; };
 		A3A1027A2D11C73A002F3ACE /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A3A102792D11C73A002F3ACE /* ExyteChat */; };
+		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
+		A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D5168F2DE4FD4C00148AA8 /* Logging */; };
+		A3D516CA2DE4FE3700148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D516C92DE4FE3700148AA8 /* Logging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +67,7 @@
 		A38427C32D062C8D00271C34 /* epac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427D62D062C8E00271C34 /* epacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -77,10 +83,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
+				Logging.swift,
 				Model_Old/PhotoProvider.swift,
 				Model/Fetch.swift,
 				Model/Model.swift,
 				"Model/Model+Hansard.swift",
+				Model/SpeechNavigation.swift,
 				Model/ViewModel.swift,
 				Util/Appearance.swift,
 				Util/DateUtils.swift,
@@ -88,11 +96,11 @@
 				Util/Downloader.swift,
 				Util/File.swift,
 				Util/XMLBro.swift,
-				Views/CalendarView.swift,
 				Views/SittingCalendarView.swift,
 				Views/SittingView.swift,
 				Views/SpeakerView.swift,
 				Views/SpeechView.swift,
+				Views/SpeechViewModel.swift,
 				Views/SubjectView.swift,
 				Views/TypingIndicator.swift,
 			);
@@ -119,6 +127,16 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		A3D516472DE0CCFB00148AA8 /* Exceptions for "epacTests" folder in "Compile Sources" phase from "epacTests" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = A38427D22D062C8E00271C34 /* Sources */;
+			membershipExceptions = (
+				"test-20241217.xml",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A327A90A2D18F75B00A2D292 /* epac-clip */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -139,6 +157,9 @@
 		};
 		A38427D92D062C8E00271C34 /* epacTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A3D516472DE0CCFB00148AA8 /* Exceptions for "epacTests" folder in "Compile Sources" phase from "epacTests" target */,
+			);
 			path = epacTests;
 			sourceTree = "<group>";
 		};
@@ -154,8 +175,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3D516CA2DE4FE3700148AA8 /* Logging in Frameworks */,
 				A327A9392D18FA8D00A2D292 /* SWXMLHash in Frameworks */,
 				A327A93B2D18FAA400A2D292 /* ActivityView in Frameworks */,
+				A31E10452DD3A19E00C423AE /* HorizonCalendar in Frameworks */,
 				A327A93D2D18FAAE00A2D292 /* Kanna in Frameworks */,
 				A327A9372D18FA7C00A2D292 /* ExyteChat in Frameworks */,
 			);
@@ -167,8 +190,10 @@
 			files = (
 				A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */,
 				A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */,
+				A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */,
 				A327A9342D18FA2F00A2D292 /* ExyteChat in Frameworks */,
 				A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */,
+				A38138C52DD39D6F0062421F /* HorizonCalendar in Frameworks */,
 				A3A1027A2D11C73A002F3ACE /* ExyteChat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -200,6 +225,7 @@
 		A38427BA2D062C8D00271C34 = {
 			isa = PBXGroup;
 			children = (
+				A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */,
 				A38427C52D062C8D00271C34 /* epac */,
 				A38427D92D062C8E00271C34 /* epacTests */,
 				A38427E32D062C8E00271C34 /* epacUITests */,
@@ -244,6 +270,8 @@
 				A327A9382D18FA8D00A2D292 /* SWXMLHash */,
 				A327A93A2D18FAA400A2D292 /* ActivityView */,
 				A327A93C2D18FAAE00A2D292 /* Kanna */,
+				A31E10442DD3A19E00C423AE /* HorizonCalendar */,
+				A3D516C92DE4FE3700148AA8 /* Logging */,
 			);
 			productName = "epac-clip";
 			productReference = A327A9092D18F75B00A2D292 /* epac-clip.app */;
@@ -273,6 +301,8 @@
 				A3A102792D11C73A002F3ACE /* ExyteChat */,
 				A34F7CD12D13ADD70004C905 /* ActivityView */,
 				A327A9332D18FA2F00A2D292 /* ExyteChat */,
+				A38138C42DD39D6F0062421F /* HorizonCalendar */,
+				A3D5168F2DE4FD4C00148AA8 /* Logging */,
 			);
 			productName = epac;
 			productReference = A38427C32D062C8D00271C34 /* epac.app */;
@@ -332,7 +362,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1610;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					A327A9082D18F75B00A2D292 = {
 						CreatedOnToolsVersion = 16.2;
@@ -364,6 +394,8 @@
 				A36615822D0A261300A3FBF7 /* XCRemoteSwiftPackageReference "SWXMLHash" */,
 				A34F7CD02D13ADD70004C905 /* XCRemoteSwiftPackageReference "ActivityView" */,
 				A327A9322D18FA2F00A2D292 /* XCLocalSwiftPackageReference "../Chat" */,
+				A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */,
+				A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -390,6 +422,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,7 +500,6 @@
 				CODE_SIGN_ENTITLEMENTS = "epac-clip/epac_clip.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"epac-clip/Preview Content\"";
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "epac-clip/Info.plist";
@@ -501,7 +533,6 @@
 				CODE_SIGN_ENTITLEMENTS = "epac-clip/epac_clip.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"epac-clip/Preview Content\"";
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "epac-clip/Info.plist";
@@ -562,8 +593,10 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -583,12 +616,13 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 1.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -626,8 +660,10 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -641,10 +677,11 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 1.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -655,8 +692,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = epac/epac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"epac/Preview Content\"";
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -683,7 +720,6 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
@@ -696,8 +732,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = epac/epac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"epac/Preview Content\"";
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -724,7 +760,6 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
@@ -735,7 +770,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
@@ -756,7 +791,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
@@ -776,7 +811,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
@@ -796,7 +831,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
@@ -894,9 +929,30 @@
 				version = 8.1.0;
 			};
 		};
+		A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/HorizonCalendar";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.0;
+			};
+		};
+		A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log";
+			requirement = {
+				kind = exactVersion;
+				version = 1.6.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A31E10442DD3A19E00C423AE /* HorizonCalendar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */;
+			productName = HorizonCalendar;
+		};
 		A327A9332D18FA2F00A2D292 /* ExyteChat */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ExyteChat;
@@ -936,9 +992,24 @@
 			package = A36615822D0A261300A3FBF7 /* XCRemoteSwiftPackageReference "SWXMLHash" */;
 			productName = SWXMLHash;
 		};
+		A38138C42DD39D6F0062421F /* HorizonCalendar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */;
+			productName = HorizonCalendar;
+		};
 		A3A102792D11C73A002F3ACE /* ExyteChat */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ExyteChat;
+		};
+		A3D5168F2DE4FD4C00148AA8 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		A3D516C92DE4FE3700148AA8 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "AF982F65-D20C-4996-BC05-330CCEFFE7C8",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:epac.xcodeproj",
+        "identifier" : "A38427D52D062C8E00271C34",
+        "name" : "epacTests"
+      }
+    }
+  ],
+  "version" : 1
+}

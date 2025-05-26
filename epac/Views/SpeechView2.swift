@@ -69,7 +69,7 @@ struct SpeechView2: View {
 				}
 				index += 1
 			} catch {
-				print("Failed to sleep 0.7s \(error.localizedDescription)")
+				Log.debug("Failed to sleep 0.7s \(error.localizedDescription)")
 			}
 		}
 		.onAppear {

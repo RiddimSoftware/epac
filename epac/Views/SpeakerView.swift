@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SpeakerView: View {
+	@Environment(\.modelContext) var modelContext
 	let speaker: ParliamentMember
 	let message: SpeechMessage
 	@State private var imageData: Data?
@@ -60,7 +62,7 @@ struct SpeakerView: View {
 						}
 					}
 				} catch {
-					print("Failed to download member image \(error.localizedDescription)")
+					Log.debug("Failed to download member image \(error.localizedDescription)")
 				}
 			}
 		}
@@ -102,9 +104,12 @@ struct PartyImageView: View {
 
 struct SpeakerImageView: View {
 	let speaker: ParliamentMember
+	let parliamentNumber: Int
+	@Environment(\.modelContext) var modelContext
 	@State private var imageData: Data?
-	init(speaker: ParliamentMember) {
+	init(speaker: ParliamentMember, parliamentNumber: Int) {
 		self.speaker = speaker
+		self.parliamentNumber = parliamentNumber
 		imageData = speaker.imageData
 	}
 	var body: some View {
@@ -124,19 +129,20 @@ struct SpeakerImageView: View {
 		}
 		.padding(0)
 		.task {
+			let provider = PhotoProvider(parliamentNumber: parliamentNumber)
 			var fns: [(String, String, Party) -> URL] = [
-				PhotoProvider.getPhotoURL2,
-				PhotoProvider.getPhotoURL3,
-				PhotoProvider.getPhotoURL4,
-				PhotoProvider.getPhotoURL5,
-				PhotoProvider.getPhotoURL6,
-				PhotoProvider.getPhotoURL7
+				provider.getPhotoURL2,
+				provider.getPhotoURL3,
+				provider.getPhotoURL4,
+				provider.getPhotoURL5,
+				provider.getPhotoURL6,
+				provider.getPhotoURL7
 			]
 			if speaker.imageData == nil {
 				do {
 					try await updateImageData(speaker)
 				} catch {
-					print(error.localizedDescription)
+					Log.debug("\(error.localizedDescription)")
 					while !fns.isEmpty {
 						let fn = fns.removeFirst()
 						speaker.photoURL = fn(speaker.lastName, speaker.firstName, speaker.party)
@@ -144,9 +150,9 @@ struct SpeakerImageView: View {
 							try await updateImageData(speaker)
 							fns.removeAll()
 						} catch {
-							print(error.localizedDescription)
+							Log.debug("\(error.localizedDescription)")
 							if fns.isEmpty {
-								print("Failed to download speaker image \(speaker.name)")
+								Log.debug("Failed to download speaker image \(speaker.name)")
 							} else {
 								continue
 							}
@@ -158,12 +164,22 @@ struct SpeakerImageView: View {
 	}
 
 	private func updateImageData(_ speaker: ParliamentMember) async throws {
-		print("Fetching \(speaker.photoURL.absoluteString)")
+		Log.debug("Fetching \(speaker.photoURL.absoluteString)")
 		let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
 		if !data.isEmpty, UIImage(data: data) != nil {
 			speaker.imageData = data
 			withAnimation {
 				self.imageData = data
+			}
+			do {
+				let id = speaker.id
+				let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { return $0.id == id }))
+				if let first = fetched.first {
+					first.imageData = data
+					try modelContext.save()
+				}
+			} catch {
+				Log.debug("Failed to updateImageData \(speaker.name)")
 			}
 		} else {
 			throw NSError(domain: "", code: 100)
@@ -174,6 +190,6 @@ struct SpeakerImageView: View {
 #Preview {
 	SpeakerView(
 		speaker: ParliamentMember(name: "Justin Trudeau", lastName: "Trudeau", firstName: "Justin", photoURL: URL(string: "https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/44/TrudeauJustin_LIB.jpg")!, riding: "Papineau", province: .Quebec, party: .liberal),
-		message: .init(firstName: "Justin", lastName: "Trudeau", hansardID: "10158", content: "This is the message", timestamp: .now)
+		message: .init(firstName: "Justin", lastName: "Trudeau", partyAbbreviation: "Lib", ridingName: "Yukon", hansardID: "10158", content: "This is the message", timestamp: .now)
 	)
 }

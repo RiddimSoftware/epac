@@ -24,18 +24,18 @@ struct DateFormatterInstance {
 	}
 }
 
-class DateUtils {
+final class DateUtils: Sendable {
 
 	static let instance = DateUtils()
-	private static var csvDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "en_CA"))!
-	private static var csvDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "fr_CA"))!
-	private lazy var fullDateFormatter: DateFormatterInstance = DateFormatterInstance(format: nil, style: .full)!
-	private lazy var htmlDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "EEEE MMM dd, yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
-	private lazy var htmlDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "EEEE dd MMM yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
-	private lazy var committeeDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "EEEE, MMM dd, yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
-	private lazy var committeeDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "EEEE dd MMM yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
-	private lazy var shortDateFormatter: DateFormatterInstance = DateFormatterInstance(format: nil, style: .short)!
-	private lazy var calendar: Calendar = Calendar.current
+	private static let csvDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "en_CA"))!
+	private static let csvDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "fr_CA"))!
+	private let fullDateFormatter: DateFormatterInstance = DateFormatterInstance(format: nil, style: .full)!
+	private let htmlDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "EEEE MMM dd, yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
+	private let htmlDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "EEEE dd MMM yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
+	private let committeeDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "EEEE, MMM dd, yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
+	private let committeeDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "EEEE dd MMM yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
+	private let shortDateFormatter: DateFormatterInstance = DateFormatterInstance(format: nil, style: .short)!
+	private let calendar: Calendar = Calendar.current
 
 	func getDate(forCommitteeMeetingDateString string: String) -> Date {
 		if Locale.current.identifier == "fr_CA" {

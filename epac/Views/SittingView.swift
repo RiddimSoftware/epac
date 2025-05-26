@@ -10,13 +10,36 @@ import SwiftData
 
 struct SittingView: View {
 	@Environment(\.modelContext) var modelContext
+	@EnvironmentObject var fetch: Fetch
 	let hansard: Hansard
 	@Binding var selectedSubject: SubjectOfBusiness?
+	@Query var members: [ParliamentMember]
 
 	private func getMember(_ firstName: String, _ lastName: String) -> ParliamentMember? {
-		return try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate {
-			$0.firstName == firstName && $0.lastName == lastName
-		})).first
+		if let member = members.first(where: { $0.firstName == firstName && $0.lastName == lastName }) {
+			return member
+		}
+
+		Task {
+			try? await fetch.downloadMember(firstName, lastName)
+		}
+		
+//		if let constituency = try? modelContext.fetch(FetchDescriptor<Constituency>(predicate: #Predicate {
+//			$0.name == riding || $0.name.starts(with: riding)
+//		})).first {
+//			let party = Party.partyWithAbbreviation(partyAbbreviation)
+//			return ParliamentMember(
+//			 name: "\(firstName) \(lastName)",
+//			 lastName: lastName,
+//			 firstName: firstName,
+//			 photoURL: PhotoProvider(parliamentNumber: hansard.parliamentNumber).getPhotoURL(lastName: lastName, firstName: firstName, party: party),
+//			 riding: riding,
+//			 province: constituency.province,
+//			 party: party
+//		 )
+//		}
+
+		return nil
 	}
 
 	var body: some View {
@@ -27,15 +50,9 @@ struct SittingView: View {
 						HStack {
 							Text(subject.title)
 							Spacer()
-							if let member = getMember(subject.speeches.first!.messages.first!.firstName, subject.speeches.first!.messages.first!.lastName) {
-								if subject.speeches.count == 1 {
+							VStack(alignment: .trailing, spacing: 5) {
+								ForEach(Array(Set(subject.speeches.compactMap { getMember($0.messages.first!.firstName, $0.messages.first!.lastName) })).sorted(by: { $0.lastName < $1.lastName })) { member in
 									SittingSpeakerView(member: member)
-								} else {
-									VStack(alignment: .trailing, spacing: 5) {
-										ForEach(Array(Set(subject.speeches.sorted(by: { $0.hansardID > $1.hansardID }).compactMap { getMember($0.messages.first!.firstName, $0.messages.first!.lastName) }))) { member in
-											SittingSpeakerView(member: member)
-										}
-									}
 								}
 							}
 						}
@@ -63,12 +80,21 @@ struct SittingView: View {
 }
 
 struct SittingSpeakerView: View {
-	let member: ParliamentMember
+	let name: String
+	let party: Party
+	init(member: ParliamentMember) {
+		self.name = member.name
+		self.party = member.party
+	}
+	init(name: String, party: Party) {
+		self.name = name
+		self.party = party
+	}
 	var body: some View {
 		HStack {
-			Text(verbatim: member.name)
+			Text(verbatim: name)
 				.font(.system(size: 12, weight: .light, design: .rounded))
-			if let image = member.party.image {
+			if let image = party.image {
 				Image(uiImage: image)
 					.resizable()
 					.frame(width: 12, height: 12)

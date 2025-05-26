@@ -13,44 +13,38 @@ import ActivityView
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.colorScheme) var colorScheme
+	@EnvironmentObject var fetch: Fetch
+	@State var navigator: SubjectNavigator
+
 	let hansard: Hansard
 	let subject: SubjectOfBusiness
 	let length: Int
-	@State var speeches: [Speech]
-	@State private var index: Int = 0
-	@State var messages = [ChatMessage]()
-	@State var didFinish = false
-	@State var isResuming = false
-	@State private var item: ActivityItem?
 
+	@State var viewModel: SpeechViewModel
+	@State private var item: ActivityItem?
 
 	init(hansard: Hansard, subject: SubjectOfBusiness) {
 		self.hansard = hansard
 		self.subject = subject
-		let speeches = subject.speeches.map { speech in
-			let speech = speech
-			speech.messages = speech.messages.sorted(by: { $0.hansardID < $1.hansardID })
-			return speech
-		}.sorted(by: { $0.hansardID < $1.hansardID })
-		self.speeches = speeches
-		self.length = speeches.map { $0.messages.count }.reduce(0, +)
+		navigator = SubjectNavigator(subject)
+		self.length = subject.speeches.map { $0.messages.count }.reduce(0, +)
+		self.viewModel = SpeechViewModel()
 	}
-#if DEBUG
-	init(hansard: Hansard, subject: SubjectOfBusiness, messages: [ChatMessage] = [], index: Int = 0) {
-		self.init(hansard: hansard, subject: subject)
-		self.messages = messages
-		self.index = index
-	}
-#endif
+//#if DEBUG
+//	init(hansard: Hansard, subject: SubjectOfBusiness, messages: [ChatMessage] = []) {
+//		self.init(hansard: hansard, subject: subject)
+//		self.messages = messages
+//	}
+//#endif
 
 	var body: some View {
 		VStack {
 			Text(verbatim: subject.title)
 				.multilineTextAlignment(.center)
-			ProgressView(value: Float(messages.count), total: Float(length))
+			ProgressView(value: Float(viewModel.messages.count), total: Float(length))
 				.progressViewStyle(.linear)
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
-			ChatView(messages: messages) { _ in
+			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
 			messageBuilder: { message, positionInGroup, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
@@ -59,7 +53,7 @@ struct SpeechView: View {
 						Spacer()
 					}
 					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
-						SpeakerImageView(speaker: speaker)
+						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -90,7 +84,7 @@ struct SpeechView: View {
 						}
 					}
 					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = (message as? ChatMessage)?.speaker {
-						SpeakerImageView(speaker: speaker)
+						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -110,7 +104,7 @@ struct SpeechView: View {
 				Text("Tap anywhere to continue")
 					.foregroundStyle(.gray)
 					.font(.system(.callout, design: .rounded, weight: .regular))
-					.opacity(messages.count < 2 || isResuming ? 1 : 0)
+					.opacity(viewModel.tapAnywhereOpacity)
 			})
 			.chatTheme(
 				colors: .init(
@@ -121,7 +115,7 @@ struct SpeechView: View {
 					textDarkContext: Color(UIColor.darkText)
 				)
 			)
-			if didFinish {
+			if viewModel.didFinish {
 				Text("End")
 					.font(.system(.callout, design: .rounded, weight: .regular))
 			}
@@ -133,48 +127,37 @@ struct SpeechView: View {
 				}
 		)
 		.task {
-			guard self.messages.isEmpty else {
+			guard viewModel.messages.isEmpty else {
 				return
 			}
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
-				guard self.messages.isEmpty else {
+				guard viewModel.messages.isEmpty else {
 				 return
 			 }
 				withAnimation {
 					nextMessage()
 				}
 			} catch {
-				print("Failed to sleep 0.7s \(error.localizedDescription)")
+				Log.debug("Failed to sleep 0.7s \(error.localizedDescription)")
 			}
 		}
 		.onAppear {
+			/// TODO: Deal with resuming a speech using SubjectNavigator
 			if let currentSpeech = subject.currentSpeech {
+				while navigator.navigator?.speech.hansardID != currentSpeech.hansardID {
+					nextMessage()
+				}
 				withAnimation {
-					isResuming = true
+					viewModel.isResuming = true
 				}
-				index = 0
-				var speech: Speech!
-				while !speeches.isEmpty {
-					speech = speeches.first!
-					if speech != currentSpeech {
-						for _ in 0..<speech.messages.count {
-							nextMessage()
-						}
-					} else {
-						break
-					}
-					_ = speeches.removeFirst()
-					index = 0
-				}
-				var message: ChatMessage?
-				if let currentMessage = speech.currentMessage {
-					message = self.messages.last
-					while index < speech.messages.count && message?.message.hansardID != currentMessage.hansardID {
-						nextMessage()
-						message = messages.last!
-					}
-				}
+//				if let currentMessage = currentSpeech.currentMessage {
+//					if let speechNav = navigator.navigator {
+//						while speechNav.speech.messages[speechNav.index].hansardID != currentMessage.hansardID {
+//							nextMessage()
+//						}
+//					}
+//				}
 			}
 		}
 		.activitySheet($item)
@@ -182,13 +165,8 @@ struct SpeechView: View {
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					withAnimation {
-						messages.removeAll()
-						index = 0
-						self.speeches = subject.speeches.map { speech in
-							let speech = speech
-							speech.messages = speech.messages.sorted(by: { $0.hansardID < $1.hansardID })
-							return speech
-						}.sorted(by: { $0.hansardID < $1.hansardID })
+						viewModel.messages.removeAll()
+						navigator.reset()
 					}
 					Task {
 						do {
@@ -204,16 +182,16 @@ struct SpeechView: View {
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
-					if didFinish {
+					if viewModel.didFinish {
 						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)")!
 						self.item = ActivityItem(
 							items: url
 						)
 					} else {
-						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(speeches.first!.hansardID)&messageID=\(speeches.first!.messages.first!.hansardID)")!
-						self.item = ActivityItem(
-							items: url
-						)
+//						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(speeches.first!.hansardID)&messageID=\(speeches.first!.messages.first!.hansardID)")!
+//						self.item = ActivityItem(
+//							items: url
+//						)
 					}
 				} label: {
 					Image(systemName: "square.and.arrow.up")
@@ -223,29 +201,14 @@ struct SpeechView: View {
 	}
 
 	private func nextMessage() {
-		guard !speeches.isEmpty else {
+		guard !viewModel.didFinish else {
 			return
 		}
-		isResuming = false
-		let speech: Speech
-		if speeches.first!.messages.count == index {
-			// end of speech
-			if speeches.count > 1 {
-				index = 0
-				_ = speeches.removeFirst()
-				speech = speeches.first!
-			} else {
-				didFinish = true
-				subject.currentSpeech?.currentMessage = nil
-				subject.currentSpeech = nil
-				return
-			}
-		} else {
-			speech = speeches.first!
+		guard let message = navigator.next() else {
+			viewModel.didFinish = true
+			return
 		}
-		subject.currentSpeech = speech
-		let message = speech.messages[index]
-		speech.currentMessage = message
+
 		let firstName = message.firstName
 		let lastName = message.lastName
 		var speaker = try? modelContext.fetch(
@@ -254,27 +217,36 @@ struct SpeechView: View {
 			)
 		).first
 		if speaker == nil {
+			Task {
+				try? await fetch.downloadMember(firstName, lastName)
+			}
+			let provider = PhotoProvider(parliamentNumber: hansard.parliamentNumber)
+			let riding = message.ridingName
+			let constituency = try? modelContext.fetch(
+				FetchDescriptor<Constituency>(
+					predicate: #Predicate { !riding.isEmpty && ($0.name == riding || $0.name.starts(with: riding)) }
+				)
+			).first
 			speaker = ParliamentMember(
 				name: message.firstName + " " + message.lastName,
 				lastName: message.lastName,
 				firstName: message.firstName,
-				photoURL: PhotoProvider.getPhotoURL(lastName: message.lastName, firstName: message.firstName, party: .independent),
-				riding: "",
-				province: .Ontario,
-				party: .independent
+				photoURL: provider.getPhotoURL(lastName: message.lastName, firstName: message.firstName, party: Party.partyWithAbbreviation(message.partyAbbreviation)),
+				riding: constituency?.name ?? riding,
+				province: constituency?.province ?? .Ontario,
+				party: Party.partyWithAbbreviation(message.partyAbbreviation)
 			)
 		}
 		var isCurrentUser: Bool
-		if let last = messages.last {
+		if let last = viewModel.messages.last {
 			isCurrentUser = last.user.isCurrentUser
 		} else {
 			isCurrentUser = speaker!.party == .liberal
 		}
-		if let last = messages.last, speaker != last.speaker {
+		if let last = viewModel.messages.last, speaker != last.speaker {
 			isCurrentUser.toggle()
 		}
-		messages.append(ChatMessage(message, speaker!, isCurrentUser))
-		index += 1
+		viewModel.append(ChatMessage(message, speaker!, isCurrentUser))
 	}
 
 	private func createMessageView(_ message: ChatMessage, speaker: ParliamentMember) -> some View {
@@ -293,7 +265,7 @@ struct SpeechView: View {
 				}
 				SpeakerNameView(speaker: speaker, alignment: message.user.isCurrentUser ? .trailing : .leading)
 			}
-			SpeakerImageView(speaker: speaker)
+			SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 		}
 		.padding()
 		.background(.white)

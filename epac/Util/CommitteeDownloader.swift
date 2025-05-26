@@ -33,19 +33,19 @@ class CommitteeDownloader {
     
     func downloadEvidenceList(forCommittee acronym: String, completion: @escaping ([CommitteeEvidence]?)->()) {
         if let list = evidenceList[acronym] {
-            print("Evidence list from memory")
+            Log.debug("Evidence list from memory")
             completion(list)
             return
         }
         else if FileManager.default.fileExists(atPath: File.documentDirectoryURL.appendingPathComponent("evidence", isDirectory: true).appendingPathComponent("\(acronym).list").path) {
-            print("Evidence list from disk")
+            Log.debug("Evidence list from disk")
             let path = File.documentDirectoryURL.appendingPathComponent("evidence", isDirectory: true).appendingPathComponent("\(acronym).list").path
             let list = NSKeyedUnarchiver.unarchiveObject(withFile: path) as! [CommitteeEvidence]
             completion(list)
             return
         }
         else {
-            print("Evidence list from network")
+            Log.debug("Evidence list from network")
             let meetingslink = meetingsurl.replacingOccurrences(of: "<ABBR>", with: acronym)
 //            Alamofire.request(hosturl.appending(meetingslink)).responseString { response in
 //                guard let htmlstring = response.result.value,
@@ -85,19 +85,19 @@ class CommitteeDownloader {
     
     func downloadList(completion: @escaping ([Committee]?)->()) {
         if committeeList != nil {
-            print("Committees from memory")
+            Log.debug("Committees from memory")
             completion(committeeList!)
             return
         }
         else if FileManager.default.fileExists(atPath: File.documentDirectoryURL.appendingPathComponent("committees.list").path) {
-            print("Committees from disk")
+            Log.debug("Committees from disk")
             let path = File.documentDirectoryURL.appendingPathComponent("committees.list")
             let list = NSKeyedUnarchiver.unarchiveObject(withFile: path.path) as! [Committee]
             completion(list)
             return
         }
         else {
-            print("Committees from network")
+            Log.debug("Committees from network")
 //            Alamofire.request(hosturl.appending(listurl)).responseString { response in
 //                guard let htmlstring = response.result.value,
 //                    let doc = HTML(html: htmlstring, url: nil, encoding: .utf8) else {

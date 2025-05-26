@@ -35,7 +35,7 @@ struct ContentView: View {
 						.navigationDestination(item: $selectedSubject, destination: { subject in
 							SpeechView(hansard: hansard, subject: subject)
 								.onDisappear {
-									print("onDisappear")
+									Log.debug("onDisappear")
 								}
 						})
 						.onAppear {
@@ -54,48 +54,48 @@ struct ContentView: View {
 				.onChange(of: selectedDate) { oldValue, newValue in
 					if let newValue, let date = Calendar.current.date(from: newValue) {
 						Task {
-							selectedHansard = try await fetch.hansard(date)
+							let id = try await fetch.hansard(date)
+							selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.id == id })).first
 						}
 					}
 				}
 		}
 		.onOpenURL { url in
-				print(url)
-				let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-				if let items = components.queryItems {
-					let date = items.first(where: { $0.name == "date" })?.value
-					let subjectID = items.first(where: { $0.name == "subjectID" })?.value
-					let speechID = items.first(where: { $0.name == "speechID" })?.value
-					let messageID = items.first(where: { $0.name == "messageID" })?.value
-					if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
-						Task {
-							do {
-								selectedHansard = try await fetch.hansard(d)
-								if let subjectID {
-									let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
-									if let speechID {
-										subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
-										if let messageID {
-											subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
-										}
+			Log.debug("\(url.absoluteString)")
+			let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+			if let items = components.queryItems {
+				let date = items.first(where: { $0.name == "date" })?.value
+				let subjectID = items.first(where: { $0.name == "subjectID" })?.value
+				let speechID = items.first(where: { $0.name == "speechID" })?.value
+				let messageID = items.first(where: { $0.name == "messageID" })?.value
+				if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
+					Task {
+						do {
+							let id = try await fetch.hansard(d)
+							selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.id == id })).first
+							if let subjectID {
+								let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
+								if let speechID {
+									subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
+									if let messageID {
+										subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
 									}
-									selectedSubject = subject
 								}
-							} catch {
-								print(error.localizedDescription)
+								selectedSubject = subject
 							}
+						} catch {
+							Log.debug("\(error.localizedDescription)")
 						}
 					}
 				}
 			}
+		}
 		.task {
 			if members.count == 0 {
 				do {
-					let downloadedMembers = try await Downloader.downloadMembers()
-					print("Downloaded \(downloadedMembers.count) members")
-					downloadedMembers.forEach { modelContext.insert($0) }
+					try await fetch.downloadMembers()
 				} catch {
-					print("Failed to download members \(error.localizedDescription)")
+					Log.debug("Failed to download members \(error.localizedDescription)")
 				}
 			}
 			if !wasForwarded {

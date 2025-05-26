@@ -18,7 +18,8 @@ struct epacApp: App {
 			SubjectOfBusiness.self,
 			ParliamentMember.self,
 			Speech.self,
-			SpeechMessage.self
+			SpeechMessage.self,
+			Constituency.self
 		])
 		#if DEBUG
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
