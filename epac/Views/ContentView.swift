@@ -11,7 +11,6 @@ import Foundation
 
 struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
-	var modelContainer: ModelContainer
 	var fetch: Fetch
 	@State private var selectedDate: DateComponents?
 	@State private var selectedHansard: Hansard?
@@ -21,7 +20,6 @@ struct ContentView: View {
 	@Query private var constituencies: [Constituency]
 
 	init(modelContainer: ModelContainer) {
-		self.modelContainer = modelContainer
 		self.fetch = Fetch(modelContainer: modelContainer)
 	}
 

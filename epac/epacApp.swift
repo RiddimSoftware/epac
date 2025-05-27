@@ -17,7 +17,6 @@ struct epacApp: App {
 #else
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 #endif
-
 		do {
 			return try ModelContainer(for: schema, migrationPlan: MigrationPlan.self, configurations: [modelConfiguration])
 		} catch {

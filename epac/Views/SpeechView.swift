@@ -66,16 +66,16 @@ struct SpeechView: View {
 									.cornerRadius(10)
 									.foregroundStyle(.white)
 							}
-							Button {
-								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
-									.uiImage {
-									self.item = ActivityItem(
-										items: image
-									)
-								}
-							} label: {
-								Image(systemName: "square.and.arrow.up")
-							}
+//							Button {
+//								if let image = ImageRenderer(content: createMessageView((message as! ChatMessage), speaker: (message as! ChatMessage).speaker))
+//									.uiImage {
+//									self.item = ActivityItem(
+//										items: image
+//									)
+//								}
+//							} label: {
+//								Image(systemName: "square.and.arrow.up")
+//							}
 						}
 						if (positionInGroup == .last || positionInGroup == .single) {
 							if let speaker = (message as? ChatMessage)?.speaker {
@@ -143,7 +143,6 @@ struct SpeechView: View {
 			}
 		}
 		.onAppear {
-			/// TODO: Deal with resuming a speech using SubjectNavigator
 			if let currentSpeech = subject.currentSpeech {
 				while navigator.navigator?.speech.hansardID != currentSpeech.hansardID {
 					nextMessage()
@@ -151,13 +150,6 @@ struct SpeechView: View {
 				withAnimation {
 					viewModel.isResuming = true
 				}
-//				if let currentMessage = currentSpeech.currentMessage {
-//					if let speechNav = navigator.navigator {
-//						while speechNav.speech.messages[speechNav.index].hansardID != currentMessage.hansardID {
-//							nextMessage()
-//						}
-//					}
-//				}
 			}
 		}
 		.activitySheet($item)
@@ -188,10 +180,10 @@ struct SpeechView: View {
 							items: url
 						)
 					} else {
-//						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(speeches.first!.hansardID)&messageID=\(speeches.first!.messages.first!.hansardID)")!
-//						self.item = ActivityItem(
-//							items: url
-//						)
+						let url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(navigator.navigator!.speech.hansardID)&messageID=\(navigator.navigator!.speech.messages.first!.hansardID)")!
+						self.item = ActivityItem(
+							items: url
+						)
 					}
 				} label: {
 					Image(systemName: "square.and.arrow.up")

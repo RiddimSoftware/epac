@@ -75,6 +75,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
+				ContentView.swift,
 				Info.plist,
 			);
 			target = A327A9082D18F75B00A2D292 /* epac-clip */;
@@ -97,6 +98,7 @@
 				Util/Downloader.swift,
 				Util/File.swift,
 				Util/XMLBro.swift,
+				Views/ContentView.swift,
 				Views/SittingCalendarView.swift,
 				Views/SittingView.swift,
 				Views/SpeakerView.swift,
@@ -617,7 +619,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -678,7 +680,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;

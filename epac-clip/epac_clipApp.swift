@@ -11,20 +11,8 @@ import SwiftData
 @main
 struct epac_clipApp: App {
 	var sharedModelContainer: ModelContainer = {
-		let schema = Schema([
-			SittingCalendar.self,
-			Hansard.self,
-			OrderOfBusiness.self,
-			SubjectOfBusiness.self,
-			ParliamentMember.self,
-			Speech.self,
-			SpeechMessage.self
-		])
-		#if DEBUG
+		let schema = Schema(versionedSchema: SchemaV2.self)
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-		#else
-		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-		#endif
 
 		do {
 			return try ModelContainer(for: schema, configurations: [modelConfiguration])
