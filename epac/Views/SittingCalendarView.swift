@@ -88,14 +88,6 @@ struct SittingCalendarView: View {
 						.minimumScaleFactor(1)
 				}
 			}
-			ToolbarItem(placement: .topBarTrailing) {
-				Button {
-					Log.debug("HELP")
-				} label: {
-					Image(systemName: "questionmark.circle")
-						.resizable()
-				}
-			}
 		}
 	}
 
