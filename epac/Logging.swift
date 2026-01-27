@@ -8,7 +8,7 @@
 import Logging
 
 actor Log {
-	private static var logger = {
+	 private var logger: Logger = {
 		var logger = Logger(label: "com.riddimsoftware.epac")
 		#if DEBUG
 		logger.logLevel = .trace
@@ -17,22 +17,38 @@ actor Log {
 		#endif
 		return logger
 	}()
-	static func setLevel(_ level: Logger.Level) {
+
+	static let shared = Log()
+
+	private func setLevel(_ level: Logger.Level) {
 		logger.logLevel = level
 	}
+
+	private func log(level: Logger.Level, _ message: Logger.Message) {
+		logger.log(level: level, message)
+	}
+
+	static func setLevel(_ level: Logger.Level) {
+		Task { await shared.setLevel(level) }
+	}
+
 	static func debug(_ message: Logger.Message) {
-		logger.log(level: .debug, message)
+		Task { await shared.log(level: .debug, message) }
 	}
+
 	static func info(_ message: Logger.Message) {
-		logger.log(level: .info, message)
+		Task { await shared.log(level: .info, message) }
 	}
+
 	static func verbose(_ message: Logger.Message) {
-		logger.log(level: .trace, message)
+		Task { await shared.log(level: .trace, message) }
 	}
+
 	static func error(_ message: Logger.Message) {
-		logger.log(level: .error, message)
+		Task { await shared.log(level: .error, message) }
 	}
+
 	static func warning(_ message: Logger.Message) {
-		logger.log(level: .warning, message)
+		Task { await shared.log(level: .warning, message) }
 	}
 }
