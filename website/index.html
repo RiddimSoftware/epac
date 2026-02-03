@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-itunes-app" content="app-id=1224459142, app-clip-bundle-id=net.dinglebox.cabinetdoor.Clip, app-clip-display=card">
+  <title>epac - Civic Engagement for Canadians</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/cooper-hewitt" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --accent: #007aff;
+      --secondary: #f2f2f7;
+      --font-main: 'Cooper Hewitt', sans-serif;
+      --font-heading: 'Cooper Hewitt', sans-serif;
+      --radius: 12px;
+      --transition: 0.3s ease;
+      --logo-filter: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0c;
+        --text: #f0f0f0;
+        --accent: #00d4ff;
+        --secondary: #1c1c1e;
+        --logo-filter: invert(1);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      transition: background-color 0.5s ease, color 0.5s ease;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    header {
+      padding: 3rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .logo-text {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: var(--font-heading);
+      letter-spacing: -0.02em;
+    }
+
+    .logo {
+      height: 64px;
+      border-radius: 14px;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .logo:hover { transform: scale(1.1) rotate(5deg); }
+
+    .hero {
+      text-align: center;
+      padding: 6rem 1rem 4rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 4.5rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      font-size: 1.5rem;
+      color: var(--text);
+      opacity: 0.9;
+      max-width: 700px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .cta {
+      display: inline-block;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .cta:hover { transform: scale(1.1); }
+    .cta img { height: 70px; }
+
+    .screenshots-outer {
+      position: relative;
+      margin-top: 4rem;
+    }
+    
+    .screenshots-container {
+      overflow-x: auto;
+      display: flex;
+      gap: 30px;
+      padding: 4rem 10vw;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .screenshots-container::-webkit-scrollbar { display: none; }
+
+    .screenshot-wrapper {
+      flex: 0 0 auto;
+      width: 320px;
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+      transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+      border: var(--border);
+    }
+    .screenshot-wrapper:hover {
+      transform: translateY(-20px) scale(1.02);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.3);
+    }
+    .screenshot-wrapper img {
+      width: 100%;
+      display: block;
+    }
+
+    .features {
+      max-width: 1100px;
+      margin: 8rem auto;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 4rem;
+    }
+
+    .feature-card {
+      background: var(--secondary);
+      padding: 3.5rem;
+      border-radius: var(--radius);
+      border: var(--border);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card:hover {
+      transform: translateY(-10px);
+      background: var(--bg);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+    }
+
+    .feature-card h3 {
+      margin-top: 0;
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 8rem 2rem 12rem;
+      opacity: 0.5;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 3rem; }
+      .hero p { font-size: 1.2rem; }
+      .screenshots-container { padding: 2rem 5vw; }
+      .screenshot-wrapper { width: 260px; }
+      .features { margin: 4rem auto; gap: 2rem; }
+    }
+
+    /* Logo visibility based on theme */
+    .logo-light { display: none; }
+    .logo-dark { display: block; }
+
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: block; }
+      .logo-dark { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <img src="epac-icon-dark.png" alt="epac logo" class="logo logo-dark">
+      <img src="epac-icon-light.png" alt="epac logo" class="logo logo-light">
+      <span class="logo-text">epac</span>
+    </div>
+    <div class="header-links">
+      <!-- Optional: Add links if needed -->
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Civic engagement, <br>simplified.</h1>
+      <p>Keep in touch with your government. Debates in the House of Commons displayed in a familiar chat format.</p>
+      <a href="https://apps.apple.com/us/app/epac/id1224459142" class="cta">
+        <img src="app-store.svg" alt="Download on the App Store">
+      </a>
+    </section>
+
+    <div class="screenshots-container">
+      <div class="screenshot-wrapper"><img src="1.png" alt="App Screenshot 1"></div>
+      <div class="screenshot-wrapper"><img src="2.png" alt="App Screenshot 2"></div>
+      <div class="screenshot-wrapper"><img src="3.png" alt="App Screenshot 3"></div>
+      <div class="screenshot-wrapper"><img src="4.png" alt="App Screenshot 4"></div>
+      <div class="screenshot-wrapper"><img src="5.png" alt="App Screenshot 5"></div>
+      <div class="screenshot-wrapper"><img src="6.png" alt="App Screenshot 6"></div>
+    </div>
+
+    <section class="features">
+      <div class="feature-card">
+        <h3>Group Chat Format</h3>
+        <p>Follow debates in the House of Commons as if you were in a group chat. Easily see who's talking and who's engaging.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Topic Following</h3>
+        <p>Stay updated on topics that matter to you. Follow conversations and never miss a beat on important Canadian issues.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Hansard Accessible</h3>
+        <p>Quick access to Canada's official parliamentary record, presented in a modern, mobile-friendly interface.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <a href="https://riddimsoftware.com" style="color: inherit; text-decoration: none;">Riddim Software</a>. Built for Canadians.</p>
+  </footer>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11533004287"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-11533004287');
+  </script>
+</body>
+</html>

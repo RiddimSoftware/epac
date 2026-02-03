@@ -1,0 +1,1 @@
+aws s3 sync . s3://epac.riddimsoftware.com --exclude '.git/*' --exclude 'sync.sh'
