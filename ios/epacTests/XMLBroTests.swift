@@ -135,6 +135,33 @@ struct XMLBroTests {
         #expect(speech.messages[0].partyAbbreviation == "Lib")
     }
 
+    @Test func testRightHonTitleParsing() async throws {
+        let xml = """
+        <Hansard id="101">
+            <HansardBody>
+                <OrderOfBusiness id="1">
+                    <CatchLine>Oral Questions</CatchLine>
+                    <SubjectOfBusiness id="1">
+                        <SubjectOfBusinessTitle>Oral Questions</SubjectOfBusinessTitle>
+                        <SubjectOfBusinessContent>
+                            <Intervention id="1">
+                                <PersonSpeaking>
+                                    <Affiliation>Right Hon. Mark Carney (Prime Minister, Lib.)</Affiliation>
+                                </PersonSpeaking>
+                                <Content><ParaText id="1">Text</ParaText></Content>
+                            </Intervention>
+                        </SubjectOfBusinessContent>
+                    </SubjectOfBusiness>
+                </OrderOfBusiness>
+            </HansardBody>
+        </Hansard>
+        """
+        let bro = XMLBro(xml: xml).parseXML()
+        let speech = bro.ordersOfBusiness[0].subjects[0].speeches[0]
+        #expect(speech.messages[0].firstName == "Mark")
+        #expect(speech.messages[0].lastName == "Carney")
+    }
+
     @Test func testParseMembers() async throws {
         guard let fixtureURL = Bundle(for: ForThisOnly.self).url(forResource: "fixtures/members", withExtension: "xml") else {
             return

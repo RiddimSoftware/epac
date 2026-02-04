@@ -78,7 +78,7 @@ class XMLBro {
                     
                     let parsed = parseAffiliationString(personspeaking)
 					
-					let cleanNames = parsed.speakerName.split(separator: " ").filter { !["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt"].contains(String($0)) }
+					let cleanNames = parsed.speakerName.split(separator: " ").filter { !["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt", "Right"].contains(String($0)) }
 					
 					let firstName = cleanNames.dropLast().joined(separator: " ")
 					let lastName = cleanNames.last
@@ -126,6 +126,9 @@ class XMLBro {
 
 				if let lastCommaIndex = details.lastIndex(of: ",") {
 					partyAbbreviation = String(details[details.index(after: lastCommaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+					if partyAbbreviation.hasSuffix(".") {
+						partyAbbreviation.removeLast()
+					}
 					
 					let potentialRidingAndRole = String(details[..<lastCommaIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
 					
