@@ -12,30 +12,32 @@ import SWXMLHash
 
 @ModelActor
 actor Fetch: ObservableObject {
-	private let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
-	private let calendarPath: String = "en/sitting-calendar/%d"
-	private let dailyPath: String = "en/parliamentary-business/"
-	private let xmlPath: String = "Content/House/%@/Debates/%@/HAN%@-%@.XML"
-	private let membersPath: String = "Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all"
-	private let membersSearchPath: String = "Members/search/members"
-	private let constituenciesPath: String = "Members/en/constituencies/XML"
-	private let leadersPath: String = "members/en/house-officers/xml?parliament=%d&caucusId=all&province=all&gender=all" // replace #d with parliament number 1-45
-	private let cabinetPath: String = "members/en/ministries/xml?ministry=%d&province=all&gender=all&lastName=all" // replace %d with parliament number 1-30
-	private let chairsPath: String = "members/en/chair-occupants/xml?parliament=%d&caucusId=all&province=all&gender=all" // replace %d with ministry number 1-45
-	private let memberPath: String = "members/en/%@-%@(%@)/xml" // replace with first name, last name, personID
-	/// expenditurePath is an HTML page with a link to a CSV export of the expenditures for that year/quarter. The CSV export does not change since it is a historical record of expenditures.
-	/// The HTML page also has a number of links in the table under the Travel, Hospitality, and Contracts columns. Clicking on these links gives more details about each expenditure type for a specific member.
-	/// There is a CSV export link on each of those Travel/Hospitality/Contracts pages as well.
-	/// The CSV exports are of interest so that they can be downloaded and data extracted from them to populate our data model.
-	private let expenditurePath: String = "proactivedisclosure/en/members/%d/%d" // replace with Year 2021+ and Quarter 1-4.
-	private var language: String = {
-		if Locale.current.identifier.contains("fr") {
-			return "F"
-		} else {
-			return "E"
-		}
-	}()
+        private let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
+        private let calendarPath: String = "en/sitting-calendar/%d"
+        private let dailyPath: String = "en/parliamentary-business/"
+        private let xmlPath: String = "Content/House/%@/Debates/%@/HAN%@-%@.XML"
+        private let membersPath: String = "Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all"
+        private let membersSearchPath: String = "Members/search/members"
+        private let constituenciesPath: String = "Members/en/constituencies/XML"
+        private let leadersPath: String = "members/en/house-officers/xml?parliament=%d&caucusId=all&province=all&gender=all" // replace #d with parliament number 1-45
+        private let cabinetPath: String = "members/en/ministries/xml?ministry=%d&province=all&gender=all&lastName=all" // replace %d with parliament number 1-30
+        private let chairsPath: String = "members/en/chair-occupants/xml?parliament=%d&caucusId=all&province=all&gender=all" // replace %d with ministry number 1-45
+        private let memberPath: String = "members/en/%@-%@(%@)/xml" // replace with first name, last name, personID
+        /// expenditurePath is an HTML page with a link to a CSV export of the expenditures for that year/quarter. The CSV export does not change since it is a historical record of expenditures.
+        /// The HTML page also has a number of links in the table under the Travel, Hospitality, and Contracts columns. Clicking on these links gives more details about each expenditure type for a specific member.
+        /// There is a CSV export link on each of those Travel/Hospitality/Contracts pages as well.
+        /// The CSV exports are of interest so that they can be downloaded and data extracted from them to populate our data model.
+        private let expenditurePath: String = "proactivedisclosure/en/members/%d/%d" // replace with Year 2021+ and Quarter 1-4.
+        private var language: String = {
+                if Locale.current.identifier.contains("fr") {
+                        return "F"
+                } else {
+                        return "E"
+                }
+        }()
 
+        private var downloadsInProgress: Set<String> = []
+        private var failedDownloads: Set<String> = []
 	func sittingCalendar(_ year: Int) async throws -> SittingCalendar {
 		Log.debug("Fetch.sittingCalendar(year: \(year))")
 		let calendar = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
@@ -491,42 +493,53 @@ actor Fetch: ObservableObject {
 			}
 		}
 	}
-	func downloadMember(_ firstName: String, _ lastName: String) async throws {
-		Log.debug("Fetch.downloadMember(firstName: \(firstName), lastName: \(lastName))")
-		let url = hosturl.appending(path: membersSearchPath)
-		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		request.httpMethod = "POST"
-		request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
-		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-		request.setValue("application/json", forHTTPHeaderField: "Accept")
-		let (data, _) = try await URLSession.shared.data(for: request)
-		guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-			throw NSError(domain: "", code: 7)
-		}
-		let pastMembers = responseBody["pastMembers"] as? [[String: Any]] ?? []
-		let currentMembers = responseBody["currentMembers"] as? [[String: Any]] ?? []
-		let allMembers = currentMembers + pastMembers
-
-		if let member = allMembers.first {
-			let name = "\(firstName) \(lastName)"
-			let personID = member["personId"] as? Int ?? 0
-			let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
-			if existing == nil {
-				let mp = ParliamentMember(
-					name: name,
-					lastName: lastName,
-					firstName: firstName,
-					photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
-					riding: member["constituencyNameEn"] as! String,
-					province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
-					party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
-					memberID: personID
-				)
-				modelContext.insert(mp)
-				try modelContext.save()
-			}
-		}
-	}
+	                func downloadMember(_ firstName: String, _ lastName: String) async throws {
+	                        let identifier = "\(firstName) \(lastName)"
+	                        guard !downloadsInProgress.contains(identifier), !failedDownloads.contains(identifier) else {
+	                                return
+	                        }
+	                        downloadsInProgress.insert(identifier)
+	                        defer { downloadsInProgress.remove(identifier) }
+	        
+	                        Log.debug("Fetch.downloadMember(firstName: \(firstName), lastName: \(lastName))")
+	                        let url = hosturl.appending(path: membersSearchPath)
+	                        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+	                        request.httpMethod = "POST"
+	                        request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
+	                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+	                        request.setValue("application/json", forHTTPHeaderField: "Accept")
+	                        let (data, _) = try await URLSession.shared.data(for: request)
+	                        guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+	                                failedDownloads.insert(identifier)
+	                                throw NSError(domain: "", code: 7)
+	                        }
+	                        let pastMembers = responseBody["pastMembers"] as? [[String: Any]] ?? []
+	                        let currentMembers = responseBody["currentMembers"] as? [[String: Any]] ?? []
+	                        let allMembers = currentMembers + pastMembers
+	        
+	                        if let member = allMembers.first {
+	                                let name = "\(firstName) \(lastName)"
+	                                let personID = member["personId"] as? Int ?? 0
+	                                let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
+	                                if existing == nil {
+	                                        let mp = ParliamentMember(
+	                                                name: name,
+	                                                lastName: lastName,
+	                                                firstName: firstName,
+	                                                photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
+	                                                riding: member["constituencyNameEn"] as! String,
+	                                                province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
+	                                                party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
+	                                                memberID: personID
+	                                        )
+	                                        modelContext.insert(mp)
+	                                        try modelContext.save()
+	                                }
+	                        } else {
+	                                failedDownloads.insert(identifier)
+	                        }
+	                }
+	        
 
 	func downloadConstituencies() async throws {
 		Log.debug("Fetch.downloadConstituencies()")

@@ -179,6 +179,8 @@ struct SpeechView: View {
 				Button {
 					withAnimation {
 						viewModel.messages.removeAll()
+						viewModel.speakers.removeAll()
+						viewModel.didFinish = false
 						subject.currentSpeech?.currentMessage = nil
 						subject.currentSpeech?.currentMessageID = nil
 						subject.currentSpeech = nil
@@ -283,6 +285,8 @@ struct SpeechView: View {
 				province: constituency?.province ?? .Ontario,
 				party: Party.partyWithAbbreviation(message.partyAbbreviation)
 			)
+			modelContext.insert(speaker!)
+			try? modelContext.save()
 		}
 		var isCurrentUser: Bool
 		if let last = viewModel.messages.last {

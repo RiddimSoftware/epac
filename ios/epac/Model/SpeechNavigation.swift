@@ -48,19 +48,21 @@ class SubjectNavigator {
 		self.navigators = speeches.map { SpeechNavigator($0) }
 	}
 
-	func reset() {
-		self.speeches = subject.speeches.sorted(by: { lhs, rhs in
-			let lmin = lhs.messages.min(by: { $0.hansardID.caseInsensitiveCompare($1.hansardID) == .orderedAscending })
-			let rmin = rhs.messages.min(by: { $0.hansardID.caseInsensitiveCompare($1.hansardID) == .orderedAscending })
-			if let lmin, let rmin {
-				return lmin.hansardID.caseInsensitiveCompare(rmin.hansardID) == .orderedAscending
-			} else {
-				return lhs.hansardID.caseInsensitiveCompare(rhs.hansardID) == .orderedAscending
-			}
-		})
-		self.navigators = speeches.map { SpeechNavigator($0) }
-	}
-	        func next() -> SpeechMessage? {
+	        func reset() {
+	                self.navigator = nil
+	                self.speeches = subject.speeches.sorted(by: { lhs, rhs in
+	                        let lmin = lhs.messages.min(by: { $0.hansardID.caseInsensitiveCompare($1.hansardID) == .orderedAscending })
+	                        let rmin = rhs.messages.min(by: { $0.hansardID.caseInsensitiveCompare($1.hansardID) == .orderedAscending })
+	                        if let lmin, let rmin {
+	                                return lmin.hansardID.caseInsensitiveCompare(rmin.hansardID) == .orderedAscending
+	                        } else {
+	                                return lhs.hansardID.caseInsensitiveCompare(rhs.hansardID) == .orderedAscending
+	                        }
+	                })
+	                                self.navigators = speeches.map { SpeechNavigator($0) }
+	                        }
+	                
+	                        func next() -> SpeechMessage? {
 	                if let navigator {
 	                        if let message = navigator.next() {
 	//                              Log.debug("returning message \(navigator.index)/\(navigator.speech.messages.count) \(message.hansardID)")

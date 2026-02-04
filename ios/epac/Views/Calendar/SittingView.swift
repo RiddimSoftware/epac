@@ -95,9 +95,7 @@ struct SittingView: View {
 				}
 
 			}
-
-			.listStyle(.insetGrouped)
-
+					.listStyle(.plain)
 		}
 
 	}

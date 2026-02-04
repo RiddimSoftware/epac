@@ -164,9 +164,8 @@ struct SpeakerImageView: View {
 			}
 			do {
 				let id = speaker.id
-				let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { return $0.id == id }))
-				if let first = fetched.first {
-					first.imageData = data
+				if let fetched = modelContext.model(for: id) as? ParliamentMember {
+					fetched.imageData = data
 					try modelContext.save()
 				}
 			} catch {
