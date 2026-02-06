@@ -113,6 +113,8 @@ struct SittingCalendarView: View {
 			.padding(.horizontal)
 			.padding(.bottom, 8)
 		}
+		.frame(maxWidth: 500)
+		.frame(maxWidth: .infinity)
 		.task {
 			if dates.isEmpty {
 				await fetchSittingCalendar(currentYear)
@@ -232,6 +234,8 @@ struct NonSittingDayView: View {
             Spacer()
         }
         .padding()
+        .frame(maxWidth: 500)
+        .frame(maxWidth: .infinity)
         .navigationTitle("Recess")
         .navigationBarTitleDisplayMode(.inline)
     }

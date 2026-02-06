@@ -1,0 +1,20 @@
+{
+  "app_path" : ".",
+  "bundle_identifier" : "net.dinglebox.cabinetdoor",
+  "description" : "epac is a civic engagement tool that keeps Canadians in touch with their government. Debates in the House of Commons are displayed in a group chat format that makes it easy to see which members of parliament are actively engaging in debate. It also lets you follow the conversation on topics that affect you as a Canadian.",
+  "keywords" : [
+    "canada",
+    "government",
+    "govtech",
+    "parliament",
+    "mp",
+    "democracy",
+    "hansard",
+    "debate",
+    "chatbot",
+    "politics",
+    "news"
+  ],
+  "name" : "epac",
+  "team_id" : "ZG82TFXU3C"
+}
