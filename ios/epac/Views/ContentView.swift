@@ -13,11 +13,7 @@ import Observation
 struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
 	var fetch: Fetch
-	@State private var selectedDate: DateComponents?
-	@State private var selectedHansard: Hansard?
-	@State private var nonSittingDate: Date?
-	@State private var selectedSubject: SubjectOfBusiness?
-	@State private var selectedHansardID: PersistentIdentifier?
+	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@Query private var members: [ParliamentMember]
 	@Query private var constituencies: [Constituency]
@@ -29,37 +25,23 @@ struct ContentView: View {
 	var body: some View {
 		TabView(selection: $router.selectedTab) {
 			NavigationStack {
-				SittingCalendarView(selectedDate: $selectedDate)
+				SittingCalendarView(selectedDate: $viewModel.selectedDate)
 					.environmentObject(fetch)
-					.navigationDestination(item: $selectedHansard) { hansard in
-						SittingView(hansard: hansard, selectedSubject: $selectedSubject)
+					.navigationDestination(item: $viewModel.selectedHansard) { hansard in
+						SittingView(hansard: hansard, selectedSubject: $viewModel.selectedSubject)
 							.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
-							.navigationDestination(item: $selectedSubject, destination: { subject in
+							.navigationDestination(item: $viewModel.selectedSubject, destination: { subject in
 								SpeechView(hansard: hansard, subject: subject)
 									.onDisappear {
 										Log.debug("onDisappear")
 									}
 							})
 					}
-					.navigationDestination(item: $nonSittingDate) { date in
+					.navigationDestination(item: $viewModel.nonSittingDate) { date in
 						NonSittingDayView(date: date)
 					}
-					.onChange(of: selectedDate) { oldValue, newValue in
-						if let newValue, let date = Calendar.current.date(from: newValue) {
-							if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
-								selectedHansard = fetched
-							} else {
-								Task {
-									do {
-										try await fetch.downloadHansard(date)
-										selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
-									} catch {
-										Log.debug("Failed to fetch hansard \(date)")
-										nonSittingDate = date
-									}
-								}
-							}
-						}
+					.onChange(of: viewModel.selectedDate) { _, newValue in
+						viewModel.onSelectedDateChanged(to: newValue, modelContext: modelContext, fetch: fetch)
 					}
 			}
 			.tabItem {
@@ -76,64 +58,10 @@ struct ContentView: View {
 		.environmentObject(fetch)
 		.environment(router)
 		.onOpenURL { url in
-			Log.debug("\(url.absoluteString)")
-			let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-			if let items = components.queryItems {
-				let date = items.first(where: { $0.name == "date" })?.value
-				let subjectID = items.first(where: { $0.name == "subjectID" })?.value
-				let speechID = items.first(where: { $0.name == "speechID" })?.value
-				let messageID = items.first(where: { $0.name == "messageID" })?.value
-				if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
-					if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == d })).first {
-						selectedHansard = fetched
-						if let subjectID {
-							let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
-							if let speechID {
-								subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
-								if let messageID {
-									subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
-								}
-							}
-							selectedSubject = subject
-						}
-					} else {
-						Task {
-							do {
-								try await fetch.downloadHansard(d)
-								selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == d })).first
-								if let subjectID {
-									let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
-									if let speechID {
-										subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
-										if let messageID {
-											subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
-										}
-									}
-									selectedSubject = subject
-								}
-							} catch {
-								Log.debug("Failed to fetch hansard \(error.localizedDescription)")
-							}
-						}
-					}
-				}
-			}
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
 		}
 		.task {
-			if members.count == 0 {
-				do {
-					try await fetch.downloadMembers()
-				} catch {
-					Log.debug("Failed to download members \(error.localizedDescription)")
-				}
-			}
-			if constituencies.count == 0 {
-				do {
-					try await fetch.downloadConstituencies()
-				} catch {
-					Log.debug("Failed to download members \(error.localizedDescription)")
-				}
-			}
+			await viewModel.downloadInitialData(members: members, constituencies: constituencies, fetch: fetch)
 		}
 	}
 }

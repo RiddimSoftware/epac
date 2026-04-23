@@ -91,15 +91,16 @@ struct SpeakerImageView: View {
 	let speaker: ParliamentMember
 	let parliamentNumber: Int
 	@Environment(\.modelContext) var modelContext
-	@State private var imageData: Data?
+	@State private var viewModel = SpeakerImageViewModel()
+
 	init(speaker: ParliamentMember, parliamentNumber: Int) {
 		self.speaker = speaker
 		self.parliamentNumber = parliamentNumber
-		imageData = speaker.imageData
 	}
+
 	var body: some View {
 		VStack {
-			if let data = speaker.imageData, let image = UIImage(data: data) {
+			if let data = viewModel.imageData ?? speaker.imageData, let image = UIImage(data: data) {
 				Image(uiImage: image)
 					.resizable()
 					.scaledToFit()
@@ -120,59 +121,7 @@ struct SpeakerImageView: View {
 		}
 		.padding(0)
 		.task {
-			let provider = PhotoProvider(parliamentNumber: parliamentNumber)
-			var fns: [(String, String, Party) -> URL] = [
-				provider.getPhotoURL2,
-				provider.getPhotoURL3,
-				provider.getPhotoURL4,
-				provider.getPhotoURL5,
-				provider.getPhotoURL6,
-				provider.getPhotoURL7
-			]
-			if speaker.imageData == nil {
-				do {
-					try await updateImageData(speaker)
-				} catch {
-					Log.debug("\(error.localizedDescription)")
-					while !fns.isEmpty {
-						let fn = fns.removeFirst()
-						speaker.photoURL = fn(speaker.lastName, speaker.firstName, speaker.party)
-						do {
-							try await updateImageData(speaker)
-							fns.removeAll()
-						} catch {
-							Log.debug("\(error.localizedDescription)")
-							if fns.isEmpty {
-								Log.debug("Failed to download speaker image \(speaker.name)")
-							} else {
-								continue
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	private func updateImageData(_ speaker: ParliamentMember) async throws {
-		Log.debug("Fetching \(speaker.photoURL.absoluteString)")
-		let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
-		if !data.isEmpty, UIImage(data: data) != nil {
-			speaker.imageData = data
-			withAnimation {
-				self.imageData = data
-			}
-			do {
-				let id = speaker.id
-				if let fetched = modelContext.model(for: id) as? ParliamentMember {
-					fetched.imageData = data
-					try modelContext.save()
-				}
-			} catch {
-				Log.debug("Failed to updateImageData \(speaker.name)")
-			}
-		} else {
-			throw NSError(domain: "", code: 100)
+			await viewModel.loadImage(speaker: speaker, parliamentNumber: parliamentNumber, modelContext: modelContext)
 		}
 	}
 }

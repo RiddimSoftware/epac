@@ -18,12 +18,7 @@ struct SittingCalendarView: View {
 	@Environment(\.font) private var font
 	@StateObject private var calendarViewProxy = CalendarViewProxy()
 
-	@State private var dates = Set<DateComponents>()
-	@State private var futureDates = Set<DateComponents>()
-	@State private var currentYear: Int = Calendar.current.dateComponents([.year], from: .now).year!
-	private var sittingDayCount: Int {
-		dates.filter { $0.year == currentYear }.count + futureDates.filter { $0.year == currentYear }.count
-	}
+	@State private var viewModel = SittingCalendarViewModel()
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -35,11 +30,11 @@ struct SittingCalendarView: View {
 
 	var body: some View {
 		VStack {
-			CalendarViewRepresentable(visibleDateRange: visibleDates, monthsLayout: .vertical, dataDependency: dates, proxy: calendarViewProxy)
+			CalendarViewRepresentable(visibleDateRange: visibleDates, monthsLayout: .vertical, dataDependency: viewModel.dates, proxy: calendarViewProxy)
 				.days({ day in
 					let isToday = todayComponents.sameYMD(as: day.components)
-					let isPastSitting = dates.contains(where: { $0.sameYMD(as: day.components) })
-					let isFutureSitting = futureDates.contains(where: { $0.sameYMD(as: day.components) })
+					let isPastSitting = viewModel.dates.contains(where: { $0.sameYMD(as: day.components) })
+					let isFutureSitting = viewModel.futureDates.contains(where: { $0.sameYMD(as: day.components) })
 
 					Text(verbatim: "\(day.day)")
 						.foregroundStyle(isToday ? Color(UIColor.white) : Color(UIColor.label))
@@ -61,10 +56,10 @@ struct SittingCalendarView: View {
 				})
 				.onDragEnd({ visibleDayRange, willDecelerate in
 					guard !willDecelerate else { return }
-					onVisibleDayRangeChanged(visibleDayRange)
+					viewModel.onVisibleDayRangeChanged(visibleDayRange, modelContext: modelContext, fetch: fetch)
 				})
 				.onDeceleratingEnd({ visibleDayRange in
-					onVisibleDayRangeChanged(visibleDayRange)
+					viewModel.onVisibleDayRangeChanged(visibleDayRange, modelContext: modelContext, fetch: fetch)
 				})
 				.onDaySelection({ day in
 					selectedDate = day.components
@@ -81,8 +76,8 @@ struct SittingCalendarView: View {
 					Text("Sitting days")
 						.font(.subheadline)
 						.fontWeight(.medium)
-					if sittingDayCount > 0 {
-						Text("(\(sittingDayCount) in \(yearFormatter.string(from: NSNumber(value: currentYear))!))")
+					if viewModel.sittingDayCount > 0 {
+						Text("(\(viewModel.sittingDayCount) in \(yearFormatter.string(from: NSNumber(value: viewModel.currentYear))!))")
 							.font(.caption)
 							.foregroundColor(.secondary)
 					}
@@ -116,8 +111,8 @@ struct SittingCalendarView: View {
 		.frame(maxWidth: 500)
 		.frame(maxWidth: .infinity)
 		.task {
-			if dates.isEmpty {
-				await fetchSittingCalendar(currentYear)
+			if viewModel.dates.isEmpty {
+				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
 				calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
 			}
 			selectedDate = nil
@@ -132,54 +127,6 @@ struct SittingCalendarView: View {
 			}
 		}
 	}
-
-	private func fetchSittingCalendar(_ year: Int) async {
-		do {
-			var calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
-			if calendar == nil {
-				try await fetch.downloadSittingCalendar(year)
-				calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
-			}
-			let today = Calendar.current.startOfDay(for: .now)
-			calendar?.sittings.filter { $0 < today }.map {
-				Calendar.current.dateComponents([.year, .month, .day], from: $0)
-			}.forEach { dates.insert($0) }
-			calendar?.sittings.filter { $0 >= today }.map {
-				Calendar.current.dateComponents([.year, .month, .day], from: $0)
-			}.forEach { futureDates.insert($0) }
-		} catch {
-			Log.debug("Failed to fetch SittingCalendar count")
-		}
-	}
-
-	private func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange) {
-		if visibleDayRange.lowerBound.components.year! != currentYear {
-			currentYear = visibleDayRange.lowerBound.components.year!
-			Task {
-				await fetchSittingCalendar(visibleDayRange.lowerBound.components.year!)
-			}
-		} else if visibleDayRange.upperBound.components.year! != currentYear {
-			currentYear = visibleDayRange.upperBound.components.year!
-			Task {
-				await fetchSittingCalendar(visibleDayRange.upperBound.components.year!)
-			}
-		}
-		if visibleDayRange.lowerBound.components.year! != visibleDayRange.upperBound.components.year! {
-			let lower = Calendar.current.date(from: visibleDayRange.lowerBound.components)!
-			let endOfYear = Calendar.current.date(from: DateComponents(year: visibleDayRange.lowerBound.components.year!, month: 12, day: 31))!
-			let upper = Calendar.current.date(from: visibleDayRange.upperBound.components)!
-			let startOfYear = Calendar.current.date(from: DateComponents(year: visibleDayRange.upperBound.components.year!, month: 1, day: 1))!
-
-			let lowerCount = Calendar.current.dateComponents([.day], from: lower, to: endOfYear).day!
-			let upperCount = Calendar.current.dateComponents([.day], from: startOfYear, to: upper).day!
-			if lowerCount > upperCount {
-				currentYear = visibleDayRange.lowerBound.components.year!
-			} else {
-				currentYear = visibleDayRange.upperBound.components.year!
-			}
-		}
-	}
-}
 
 extension Date: @retroactive Identifiable {
 	public var id: Date {
