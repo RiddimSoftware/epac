@@ -7,6 +7,7 @@ import Observation
 import SwiftData
 import UIKit
 
+@MainActor
 @Observable
 class SpeakerImageViewModel {
 	var imageData: Data?

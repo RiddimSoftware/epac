@@ -21,7 +21,7 @@ class ContentViewModel {
 		if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
 			selectedHansard = fetched
 		} else {
-			Task {
+			Task { @MainActor in
 				do {
 					try await fetch.downloadHansard(date)
 					selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
@@ -62,7 +62,7 @@ class ContentViewModel {
 		if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
 			applyNavigation(hansard: fetched)
 		} else {
-			Task {
+			Task { @MainActor in
 				do {
 					try await fetch.downloadHansard(date)
 					if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {

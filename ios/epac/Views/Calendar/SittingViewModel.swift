@@ -7,12 +7,18 @@ import Observation
 
 @Observable
 class SittingViewModel {
+	private var pendingDownloads: Set<String> = []
+
 	func getMember(_ firstName: String, _ lastName: String, from members: [ParliamentMember], fetch: Fetch) -> ParliamentMember? {
 		if let member = members.first(where: { $0.firstName == firstName && $0.lastName == lastName }) {
 			return member
 		}
+		let key = "\(firstName)|\(lastName)"
+		guard !pendingDownloads.contains(key) else { return nil }
+		pendingDownloads.insert(key)
 		Task {
 			try? await fetch.downloadMember(firstName, lastName)
+			pendingDownloads.remove(key)
 		}
 		return nil
 	}

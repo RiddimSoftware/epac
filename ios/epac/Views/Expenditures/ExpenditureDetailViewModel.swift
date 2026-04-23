@@ -61,6 +61,7 @@ class ExpenditureDetailViewModel {
 		}
 	}
 
+	@MainActor
 	func loadDetails(expenditure: SummaryExpenditure, fetch: Fetch) async {
 		guard expenditure.travelClaims.isEmpty && expenditure.hospitalityDetails.isEmpty && expenditure.contractDetails.isEmpty else { return }
 		isLoading = true

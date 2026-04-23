@@ -4,7 +4,6 @@
 //
 
 import Observation
-import SwiftData
 import SwiftUI
 import ActivityView
 
@@ -27,20 +26,23 @@ class ExpendituresViewModel {
 	}
 
 	let periods: [ExpenditurePeriod] = {
+		let now = Date()
+		let cal = Calendar.current
+		let currentYear = cal.component(.year, from: now)
+		let currentQuarter = (cal.component(.month, from: now) - 1) / 3 + 1
 		var p: [ExpenditurePeriod] = []
-		for year in (2021...2026).reversed() {
-			for quarter in (1...4).reversed() {
-				if (year == 2021 && quarter < 2) || (year == 2026 && quarter > 2) {
-					continue
-				}
+		for year in (2021...currentYear).reversed() {
+			let maxQ = (year == currentYear) ? currentQuarter : 4
+			for quarter in stride(from: maxQ, through: 1, by: -1) {
+				if year == 2021 && quarter < 2 { continue }
 				p.append(ExpenditurePeriod(year: year, quarter: quarter))
 			}
 		}
 		return p
 	}()
 
-	var selectedYear = 2026
-	var selectedQuarter = 2
+	var selectedYear: Int = Calendar.current.component(.year, from: Date())
+	var selectedQuarter: Int = (Calendar.current.component(.month, from: Date()) - 1) / 3 + 1
 	var searchText = ""
 	var sortOrder: SortOrder = .total
 	var isLoading = false
@@ -64,6 +66,7 @@ class ExpendituresViewModel {
 		}
 	}
 
+	@MainActor
 	func loadData(expenditures: [SummaryExpenditure], fetch: Fetch) async {
 		let exists = expenditures.contains { $0.year == selectedYear && $0.quarter == selectedQuarter }
 		if !exists {

@@ -8,6 +8,7 @@ import Observation
 import SwiftData
 import HorizonCalendar
 
+@MainActor
 @Observable
 class SittingCalendarViewModel {
 	var dates = Set<DateComponents>()

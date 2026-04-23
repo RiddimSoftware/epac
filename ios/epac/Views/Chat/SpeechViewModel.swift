@@ -146,11 +146,14 @@ class SpeechViewModel {
 	@MainActor
 	func shareLast5Messages(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
 		let last5 = Array(messages.suffix(5))
+		let baseURL = "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)"
 		let url: URL
 		if didFinish {
-			url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)")!
+			url = URL(string: baseURL)!
+		} else if let nav = navigator.navigator, let firstMessage = nav.speech.messages.first {
+			url = URL(string: "\(baseURL)&speechID=\(nav.speech.hansardID)&messageID=\(firstMessage.hansardID)")!
 		} else {
-			url = URL(string: "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)&speechID=\(navigator.navigator!.speech.hansardID)&messageID=\(navigator.navigator!.speech.messages.first!.hansardID)")!
+			url = URL(string: baseURL)!
 		}
 
 		let shareView = MultiMessageShareView(messages: last5, speakers: speakers, parliamentNumber: hansard.parliamentNumber, subjectTitle: subject.title, date: hansard.date)
