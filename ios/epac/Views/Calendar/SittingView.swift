@@ -18,87 +18,49 @@ struct SittingView: View {
 
 	@Binding var selectedSubject: SubjectOfBusiness?
 
-		@Query var members: [ParliamentMember]
+	@Query var members: [ParliamentMember]
 
-	
+	@State private var viewModel = SittingViewModel()
 
-		private func getMember(_ firstName: String, _ lastName: String) -> ParliamentMember? {
+	var body: some View {
+		List {
+			ForEach(hansard.orders.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.subjects.isEmpty }) { order in
+				Section {
+					ForEach(order.subjects.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.speeches.isEmpty }) { subject in
+						VStack(alignment: .leading, spacing: 8) {
+							Text(subject.title)
+								.font(.headline)
+								.foregroundColor(.primary)
 
-			if let member = members.first(where: { $0.firstName == firstName && $0.lastName == lastName }) {
-
-				return member
-
-			}
-
-	
-
-			Task {
-
-				try? await fetch.downloadMember(firstName, lastName)
-
-			}
-
-	
-
-			        return nil
-			    }
-			
-			    private func speakers(for subject: SubjectOfBusiness) -> [ParliamentMember] {
-			        let speakers = subject.speeches
-			            .compactMap { $0.messages.first }
-			            .compactMap { getMember($0.firstName, $0.lastName) }
-			        return Array(Set(speakers)).sorted(by: { $0.lastName < $1.lastName })
-			    }
-			
-			    var body: some View {
-			        List {
-			            ForEach(hansard.orders.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.subjects.isEmpty }) { order in
-			                Section {
-			                    ForEach(order.subjects.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.speeches.isEmpty }) { subject in
-			                        VStack(alignment: .leading, spacing: 8) {
-			                            Text(subject.title)
-			                                .font(.headline)
-			                                .foregroundColor(.primary)
-			
-			                            HStack {
-			                                Spacer()
-			                                VStack(alignment: .trailing, spacing: 4) {
-			                                    ForEach(speakers(for: subject)) { member in
-			                                        SittingSpeakerView(member: member)
-			                                    }
-			                                }
-			                            }
-			                        }
-			                        .padding(.vertical, 4)
-			                        .contentShape(Rectangle())
-			                        .onTapGesture {
-			                            selectedSubject = subject
-			                        }
-			                    }
-			                } header: {
-									Text(order.catchline)
-
-							.font(.title2)
-
-							.fontWeight(.black)
-
-							.textCase(.uppercase)
-
-							.foregroundColor(.secondary)
-
-							.padding(.top, 20)
-
-							.padding(.bottom, 8)
-
+							HStack {
+								Spacer()
+								VStack(alignment: .trailing, spacing: 4) {
+									ForEach(viewModel.speakers(for: subject, from: members, fetch: fetch)) { member in
+										SittingSpeakerView(member: member)
+									}
+								}
+							}
+						}
+						.padding(.vertical, 4)
+						.contentShape(Rectangle())
+						.onTapGesture {
+							selectedSubject = subject
+						}
 					}
-
+				} header: {
+					Text(order.catchline)
+						.font(.title2)
+						.fontWeight(.black)
+						.textCase(.uppercase)
+						.foregroundColor(.secondary)
+						.padding(.top, 20)
+						.padding(.bottom, 8)
 				}
-
 			}
-					.listStyle(.plain)
 		}
-
+		.listStyle(.plain)
 	}
+}
 
 
 

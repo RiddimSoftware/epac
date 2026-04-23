@@ -14,72 +14,18 @@ struct ExpendituresView: View {
     @EnvironmentObject var fetch: Fetch
     @Query private var expenditures: [SummaryExpenditure]
     @Query private var members: [ParliamentMember]
-    
-    @State private var selectedYear = 2026
-    @State private var selectedQuarter = 2
-    @State private var searchText = ""
-    @State private var sortOrder: SortOrder = .total
-    @State private var isLoading = false
+
+    @State private var viewModel = ExpendituresViewModel()
     @State private var item: ActivityItem?
-    
-    enum SortOrder: String, CaseIterable, Identifiable {
-        case name = "Name"
-        case total = "Total"
-        case travel = "Travel"
-        case hospitality = "Hospitality"
-        case contracts = "Contracts"
-        
-        var id: String { rawValue }
-    }
-    
-    struct ExpenditurePeriod: Hashable, Identifiable {
-        var id: String { "\(year) Q\(quarter)" }
-        let year: Int
-        let quarter: Int
-    }
-    
-    private let periods: [ExpenditurePeriod] = {
-        var p: [ExpenditurePeriod] = []
-        for year in (2021...2026).reversed() {
-            for quarter in (1...4).reversed() {
-                if (year == 2021 && quarter < 2) || (year == 2026 && quarter > 2) {
-                    continue
-                }
-                p.append(ExpenditurePeriod(year: year, quarter: quarter))
-            }
-        }
-        return p
-    }()
-    
+
     private var filteredExpenditures: [SummaryExpenditure] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let filtered = expenditures.filter { expenditure in
-            expenditure.year == selectedYear && expenditure.quarter == selectedQuarter &&
-            (trimmed.isEmpty || 
-             expenditure.firstName.lowercased().contains(trimmed) || 
-             expenditure.lastName.lowercased().contains(trimmed))
-        }
-        
-        return filtered.sorted { a, b in
-            switch sortOrder {
-            case .name:
-                return a.lastName < b.lastName
-            case .total:
-                return a.total > b.total
-            case .travel:
-                return a.travel > b.travel
-            case .hospitality:
-                return a.hospitality > b.hospitality
-            case .contracts:
-                return a.contracts > b.contracts
-            }
-        }
+        viewModel.filteredExpenditures(from: expenditures)
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
-                if filteredExpenditures.isEmpty && isLoading {
+                if filteredExpenditures.isEmpty && viewModel.isLoading {
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
@@ -93,19 +39,20 @@ struct ExpendituresView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
-                        if filteredExpenditures.isEmpty && !isLoading {
-                            ContentUnavailableView.search(text: searchText)
-                                        } else {
-                                            ForEach(filteredExpenditures) { expenditure in
-                                                let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
-                                                NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
-                                                    ExpenditureRow(expenditure: expenditure, member: member)
-                                                }
-                                            }
-                                        }                    }
+                        if filteredExpenditures.isEmpty && !viewModel.isLoading {
+                            ContentUnavailableView.search(text: viewModel.searchText)
+                        } else {
+                            ForEach(filteredExpenditures) { expenditure in
+                                let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
+                                NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
+                                    ExpenditureRow(expenditure: expenditure, member: member)
+                                }
+                            }
+                        }
+                    }
                     .listStyle(.plain)
                 }
-                
+
                 VStack {
                     Spacer()
                     searchBar
@@ -122,7 +69,7 @@ struct ExpendituresView: View {
                     HStack {
                         sortSelector
                         Button {
-                            shareExpenditures()
+                            item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                         }
@@ -130,8 +77,8 @@ struct ExpendituresView: View {
                 }
             }
             .activitySheet($item)
-            .task(id: selectedYear * 10 + selectedQuarter) {
-                await loadData()
+            .task(id: viewModel.selectedYear * 10 + viewModel.selectedQuarter) {
+                await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
             }
             .onAppear {
                 Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
@@ -141,34 +88,34 @@ struct ExpendituresView: View {
             }
         }
     }
-    
+
     private var periodSelector: some View {
         Menu {
             Picker("Period", selection: Binding(
-                get: { ExpenditurePeriod(year: selectedYear, quarter: selectedQuarter) },
-                set: { 
-                    selectedYear = $0.year
-                    selectedQuarter = $0.quarter
+                get: { ExpendituresViewModel.ExpenditurePeriod(year: viewModel.selectedYear, quarter: viewModel.selectedQuarter) },
+                set: {
+                    viewModel.selectedYear = $0.year
+                    viewModel.selectedQuarter = $0.quarter
                 }
             )) {
-                ForEach(periods) { period in
+                ForEach(viewModel.periods) { period in
                     Text("\(String(period.year)) Q\(period.quarter)").tag(period)
                 }
             }
         } label: {
             HStack(spacing: 4) {
-                Text("\(String(selectedYear)) Q\(selectedQuarter)")
+                Text("\(String(viewModel.selectedYear)) Q\(viewModel.selectedQuarter)")
                 Image(systemName: "chevron.down")
                     .font(.caption2)
             }
             .fontWeight(.medium)
         }
     }
-    
+
     private var sortSelector: some View {
         Menu {
-            Picker("Sort By", selection: $sortOrder) {
-                ForEach(SortOrder.allCases) { order in
+            Picker("Sort By", selection: $viewModel.sortOrder) {
+                ForEach(ExpendituresViewModel.SortOrder.allCases) { order in
                     Text(order.rawValue).tag(order)
                 }
             }
@@ -176,10 +123,10 @@ struct ExpendituresView: View {
             Label("Sort", systemImage: "line.3.horizontal.decrease.circle")
         }
     }
-    
+
     private var searchBar: some View {
         HStack {
-            TextField("Search for a member", text: $searchText)
+            TextField("Search for a member", text: $viewModel.searchText)
                 .padding(7)
                 .padding(.horizontal, 25)
                 .background(Color.clear)
@@ -190,9 +137,9 @@ struct ExpendituresView: View {
                             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                             .padding(.leading, 8)
 
-                        if !searchText.isEmpty {
+                        if !viewModel.searchText.isEmpty {
                             Button(action: {
-                                self.searchText = ""
+                                viewModel.searchText = ""
                             }) {
                                 Image(systemName: "multiply.circle.fill")
                                     .foregroundColor(.gray)
@@ -206,51 +153,6 @@ struct ExpendituresView: View {
         .padding(.vertical, 5)
         .glassHeaderStyle()
         .padding(.horizontal)
-    }
-    
-    private func loadData() async {
-        let exists = expenditures.contains { $0.year == selectedYear && $0.quarter == selectedQuarter }
-        if !exists {
-            isLoading = true
-            do {
-                try await fetch.expenditures(year: selectedYear, quarter: selectedQuarter)
-            } catch {
-                Log.error("Failed to load expenditures: \(error.localizedDescription)")
-            }
-            isLoading = false
-        }
-    }
-
-    @MainActor
-    private func shareExpenditures() {
-        let view = VStack(spacing: 0) {
-            Text("Expenditures - \(selectedYear) Q\(selectedQuarter)")
-                .font(.headline)
-                .padding()
-            
-            ForEach(filteredExpenditures.prefix(20)) { expenditure in
-                let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
-                ExpenditureRow(expenditure: expenditure, member: member)
-                    .padding()
-                Divider()
-            }
-            
-            if filteredExpenditures.count > 20 {
-                Text("... and \(filteredExpenditures.count - 20) more")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding()
-            }
-        }
-        .frame(width: 400)
-        .background(Color(UIColor.systemBackground))
-        
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = UIScreen.main.scale
-        if let image = renderer.uiImage {
-            let source = ShareActivityItemSource(image: image, title: "Expenditures - \(selectedYear) Q\(selectedQuarter)")
-            self.item = ActivityItem(items: source)
-        }
     }
 }
 
