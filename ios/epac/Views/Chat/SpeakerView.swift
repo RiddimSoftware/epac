@@ -32,7 +32,7 @@ struct SpeakerView: View {
 					} else {
 						ZStack {
 							Circle()
-								.fill(Color(uiColor: speaker.party.colour))
+								.fill(Color.party(speaker.party))
 								.frame(width: 46, height: 46)
 							Text(speaker.initials)
 								.font(.system(.headline, design: .rounded))
@@ -113,7 +113,7 @@ struct SpeakerImageView: View {
 			} else {
 				ZStack {
 					Circle()
-						.fill(Color(uiColor: speaker.party.colour))
+						.fill(Color.party(speaker.party))
 						.frame(width: 46, height: 46)
 					Text(speaker.initials)
 						.font(.system(.headline, design: .rounded))

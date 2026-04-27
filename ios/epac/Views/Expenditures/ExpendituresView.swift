@@ -184,12 +184,12 @@ struct ExpenditureRow: View {
                         .frame(width: 44, height: 44)
                 } else {
                     Circle()
-                        .fill(expenditure.party.subtleBackground)
+                        .fill(Color.partySubtle(expenditure.party))
                         .frame(width: 44, height: 44)
                         .overlay(
                             Text(expenditure.firstName.prefix(1) + expenditure.lastName.prefix(1))
                                 .font(.headline)
-                                .foregroundColor(expenditure.party.swiftUIColor)
+                                .foregroundColor(Color.party(expenditure.party))
                         )
                 }
                 
@@ -265,10 +265,10 @@ struct ExpenditureRow: View {
 //
 //    private var placeholder: some View {
 //        ZStack {
-//            member.party.subtleBackground
+//            Color.partySubtle(member.party)
 //            Text(member.initials)
 //                .font(.headline)
-//                .foregroundColor(member.party.swiftUIColor)
+//                .foregroundColor(Color.party(member.party))
 //        }
 //        .background(Color(.systemGray6))
 //    }
