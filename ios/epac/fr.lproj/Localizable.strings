@@ -101,6 +101,17 @@
 "Province" = "Province";
 "Status" = "Statut";
 
+/* Vote detail */
+"voteDetail.debates.header" = "Débats dans le hansard";
+"voteDetail.seeDebate" = "Voir le débat";
+"voteDetail.description" = "Description";
+"voteDetail.date" = "Date";
+"voteDetail.result" = "Résultat";
+"voteDetail.tally" = "Décompte";
+"voteDetail.ballot" = "Votre député a voté";
+"votes.yea" = "Pour";
+"votes.nay" = "Contre";
+
 /* Voting history */
 "votes.navTitle" = "Votes";
 "votes.toolbarLabel" = "Dossier de vote";

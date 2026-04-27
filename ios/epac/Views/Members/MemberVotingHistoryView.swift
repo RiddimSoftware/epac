@@ -8,6 +8,15 @@
 import SwiftUI
 import SwiftData
 
+private struct VoteSelection: Identifiable, Hashable {
+    let id = UUID()
+    let mv: MemberVote
+    let rv: RecordedVote?
+
+    static func == (lhs: VoteSelection, rhs: VoteSelection) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
 struct MemberVotingHistoryView: View {
     let member: ParliamentMember
 
@@ -16,6 +25,7 @@ struct MemberVotingHistoryView: View {
     @State private var votes: [(mv: MemberVote, rv: RecordedVote?)] = []
     @State private var isLoading = false
     @State private var loadFailed = false
+    @State private var selectedVote: VoteSelection?
 
     var body: some View {
         Group {
@@ -41,9 +51,18 @@ struct MemberVotingHistoryView: View {
                 )
             } else {
                 List(votes, id: \.mv.voteID) { pair in
-                    VoteRow(mv: pair.mv, rv: pair.rv)
+                    Button {
+                        selectedVote = VoteSelection(mv: pair.mv, rv: pair.rv)
+                    } label: {
+                        VoteRow(mv: pair.mv, rv: pair.rv)
+                    }
+                    .foregroundStyle(.primary)
                 }
                 .listStyle(.plain)
+                .navigationDestination(item: $selectedVote) { selection in
+                    VoteDetailView(mv: selection.mv, rv: selection.rv)
+                        .environmentObject(fetch)
+                }
             }
         }
         .navigationTitle(NSLocalizedString("votes.navTitle", comment: ""))
