@@ -165,6 +165,10 @@
 "debate.navTitle" = "Activité de débat";
 "debate.empty.title" = "Aucun enregistrement de débat";
 "debate.empty.description" = "Ouvrez des jours de séance pour charger les transcriptions de débats pour ce membre.";
+"debate.empty.noSpeeches" = "Aucun discours trouvé dans les jours de séance récents.";
+"debate.empty.loadMore" = "Rechercher plus de jours de séance";
+"debate.loading.start" = "Chargement des jours de séance récents…";
+"debate.loading.progress" = "%d jours de séance chargés…";
 "debate.recentSittingDays" = "Jours de séance récents";
 "debate.contributionCount" = "%d intervention(s)";
 "debate.stat.contributions" = "Interventions";
