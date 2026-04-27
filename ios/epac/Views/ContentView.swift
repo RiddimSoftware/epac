@@ -14,6 +14,7 @@ struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	var fetch: Fetch
+	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
@@ -36,6 +37,14 @@ struct ContentView: View {
 		.environment(router)
 		.onOpenURL { url in
 			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		}
+		.onChange(of: notificationManager.pendingDate) { _, date in
+			guard let date else { return }
+			let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+			viewModel.selectedDate = components
+			viewModel.onSelectedDateChanged(to: components, modelContext: modelContext, fetch: fetch)
+			router.selectedTab = .sittingCalendar
+			notificationManager.clearPendingDate()
 		}
 		.task {
 			networkMonitor.start()
