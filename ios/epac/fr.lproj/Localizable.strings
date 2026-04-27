@@ -276,9 +276,10 @@
 "topic.labour" = "Travail";
 "topic.trade" = "Commerce";
 
-/* Suivi des projets de loi — notifications */
+/* Suivi et partage des projets de loi */
 "bill.follow" = "Suivre";
 "bill.unfollow" = "Ne plus suivre";
+"bill.share" = "Partager";
 "bill.notification.stageChange" = "%@ a avancé\u{a0}: %@";
 "bill.notification.royalAssent" = "%@ a reçu la sanction royale";
 "bill.notification.defeated" = "%@ a été rejeté";

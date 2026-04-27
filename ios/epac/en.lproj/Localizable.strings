@@ -276,9 +276,10 @@
 "topic.labour" = "Labour";
 "topic.trade" = "Trade";
 
-/* Follow bill */
+/* Follow and share bill */
 "bill.follow" = "Follow";
 "bill.unfollow" = "Unfollow";
+"bill.share" = "Share";
 "bill.notification.stageChange" = "%@ advanced: %@";
 "bill.notification.royalAssent" = "%@ received Royal Assent";
 "bill.notification.defeated" = "%@ was defeated";
