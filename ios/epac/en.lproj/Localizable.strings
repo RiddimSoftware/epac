@@ -375,6 +375,7 @@
 
 /* Senate */
 "senate.mySenators.title" = "My Senators";
+"senate.mySenators.empty" = "No senators found for this province.";
 "senate.card.name" = "Senator %@";
 "senate.card.accessibility" = "Senator %@, %@";
 

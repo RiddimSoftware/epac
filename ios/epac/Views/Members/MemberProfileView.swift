@@ -335,8 +335,10 @@ struct MemberAvatar: View {
 		Group {
 			if let image = cachedImage {
 				Image(uiImage: image).resizable().scaledToFill()
+					.accessibilityLabel(member.name)
 			} else {
 				placeholder
+					.accessibilityHidden(true)  // parent row composes the full label
 					.task(id: member.memberID) {
 						// NSCache fast path (populated by SpeakerImageViewModel or a prior cell)
 						if let cached = MemberImageCache.shared.image(for: member.photoURL) {

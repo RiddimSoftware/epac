@@ -56,9 +56,10 @@ class SearchViewModel {
         members: [ParliamentMember],
         votes: [RecordedVote],
         bills: [Bill],
-        hansards: [Hansard]
+        hansards: [Hansard],
+        query: String? = nil
     ) -> SearchResults {
-        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let q = (query ?? searchText).trimmingCharacters(in: .whitespacesAndNewlines)
         guard q.count >= 2 else { return SearchResults() }
 
         var out = SearchResults()

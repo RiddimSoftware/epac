@@ -107,6 +107,7 @@ struct MyMPView: View {
     @State private var showConsultations = false
     @State private var showElectionResources = false
     @State private var senators: [Senator] = []
+    @State private var senatorsLoaded = false
     @State private var ontarioMPP: OntarioMPP?
 
     var body: some View {
@@ -206,6 +207,12 @@ struct MyMPView: View {
                         SenatorCard(senator: senator)
                     }
                 }
+            } else if senatorsLoaded {
+                Section(NSLocalizedString("senate.mySenators.title", comment: "")) {
+                    Text(NSLocalizedString("senate.mySenators.empty", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             if let mpp = ontarioMPP {
                 Section(NSLocalizedString("ontario.myMPP.title", comment: "")) {
@@ -246,6 +253,7 @@ struct MyMPView: View {
             if !provinceAbbrev.isEmpty {
                 let allSenators = await SenatorsService.fetchSenators()
                 senators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
+                senatorsLoaded = true
 
                 // Load Ontario MPP when the federal riding is in Ontario
                 if provinceAbbrev == "ON" {
