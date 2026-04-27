@@ -126,11 +126,6 @@ private struct VoteRow: View {
     }
 
     private var badgeColor: Color {
-        switch mv.recordedVote.lowercased() {
-        case "yea":    return .green
-        case "nay":    return .red
-        case "paired": return .orange
-        default:       return Color(.systemGray3)
-        }
+        Color.ballot(mv.recordedVote)
     }
 }

@@ -73,7 +73,7 @@ struct ContentView: View {
 			.foregroundStyle(.white)
 			.padding(.horizontal)
 			.padding(.vertical, 10)
-			.background(Color(UIColor.systemOrange))
+			.background(Color.appWarning)
 		}
 	}
 

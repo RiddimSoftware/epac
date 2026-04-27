@@ -47,11 +47,7 @@ private enum MPActivity: Identifiable {
         case .speech:
             return .blue
         case .vote(let mv, _):
-            switch mv.recordedVote.lowercased() {
-            case "yea": return .green
-            case "nay": return .red
-            default:    return .orange
-            }
+            return Color.ballot(mv.recordedVote)
         case .expenditure:
             return .teal
         }

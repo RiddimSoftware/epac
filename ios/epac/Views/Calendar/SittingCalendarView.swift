@@ -42,13 +42,13 @@ struct SittingCalendarView: View {
 						.background {
 							if isToday {
 								Circle()
-									.fill(Color(UIColor.systemRed))
+									.fill(Color.appDestructive)
 							} else if isPastSitting {
 								RoundedRectangle(cornerRadius: 12)
-									.fill(Color(UIColor.systemGreen))
+									.fill(Color.appPositive)
 							} else if isFutureSitting {
 								RoundedRectangle(cornerRadius: 12)
-									.stroke(Color(UIColor.systemGreen), lineWidth: 2)
+									.stroke(Color.appPositive, lineWidth: 2)
 							} else {
 								Color.clear
 							}
@@ -71,7 +71,7 @@ struct SittingCalendarView: View {
 			VStack(alignment: .leading, spacing: 12) {
 				HStack(spacing: 12) {
 					RoundedRectangle(cornerRadius: 6)
-						.fill(Color(UIColor.systemGreen))
+						.fill(Color.appPositive)
 						.frame(width: 24, height: 24)
 					Text("Sitting days")
 						.font(.subheadline)
@@ -86,7 +86,7 @@ struct SittingCalendarView: View {
 				HStack(spacing: 20) {
 					HStack(spacing: 8) {
 						Circle()
-							.fill(Color(UIColor.systemRed))
+							.fill(Color.appDestructive)
 							.frame(width: 16, height: 16)
 						Text("Today")
 					}
@@ -97,7 +97,7 @@ struct SittingCalendarView: View {
 					
 					HStack(spacing: 8) {
 						RoundedRectangle(cornerRadius: 4)
-							.stroke(Color(UIColor.systemGreen), lineWidth: 2)
+							.stroke(Color.appPositive, lineWidth: 2)
 							.frame(width: 16, height: 16)
 						Text("Upcoming")
 					}

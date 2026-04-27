@@ -274,10 +274,10 @@ struct MemberAvatar: View {
 
 	private var placeholder: some View {
 		ZStack {
-			Color(uiColor: member.party.colour).opacity(0.2)
+			Color.party(member.party).opacity(0.2)
 			Text(member.initials)
 				.font(.headline)
-				.foregroundColor(Color(uiColor: member.party.colour))
+				.foregroundColor(Color.party(member.party))
 		}
 		.background(Color(.systemGray6))
 	}
@@ -297,7 +297,7 @@ struct PartyBadge: View {
 			.foregroundColor(.white)
 			.padding(.horizontal, 6)
 			.padding(.vertical, 2)
-			.background(Color(uiColor: party.colour))
+			.background(Color.party(party))
 			.clipShape(Capsule())
 	}
 }

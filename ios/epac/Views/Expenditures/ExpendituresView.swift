@@ -184,12 +184,12 @@ struct ExpenditureRow: View {
                         .frame(width: 44, height: 44)
                 } else {
                     Circle()
-                        .fill(Color(uiColor: expenditure.party.colour).opacity(0.2))
+                        .fill(Color.party(expenditure.party).opacity(0.2))
                         .frame(width: 44, height: 44)
                         .overlay(
                             Text(expenditure.firstName.prefix(1) + expenditure.lastName.prefix(1))
                                 .font(.headline)
-                                .foregroundColor(Color(uiColor: expenditure.party.colour))
+                                .foregroundColor(Color.party(expenditure.party))
                         )
                 }
                 

@@ -111,7 +111,7 @@ struct SpeechView: View {
 			})
 			.chatTheme(
 				colors: .init(
-					mainBG: Color(UIColor.systemBackground),
+					mainBG: Color.appBackground,
 					messageMyBG: Color(UIColor.systemBlue),
 					messageFriendBG: Color(UIColor.systemGray6)
 				)
@@ -253,7 +253,7 @@ struct MultiMessageShareView: View {
 			}
 		}
 		.padding()
-		.background(Color(UIColor.systemBackground))
+		.background(Color.appBackground)
 		.fixedSize(horizontal: false, vertical: true)
 		.frame(width: 400)
 	}
