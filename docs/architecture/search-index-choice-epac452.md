@@ -1,7 +1,7 @@
 # Search Index Choice (EPAC-452)
 
-**Status:** Accepted for v1  
-**Last updated:** 2026-04-27  
+**Status:** Accepted for v1
+**Last updated:** 2026-04-27
 **Decision:** Use PostgreSQL full-text search (`tsvector`) for the v1 parliamentary search index. Revisit Meilisearch after the canonical Hansard, bill, vote, and member records are flowing through the backend.
 
 ## Context
@@ -68,6 +68,22 @@ GET /search?q=housing&types=speech,bill&member_id=123&page=1
 ```
 
 The API should return source-linked result objects, not generated summaries.
+
+## Implementation Guardrails
+
+- Search documents are derived from normalized source records. Do not ingest raw search-only records that cannot be traced back to a canonical Hansard, bill, vote, or member row.
+- Store enough source metadata with each result to render an honest result card without a second lookup: title, snippet, date, source label, and primary-source URL when available.
+- Keep writes idempotent by using `(document_type, source_id, language)` as the logical key.
+- Prefer generated `tsvector` columns when each document type has its own table; prefer a materialized view when the unified index is assembled from several canonical tables.
+- Add GIN indexes for `search_vector` and btree indexes for common filters (`document_type`, `occurred_on`, `member_id`, `bill_id`, `vote_id`).
+- Rebuild or refresh the index from canonical records in CI or a backend job; never hand-edit search rows.
+
+## Follow-On Tickets
+
+- EPAC-466: bilingual indexing design on Postgres dictionaries and language-specific vectors.
+- EPAC-467: ranking and relevance tuning with weighted fields, recency boosts, and type-specific boosts.
+- A backend schema ticket should create the first `search_documents` table or materialized view.
+- An API ticket should expose paginated search results with source labels, dates, and deep-link targets.
 
 ## Meilisearch Migration Trigger
 
