@@ -53,12 +53,12 @@ struct SpeakerView: View {
 					.frame(width: 48, height: 48)
 					.padding(5)
 					.background(.white)
-					.accessibilityLabel(speaker.party.fullName)
+					.accessibilityHidden(true)  // decorative; party info is in the parent label
 			}
 		}
 		.font(.system(.footnote, design: .default, weight: .regular))
 		.accessibilityElement(children: .combine)
-		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName), \(speaker.riding)")
+		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName), \(speaker.riding), \(speaker.province.rawValue)")
 		.task {
 			if speaker.imageData == nil {
 				do {
