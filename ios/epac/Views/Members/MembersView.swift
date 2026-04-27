@@ -13,6 +13,7 @@ struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
 	@State private var viewModel = MembersViewModel()
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@EnvironmentObject private var fetch: Fetch
 
 	private var filteredMembers: [ParliamentMember] {
 		viewModel.filteredMembers(from: members)
@@ -130,6 +131,9 @@ struct MembersView: View {
 			}
 		}
 		.listStyle(.plain)
+		.refreshable {
+			try? await fetch.downloadMembers()
+		}
 	}
 }
 

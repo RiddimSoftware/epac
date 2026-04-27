@@ -67,6 +67,9 @@ struct HomeFeedView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable {
+                await loadFeed()
+            }
             .navigationTitle(NSLocalizedString("Home", comment: ""))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

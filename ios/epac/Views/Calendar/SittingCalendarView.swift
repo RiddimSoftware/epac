@@ -19,6 +19,7 @@ struct SittingCalendarView: View {
 	@StateObject private var calendarViewProxy = CalendarViewProxy()
 
 	@State private var viewModel = SittingCalendarViewModel()
+	@State private var isRefreshing = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -200,6 +201,23 @@ struct SittingCalendarView: View {
 					.accessibilityHint("Shows \(viewModel.currentYear + 1)")
 				}
 				.accessibilityElement(children: .contain)
+			}
+			ToolbarItem(placement: .topBarTrailing) {
+				if isRefreshing {
+					ProgressView()
+						.accessibilityLabel("Refreshing sitting calendar")
+				} else {
+					Button {
+						Task {
+							isRefreshing = true
+							await viewModel.refresh(modelContext: modelContext, fetch: fetch)
+							isRefreshing = false
+						}
+					} label: {
+						Image(systemName: "arrow.clockwise")
+					}
+					.accessibilityLabel("Refresh sitting calendar")
+				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				NavigationLink(destination: OrderPaperView()) {
