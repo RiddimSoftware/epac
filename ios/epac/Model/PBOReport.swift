@@ -10,7 +10,7 @@
 
 import Foundation
 
-struct PBOReport: Identifiable, Codable {
+struct PBOReport: Identifiable {
     /// Unique PBO internal ID, e.g. "LEG-2526-009-S"
     let id: String
     let title: String
@@ -38,11 +38,17 @@ struct PBOReport: Identifiable, Codable {
             let lower = s.lowercased()
             for (word, mult) in multipliers {
                 if lower.contains(word) {
-                    // Extract the leading numeric portion
-                    let digits = lower
-                        .components(separatedBy: CharacterSet.decimalDigits.union(CharacterSet(charactersIn: ".")).inverted)
-                        .joined()
-                    if let num = Double(digits.prefix(15)) {
+                    // Extract the leading numeric portion before any word boundary.
+                    // Split on chars that are not digits, periods, or commas, then take the first
+                    // non-empty token and strip commas so "1,234.5" parses correctly as 1234.5.
+                    let separators = CharacterSet.decimalDigits
+                        .union(CharacterSet(charactersIn: ".,"))
+                        .inverted
+                    let token = lower
+                        .components(separatedBy: separators)
+                        .first(where: { !$0.isEmpty }) ?? ""
+                    let stripped = token.replacingOccurrences(of: ",", with: "")
+                    if let num = Double(stripped.prefix(20)) {
                         return num * mult
                     }
                 }

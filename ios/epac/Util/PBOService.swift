@@ -23,6 +23,10 @@ import Foundation
 
 struct PBOService {
 
+    // The PBO website is a Vue SPA; the REST base URL lives in the page's `data-apiroot` attribute.
+    // The subdomain hex "393962616e6b" decodes to "99bank" — a stable internal label, not a version
+    // number. If this URL ever returns 404, reload pbo-dpb.ca and grep the page source for
+    // `data-apiroot` to find the current base.
     private static let restBase = URL(string: "https://rest-393962616e6b.pbo-dpb.ca/")!
 
     /// Parse an ISO 8601 date string. Created fresh per call to avoid Sendable issues with
@@ -55,7 +59,7 @@ struct PBOService {
     // MARK: - Strategy 1: search endpoint
 
     private static func fetchViaSearch(billNumber: String) async -> [PBOReport]? {
-        var components = URLComponents(url: restBase.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: restBase.appendingPathComponent("search"), resolvingAgainstBaseURL: false) else { return nil }
         components.queryItems = [
             URLQueryItem(name: "query", value: billNumber),
             URLQueryItem(name: "types", value: "Publication")
@@ -89,7 +93,7 @@ struct PBOService {
 
         // Scan up to 5 pages of recent LEG notes (15 per page = 75 publications — sufficient for current session)
         for page in 1...5 {
-            var components = URLComponents(url: restBase.appendingPathComponent("publications"), resolvingAgainstBaseURL: false)!
+            guard var components = URLComponents(url: restBase.appendingPathComponent("publications"), resolvingAgainstBaseURL: false) else { break }
             components.queryItems = [
                 URLQueryItem(name: "types", value: "LEG"),
                 URLQueryItem(name: "sort", value: "latest"),
