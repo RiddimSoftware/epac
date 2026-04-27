@@ -161,6 +161,20 @@ We estimate in **hours of focused work** (not story points, not ideal days). Aft
 
 The Scrum Guide (Schwaber & Sutherland, 2020) is clear: **velocity is a planning tool, not a performance metric.** Do not use it to compare sprints or to pressure estimates.
 
+### Jira Ticket Lifecycle
+
+Every ticket must be kept current. Three moments require action:
+
+| Event | Jira action |
+|---|---|
+| Picking up a ticket | Transition → **In Progress**; comment with branch name |
+| PR opened | Comment with PR URL (`https://github.com/sunnypurewal/epac/pull/N`) |
+| PR merged | Transition → **Done** |
+
+Never open a PR without the ticket already In Progress. Never merge without transitioning to Done.
+
+Transition IDs (EPAC project): To Do = `11`, In Progress = `21`, Done = `31`.
+
 ### Backlog Artifacts
 
 Every ticket that ships produces at least one artifact visible in the GitHub monorepo:
@@ -168,7 +182,7 @@ Every ticket that ships produces at least one artifact visible in the GitHub mon
 - A test file or updated test (required for logic changes)
 - A screenshot in the PR description (required for UI changes)
 
-The PR number is linked in the Jira ticket (`gh pr view` URL in the ticket comment or description).
+The PR number is linked in the Jira ticket as a comment with the full GitHub URL.
 
 ---
 
