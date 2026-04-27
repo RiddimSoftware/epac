@@ -38,6 +38,7 @@ actor Fetch: ObservableObject {
 
         private var downloadsInProgress: Set<String> = []
         private var failedDownloads: Set<String> = []
+	private let openAPIURL = URL(string: "https://api.open.ourcommons.ca")!
 	func sittingCalendar(_ year: Int) async throws -> SittingCalendar {
 		Log.debug("Fetch.sittingCalendar(year: \(year))")
 		let calendar = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
@@ -578,5 +579,93 @@ actor Fetch: ObservableObject {
 		member.constituencyAddress = contact.constituencyAddress
 		member.contactFetched = true
 		try? modelContext.save()
+	}
+
+	func downloadVotingRecords(parliament: Int = 44) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<RecordedVote>())
+		guard existing.isEmpty else { return }
+
+		var page = 1
+		var hasMore = true
+		let isoFormatter = ISO8601DateFormatter()
+		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+		while hasMore {
+			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+			components.path = "/ocd/votes/"
+			components.queryItems = [
+				URLQueryItem(name: "parliament", value: String(parliament)),
+				URLQueryItem(name: "pageSize", value: "200"),
+				URLQueryItem(name: "page", value: String(page)),
+				URLQueryItem(name: "format", value: "json")
+			]
+			guard let url = components.url else { break }
+			let (data, response) = try await URLSession.shared.data(from: url)
+			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+				  let items = json["items"] as? [[String: Any]] else { break }
+			hasMore = !items.isEmpty && items.count == 200
+			page += 1
+			for item in items {
+				guard let id = item["id"] as? Int else { continue }
+				let dateStr = item["date"] as? String ?? ""
+				let date = isoFormatter.date(from: dateStr) ?? Date()
+				let descObj = item["description"] as? [String: String]
+				let desc = descObj?["en"] ?? item["description"] as? String ?? ""
+				let resultObj = item["result"] as? [String: String]
+				let result = resultObj?["en"] ?? item["result"] as? String ?? ""
+				let vote = RecordedVote(
+					voteID: id,
+					parliament: item["parliament"] as? Int ?? parliament,
+					session: item["session"] as? Int ?? 0,
+					number: item["number"] as? Int ?? 0,
+					date: date,
+					descriptionEn: desc,
+					billNumberCode: item["billNumberCode"] as? String ?? "",
+					yea: item["yea"] as? Int ?? 0,
+					nay: item["nay"] as? Int ?? 0,
+					paired: item["paired"] as? Int ?? 0,
+					resultEn: result
+				)
+				modelContext.insert(vote)
+			}
+			try modelContext.save()
+		}
+	}
+
+	func downloadMemberVotes(memberID: Int) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<MemberVote>(
+			predicate: #Predicate { $0.memberID == memberID }
+		))
+		guard existing.isEmpty else { return }
+
+		var page = 1
+		var hasMore = true
+		while hasMore {
+			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+			components.path = "/ocd/members/\(memberID)/votes/"
+			components.queryItems = [
+				URLQueryItem(name: "pageSize", value: "200"),
+				URLQueryItem(name: "page", value: String(page)),
+				URLQueryItem(name: "format", value: "json")
+			]
+			guard let url = components.url else { break }
+			let (data, response) = try await URLSession.shared.data(from: url)
+			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+				  let items = json["items"] as? [[String: Any]] else { break }
+			hasMore = !items.isEmpty && items.count == 200
+			page += 1
+			for item in items {
+				guard let voteID = item["voteId"] as? Int,
+					  let ballot = item["recordedVote"] as? String else { continue }
+				let mv = MemberVote(voteID: voteID, memberID: memberID, recordedVote: ballot)
+				// link to RecordedVote if already stored
+				mv.vote = try? modelContext.fetch(FetchDescriptor<RecordedVote>(
+					predicate: #Predicate { $0.voteID == voteID }
+				)).first
+				modelContext.insert(mv)
+			}
+			try modelContext.save()
+		}
 	}
 }
