@@ -1043,6 +1043,7 @@ enum SchemaV5: VersionedSchema {
 			self.voteID = voteID; self.memberID = memberID; self.recordedVote = recordedVote
 		}
 	}
+
 }
 
 	enum Province: String, Codable, CaseIterable, Identifiable {
