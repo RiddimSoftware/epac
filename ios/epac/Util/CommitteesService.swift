@@ -36,7 +36,7 @@ struct CommitteesService {
             URLQueryItem(name: "format", value: "json")
         ]
         guard let url = components.url,
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -75,7 +75,7 @@ struct CommitteesService {
             URLQueryItem(name: "format", value: "json")
         ]
         guard let url = components.url,
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -136,7 +136,7 @@ struct CommitteesService {
         ) else { return [] }
         components.queryItems = [URLQueryItem(name: "format", value: "json")]
         guard let url = components.url,
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

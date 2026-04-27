@@ -30,7 +30,7 @@ struct PetitionsService {
         let body = "parl=44&status=Open&pageIndex=1&pageSize=100&order=Recent"
         request.httpBody = body.data(using: .utf8)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkService.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             return []
         }

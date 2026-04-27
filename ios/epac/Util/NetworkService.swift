@@ -10,9 +10,13 @@ import Foundation
 struct NetworkService {
     static let shared = NetworkService()
 
-    private let session = URLSession.shared
+    private let session: URLSession
     // 1 initial attempt + 3 retries = 4 total attempts.
     private let maxAttempts = 4
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         var lastError: Error?

@@ -13,6 +13,7 @@ struct FederalFinancesView: View {
 	@Query(sort: \FiscalMonitorEntry.periodDate) private var entries: [FiscalMonitorEntry]
 	@State private var isLoading = false
 	@State private var loadFailed = false
+	@State private var isRetryDisabled = false
 
 	private var currentFiscalYearEntries: [FiscalMonitorEntry] {
 		guard let latestFiscalYear = entries.map(\.fiscalYearStart).max() else { return [] }
@@ -53,9 +54,13 @@ struct FederalFinancesView: View {
 				Text("Check your connection and try again.")
 			} actions: {
 				Button("Retry") {
+					guard !isRetryDisabled else { return }
+					isRetryDisabled = true
+					Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
 					Task { await refreshFiscalMonitor() }
 				}
 				.buttonStyle(.borderedProminent)
+				.disabled(isRetryDisabled)
 			}
 		} else {
 			List {

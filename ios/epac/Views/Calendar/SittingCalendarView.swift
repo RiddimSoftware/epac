@@ -20,6 +20,7 @@ struct SittingCalendarView: View {
 
 	@State private var viewModel = SittingCalendarViewModel()
 	@State private var isRefreshing = false
+	@State private var isRetryDisabled = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -149,11 +150,13 @@ struct SittingCalendarView: View {
 						.font(.footnote)
 					Spacer()
 					Button("Retry") {
-						Task {
-							await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
-						}
+						guard !isRetryDisabled else { return }
+						isRetryDisabled = true
+						Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+						Task { await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch) }
 					}
 					.font(.footnote.bold())
+					.disabled(isRetryDisabled)
 				}
 				.padding(.horizontal)
 				.padding(.vertical, 10)

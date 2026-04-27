@@ -94,7 +94,7 @@ struct MemberSpeechService {
 
         let (data, _): (Data, URLResponse)
         do {
-            (data, _) = try await URLSession.shared.data(from: url)
+            (data, _) = try await NetworkService.shared.data(from: url)
         } catch {
             throw MemberSpeechServiceError.networkError(error)
         }

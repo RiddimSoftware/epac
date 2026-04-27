@@ -18,6 +18,7 @@ struct BillsView: View {
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
     @State private var newSince: Date? = UserDefaults.standard.object(forKey: "epac.bills.newSince") as? Date
+    @State private var isRetryDisabled = false
     @Environment(NavigationRouter.self) private var router
 
     private var filtered: [Bill] {
@@ -45,7 +46,11 @@ struct BillsView: View {
                     icon: "exclamationmark.triangle",
                     title: NSLocalizedString("bills.error.title", comment: ""),
                     message: NSLocalizedString("bills.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { await load() }
+                    })
                 )
             } else if filtered.isEmpty && filterIsActive {
                 EmptyStateView(

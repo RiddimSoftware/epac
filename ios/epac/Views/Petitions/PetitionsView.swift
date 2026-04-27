@@ -14,6 +14,7 @@ struct PetitionsView: View {
     @State private var loadFailed = false
     @State private var showOpenOnly = true
     @State private var searchText = ""
+    @State private var isRetryDisabled = false
 
     private var filtered: [EPetition] {
         let statusFiltered = showOpenOnly ? petitions.filter { $0.status == .open } : petitions
@@ -36,7 +37,11 @@ struct PetitionsView: View {
                     icon: "exclamationmark.triangle",
                     title: NSLocalizedString("petitions.error.title", comment: ""),
                     message: NSLocalizedString("petitions.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { await load() }
+                    })
                 )
             } else if filtered.isEmpty && showOpenOnly {
                 EmptyStateView(
