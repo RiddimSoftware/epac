@@ -61,6 +61,7 @@ We follow the spirit of continuous integration: keep branches short-lived (aim f
 
 Before requesting review, the author must:
 
+- [ ] **TestFlight build uploaded.** Before merging to `main`, run `cd ios && bundle exec fastlane deploy` to upload a TestFlight build. See `docs/development/local-build.md` for one-time setup. (GitHub Actions no longer builds automatically — EPAC-370.)
 - [ ] **Build passes.** Run `xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
 - [ ] **App runs.** Install and launch on the simulator: `xcrun simctl install FCFAF817-6694-402D-B116-A86EDAF34237 <DerivedData>/epac.app && xcrun simctl launch FCFAF817-6694-402D-B116-A86EDAF34237 net.dinglebox.cabinetdoor`
 - [ ] **Screenshot taken and committed.** `xcrun simctl io FCFAF817-6694-402D-B116-A86EDAF34237 screenshot /tmp/epac-screenshot.png`, then copy to `docs/build-evidence/<ticket>-running.png` and commit to the branch. Reference via raw GitHub URL — never use placeholder asset URLs (they render as broken images).
