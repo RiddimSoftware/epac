@@ -11,11 +11,12 @@ struct NetworkService {
     static let shared = NetworkService()
 
     private let session = URLSession.shared
-    private let maxRetries = 3
+    // 1 initial attempt + 3 retries = 4 total attempts.
+    private let maxAttempts = 4
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         var lastError: Error?
-        for attempt in 0...maxRetries {
+        for attempt in 0..<maxAttempts {
             if attempt > 0 {
                 let delay = pow(2.0, Double(attempt - 1)) // 1s, 2s, 4s
                 try await Task.sleep(for: .seconds(delay))

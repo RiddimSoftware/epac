@@ -3,7 +3,7 @@
 //
 // Modal sheet shown exactly once after each app update (never on first install).
 // Content is driven by whats-new.json in the app bundle.
-// Dismisses on tap or automatically after 5 seconds.
+// Dismisses via the Continue button or automatically after 5 seconds.
 
 import SwiftUI
 
@@ -62,8 +62,10 @@ struct WhatsNewView: View {
     var onDismiss: () -> Void
 
     @State private var dismissTask: Task<Void, Never>?
-
-    var entry: WhatsNewEntry? { WhatsNewManager.shared.entry() }
+    // Guard against dismiss() being called more than once (button + auto-timer race).
+    @State private var hasDismissed = false
+    // Loaded once on appear; avoids re-reading the bundle JSON on every render.
+    @State private var entry: WhatsNewEntry? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -113,8 +115,8 @@ struct WhatsNewView: View {
             }
             .padding(.horizontal, 28)
         }
-        .onTapGesture { dismiss() }
         .onAppear {
+            entry = WhatsNewManager.shared.entry()
             dismissTask = Task {
                 try? await Task.sleep(for: .seconds(5))
                 dismiss()
@@ -126,6 +128,9 @@ struct WhatsNewView: View {
     }
 
     private func dismiss() {
+        guard !hasDismissed else { return }
+        hasDismissed = true
+        dismissTask?.cancel()
         WhatsNewManager.shared.markSeen()
         onDismiss()
     }

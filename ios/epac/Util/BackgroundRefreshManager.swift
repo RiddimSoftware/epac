@@ -1,9 +1,9 @@
 // BackgroundRefreshManager.swift
 // epac
 //
-// Manages BGAppRefreshTask lifecycle: scheduling, handling, and calendar-aware
-// throttling. Only schedules wakes on weekdays within the parliamentary sitting
-// window (September–June) to avoid unnecessary battery drain during recess.
+// Manages BGAppRefreshTask lifecycle: scheduling and handling.
+// Schedules a wake at least 1 hour from now; iOS throttles actual execution
+// based on device usage patterns.
 
 import BackgroundTasks
 import SwiftData
