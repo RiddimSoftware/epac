@@ -100,6 +100,12 @@
 "Province" = "Province";
 "Status" = "Statut";
 
+/* Voting history */
+"votes.navTitle" = "Votes";
+"votes.toolbarLabel" = "Dossier de vote";
+"votes.empty.title" = "Aucun vote chargé";
+"votes.empty.description" = "L'historique des votes apparaîtra après la synchronisation.";
+
 /* MP Contact */
 "contact.email" = "Courriel";
 "contact.hillOffice" = "Bureau sur la Colline";
