@@ -73,7 +73,7 @@ jobs:
           python3 scripts/release/find_qualifying_build.py \
             --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
             --issuer-id "${{ steps.fetch-creds.outputs.issuer_id }}" \
-            --private-key-path ~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8 \
+            --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
             --app-id "${{ env.APPLE_APP_ID }}" \
             --cutoff-hour 14 \
             --override "$OVERRIDE_BUILD" \

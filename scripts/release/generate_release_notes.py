@@ -93,7 +93,9 @@ def main() -> None:
         print(content)
         return
 
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    parent = os.path.dirname(args.output)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(args.output, "w") as f:
         f.write(content)
 
