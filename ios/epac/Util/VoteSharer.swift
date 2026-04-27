@@ -21,8 +21,9 @@ enum VoteSharer {
 
 	private static func url(for vote: RecordedVote) -> URL {
 		// openparliament.ca provides clean, human-readable vote pages.
-		// Format: /votes/[parliament]/[voteNumber]/
-		let urlString = "https://openparliament.ca/votes/\(vote.parliament)/\(vote.number)/"
+		// Format: /votes/[parliament]-[session]/[voteNumber]/
+		// e.g. /votes/44-1/300/ — both parliament and session are required.
+		let urlString = "https://openparliament.ca/votes/\(vote.parliament)-\(vote.session)/\(vote.number)/"
 		return URL(string: urlString) ?? URL(string: "https://openparliament.ca")!
 	}
 
