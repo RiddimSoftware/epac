@@ -22,52 +22,58 @@ platform :ios do
     )
 
     # ------------------------------------------------------------------
-    # Provisioning profiles via sigh.
+    # 1. Download / create provisioning profiles via sigh.
     #
-    # The distribution certificate was pre-installed into the ephemeral
-    # keychain by the workflow's "Import distribution certificate" step.
-    # sigh uses that certificate to create or download profiles from ASC,
-    # installing them into ~/Library/MobileDevice/Provisioning Profiles/.
+    # sigh uses the cert already in the keychain (imported from the
+    # DISTRIBUTION_CERT_P12 secret) to find or create App Store profiles.
+    # It returns the profile UUID, which we pass to xcodebuild explicitly.
     # ------------------------------------------------------------------
-    sigh(
+    main_uuid = sigh(
       api_key:        api_key,
       app_identifier: "net.dinglebox.cabinetdoor",
       force:          false
     )
 
-    sigh(
+    clip_uuid = sigh(
       api_key:        api_key,
       app_identifier: "net.dinglebox.cabinetdoor.Clip",
       force:          false
     )
 
     # ------------------------------------------------------------------
-    # Archive and export.
+    # 2. Bake the profile UUIDs into the Xcode project.
     #
-    # The Xcode project uses CODE_SIGN_STYLE=Manual in the pbxproj, so
-    # xcodebuild requires -allowProvisioningUpdates to switch signing to
-    # Automatic mode and pick up the profiles sigh just downloaded.
-    #
-    # Previously -allowProvisioningUpdates caused xcodebuild to CREATE a
-    # new distribution certificate (hitting Apple's 2-cert limit). That
-    # is now safe because the workflow pre-imports the cert from the
-    # DISTRIBUTION_CERT_P12 secret — xcodebuild finds it in the keychain
-    # and reuses it instead of creating a new one.
+    # This lets xcodebuild use Manual signing with the exact profiles
+    # sigh just installed. xcodebuild never calls the ASC API during the
+    # build, so it never tries to create a new certificate — eliminating
+    # the 2-cert account limit problem entirely.
     # ------------------------------------------------------------------
-    key_path = File.expand_path(
-      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path:                  "epac.xcodeproj",
+      team_id:               "ZG82TFXU3C",
+      targets:               ["epac"],
+      code_sign_identity:    "Apple Distribution",
+      profile_uuid:          main_uuid
     )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path:                  "epac.xcodeproj",
+      team_id:               "ZG82TFXU3C",
+      targets:               ["epac-clip"],
+      code_sign_identity:    "Apple Distribution",
+      profile_uuid:          clip_uuid
+    )
+
+    # ------------------------------------------------------------------
+    # 3. Archive and export — no ASC API calls during the build.
+    # ------------------------------------------------------------------
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           [
-        "-allowProvisioningUpdates",
-        "-authenticationKeyPath #{key_path}",
-        "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
-        "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}",
-        "DEVELOPMENT_TEAM=ZG82TFXU3C"
-      ].join(" "),
+      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C",
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true
