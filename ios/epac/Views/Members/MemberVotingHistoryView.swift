@@ -40,6 +40,7 @@ struct MemberVotingHistoryView: View {
                     Text(NSLocalizedString("votes.error.description", comment: ""))
                 } actions: {
                     Button(NSLocalizedString("votes.error.retry", comment: "")) {
+                        guard !isRetryDisabled else { return }
                         isRetryDisabled = true
                         Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
                         Task { await loadVotes() }
