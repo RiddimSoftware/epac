@@ -2,7 +2,7 @@
 .DS_Store
 .codex/
 gpt2_*/
-model*/
+/model*/
 .env/
 function.zip
 bootstrap
