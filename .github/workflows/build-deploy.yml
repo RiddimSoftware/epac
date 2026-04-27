@@ -1,12 +1,12 @@
 name: Build and Deploy to App Store Connect
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'ios/**'
-      - '.github/workflows/build-deploy.yml'
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for this build (optional)'
+        required: false
+        type: string
 
 concurrency:
   group: app-store-deploy
