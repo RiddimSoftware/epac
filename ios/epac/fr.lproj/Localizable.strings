@@ -1,0 +1,64 @@
+/* Tab bar */
+"Sitting Calendar" = "Calendrier des séances";
+"Members" = "Membres";
+"Expenditures" = "Dépenses";
+
+/* Sitting calendar view */
+"House of Commons Sitting Calendar" = "Calendrier des séances de la Chambre des communes";
+"Sitting days" = "Jours de séance";
+"Today" = "Aujourd'hui";
+"Upcoming" = "À venir";
+"epac" = "epac";
+
+/* Non-sitting day view */
+"Recess" = "Ajournement";
+"The House is not sitting today." = "La Chambre ne siège pas aujourd'hui.";
+"Committee Meetings" = "Réunions de comités";
+"Committees often meet even when the House is not in session to study legislation and specific issues in depth." = "Les comités se réunissent souvent même lorsque la Chambre ne siège pas pour étudier les projets de loi et des questions spécifiques en profondeur.";
+"Historical Throwback" = "Retour historique";
+"Did you know? The first session of Canada's 1st Parliament opened on November 6, 1867." = "Le saviez-vous? La première session du 1er Parlement du Canada a ouvert le 6 novembre 1867.";
+
+/* Calendar error banner */
+"Couldn't load sitting dates." = "Impossible de charger les dates de séance.";
+"Retry" = "Réessayer";
+"Check your connection and try again." = "Vérifiez votre connexion et réessayez.";
+
+/* Sitting view */
+"Search debates" = "Rechercher des débats";
+"Open debate" = "Ouvrir le débat";
+
+/* Speech view */
+"Tap anywhere to continue" = "Touchez n'importe où pour continuer";
+"End" = "Fin";
+"Restart debate" = "Recommencer le débat";
+"Share recent messages" = "Partager les messages récents";
+"View member profile" = "Voir le profil du membre";
+
+/* Expenditures view */
+"Sort" = "Trier";
+"Sort By" = "Trier par";
+"Period" = "Période";
+"Name" = "Nom";
+"Total" = "Total";
+"Travel" = "Voyage";
+"Hospitality" = "Hospitalité";
+"Contracts" = "Contrats";
+"Search for a member" = "Rechercher un membre";
+"Fetching expenditure data..." = "Récupération des données de dépenses...";
+"This may take a moment." = "Cela peut prendre un moment.";
+"Couldn't Load Expenditures" = "Impossible de charger les dépenses";
+
+/* Members view */
+"Search by name or riding" = "Rechercher par nom ou circonscription";
+"Loading members..." = "Chargement des membres...";
+"Parliamentary portraits are being synced." = "Les portraits parlementaires sont synchronisés.";
+"No Members Found" = "Aucun membre trouvé";
+"No members match your current filter criteria." = "Aucun membre ne correspond aux critères de filtre actuels.";
+"Clear Filters" = "Effacer les filtres";
+"All Parties" = "Tous les partis";
+"All Provinces" = "Toutes les provinces";
+"Current" = "Actuel";
+"All" = "Tous";
+"Party" = "Parti";
+"Province" = "Province";
+"Status" = "Statut";

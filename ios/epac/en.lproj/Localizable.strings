@@ -1,0 +1,64 @@
+/* Tab bar */
+"Sitting Calendar" = "Sitting Calendar";
+"Members" = "Members";
+"Expenditures" = "Expenditures";
+
+/* Sitting calendar view */
+"House of Commons Sitting Calendar" = "House of Commons Sitting Calendar";
+"Sitting days" = "Sitting days";
+"Today" = "Today";
+"Upcoming" = "Upcoming";
+"epac" = "epac";
+
+/* Non-sitting day view */
+"Recess" = "Recess";
+"The House is not sitting today." = "The House is not sitting today.";
+"Committee Meetings" = "Committee Meetings";
+"Committees often meet even when the House is not in session to study legislation and specific issues in depth." = "Committees often meet even when the House is not in session to study legislation and specific issues in depth.";
+"Historical Throwback" = "Historical Throwback";
+"Did you know? The first session of Canada's 1st Parliament opened on November 6, 1867." = "Did you know? The first session of Canada's 1st Parliament opened on November 6, 1867.";
+
+/* Calendar error banner */
+"Couldn't load sitting dates." = "Couldn't load sitting dates.";
+"Retry" = "Retry";
+"Check your connection and try again." = "Check your connection and try again.";
+
+/* Sitting view */
+"Search debates" = "Search debates";
+"Open debate" = "Open debate";
+
+/* Speech view */
+"Tap anywhere to continue" = "Tap anywhere to continue";
+"End" = "End";
+"Restart debate" = "Restart debate";
+"Share recent messages" = "Share recent messages";
+"View member profile" = "View member profile";
+
+/* Expenditures view */
+"Sort" = "Sort";
+"Sort By" = "Sort By";
+"Period" = "Period";
+"Name" = "Name";
+"Total" = "Total";
+"Travel" = "Travel";
+"Hospitality" = "Hospitality";
+"Contracts" = "Contracts";
+"Search for a member" = "Search for a member";
+"Fetching expenditure data..." = "Fetching expenditure data...";
+"This may take a moment." = "This may take a moment.";
+"Couldn't Load Expenditures" = "Couldn't Load Expenditures";
+
+/* Members view */
+"Search by name or riding" = "Search by name or riding";
+"Loading members..." = "Loading members...";
+"Parliamentary portraits are being synced." = "Parliamentary portraits are being synced.";
+"No Members Found" = "No Members Found";
+"No members match your current filter criteria." = "No members match your current filter criteria.";
+"Clear Filters" = "Clear Filters";
+"All Parties" = "All Parties";
+"All Provinces" = "All Provinces";
+"Current" = "Current";
+"All" = "All";
+"Party" = "Party";
+"Province" = "Province";
+"Status" = "Status";
