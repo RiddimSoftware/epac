@@ -10,7 +10,10 @@ import json, os, re, urllib.request
 
 MEMBERS_URL = "https://www.ourcommons.ca/Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all"
 RIDINGS_DIR = os.path.join(os.path.dirname(__file__), "ridings")
-APPSTORE_URL = "https://apps.apple.com/ca/app/epac/id6739397803"
+APPSTORE_URL_BASE = "https://apps.apple.com/ca/app/epac/id6739397803"
+
+def appstore_url(slug: str) -> str:
+    return f"{APPSTORE_URL_BASE}?utm_source=epac-web&utm_medium=riding-page&utm_content={slug}&utm_campaign=organic"
 
 def slugify(s):
     s = s.lower().strip()
@@ -87,11 +90,11 @@ def html_for_riding(member):
     <h1 style="margin:0 0 .25rem">{riding}</h1>
     <h2 style="font-weight:400;font-size:1.5rem;margin:0 0 2rem">{mp_name}</h2>
     <p>Track {mp_name}'s votes, speeches, expenses, and lobbyist connections in the epac app — using only data published by the Government of Canada.</p>
-    <a href="{APPSTORE_URL}" style="display:inline-block;margin:1.5rem 0;padding:.875rem 2rem;background:#0071e3;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">Download epac — free</a>
+    <a href="{appstore_url(slug)}" style="display:inline-block;margin:1.5rem 0;padding:.875rem 2rem;background:#0071e3;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">Download epac — free</a>
     <p style="font-size:.8rem;color:#888;margin-top:3rem">Data source: Parliament of Canada. epac is not affiliated with or endorsed by any government body.</p>
   </main>
   <footer style="text-align:center;padding:2rem;color:#888;font-size:.8rem;opacity:.6">
-    <p><a href="/">epac</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/press.html">Press</a> &middot; <a href="{APPSTORE_URL}">App Store</a></p>
+    <p><a href="/">epac</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/press.html">Press</a> &middot; <a href="{appstore_url(slug)}">App Store</a></p>
   </footer>
 </body>
 </html>"""
