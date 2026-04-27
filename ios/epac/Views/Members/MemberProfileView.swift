@@ -208,8 +208,15 @@ struct MemberProfileView: View {
 					}
 				}
 			}
-			.padding()
+			#if DEBUG
+			Text("Member ID: \(member.memberID)")
+				.font(.caption2)
+				.foregroundStyle(.tertiary)
+				.padding(.top, 4)
+				.frame(maxWidth: .infinity)
+			#endif
 		}
+		.padding()
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
 		}
@@ -231,6 +238,7 @@ struct MemberProfileView: View {
 					Label(NSLocalizedString("member.share", comment: ""), systemImage: "square.and.arrow.up")
 				}
 				.accessibilityLabel(NSLocalizedString("member.share", comment: ""))
+				.accessibilityHint("Opens the share sheet")
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
@@ -240,6 +248,7 @@ struct MemberProfileView: View {
 					Label("Compare", systemImage: "person.2.badge.gearshape")
 				}
 				.accessibilityLabel("Compare with another member")
+				.accessibilityHint("Opens a picker to select another member for comparison")
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
@@ -257,6 +266,11 @@ struct MemberProfileView: View {
 					followStore.isFollowing(member.memberID)
 						? NSLocalizedString("follow.unfollow", comment: "")
 						: NSLocalizedString("follow.follow", comment: "")
+				)
+				.accessibilityHint(
+					followStore.isFollowing(member.memberID)
+						? "Stops sending notifications for this member"
+						: "Sends a notification when this member votes or speaks"
 				)
 			}
 		}

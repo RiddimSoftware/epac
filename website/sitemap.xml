@@ -40,6 +40,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-non-confidence-vote.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-federal-by-election.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://epac.riddimsoftware.com/blog/what-is-royal-assent.html</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>yearly</changefreq>
@@ -86,6 +98,12 @@
     <lastmod>2026-04-27</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/privacy.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://epac.riddimsoftware.com/features.html</loc>
