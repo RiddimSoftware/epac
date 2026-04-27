@@ -121,7 +121,7 @@ struct BillsService {
         // Build stage timeline
         // For House-originating bills: House 1st → House 2nd → House 3rd → Senate 1st → Senate 3rd → Royal Assent
         // For Senate-originating bills: Senate 1st → Senate 3rd → House 1st → House 3rd → Royal Assent
-        let isHouseOriginating = raw.OriginatingChamberId == 1
+        let isHouseOriginating = (raw.OriginatingChamberId ?? 1) == 1
         var stages: [BillStage]
         if isHouseOriginating {
             stages = [
@@ -153,8 +153,11 @@ struct BillsService {
         let currentStage = raw.LatestCompletedMajorStageEn ?? raw.CurrentStatusEn ?? ""
 
         // LEGISinfo detail URL  e.g. https://www.parl.ca/legisinfo/en/bill/45-1/c-5
+        // Both components are hardcoded strings that always produce valid URLs,
+        // but we guard instead of force-unwrapping so a future refactor can't crash.
         let billSlug = "\(parliament)-\(session)/\(number.lowercased())"
-        let legisURL = URL(string: "\(legisInfoBase)/\(billSlug)") ?? URL(string: legisInfoBase)!
+        guard let legisURL = URL(string: "\(legisInfoBase)/\(billSlug)")
+                          ?? URL(string: legisInfoBase) else { return nil }
 
         return Bill(
             id: number,
@@ -194,7 +197,7 @@ private struct LEGISinfoBill: Decodable {
     let CurrentStatusEn: String?
     let BillTypeEn: String?
     let SponsorEn: String?
-    let OriginatingChamberId: Int       // 1 = House, 2 = Senate
+    let OriginatingChamberId: Int?      // 1 = House, 2 = Senate; nil-safe for future API changes
     let ParliamentNumber: Int
     let SessionNumber: Int
 
