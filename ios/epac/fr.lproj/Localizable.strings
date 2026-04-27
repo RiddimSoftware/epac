@@ -244,7 +244,9 @@
 "bills.error.title" = "Impossible de charger les projets de loi";
 "bills.error.description" = "Vérifiez votre connexion et réessayez.";
 "bills.empty.title" = "Aucun projet de loi";
-"bills.empty.description" = "Aucun projet de loi ne correspond à votre filtre.";
+"bills.empty.description" = "Aucun projet de loi n'est disponible.";
+"bills.noMatch.title" = "Aucun résultat";
+"bills.noMatch.description" = "Aucun projet de loi ne correspond aux filtres actuels. Effacez les filtres pour tout afficher.";
 "bills.detail.number" = "Numéro";
 "bills.detail.status" = "Statut";
 "bills.detail.sponsor" = "Parrain";

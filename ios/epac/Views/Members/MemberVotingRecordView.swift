@@ -10,6 +10,7 @@ import ActivityView
 struct MemberVotingRecordView: View {
 	let member: ParliamentMember
 
+	@Environment(NavigationRouter.self) private var router
 	@Query private var memberVotes: [MemberVote]
 	@State private var shareItem: ActivityItem?
 
@@ -93,6 +94,15 @@ struct MemberVotingRecordView: View {
 									}
 								}
 								.swipeActions(edge: .trailing, allowsFullSwipe: false) {
+									if let vote = rv, !vote.billNumberCode.isEmpty {
+										Button {
+											router.pendingSearchQuery = vote.billNumberCode
+											router.selectedTab = .search
+										} label: {
+											Label("Search Debates", systemImage: "magnifyingglass")
+										}
+										.tint(.teal)
+									}
 									if let vote = rv {
 										Button {
 											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)

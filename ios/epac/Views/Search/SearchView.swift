@@ -66,6 +66,13 @@ struct SearchView: View {
                 bills = (try? await BillsService.fetchBills()) ?? []
             }
         }
+        .onAppear {
+            if let query = router.pendingSearchQuery {
+                viewModel.searchText = query
+                debouncedQuery = query
+                router.pendingSearchQuery = nil
+            }
+        }
         .task(id: viewModel.searchText) {
             // 300ms debounce: cancel the task if the user types again before it fires.
             do {
