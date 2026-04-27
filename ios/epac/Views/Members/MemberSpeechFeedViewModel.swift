@@ -75,13 +75,13 @@ final class MemberSpeechFeedViewModel {
             if stats == nil {
                 stats = page.stats
             }
-            updateTopicChips(from: page.speeches)
+            updateTopicChips()
         } catch {
             self.error = "Could not load speeches. Please try again."
         }
     }
 
-    private func updateTopicChips(from entries: [MemberSpeechEntry]) {
+    private func updateTopicChips() {
         var counts: [String: Int] = [:]
         for entry in speeches {
             if let title = entry.subjectTitle, !title.isEmpty {

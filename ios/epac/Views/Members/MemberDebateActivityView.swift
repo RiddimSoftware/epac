@@ -342,22 +342,3 @@ struct SpeechEntryRow: View {
     }
 }
 
-// MARK: - Legacy fallback
-
-private struct StatPill: View {
-    let value: Int
-    let label: String
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Text("\(value)")
-                .font(.title3.bold().monospacedDigit())
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(value > 0 ? Color.accentColor.opacity(0.07) : Color.clear)
-    }
-}
