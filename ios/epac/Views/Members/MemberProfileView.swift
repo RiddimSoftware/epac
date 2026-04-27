@@ -310,25 +310,33 @@ struct MemberAvatar: View {
 
 	var body: some View {
 		Group {
-			if let data = member.imageData, let image = UIImage(data: data) {
-				// L2: SwiftData persistent cache — fastest path after cold launch
-				Image(uiImage: image).resizable().scaledToFill()
-			} else if let image = cachedImage {
-				// L1: NSCache in-memory hit
+			if let image = cachedImage {
 				Image(uiImage: image).resizable().scaledToFill()
 			} else {
-				// L3: single URLSession download; AsyncImage removed to avoid a
-				// concurrent duplicate request racing the .task fetch below.
+				// Placeholder shown while any async path is in progress.
+				// Decoding is intentionally NOT done synchronously in body to keep the
+				// main thread free during list scroll (EPAC-87).
 				placeholder
 					.task(id: member.photoURL) {
-						// Fast path: already in NSCache (e.g. populated by SpeakerImageViewModel)
+						// L1: NSCache in-memory hit (e.g. populated by SpeakerImageViewModel)
 						if let cached = MemberImageCache.shared.image(for: member.photoURL) {
 							cachedImage = cached
 							return
 						}
-						// Slow path: network fetch — single owner of the download
-						guard let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
-						      let img = UIImage(data: data) else { return }
+						// L2: SwiftData imageData — decode JPEG off the main thread.
+						// Data is Sendable (value type); snapshot before crossing the actor boundary.
+						if let data = member.imageData {
+							let snapshot = data
+							let img = await Task.detached(priority: .utility) { UIImage(data: snapshot) }.value
+							if let img {
+								MemberImageCache.shared.store(img, for: member.photoURL)
+								cachedImage = img
+								return
+							}
+						}
+						// L3: Network fetch — single owner; avoids duplicate concurrent requests.
+						guard let (netData, _) = try? await URLSession.shared.data(from: member.photoURL),
+						      let img = UIImage(data: netData) else { return }
 						MemberImageCache.shared.store(img, for: member.photoURL)
 						cachedImage = img
 					}
