@@ -23,8 +23,6 @@ struct ContentView: View {
 	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
 	@State private var showOnboarding = !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
-	@Query private var members: [ParliamentMember]
-	@Query private var constituencies: [Constituency]
 
 	init(modelContainer: ModelContainer) {
 		self.fetch = Fetch(modelContainer: modelContainer)
@@ -65,6 +63,10 @@ struct ContentView: View {
 		.task {
 			networkMonitor.start()
 			showWhatsNew = WhatsNewManager.shared.shouldShow()
+			// Fetch members and constituencies inside the task so the @Query
+			// table scans don't block the main thread before first frame.
+			let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+			let constituencies = (try? modelContext.fetch(FetchDescriptor<Constituency>())) ?? []
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
 			// Skip the permission request when onboarding is showing — the
 			// onboarding flow presents a contextual prompt on screen 4. For
@@ -298,7 +300,9 @@ struct ContentView: View {
 	}
 
 	private func navigateToMember(memberID: Int) {
-		if let match = members.first(where: { $0.memberID == memberID }) {
+		if let match = try? modelContext.fetch(
+			FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.memberID == memberID })
+		).first {
 			router.selectedMember = match
 			router.selectedTab = .members
 		}

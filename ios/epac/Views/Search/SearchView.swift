@@ -11,14 +11,9 @@ struct SearchView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(NavigationRouter.self) var router
 
-    @Query(sort: [SortDescriptor(\Hansard.date, order: .reverse)])
-    private var hansards: [Hansard]
-
-    @Query(sort: \ParliamentMember.lastName)
-    private var members: [ParliamentMember]
-
-    @Query(sort: \RecordedVote.date, order: .reverse)
-    private var votes: [RecordedVote]
+    @State private var hansards: [Hansard] = []
+    @State private var members: [ParliamentMember] = []
+    @State private var votes: [RecordedVote] = []
 
     @State private var viewModel = SearchViewModel()
     @State private var bills: [Bill] = []
@@ -62,6 +57,24 @@ struct SearchView: View {
             }
         }
         .task {
+            // Defer all three table scans until the view appears (on phone: first
+            // tap of Search tab; on iPad: after first frame) so they don't block
+            // cold launch.
+            if members.isEmpty {
+                members = (try? modelContext.fetch(
+                    FetchDescriptor<ParliamentMember>(sortBy: [SortDescriptor(\ParliamentMember.lastName)])
+                )) ?? []
+            }
+            if votes.isEmpty {
+                votes = (try? modelContext.fetch(
+                    FetchDescriptor<RecordedVote>(sortBy: [SortDescriptor(\RecordedVote.date, order: .reverse)])
+                )) ?? []
+            }
+            if hansards.isEmpty {
+                hansards = (try? modelContext.fetch(
+                    FetchDescriptor<Hansard>(sortBy: [SortDescriptor(\Hansard.date, order: .reverse)])
+                )) ?? []
+            }
             if bills.isEmpty {
                 bills = (try? await BillsService.fetchBills()) ?? []
             }
