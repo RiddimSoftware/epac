@@ -3,6 +3,7 @@ import SwiftData
 import Foundation
 @testable import epac
 
+@MainActor
 struct SittingViewModelTests {
 
 	private func makeContainer() throws -> ModelContainer {
@@ -131,5 +132,56 @@ struct SittingViewModelTests {
 		#expect(vm.filteredSubjects(for: o).count == 1)
 		vm.searchText = ""
 		#expect(vm.filteredSubjects(for: o).count == 2)
+	}
+
+	@Test func whitespaceOnlySearchBehavesAsEmpty() throws {
+		let ctx = ModelContext(try makeContainer())
+		let subjects = [
+			subject(title: "Carbon Tax", hansardID: "s1", context: ctx),
+			subject(title: "Housing", hansardID: "s2", context: ctx)
+		]
+		let o = order(catchline: "Routine", subjects: subjects, context: ctx)
+		let vm = SittingViewModel()
+		vm.searchText = "   "
+
+		// Whitespace-only is trimmed to empty, so all subjects with speeches are returned.
+		#expect(vm.filteredSubjects(for: o).count == 2)
+	}
+
+	// MARK: - visibleOrderSubjects
+
+	@Test func visibleOrderSubjectsExcludesOrdersWithNoMatchingSubjects() throws {
+		let ctx = ModelContext(try makeContainer())
+		let carbonSubject = subject(title: "Carbon Tax", hansardID: "s1", context: ctx)
+		let housingSubject = subject(title: "Housing Affordability", hansardID: "s2", context: ctx)
+		let orderA = order(catchline: "Oral Questions", subjects: [carbonSubject], context: ctx)
+		let orderB = order(catchline: "Routine Proceedings", subjects: [housingSubject], context: ctx)
+
+		let hansard = Hansard(date: Date(), hansardID: "h1", parliamentNumber: 45, sessionNumber: 1, orders: [orderA, orderB])
+		ctx.insert(hansard)
+
+		let vm = SittingViewModel()
+		vm.searchText = "carbon"
+
+		let pairs = vm.visibleOrderSubjects(from: hansard)
+		#expect(pairs.count == 1)
+		#expect(pairs[0].order.catchline == "Oral Questions")
+		#expect(pairs[0].subjects.count == 1)
+		#expect(pairs[0].subjects[0].title == "Carbon Tax")
+	}
+
+	@Test func visibleOrderSubjectsReturnsAllWhenSearchEmpty() throws {
+		let ctx = ModelContext(try makeContainer())
+		let s1 = subject(title: "Carbon Tax", hansardID: "s1", context: ctx)
+		let s2 = subject(title: "Housing", hansardID: "s2", context: ctx)
+		let o = order(catchline: "Oral Questions", subjects: [s1, s2], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h2", parliamentNumber: 45, sessionNumber: 1, orders: [o])
+		ctx.insert(hansard)
+
+		let vm = SittingViewModel()
+
+		let pairs = vm.visibleOrderSubjects(from: hansard)
+		#expect(pairs.count == 1)
+		#expect(pairs[0].subjects.count == 2)
 	}
 }

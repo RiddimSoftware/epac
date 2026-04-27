@@ -23,22 +23,16 @@ struct SittingView: View {
 	@State private var coordinator = MemberDownloadCoordinator()
 	@State private var viewModel = SittingViewModel()
 
-	private var visibleOrders: [OrderOfBusiness] {
-		hansard.orders
-			.filter { !$0.subjects.isEmpty }
-			.sorted(by: { $0.hansardID < $1.hansardID })
-			.filter { !viewModel.filteredSubjects(for: $0).isEmpty }
-	}
-
 	var body: some View {
+		let pairs = viewModel.visibleOrderSubjects(from: hansard)
 		Group {
-			if visibleOrders.isEmpty && !viewModel.searchText.isEmpty {
+			if pairs.isEmpty && !viewModel.searchText.isEmpty {
 				ContentUnavailableView.search(text: viewModel.searchText)
 			} else {
 				List {
-					ForEach(visibleOrders) { order in
+					ForEach(pairs, id: \.order.hansardID) { (order, subjects) in
 						Section {
-							ForEach(viewModel.filteredSubjects(for: order)) { subject in
+							ForEach(subjects) { subject in
 								VStack(alignment: .leading, spacing: 8) {
 									Text(subject.title)
 										.font(.headline)

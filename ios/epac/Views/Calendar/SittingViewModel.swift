@@ -6,6 +6,7 @@
 import Observation
 
 @Observable
+@MainActor
 class SittingViewModel {
 	var searchText: String = ""
 
@@ -19,5 +20,18 @@ class SittingViewModel {
 		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !trimmed.isEmpty else { return sorted }
 		return sorted.filter { $0.title.localizedCaseInsensitiveContains(trimmed) }
+	}
+
+	/// Returns orders paired with their filtered subjects in a single pass,
+	/// eliminating the double call to filteredSubjects that visibleOrders + ForEach
+	/// would otherwise cause.
+	func visibleOrderSubjects(from hansard: Hansard) -> [(order: OrderOfBusiness, subjects: [SubjectOfBusiness])] {
+		hansard.orders
+			.filter { !$0.subjects.isEmpty }
+			.sorted(by: { $0.hansardID < $1.hansardID })
+			.compactMap { order -> (OrderOfBusiness, [SubjectOfBusiness])? in
+				let subjects = filteredSubjects(for: order)
+				return subjects.isEmpty ? nil : (order, subjects)
+			}
 	}
 }
