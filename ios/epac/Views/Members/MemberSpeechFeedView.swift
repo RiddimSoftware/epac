@@ -46,6 +46,11 @@ final class MemberSpeechFeedViewModel {
 
     // Unique topics from loaded speeches, ordered by frequency.
     var topicCounts: [(topic: String, count: Int)] {
+        Self.buildTopicCounts(from: speeches)
+    }
+
+    /// Pure helper — extracted for testability.
+    static func buildTopicCounts(from speeches: [MemberSpeechEntry]) -> [(topic: String, count: Int)] {
         var counts: [String: Int] = [:]
         for s in speeches {
             if let t = s.subjectTitle, !t.isEmpty {
@@ -57,6 +62,7 @@ final class MemberSpeechFeedViewModel {
 
     private var currentPage = 0
     private let perPage = 20
+    private var loadTask: Task<Void, Never>?
 
     // TODO(EPAC-299): Replace with the deployed member-speeches Lambda URL from AWS API Gateway.
     // Run: cd backend && make create-api SERVICE=member-speeches, then update this constant.
@@ -68,7 +74,8 @@ final class MemberSpeechFeedViewModel {
 
     func selectTopic(_ topic: String?) {
         selectedTopic = topic
-        Task { await loadFirstPage() }
+        loadTask?.cancel()
+        loadTask = Task { await loadFirstPage() }
     }
 
     func loadFirstPage() async {
@@ -133,7 +140,7 @@ struct MemberSpeechFeedView: View {
     @State private var targetSubject: SubjectOfBusiness?
     @State private var isLoadingSitting = false
 
-    private let isoDate: DateFormatter = {
+    private static let isoDate: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -317,7 +324,7 @@ struct MemberSpeechFeedView: View {
 
     private func navigateToSpeech(_ entry: MemberSpeechEntry) async {
         guard let dateStr = entry.sittingDate,
-              let date = isoDate.date(from: dateStr) else { return }
+              let date = Self.isoDate.date(from: dateStr) else { return }
 
         isLoadingSitting = true
         defer { isLoadingSitting = false }
@@ -346,12 +353,16 @@ struct MemberSpeechFeedView: View {
 private struct SpeechEntryRow: View {
     let entry: MemberSpeechEntry
 
-    private var formattedDate: String? {
-        guard let s = entry.sittingDate else { return nil }
+    private static let isoDate: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
-        guard let d = f.date(from: s) else { return nil }
+        return f
+    }()
+
+    private var formattedDate: String? {
+        guard let s = entry.sittingDate,
+              let d = Self.isoDate.date(from: s) else { return nil }
         return d.formatted(date: .abbreviated, time: .omitted)
     }
 
