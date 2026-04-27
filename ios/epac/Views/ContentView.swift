@@ -14,6 +14,7 @@ import CoreSpotlight
 struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
+	@Environment(\.scenePhase) private var scenePhase
 	var fetch: Fetch
 	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
@@ -51,15 +52,21 @@ struct ContentView: View {
 		.onContinueUserActivity(CSSearchableItemActionType) { activity in
 			guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
 			if let memberID = SpotlightIndexer.memberID(from: id) {
-				if let match = members.first(where: { $0.memberID == memberID }) {
-					router.selectedMember = match
-					router.selectedTab = .members
-				}
+				navigateToMember(memberID: memberID)
+			}
+		}
+		.onChange(of: scenePhase) { _, phase in
+			if phase == .active {
+				checkPendingMemberNavigation()
 			}
 		}
 		.task {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
+			// Populate name cache for App Intents (OpenMemberIntent).
+			MemberNameCache.shared.populate(entries: members.map {
+				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)
+			})
 			// Index data into Spotlight after the initial sync so results are available system-wide.
 			let entries = SpotlightIndexer.makeEntries(from: members)
 			await SpotlightIndexer.indexMembers(entries)
@@ -176,6 +183,22 @@ struct ContentView: View {
 					MemberProfileView(member: member)
 				}
 		}
+	}
+
+	// MARK: - Deep-link navigation helpers
+
+	private func navigateToMember(memberID: Int) {
+		if let match = members.first(where: { $0.memberID == memberID }) {
+			router.selectedMember = match
+			router.selectedTab = .members
+		}
+	}
+
+	private func checkPendingMemberNavigation() {
+		let key = "pendingMemberID"
+		guard let memberID = UserDefaults.standard.object(forKey: key) as? Int else { return }
+		UserDefaults.standard.removeObject(forKey: key)
+		navigateToMember(memberID: memberID)
 	}
 
 	// MARK: - Parliament navigation stack
