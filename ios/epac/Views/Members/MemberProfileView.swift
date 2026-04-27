@@ -90,6 +90,17 @@ struct MemberProfileView: View {
 
 				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 					contactSection
+				} else if !member.contactFetched {
+					HStack(spacing: 8) {
+						ProgressView().scaleEffect(0.8)
+						Text(NSLocalizedString("member.contact.loading", comment: ""))
+							.font(.caption)
+							.foregroundStyle(.secondary)
+					}
+					.padding()
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
 				}
 
 				NavigationLink(destination: MemberVotingRecordView(member: member)) {
