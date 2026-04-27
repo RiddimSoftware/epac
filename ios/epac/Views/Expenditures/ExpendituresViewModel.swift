@@ -46,6 +46,7 @@ class ExpendituresViewModel {
 	var searchText = ""
 	var sortOrder: SortOrder = .total
 	var isLoading = false
+	var loadFailed = false
 
 	func filteredExpenditures(from expenditures: [SummaryExpenditure]) -> [SummaryExpenditure] {
 		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -68,6 +69,7 @@ class ExpendituresViewModel {
 
 	@MainActor
 	func loadData(expenditures: [SummaryExpenditure], fetch: Fetch) async {
+		loadFailed = false
 		let exists = expenditures.contains { $0.year == selectedYear && $0.quarter == selectedQuarter }
 		if !exists {
 			isLoading = true
@@ -75,6 +77,7 @@ class ExpendituresViewModel {
 				try await fetch.expenditures(year: selectedYear, quarter: selectedQuarter)
 			} catch {
 				Log.error("Failed to load expenditures: \(error.localizedDescription)")
+				loadFailed = true
 			}
 			isLoading = false
 		}

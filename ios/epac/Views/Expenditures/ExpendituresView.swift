@@ -37,6 +37,20 @@ struct ExpendituresView: View {
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.loadFailed && filteredExpenditures.isEmpty {
+                    ContentUnavailableView {
+                        Label("Couldn't Load Expenditures", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text("Check your connection and try again.")
+                    } actions: {
+                        Button("Retry") {
+                            Task {
+                                await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         if filteredExpenditures.isEmpty && !viewModel.isLoading {

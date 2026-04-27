@@ -14,12 +14,14 @@ class SittingCalendarViewModel {
 	var dates = Set<DateComponents>()
 	var futureDates = Set<DateComponents>()
 	var currentYear: Int = Calendar.current.dateComponents([.year], from: .now).year!
+	var loadFailed = false
 
 	var sittingDayCount: Int {
 		dates.filter { $0.year == currentYear }.count + futureDates.filter { $0.year == currentYear }.count
 	}
 
 	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
+		loadFailed = false
 		do {
 			var calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
 			if calendar == nil {
@@ -35,6 +37,7 @@ class SittingCalendarViewModel {
 			}.forEach { futureDates.insert($0) }
 		} catch {
 			Log.debug("Failed to fetch SittingCalendar count")
+			loadFailed = true
 		}
 	}
 
