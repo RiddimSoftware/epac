@@ -80,7 +80,7 @@ struct MemberVotingRecordView: View {
 												vote: vote, memberVote: mv.recordedVote)
 											ContactMyMP.open(to: member, template: template)
 										} label: {
-											Label("Write to MP", systemImage: "envelope.badge")
+											Label(NSLocalizedString("contact.writeToMP", comment: ""), systemImage: "envelope.badge")
 										}
 										.tint(.blue)
 									}

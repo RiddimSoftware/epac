@@ -151,3 +151,6 @@
 "partyLine.info.title" = "About Party Solidarity";
 "partyLine.info.body" = "This score shows how often this MP voted the same way as the majority of their party caucus on recorded votes. Paired votes and absences are excluded. A higher score means the MP almost always follows the party whip; a lower score signals independence. The score is computed from vote records published by the Parliament of Canada.";
 "partyLine.info.done" = "Done";
+
+/* Contact MP */
+"contact.writeToMP" = "Write to MP";
