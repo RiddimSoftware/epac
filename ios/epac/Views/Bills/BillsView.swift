@@ -15,13 +15,16 @@ struct BillsView: View {
     @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
     @State private var typeFilter: BillTypeGroup? = nil
     @State private var billStore = BillFollowStore.shared
+    @State private var searchText = ""
     @State private var shareItems: ActivityItem?
     @Environment(NavigationRouter.self) private var router
 
     private var filtered: [Bill] {
-        bills.filter {
+        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return bills.filter {
             (statusFilter == nil || $0.status == statusFilter) &&
-            (typeFilter == nil || typeFilter!.matches($0))
+            (typeFilter == nil || typeFilter!.matches($0)) &&
+            (q.isEmpty || $0.number.localizedCaseInsensitiveContains(q) || $0.title.localizedCaseInsensitiveContains(q))
         }
     }
 
@@ -95,6 +98,7 @@ struct BillsView: View {
                 }
             }
         }
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: NSLocalizedString("bills.search.prompt", comment: ""))
         .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

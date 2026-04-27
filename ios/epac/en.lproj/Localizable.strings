@@ -228,6 +228,7 @@
 
 /* Bill tracker */
 "bills.navTitle" = "Bills";
+"bills.search.prompt" = "Search by bill number or title";
 "bills.browseAll" = "Browse bills";
 "bills.filter" = "Filter";
 "bills.filter.all" = "All";
