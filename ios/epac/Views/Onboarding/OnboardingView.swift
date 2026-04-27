@@ -38,7 +38,6 @@ struct OnboardingView: View {
             promiseScreen.tag(4)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .animation(.easeInOut, value: page)
         .overlay(alignment: .topTrailing) {
             if page < totalPages - 1 {
                 Button(NSLocalizedString("onboarding.skip", comment: "")) {
@@ -476,7 +475,7 @@ private struct TopicChip: View {
         }
         .disabled(isDisabled)
         .accessibilityLabel(topic.localizedName)
-        .accessibilityValue(isSelected ? "selected" : "not selected")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

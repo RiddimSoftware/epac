@@ -66,8 +66,14 @@ struct ContentView: View {
 			networkMonitor.start()
 			showWhatsNew = WhatsNewManager.shared.shouldShow()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
-			// Notification permission is user-visible; show it promptly.
-			await notificationManager.requestAuthorization()
+			// Skip the permission request when onboarding is showing — the
+			// onboarding flow presents a contextual prompt on screen 4. For
+			// returning users (onboarding already completed) we request here as
+			// before, so the prompt appears if they declined earlier and then
+			// changed their mind in Settings.
+			if !showOnboarding {
+				await notificationManager.requestAuthorization()
+			}
 			// Snapshot lightweight name data on @MainActor (no imageData access).
 			let nameEntries = members.map {
 				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)
