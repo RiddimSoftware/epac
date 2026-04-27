@@ -7,6 +7,7 @@ import Observation
 import SwiftUI
 import SwiftData
 
+@MainActor
 @Observable
 class ContentViewModel {
 	var selectedDate: DateComponents?
