@@ -24,6 +24,9 @@ struct AccountabilityHubView: View {
 					NavigationLink(destination: TopicsView()) {
 						Label(NSLocalizedString("topics.navTitle", comment: ""), systemImage: "tag.fill")
 					}
+					NavigationLink(destination: CommitteesView()) {
+						Label(NSLocalizedString("committees.navTitle", comment: ""), systemImage: "person.3.fill")
+					}
 				}
 			}
 			.listStyle(.insetGrouped)
