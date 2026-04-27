@@ -95,12 +95,19 @@ struct CommitteeMeetingsView: View {
     let committee: ParliamentaryCommittee
     @State private var meetings: [CommitteeMeeting] = []
     @State private var isLoading = false
+    @State private var loadFailed = false
 
     var body: some View {
         Group {
             if isLoading && meetings.isEmpty {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
+            } else if loadFailed && meetings.isEmpty {
+                ContentUnavailableView(
+                    NSLocalizedString("committees.error.title", comment: ""),
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(NSLocalizedString("committees.error.description", comment: ""))
+                )
             } else if meetings.isEmpty && !isLoading {
                 ContentUnavailableView(
                     NSLocalizedString("committees.noMeetings", comment: ""),
@@ -158,8 +165,14 @@ struct CommitteeMeetingsView: View {
 
     private func load() async {
         isLoading = true
+        loadFailed = false
         defer { isLoading = false }
-        meetings = await CommitteesService.fetchRecentMeetings(committeeId: committee.id)
+        let result = await CommitteesService.fetchRecentMeetings(committeeId: committee.id)
+        if result.isEmpty {
+            loadFailed = true
+        } else {
+            meetings = result
+        }
     }
 }
 
@@ -226,7 +239,7 @@ struct CommitteeEvidenceView: View {
         defer { isLoading = false }
         interventions = await CommitteesService.fetchInterventions(
             committeeId: meeting.committee,
-            meetingId: meeting.id
+            meetingNumber: meeting.meetingNumber
         )
     }
 }
@@ -242,7 +255,7 @@ private struct InterventionRow: View {
                 Text(intervention.speakerName)
                     .font(.subheadline.weight(.semibold))
                 if intervention.isMP {
-                    Text("MP")
+                    Text(NSLocalizedString("committees.mp", comment: ""))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)

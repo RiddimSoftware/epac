@@ -124,10 +124,13 @@ struct CommitteesService {
     /// Returns individual interventions (speeches) from a committee meeting.
     /// Returns [] if the evidence endpoint doesn't exist or parse fails.
     /// The caller should fall back to showing meeting metadata + a link to parl.ca.
-    static func fetchInterventions(committeeId: String, meetingId: String) async -> [CommitteeIntervention] {
+    ///
+    /// Note: the API path uses the numeric meeting number, not the composite
+    /// `CommitteeMeeting.id` string (which is an app-internal key, not an API token).
+    static func fetchInterventions(committeeId: String, meetingNumber: Int) async -> [CommitteeIntervention] {
         guard var components = URLComponents(
             url: baseURL.appendingPathComponent(
-                "ocd/committees/\(committeeId)/meetings/\(meetingId)/evidence/"
+                "ocd/committees/\(committeeId)/meetings/\(meetingNumber)/evidence/"
             ),
             resolvingAgainstBaseURL: false
         ) else { return [] }
@@ -154,7 +157,7 @@ struct CommitteesService {
                 ?? item["content"] as? String ?? ""
             let ts = item["timestamp"] as? String
             return CommitteeIntervention(
-                id: "\(meetingId)-\(idx)",
+                id: "\(committeeId)-\(meetingNumber)-\(idx)",
                 speakerName: name,
                 speakerRole: role,
                 affiliation: affiliation,
