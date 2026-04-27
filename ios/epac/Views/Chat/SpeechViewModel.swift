@@ -78,58 +78,37 @@ class SpeechViewModel {
 			currentSpeech.currentMessageID = message.hansardID
 		}
 
-		let firstName = message.firstName
-		let lastName = message.lastName
-		var speaker = try? modelContext.fetch(
-			FetchDescriptor<ParliamentMember>(
-				predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }
-			)
-		).first
-		if speaker == nil {
-			Task {
-				try? await fetch.downloadMember(firstName, lastName)
-			}
-			let provider = PhotoProvider(parliamentNumber: hansard.parliamentNumber)
-			let riding = message.ridingName
-			let constituency = try? modelContext.fetch(
-				FetchDescriptor<Constituency>(
-					predicate: #Predicate { !riding.isEmpty && ($0.name == riding || $0.name.starts(with: riding)) }
-				)
-			).first
-			speaker = ParliamentMember(
-				name: message.firstName + " " + message.lastName,
-				lastName: message.lastName,
-				firstName: message.firstName,
-				photoURL: provider.getPhotoURL(lastName: message.lastName, firstName: message.firstName, party: Party.partyWithAbbreviation(message.partyAbbreviation)),
-				riding: constituency?.name ?? riding,
-				province: constituency?.province ?? .Ontario,
-				party: Party.partyWithAbbreviation(message.partyAbbreviation)
-			)
-			modelContext.insert(speaker!)
-			try? modelContext.save()
-		}
+		let speaker = MemberResolver().resolve(
+			firstName: message.firstName,
+			lastName: message.lastName,
+			partyAbbreviation: message.partyAbbreviation,
+			ridingName: message.ridingName,
+			parliamentNumber: hansard.parliamentNumber,
+			modelContext: modelContext,
+			fetch: fetch
+		)
+
 		var isCurrentUser: Bool
 		if let last = messages.last {
 			isCurrentUser = last.user.isCurrentUser
 		} else {
-			isCurrentUser = speaker!.party == .liberal
+			isCurrentUser = speaker.party == .liberal
 		}
 		if let last = messages.last, let lastSpeaker = speakers[last.id], speaker != lastSpeaker {
 			isCurrentUser.toggle()
 		}
 
-		let chatMessage = Message(
+		append(Message(
 			id: message.hansardID,
 			user: User(
-				id: "\(speaker!.persistentModelID)",
-				name: speaker!.name,
-				avatarURL: speaker!.photoURL,
+				id: "\(speaker.persistentModelID)",
+				name: speaker.name,
+				avatarURL: speaker.photoURL,
 				isCurrentUser: isCurrentUser
 			),
 			createdAt: message.timestamp,
 			text: message.content
-		)
-		append(chatMessage, speaker: speaker!)
+		), speaker: speaker)
 	}
 
 	@MainActor
