@@ -12,6 +12,7 @@ import ActivityView
 struct ExpenditureDetailView: View {
     let expenditure: SummaryExpenditure
     @EnvironmentObject var fetch: Fetch
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var viewModel = ExpenditureDetailViewModel()
     @State private var item: ActivityItem?
@@ -30,7 +31,7 @@ struct ExpenditureDetailView: View {
                         }
                     },
                     tapAction: {
-                        viewModel.handleHeaderTap(isCollapsed: $viewModel.travelCollapsed, firstItemId: "travel-first", proxy: proxy)
+                        viewModel.handleHeaderTap(isCollapsed: $viewModel.travelCollapsed, firstItemId: "travel-first", proxy: proxy, reduceMotion: reduceMotion)
                     }
                 )) {
                     if !viewModel.travelCollapsed {
@@ -74,7 +75,7 @@ struct ExpenditureDetailView: View {
                         }
                     },
                     tapAction: {
-                        viewModel.handleHeaderTap(isCollapsed: $viewModel.hospitalityCollapsed, firstItemId: "hospitality-first", proxy: proxy)
+                        viewModel.handleHeaderTap(isCollapsed: $viewModel.hospitalityCollapsed, firstItemId: "hospitality-first", proxy: proxy, reduceMotion: reduceMotion)
                     }
                 )) {
                     if !viewModel.hospitalityCollapsed {
@@ -118,7 +119,7 @@ struct ExpenditureDetailView: View {
                         }
                     },
                     tapAction: {
-                        viewModel.handleHeaderTap(isCollapsed: $viewModel.contractsCollapsed, firstItemId: "contracts-first", proxy: proxy)
+                        viewModel.handleHeaderTap(isCollapsed: $viewModel.contractsCollapsed, firstItemId: "contracts-first", proxy: proxy, reduceMotion: reduceMotion)
                     }
                 )) {
                     if !viewModel.contractsCollapsed {
@@ -330,6 +331,7 @@ struct ContractRow: View {
 struct TravelClaimRow: View {
     let claim: TravelClaim
     @State private var isExpanded: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(claim: TravelClaim, initiallyExpanded: Bool = false) {
         self.claim = claim
@@ -350,7 +352,7 @@ struct TravelClaimRow: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(.snappy) {
+                withAnimation(reduceMotion ? nil : .snappy) {
                     isExpanded.toggle()
                 }
             }

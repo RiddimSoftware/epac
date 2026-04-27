@@ -14,6 +14,7 @@ import Observation
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.colorScheme) var colorScheme
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(NavigationRouter.self) var router
 	@EnvironmentObject var fetch: Fetch
 	@State var navigator: SubjectNavigator
@@ -137,7 +138,7 @@ struct SpeechView: View {
 		.simultaneousGesture(
 			TapGesture()
 				.onEnded {
-					withAnimation {
+					withAnimation(reduceMotion ? nil : .default) {
 						viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 					}
 				}
@@ -147,7 +148,7 @@ struct SpeechView: View {
 			do {
 				try await Task.sleep(nanoseconds: 700_000_000)
 				guard viewModel.messages.isEmpty else { return }
-				withAnimation {
+				withAnimation(reduceMotion ? nil : .default) {
 					viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				}
 			} catch {
@@ -169,7 +170,7 @@ struct SpeechView: View {
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
-					withAnimation {
+					withAnimation(reduceMotion ? nil : .default) {
 						viewModel.reset(navigator: navigator, subject: subject)
 					}
 					Task {

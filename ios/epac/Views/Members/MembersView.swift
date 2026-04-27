@@ -12,6 +12,7 @@ import UIKit
 struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
 	@State private var viewModel = MembersViewModel()
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	private var filteredMembers: [ParliamentMember] {
 		viewModel.filteredMembers(from: members)
@@ -82,7 +83,7 @@ struct MembersView: View {
 		}
 		.navigationTitle("Members")
 		.navigationBarTitleDisplayMode(.large)
-		.animation(.default, value: filteredMembers)
+		.animation(reduceMotion ? nil : .default, value: filteredMembers)
 	}
 
 	private var loadingView: some View {

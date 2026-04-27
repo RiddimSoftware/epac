@@ -11,19 +11,20 @@ import SwiftUI
 struct ShimmerModifier: ViewModifier {
     let isActive: Bool
     @State private var phase: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .redacted(reason: isActive ? .placeholder : [])
             .overlay(
-                isActive ? shimmerOverlay : nil
+                isActive && !reduceMotion ? shimmerOverlay : nil
             )
             .animation(
-                isActive ? .linear(duration: 1.2).repeatForever(autoreverses: false) : .default,
+                isActive && !reduceMotion ? .linear(duration: 1.2).repeatForever(autoreverses: false) : .default,
                 value: phase
             )
             .onAppear {
-                if isActive { phase = 1 }
+                if isActive && !reduceMotion { phase = 1 }
             }
     }
 
