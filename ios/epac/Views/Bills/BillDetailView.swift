@@ -81,33 +81,35 @@ struct BillDetailView: View {
 
             // MARK: Stage timeline
             Section(NSLocalizedString("bills.detail.timeline", comment: "")) {
-                ForEach(bill.stages) { stage in
+                ForEach(Array(bill.stages.enumerated()), id: \.element.id) { index, stage in
+                    let state = timelineState(forStageAt: index)
                     HStack(spacing: 12) {
-                        Image(systemName: stage.isCompleted
-                              ? "checkmark.circle.fill"
-                              : "circle.dotted")
-                            .foregroundStyle(stage.isCompleted
-                                ? Color.appPositive
-                                : Color.appNeutral)
+                        Image(systemName: state.systemImage)
+                            .foregroundStyle(state.color)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(stage.name)
                                 .font(.subheadline)
+                                .fontWeight(state == .current ? .semibold : .regular)
                                 .explainerTip(for: stage.name)
                             if let date = stage.completedDate {
                                 Text(date.formatted(date: .abbreviated, time: .omitted))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
+                            } else {
+                                Text(state.displayName)
+                                    .font(.caption2.weight(state == .current ? .semibold : .regular))
+                                    .foregroundStyle(state == .current ? Color.accentColor : .secondary)
                             }
                         }
+                        Spacer()
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel({
-                        let status = stage.isCompleted ? "Completed" : "Pending"
                         if let date = stage.completedDate {
-                            return "\(stage.name), \(status), \(date.formatted(date: .abbreviated, time: .omitted))"
+                            return "\(stage.name), \(state.accessibilityStatus), \(date.formatted(date: .abbreviated, time: .omitted))"
                         }
-                        return "\(stage.name), \(status)"
+                        return "\(stage.name), \(state.accessibilityStatus)"
                     }())
                 }
             }
@@ -199,6 +201,16 @@ struct BillDetailView: View {
         .activitySheet($shareItem)
     }
 
+    private func timelineState(forStageAt index: Int) -> BillTimelineStageState {
+        let stage = bill.stages[index]
+        if stage.isCompleted {
+            return .completed
+        }
+
+        let firstIncompleteIndex = bill.stages.firstIndex { !$0.isCompleted }
+        return index == firstIncompleteIndex ? .current : .future
+    }
+
     // MARK: - Cross-reference loading
 
     @MainActor
@@ -235,5 +247,48 @@ struct BillDetailView: View {
                 bill.sponsorName.localizedCaseInsensitiveContains($0.firstName.prefix(3))
             })
         }
+    }
+}
+
+private enum BillTimelineStageState: Equatable {
+    case completed
+    case current
+    case future
+
+    var systemImage: String {
+        switch self {
+        case .completed:
+            return "checkmark.circle.fill"
+        case .current:
+            return "circle.circle.fill"
+        case .future:
+            return "circle.dotted"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .completed:
+            return .appPositive
+        case .current:
+            return .accentColor
+        case .future:
+            return .appNeutral
+        }
+    }
+
+    var accessibilityStatus: String {
+        switch self {
+        case .completed:
+            return NSLocalizedString("bills.timeline.completed", comment: "")
+        case .current:
+            return NSLocalizedString("bills.timeline.current", comment: "")
+        case .future:
+            return NSLocalizedString("bills.timeline.future", comment: "")
+        }
+    }
+
+    var displayName: String {
+        accessibilityStatus
     }
 }

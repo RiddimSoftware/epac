@@ -275,6 +275,9 @@
 "bills.stage.senateSecond" = "Sénat — Deuxième lecture";
 "bills.stage.senateThird" = "Sénat — Troisième lecture";
 "bills.stage.royalAssent" = "Sanction royale";
+"bills.timeline.completed" = "Terminée";
+"bills.timeline.current" = "Étape actuelle ou suivante";
+"bills.timeline.future" = "Étape future";
 
 /* Suivi des sujets */
 "topics.navTitle" = "Sujets";
