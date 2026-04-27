@@ -25,14 +25,9 @@ platform :ios do
     # Provisioning profiles via sigh.
     #
     # The distribution certificate was pre-installed into the ephemeral
-    # keychain by the "Import distribution certificate" workflow step
-    # (from the DISTRIBUTION_CERT_P12 secret). sigh uses the cert already
-    # in the keychain to create or download matching profiles — it does
-    # NOT create a new certificate, so the 2-cert account limit is safe.
-    #
-    # The App Clip profile (net.dinglebox.cabinetdoor.Clip) didn't exist
-    # until this lane creates it. sigh creates it automatically on first
-    # run, then reuses it on subsequent runs.
+    # keychain by the workflow's "Import distribution certificate" step.
+    # sigh uses that certificate to create or download profiles from ASC,
+    # installing them into ~/Library/MobileDevice/Provisioning Profiles/.
     # ------------------------------------------------------------------
     sigh(
       api_key:        api_key,
@@ -49,17 +44,30 @@ platform :ios do
     # ------------------------------------------------------------------
     # Archive and export.
     #
-    # No -allowProvisioningUpdates: the cert and profiles are already
-    # installed by the steps above. Passing -allowProvisioningUpdates
-    # alongside a keychain that has an imported cert still causes Xcode
-    # to call the ASC API to "verify" the certificate, which triggers a
-    # new-cert creation attempt and hits the 2-cert limit.
+    # The Xcode project uses CODE_SIGN_STYLE=Manual in the pbxproj, so
+    # xcodebuild requires -allowProvisioningUpdates to switch signing to
+    # Automatic mode and pick up the profiles sigh just downloaded.
+    #
+    # Previously -allowProvisioningUpdates caused xcodebuild to CREATE a
+    # new distribution certificate (hitting Apple's 2-cert limit). That
+    # is now safe because the workflow pre-imports the cert from the
+    # DISTRIBUTION_CERT_P12 secret — xcodebuild finds it in the keychain
+    # and reuses it instead of creating a new one.
     # ------------------------------------------------------------------
+    key_path = File.expand_path(
+      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+    )
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C CODE_SIGN_STYLE=Automatic",
+      xcargs:           [
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath #{key_path}",
+        "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
+        "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}",
+        "DEVELOPMENT_TEAM=ZG82TFXU3C"
+      ].join(" "),
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true
