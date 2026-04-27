@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["ZG82TFXU3C.net.dinglebox.cabinetdoor"],
+        "components": [
+          { "/": "/vote/*", "comment": "Shared vote deep-links" },
+          { "/": "/speech/*", "comment": "Shared speech deep-links" },
+          { "/": "/bill/*", "comment": "Shared bill deep-links" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["ZG82TFXU3C.net.dinglebox.cabinetdoor"]
+  }
+}
