@@ -386,3 +386,11 @@
 "committees.transcript.source" = "Les transcriptions complètes sont publiées par le Parlement du Canada sur parl.ca";
 "committees.witness" = "Témoin";
 "committees.mp" = "député(e)";
+
+/* Recherche étendue (EPAC-85) */
+"search.prompt" = "Rechercher députés, votes, débats";
+"search.emptyTitle" = "Rechercher dans le Parlement";
+"search.emptyDescription" = "Cherchez des députés par nom, des votes par numéro de projet de loi et des débats par sujet.";
+"search.section.members" = "Membres";
+"search.section.votes" = "Votes";
+"search.section.debates" = "Débats";
