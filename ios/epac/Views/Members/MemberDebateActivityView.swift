@@ -6,216 +6,358 @@
 import SwiftUI
 import SwiftData
 
-// Shows how often a member speaks in the House and what topics they address.
-// Data source: SpeechMessage records already in SwiftData from the Hansard
-// fetch pipeline. When no speeches are loaded yet, auto-fetches the most
-// recent sitting days from the already-downloaded SittingCalendar so the
-// user does not have to navigate the calendar manually.
+// Speech feed for a member's profile (EPAC-299).
+// Shows every speech this MP has given, most recent first, with topic filters
+// and a stats bar. Data comes from GET /api/v1/members/{id}/speeches (EPAC-293).
 struct MemberDebateActivityView: View {
-	let member: ParliamentMember
+    let member: ParliamentMember
 
-	@Environment(\.modelContext) private var modelContext
-	@EnvironmentObject private var fetch: Fetch
-	@Query private var messages: [SpeechMessage]
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var fetch: Fetch
+    @State private var viewModel: MemberSpeechFeedViewModel
 
-	@State private var isLoading = false
-	@State private var loadedCount = 0
-	/// True once the initial auto-load has been attempted (even if it returned no results).
-	/// Prevents the emptyView from flashing before the first load begins.
-	@State private var hasAttemptedLoad = false
+    init(member: ParliamentMember) {
+        self.member = member
+        self._viewModel = State(wrappedValue: MemberSpeechFeedViewModel(memberId: member.memberID))
+    }
 
-	init(member: ParliamentMember) {
-		self.member = member
-		let firstName = member.firstName
-		let lastName = member.lastName
-		let pred = #Predicate<SpeechMessage> { msg in
-			msg.firstName == firstName && msg.lastName == lastName
-		}
-		var descriptor = FetchDescriptor<SpeechMessage>(predicate: pred, sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
-		descriptor.fetchLimit = 500
-		_messages = Query(descriptor)
-	}
+    var body: some View {
+        Group {
+            if viewModel.isLoading && viewModel.speeches.isEmpty {
+                loadingView
+            } else if let err = viewModel.error, viewModel.speeches.isEmpty {
+                errorView(message: err)
+            } else if viewModel.speeches.isEmpty {
+                emptyView
+            } else {
+                feedList
+            }
+        }
+        .navigationTitle("Speeches")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            if viewModel.speeches.isEmpty {
+                await viewModel.loadInitial()
+            }
+        }
+    }
 
-	// MARK: - Derived stats
+    // MARK: - States
 
-	private struct DayStats {
-		let byDay: [(date: Date, count: Int)]
-		let mostActiveDay: (date: Date, count: Int)?
-	}
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text("Loading speeches…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
-	private var dayStats: DayStats {
-		var counts: [Date: Int] = [:]
-		let cal = Calendar.current
-		for msg in messages {
-			let day = cal.startOfDay(for: msg.timestamp)
-			counts[day, default: 0] += 1
-		}
-		var maxCount = 0
-		var maxDate: Date?
-		let sorted = counts.sorted { $0.key > $1.key }.map { entry -> (date: Date, count: Int) in
-			if entry.value > maxCount { maxCount = entry.value; maxDate = entry.key }
-			return (date: entry.key, count: entry.value)
-		}
-		let best = maxDate.map { (date: $0, count: maxCount) }
-		return DayStats(byDay: sorted, mostActiveDay: best)
-	}
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 40, weight: .thin))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("Couldn't load speeches")
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Retry") {
+                Task { await viewModel.loadInitial() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
-	var body: some View {
-		let stats = dayStats
-		Group {
-			if messages.isEmpty && (isLoading || !hasAttemptedLoad) {
-				loadingView
-			} else if messages.isEmpty {
-				emptyView
-			} else {
-				resultsList(stats: stats)
-			}
-		}
-		.navigationTitle(NSLocalizedString("debate.navTitle", comment: ""))
-		.navigationBarTitleDisplayMode(.inline)
-		.task {
-			// Auto-load recent sittings on first appearance if no speeches are cached.
-			if messages.isEmpty && !isLoading {
-				await loadRecentSittings()
-			}
-			hasAttemptedLoad = true
-		}
-	}
+    private var emptyView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "text.bubble")
+                .font(.system(size: 48, weight: .thin))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("No speeches found")
+                .font(.headline)
+            if viewModel.selectedTopic != nil {
+                Text("No speeches match this topic filter.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button("Clear filter") {
+                    Task { await viewModel.applyTopicFilter(nil) }
+                }
+                .buttonStyle(.bordered)
+            } else {
+                Text("No speeches from this Parliament have been indexed yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
-	// MARK: - Sub-views
+    // MARK: - Feed
 
-	private var loadingView: some View {
-		VStack(spacing: 16) {
-			ProgressView()
-			Text(loadedCount == 0
-				 ? NSLocalizedString("debate.loading.start", comment: "")
-				 : String(format: NSLocalizedString("debate.loading.progress", comment: ""), loadedCount))
-				.font(.subheadline)
-				.foregroundStyle(.secondary)
-				.multilineTextAlignment(.center)
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
-	}
+    private var feedList: some View {
+        List {
+            // Stats bar
+            if let s = viewModel.stats {
+                Section {
+                    statsBar(stats: s)
+                }
+            }
 
-	private var emptyView: some View {
-		VStack(spacing: 16) {
-			Image(systemName: "text.bubble")
-				.font(.system(size: 48, weight: .thin))
-				.foregroundStyle(.secondary)
-				.accessibilityHidden(true)
-			Text(NSLocalizedString("debate.empty.title", comment: ""))
-				.font(.headline)
-			Text(NSLocalizedString("debate.empty.noSpeeches", comment: ""))
-				.font(.subheadline)
-				.foregroundStyle(.secondary)
-				.multilineTextAlignment(.center)
-			Button(NSLocalizedString("debate.empty.loadMore", comment: "")) {
-				Task { await loadRecentSittings(limit: 60) }
-			}
-			.buttonStyle(.borderedProminent)
-			.controlSize(.regular)
-			.disabled(isLoading)
-		}
-		.padding(32)
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
-	}
+            // Topic filter chips
+            if !viewModel.topicChips.isEmpty {
+                Section {
+                    topicFilterRow
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            }
 
-	private func resultsList(stats: DayStats) -> some View {
-		List {
-			Section {
-				summaryCard(stats: stats)
-			}
-			Section(NSLocalizedString("debate.recentSittingDays", comment: "")) {
-				ForEach(stats.byDay.prefix(50), id: \.date) { entry in
-					HStack {
-						VStack(alignment: .leading, spacing: 2) {
-							Text(entry.date.formatted(date: .long, time: .omitted))
-								.font(.subheadline)
-							Text(String(format: NSLocalizedString("debate.contributionCount", comment: ""), entry.count))
-								.font(.caption)
-								.foregroundStyle(.secondary)
-						}
-						Spacer()
-						Text("\(entry.count)")
-							.font(.headline.monospacedDigit())
-							.foregroundStyle(Color.accentColor)
-					}
-				}
-			}
-		}
-		.listStyle(.insetGrouped)
-	}
+            // Speech entries
+            Section {
+                ForEach(viewModel.speeches) { entry in
+                    SpeechEntryRow(entry: entry, member: member)
+                        .task {
+                            await viewModel.loadMoreIfNeeded(currentItem: entry)
+                        }
+                }
+                if viewModel.isLoadingMore {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .refreshable {
+            await viewModel.loadInitial()
+        }
+    }
 
-	// MARK: - Summary card
+    // MARK: - Stats bar
 
-	private func summaryCard(stats: DayStats) -> some View {
-		VStack(spacing: 12) {
-			HStack(spacing: 0) {
-				StatPill(value: messages.count, label: NSLocalizedString("debate.stat.contributions", comment: ""))
-				StatPill(value: stats.byDay.count, label: NSLocalizedString("debate.stat.sittingDays", comment: ""))
-				if let best = stats.mostActiveDay {
-					StatPill(value: best.count, label: NSLocalizedString("debate.stat.bestDay", comment: ""))
-				}
-			}
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+    private func statsBar(stats: MemberStats) -> some View {
+        HStack(spacing: 0) {
+            statCell(value: "\(stats.totalSpeeches)", label: "Speeches")
+            Divider().frame(height: 40)
+            statCell(value: "\(stats.avgWordCount)", label: "Avg words")
+            if !stats.topTopic.isEmpty {
+                Divider().frame(height: 40)
+                statCell(value: stats.topTopic, label: "Most on", compact: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(stats.totalSpeeches) speeches, \(stats.avgWordCount) average words, most frequent topic: \(stats.topTopic)")
+    }
 
-			if let best = stats.mostActiveDay {
-				HStack {
-					Text(NSLocalizedString("debate.mostActive", comment: ""))
-						.font(.caption)
-						.foregroundStyle(.secondary)
-					Text(best.date.formatted(date: .abbreviated, time: .omitted))
-						.font(.caption.bold())
-					Spacer()
-				}
-			}
-		}
-		.padding(.vertical, 4)
-	}
+    private func statCell(value: String, label: String, compact: Bool = false) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(compact ? .caption.bold() : .title3.bold().monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+    }
 
-	// MARK: - Data loading
+    // MARK: - Topic filter chips
 
-	/// Fetches the most recent `limit` sitting days from the already-downloaded
-	/// SittingCalendar and triggers Hansard downloads for each. Speech messages
-	/// then appear via the @Query automatically.
-	private func loadRecentSittings(limit: Int = 30) async {
-		guard !isLoading else { return }
-		isLoading = true
-		loadedCount = 0
-		defer { isLoading = false }
+    private var topicFilterRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chipButton(label: "All", isSelected: viewModel.selectedTopic == nil) {
+                    Task { await viewModel.applyTopicFilter(nil) }
+                }
+                ForEach(viewModel.topicChips) { chip in
+                    chipButton(
+                        label: "\(chip.id) (\(chip.count))",
+                        isSelected: viewModel.selectedTopic == chip.id
+                    ) {
+                        Task {
+                            let newTopic = viewModel.selectedTopic == chip.id ? nil : chip.id
+                            await viewModel.applyTopicFilter(newTopic)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+    }
 
-		let calendars = (try? modelContext.fetch(FetchDescriptor<SittingCalendar>())) ?? []
-		let today = Date()
-		let recentDates = calendars
-			.flatMap { $0.sittings }
-			.filter { $0 <= today }
-			.sorted(by: >)
-			.prefix(limit)
-
-		// Only fetch sittings not already in SwiftData.
-		let loaded = Set((try? modelContext.fetch(FetchDescriptor<Hansard>()).map { $0.date }) ?? [])
-
-		for date in recentDates where !loaded.contains(date) {
-			try? await fetch.downloadHansard(date)
-			loadedCount += 1
-		}
-	}
+    private func chipButton(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? Color.accentColor : Color(.secondarySystemFill))
+                .foregroundStyle(isSelected ? .white : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
 }
 
-private struct StatPill: View {
-	let value: Int
-	let label: String
+// MARK: - Speech entry row
 
-	var body: some View {
-		VStack(spacing: 2) {
-			Text("\(value)")
-				.font(.title3.bold().monospacedDigit())
-			Text(label)
-				.font(.caption2)
-				.foregroundStyle(.secondary)
-		}
-		.frame(maxWidth: .infinity)
-		.padding(.vertical, 8)
-		.background(value > 0 ? Color.accentColor.opacity(0.07) : Color.clear)
-	}
+struct SpeechEntryRow: View {
+    let entry: MemberSpeechEntry
+    let member: ParliamentMember
+
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var fetch: Fetch
+    @State private var isNavigating = false
+    @State private var targetHansard: Hansard?
+    @State private var targetSubject: SubjectOfBusiness?
+
+    var body: some View {
+        Button {
+            Task { await navigateToSpeech() }
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    if let date = entry.parsedDate {
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let words = entry.wordCount, words > 0 {
+                        Text("·")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                        Text("\(words) words")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    if isNavigating {
+                        ProgressView().scaleEffect(0.7)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                if let subject = entry.subjectTitle, !subject.isEmpty {
+                    Text(subject)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(2)
+                }
+
+                if !entry.preview.isEmpty {
+                    Text(entry.preview + "…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .navigationDestination(item: $targetHansard) { hansard in
+            if let subject = targetSubject {
+                SpeechView(hansard: hansard, subject: subject)
+                    .environmentObject(fetch)
+            }
+        }
+    }
+
+    private var accessibilityLabel: String {
+        var parts: [String] = []
+        if let subject = entry.subjectTitle { parts.append(subject) }
+        if let date = entry.parsedDate {
+            parts.append("on " + date.formatted(date: .long, time: .omitted))
+        }
+        if let words = entry.wordCount { parts.append("\(words) words") }
+        return parts.joined(separator: ", ")
+    }
+
+    private func navigateToSpeech() async {
+        guard !isNavigating else { return }
+        isNavigating = true
+        defer { isNavigating = false }
+
+        guard let sittingDate = entry.parsedDate else { return }
+
+        if let hansard = findHansard(for: sittingDate) {
+            if let subject = findSubject(in: hansard, interventionId: entry.id) {
+                targetSubject = subject
+                targetHansard = hansard
+            } else if let first = hansard.orders.first?.subjects.first {
+                targetSubject = first
+                targetHansard = hansard
+            }
+        } else {
+            try? await fetch.downloadHansard(sittingDate)
+            if let hansard = findHansard(for: sittingDate) {
+                targetSubject = hansard.orders.first?.subjects.first
+                targetHansard = hansard
+            }
+        }
+    }
+
+    private func findHansard(for date: Date) -> Hansard? {
+        let cal = Calendar.current
+        let target = cal.startOfDay(for: date)
+        let descriptor = FetchDescriptor<Hansard>()
+        guard let all = try? modelContext.fetch(descriptor) else { return nil }
+        return all.first { cal.startOfDay(for: $0.date) == target }
+    }
+
+    private func findSubject(in hansard: Hansard, interventionId: String) -> SubjectOfBusiness? {
+        for order in hansard.orders {
+            for subject in order.subjects {
+                for speech in subject.speeches {
+                    if speech.messages.contains(where: { $0.hansardID == interventionId }) {
+                        return subject
+                    }
+                }
+            }
+        }
+        return nil
+    }
+}
+
+// MARK: - Legacy fallback
+
+private struct StatPill: View {
+    let value: Int
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.title3.bold().monospacedDigit())
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(value > 0 ? Color.accentColor.opacity(0.07) : Color.clear)
+    }
 }
