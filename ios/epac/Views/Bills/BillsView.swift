@@ -24,9 +24,14 @@ struct BillsView: View {
     var body: some View {
         Group {
             if isLoading && bills.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityLabel(NSLocalizedString("bills.loading", comment: ""))
+                List {
+                    ForEach(0..<5, id: \.self) { _ in
+                        BillRowSkeleton()
+                            .shimmer(when: true)
+                    }
+                }
+                .listStyle(.plain)
+                .accessibilityLabel(NSLocalizedString("bills.loading", comment: ""))
             } else if loadFailed && bills.isEmpty {
                 EmptyStateView(
                     icon: "exclamationmark.triangle",

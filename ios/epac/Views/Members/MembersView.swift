@@ -86,13 +86,13 @@ struct MembersView: View {
 	}
 
 	private var loadingView: some View {
-		VStack(spacing: 16) {
-			ProgressView("Loading members...")
-			Text("Parliamentary portraits are being synced.")
-				.font(.footnote)
-				.foregroundColor(.secondary)
+		List {
+			ForEach(0..<8, id: \.self) { _ in
+				MemberRowSkeleton()
+					.shimmer(when: true)
+			}
 		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.listStyle(.plain)
 	}
 
 	private var memberList: some View {
