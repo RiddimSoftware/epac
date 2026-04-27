@@ -56,7 +56,8 @@ struct SittingCalendarView: View {
 						.accessibilityLabel({
 							if let date = Calendar.current.date(from: day.components) {
 								let formatted = date.formatted(date: .long, time: .omitted)
-								if isToday { return "\(formatted), today, sitting" }
+								if isToday && isPastSitting { return "\(formatted), today, sitting" }
+								if isToday { return "\(formatted), today" }
 								if isPastSitting { return "\(formatted), sitting day" }
 								if isFutureSitting { return "\(formatted), scheduled sitting" }
 								return formatted
