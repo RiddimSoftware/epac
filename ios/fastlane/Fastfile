@@ -4,7 +4,6 @@ platform :ios do
   desc "Build release archive and upload to TestFlight"
   lane :deploy do
     # Authenticate with App Store Connect API for the entire lane.
-    # This covers both automatic code signing and the TestFlight upload.
     api_key = app_store_connect_api_key(
       key_id:       ENV.fetch("ASC_KEY_ID"),
       issuer_id:    ENV.fetch("ASC_ISSUER_ID"),
@@ -15,49 +14,56 @@ platform :ios do
       in_house:     false
     )
 
-    # Use the last TestFlight build number + 1 so the build number always
-    # advances even if the workflow runs multiple times from the same commit.
-    # Falls back to 1 on the very first upload (no existing builds).
+    # Bump build number ahead of the current TestFlight maximum.
     next_build_number = (latest_testflight_build_number(api_key: api_key) rescue 0) + 1
     increment_build_number(
       build_number: next_build_number,
       xcodeproj:    "epac.xcodeproj"
     )
 
-    # Resolve the .p8 key file path for explicit xcodebuild auth flags.
-    # fastlane's app_store_connect_api_key stores the key in its own context
-    # but does not automatically forward it to xcodebuild's -authenticationKey*
-    # flags. Passing them explicitly ensures Xcode can download the distribution
-    # certificate and provisioning profile on a clean CI runner.
-    key_path = File.expand_path(
-      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+    # ------------------------------------------------------------------
+    # Provisioning profiles — one per bundle ID.
+    #
+    # sigh downloads the profile from App Store Connect via the API key.
+    # It creates the profile if it does not exist yet (handles the App
+    # Clip profile added in EPAC-75). The distribution certificate must
+    # already be in the ephemeral keychain; the workflow imports it from
+    # the DISTRIBUTION_CERT_P12 GitHub secret before calling this lane.
+    # ------------------------------------------------------------------
+    sigh(
+      api_key:        api_key,
+      app_identifier: "net.dinglebox.cabinetdoor",
+      force:          false     # reuse the existing valid profile
     )
-    auth_flags = [
-      "-allowProvisioningUpdates",
-      "-authenticationKeyPath #{key_path}",
-      "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
-      "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
-    ].join(" ")
 
+    sigh(
+      api_key:        api_key,
+      app_identifier: "net.dinglebox.cabinetdoor.Clip",
+      force:          false
+    )
+
+    # ------------------------------------------------------------------
+    # Archive and export.
+    # The DEVELOPMENT_TEAM xcarg prevents Xcode from trying to discover
+    # the team via the API, which would otherwise attempt to download or
+    # create a certificate on ASC — filling the 2-cert limit.
+    # ------------------------------------------------------------------
     build_app(
-      scheme:             "epac",
-      configuration:      "Release",
-      export_method:      "app-store",
-      xcargs:             auth_flags,
-      output_directory:   "build",
-      output_name:        "epac.ipa",
-      clean:              true
+      scheme:           "epac",
+      configuration:    "Release",
+      export_method:    "app-store",
+      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C",
+      output_directory: "build",
+      output_name:      "epac.ipa",
+      clean:            true
     )
 
-    # Upload to App Store Connect. The IPA lands in TestFlight immediately
-    # and can be promoted to the App Store from the ASC web UI without a
-    # separate upload step.
     upload_to_testflight(
-      api_key:                        api_key,
-      ipa:                            "build/epac.ipa",
+      api_key:                           api_key,
+      ipa:                               "build/epac.ipa",
       skip_waiting_for_build_processing: true,
-      distribute_external:            false,
-      notify_external_testers:        false
+      distribute_external:               false,
+      notify_external_testers:           false
     )
   end
 end

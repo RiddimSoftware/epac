@@ -52,15 +52,40 @@ jobs:
             > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
 
       # Create a short-lived keychain isolated from the user's login keychain.
-      # Xcode uses it to store the distribution certificate it downloads via
-      # the ASC API. The keychain is deleted in the cleanup step regardless of
-      # job outcome.
       - name: Create ephemeral keychain
         run: |
           security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
+
+      # Import the distribution certificate from a GitHub secret.
+      #
+      # Why: Apple caps distribution certificates at 2 per account. Letting
+      # xcodebuild or the ASC API create a new cert on every CI run exhausts
+      # this limit within days (error: "Choose a certificate to revoke").
+      # The fix is to export the existing cert+key as a .p12 from Keychain
+      # Access on a developer machine, base64-encode it, and store it as the
+      # DISTRIBUTION_CERT_P12 secret. CI then installs this one cert each
+      # run instead of creating new ones.
+      #
+      # To rotate: export a new .p12 from Keychain Access and update the secret.
+      # base64 encoding: `base64 -i DistributionCert.p12 | pbcopy`
+      - name: Import distribution certificate
+        run: |
+          echo "${{ secrets.DISTRIBUTION_CERT_P12 }}" \
+            | base64 --decode > /tmp/dist_cert.p12
+          security import /tmp/dist_cert.p12 \
+            -k ~/Library/Keychains/build.keychain \
+            -P "${{ secrets.DISTRIBUTION_CERT_PASSWORD }}" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          # Allow codesign to access the key without a UI prompt.
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" \
+            ~/Library/Keychains/build.keychain
+          rm /tmp/dist_cert.p12
 
       - name: Build and upload to TestFlight
         working-directory: ios
