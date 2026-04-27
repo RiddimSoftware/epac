@@ -61,9 +61,15 @@ struct WatchParliamentSnapshot {
 			guard let interval = defaults?.object(forKey: key) as? TimeInterval else { return nil }
 			return Date(timeIntervalSince1970: interval)
 		}
+		let calendar = Calendar.current
+		let nextSitting = date(forKey: "widget.parliament.nextSittingDate")
+		let statusUpdatedAt = date(forKey: "widget.parliament.statusUpdatedAt")
+		let storedSittingToday = defaults?.bool(forKey: "widget.parliament.isSittingToday") ?? false
+		let storedStatusIsCurrent = statusUpdatedAt.map { calendar.isDateInToday($0) } ?? false
+		let inferredSittingToday = nextSitting.map { calendar.isDateInToday($0) } ?? false
 		return WatchParliamentSnapshot(
-			isSittingToday: defaults?.bool(forKey: "widget.parliament.isSittingToday") ?? false,
-			nextSitting: date(forKey: "widget.parliament.nextSittingDate"),
+			isSittingToday: (storedSittingToday && storedStatusIsCurrent) || inferredSittingToday,
+			nextSitting: nextSitting,
 			lastVoteTitle: defaults?.string(forKey: "widget.parliament.lastVoteTitle") ?? "",
 			lastVoteBill: defaults?.string(forKey: "widget.parliament.lastVoteBill") ?? "",
 			lastVoteResult: defaults?.string(forKey: "widget.parliament.lastVoteResult") ?? "",

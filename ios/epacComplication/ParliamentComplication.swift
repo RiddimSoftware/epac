@@ -18,7 +18,21 @@ struct ParliamentEntry: TimelineEntry {
 	let lastVoteNay: Int
 
 	var refreshInterval: Date {
-		Calendar.current.date(byAdding: isSittingToday ? .hour : .day, value: 1, to: date) ?? date
+		let calendar = Calendar.current
+		if isSittingToday {
+			return calendar.date(byAdding: .hour, value: 1, to: date) ?? date
+		}
+		if let nextSitting {
+			let nextSittingRefresh = calendar.date(
+				byAdding: .hour,
+				value: 1,
+				to: calendar.startOfDay(for: nextSitting)
+			)
+			if let nextSittingRefresh, nextSittingRefresh > date {
+				return min(nextSittingRefresh, calendar.date(byAdding: .day, value: 1, to: date) ?? nextSittingRefresh)
+			}
+		}
+		return calendar.date(byAdding: .day, value: 1, to: date) ?? date
 	}
 
 	var statusText: String {
@@ -34,12 +48,13 @@ struct ParliamentEntry: TimelineEntry {
 	}
 
 	var rectangularText: String {
+		let statusPrefix = "House of Commons - \(statusText)"
 		if !lastVoteBill.isEmpty || !lastVoteTitle.isEmpty {
 			let label = lastVoteBill.isEmpty ? "Last vote" : "Last vote: \(lastVoteBill)"
 			let result = lastVoteResult.isEmpty ? "\(lastVoteYea)-\(lastVoteNay)" : lastVoteResult
-			return "\(label) \(result)"
+			return "\(statusPrefix)\n\(label) \(result)"
 		}
-		return "House of Commons - \(statusText)"
+		return statusPrefix
 	}
 }
 
@@ -73,10 +88,16 @@ struct ParliamentProvider: TimelineProvider {
 			guard let interval = defaults?.object(forKey: key) as? TimeInterval else { return nil }
 			return Date(timeIntervalSince1970: interval)
 		}
+		let calendar = Calendar.current
+		let nextSitting = date(forKey: "widget.parliament.nextSittingDate")
+		let statusUpdatedAt = date(forKey: "widget.parliament.statusUpdatedAt")
+		let storedSittingToday = defaults?.bool(forKey: "widget.parliament.isSittingToday") ?? false
+		let storedStatusIsCurrent = statusUpdatedAt.map { calendar.isDateInToday($0) } ?? false
+		let inferredSittingToday = nextSitting.map { calendar.isDateInToday($0) } ?? false
 		return ParliamentEntry(
 			date: .now,
-			isSittingToday: defaults?.bool(forKey: "widget.parliament.isSittingToday") ?? false,
-			nextSitting: date(forKey: "widget.parliament.nextSittingDate"),
+			isSittingToday: (storedSittingToday && storedStatusIsCurrent) || inferredSittingToday,
+			nextSitting: nextSitting,
 			lastVoteTitle: defaults?.string(forKey: "widget.parliament.lastVoteTitle") ?? "",
 			lastVoteBill: defaults?.string(forKey: "widget.parliament.lastVoteBill") ?? "",
 			lastVoteResult: defaults?.string(forKey: "widget.parliament.lastVoteResult") ?? "",
