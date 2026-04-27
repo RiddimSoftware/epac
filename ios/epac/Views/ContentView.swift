@@ -41,19 +41,23 @@ struct ContentView: View {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, fetch: fetch)
 		}
-		.safeAreaInset(edge: .bottom) {
-			if !networkMonitor.isConnected {
-				HStack(spacing: 10) {
-					Image(systemName: "wifi.slash")
-					Text("You're offline. Showing cached content.")
-						.font(.footnote)
-					Spacer()
-				}
-				.foregroundStyle(.white)
-				.padding(.horizontal)
-				.padding(.vertical, 10)
-				.background(Color(UIColor.systemOrange))
+	}
+
+	// MARK: - Offline banner
+
+	@ViewBuilder
+	private var offlineBanner: some View {
+		if !networkMonitor.isConnected {
+			HStack(spacing: 10) {
+				Image(systemName: "wifi.slash")
+				Text("You're offline. Showing cached content.")
+					.font(.footnote)
+				Spacer()
 			}
+			.foregroundStyle(.white)
+			.padding(.horizontal)
+			.padding(.vertical, 10)
+			.background(Color(UIColor.systemOrange))
 		}
 	}
 
@@ -73,6 +77,7 @@ struct ContentView: View {
 				.tabItem { Label(AppTab.expenditures.title, systemImage: AppTab.expenditures.systemImageName) }
 				.tag(AppTab.expenditures)
 		}
+		.safeAreaInset(edge: .bottom) { offlineBanner }
 	}
 
 	// MARK: - iPad layout (regular size class)
@@ -108,6 +113,7 @@ struct ContentView: View {
 					.opacity(router.selectedTab == .expenditures ? 1 : 0)
 			}
 		}
+		.safeAreaInset(edge: .bottom) { offlineBanner }
 	}
 
 	// MARK: - Shared calendar navigation stack

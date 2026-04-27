@@ -17,8 +17,11 @@ final class NetworkMonitor {
 
 	private let monitor = NWPathMonitor()
 	private let queue = DispatchQueue(label: "net.dinglebox.cabinetdoor.networkMonitor")
+	private var isStarted = false
 
 	func start() {
+		guard !isStarted else { return }
+		isStarted = true
 		monitor.pathUpdateHandler = { [weak self] path in
 			let connected = path.status == .satisfied
 			Task { @MainActor [weak self] in
