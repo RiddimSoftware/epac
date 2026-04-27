@@ -325,6 +325,32 @@ struct ContentView: View {
 		navigateToMember(memberID: memberID)
 	}
 
+
+	// MARK: - Home Screen Quick Actions (EPAC-351)
+
+	/// Routes a Home Screen Quick Action to the correct tab and state.
+	private func handleQuickAction(_ action: QuickAction) {
+		switch action {
+		case .todayInParliament:
+			// Navigate to Parliament tab — the sitting calendar shows today.
+			router.selectedTab = .parliament
+
+		case .findMyMP:
+			// If the user has not set up their MP yet, show the postal code sheet;
+			// otherwise navigate to the Home tab where the My MP section is prominent.
+			if PostalCodeViewModel.savedRidingName == nil {
+				router.pendingShowPostalCodeSetup = true
+				router.selectedTab = .home
+			} else {
+				router.selectedTab = .home
+			}
+
+		case .searchDebates:
+			// Navigate to Search tab; SearchView auto-focuses the search bar on appear.
+			router.selectedTab = .search
+		}
+	}
+
 	// MARK: - Parliament navigation stack
 
 	private var parliamentStack: some View {

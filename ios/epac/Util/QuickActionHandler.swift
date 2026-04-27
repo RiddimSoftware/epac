@@ -14,6 +14,7 @@
 
 import UIKit
 
+@MainActor
 final class AppDelegate: NSObject, UIApplicationDelegate {
 
     /// Injected by epacApp once ContentView has created the router.
