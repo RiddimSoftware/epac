@@ -101,6 +101,17 @@
 "Province" = "Province";
 "Status" = "Status";
 
+/* Vote detail */
+"voteDetail.debates.header" = "Debates in Hansard";
+"voteDetail.seeDebate" = "See the debate";
+"voteDetail.description" = "Description";
+"voteDetail.date" = "Date";
+"voteDetail.result" = "Result";
+"voteDetail.tally" = "Tally";
+"voteDetail.ballot" = "Your MP voted";
+"votes.yea" = "Yea";
+"votes.nay" = "Nay";
+
 /* Voting history */
 "votes.navTitle" = "Votes";
 "votes.toolbarLabel" = "Voting record";
