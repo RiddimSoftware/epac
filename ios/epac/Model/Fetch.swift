@@ -666,6 +666,16 @@ actor Fetch: ObservableObject {
 		}
 	}
 
+	/// Force-refreshes vote history for a member by deleting stored votes and re-downloading.
+	func refreshMemberVotes(memberID: Int) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<MemberVote>(
+			predicate: #Predicate { $0.memberID == memberID }
+		))
+		for vote in existing { modelContext.delete(vote) }
+		try modelContext.save()
+		try await downloadMemberVotes(memberID: memberID)
+	}
+
 	func downloadMemberVotes(memberID: Int) async throws {
 		let existing = try modelContext.fetch(FetchDescriptor<MemberVote>(
 			predicate: #Predicate { $0.memberID == memberID }

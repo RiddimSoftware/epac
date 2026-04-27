@@ -64,6 +64,9 @@ struct ExpendituresView: View {
                         }
                     }
                     .listStyle(.plain)
+                    .refreshable {
+                        await viewModel.refresh(fetch: fetch)
+                    }
                 }
 
                 VStack {
