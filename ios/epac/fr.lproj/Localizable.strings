@@ -304,3 +304,13 @@
 "consult.topic.immigration" = "Immigration";
 "consult.topic.agriculture" = "Agriculture et alimentation";
 "consult.topic.justice" = "Justice et droits";
+
+/* Fil d'accueil personnalisé */
+"home.parliament.sitting" = "Le Parlement siège aujourd'hui";
+"home.myMP.activityCount" = "%d activités récentes";
+"home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
+"home.followedBills" = "Projets de loi suivis";
+"home.followedTopics" = "Sujets suivis";
+"home.recentDebates" = "Récent au Hansard";
+"home.seeAllBills" = "Voir tous les projets →";
+"home.manageTopics" = "Gérer les sujets →";

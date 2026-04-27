@@ -81,7 +81,7 @@ struct ContentView: View {
 
 	private var phoneLayout: some View {
 		TabView(selection: $router.selectedTab) {
-			MyMPView()
+			HomeFeedView()
 				.tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImageName) }
 				.tag(AppTab.home)
 
@@ -129,7 +129,7 @@ struct ContentView: View {
 			// so each view's NavigationStack retains its push state when the user
 			// navigates between sidebar items and returns.
 			ZStack {
-				MyMPView()
+				HomeFeedView()
 					.opacity(router.selectedTab == .home ? 1 : 0)
 				parliamentStack
 					.opacity(router.selectedTab == .parliament ? 1 : 0)

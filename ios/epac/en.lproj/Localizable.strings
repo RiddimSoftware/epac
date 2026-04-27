@@ -304,3 +304,13 @@
 "consult.topic.immigration" = "Immigration";
 "consult.topic.agriculture" = "Agriculture & Food";
 "consult.topic.justice" = "Justice & Rights";
+
+/* Home feed */
+"home.parliament.sitting" = "Parliament is sitting today";
+"home.myMP.activityCount" = "%d recent activities";
+"home.myMP.notSet" = "Set your postal code to track your MP";
+"home.followedBills" = "Bills You Follow";
+"home.followedTopics" = "Topics You Follow";
+"home.recentDebates" = "Recent in Hansard";
+"home.seeAllBills" = "See all bills →";
+"home.manageTopics" = "Manage topics →";
