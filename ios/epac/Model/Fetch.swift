@@ -686,4 +686,58 @@ actor Fetch: ObservableObject {
 			try modelContext.save()
 		}
 	}
+
+	func downloadWrittenQuestions(memberID: Int, parliament: Int = 45) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<WrittenQuestion>(
+			predicate: #Predicate { $0.memberID == memberID }
+		))
+		guard existing.isEmpty else { return }
+
+		let isoFormatter = ISO8601DateFormatter()
+		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+
+		var page = 1
+		var hasMore = true
+		while hasMore {
+			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+			components.path = "/ocd/questions/"
+			components.queryItems = [
+				URLQueryItem(name: "parliament", value: String(parliament)),
+				URLQueryItem(name: "memberId", value: String(memberID)),
+				URLQueryItem(name: "pageSize", value: "100"),
+				URLQueryItem(name: "page", value: String(page)),
+				URLQueryItem(name: "format", value: "json")
+			]
+			guard let url = components.url else { break }
+			let (data, response) = try await NetworkService.shared.data(from: url)
+			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+				  let items = json["items"] as? [[String: Any]] else { break }
+			hasMore = !items.isEmpty && items.count == 100
+			page += 1
+			for item in items {
+				guard let id = item["id"] as? Int else { continue }
+				let dateStr = item["dateSubmitted"] as? String ?? ""
+				let date = isoFormatter.date(from: dateStr) ?? Date()
+				let responseDateStr = item["responseDate"] as? String
+				let responseDate = responseDateStr.flatMap { isoFormatter.date(from: $0) }
+				let q = WrittenQuestion(
+					questionID: id,
+					memberID: memberID,
+					parliament: item["parliament"] as? Int ?? parliament,
+					session: item["session"] as? Int ?? 0,
+					number: item["questionNumber"] as? Int ?? 0,
+					dateSubmitted: date,
+					subject: item["subject"] as? String ?? "",
+					questionTextEn: item["textEn"] as? String ?? item["text"] as? String ?? "",
+					statusEn: item["statusEn"] as? String ?? item["status"] as? String ?? "Pending",
+					responseDate: responseDate,
+					responseTextEn: item["responseTextEn"] as? String ?? item["responseText"] as? String,
+					daysElapsed: item["daysElapsed"] as? Int ?? 0
+				)
+				modelContext.insert(q)
+			}
+			try modelContext.save()
+		}
+	}
 }
