@@ -109,6 +109,14 @@ struct MemberVotingRecordView: View {
 			}
 		}
 		.activitySheet($shareItem)
+		.safeAreaInset(edge: .bottom) {
+			HStack {
+				Spacer()
+				DataSourceBadge(source: .votes())
+			}
+			.padding(.horizontal)
+			.padding(.vertical, 6)
+		}
 		.navigationTitle(NSLocalizedString("voting.title", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)
 	}
