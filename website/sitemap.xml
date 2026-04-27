@@ -11,6 +11,21 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://epac.riddimsoftware.com/blog/how-to-look-up-voting-record.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-federal-riding.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/how-to-contact-your-mp.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://epac.riddimsoftware.com/blog/what-is-hansard.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>

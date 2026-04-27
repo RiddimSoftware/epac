@@ -7,6 +7,27 @@
     <language>en-ca</language>
     <atom:link href="https://epac.riddimsoftware.com/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>How to look up your MP's voting record</title>
+      <link>https://epac.riddimsoftware.com/blog/how-to-look-up-voting-record.html</link>
+      <description>Every recorded vote in the House of Commons is public record. Here is how to find how your MP voted on any bill.</description>
+      <pubDate>Mon, 27 Apr 2026 15:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/how-to-look-up-voting-record.html</guid>
+    </item>
+    <item>
+      <title>What is a federal riding?</title>
+      <link>https://epac.riddimsoftware.com/blog/what-is-a-federal-riding.html</link>
+      <description>Canada is divided into 338 federal electoral districts, each represented by one Member of Parliament. Here is how they work.</description>
+      <pubDate>Mon, 27 Apr 2026 14:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/what-is-a-federal-riding.html</guid>
+    </item>
+    <item>
+      <title>How to contact your MP during an election campaign</title>
+      <link>https://epac.riddimsoftware.com/blog/how-to-contact-your-mp.html</link>
+      <description>During a federal election, your MP is a candidate seeking re-election. Here is how to reach them and what to say.</description>
+      <pubDate>Mon, 27 Apr 2026 13:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/how-to-contact-your-mp.html</guid>
+    </item>
+    <item>
       <title>What's in epac v1</title>
       <link>https://epac.riddimsoftware.com/blog/epac-launch.html</link>
       <description>A tour of what epac can do: Hansard debates, MP profiles, voting records, and more.</description>
