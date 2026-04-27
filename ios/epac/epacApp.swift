@@ -14,7 +14,20 @@ import UIKit
 // AppDelegate receives UIKit callbacks that SwiftUI lifecycle doesn't expose.
 // didRegisterForRemoteNotificationsWithDeviceToken persists the APNs token and
 // triggers backend device registration whenever the system issues a new token.
+@MainActor
 class AppDelegate: NSObject, UIApplicationDelegate {
+	/// Injected by ContentView once it has created the router.
+	var router: NavigationRouter? {
+		didSet {
+			if let action = coldLaunchAction {
+				router?.pendingQuickAction = action
+				coldLaunchAction = nil
+			}
+		}
+	}
+
+	var coldLaunchAction: QuickAction?
+
 	func application(
 		_ application: UIApplication,
 		didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -73,7 +86,7 @@ struct epacApp: App {
 
 	var body: some Scene {
 		WindowGroup {
-			ContentView(modelContainer: sharedModelContainer)
+			ContentView(modelContainer: sharedModelContainer, appDelegate: appDelegate)
 				.environment(notificationManager)
 		}
 		.modelContainer(sharedModelContainer)

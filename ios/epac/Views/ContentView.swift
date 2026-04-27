@@ -16,6 +16,7 @@ struct ContentView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
 	var fetch: Fetch
+	var appDelegate: AppDelegate
 	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
@@ -24,8 +25,9 @@ struct ContentView: View {
 	@State private var showOnboarding = !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
-	init(modelContainer: ModelContainer) {
+	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
+		self.appDelegate = appDelegate
 	}
 
 	var body: some View {
@@ -67,6 +69,9 @@ struct ContentView: View {
 			}
 		}
 		.task {
+			// Wire the router to the AppDelegate so Home Screen Quick Actions
+			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
+			appDelegate.router = router
 			networkMonitor.start()
 			showWhatsNew = WhatsNewManager.shared.shouldShow()
 			// Fetch members and constituencies inside the task so the @Query
@@ -110,6 +115,11 @@ struct ContentView: View {
 				showMyMPSetup = true
 				router.pendingShowPostalCodeSetup = false
 			}
+		}
+		.onChange(of: router.pendingQuickAction) { _, action in
+			guard let action else { return }
+			handleQuickAction(action)
+			router.pendingQuickAction = nil
 		}
 		.sheet(isPresented: $showWhatsNew) {
 			WhatsNewView { showWhatsNew = false }
@@ -319,6 +329,32 @@ struct ContentView: View {
 		guard let memberID = UserDefaults.standard.object(forKey: key) as? Int else { return }
 		UserDefaults.standard.removeObject(forKey: key)
 		navigateToMember(memberID: memberID)
+	}
+
+
+	// MARK: - Home Screen Quick Actions (EPAC-351)
+
+	/// Routes a Home Screen Quick Action to the correct tab and state.
+	private func handleQuickAction(_ action: QuickAction) {
+		switch action {
+		case .todayInParliament:
+			// Navigate to Parliament tab — the sitting calendar shows today.
+			router.selectedTab = .parliament
+
+		case .findMyMP:
+			// If the user has not set up their MP yet, show the postal code sheet;
+			// otherwise navigate to the Home tab where the My MP section is prominent.
+			if PostalCodeViewModel.savedRidingName == nil {
+				router.pendingShowPostalCodeSetup = true
+				router.selectedTab = .home
+			} else {
+				router.selectedTab = .home
+			}
+
+		case .searchDebates:
+			// Navigate to Search tab; SearchView auto-focuses the search bar on appear.
+			router.selectedTab = .search
+		}
 	}
 
 	// MARK: - Parliament navigation stack

@@ -21,6 +21,33 @@
 	<array>
 		<string>fetch</string>
 	</array>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>today</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>quick.action.today.title</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>calendar</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>my-mp</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>quick.action.mymp.title</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>person.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>search</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>quick.action.search.title</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>magnifyingglass</string>
+		</dict>
+	</array>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
 </dict>
