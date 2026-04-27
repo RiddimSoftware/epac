@@ -95,7 +95,7 @@ struct ContactMyMPButton: View {
 		Button {
 			ContactMyMP.open(to: myMP, template: template)
 		} label: {
-			Label(NSLocalizedString("contact.writeToMP", comment: ""), systemImage: "envelope.badge")
+			Label("Write to your MP", systemImage: "envelope.badge")
 		}
 	}
 }

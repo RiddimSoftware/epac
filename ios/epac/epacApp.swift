@@ -32,6 +32,10 @@ struct epacApp: App {
 
 	@State private var notificationManager = NotificationManager()
 
+	init() {
+		MetricKitSubscriber.shared.start()
+	}
+
 	var body: some Scene {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer)

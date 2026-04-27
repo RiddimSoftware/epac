@@ -143,6 +143,17 @@
 "myMP.activity.speech" = "Discours au hansard";
 "myMP.activity.expenditure" = "%d T%d Dépenses";
 
+/* Debate activity view */
+"debate.navTitle" = "Activité de débat";
+"debate.empty.title" = "Aucun enregistrement de débat";
+"debate.empty.description" = "Ouvrez des jours de séance pour charger les transcriptions de débats pour ce membre.";
+"debate.recentSittingDays" = "Jours de séance récents";
+"debate.contributionCount" = "%d intervention(s)";
+"debate.stat.contributions" = "Interventions";
+"debate.stat.sittingDays" = "Jours de séance";
+"debate.stat.bestDay" = "Meilleur jour";
+"debate.mostActive" = "Le plus actif :";
+
 /* Party-line voting score */
 "partyLine.title" = "Solidarité de parti";
 "partyLine.infoButton" = "À propos de ce score";
