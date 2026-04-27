@@ -4,12 +4,10 @@
 //
 
 import SwiftUI
-import SwiftData
 
 // Shows past and present electoral context for a riding.
 // Data sources:
 //   - Local: ParliamentMember.riding, province, party (current holder)
-//   - Local: Constituency model (riding name, province, party)
 //   - External links: Elections Canada (official results), openparliament.ca (context)
 //
 // We don't store historical election results locally; this view surfaces
@@ -18,12 +16,6 @@ struct RidingElectionHistoryView: View {
 	let member: ParliamentMember
 
 	@Environment(\.openURL) private var openURL
-	@Query private var constituencies: [Constituency]
-
-	private var constituency: Constituency? {
-		constituencies.first { $0.name.localizedCaseInsensitiveContains(member.riding) ||
-		                       member.riding.localizedCaseInsensitiveContains($0.name) }
-	}
 
 	var body: some View {
 		List {
@@ -122,13 +114,19 @@ struct RidingElectionHistoryView: View {
 	}
 
 	private var openParliamentURL: URL {
-		// openparliament.ca riding search
-		let ridingSlug = member.riding
+		// openparliament.ca riding search.
+		// Canadian riding names use em dashes (—, U+2014) as word separators and may
+		// contain accented characters or apostrophes. Normalise to ASCII hyphens first,
+		// then percent-encode any remaining characters so URL(string:) never returns nil.
+		let slug = member.riding
 			.lowercased()
+			.replacingOccurrences(of: "—", with: "-")   // em dash (U+2014) — most common
+			.replacingOccurrences(of: "–", with: "-")   // en dash (U+2013)
 			.replacingOccurrences(of: " ", with: "-")
-			.replacingOccurrences(of: "–", with: "-")
-			.replacingOccurrences(of: "--", with: "-")
-		return URL(string: "https://openparliament.ca/politicians/?riding=\(ridingSlug)") ??
+			.replacingOccurrences(of: "'", with: "")     // apostrophe (e.g. "Saint John's")
+			.replacingOccurrences(of: "--", with: "-")   // collapse double-hyphens from above
+			.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+		return URL(string: "https://openparliament.ca/politicians/?riding=\(slug)") ??
 		       URL(string: "https://openparliament.ca")!
 	}
 }
