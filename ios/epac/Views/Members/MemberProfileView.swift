@@ -100,6 +100,8 @@ struct MemberProfileView: View {
 					.frame(width: 150, height: 150)
 					.padding(.top, 20)
 
+				MemberHighlightsCard(member: member)
+
 				PartyLineScoreView(member: member)
 
 				VStack(alignment: .leading, spacing: 10) {
@@ -246,6 +248,7 @@ struct MemberProfileView: View {
 			#endif
 		}
 		.padding()
+		.animation(.none, value: showLobbying)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
 		}
@@ -343,6 +346,45 @@ struct MemberProfileView: View {
 			}
 		}
 	}
+}
+
+// MARK: - Member highlights (total votes, speeches, score)
+
+struct MemberHighlightsCard: View {
+    let member: ParliamentMember
+    @Query private var memberVotes: [MemberVote]
+    @Query private var speeches: [SpeechMessage]
+
+    init(member: ParliamentMember) {
+        self.member = member
+        let mid = member.memberID
+        _memberVotes = Query(FetchDescriptor<MemberVote>(predicate: #Predicate { $0.memberID == mid }))
+        let last = member.lastName
+        _speeches = Query(FetchDescriptor<SpeechMessage>(predicate: #Predicate { $0.lastName == last }))
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+            Divider().frame(height: 40)
+            statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+        }
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private func statCell(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon).font(.caption).foregroundStyle(Color.party(member.party))
+                .accessibilityHidden(true)
+            Text(value).font(.title3.bold())
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
+    }
 }
 
 struct ProfileDetailRow: View {
