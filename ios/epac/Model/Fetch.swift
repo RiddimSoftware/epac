@@ -555,4 +555,28 @@ actor Fetch: ObservableObject {
 		constituencies.forEach { modelContext.insert($0) }
 		try modelContext.save()
 	}
+
+	func downloadMemberContact(identifier: PersistentIdentifier) async throws {
+		guard let member = modelContext.model(for: identifier) as? ParliamentMember,
+			  member.memberID > 0,
+			  !member.contactFetched else { return }
+		let first = member.firstName.lowercased()
+			.replacingOccurrences(of: " ", with: "-")
+			.folding(options: .diacriticInsensitive, locale: .current)
+		let last = member.lastName.lowercased()
+			.replacingOccurrences(of: " ", with: "-")
+			.folding(options: .diacriticInsensitive, locale: .current)
+		let path = String(format: memberPath, first, last, String(member.memberID))
+		guard let url = URL(string: path, relativeTo: hosturl) else { return }
+		let (data, response) = try await URLSession.shared.data(from: url)
+		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let xmlString = String(data: data, encoding: .utf8) else { return }
+		let contact = XMLBro.parseMemberContact(xmlString)
+		member.email = contact.email
+		member.hillPhone = contact.hillPhone
+		member.constituencyPhone = contact.constituencyPhone
+		member.constituencyAddress = contact.constituencyAddress
+		member.contactFetched = true
+		try? modelContext.save()
+	}
 }

@@ -312,6 +312,40 @@ extension XMLAttribute {
 	}
 }
 
+struct MemberContactInfo {
+	var email: String?
+	var hillPhone: String?
+	var constituencyPhone: String?
+	var constituencyAddress: String?
+}
+
+extension XMLBro {
+	static func parseMemberContact(_ xmlString: String) -> MemberContactInfo {
+		let xml = XMLHash.parse(xmlString)
+		let root = xml["MemberOfParliament"]
+		let email = root["Email"].element?.trimmedText().nonEmpty
+		let hillPhone = root["HillOffice"]["MainVoiceNumber"].element?.trimmedText().nonEmpty
+		let firstOffice = root["ConstituencyOfficeList"]["ConstituencyOffice"].all.first
+		let constituencyPhone = firstOffice?["MainVoiceNumber"].element?.trimmedText().nonEmpty
+		let addr = firstOffice?["Address"]
+		let parts = [
+			addr?["AddressLine1"].element?.trimmedText(),
+			addr?["AddressLine2"].element?.trimmedText(),
+			addr?["City"].element?.trimmedText(),
+			addr?["Province"].element?.trimmedText(),
+			addr?["PostalCode"].element?.trimmedText()
+		].compactMap { $0?.nonEmpty }
+		let constituencyAddress = parts.isEmpty ? nil : parts.joined(separator: ", ")
+		return MemberContactInfo(email: email, hillPhone: hillPhone,
+								 constituencyPhone: constituencyPhone,
+								 constituencyAddress: constituencyAddress)
+	}
+}
+
+private extension String {
+	var nonEmpty: String? { isEmpty ? nil : self }
+}
+
 extension XMLElement {
 	func trimmedText() -> String {
 		return text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
