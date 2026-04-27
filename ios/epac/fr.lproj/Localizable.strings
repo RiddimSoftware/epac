@@ -8,6 +8,8 @@
 "Parliament" = "Parlement";
 "Accountability" = "Responsabilité";
 "accountability.navTitle" = "Responsabilité";
+"accountability.donations" = "Dons politiques";
+"accountability.projectCosts" = "Coût des projets";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";

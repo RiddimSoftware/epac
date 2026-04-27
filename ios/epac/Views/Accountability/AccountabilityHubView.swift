@@ -27,6 +27,12 @@ struct AccountabilityHubView: View {
 					NavigationLink(destination: CommitteesView()) {
 						Label(NSLocalizedString("committees.navTitle", comment: ""), systemImage: "person.3.fill")
 					}
+					NavigationLink(destination: PoliticalDonationsView()) {
+						Label(NSLocalizedString("accountability.donations", comment: ""), systemImage: "banknote.fill")
+					}
+					NavigationLink(destination: FederalProjectCostView()) {
+						Label(NSLocalizedString("accountability.projectCosts", comment: ""), systemImage: "chart.bar.doc.horizontal.fill")
+					}
 				}
 			}
 			.listStyle(.insetGrouped)
