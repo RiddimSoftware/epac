@@ -26,6 +26,7 @@ struct HomeFeedView: View {
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
     @State private var provinceAbbrev: String = ""
+    @State private var mySenators: [Senator] = []
 
     var body: some View {
         NavigationStack {
@@ -39,6 +40,9 @@ struct HomeFeedView: View {
                 }
                 if !topicStore.followedIDs.isEmpty {
                     followedTopicsSection
+                }
+                if !mySenators.isEmpty {
+                    senatorsSection
                 }
                 healthcareContextCard
                 if !recentSubjects.isEmpty {
@@ -187,6 +191,35 @@ struct HomeFeedView: View {
         }
     }
 
+    // MARK: - Section 4b: My Senators (shown when province is known)
+
+    private var senatorsSection: some View {
+        Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: ""))) {
+            ForEach(mySenators.prefix(3)) { senator in
+                Link(destination: senator.senateURL) {
+                    HStack(spacing: 10) {
+                        Circle()
+                            .fill(senator.caucusColor.opacity(0.2))
+                            .frame(width: 8, height: 8)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(senator.name)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Text(senator.caucusFullName)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
+            }
+        }
+    }
+
     // MARK: - Healthcare contextual card (shown when "healthcare" topic followed + province known)
 
     @ViewBuilder
@@ -262,6 +295,11 @@ struct HomeFeedView: View {
                 name.localizedCaseInsensitiveContains($0.lastName)
             }) {
                 provinceAbbrev = mp.province.shortCode
+                // Load senators for the user's province if not already loaded.
+                if mySenators.isEmpty && !provinceAbbrev.isEmpty {
+                    let allSenators = await SenatorsService.fetchSenators()
+                    mySenators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
+                }
             }
         }
 
