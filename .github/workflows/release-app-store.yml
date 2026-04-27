@@ -153,13 +153,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload metadata to App Store
+      - name: Upload metadata and screenshots to App Store
         working-directory: ios
         run: |
           bundle exec fastlane run deliver \
             app_identifier:"${{ env.APP_BUNDLE_ID }}" \
             skip_binary_upload:true \
-            skip_screenshots:true \
+            skip_screenshots:false \
             skip_metadata:false \
             submit_for_review:false
 
