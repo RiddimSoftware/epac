@@ -10,19 +10,21 @@ import Foundation
 import UIKit
 import SwiftUI
 
-typealias SittingCalendar = SchemaV4.SittingCalendar
-typealias Hansard = SchemaV4.Hansard
-typealias OrderOfBusiness = SchemaV4.OrderOfBusiness
-typealias SubjectOfBusiness = SchemaV4.SubjectOfBusiness
-typealias ParliamentMember = SchemaV4.ParliamentMember
-typealias Speech = SchemaV4.Speech
-typealias SpeechMessage = SchemaV4.SpeechMessage
-typealias Constituency = SchemaV4.Constituency
-typealias TravelClaim = SchemaV4.TravelClaim
-typealias TravelExpenditureDetail = SchemaV4.TravelExpenditureDetail
-typealias HospitalityExpenditure = SchemaV4.HospitalityExpenditure
-typealias ContractExpenditure = SchemaV4.ContractExpenditure
-typealias SummaryExpenditure = SchemaV4.SummaryExpenditure
+typealias SittingCalendar = SchemaV5.SittingCalendar
+typealias Hansard = SchemaV5.Hansard
+typealias OrderOfBusiness = SchemaV5.OrderOfBusiness
+typealias SubjectOfBusiness = SchemaV5.SubjectOfBusiness
+typealias ParliamentMember = SchemaV5.ParliamentMember
+typealias Speech = SchemaV5.Speech
+typealias SpeechMessage = SchemaV5.SpeechMessage
+typealias Constituency = SchemaV5.Constituency
+typealias TravelClaim = SchemaV5.TravelClaim
+typealias TravelExpenditureDetail = SchemaV5.TravelExpenditureDetail
+typealias HospitalityExpenditure = SchemaV5.HospitalityExpenditure
+typealias ContractExpenditure = SchemaV5.ContractExpenditure
+typealias SummaryExpenditure = SchemaV5.SummaryExpenditure
+typealias RecordedVote = SchemaV5.RecordedVote
+typealias MemberVote = SchemaV5.MemberVote
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -441,10 +443,10 @@ enum SchemaV4: VersionedSchema {
 	final class SubjectOfBusiness: Hashable {
 		var title: String
 		var hansardID: String
-		var speeches: [Speech]
-		var currentSpeech: Speech?
+		var speeches: [SchemaV4.Speech]
+		var currentSpeech: SchemaV4.Speech?
 		var currentSpeechID: String?
-		init(title: String, hansardID: String, speeches: [Speech] = []) {
+		init(title: String, hansardID: String, speeches: [SchemaV4.Speech] = []) {
 			self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
 			self.hansardID = hansardID
 			self.speeches = speeches
@@ -461,8 +463,8 @@ enum SchemaV4: VersionedSchema {
 	final class OrderOfBusiness {
 		var hansardID: String
 		var catchline: String
-		var subjects: [SubjectOfBusiness]
-		init(hansardID: String, catchline: String, subjects: [SubjectOfBusiness] = []) {
+		var subjects: [SchemaV4.SubjectOfBusiness]
+		init(hansardID: String, catchline: String, subjects: [SchemaV4.SubjectOfBusiness] = []) {
 			self.hansardID = hansardID
 			self.catchline = catchline
 			self.subjects = subjects
@@ -491,14 +493,14 @@ enum SchemaV4: VersionedSchema {
 
 	@Model
 	final class Speech: Hashable {
-		var messages: [SpeechMessage]
+		var messages: [SchemaV4.SpeechMessage]
 		var hansardID: String
-		var currentMessage: SpeechMessage?
+		var currentMessage: SchemaV4.SpeechMessage?
 		var currentMessageID: String?
 		var date: Date
 		var length: Int
 		var title: String
-		init(messages: [SpeechMessage], hansardID: String, date: Date, title: String) {
+		init(messages: [SchemaV4.SpeechMessage], hansardID: String, date: Date, title: String) {
 			self.messages = messages
 			self.hansardID = hansardID
 			self.date = date
@@ -519,21 +521,13 @@ enum SchemaV4: VersionedSchema {
 		var hansardID: String
 		var parliamentNumber: Int
 		var sessionNumber: Int
-		var orders: [OrderOfBusiness]
-		init(date: Date, hansardID: String, parliamentNumber: Int, sessionNumber: Int, orders: [OrderOfBusiness] = []) {
+		var orders: [SchemaV4.OrderOfBusiness]
+		init(date: Date, hansardID: String, parliamentNumber: Int, sessionNumber: Int, orders: [SchemaV4.OrderOfBusiness] = []) {
 			self.date = date
 			self.hansardID = hansardID
 			self.parliamentNumber = parliamentNumber
 			self.sessionNumber = sessionNumber
 			self.orders = orders
-		}
-		init(xml: String) {
-			let hansard = XMLBro(xml: xml).parseXML().hansard()
-			date = hansard.date
-			hansardID = hansard.hansardID
-			parliamentNumber = hansard.parliamentNumber
-			sessionNumber = hansard.sessionNumber
-			orders = hansard.orders
 		}
 	}
 
@@ -553,9 +547,9 @@ enum SchemaV4: VersionedSchema {
 		var hospitalityURL: String?
 		var contractsURL: String?
 
-		@Relationship(deleteRule: .cascade) var travelClaims: [TravelClaim] = []
-		@Relationship(deleteRule: .cascade) var hospitalityDetails: [HospitalityExpenditure] = []
-		@Relationship(deleteRule: .cascade) var contractDetails: [ContractExpenditure] = []
+		@Relationship(deleteRule: .cascade) var travelClaims: [SchemaV4.TravelClaim] = []
+		@Relationship(deleteRule: .cascade) var hospitalityDetails: [SchemaV4.HospitalityExpenditure] = []
+		@Relationship(deleteRule: .cascade) var contractDetails: [SchemaV4.ContractExpenditure] = []
 
 		var total: Double {
 			return travel + hospitality + contracts
@@ -591,8 +585,8 @@ enum SchemaV4: VersionedSchema {
 		var accommodations: Double
 		var mealsAndIncidentals: Double
 		var total: Double
-		var summary: SummaryExpenditure?
-		@Relationship(deleteRule: .cascade) var details: [TravelExpenditureDetail] = []
+		var summary: SchemaV4.SummaryExpenditure?
+		@Relationship(deleteRule: .cascade) var details: [SchemaV4.TravelExpenditureDetail] = []
 
 		init(claimID: String, startDate: Date, endDate: Date, transportation: Double, accommodations: Double, mealsAndIncidentals: Double, total: Double) {
 			self.claimID = claimID
@@ -613,7 +607,7 @@ enum SchemaV4: VersionedSchema {
 		var date: Date
 		var departure: String
 		var destination: String
-		var claim: TravelClaim?
+		var claim: SchemaV4.TravelClaim?
 
 		init(travellerName: String? = nil, travellerType: String, purposeOfTravel: String, date: Date, departure: String, destination: String) {
 			self.travellerName = travellerName
@@ -638,7 +632,7 @@ enum SchemaV4: VersionedSchema {
 		var memberID: Int
 		var year: Int
 		var quarter: Int
-		var summary: SummaryExpenditure?
+		var summary: SchemaV4.SummaryExpenditure?
 
 		init(date: Date, location: String, totalOfAttendees: Int, purposeOfHospitality: String, total: Double, typeOfEvent: String, claim: String, supplier: String, memberID: Int, year: Int, quarter: Int) {
 			self.date = date
@@ -664,7 +658,7 @@ enum SchemaV4: VersionedSchema {
 		var memberID: Int
 		var year: Int
 		var quarter: Int
-		var summary: SummaryExpenditure?
+		var summary: SchemaV4.SummaryExpenditure?
 
 		init(supplier: String, details: String, date: Date, total: Double, memberID: Int, year: Int, quarter: Int) {
 			self.supplier = supplier
@@ -674,6 +668,379 @@ enum SchemaV4: VersionedSchema {
 			self.memberID = memberID
 			self.year = year
 			self.quarter = quarter
+		}
+	}
+}
+
+enum SchemaV5: VersionedSchema {
+	static var versionIdentifier: Schema.Version { .init(5, 0, 0) }
+	static var models: [any PersistentModel.Type] {
+		[
+			SittingCalendar.self,
+			Hansard.self,
+			OrderOfBusiness.self,
+			SubjectOfBusiness.self,
+			ParliamentMember.self,
+			Speech.self,
+			SpeechMessage.self,
+			Constituency.self,
+			SummaryExpenditure.self,
+			TravelClaim.self,
+			TravelExpenditureDetail.self,
+			HospitalityExpenditure.self,
+			ContractExpenditure.self,
+			RecordedVote.self,
+			MemberVote.self
+		]
+	}
+
+	@Model
+	final class SittingCalendar {
+		var year: Int
+		var sittings: [Date]
+		init(year: Int, sittings: [Date]) {
+			self.year = year
+			self.sittings = sittings
+		}
+	}
+
+	@Model
+	final class ParliamentMember: Hashable {
+		@Attribute(.unique) var name:           String
+		var memberID: Int
+		var lastName:       String
+		var firstName:      String
+		var photoURL: 			URL
+		var riding:         String
+		var province: Province
+		var party:          Party
+		var websiteURL:     URL?
+		var imageData: Data?
+		var fromDateTime: Date?
+		var toDateTime: Date?
+		var email: String?
+		var hillPhone: String?
+		var constituencyPhone: String?
+		var constituencyAddress: String?
+		var contactFetched: Bool
+		init(name: String, lastName: String, firstName: String, photoURL: URL, riding: String, province: Province, party: Party, websiteURL: URL? = nil, memberID: Int = 0, fromDateTime: Date? = nil, toDateTime: Date? = nil) {
+			self.name = name
+			self.memberID = memberID
+			self.lastName = lastName
+			self.firstName = firstName
+			self.photoURL = photoURL
+			self.riding = riding
+			self.province = province
+			self.party = party
+			self.websiteURL = websiteURL
+			self.fromDateTime = fromDateTime
+			self.toDateTime = toDateTime
+			self.email = nil
+			self.hillPhone = nil
+			self.constituencyPhone = nil
+			self.constituencyAddress = nil
+			self.contactFetched = false
+		}
+		var initials: String {
+			let first = firstName.first.map(String.init) ?? ""
+			let last = lastName.first.map(String.init) ?? ""
+			return first + last
+		}
+		static func == (lhs: ParliamentMember, rhs: ParliamentMember) -> Bool {
+			return lhs.name == rhs.name
+		}
+		func hash(into hasher: inout Hasher) {
+			hasher.combine(name)
+		}
+	}
+
+	@Model
+	final class Constituency: Hashable {
+		var name: String
+		var province: Province
+		var currentMemberFirstName: String
+		var currentMemberLastName: String
+		var currentMemberParty: Party
+		init(name: String, province: Province, currentMemberFirstName: String, currentMemberLastName: String, currentMemberParty: Party) {
+			self.name = name
+			self.province = province
+			self.currentMemberFirstName = currentMemberFirstName
+			self.currentMemberLastName = currentMemberLastName
+			self.currentMemberParty = currentMemberParty
+		}
+	}
+
+	@Model
+	final class SubjectOfBusiness: Hashable {
+		var title: String
+		var hansardID: String
+		var speeches: [SchemaV5.Speech]
+		var currentSpeech: SchemaV5.Speech?
+		var currentSpeechID: String?
+		init(title: String, hansardID: String, speeches: [SchemaV5.Speech] = []) {
+			self.title = title.trimmingCharacters(in: CharacterSet.whitespaces)
+			self.hansardID = hansardID
+			self.speeches = speeches
+		}
+		static func == (lhs: SubjectOfBusiness, rhs: SubjectOfBusiness) -> Bool {
+			return lhs.hansardID == rhs.hansardID
+		}
+		func hash(into hasher: inout Hasher) {
+			hasher.combine(hansardID)
+		}
+	}
+
+	@Model
+	final class OrderOfBusiness {
+		var hansardID: String
+		var catchline: String
+		var subjects: [SchemaV5.SubjectOfBusiness]
+		init(hansardID: String, catchline: String, subjects: [SchemaV5.SubjectOfBusiness] = []) {
+			self.hansardID = hansardID
+			self.catchline = catchline
+			self.subjects = subjects
+		}
+	}
+
+	@Model
+	final class SpeechMessage {
+		var firstName: String
+		var lastName: String
+		var partyAbbreviation: String
+		var ridingName: String
+		var hansardID: String
+		var content: String
+		var timestamp: Date
+		init(firstName: String, lastName: String, partyAbbreviation: String, ridingName: String, hansardID: String, content: String, timestamp: Date) {
+			self.firstName = firstName
+			self.lastName = lastName
+			self.partyAbbreviation = partyAbbreviation
+			self.ridingName = ridingName
+			self.hansardID = hansardID
+			self.content = content
+			self.timestamp = timestamp
+		}
+	}
+
+	@Model
+	final class Speech: Hashable {
+		var messages: [SchemaV5.SpeechMessage]
+		var hansardID: String
+		var currentMessage: SchemaV5.SpeechMessage?
+		var currentMessageID: String?
+		var date: Date
+		var length: Int
+		var title: String
+		init(messages: [SchemaV5.SpeechMessage], hansardID: String, date: Date, title: String) {
+			self.messages = messages
+			self.hansardID = hansardID
+			self.date = date
+			self.length = messages.count
+			self.title = title
+		}
+		static func == (lhs: Speech, rhs: Speech) -> Bool {
+			return lhs.hansardID == rhs.hansardID
+		}
+		func hash(into hasher: inout Hasher) {
+			hasher.combine(hansardID)
+		}
+	}
+
+	@Model
+	final class Hansard {
+		var date: Date
+		var hansardID: String
+		var parliamentNumber: Int
+		var sessionNumber: Int
+		var orders: [SchemaV5.OrderOfBusiness]
+		init(date: Date, hansardID: String, parliamentNumber: Int, sessionNumber: Int, orders: [SchemaV5.OrderOfBusiness] = []) {
+			self.date = date
+			self.hansardID = hansardID
+			self.parliamentNumber = parliamentNumber
+			self.sessionNumber = sessionNumber
+			self.orders = orders
+		}
+		init(xml: String) {
+			let hansard = XMLBro(xml: xml).parseXML().hansard()
+			date = hansard.date
+			hansardID = hansard.hansardID
+			parliamentNumber = hansard.parliamentNumber
+			sessionNumber = hansard.sessionNumber
+			orders = hansard.orders
+		}
+	}
+
+	@Model
+	final class SummaryExpenditure: Identifiable {
+		var firstName: String
+		var lastName: String
+		var constituency: String
+		var caucus: String
+		var salaries: Double
+		var travel: Double
+		var hospitality: Double
+		var contracts: Double
+		var year: Int
+		var quarter: Int
+		var travelURL: String?
+		var hospitalityURL: String?
+		var contractsURL: String?
+
+		@Relationship(deleteRule: .cascade) var travelClaims: [SchemaV5.TravelClaim] = []
+		@Relationship(deleteRule: .cascade) var hospitalityDetails: [SchemaV5.HospitalityExpenditure] = []
+		@Relationship(deleteRule: .cascade) var contractDetails: [SchemaV5.ContractExpenditure] = []
+
+		var total: Double {
+			return travel + hospitality + contracts
+		}
+
+		var party: Party {
+			return Party.partyWithAbbreviation(caucus)
+		}
+
+		init(firstName: String, lastName: String, constituency: String, caucus: String, salaries: Double, travel: Double, hospitality: Double, contracts: Double, year: Int, quarter: Int, travelURL: String? = nil, hospitalityURL: String? = nil, contractsURL: String? = nil) {
+			self.firstName = firstName
+			self.lastName = lastName
+			self.constituency = constituency
+			self.caucus = caucus
+			self.salaries = salaries
+			self.travel = travel
+			self.hospitality = hospitality
+			self.contracts = contracts
+			self.year = year
+			self.quarter = quarter
+			self.travelURL = travelURL
+			self.hospitalityURL = hospitalityURL
+			self.contractsURL = contractsURL
+		}
+	}
+
+	@Model
+	final class TravelClaim: Identifiable {
+		var claimID: String
+		var startDate: Date
+		var endDate: Date
+		var transportation: Double
+		var accommodations: Double
+		var mealsAndIncidentals: Double
+		var total: Double
+		var summary: SchemaV5.SummaryExpenditure?
+		@Relationship(deleteRule: .cascade) var details: [SchemaV5.TravelExpenditureDetail] = []
+
+		init(claimID: String, startDate: Date, endDate: Date, transportation: Double, accommodations: Double, mealsAndIncidentals: Double, total: Double) {
+			self.claimID = claimID
+			self.startDate = startDate
+			self.endDate = endDate
+			self.transportation = transportation
+			self.accommodations = accommodations
+			self.mealsAndIncidentals = mealsAndIncidentals
+			self.total = total
+		}
+	}
+
+	@Model
+	final class TravelExpenditureDetail: Identifiable {
+		var travellerName: String?
+		var travellerType: String
+		var purposeOfTravel: String
+		var date: Date
+		var departure: String
+		var destination: String
+		var claim: SchemaV5.TravelClaim?
+
+		init(travellerName: String? = nil, travellerType: String, purposeOfTravel: String, date: Date, departure: String, destination: String) {
+			self.travellerName = travellerName
+			self.travellerType = travellerType
+			self.purposeOfTravel = purposeOfTravel
+			self.date = date
+			self.departure = departure
+			self.destination = destination
+		}
+	}
+
+	@Model
+	final class HospitalityExpenditure: Identifiable {
+		var date: Date
+		var location: String
+		var totalOfAttendees: Int
+		var purposeOfHospitality: String
+		var total: Double
+		var typeOfEvent: String
+		var claim: String
+		var supplier: String
+		var memberID: Int
+		var year: Int
+		var quarter: Int
+		var summary: SchemaV5.SummaryExpenditure?
+
+		init(date: Date, location: String, totalOfAttendees: Int, purposeOfHospitality: String, total: Double, typeOfEvent: String, claim: String, supplier: String, memberID: Int, year: Int, quarter: Int) {
+			self.date = date
+			self.location = location
+			self.totalOfAttendees = totalOfAttendees
+			self.purposeOfHospitality = purposeOfHospitality
+			self.total = total
+			self.typeOfEvent = typeOfEvent
+			self.claim = claim
+			self.supplier = supplier
+			self.memberID = memberID
+			self.year = year
+			self.quarter = quarter
+		}
+	}
+
+	@Model
+	final class ContractExpenditure: Identifiable {
+		var supplier: String
+		var details: String
+		var date: Date
+		var total: Double
+		var memberID: Int
+		var year: Int
+		var quarter: Int
+		var summary: SchemaV5.SummaryExpenditure?
+
+		init(supplier: String, details: String, date: Date, total: Double, memberID: Int, year: Int, quarter: Int) {
+			self.supplier = supplier
+			self.details = details
+			self.date = date
+			self.total = total
+			self.memberID = memberID
+			self.year = year
+			self.quarter = quarter
+		}
+	}
+
+	@Model
+	final class RecordedVote {
+		@Attribute(.unique) var voteID: Int
+		var parliament: Int
+		var session: Int
+		var number: Int
+		var date: Date
+		var descriptionEn: String
+		var billNumberCode: String
+		var yea: Int
+		var nay: Int
+		var paired: Int
+		var resultEn: String
+		@Relationship(deleteRule: .cascade, inverse: \SchemaV5.MemberVote.vote) var memberVotes: [SchemaV5.MemberVote] = []
+		init(voteID: Int, parliament: Int, session: Int, number: Int, date: Date,
+			 descriptionEn: String, billNumberCode: String, yea: Int, nay: Int, paired: Int, resultEn: String) {
+			self.voteID = voteID; self.parliament = parliament; self.session = session
+			self.number = number; self.date = date; self.descriptionEn = descriptionEn
+			self.billNumberCode = billNumberCode; self.yea = yea; self.nay = nay
+			self.paired = paired; self.resultEn = resultEn
+		}
+	}
+
+	@Model
+	final class MemberVote {
+		var voteID: Int
+		var memberID: Int
+		var recordedVote: String   // "Yea", "Nay", "Paired", "Abstained"
+		var vote: SchemaV5.RecordedVote?
+		init(voteID: Int, memberID: Int, recordedVote: String) {
+			self.voteID = voteID; self.memberID = memberID; self.recordedVote = recordedVote
 		}
 	}
 }

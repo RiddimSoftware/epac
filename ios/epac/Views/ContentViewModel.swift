@@ -76,7 +76,7 @@ class ContentViewModel {
 		}
 	}
 
-	func downloadInitialData(members: [ParliamentMember], constituencies: [Constituency], fetch: Fetch) async {
+	func downloadInitialData(members: [ParliamentMember], constituencies: [Constituency], modelContext: ModelContext, fetch: Fetch) async {
 		if members.isEmpty {
 			do {
 				try await fetch.downloadMembers()
@@ -89,6 +89,13 @@ class ContentViewModel {
 				try await fetch.downloadConstituencies()
 			} catch {
 				Log.debug("Failed to download constituencies \(error.localizedDescription)")
+			}
+		}
+		if (try? modelContext.fetch(FetchDescriptor<RecordedVote>()))?.isEmpty == true {
+			do {
+				try await fetch.downloadVotingRecords()
+			} catch {
+				Log.debug("Failed to download voting records: \(error.localizedDescription)")
 			}
 		}
 	}
