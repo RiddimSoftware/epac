@@ -14,6 +14,9 @@ struct OntarioLegislatureService {
     private static let cacheKey = "epac.ontario.mpps"
     private static let cacheTimestampKey = "epac.ontario.mpps.ts"
     private static let cacheTTL: TimeInterval = 7 * 86_400 // 1 week
+    // Known-good fallback URL: literal is always valid, forced unwrap is intentional.
+    // swiftlint:disable:next force_unwrapping
+    private static let olaFallbackURL: URL = URL(string: "https://www.ola.org/en/members/current")!
 
     // MARK: - Public API
 
@@ -105,7 +108,7 @@ struct OntarioLegislatureService {
             guard !fn.isEmpty, !ln.isEmpty, !riding.isEmpty else { return nil }
             let email = record["email"] as? String ?? record["Email"] as? String
             let profileURLStr = record["url"] as? String ?? "https://www.ola.org/en/members/current"
-            let profileURL = URL(string: profileURLStr) ?? URL(string: "https://www.ola.org")!
+            let profileURL = URL(string: profileURLStr) ?? olaFallbackURL
             let id = "\(fn)-\(ln)"
                 .lowercased()
                 .replacingOccurrences(of: " ", with: "-")
@@ -147,7 +150,7 @@ struct OntarioLegislatureService {
             let parts = fullName.components(separatedBy: " ")
             let fn = parts.dropLast().joined(separator: " ")
             let ln = parts.last ?? ""
-            let profileURL = URL(string: "https://www.ola.org\(path)") ?? URL(string: "https://www.ola.org")!
+            let profileURL = URL(string: "https://www.ola.org\(path)") ?? olaFallbackURL
             let id = fullName
                 .lowercased()
                 .replacingOccurrences(of: " ", with: "-")

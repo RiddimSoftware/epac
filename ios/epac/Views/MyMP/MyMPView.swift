@@ -252,8 +252,9 @@ struct MyMPView: View {
                     let allMPPs = await OntarioLegislatureService.fetchMPPs()
                     // Federal and provincial ridings don't align perfectly; match on
                     // the first significant word of each riding name as a heuristic.
-                    if let savedRiding = PostalCodeViewModel.savedRidingName {
-                        let firstWord = savedRiding.components(separatedBy: " ").first ?? ""
+                    if let savedRiding = PostalCodeViewModel.savedRidingName,
+                       let firstWord = savedRiding.components(separatedBy: " ").first,
+                       !firstWord.isEmpty {
                         ontarioMPP = allMPPs.first { mpp in
                             mpp.riding.localizedCaseInsensitiveContains(firstWord) ||
                             firstWord.localizedCaseInsensitiveContains(mpp.riding.components(separatedBy: " ").first ?? "")
