@@ -15,42 +15,29 @@
 import UIKit
 
 @MainActor
-final class AppDelegate: NSObject, UIApplicationDelegate {
+extension AppDelegate {
+	func application(
+		_ application: UIApplication,
+		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+	) -> Bool {
+		if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem,
+		   let action = QuickAction(rawValue: shortcutItem.type) {
+			// Router not wired yet; stash for delivery once ContentView appears.
+			coldLaunchAction = action
+		}
+		return true
+	}
 
-    /// Injected by epacApp once ContentView has created the router.
-    var router: NavigationRouter? {
-        didSet {
-            if let action = coldLaunchAction {
-                router?.pendingQuickAction = action
-                coldLaunchAction = nil
-            }
-        }
-    }
-
-    private var coldLaunchAction: QuickAction?
-
-    func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-        if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem,
-           let action = QuickAction(rawValue: shortcutItem.type) {
-            // Router not wired yet — stash for delivery once ContentView appears.
-            coldLaunchAction = action
-        }
-        return true
-    }
-
-    func application(
-        _ application: UIApplication,
-        performActionFor shortcutItem: UIApplicationShortcutItem,
-        completionHandler: @escaping (Bool) -> Void
-    ) {
-        guard let action = QuickAction(rawValue: shortcutItem.type) else {
-            completionHandler(false)
-            return
-        }
-        router?.pendingQuickAction = action
-        completionHandler(true)
-    }
+	func application(
+		_ application: UIApplication,
+		performActionFor shortcutItem: UIApplicationShortcutItem,
+		completionHandler: @escaping (Bool) -> Void
+	) {
+		guard let action = QuickAction(rawValue: shortcutItem.type) else {
+			completionHandler(false)
+			return
+		}
+		router?.pendingQuickAction = action
+		completionHandler(true)
+	}
 }
