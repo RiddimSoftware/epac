@@ -7,7 +7,7 @@ import Foundation
 struct MemberResolverTests {
 	private func makeContext() throws -> ModelContext {
 		let config = ModelConfiguration(isStoredInMemoryOnly: true)
-		let container = try ModelContainer(for: Schema(SchemaV3.models), configurations: config)
+		let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
 		return ModelContext(container)
 	}
 
