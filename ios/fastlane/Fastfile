@@ -1,0 +1,52 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build release archive and upload to TestFlight"
+  lane :deploy do
+    # Authenticate with App Store Connect API for the entire lane.
+    # This covers both automatic code signing and the TestFlight upload.
+    api_key = app_store_connect_api_key(
+      key_id:       ENV.fetch("ASC_KEY_ID"),
+      issuer_id:    ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: File.expand_path(
+        "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+      ),
+      duration:     1200,
+      in_house:     false
+    )
+
+    # Use the last TestFlight build number + 1 so the build number always
+    # advances even if the workflow runs multiple times from the same commit.
+    # Falls back to 1 on the very first upload (no existing builds).
+    next_build_number = (latest_testflight_build_number(api_key: api_key) rescue 0) + 1
+    increment_build_number(
+      build_number: next_build_number,
+      xcodeproj:    "epac.xcodeproj"
+    )
+
+    # Archive the Release configuration. -allowProvisioningUpdates lets
+    # Xcode create or download the distribution certificate and provisioning
+    # profile using the ASC API key — no manual .p12 or .mobileprovision
+    # required. CODE_SIGN_STYLE=Automatic is already set in the project.
+    build_app(
+      scheme:             "epac",
+      configuration:      "Release",
+      export_method:      "app-store",
+      xcargs:             "-allowProvisioningUpdates",
+      output_directory:   "build",
+      output_name:        "epac.ipa",
+      clean:              true
+    )
+
+    # Upload to App Store Connect. The IPA lands in TestFlight immediately
+    # and can be promoted to the App Store from the ASC web UI without a
+    # separate upload step.
+    upload_to_testflight(
+      api_key:                        api_key,
+      ipa:                            "build/epac.ipa",
+      skip_waiting_for_build_processing: true,
+      distribute_external:            false,
+      notify_external_testers:        false
+    )
+  end
+end
