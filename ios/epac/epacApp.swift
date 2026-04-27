@@ -36,7 +36,6 @@ struct epacApp: App {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer)
 				.environment(notificationManager)
-				.task { await notificationManager.requestAuthorization() }
 		}
 		.modelContainer(sharedModelContainer)
 	}

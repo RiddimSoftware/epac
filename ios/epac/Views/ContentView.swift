@@ -49,6 +49,9 @@ struct ContentView: View {
 		.task {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, fetch: fetch)
+			// Request notification permission after initial content is loaded,
+			// so the system prompt appears in context rather than at cold launch.
+			await notificationManager.requestAuthorization()
 		}
 	}
 
