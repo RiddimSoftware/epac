@@ -15,12 +15,24 @@ struct MemberVotingHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var votes: [(mv: MemberVote, rv: RecordedVote?)] = []
     @State private var isLoading = false
+    @State private var loadFailed = false
 
     var body: some View {
         Group {
             if isLoading && votes.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if loadFailed && votes.isEmpty {
+                ContentUnavailableView {
+                    Label(NSLocalizedString("votes.error.title", comment: ""), systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(NSLocalizedString("votes.error.description", comment: ""))
+                } actions: {
+                    Button(NSLocalizedString("votes.error.retry", comment: "")) {
+                        Task { await loadVotes() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else if votes.isEmpty {
                 ContentUnavailableView(
                     NSLocalizedString("votes.empty.title", comment: ""),
@@ -37,17 +49,27 @@ struct MemberVotingHistoryView: View {
         .navigationTitle(NSLocalizedString("votes.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: member.memberID) {
-            isLoading = true
-            let mid = member.memberID
-            try? await fetch.downloadMemberVotes(memberID: mid)
-            let mvs = (try? modelContext.fetch(FetchDescriptor<MemberVote>(
-                predicate: #Predicate { $0.memberID == mid }
-            ))) ?? []
-            votes = mvs
-                .sorted { $0.voteID > $1.voteID }
-                .map { mv in (mv: mv, rv: mv.vote) }
-            isLoading = false
+            await loadVotes()
         }
+    }
+
+    @MainActor
+    private func loadVotes() async {
+        isLoading = true
+        loadFailed = false
+        let mid = member.memberID
+        do {
+            try await fetch.downloadMemberVotes(memberID: mid)
+        } catch {
+            loadFailed = true
+        }
+        let mvs = (try? modelContext.fetch(FetchDescriptor<MemberVote>(
+            predicate: #Predicate { $0.memberID == mid }
+        ))) ?? []
+        votes = mvs
+            .sorted { $0.voteID > $1.voteID }
+            .map { mv in (mv: mv, rv: mv.vote) }
+        isLoading = false
     }
 }
 

@@ -105,6 +105,9 @@
 "votes.toolbarLabel" = "Voting record";
 "votes.empty.title" = "No Votes Loaded";
 "votes.empty.description" = "Vote history will appear after the app syncs.";
+"votes.error.title" = "Couldn't Load Votes";
+"votes.error.description" = "Check your connection and try again.";
+"votes.error.retry" = "Retry";
 
 /* MP Contact */
 "contact.email" = "Email";
