@@ -40,6 +40,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("accountability.projectCosts", comment: ""), systemImage: "chart.bar.doc.horizontal.fill")
 					}
 					.accessibilityHint("Opens federal project cost lifecycle view")
+					NavigationLink(destination: GazetteView()) {
+						Label(NSLocalizedString("gazette.navTitle", comment: ""), systemImage: "newspaper.fill")
+					}
+					.accessibilityHint("Opens Canada Gazette regulations and notices")
 				}
 			}
 			.listStyle(.insetGrouped)
