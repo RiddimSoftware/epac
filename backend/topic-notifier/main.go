@@ -132,8 +132,9 @@ func getConn(ctx context.Context) (*pgx.Conn, error) {
 func HandleRequest(ctx context.Context, req NotifyRequest) error {
 	sittingDate := req.SittingDate
 	if sittingDate == "" {
-		// Default: yesterday in Ottawa time (America/Toronto, UTC-4/UTC-5).
-		// topic-notifier runs at 02:00 UTC = 10 PM Ottawa, so "today Ottawa" = yesterday UTC.
+		// Default: today in Ottawa time (America/Toronto, UTC-4/UTC-5).
+		// Lambda runs at 02:00 UTC = 10 PM Ottawa, so time.Now().In(ottawa) gives
+		// the sitting date (e.g. Tuesday 22:00 Ottawa → "2026-04-29").
 		ottawa, _ := time.LoadLocation("America/Toronto")
 		if ottawa == nil {
 			ottawa = time.UTC
@@ -188,7 +189,11 @@ func HandleRequest(ctx context.Context, req NotifyRequest) error {
 				}
 
 				if err := sendTopicNotification(ctx, apnsJWT, sub.token, tid, subj, sittingDate); err != nil {
-					fmt.Printf("APNs send error to %s...: %v\n", sub.token[:8], err)
+					prefix := sub.token
+					if len(prefix) > 8 {
+						prefix = prefix[:8]
+					}
+					fmt.Printf("APNs send error to %s...: %v\n", prefix, err)
 				} else {
 					sent++
 				}
