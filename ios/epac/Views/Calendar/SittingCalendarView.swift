@@ -150,6 +150,15 @@ struct SittingCalendarView: View {
 					Label("Order Paper", systemImage: "doc.text.below.ecg")
 				}
 			}
+			ToolbarItem(placement: .topBarLeading) {
+				NavigationLink(destination: CommitteesView()) {
+					Label(
+						NSLocalizedString("committees.navTitle", comment: ""),
+						systemImage: "person.3"
+					)
+				}
+				.accessibilityLabel(NSLocalizedString("committees.navTitle", comment: ""))
+			}
 		}
 	}
 }

@@ -363,3 +363,15 @@
 "senate.mySenators.title" = "My Senators";
 "senate.card.name" = "Senator %@";
 "senate.card.accessibility" = "Senator %@, %@";
+
+/* Committees */
+"committees.navTitle" = "Committees";
+"committees.error.title" = "Couldn't Load Committees";
+"committees.error.description" = "Check your connection and try again.";
+"committees.empty.title" = "No Committees";
+"committees.noMeetings" = "No Recent Meetings";
+"committees.meeting.number" = "Meeting %d";
+"committees.agenda" = "Agenda";
+"committees.viewTranscript" = "View full transcript on parl.ca →";
+"committees.transcript.source" = "Full transcripts are published by Parliament of Canada at parl.ca";
+"committees.witness" = "Witness";
