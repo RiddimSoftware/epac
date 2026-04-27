@@ -336,6 +336,7 @@
 "home.recentDebates" = "Recent in Hansard";
 "home.seeAllBills" = "See all bills →";
 "home.manageTopics" = "Manage topics →";
+"home.seeAllDebates" = "Open Parliament tab →";
 
 /* CIHI health wait times */
 "cihi.sectionTitle" = "Health Wait Times (%d)";

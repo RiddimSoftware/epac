@@ -338,6 +338,7 @@
 "home.recentDebates" = "Récent au Hansard";
 "home.seeAllBills" = "Voir tous les projets →";
 "home.manageTopics" = "Gérer les sujets →";
+"home.seeAllDebates" = "Ouvrir l'onglet Parlement →";
 
 /* Temps d'attente en santé ICIS */
 "cihi.sectionTitle" = "Temps d'attente en santé (%d)";
