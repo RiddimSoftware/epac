@@ -98,6 +98,8 @@
 "riding.error.invalidPostalCode" = "Invalid postal code. Please enter a valid Canadian postal code (e.g., K1A 0A6).";
 "riding.error.noFederalRepresentative" = "No federal MP found for this postal code. Please check Elections Canada for your riding.";
 "riding.error.noResults" = "No results found. Please check your postal code and try again.";
+"riding.error.networkError" = "Could not connect to the server. Check your connection and try again.";
+"riding.result.mpLoadingLater" = "Riding found. Your MP's details will appear once membership data loads.";
 
 /* Members view */
 "Search by name or riding" = "Search by name or riding";

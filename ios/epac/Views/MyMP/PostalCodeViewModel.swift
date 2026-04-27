@@ -1,5 +1,6 @@
 import Observation
 import SwiftUI
+import SwiftData
 
 private let ridingNameKey = "epac.myMP.ridingName"
 private let memberNameKey = "epac.myMP.memberName"
@@ -17,7 +18,7 @@ class PostalCodeViewModel {
     static var savedRidingName: String? { UserDefaults.standard.string(forKey: ridingNameKey) }
     static var savedMemberName: String? { UserDefaults.standard.string(forKey: memberNameKey) }
 
-    func lookup() async {
+    func lookup(modelContext: ModelContext) async {
         let trimmed = postalCode.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
         isLoading = true
@@ -25,18 +26,34 @@ class PostalCodeViewModel {
         result = nil
         defer { isLoading = false }
         do {
-            result = try await service.lookup(postalCode: trimmed)
+            let ridingName = try await service.lookupRiding(postalCode: trimmed)
+
+            // Resolve MP from local SwiftData — stays on @MainActor, no data race.
+            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+            let normalized = RidingLookupService.normalizeRidingName(ridingName)
+            let mp = allMembers.first {
+                RidingLookupService.normalizeRidingName($0.riding) == normalized
+            }
+
+            result = RidingLookupResult(
+                memberName: mp?.name ?? "",
+                ridingName: ridingName,
+                partyName: mp?.party.fullName ?? ""
+            )
         } catch let error as RidingLookupError {
             errorMessage = error.errorDescription
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NSLocalizedString("riding.error.networkError", comment: "")
         }
     }
 
     func confirm() {
         guard let result else { return }
         UserDefaults.standard.set(result.ridingName, forKey: ridingNameKey)
-        UserDefaults.standard.set(result.memberName, forKey: memberNameKey)
+        // If no MP resolved yet, save the riding name as a placeholder so the
+        // home feed shows something meaningful rather than the "Find Your MP" prompt.
+        UserDefaults.standard.set(result.memberName.isEmpty ? result.ridingName : result.memberName,
+                                  forKey: memberNameKey)
     }
 
     static func clear() {
