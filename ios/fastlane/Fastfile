@@ -24,15 +24,26 @@ platform :ios do
       xcodeproj:    "epac.xcodeproj"
     )
 
-    # Archive the Release configuration. -allowProvisioningUpdates lets
-    # Xcode create or download the distribution certificate and provisioning
-    # profile using the ASC API key — no manual .p12 or .mobileprovision
-    # required. CODE_SIGN_STYLE=Automatic is already set in the project.
+    # Resolve the .p8 key file path for explicit xcodebuild auth flags.
+    # fastlane's app_store_connect_api_key stores the key in its own context
+    # but does not automatically forward it to xcodebuild's -authenticationKey*
+    # flags. Passing them explicitly ensures Xcode can download the distribution
+    # certificate and provisioning profile on a clean CI runner.
+    key_path = File.expand_path(
+      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+    )
+    auth_flags = [
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath #{key_path}",
+      "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
+      "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
+    ].join(" ")
+
     build_app(
       scheme:             "epac",
       configuration:      "Release",
       export_method:      "app-store",
-      xcargs:             "-allowProvisioningUpdates",
+      xcargs:             auth_flags,
       output_directory:   "build",
       output_name:        "epac.ipa",
       clean:              true
