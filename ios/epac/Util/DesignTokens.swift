@@ -14,10 +14,36 @@ import UIKit
 // MARK: — Party colours
 
 extension Color {
-    /// Returns the canonical party colour for use in UI elements.
-    /// These are the same UIColors as Party.colour but exposed as SwiftUI Color tokens.
+    /// Canonical party colour — dark-mode adaptive.
+    /// In dark mode the colour is lightened (HSB) for contrast on dark surfaces.
     static func party(_ party: Party) -> Color {
-        Color(uiColor: party.colour)
+        Color(uiColor: UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? party.colour.lightened(by: 0.30)
+                : party.colour
+        })
+    }
+
+    /// Subtle tinted background for badges, chips, and avatar placeholders.
+    /// 15% opacity in both modes — visible but unobtrusive over system backgrounds.
+    static func partySubtle(_ party: Party) -> Color {
+        Color(uiColor: party.colour.withAlphaComponent(0.15))
+    }
+}
+
+// MARK: — UIColor utilities
+
+extension UIColor {
+    /// Increases perceived brightness in HSB space.
+    /// Saturation is slightly reduced to compensate for hue wash-out at high brightness.
+    /// Achromatic colors (s = 0) brighten without hue shift.
+    func lightened(by amount: CGFloat) -> UIColor {
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return UIColor(hue: h,
+                       saturation: max(0, s - amount * 0.3),
+                       brightness: min(1, b + amount),
+                       alpha: a)
     }
 }
 
@@ -70,6 +96,16 @@ extension Color {
         case "paired": return .appWarning
         default:       return .appNeutral
         }
+    }
+}
+
+// MARK: — View modifiers
+
+extension View {
+    /// Standard epac card: secondary system background + cornerRadius 12.
+    /// Apply AFTER any inner `.background()` modifiers.
+    func epacCard() -> some View {
+        self.background(Color.appSurface).cornerRadius(12)
     }
 }
 
