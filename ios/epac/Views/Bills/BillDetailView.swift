@@ -128,6 +128,16 @@ struct BillDetailView: View {
                      destination: bill.legisInfoURL)
                     .foregroundStyle(Color.accentColor)
             }
+
+            // MARK: Data source badge
+            Section {
+                HStack {
+                    Spacer()
+                    DataSourceBadge(source: .bills())
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(bill.number)

@@ -400,6 +400,13 @@
 "committees.witness" = "Witness";
 "committees.mp" = "MP";
 
+/* Data source badge (EPAC-104) */
+"dataSource.source" = "Source";
+"dataSource.vintage" = "Data vintage";
+"dataSource.updated" = "Last updated";
+"dataSource.viewSource" = "View source →";
+"dataSource.done" = "Done";
+
 /* Extended search (EPAC-85) */
 "search.prompt" = "Search MPs, votes, debates";
 "search.emptyTitle" = "Search Parliament";

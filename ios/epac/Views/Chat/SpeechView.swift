@@ -127,6 +127,12 @@ struct SpeechView: View {
 				Text("End")
 					.font(.system(.callout, design: .rounded, weight: .regular))
 			}
+			HStack {
+				Spacer()
+				DataSourceBadge(source: .hansard())
+			}
+			.padding(.horizontal)
+			.padding(.bottom, 4)
 		}
 		.simultaneousGesture(
 			TapGesture()
