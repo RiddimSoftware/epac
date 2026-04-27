@@ -128,6 +128,14 @@ struct MyMPView: View {
                 }
             }
             .navigationTitle(PostalCodeViewModel.savedMemberName ?? NSLocalizedString("myMP.navTitle", comment: ""))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: GovernmentConsultationsView()) {
+                        Label("Consultations", systemImage: "bubble.left.and.text.bubble.right")
+                    }
+                    .accessibilityLabel("Government consultations")
+                }
+            }
             .task { await loadActivities() }
         }
         .sheet(isPresented: $showPostalCodeSetup) {
