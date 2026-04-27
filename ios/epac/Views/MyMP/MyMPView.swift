@@ -152,6 +152,14 @@ struct MyMPView: View {
 
     private var activityList: some View {
         List {
+            Section(NSLocalizedString("bills.navTitle", comment: "")) {
+                NavigationLink(destination: BillsView()) {
+                    Label(
+                        NSLocalizedString("bills.browseAll", comment: ""),
+                        systemImage: "doc.text"
+                    )
+                }
+            }
             Section(NSLocalizedString("petitions.navTitle", comment: "")) {
                 NavigationLink(destination: PetitionsView()) {
                     Label(

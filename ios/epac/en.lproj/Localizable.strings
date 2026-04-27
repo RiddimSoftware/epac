@@ -200,3 +200,45 @@
 
 /* My MP activity section header */
 "myMP.activity.section" = "Recent Activity";
+
+/* Bill tracker */
+"bills.navTitle" = "Bills";
+"bills.browseAll" = "Browse bills";
+"bills.filter" = "Filter";
+"bills.filter.all" = "All";
+"bills.filter.status" = "Status";
+"bills.filter.type" = "Type";
+"bills.loading" = "Loading bills";
+"bill.status.inProgress" = "In Progress";
+"bill.status.royalAssent" = "Royal Assent";
+"bill.status.defeated" = "Defeated";
+"bill.status.unknown" = "Unknown";
+"bill.type.houseGovernment" = "House Government Bill";
+"bill.type.privateMember" = "Private Member's Bill";
+"bill.type.senateGovernment" = "Senate Government Bill";
+"bill.type.senatePublic" = "Senate Public Bill";
+"bill.type.senatePrivate" = "Senate Private Bill";
+"bill.type.short.gov" = "Government";
+"bill.type.short.pmb" = "Private Member";
+"bill.type.short.senate" = "Senate";
+"bills.error.title" = "Couldn't Load Bills";
+"bills.error.description" = "Check your connection and try again.";
+"bills.empty.title" = "No Bills";
+"bills.empty.description" = "No bills match your filter.";
+"bills.detail.number" = "Number";
+"bills.detail.status" = "Status";
+"bills.detail.sponsor" = "Sponsor";
+"bills.detail.stage" = "Current Stage";
+"bills.detail.introduced" = "Introduced";
+"bills.detail.type" = "Type";
+"bills.detail.timeline" = "Legislative Timeline";
+"bills.detail.votes" = "Recorded Votes";
+"bills.detail.debates" = "Debates";
+"bills.detail.legisinfo" = "View on LEGISinfo";
+"bills.stage.houseFirst" = "House — First Reading";
+"bills.stage.houseSecond" = "House — Second Reading";
+"bills.stage.houseThird" = "House — Third Reading";
+"bills.stage.senateFirst" = "Senate — First Reading";
+"bills.stage.senateSecond" = "Senate — Second Reading";
+"bills.stage.senateThird" = "Senate — Third Reading";
+"bills.stage.royalAssent" = "Royal Assent";
