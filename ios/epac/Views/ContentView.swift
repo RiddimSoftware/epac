@@ -82,6 +82,12 @@ struct ContentView: View {
 		.sheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }
 		}
+		.onChange(of: router.pendingShowPostalCodeSetup) { _, pending in
+			if pending {
+				showMyMPSetup = true
+				router.pendingShowPostalCodeSetup = false
+			}
+		}
 		.sheet(isPresented: $showWhatsNew) {
 			WhatsNewView { showWhatsNew = false }
 				.presentationDetents([.medium])
@@ -198,19 +204,20 @@ struct ContentView: View {
 	// MARK: - Deep-link navigation helpers
 
 	/// Routes all incoming URLs. Custom scheme `cabinetdoor://` is handled first;
-	/// everything else falls through to ContentViewModel for Hansard date links.
+	/// Universal Links (https://epac.riddimsoftware.com/...) use path-based routing;
+	/// legacy query-parameter links (/app?date=...) fall through to ContentViewModel.
 	private func handleOpenURL(_ url: URL) {
 		guard let scheme = url.scheme?.lowercased() else { return }
 		if scheme == "cabinetdoor" {
 			handleCustomScheme(url)
 		} else {
-			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+			handleUniversalLink(url)
 		}
 	}
 
 	private func handleCustomScheme(_ url: URL) {
 		// cabinetdoor://member/[memberID]
-		// cabinetdoor://vote/[voteID]  → switches to search tab (standalone vote view TBD)
+		// cabinetdoor://vote/[voteID]  → switches to accountability tab
 		let host = url.host?.lowercased() ?? ""
 		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
 		switch host {
@@ -220,6 +227,57 @@ struct ContentView: View {
 			router.selectedTab = .accountability
 		default:
 			break
+		}
+	}
+
+	/// Handles Universal Links from epac.riddimsoftware.com.
+	/// Each path pattern maps to a specific in-app destination; unrecognised paths fall back to Home.
+	private func handleUniversalLink(_ url: URL) {
+		let segments = url.pathComponents.filter { $0 != "/" }
+
+		switch segments.first {
+		case "member":
+			// /member/[member-id] → MP profile
+			if let idStr = segments.dropFirst().first, let id = Int(idStr) {
+				navigateToMember(memberID: id)
+			}
+		case "vote":
+			// /vote/[parliament]-[session]/[number] → Search tab pre-filled
+			let voteRef = segments.dropFirst().joined(separator: "/")
+			if !voteRef.isEmpty { router.pendingSearchQuery = voteRef }
+			router.selectedTab = .search
+		case "bill":
+			// /bill/[bill-number] e.g. /bill/C-50 → Search tab pre-filled
+			if let billNumber = segments.dropFirst().first {
+				router.pendingSearchQuery = billNumber
+				router.selectedTab = .search
+			}
+		case "sitting":
+			// /sitting/[date] → Parliament tab (date routing in ContentViewModel)
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+			router.selectedTab = .parliament
+		case "topic":
+			// /topic/[topic-slug] → Search tab pre-filled
+			if let slug = segments.dropFirst().first {
+				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.selectedTab = .search
+			}
+		case "riding":
+			// /riding/[riding-slug] → Search tab pre-filled (riding detail view planned)
+			if let slug = segments.dropFirst().first {
+				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.selectedTab = .search
+			}
+		case "setup":
+			// /setup/postal-code → postal code setup sheet on Home tab
+			router.pendingShowPostalCodeSetup = true
+			router.selectedTab = .home
+		case "app", nil:
+			// Legacy query-parameter format: /app?date=...&subjectID=...
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		default:
+			// Home fallback for unrecognised paths — never crashes
+			router.selectedTab = .home
 		}
 	}
 

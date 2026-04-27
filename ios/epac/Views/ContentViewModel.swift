@@ -61,28 +61,49 @@ class ContentViewModel {
 
 	func onOpenURL(_ url: URL, modelContext: ModelContext, fetch: Fetch) {
 		Log.debug("\(url.absoluteString)")
+
+		// Path-based format: /sitting/[yyyy-MM-dd]
+		let segments = url.pathComponents.filter { $0 != "/" }
+		if segments.first == "sitting", let dateStr = segments.dropFirst().first {
+			let formatter = DateFormatter()
+			formatter.dateFormat = "yyyy-MM-dd"
+			formatter.locale = Locale(identifier: "en_US_POSIX")
+			if let date = formatter.date(from: dateStr) {
+				navigateToHansard(date: date, subjectID: nil, speechID: nil, messageID: nil,
+				                  modelContext: modelContext, fetch: fetch)
+			}
+			return
+		}
+
+		// Legacy query-parameter format: /app?date=...&subjectID=...&speechID=...&messageID=...
 		guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
 			  let items = components.queryItems else { return }
 
 		let dateString = items.first(where: { $0.name == "date" })?.value
-		let subjectID = items.first(where: { $0.name == "subjectID" })?.value
-		let speechID = items.first(where: { $0.name == "speechID" })?.value
-		let messageID = items.first(where: { $0.name == "messageID" })?.value
+		let subjectID  = items.first(where: { $0.name == "subjectID" })?.value
+		let speechID   = items.first(where: { $0.name == "speechID" })?.value
+		let messageID  = items.first(where: { $0.name == "messageID" })?.value
 
 		guard let dateString, let date = ISO8601DateFormatter().date(from: dateString) else { return }
+		navigateToHansard(date: date, subjectID: subjectID, speechID: speechID, messageID: messageID,
+		                  modelContext: modelContext, fetch: fetch)
+	}
 
+	private func navigateToHansard(date: Date, subjectID: String?, speechID: String?, messageID: String?,
+	                               modelContext: ModelContext, fetch: Fetch) {
 		func applyNavigation(hansard: Hansard) {
 			selectedHansard = hansard
-			if let subjectID {
-				let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
-				if let speechID {
-					subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
-					if let messageID {
-						subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
-					}
+			guard let subjectID else { return }
+			let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(
+				predicate: #Predicate { $0.hansardID == subjectID }
+			)).first
+			if let speechID {
+				subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
+				if let messageID {
+					subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
 				}
-				selectedSubject = subject
 			}
+			selectedSubject = subject
 		}
 
 		if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
