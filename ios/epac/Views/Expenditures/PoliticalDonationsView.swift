@@ -57,14 +57,14 @@ struct PoliticalDonationsView: View {
 					subtitle: "Find donors and recipients on Elections Canada",
 					icon: "magnifyingglass.circle.fill",
 					color: .blue,
-					url: "https://www.elections.ca/WPAPPS/WPF/EN/PF/SearchContributions"
+					url: "https://www.elections.ca/wpapps/WPF/EN/CCS/Index?returntype=1"
 				)
 				searchRow(
 					title: "Annual financial returns",
 					subtitle: "View all registered party returns by year",
 					icon: "doc.text.magnifyingglass",
 					color: .indigo,
-					url: "https://www.elections.ca/fin/pol-part/pol_part-fra_1.xls"
+					url: "https://www.elections.ca/wpapps/WPF/EN/Home/Index?returntype=1"
 				)
 				searchRow(
 					title: "All political financing",
@@ -129,7 +129,7 @@ struct PoliticalDonationsView: View {
 
 	private func partyRow(party: Party, fullName: String) -> some View {
 		Button {
-			if let url = partyURL(party) { openURL(url) }
+			openURL(Self.financialReturnsURL)
 		} label: {
 			HStack(spacing: 12) {
 				Circle()
@@ -140,7 +140,7 @@ struct PoliticalDonationsView: View {
 					Text(fullName)
 						.font(.subheadline)
 						.foregroundStyle(.primary)
-					Text("Annual returns & spending on Elections Canada")
+					Text("Search financial returns on Elections Canada")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
@@ -179,16 +179,7 @@ struct PoliticalDonationsView: View {
 
 	// MARK: - URLs
 
-	private func partyURL(_ party: Party) -> URL? {
-		// Elections Canada party financial returns, keyed by party code
-		let codes: [Party: String] = [
-			.liberal:       "lib",
-			.conservative:  "con",
-			.newdemocratic: "ndp",
-			.bloc:          "bq",
-			.green:         "grn",
-		]
-		guard let code = codes[party] else { return nil }
-		return URL(string: "https://www.elections.ca/fin/pol-part/pol_part-fra.aspx?lang=e&id=\(code)")
-	}
+	// Elections Canada migrated from per-party ASPX pages (pol_part-fra.aspx?id=)
+	// to a unified financial-returns search portal. The old URLs return 404.
+	private static let financialReturnsURL = URL(string: "https://www.elections.ca/wpapps/WPF/EN/Home/Index?returntype=1")!
 }
