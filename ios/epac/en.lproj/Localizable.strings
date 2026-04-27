@@ -511,3 +511,24 @@
 "settings.about.dataSources" = "Data Sources";
 "settings.about.github" = "GitHub (open source)";
 "settings.about.feedback" = "Send feedback";
+
+/* Canada Gazette (EPAC-116) */
+"gazette.navTitle" = "Canada Gazette";
+"gazette.loading" = "Loading Canada Gazette";
+"gazette.error.title" = "Couldn't load Gazette";
+"gazette.error.description" = "The Canada Gazette feed is temporarily unavailable. Check your connection and try again.";
+"gazette.empty.title" = "No notices found";
+"gazette.empty.description" = "No Gazette notices match your current filter.";
+"gazette.filter.all" = "All Parts";
+"gazette.filter.label" = "Filter by part";
+"gazette.search.prompt" = "Search notices";
+"gazette.part.i" = "Part I";
+"gazette.part.ii" = "Part II";
+"gazette.part.i.subtitle" = "Proposed regulations and notices";
+"gazette.part.ii.subtitle" = "Final regulations";
+"gazette.category.notice" = "Notice";
+"gazette.detail.navTitle" = "Notice";
+"gazette.detail.summary" = "Summary";
+"gazette.detail.source" = "Source";
+"gazette.detail.fullText" = "Read full text on canadagazette.gc.ca";
+"gazette.detail.sourceLabel" = "Official source";
