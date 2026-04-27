@@ -437,3 +437,18 @@
 "empty.home.title" = "Set up your civic feed";
 "empty.home.message" = "Add your postal code to track your MP, or follow topics and bills that matter to you.";
 "empty.home.action" = "Find my MP";
+
+/* Contextual menus — speech bubbles (EPAC-170) */
+"speech.share" = "Share Speech";
+"speech.follow" = "Follow %@";
+"speech.unfollow" = "Unfollow %@";
+"speech.goToProfile" = "%@'s Profile";
+"speech.copyQuote" = "Copy Quote";
+
+/* Contextual menus — vote rows (EPAC-170) */
+"vote.contextMenu.share" = "Share Vote";
+"vote.contextMenu.searchDebates" = "See Debate on Bill";
+"vote.contextMenu.writeMP" = "Write to MP";
+
+/* Contextual menus — bill rows (EPAC-170) */
+"bill.contextMenu.seeVotes" = "See Votes on This Bill";

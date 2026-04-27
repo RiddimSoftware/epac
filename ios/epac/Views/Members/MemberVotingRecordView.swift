@@ -98,7 +98,7 @@ struct MemberVotingRecordView: View {
 												vote: vote, memberVote: mv.recordedVote)
 											ContactMyMP.open(to: member, template: template)
 										} label: {
-											Label("Write to MP", systemImage: "envelope.badge")
+											Label(NSLocalizedString("vote.contextMenu.writeMP", comment: ""), systemImage: "envelope.badge")
 										}
 										.tint(.blue)
 									}
@@ -109,7 +109,7 @@ struct MemberVotingRecordView: View {
 											router.pendingSearchQuery = vote.billNumberCode
 											router.selectedTab = .search
 										} label: {
-											Label("Search Debates", systemImage: "magnifyingglass")
+											Label(NSLocalizedString("vote.contextMenu.searchDebates", comment: ""), systemImage: "magnifyingglass")
 										}
 										.tint(.teal)
 									}
@@ -117,9 +117,32 @@ struct MemberVotingRecordView: View {
 										Button {
 											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
 										} label: {
-											Label("Share", systemImage: "square.and.arrow.up")
+											Label(NSLocalizedString("vote.contextMenu.share", comment: ""), systemImage: "square.and.arrow.up")
 										}
 										.tint(.orange)
+									}
+								}
+								.contextMenu {
+									if let vote = rv {
+										Button {
+											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.share", comment: ""), systemImage: "square.and.arrow.up")
+										}
+										if !vote.billNumberCode.isEmpty {
+											Button {
+												router.pendingSearchQuery = vote.billNumberCode
+												router.selectedTab = .search
+											} label: {
+												Label(NSLocalizedString("vote.contextMenu.searchDebates", comment: ""), systemImage: "magnifyingglass")
+											}
+										}
+										Button {
+											let template = ContactMyMP.voteTemplate(vote: vote, memberVote: mv.recordedVote)
+											ContactMyMP.open(to: member, template: template)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.writeMP", comment: ""), systemImage: "envelope")
+										}
 									}
 								}
 						}
