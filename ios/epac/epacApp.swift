@@ -40,6 +40,7 @@ struct epacApp: App {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer)
 				.environment(notificationManager)
+				.onAppear { ReviewRequestManager.shared.recordAppOpen() }
 		}
 		.modelContainer(sharedModelContainer)
 	}

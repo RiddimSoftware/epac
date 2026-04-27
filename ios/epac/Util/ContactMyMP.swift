@@ -82,6 +82,7 @@ Sincerely,
 		]
 		guard let url = components.url else { return }
 		UIApplication.shared.open(url)
+		ReviewRequestManager.shared.requestReviewIfAppropriate()
 	}
 }
 

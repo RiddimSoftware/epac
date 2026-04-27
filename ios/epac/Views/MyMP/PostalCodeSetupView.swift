@@ -109,6 +109,7 @@ struct PostalCodeSetupView: View {
             Button {
                 viewModel.confirm()
                 onDone()
+                ReviewRequestManager.shared.requestReviewIfAppropriate()
             } label: {
                 Text(NSLocalizedString("riding.setup.confirmButton", comment: ""))
                     .frame(maxWidth: .infinity)
