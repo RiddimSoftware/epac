@@ -8,7 +8,7 @@
 import SwiftUI
 import Observation
 
-public enum AppTab: String, CaseIterable, Identifiable {
+public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 	case sittingCalendar
 	case members
 	case expenditures
