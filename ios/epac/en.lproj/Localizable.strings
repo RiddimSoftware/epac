@@ -453,3 +453,34 @@
 
 /* Contextual menus — bill rows (EPAC-170) */
 "bill.contextMenu.seeVotes" = "See Votes on This Bill";
+
+/* Onboarding (EPAC-296) */
+"onboarding.skip" = "Skip";
+"onboarding.getStarted" = "Get Started →";
+
+"onboarding.what.title" = "Canada's Parliament App";
+"onboarding.what.subtitle" = "Built on the official government record.";
+"onboarding.what.point1" = "Every speech your MP makes — from the Hansard verbatim transcript";
+"onboarding.what.point2" = "Every vote they cast — from Parliament.ca's official voting API";
+"onboarding.what.point3" = "Who's lobbying them — from the Commissioner of Lobbying Registry";
+"onboarding.what.trust" = "All from official government sources. Nothing generated or editorialized.";
+
+"onboarding.topics.title" = "What matters to you?";
+"onboarding.topics.subtitle" = "Follow up to 4 topics. Get notified when Parliament debates them.";
+"onboarding.topics.follow" = "Follow %d topic(s) →";
+
+"onboarding.notifications.title" = "Stay informed";
+"onboarding.notifications.subtitle" = "We'll tell you when Parliament acts on things that matter to you.";
+"onboarding.notifications.preview1" = "When your MP speaks or votes";
+"onboarding.notifications.preview2" = "When a bill you follow advances";
+"onboarding.notifications.preview3" = "When Parliament debates a topic you follow";
+"onboarding.notifications.privacy" = "Notifications only. No tracking. No analytics.";
+"onboarding.notifications.allow" = "Allow Notifications →";
+"onboarding.notifications.skip" = "Not now";
+
+"onboarding.promise.title" = "You're set up";
+"onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
+"onboarding.promise.point1" = "Your MP's votes and speeches, as they happen";
+"onboarding.promise.point2" = "Notifications when Parliament debates your %d topic(s)";
+"onboarding.promise.point3" = "No account required. No data sold. No ads.";
+"onboarding.promise.start" = "Start Exploring →";
