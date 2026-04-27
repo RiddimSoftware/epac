@@ -151,13 +151,22 @@ struct SittingCalendarView: View {
 				}
 			}
 			ToolbarItem(placement: .topBarLeading) {
-				NavigationLink(destination: CommitteesView()) {
-					Label(
-						NSLocalizedString("committees.navTitle", comment: ""),
-						systemImage: "person.3"
-					)
+				HStack(spacing: 4) {
+					NavigationLink(destination: CommitteesView()) {
+						Label(
+							NSLocalizedString("committees.navTitle", comment: ""),
+							systemImage: "person.3"
+						)
+					}
+					.accessibilityLabel(NSLocalizedString("committees.navTitle", comment: ""))
+					NavigationLink(destination: OntarioDebatesView()) {
+						Label(
+							NSLocalizedString("ontario.debates.toolbarLabel", comment: ""),
+							systemImage: "building.2"
+						)
+					}
+					.accessibilityLabel(NSLocalizedString("ontario.debates.toolbarLabel", comment: ""))
 				}
-				.accessibilityLabel(NSLocalizedString("committees.navTitle", comment: ""))
 			}
 		}
 	}
