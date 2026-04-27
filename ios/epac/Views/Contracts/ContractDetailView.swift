@@ -36,7 +36,7 @@ struct FederalContractDetailView: View {
                 }
                 if contract.originalValue != contract.value {
                     LabeledContent(NSLocalizedString("contracts.detail.original", comment: ""),
-                                   value: contract.formattedValue)
+                                   value: contract.formattedOriginalValue)
                 }
                 LabeledContent(NSLocalizedString("contracts.detail.refNumber", comment: ""),
                                value: contract.id)
