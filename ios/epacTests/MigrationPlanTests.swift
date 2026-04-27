@@ -15,20 +15,23 @@ struct MigrationPlanTests {
 
     @Test func schemasAreInChronologicalOrder() {
         let schemas = EpacMigrationPlan.schemas
-        #expect(schemas.count == 4)
-        // Confirm the ordering: V3 < V4 < V5 < V6
+        #expect(schemas.count == 5)
+        // Confirm the ordering: V3 < V4 < V5 < V6 < V7
         let v3 = SchemaV3.versionIdentifier
         let v4 = SchemaV4.versionIdentifier
         let v5 = SchemaV5.versionIdentifier
         let v6 = SchemaV6.versionIdentifier
+        let v7 = SchemaV7.versionIdentifier
         #expect(v3 < v4)
         #expect(v4 < v5)
         #expect(v5 < v6)
+        #expect(v6 < v7)
         // Confirm the plan lists them in the same order
         #expect(schemas[0] == SchemaV3.self)
         #expect(schemas[1] == SchemaV4.self)
         #expect(schemas[2] == SchemaV5.self)
         #expect(schemas[3] == SchemaV6.self)
+        #expect(schemas[4] == SchemaV7.self)
     }
 
     @Test func stagesCountIsOnePerSchemaBoundary() {
@@ -42,7 +45,7 @@ struct MigrationPlanTests {
         // Verifies that epacApp's container initialisation doesn't throw on an empty store.
         // Uses an in-memory configuration so tests don't touch disk.
         let container = try ModelContainer(
-            for: Schema(versionedSchema: SchemaV6.self),
+            for: Schema(versionedSchema: SchemaV7.self),
             migrationPlan: EpacMigrationPlan.self,
             configurations: [ModelConfiguration(isStoredInMemoryOnly: true)]
         )
@@ -52,5 +55,7 @@ struct MigrationPlanTests {
         #expect(members.isEmpty)
         let questions = try context.fetch(FetchDescriptor<WrittenQuestion>())
         #expect(questions.isEmpty)
+        let fiscalEntries = try context.fetch(FetchDescriptor<FiscalMonitorEntry>())
+        #expect(fiscalEntries.isEmpty)
     }
 }
