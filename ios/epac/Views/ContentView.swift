@@ -21,6 +21,7 @@ struct ContentView: View {
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
 	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
+	@State private var showOnboarding = !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 	@Query private var members: [ParliamentMember]
 	@Query private var constituencies: [Constituency]
@@ -78,6 +79,14 @@ struct ContentView: View {
 				MemberNameCache.shared.populate(entries: nameEntries)
 				await SpotlightIndexer.indexMembers(spotlightEntries)
 			}
+		}
+		.sheet(isPresented: $showOnboarding) {
+			OnboardingView {
+				showOnboarding = false
+				// Postal code may have been set during onboarding.
+				showMyMPSetup = false
+			}
+			.interactiveDismissDisabled()
 		}
 		.sheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }

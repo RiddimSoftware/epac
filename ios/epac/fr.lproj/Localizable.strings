@@ -455,3 +455,34 @@
 
 /* Menus contextuels — rangées de projet de loi (EPAC-170) */
 "bill.contextMenu.seeVotes" = "Voir les votes sur ce projet de loi";
+
+/* Onboarding (EPAC-296) */
+"onboarding.skip" = "Passer";
+"onboarding.getStarted" = "Commencer →";
+
+"onboarding.what.title" = "L'application du Parlement canadien";
+"onboarding.what.subtitle" = "Fondée sur le dossier officiel du gouvernement.";
+"onboarding.what.point1" = "Chaque discours de votre député — du hansard officiel";
+"onboarding.what.point2" = "Chaque vote — de l'API officielle de Parliament.ca";
+"onboarding.what.point3" = "Qui les influence — du registre du commissaire au lobbying";
+"onboarding.what.trust" = "Toutes les sources officielles du gouvernement. Rien de généré ou d'éditorialisé.";
+
+"onboarding.topics.title" = "Ce qui vous importe";
+"onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets. Soyez averti quand le Parlement en débat.";
+"onboarding.topics.follow" = "Suivre %d sujet(s) →";
+
+"onboarding.notifications.title" = "Restez informé";
+"onboarding.notifications.subtitle" = "Nous vous alerterons quand le Parlement agit sur ce qui vous tient à cœur.";
+"onboarding.notifications.preview1" = "Quand votre député parle ou vote";
+"onboarding.notifications.preview2" = "Quand un projet de loi suivi avance";
+"onboarding.notifications.preview3" = "Quand le Parlement débat d'un sujet suivi";
+"onboarding.notifications.privacy" = "Notifications seulement. Aucun suivi. Aucune publicité.";
+"onboarding.notifications.allow" = "Autoriser les notifications →";
+"onboarding.notifications.skip" = "Pas maintenant";
+
+"onboarding.promise.title" = "Vous êtes prêt";
+"onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
+"onboarding.promise.point1" = "Les votes et discours de votre député, en temps réel";
+"onboarding.promise.point2" = "Notifications quand le Parlement débat de vos %d sujet(s)";
+"onboarding.promise.point3" = "Aucun compte requis. Aucune donnée vendue. Sans publicité.";
+"onboarding.promise.start" = "Commencer à explorer →";
