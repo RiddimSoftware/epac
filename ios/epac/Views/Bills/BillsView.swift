@@ -39,6 +39,15 @@ struct BillsView: View {
                     message: NSLocalizedString("bills.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
                 )
+            } else if filtered.isEmpty && filterIsActive {
+                EmptyStateView(
+                    icon: "line.3.horizontal.decrease.circle",
+                    title: NSLocalizedString("bills.noMatch.title", comment: ""),
+                    message: NSLocalizedString("bills.noMatch.description", comment: ""),
+                    action: EmptyStateAction(label: NSLocalizedString("bills.filter.all", comment: ""), handler: {
+                        statusFilter = nil; typeFilter = nil
+                    })
+                )
             } else if filtered.isEmpty {
                 EmptyStateView(
                     icon: "doc.text",

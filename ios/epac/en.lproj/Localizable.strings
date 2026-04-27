@@ -242,7 +242,9 @@
 "bills.error.title" = "Couldn't Load Bills";
 "bills.error.description" = "Check your connection and try again.";
 "bills.empty.title" = "No Bills";
-"bills.empty.description" = "No bills match your filter.";
+"bills.empty.description" = "No bills are available.";
+"bills.noMatch.title" = "No Bills Found";
+"bills.noMatch.description" = "No bills match the current filters. Try clearing filters to see all bills.";
 "bills.detail.number" = "Number";
 "bills.detail.status" = "Status";
 "bills.detail.sponsor" = "Sponsor";
