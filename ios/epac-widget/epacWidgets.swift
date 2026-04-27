@@ -47,6 +47,10 @@ struct EpacTimelineProvider: TimelineProvider {
 }
 
 // Reads from the App Group — mirrors WidgetDataWriter on the app side.
+// Constants are intentionally duplicated here rather than shared via a framework:
+// the widget extension and the app are separate compilation units and there is
+// no shared Swift package in this project. If a third constant ever appears,
+// promote these to a shared WidgetDataConstants.swift inside a local Swift package.
 private enum WidgetDataReader {
 	static let appGroupID = "group.net.dinglebox.cabinetdoor"
 	private static let nextSittingKey = "widget.nextSitting"

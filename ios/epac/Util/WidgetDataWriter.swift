@@ -35,15 +35,4 @@ enum WidgetDataWriter {
 	static func writeRecentSubjects(_ titles: [String]) {
 		defaults?.set(Array(titles.prefix(3)), forKey: recentSubjectsKey)
 	}
-
-	// MARK: - Readers (used by widget extension)
-
-	static func readNextSitting() -> Date? {
-		guard let interval = defaults?.object(forKey: nextSittingKey) as? TimeInterval else { return nil }
-		return Date(timeIntervalSince1970: interval)
-	}
-
-	static func readRecentSubjects() -> [String] {
-		defaults?.stringArray(forKey: recentSubjectsKey) ?? []
-	}
 }
