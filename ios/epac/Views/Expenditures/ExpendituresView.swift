@@ -68,6 +68,12 @@ struct ExpendituresView: View {
 
                 VStack {
                     Spacer()
+                    HStack {
+                        Spacer()
+                        DataSourceBadge(source: .expenditures())
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 4)
                     searchBar
                 }
                 .padding(.bottom, 10)

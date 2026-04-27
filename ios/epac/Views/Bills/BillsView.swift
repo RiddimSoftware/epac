@@ -105,6 +105,7 @@ struct BillsView: View {
         defer { isLoading = false }
         do {
             bills = try await BillsService.fetchBills()
+            UserDefaults.standard.set(Date(), forKey: "epac.sync.bills")
             // Detect stage changes for followed bills and schedule notifications
             let store = BillFollowStore.shared
             let changes = store.detectChanges(in: bills)

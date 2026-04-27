@@ -56,6 +56,14 @@ struct VoteDetailView: View {
                     }
                 }
             }
+            Section {
+                HStack {
+                    Spacer()
+                    DataSourceBadge(source: .votes())
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(rv.flatMap { $0.billNumberCode.isEmpty ? nil : $0.billNumberCode } ?? "Vote #\(mv.voteID)")

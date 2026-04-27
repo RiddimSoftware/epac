@@ -75,6 +75,7 @@ actor Fetch: ObservableObject {
 		let hansard = Hansard(xml: xml)
 		modelContext.insert(hansard)
 		try modelContext.save()
+		UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
 	}
 
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {
@@ -232,6 +233,7 @@ actor Fetch: ObservableObject {
 			Log.debug("Inserted \(expenditures.count) new expenditures into database")
 		}
 		try modelContext.save()
+		UserDefaults.standard.set(Date(), forKey: "epac.sync.expenditures")
 		try? FileManager.default.removeItem(at: tempURL)
 	}
 
@@ -632,6 +634,7 @@ actor Fetch: ObservableObject {
 				modelContext.insert(vote)
 			}
 			try modelContext.save()
+			UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
 		}
 	}
 

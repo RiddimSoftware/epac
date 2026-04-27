@@ -402,6 +402,13 @@
 "committees.witness" = "Témoin";
 "committees.mp" = "député(e)";
 
+/* Insigne de source de données (EPAC-104) */
+"dataSource.source" = "Source";
+"dataSource.vintage" = "Millésime des données";
+"dataSource.updated" = "Dernière mise à jour";
+"dataSource.viewSource" = "Voir la source →";
+"dataSource.done" = "Terminé";
+
 /* Recherche étendue (EPAC-85) */
 "search.prompt" = "Rechercher députés, votes, débats";
 "search.emptyTitle" = "Rechercher dans le Parlement";

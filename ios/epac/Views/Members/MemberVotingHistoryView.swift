@@ -50,13 +50,23 @@ struct MemberVotingHistoryView: View {
                     description: Text(NSLocalizedString("votes.empty.description", comment: ""))
                 )
             } else {
-                List(votes, id: \.mv.voteID) { pair in
-                    Button {
-                        selectedVote = VoteSelection(mv: pair.mv, rv: pair.rv)
-                    } label: {
-                        VoteRow(mv: pair.mv, rv: pair.rv)
+                List {
+                    ForEach(votes, id: \.mv.voteID) { pair in
+                        Button {
+                            selectedVote = VoteSelection(mv: pair.mv, rv: pair.rv)
+                        } label: {
+                            VoteRow(mv: pair.mv, rv: pair.rv)
+                        }
+                        .foregroundStyle(.primary)
                     }
-                    .foregroundStyle(.primary)
+                    Section {
+                        HStack {
+                            Spacer()
+                            DataSourceBadge(source: .votes())
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
                 }
                 .listStyle(.plain)
                 .navigationDestination(item: $selectedVote) { selection in
