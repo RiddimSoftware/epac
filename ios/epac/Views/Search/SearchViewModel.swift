@@ -25,12 +25,18 @@ class SearchViewModel {
 		let hansard: Hansard
 	}
 
+	/// True when the query is too short to search (checked against trimmed text).
+	var isQueryTooShort: Bool {
+		searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
+	}
+
 	func results(from hansards: [Hansard]) -> [SearchResult] {
 		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard trimmed.count >= 2 else { return [] }
 
+		// hansards arrive pre-sorted most-recent-first from @Query; no re-sort needed.
 		var found: [SearchResult] = []
-		for hansard in hansards.sorted(by: { $0.date > $1.date }) {
+		for hansard in hansards {
 			for order in hansard.orders {
 				for subject in order.subjects where !subject.speeches.isEmpty {
 					if subject.title.localizedCaseInsensitiveContains(trimmed) {

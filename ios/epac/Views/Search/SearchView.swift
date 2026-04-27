@@ -25,7 +25,7 @@ struct SearchView: View {
 	var body: some View {
 		NavigationStack {
 			Group {
-				if viewModel.searchText.count < 2 {
+				if viewModel.isQueryTooShort {
 					promptView
 				} else if results.isEmpty {
 					ContentUnavailableView.search(text: viewModel.searchText)
