@@ -582,8 +582,7 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadVotingRecords(parliament: Int = 44) async throws {
-		let existing = try modelContext.fetch(FetchDescriptor<RecordedVote>())
-		guard existing.isEmpty else { return }
+		guard (try modelContext.fetchCount(FetchDescriptor<RecordedVote>())) == 0 else { return }
 
 		var page = 1
 		var hasMore = true

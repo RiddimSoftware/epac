@@ -87,7 +87,9 @@ struct VoteDetailView: View {
         let matched = allSubjects.filter { $0.title.localizedCaseInsensitiveContains(bill) }
         guard !matched.isEmpty else { return }
 
-        let allHansards = (try? modelContext.fetch(FetchDescriptor<Hansard>())) ?? []
+        var hansDescriptor = FetchDescriptor<Hansard>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        hansDescriptor.fetchLimit = 500
+        let allHansards = (try? modelContext.fetch(hansDescriptor)) ?? []
         var results: [(subject: SubjectOfBusiness, hansard: Hansard)] = []
         for subject in matched {
             // Primary strategy: use Speech.date to find the parent Hansard
