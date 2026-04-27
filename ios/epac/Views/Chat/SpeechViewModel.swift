@@ -11,6 +11,7 @@ import SwiftData
 import ActivityView
 import SwiftUI
 
+@MainActor
 @Observable
 class SpeechViewModel {
 	var messages: [Message] = []

@@ -5,6 +5,7 @@
 
 import Observation
 
+@MainActor
 @Observable
 class SittingViewModel {
 	private var pendingDownloads: Set<String> = []

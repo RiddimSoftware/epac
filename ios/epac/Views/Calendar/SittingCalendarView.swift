@@ -127,6 +127,7 @@ struct SittingCalendarView: View {
 			}
 		}
 	}
+}
 
 extension Date: @retroactive Identifiable {
 	public var id: Date {
