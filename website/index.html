@@ -201,6 +201,16 @@
       .pillar-card { padding: 40px 20px; }
       .screenshot { width: 200px; }
     }
+
+    /* Features section */
+    .features-section { background: var(--card-bg); padding: 60px 0; margin-top: 60px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; text-align: left; }
+    .category-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; margin-bottom: 20px; }
+    .feature-list { display: flex; flex-direction: column; gap: 20px; }
+    .feature-item { display: flex; gap: 14px; align-items: flex-start; }
+    .fi { font-size: 1.4rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+    .feature-item strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
+    .feature-item p { font-size: 0.85rem; opacity: 0.65; line-height: 1.5; margin: 0; }
   </style>
 
   <!-- Google tag (gtag.js) -->
@@ -254,6 +264,62 @@
       </div>
     </div>
   </main>
+
+  <section class="features-section">
+    <div class="hero-content" style="padding-top: 20px; padding-bottom: 20px;">
+      <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); margin-bottom: 12px; font-family: var(--font-rounded);">Everything Parliament. In your pocket.</h2>
+      <p class="subtitle" style="font-size: 1rem; margin-bottom: 48px;">epac brings together 12+ official data sources so you never have to wonder what your government is doing.</p>
+      <div class="features-grid">
+
+        <div class="feature-category">
+          <div class="category-label">Know Your MP</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">🗳️</span><div><strong>Voting Record</strong><p>Every vote your MP has cast, with Yea/Nay results and the final outcome.</p></div></div>
+            <div class="feature-item"><span class="fi">💬</span><div><strong>Debate Activity</strong><p>How often your MP speaks in the House and on which subjects.</p></div></div>
+            <div class="feature-item"><span class="fi">💰</span><div><strong>MP Spending</strong><p>Quarterly travel, hospitality, and contract expenditures.</p></div></div>
+            <div class="feature-item"><span class="fi">🤝</span><div><strong>Lobbyist Connections</strong><p>Who is lobbying your MP — from the Commissioner of Lobbying registry.</p></div></div>
+            <div class="feature-item"><span class="fi">📬</span><div><strong>Contact Your MP</strong><p>Pre-written email templates tied to specific votes or debates.</p></div></div>
+            <div class="feature-item"><span class="fi">⚖️</span><div><strong>Party-Line Score</strong><p>How often your MP votes with their party vs. independently.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Follow What Matters</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">📜</span><div><strong>Bill Tracker</strong><p>Follow bills from introduction to Royal Assent, with vote and debate links.</p></div></div>
+            <div class="feature-item"><span class="fi">🔔</span><div><strong>Follow a Member</strong><p>Notifications when your MP votes, speaks, or has new expense data.</p></div></div>
+            <div class="feature-item"><span class="fi">🏷️</span><div><strong>Topic Following</strong><p>Subscribe to housing, healthcare, environment, and more.</p></div></div>
+            <div class="feature-item"><span class="fi">🗺️</span><div><strong>My MP</strong><p>Enter your postal code to get a personalized feed for your representative.</p></div></div>
+            <div class="feature-item"><span class="fi">🏠</span><div><strong>Personalized Home</strong><p>Today's activity from your MP, followed bills, topics, and recent debates.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Understand Parliament</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">🔍</span><div><strong>Hansard Search</strong><p>Search across all sittings for debates on any topic.</p></div></div>
+            <div class="feature-item"><span class="fi">📅</span><div><strong>Sitting Calendar</strong><p>See which days Parliament sits, with upcoming sittings highlighted.</p></div></div>
+            <div class="feature-item"><span class="fi">📋</span><div><strong>Order Paper</strong><p>What Parliament has scheduled before it sits — with official source link.</p></div></div>
+            <div class="feature-item"><span class="fi">📝</span><div><strong>e-Petitions</strong><p>Browse and track open petitions in the House of Commons.</p></div></div>
+            <div class="feature-item"><span class="fi">🔗</span><div><strong>Vote-Speech Links</strong><p>See which debates led to which votes — the context behind the decision.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Accountability Data</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">📊</span><div><strong>MP Expenditures</strong><p>Quarterly travel, hospitality, and contract spending for every MP.</p></div></div>
+            <div class="feature-item"><span class="fi">🗳️</span><div><strong>Electoral History</strong><p>Past election results for any riding, via Elections Canada.</p></div></div>
+            <div class="feature-item"><span class="fi">💸</span><div><strong>Political Donations</strong><p>Annual limits and party financial disclosures from Elections Canada.</p></div></div>
+            <div class="feature-item"><span class="fi">📈</span><div><strong>Riding Statistics</strong><p>2021 Census data and housing market links for your riding.</p></div></div>
+            <div class="feature-item"><span class="fi">🏛️</span><div><strong>Government Consultations</strong><p>Open federal consultation processes where you can have your say.</p></div></div>
+            <div class="feature-item"><span class="fi">📤</span><div><strong>Share Votes</strong><p>Fact-checkable links with verified source citations for any vote.</p></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
 
   <section class="cta-footer">
     <a href="https://apps.apple.com/ca/app/epac/id1224459142">
