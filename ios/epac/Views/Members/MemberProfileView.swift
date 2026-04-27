@@ -82,6 +82,20 @@ struct MemberProfileView: View {
 				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 					contactSection
 				}
+
+				NavigationLink(destination: MemberVotingRecordView(member: member)) {
+					HStack {
+						Label(NSLocalizedString("voting.title", comment: ""), systemImage: "checkmark.ballot")
+						Spacer()
+						Image(systemName: "chevron.right")
+							.font(.caption)
+							.foregroundStyle(.tertiary)
+					}
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+				}
+				.foregroundStyle(.primary)
 			}
 			.padding()
 		}
@@ -169,27 +183,28 @@ struct MemberAvatar: View {
 
 	var body: some View {
 		Group {
-			if let data = member.imageData, let img = UIImage(data: data) {
-				Image(uiImage: img).resizable().scaledToFill()
-			} else if let img = cachedImage {
-				Image(uiImage: img).resizable().scaledToFill()
+			if let data = member.imageData, let image = UIImage(data: data) {
+				// L2: SwiftData persistent cache — fastest path after cold launch
+				Image(uiImage: image).resizable().scaledToFill()
+			} else if let image = cachedImage {
+				// L1: NSCache in-memory hit
+				Image(uiImage: image).resizable().scaledToFill()
 			} else {
-				AsyncImage(url: member.photoURL) { phase in
-					if case .success(let image) = phase {
-						image.resizable().scaledToFill()
-					} else {
-						placeholder
-					}
-				}
-				.task {
-					if let img = MemberImageCache.shared.image(for: member.photoURL) {
-						cachedImage = img
-					} else if let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
-					          let img = UIImage(data: data) {
+				// L3: single URLSession download; AsyncImage removed to avoid a
+				// concurrent duplicate request racing the .task fetch below.
+				placeholder
+					.task(id: member.photoURL) {
+						// Fast path: already in NSCache (e.g. populated by SpeakerImageViewModel)
+						if let cached = MemberImageCache.shared.image(for: member.photoURL) {
+							cachedImage = cached
+							return
+						}
+						// Slow path: network fetch — single owner of the download
+						guard let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
+						      let img = UIImage(data: data) else { return }
 						MemberImageCache.shared.store(img, for: member.photoURL)
 						cachedImage = img
 					}
-				}
 			}
 		}
 		.clipShape(Circle())

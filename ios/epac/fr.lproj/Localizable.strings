@@ -105,3 +105,10 @@
 "contact.hillOffice" = "Bureau sur la Colline";
 "contact.constituencyPhone" = "Bureau de circonscription";
 "contact.constituencyAddress" = "Adresse du bureau de circonscription";
+
+/* Voting Record */
+"voting.title" = "Dossier de vote";
+"voting.empty.title" = "Aucun dossier de vote";
+"voting.empty.description" = "Les données de vote pour ce membre n'ont pas encore été chargées.";
+"voting.recentVotes" = "Votes récents";
+"voting.withMajority" = "Votes avec la majorité";
