@@ -56,6 +56,11 @@ struct LobbyingView: View {
         let result = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
         isLoading = false
         communications = result
+        // fetchCommunications never throws; check the service's error flag to distinguish
+        // a network failure from an MP who has no registered communications.
+        if result.isEmpty {
+            loadFailed = await LobbyistService.lastFetchFailed
+        }
     }
 }
 

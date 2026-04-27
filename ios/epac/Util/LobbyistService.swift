@@ -26,7 +26,7 @@
 //
 
 import Foundation
-import Compression
+import zlib
 
 struct LobbyistService {
 
@@ -45,6 +45,10 @@ struct LobbyistService {
         private(set) var isLoaded = false
         private(set) var loadError: Bool = false
 
+        // In-flight download task — prevents a concurrent second 22 MB download when two
+        // callers race through fetchCommunications before isLoaded becomes true.
+        private var inflightTask: Task<Void, Error>?
+
         // Parsed tables — populated once on first download.
         private(set) var dpohTable:    [String: [(lastName: String, firstName: String, institution: String)]] = [:]
         private(set) var primaryTable: [String: PrimaryRecord] = [:]
@@ -60,11 +64,25 @@ struct LobbyistService {
             subjectTable = subjects
             smtDescs     = smt
             isLoaded     = true
+            inflightTask = nil
         }
 
         func markFailed() {
-            loadError = true
-            isLoaded  = true   // prevent infinite retries in one session
+            loadError    = true
+            isLoaded     = true   // prevent infinite retries in one session
+            inflightTask = nil
+        }
+
+        /// Returns the existing in-flight download task if one is running, otherwise
+        /// registers and returns a new one. The check+create is atomic within the actor
+        /// so concurrent callers can never create two independent downloads.
+        func inflightTaskOrNew(makeTask: () -> Task<Void, Error>) -> (task: Task<Void, Error>, isNew: Bool) {
+            if let existing = inflightTask {
+                return (existing, false)
+            }
+            let task = makeTask()
+            inflightTask = task
+            return (task, true)
         }
 
         func cached(key: String) -> [LobbyistCommunication]? { commsPerMP[key] }
@@ -76,6 +94,12 @@ struct LobbyistService {
 
     // MARK: - Public API
 
+    /// True if the last download attempt failed. Lets callers distinguish
+    /// "network error" from "MP has no registered communications".
+    static var lastFetchFailed: Bool {
+        get async { await cache.loadError }
+    }
+
     /// Returns at most 50 lobbying communications where the MP identified by
     /// `lastName` / `firstName` is the Designated Public Office Holder.
     /// Sorted by date descending. Always returns an array — never throws.
@@ -86,7 +110,7 @@ struct LobbyistService {
 
         if !(await cache.isLoaded) {
             do {
-                try await downloadAndParse()
+                try await ensureLoaded()
             } catch {
                 await cache.markFailed()
                 return []
@@ -110,6 +134,19 @@ struct LobbyistService {
     }
 
     // MARK: - Download + Parse
+
+    /// Ensures the ZIP is downloaded and parsed exactly once per session.
+    /// Concurrent callers that arrive while the download is in-flight await the
+    /// same Task instead of starting a second 22 MB download.
+    ///
+    /// The check+create is performed inside a single actor call so it is atomic
+    /// with respect to other callers — no two tasks are ever registered.
+    private static func ensureLoaded() async throws {
+        let (task, _) = await cache.inflightTaskOrNew {
+            Task<Void, Error> { try await downloadAndParse() }
+        }
+        try await task.value
+    }
 
     private static func downloadAndParse() async throws {
         var request = URLRequest(url: zipURL, timeoutInterval: 60)
@@ -212,22 +249,48 @@ struct LobbyistService {
         throw URLError(.cannotParseResponse)
     }
 
-    /// Decompresses raw DEFLATE-compressed bytes using Apple's Compression framework.
-    private static func inflate(_ data: Data, uncompressedSize: Int) throws -> Data {
-        // Copy input to a raw buffer to avoid overlapping-access errors when
-        // both withUnsafeBytes blocks are nested.
-        let inputBytes = [UInt8](data)
-        var outputBytes = [UInt8](repeating: 0, count: max(uncompressedSize, 1))
+    /// Decompresses raw DEFLATE-compressed bytes (ZIP compression method 8) using libz.
+    ///
+    /// Apple's Compression framework constant `COMPRESSION_ZLIB` decompresses
+    /// **zlib-wrapped** data (RFC 1950: 2-byte header + Adler-32 trailer). ZIP stores
+    /// **raw DEFLATE** (RFC 1951) with no header or trailer; passing raw DEFLATE bytes
+    /// to `compression_decode_buffer` with `COMPRESSION_ZLIB` always returns 0 (failure).
+    ///
+    /// The fix uses libz directly with `inflateInit2_` and `windowBits = -15`, which
+    /// tells zlib to expect raw DEFLATE with no framing.
+    private static func inflate(_ compressed: Data, uncompressedSize: Int) throws -> Data {
+        let capacity = max(uncompressedSize, 1)
+        var output = Data(count: capacity)
+        var totalOut: Int = 0
 
-        let result = compression_decode_buffer(
-            &outputBytes, outputBytes.count,
-            inputBytes, inputBytes.count,
-            nil,
-            COMPRESSION_ZLIB   // raw DEFLATE — matches ZIP compression method 8
-        )
+        try compressed.withUnsafeBytes { srcPtr in
+            try output.withUnsafeMutableBytes { dstPtr in
+                var stream = z_stream()
+                // windowBits = -15 → raw DEFLATE (no zlib header/trailer)
+                guard inflateInit2_(&stream,
+                                    -15,
+                                    ZLIB_VERSION,
+                                    Int32(MemoryLayout<z_stream>.size)) == Z_OK else {
+                    throw URLError(.cannotParseResponse)
+                }
+                defer { inflateEnd(&stream) }
 
-        guard result > 0 else { throw URLError(.cannotParseResponse) }
-        return Data(outputBytes.prefix(result))
+                stream.next_in   = UnsafeMutablePointer(mutating: srcPtr.bindMemory(to: UInt8.self).baseAddress!)
+                stream.avail_in  = uInt(compressed.count)
+                stream.next_out  = dstPtr.bindMemory(to: UInt8.self).baseAddress!
+                stream.avail_out = uInt(capacity)
+
+                let status = zlib.inflate(&stream, Z_FINISH)
+                guard status == Z_STREAM_END || status == Z_OK else {
+                    throw URLError(.cannotParseResponse)
+                }
+                totalOut = Int(stream.total_out)
+            }
+        }
+
+        guard totalOut > 0 else { throw URLError(.cannotParseResponse) }
+        output.count = totalOut
+        return output
     }
 
     // MARK: - CSV Parsers
