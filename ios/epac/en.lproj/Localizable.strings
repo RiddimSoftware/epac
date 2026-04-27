@@ -72,6 +72,19 @@
 "Comparison" = "Comparison";
 "Expenditures (all periods)" = "Expenditures (all periods)";
 
+/* My MP / Riding lookup */
+"riding.setup.navTitle" = "My MP";
+"riding.setup.title" = "Find Your MP";
+"riding.setup.subtitle" = "Enter your postal code to identify your Member of Parliament.";
+"riding.setup.placeholder" = "Postal Code (e.g. K1A 0A6)";
+"riding.setup.lookupButton" = "Look Up";
+"riding.setup.confirmButton" = "This is my MP";
+"riding.setup.skip" = "Skip";
+"riding.myMP.toolbarLabel" = "My MP";
+"riding.error.invalidPostalCode" = "Invalid postal code. Please enter a valid Canadian postal code (e.g., K1A 0A6).";
+"riding.error.noFederalRepresentative" = "No federal MP found for this postal code. Please check Elections Canada for your riding.";
+"riding.error.noResults" = "No results found. Please check your postal code and try again.";
+
 /* Members view */
 "Search by name or riding" = "Search by name or riding";
 "Loading members..." = "Loading members...";
