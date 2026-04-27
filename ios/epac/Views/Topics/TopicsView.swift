@@ -41,6 +41,15 @@ struct TopicsView: View {
                     : NSLocalizedString("topic.follow", comment: ""))
             }
             .padding(.vertical, 2)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                if store.isFollowing(topic.id) {
+                    Button(role: .destructive) {
+                        store.unfollow(topic.id)
+                    } label: {
+                        Label(NSLocalizedString("topic.unfollow", comment: ""), systemImage: "bell.slash")
+                    }
+                }
+            }
         }
         .listStyle(.plain)
         .searchable(

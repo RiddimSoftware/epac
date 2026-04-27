@@ -13,7 +13,9 @@ struct MemberProfileView: View {
 	let member: ParliamentMember
 
 	@EnvironmentObject private var fetch: Fetch
-	@Query(sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
+	// Compare picker only needs current MPs — predicate avoids loading all historical members.
+	@Query(filter: #Predicate<ParliamentMember> { $0.toDateTime == nil },
+	       sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
 	@State private var showingComparePicker = false
 	@State private var comparisonTarget: ParliamentMember?
 	@State private var navigateToComparison = false

@@ -248,6 +248,8 @@
 "bills.noMatch.title" = "No Bills Found";
 "bills.noMatch.description" = "No bills match the current filters. Try clearing filters to see all bills.";
 "bills.detail.number" = "Number";
+"bills.detail.parliament" = "Parliament";
+"bills.detail.parliament.value" = "%d-%d";
 "bills.detail.status" = "Status";
 "bills.detail.sponsor" = "Sponsor";
 "bills.detail.stage" = "Current Stage";

@@ -29,6 +29,11 @@ struct BillDetailView: View {
                     value: bill.number
                 )
                 LabeledContent(
+                    NSLocalizedString("bills.detail.parliament", comment: ""),
+                    value: String(format: NSLocalizedString("bills.detail.parliament.value", comment: ""),
+                                  bill.parliament, bill.session)
+                )
+                LabeledContent(
                     NSLocalizedString("bills.detail.status", comment: ""),
                     value: bill.status.displayName
                 )

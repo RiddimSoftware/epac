@@ -251,6 +251,8 @@
 "bills.noMatch.title" = "Aucun résultat";
 "bills.noMatch.description" = "Aucun projet de loi ne correspond aux filtres actuels. Effacez les filtres pour tout afficher.";
 "bills.detail.number" = "Numéro";
+"bills.detail.parliament" = "Parlement";
+"bills.detail.parliament.value" = "%d-%d";
 "bills.detail.status" = "Statut";
 "bills.detail.sponsor" = "Parrain";
 "bills.detail.stage" = "Étape actuelle";
