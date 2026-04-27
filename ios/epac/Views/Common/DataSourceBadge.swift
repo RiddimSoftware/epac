@@ -159,6 +159,17 @@ struct DataSource {
         )
     }
 
+    static func members(lastSync: Date? = nil) -> DataSource {
+        DataSource(
+            name: "Parliament of Canada",
+            description: "MP profiles, ridings, and contact information from Parliament of Canada.",
+            url: URL(string: "https://www.ourcommons.ca/members/en")!,
+            lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.members") as? Date,
+            vintage: nil,
+            stalenessThreshold: 86400 * 30  // amber after 30 days
+        )
+    }
+
     static var lobbyist: DataSource {
         DataSource(
             name: "Commissioner of Lobbying",

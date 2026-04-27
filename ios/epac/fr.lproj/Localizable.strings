@@ -352,6 +352,7 @@
 "home.followedTopics" = "Sujets suivis";
 "home.recentDebates" = "Récent au Hansard";
 "home.seeAllBills" = "Voir tous les projets →";
+"home.clearAllBills" = "Tout effacer";
 "home.manageTopics" = "Gérer les sujets →";
 "home.seeAllDebates" = "Ouvrir l'onglet Parlement →";
 

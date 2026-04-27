@@ -175,11 +175,25 @@ struct HomeFeedView: View {
                 }
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
+                .accessibilityLabel("Bill \(number), \(state.lastKnownStage), Followed")
             }
-            NavigationLink(destination: BillsView()) {
-                Text(NSLocalizedString("home.seeAllBills", comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.tint)
+            HStack {
+                NavigationLink(destination: BillsView()) {
+                    Text(NSLocalizedString("home.seeAllBills", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                }
+                if billStore.followed.count > 3 {
+                    Spacer()
+                    Button {
+                        billStore.unfollowAll()
+                    } label: {
+                        Text(NSLocalizedString("home.clearAllBills", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    .accessibilityLabel("Unfollow all bills")
+                }
             }
         }
     }
