@@ -561,3 +561,14 @@
 "contracts.detail.openData" = "View on open.canada.ca";
 "contracts.detail.sourceLabel" = "Official source";
 "contracts.detail.sourceName" = "Treasury Board Secretariat — Proactive Disclosure of Contracts";
+
+/* Vancouver City Council */
+"vancouver.myCouncil.title" = "My City Council (Vancouver)";
+"vancouver.councillor.nameLabel" = "%1$@ %2$@";
+"vancouver.votes.navTitle" = "Vancouver Council Votes";
+"vancouver.votes.browseButton" = "Browse Council Votes";
+"vancouver.votes.filter" = "Filter by Topic";
+"vancouver.votes.allCategories" = "All Topics";
+"vancouver.votes.empty.title" = "No Votes Found";
+"vancouver.votes.empty.description" = "Vancouver City Council vote records will appear here.";
+"vancouver.votes.sourceLink" = "Source: City of Vancouver Open Data";

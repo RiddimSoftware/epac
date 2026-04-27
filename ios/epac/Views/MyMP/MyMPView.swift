@@ -109,6 +109,8 @@ struct MyMPView: View {
     @State private var senators: [Senator] = []
     @State private var senatorsLoaded = false
     @State private var ontarioMPP: OntarioMPP?
+    @State private var vancouverCouncillors: [VancouverCouncillor] = []
+    @State private var showVancouverVotes = false
 
     var body: some View {
         NavigationStack {
@@ -153,6 +155,9 @@ struct MyMPView: View {
             }
             .navigationDestination(isPresented: $showElectionResources) {
                 ElectionResourcesView()
+            }
+            .navigationDestination(isPresented: $showVancouverVotes) {
+                VancouverVotesView()
             }
             .task { await loadActivities() }
         }
@@ -219,6 +224,19 @@ struct MyMPView: View {
                     OntarioMPPCard(mpp: mpp)
                 }
             }
+            if !vancouverCouncillors.isEmpty {
+                Section(NSLocalizedString("vancouver.myCouncil.title", comment: "")) {
+                    ForEach(vancouverCouncillors) { councillor in
+                        VancouverCouncillorCard(councillor: councillor)
+                    }
+                    Button {
+                        showVancouverVotes = true
+                    } label: {
+                        Label(NSLocalizedString("vancouver.votes.browseButton", comment: ""),
+                              systemImage: "building.2")
+                    }
+                }
+            }
             Section(NSLocalizedString("myMP.activity.section", comment: "")) {
                 ForEach(activities) { activity in
                     ActivityRow(activity: activity)
@@ -268,6 +286,12 @@ struct MyMPView: View {
                             firstWord.localizedCaseInsensitiveContains(mpp.riding.components(separatedBy: " ").first ?? "")
                         }
                     }
+                }
+
+                // Load Vancouver City Council when the federal riding is in Vancouver
+                if let savedRiding = PostalCodeViewModel.savedRidingName,
+                   VancouverCouncilService.isVancouverRiding(savedRiding) {
+                    vancouverCouncillors = await VancouverCouncilService.fetchCouncillors()
                 }
             }
         }
