@@ -49,6 +49,10 @@ struct SittingView: View {
 								}
 								.padding(.vertical, 4)
 								.contentShape(Rectangle())
+								.accessibilityElement(children: .ignore)
+								.accessibilityLabel(subject.title)
+								.accessibilityHint("Open debate")
+								.accessibilityAddTraits(.isButton)
 								.onTapGesture {
 									selectedSubject = subject
 								}
@@ -101,7 +105,7 @@ struct SittingSpeakerView: View {
 
 			Text(verbatim: name)
 
-				.font(.system(size: 13, weight: .medium, design: .rounded))
+				.font(.system(.footnote, design: .rounded).weight(.medium))
 
 				.foregroundColor(.secondary)
 

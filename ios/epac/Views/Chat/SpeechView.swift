@@ -54,6 +54,8 @@ struct SpeechView: View {
 								router.selectedMember = speaker
 								router.selectedTab = .members
 							}
+							.accessibilityAddTraits(.isButton)
+							.accessibilityHint("View member profile")
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -63,9 +65,9 @@ struct SpeechView: View {
 								if let speaker = viewModel.speakers[message.id] {
 									VStack(alignment: .leading, spacing: 0) {
 										Text(speaker.name)
-											.font(.system(size: 12, weight: .bold, design: .rounded))
+											.font(.system(.caption, design: .rounded).bold())
 										Text("\(speaker.riding), \(speaker.province.rawValue)")
-											.font(.system(size: 10, weight: .regular, design: .rounded))
+											.font(.system(.caption2, design: .rounded))
 									}
 									.foregroundStyle(.white.opacity(0.8))
 								}
@@ -84,6 +86,8 @@ struct SpeechView: View {
 								router.selectedMember = speaker
 								router.selectedTab = .members
 							}
+							.accessibilityAddTraits(.isButton)
+							.accessibilityHint("View member profile")
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -156,6 +160,7 @@ struct SpeechView: View {
 				} label: {
 					Image(systemName: "arrow.clockwise")
 				}
+				.accessibilityLabel("Restart debate")
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
@@ -163,6 +168,7 @@ struct SpeechView: View {
 				} label: {
 					Image(systemName: "square.and.arrow.up")
 				}
+				.accessibilityLabel("Share recent messages")
 			}
 		}
 	}

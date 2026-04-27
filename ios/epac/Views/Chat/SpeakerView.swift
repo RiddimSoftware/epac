@@ -35,7 +35,7 @@ struct SpeakerView: View {
 								.fill(Color(uiColor: speaker.party.colour))
 								.frame(width: 46, height: 46)
 							Text(speaker.initials)
-								.font(.system(size: 18, weight: .bold, design: .rounded))
+								.font(.system(.headline, design: .rounded))
 								.foregroundColor(.white)
 						}
 						.frame(width: 46, height: 77)
@@ -53,9 +53,12 @@ struct SpeakerView: View {
 					.frame(width: 48, height: 48)
 					.padding(5)
 					.background(.white)
+					.accessibilityLabel(speaker.party.fullName)
 			}
 		}
 		.font(.system(.footnote, design: .default, weight: .regular))
+		.accessibilityElement(children: .combine)
+		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName), \(speaker.riding)")
 		.task {
 			if speaker.imageData == nil {
 				do {
@@ -83,6 +86,7 @@ struct PartyImageView: View {
 				.frame(width: 24, height: 24)
 				.padding(5)
 				.background(.white)
+				.accessibilityHidden(true)  // decorative; party info is in the parent label
 		}
 	}
 }
@@ -112,7 +116,7 @@ struct SpeakerImageView: View {
 						.fill(Color(uiColor: speaker.party.colour))
 						.frame(width: 46, height: 46)
 					Text(speaker.initials)
-						.font(.system(size: 18, weight: .bold, design: .rounded))
+						.font(.system(.headline, design: .rounded))
 						.foregroundColor(.white)
 				}
 				.frame(width: 46, height: 77)
@@ -120,6 +124,8 @@ struct SpeakerImageView: View {
 			PartyImageView(party: speaker.party)
 		}
 		.padding(0)
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName)")
 		.task {
 			await viewModel.loadImage(speaker: speaker, parliamentNumber: parliamentNumber, modelContext: modelContext)
 		}
