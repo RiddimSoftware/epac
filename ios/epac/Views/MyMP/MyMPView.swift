@@ -194,7 +194,9 @@ struct MyMPView: View {
         if matchingHansardIDs.isEmpty {
             mySpeeches = []
         } else {
-            mySpeeches = (try? modelContext.fetch(FetchDescriptor<Speech>())) ?? []
+            var speechDesc = FetchDescriptor<Speech>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+            speechDesc.fetchLimit = 500
+            mySpeeches = (try? modelContext.fetch(speechDesc)) ?? []
         }
         all += mySpeeches
             .filter { matchingHansardIDs.contains($0.hansardID) }
@@ -208,7 +210,9 @@ struct MyMPView: View {
         all += votes.map { mv in .vote(mv, mv.vote) }
 
         // Expenditures: match by last name and first-name prefix
-        let exps = (try? modelContext.fetch(FetchDescriptor<SummaryExpenditure>())) ?? []
+        var expDesc = FetchDescriptor<SummaryExpenditure>(sortBy: [SortDescriptor(\.year, order: .reverse)])
+        expDesc.fetchLimit = 40
+        let exps = (try? modelContext.fetch(expDesc)) ?? []
         let myExps = exps.filter {
             $0.lastName.localizedCaseInsensitiveCompare(mpLastName) == .orderedSame &&
             $0.firstName.localizedCaseInsensitiveContains(firstThreeFirst)

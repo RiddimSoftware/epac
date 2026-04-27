@@ -83,11 +83,15 @@ struct VoteDetailView: View {
     private func findMatchingDebates() {
         guard let bill = rv?.billNumberCode, !bill.isEmpty else { return }
 
-        let allSubjects = (try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>())) ?? []
+        var subjDescriptor = FetchDescriptor<SubjectOfBusiness>()
+        subjDescriptor.fetchLimit = 2000
+        let allSubjects = (try? modelContext.fetch(subjDescriptor)) ?? []
         let matched = allSubjects.filter { $0.title.localizedCaseInsensitiveContains(bill) }
         guard !matched.isEmpty else { return }
 
-        let allHansards = (try? modelContext.fetch(FetchDescriptor<Hansard>())) ?? []
+        var hansDescriptor = FetchDescriptor<Hansard>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        hansDescriptor.fetchLimit = 500
+        let allHansards = (try? modelContext.fetch(hansDescriptor)) ?? []
         var results: [(subject: SubjectOfBusiness, hansard: Hansard)] = []
         for subject in matched {
             // Primary strategy: use Speech.date to find the parent Hansard
