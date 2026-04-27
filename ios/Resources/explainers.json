@@ -1,0 +1,170 @@
+[
+  {
+    "term": "First Reading",
+    "definition": "The formal introduction of a bill to Parliament. No debate or vote takes place — the bill is simply tabled and printed so members can read it before debate begins at Second Reading.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Second Reading",
+    "definition": "The main debate on whether Parliament agrees with the principles of a bill. Members vote to approve the bill in principle and send it to a committee for detailed study, or to defeat it.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Third Reading",
+    "definition": "The final debate and vote on a bill after it has been reviewed by committee. Members vote on whether to adopt the bill in its final form, including any amendments made during committee study.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Royal Assent",
+    "definition": "The formal approval of a bill by the Governor General on behalf of the Crown, making it law. Royal Assent is the final step after a bill has passed both the House of Commons and the Senate.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Report Stage",
+    "definition": "The stage after committee review where the full House considers amendments proposed by the committee or individual members. Members can debate and vote on each proposed amendment before Third Reading.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Referred to Committee",
+    "definition": "After Second Reading, a bill is sent to a parliamentary committee for detailed study. The committee hears from witnesses and experts, reviews the bill clause by clause, and can propose amendments.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Prorogation",
+    "definition": "The suspension of a parliamentary session by the Governor General on the advice of the Prime Minister. Bills that have not received Royal Assent when Parliament is prorogued die and must be reintroduced.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Dissolution",
+    "definition": "The formal ending of Parliament by the Governor General, after which a general election must be called within 36 days. All bills and committee work in progress are terminated upon dissolution.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Confidence Vote",
+    "definition": "A vote that tests whether the government retains the support of a majority in the House. If the government loses, it must resign or request that the Governor General dissolve Parliament and call an election.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Omnibus Bill",
+    "definition": "A single bill that amends or enacts several different laws at once, covering multiple unrelated subjects. Omnibus bills are controversial because they bundle many policy changes into one vote.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Private Member's Bill",
+    "definition": "A bill introduced by any MP who is not a Cabinet minister. Private members' bills are drawn by lottery for debate time and rarely become law, but they signal issues that members care about.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Government Bill",
+    "definition": "A bill introduced by a Cabinet minister on behalf of the government. Government bills have priority in the parliamentary schedule and are a key way the government implements its platform.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Order Paper",
+    "definition": "The official agenda of Parliament published each sitting day, listing all bills, motions, written questions, and other business scheduled for consideration. Members can track the progress of any item through the Order Paper.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Question Period",
+    "definition": "A 45-minute daily session each sitting day in which MPs — primarily opposition members — ask questions of Cabinet ministers about government policy and actions. It is broadcast live and is the most visible accountability mechanism in Parliament.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/questionperiod-e.aspx"
+  },
+  {
+    "term": "Committee of the Whole",
+    "definition": "A procedure in which the full House of Commons reconstitutes itself as a committee to review legislation or government spending estimates in detail, without the formalities of a regular sitting.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Cabinet",
+    "definition": "The senior body of ministers appointed by the Prime Minister to head government departments and develop policy. Cabinet is collectively responsible to Parliament for government decisions.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Governor General",
+    "definition": "The representative of the Crown in Canada. The Governor General formally appoints the Prime Minister, opens and closes Parliament, and gives Royal Assent to bills. The role is largely ceremonial — the Governor General acts on the advice of the Prime Minister.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.gg.ca/en/governor-general/role-governor-general"
+  },
+  {
+    "term": "Senate",
+    "definition": "The upper chamber of Canada's Parliament. The 105 senators are appointed by the Governor General on the advice of the Prime Minister. The Senate reviews, amends, and must approve all legislation before it can receive Royal Assent.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://sencanada.ca/en/about/"
+  },
+  {
+    "term": "Parliamentary Secretary",
+    "definition": "An MP appointed to assist a Cabinet minister with their parliamentary duties. Parliamentary Secretaries support the minister in debates, appear before committees on the minister's behalf, and help move government legislation forward.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Whip",
+    "definition": "A party official responsible for ensuring that members of their caucus attend votes and vote in line with party policy. Each recognized party in the House has a whip who coordinates attendance and discipline.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Speaker",
+    "definition": "The presiding officer of the House of Commons, elected by secret ballot. The Speaker maintains order in the chamber, recognizes members to speak, and rules on points of order and questions of privilege.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Speaker/role-e.htm"
+  },
+  {
+    "term": "Recorded Vote",
+    "definition": "A vote in which each member's individual choice is recorded in Hansard (the official parliamentary record). Also called a division. Members are summoned by bells and vote by rising in their seats.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Order in Council",
+    "definition": "A formal decision or regulation made by the Governor-in-Council (the Governor General acting on the advice of Cabinet). Orders in Council are used to implement legislation, make appointments, and establish regulations without a vote in Parliament.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "Privy Council",
+    "definition": "A formal advisory body to the Crown. The active Privy Council consists of Cabinet ministers. All Cabinet ministers and certain other officials are sworn as Privy Councillors, entitling them to the prefix 'The Honourable' for life.",
+    "sourceLabel": "Parliament of Canada",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/glossary"
+  },
+  {
+    "term": "House Government Bill",
+    "definition": "A bill introduced by a Cabinet minister in the House of Commons on behalf of the government. Government bills have priority scheduling and represent the government's legislative program.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "Senate Government Bill",
+    "definition": "A government bill introduced first in the Senate rather than the House of Commons. Once passed by the Senate, it must still pass the House to become law.",
+    "sourceLabel": "Parliament of Canada Glossary",
+    "learnMoreURL": "https://www.parl.ca/About/Parliament/Education/FactSheets/pages/bills-e.aspx"
+  },
+  {
+    "term": "In Progress",
+    "definition": "A bill that is currently working its way through the legislative process — it has been introduced and debated, but has not yet received Royal Assent, been defeated, or died on the Order Paper.",
+    "sourceLabel": "Parliament of Canada LEGISinfo",
+    "learnMoreURL": "https://www.parl.ca/legisinfo"
+  },
+  {
+    "term": "Defeated",
+    "definition": "A bill that was voted down at some stage in the legislative process — either in the House of Commons or the Senate. A defeated bill cannot proceed further and would need to be reintroduced to try again.",
+    "sourceLabel": "Parliament of Canada LEGISinfo",
+    "learnMoreURL": "https://www.parl.ca/legisinfo"
+  }
+]
