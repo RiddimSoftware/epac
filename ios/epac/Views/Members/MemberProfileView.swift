@@ -188,22 +188,36 @@ struct ProfileDetailRow: View {
 
 struct MemberAvatar: View {
 	let member: ParliamentMember
+	@State private var cachedImage: UIImage?
 
 	init(member: ParliamentMember) {
 		self.member = member
 	}
 
 	var body: some View {
-		AsyncImage(url: member.photoURL) { phase in
-			switch phase {
-			case .success(let image):
-				image
-					.resizable()
-					.scaledToFill()
-			case .failure:
+		Group {
+			if let data = member.imageData, let image = UIImage(data: data) {
+				// L2: SwiftData persistent cache — fastest path after cold launch
+				Image(uiImage: image).resizable().scaledToFill()
+			} else if let image = cachedImage {
+				// L1: NSCache in-memory hit
+				Image(uiImage: image).resizable().scaledToFill()
+			} else {
+				// L3: single URLSession download; AsyncImage removed to avoid a
+				// concurrent duplicate request racing the .task fetch below.
 				placeholder
-			default:
-				placeholder
+					.task(id: member.photoURL) {
+						// Fast path: already in NSCache (e.g. populated by SpeakerImageViewModel)
+						if let cached = MemberImageCache.shared.image(for: member.photoURL) {
+							cachedImage = cached
+							return
+						}
+						// Slow path: network fetch — single owner of the download
+						guard let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
+						      let img = UIImage(data: data) else { return }
+						MemberImageCache.shared.store(img, for: member.photoURL)
+						cachedImage = img
+					}
 			}
 		}
 		.clipShape(Circle())
