@@ -343,4 +343,5 @@
 
 /* Sénat */
 "senate.mySenators.title" = "Mes sénateurs";
+"senate.card.name" = "Sénateur(trice) %@";
 "senate.card.accessibility" = "Sénateur(trice) %@, %@";

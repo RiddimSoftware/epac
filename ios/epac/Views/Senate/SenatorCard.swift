@@ -20,7 +20,7 @@ struct SenatorCard: View {
                     .frame(width: 10, height: 10)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Senator \(senator.name)")
+                    Text(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
                         .font(.subheadline.weight(.semibold))
                     Text(senator.caucusFullName)
                         .font(.caption2)
