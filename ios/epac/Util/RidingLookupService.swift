@@ -41,10 +41,15 @@ struct RidingLookupService {
         }
 
         let data: Data
+        let response: URLResponse
         do {
-            (data, _) = try await URLSession.shared.data(from: url)
+            (data, response) = try await URLSession.shared.data(from: url)
         } catch {
             throw RidingLookupError.networkError(error)
+        }
+
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw RidingLookupError.noResults
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
