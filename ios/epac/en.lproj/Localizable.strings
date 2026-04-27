@@ -305,6 +305,18 @@
 "consult.topic.agriculture" = "Agriculture & Food";
 "consult.topic.justice" = "Justice & Rights";
 
+/* Lobbying */
+"lobbying.sectionTitle" = "Lobbying";
+"lobbying.navTitle" = "Lobbying Communications";
+"lobbying.loading" = "Loading communications…";
+"lobbying.empty.title" = "No Registered Communications";
+"lobbying.empty.description" = "No registered lobbying communications found for this MP in the Commissioner of Lobbying registry.";
+"lobbying.viewRecord" = "View full record →";
+"lobbying.seeAll" = "See all %d communications →";
+"lobbying.error.title" = "Couldn't Load Lobbying Data";
+"lobbying.error.description" = "Check your connection and try again.";
+"lobbying.subject.unspecified" = "Subject not specified";
+
 /* Home feed */
 "home.parliament.sitting" = "Parliament is sitting today";
 "home.myMP.activityCount" = "%d recent activities";

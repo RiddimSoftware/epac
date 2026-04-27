@@ -19,6 +19,9 @@ struct MemberProfileView: View {
 	@State private var pickerSearch = ""
 	@State private var showVotingHistory = false
 	@State private var followStore = MemberFollowStore.shared
+	@State private var showLobbying = false
+	@State private var lobbyingComms: [LobbyistCommunication] = []
+	@State private var lobbyingLoaded = false
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -128,6 +131,69 @@ struct MemberProfileView: View {
 					.cornerRadius(12)
 				}
 				.foregroundStyle(.primary)
+
+				// MARK: Lobbying section
+				DisclosureGroup(
+					isExpanded: $showLobbying,
+					content: {
+						if lobbyingComms.isEmpty && lobbyingLoaded {
+							Text(NSLocalizedString("lobbying.empty.title", comment: ""))
+								.font(.caption)
+								.foregroundStyle(.secondary)
+								.padding(.vertical, 8)
+						} else {
+							ForEach(lobbyingComms.prefix(3)) { comm in
+								VStack(alignment: .leading, spacing: 3) {
+									Text(comm.organizationName)
+										.font(.subheadline)
+										.lineLimit(1)
+									if !comm.subjectMatter.isEmpty {
+										Text(comm.subjectMatter)
+											.font(.caption2)
+											.foregroundStyle(.secondary)
+											.lineLimit(1)
+									}
+									if let d = comm.communicationDate {
+										Text(d, style: .date)
+											.font(.caption2)
+											.foregroundStyle(.secondary)
+									}
+								}
+								.padding(.vertical, 2)
+							}
+							if !lobbyingComms.isEmpty {
+								NavigationLink(destination: LobbyingView(member: member)) {
+									Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
+										.font(.caption)
+										.foregroundStyle(.tint)
+								}
+							}
+						}
+					},
+					label: {
+						HStack {
+							Image(systemName: "person.fill.badge.plus")
+								.foregroundStyle(.tint)
+							Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+								.font(.subheadline)
+								.fontWeight(.semibold)
+						}
+					}
+				)
+				.padding()
+				.background(Color.appSurface)
+				.cornerRadius(12)
+				.onChange(of: showLobbying) { _, isExpanded in
+					if isExpanded && !lobbyingLoaded {
+						// Capture primitive name values on the main actor before async hop.
+						let ln = member.lastName
+						let fn = member.firstName
+						Task {
+							lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
+							lobbyingLoaded = true
+						}
+					}
+				}
 			}
 			.padding()
 		}

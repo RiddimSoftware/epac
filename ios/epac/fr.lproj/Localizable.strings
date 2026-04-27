@@ -305,6 +305,18 @@
 "consult.topic.agriculture" = "Agriculture et alimentation";
 "consult.topic.justice" = "Justice et droits";
 
+/* Lobbying */
+"lobbying.sectionTitle" = "Lobbying";
+"lobbying.navTitle" = "Communications de lobbying";
+"lobbying.loading" = "Chargement des communications…";
+"lobbying.empty.title" = "Aucune communication enregistrée";
+"lobbying.empty.description" = "Aucune communication de lobbying enregistrée trouvée pour ce député dans le registre du commissaire au lobbying.";
+"lobbying.viewRecord" = "Voir le dossier complet →";
+"lobbying.seeAll" = "Voir les %d communications →";
+"lobbying.error.title" = "Impossible de charger les données de lobbying";
+"lobbying.error.description" = "Vérifiez votre connexion et réessayez.";
+"lobbying.subject.unspecified" = "Sujet non précisé";
+
 /* Fil d'accueil personnalisé */
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
 "home.myMP.activityCount" = "%d activités récentes";
