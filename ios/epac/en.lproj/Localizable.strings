@@ -167,8 +167,9 @@
 "debate.stat.bestDay" = "Best Day";
 "debate.mostActive" = "Most active:";
 
-/* Follow member */
+/* Follow and share member */
 "follow.follow" = "Follow";
+"member.share" = "Share";
 "follow.unfollow" = "Unfollow";
 "follow.notification.vote" = "Voted %@ on %@";
 "follow.notification.speech" = "Spoke today: %@";

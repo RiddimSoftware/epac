@@ -37,7 +37,7 @@ enum RidingLookupError: LocalizedError, Equatable {
 }
 
 struct RidingLookupService {
-    private let baseURL = URL(string: "https://represent.opennorth.ca")!
+    private let baseURL = URL(string: "https://api.represent.opennorth.ca")!
 
     func lookup(postalCode: String) async throws -> RidingLookupResult {
         let normalized = postalCode.uppercased().filter { !$0.isWhitespace }

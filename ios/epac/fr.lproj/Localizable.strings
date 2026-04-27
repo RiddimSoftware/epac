@@ -169,8 +169,9 @@
 "debate.stat.bestDay" = "Meilleur jour";
 "debate.mostActive" = "Le plus actif :";
 
-/* Follow member */
+/* Follow and share member */
 "follow.follow" = "Suivre";
+"member.share" = "Partager";
 "follow.unfollow" = "Ne plus suivre";
 "follow.notification.vote" = "A voté %@ sur %@";
 "follow.notification.speech" = "A pris la parole aujourd'hui : %@";
