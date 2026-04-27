@@ -47,6 +47,19 @@ class ExpendituresViewModel {
 	var sortOrder: SortOrder = .total
 	var isLoading = false
 	var loadFailed = false
+	var isLoadingFiscalMonitor = false
+	var fiscalMonitorLoadFailed = false
+
+	var currentFiscalYearStartYear: Int {
+		Self.reportedFiscalYearStartYear(for: Date())
+	}
+
+	static func reportedFiscalYearStartYear(for date: Date) -> Int {
+		let components = Calendar.current.dateComponents([.year, .month], from: date)
+		let year = components.year ?? 2026
+		let month = components.month ?? 1
+		return month >= 7 ? year : year - 1
+	}
 
 	func filteredExpenditures(from expenditures: [SummaryExpenditure]) -> [SummaryExpenditure] {
 		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -80,6 +93,28 @@ class ExpendituresViewModel {
 				loadFailed = true
 			}
 			isLoading = false
+		}
+	}
+
+	func fiscalMonitorEntriesForCurrentYear(from entries: [FiscalMonitorEntry]) -> [FiscalMonitorEntry] {
+		entries
+			.filter { $0.fiscalYearStartYear == currentFiscalYearStartYear }
+			.sorted { $0.month < $1.month }
+	}
+
+	@MainActor
+	func loadFiscalMonitor(entries: [FiscalMonitorEntry], fetch: Fetch) async {
+		fiscalMonitorLoadFailed = false
+		let exists = entries.contains { $0.fiscalYearStartYear == currentFiscalYearStartYear }
+		if !exists {
+			isLoadingFiscalMonitor = true
+			do {
+				try await fetch.fiscalMonitorEntries(fiscalYearStartYear: currentFiscalYearStartYear)
+			} catch {
+				Log.error("Failed to load Fiscal Monitor: \(error.localizedDescription)")
+				fiscalMonitorLoadFailed = true
+			}
+			isLoadingFiscalMonitor = false
 		}
 	}
 

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Charts
 import ActivityView
 
 struct ExpendituresView: View {
@@ -14,12 +15,17 @@ struct ExpendituresView: View {
     @EnvironmentObject var fetch: Fetch
     @Query private var expenditures: [SummaryExpenditure]
     @Query private var members: [ParliamentMember]
+    @Query private var fiscalMonitorEntries: [FiscalMonitorEntry]
 
     @State private var viewModel = ExpendituresViewModel()
     @State private var item: ActivityItem?
 
     private var filteredExpenditures: [SummaryExpenditure] {
         viewModel.filteredExpenditures(from: expenditures)
+    }
+
+    private var currentFiscalMonitorEntries: [FiscalMonitorEntry] {
+        viewModel.fiscalMonitorEntriesForCurrentYear(from: fiscalMonitorEntries)
     }
 
     var body: some View {
@@ -53,6 +59,8 @@ struct ExpendituresView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
+                        fiscalMonitorSection
+
                         if filteredExpenditures.isEmpty && !viewModel.isLoading {
                             ContentUnavailableView.search(text: viewModel.searchText)
                         } else {
@@ -94,12 +102,34 @@ struct ExpendituresView: View {
             .task(id: viewModel.selectedYear * 10 + viewModel.selectedQuarter) {
                 await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
             }
+            .task {
+                await viewModel.loadFiscalMonitor(entries: Array(fiscalMonitorEntries), fetch: fetch)
+            }
             .onAppear {
                 Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
             }
             .onChange(of: expenditures) { oldValue, newValue in
                 Log.debug("Expenditures query updated. New count: \(newValue.count)")
             }
+        }
+    }
+
+    private var fiscalMonitorSection: some View {
+        Section {
+            if viewModel.isLoadingFiscalMonitor && currentFiscalMonitorEntries.isEmpty {
+                HStack {
+                    ProgressView()
+                    Text("Fetching federal finances...")
+                        .foregroundColor(.secondary)
+                }
+            } else if viewModel.fiscalMonitorLoadFailed && currentFiscalMonitorEntries.isEmpty {
+                Label("Couldn't load federal finances", systemImage: "exclamationmark.triangle")
+                    .foregroundColor(.secondary)
+            } else if let latest = currentFiscalMonitorEntries.last {
+                FiscalMonitorSummaryView(entries: currentFiscalMonitorEntries, latest: latest)
+            }
+        } header: {
+            Text("Federal Finances")
         }
     }
 
@@ -238,6 +268,108 @@ struct ExpenditureRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct FiscalMonitorSummaryView: View {
+    let entries: [FiscalMonitorEntry]
+    let latest: FiscalMonitorEntry
+
+    private var budgetDeltaText: String {
+        guard let projection = latest.budgetProjectionMillions else {
+            return "Budget comparison unavailable"
+        }
+        let room = latest.yearToDateBalanceMillions - projection
+        if room < 0 {
+            return "\(abs(room).formattedMillions) worse than annual projection"
+        }
+        return "\(room.formattedMillions) room before annual projection"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(latest.yearToDateBalanceMillions >= 0 ? "Year-to-date surplus" : "Year-to-date deficit")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(latest.yearToDateBalanceMillions.formattedMillions)
+                        .font(.title2.bold())
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Published")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(latest.publicationDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(.subheadline.weight(.medium))
+                }
+            }
+
+            Chart(entries) { entry in
+                BarMark(
+                    x: .value("Month", entry.monthName),
+                    y: .value("Balance", entry.balanceMillions)
+                )
+                .foregroundStyle(entry.balanceMillions >= 0 ? .green : .red)
+
+                LineMark(
+                    x: .value("Month", entry.monthName),
+                    y: .value("Year-to-date balance", entry.yearToDateBalanceMillions)
+                )
+                .foregroundStyle(.blue)
+                .interpolationMethod(.catmullRom)
+            }
+            .chartYAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let amount = value.as(Double.self) {
+                            Text(amount.formattedMillions)
+                        }
+                    }
+                }
+            }
+            .frame(height: 180)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Revenue")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(latest.yearToDateRevenueMillions.formattedMillions)
+                        .font(.subheadline.weight(.semibold))
+                }
+                Spacer()
+                VStack(alignment: .center, spacing: 2) {
+                    Text("Spending")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(latest.yearToDateSpendingMillions.formattedMillions)
+                        .font(.subheadline.weight(.semibold))
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Vs. budget")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(budgetDeltaText)
+                        .font(.subheadline.weight(.semibold))
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+
+            Link("Finance Canada Fiscal Monitor, \(latest.monthName) \(Calendar.current.component(.year, from: latest.publicationDate))", destination: latest.sourceURL)
+                .font(.caption)
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+private extension Double {
+    var formattedMillions: String {
+        let billions = self / 1000
+        return billions.formatted(.currency(code: "CAD").precision(.fractionLength(1))) + "B"
     }
 }
 

@@ -23,6 +23,7 @@ typealias TravelExpenditureDetail = SchemaV3.TravelExpenditureDetail
 typealias HospitalityExpenditure = SchemaV3.HospitalityExpenditure
 typealias ContractExpenditure = SchemaV3.ContractExpenditure
 typealias SummaryExpenditure = SchemaV3.SummaryExpenditure
+typealias FiscalMonitorEntry = SchemaV3.FiscalMonitorEntry
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -36,6 +37,7 @@ enum SchemaV3: VersionedSchema {
 			Speech.self,
 			SpeechMessage.self,
 			Constituency.self,
+			FiscalMonitorEntry.self,
 			SummaryExpenditure.self,
 			TravelClaim.self,
 			TravelExpenditureDetail.self,
@@ -208,7 +210,53 @@ enum SchemaV3: VersionedSchema {
 		}
 	}
 
-    @Model
+	@Model
+	final class FiscalMonitorEntry: Identifiable {
+		@Attribute(.unique) var id: String
+		var fiscalYearStartYear: Int
+		var month: Int
+		var monthName: String
+		var publicationDate: Date
+		var revenueMillions: Double
+		var spendingMillions: Double
+		var balanceMillions: Double
+		var yearToDateRevenueMillions: Double
+		var yearToDateSpendingMillions: Double
+		var yearToDateBalanceMillions: Double
+		var budgetProjectionMillions: Double?
+		var sourceURL: URL
+
+		init(
+			fiscalYearStartYear: Int,
+			month: Int,
+			monthName: String,
+			publicationDate: Date,
+			revenueMillions: Double,
+			spendingMillions: Double,
+			balanceMillions: Double,
+			yearToDateRevenueMillions: Double,
+			yearToDateSpendingMillions: Double,
+			yearToDateBalanceMillions: Double,
+			budgetProjectionMillions: Double? = nil,
+			sourceURL: URL
+		) {
+			self.id = "\(fiscalYearStartYear)-\(String(format: "%02d", month))"
+			self.fiscalYearStartYear = fiscalYearStartYear
+			self.month = month
+			self.monthName = monthName
+			self.publicationDate = publicationDate
+			self.revenueMillions = revenueMillions
+			self.spendingMillions = spendingMillions
+			self.balanceMillions = balanceMillions
+			self.yearToDateRevenueMillions = yearToDateRevenueMillions
+			self.yearToDateSpendingMillions = yearToDateSpendingMillions
+			self.yearToDateBalanceMillions = yearToDateBalanceMillions
+			self.budgetProjectionMillions = budgetProjectionMillions
+			self.sourceURL = sourceURL
+		}
+	}
+
+	@Model
     final class SummaryExpenditure: Identifiable {
 		var firstName: String
         var lastName: String

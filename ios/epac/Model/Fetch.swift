@@ -28,6 +28,7 @@ actor Fetch: ObservableObject {
         /// There is a CSV export link on each of those Travel/Hospitality/Contracts pages as well.
         /// The CSV exports are of interest so that they can be downloaded and data extracted from them to populate our data model.
         private let expenditurePath: String = "proactivedisclosure/en/members/%d/%d" // replace with Year 2021+ and Quarter 1-4.
+        private let fiscalMonitorPath: String = "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/%d/%02d.html"
         private var language: String = {
                 if Locale.current.identifier.contains("fr") {
                         return "F"
@@ -115,6 +116,43 @@ actor Fetch: ObservableObject {
 		if fetched.isEmpty {
 			try await downloadExpenditures(year: year, quarter: quarter)
 		}
+	}
+
+	func fiscalMonitorEntries(fiscalYearStartYear: Int) async throws {
+		Log.debug("Fetch.fiscalMonitorEntries(fiscalYearStartYear: \(fiscalYearStartYear))")
+		let fetched = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>(predicate: #Predicate { $0.fiscalYearStartYear == fiscalYearStartYear }))
+		if fetched.isEmpty {
+			try await downloadFiscalMonitorEntries(fiscalYearStartYear: fiscalYearStartYear)
+		}
+	}
+
+	func downloadFiscalMonitorEntries(fiscalYearStartYear: Int) async throws {
+		Log.debug("Fetch.downloadFiscalMonitorEntries(fiscalYearStartYear: \(fiscalYearStartYear))")
+		for (year, month) in fiscalMonitorPublicationMonths(for: fiscalYearStartYear) {
+			let url = URL(string: String(format: fiscalMonitorPath, year, month))!
+			do {
+				let (data, response) = try await URLSession.shared.data(from: url)
+				if let http = response as? HTTPURLResponse, http.statusCode == 404 {
+					continue
+				}
+				guard let html = String(data: data, encoding: .utf8) else { continue }
+				let entries = try FiscalMonitorEntry.fromHTML(html, sourceURL: url)
+				for entry in entries {
+					let id = entry.id
+					let existing = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>(predicate: #Predicate { $0.id == id }))
+					if existing.isEmpty {
+						modelContext.insert(entry)
+					}
+				}
+			} catch {
+				Log.debug("Skipping Fiscal Monitor \(year)-\(month): \(error.localizedDescription)")
+			}
+		}
+		try modelContext.save()
+	}
+
+	private func fiscalMonitorPublicationMonths(for fiscalYearStartYear: Int) -> [(year: Int, month: Int)] {
+		[(fiscalYearStartYear, 4), (fiscalYearStartYear, 6), (fiscalYearStartYear, 7), (fiscalYearStartYear, 8), (fiscalYearStartYear, 9), (fiscalYearStartYear, 10), (fiscalYearStartYear, 11), (fiscalYearStartYear, 12), (fiscalYearStartYear + 1, 1), (fiscalYearStartYear + 1, 2), (fiscalYearStartYear + 1, 3)]
 	}
 
 	func downloadExpenditures(year: Int, quarter: Int) async throws {

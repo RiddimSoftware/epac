@@ -60,6 +60,16 @@ struct ExpendituresViewModelTests {
 		#expect(period.id == "2024 Q3")
 	}
 
+	@Test func reportedFiscalYearAccountsForFiscalMonitorPublicationLag() throws {
+		let formatter = DateFormatter()
+		formatter.calendar = Calendar(identifier: .gregorian)
+		formatter.locale = Locale(identifier: "en_CA_POSIX")
+		formatter.dateFormat = "yyyy-MM-dd"
+
+		#expect(ExpendituresViewModel.reportedFiscalYearStartYear(for: try #require(formatter.date(from: "2026-04-27"))) == 2025)
+		#expect(ExpendituresViewModel.reportedFiscalYearStartYear(for: try #require(formatter.date(from: "2026-07-31"))) == 2026)
+	}
+
 	// MARK: - filteredExpenditures — year/quarter filter
 
 	@Test func returnsOnlySelectedYearAndQuarter() throws {
@@ -236,14 +246,15 @@ struct ExpendituresViewModelTests {
 	}
 
 	/// When no cached data exists, loadData sets isLoading=true then isLoading=false
-	/// regardless of whether the fetch succeeds or fails.  Here the fetch will fail
-	/// (no network in tests), so we also expect loadFailed=true.
+	/// regardless of whether the fetch succeeds or fails. The selected period is
+	/// intentionally outside the Commons disclosure range, so the fetch fails
+	/// deterministically without relying on network availability.
 	@Test func loadFailedSetOnNetworkError() async throws {
 		let container = try makeContainer()
 		let fetch = Fetch(modelContainer: container)
 
 		let vm = ExpendituresViewModel()
-		vm.selectedYear = 2024
+		vm.selectedYear = 1900
 		vm.selectedQuarter = 1
 
 		// Pass an empty expenditures list so exists=false and a network call is made.
