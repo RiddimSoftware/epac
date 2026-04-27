@@ -251,3 +251,23 @@
 "bill.notification.defeated" = "%@ a été rejeté";
 "bill.notification.voteResult" = "Vote\u{a0}: %d pour \u{2013} %d contre.";
 "bill.notification.mpVote" = "%@ a voté %@.";
+
+/* Government consultations view */
+"consult.navTitle" = "Consultations";
+"consult.header.title" = "Donnez votre avis";
+"consult.header.subtitle" = "Les ministères consultent les Canadiens avant de prendre des décisions politiques majeures.";
+"consult.section.browse" = "Parcourir par thème";
+"consult.section.all" = "Toutes les consultations";
+"consult.finder.title" = "Outil de recherche de consultations";
+"consult.finder.subtitle" = "Rechercher toutes les consultations, ouvertes et fermées";
+"consult.portal.title" = "Consultations auprès des Canadiens";
+"consult.portal.subtitle" = "Portail officiel de consultation";
+"consult.explanation" = "Les ministères fédéraux consultent les Canadiens lors de l'élaboration de politiques, de règlements et de lois importants. Les soumissions font partie du dossier public.";
+"consult.topic.environment" = "Environnement et climat";
+"consult.topic.housing" = "Logement et infrastructure";
+"consult.topic.health" = "Santé";
+"consult.topic.indigenous" = "Peuples autochtones";
+"consult.topic.finance" = "Finances et fiscalité";
+"consult.topic.immigration" = "Immigration";
+"consult.topic.agriculture" = "Agriculture et alimentation";
+"consult.topic.justice" = "Justice et droits";

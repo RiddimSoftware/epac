@@ -251,3 +251,23 @@
 "bill.notification.defeated" = "%@ was defeated";
 "bill.notification.voteResult" = "Vote: %d Yea \u{2013} %d Nay.";
 "bill.notification.mpVote" = "%@ voted %@.";
+
+/* Government consultations view */
+"consult.navTitle" = "Consultations";
+"consult.header.title" = "Have your say";
+"consult.header.subtitle" = "Government departments consult Canadians before making major policy decisions.";
+"consult.section.browse" = "Browse by Topic";
+"consult.section.all" = "All Consultations";
+"consult.finder.title" = "Consultations Finder";
+"consult.finder.subtitle" = "Search all open and closed consultations";
+"consult.portal.title" = "Consulting with Canadians";
+"consult.portal.subtitle" = "Official consultation portal";
+"consult.explanation" = "Federal departments consult Canadians when developing major policies, regulations, and legislation. Input is accepted online, by mail, or at in-person sessions. Submissions become part of the public record.";
+"consult.topic.environment" = "Environment & Climate";
+"consult.topic.housing" = "Housing & Infrastructure";
+"consult.topic.health" = "Health";
+"consult.topic.indigenous" = "Indigenous Peoples";
+"consult.topic.finance" = "Finance & Taxation";
+"consult.topic.immigration" = "Immigration";
+"consult.topic.agriculture" = "Agriculture & Food";
+"consult.topic.justice" = "Justice & Rights";
