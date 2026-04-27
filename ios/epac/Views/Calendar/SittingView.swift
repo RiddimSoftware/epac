@@ -21,44 +21,53 @@ struct SittingView: View {
 	@Query var members: [ParliamentMember]
 
 	@State private var coordinator = MemberDownloadCoordinator()
+	@State private var viewModel = SittingViewModel()
 
 	var body: some View {
-		List {
-			ForEach(hansard.orders.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.subjects.isEmpty }) { order in
-				Section {
-					ForEach(order.subjects.sorted(by: { $0.hansardID < $1.hansardID }).filter { !$0.speeches.isEmpty }) { subject in
-						VStack(alignment: .leading, spacing: 8) {
-							Text(subject.title)
-								.font(.headline)
-								.foregroundColor(.primary)
+		let pairs = viewModel.visibleOrderSubjects(from: hansard)
+		Group {
+			if pairs.isEmpty && !viewModel.searchText.isEmpty {
+				ContentUnavailableView.search(text: viewModel.searchText)
+			} else {
+				List {
+					ForEach(pairs, id: \.order.hansardID) { (order, subjects) in
+						Section {
+							ForEach(subjects) { subject in
+								VStack(alignment: .leading, spacing: 8) {
+									Text(subject.title)
+										.font(.headline)
+										.foregroundColor(.primary)
 
-							HStack {
-								Spacer()
-								VStack(alignment: .trailing, spacing: 4) {
-									ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
-										SittingSpeakerView(member: member)
+									HStack {
+										Spacer()
+										VStack(alignment: .trailing, spacing: 4) {
+											ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
+												SittingSpeakerView(member: member)
+											}
+										}
 									}
 								}
+								.padding(.vertical, 4)
+								.contentShape(Rectangle())
+								.onTapGesture {
+									selectedSubject = subject
+								}
 							}
-						}
-						.padding(.vertical, 4)
-						.contentShape(Rectangle())
-						.onTapGesture {
-							selectedSubject = subject
+						} header: {
+							Text(order.catchline)
+								.font(.title2)
+								.fontWeight(.black)
+								.textCase(.uppercase)
+								.foregroundColor(.secondary)
+								.padding(.top, 20)
+								.padding(.bottom, 8)
 						}
 					}
-				} header: {
-					Text(order.catchline)
-						.font(.title2)
-						.fontWeight(.black)
-						.textCase(.uppercase)
-						.foregroundColor(.secondary)
-						.padding(.top, 20)
-						.padding(.bottom, 8)
 				}
+				.listStyle(.plain)
 			}
 		}
-		.listStyle(.plain)
+		.searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search debates")
 	}
 }
 
