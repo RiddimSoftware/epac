@@ -80,13 +80,16 @@ struct ContentView: View {
 			}
 			.navigationTitle("epac")
 		} detail: {
-			switch router.selectedTab {
-			case .sittingCalendar:
+			// Keep all three detail views alive with opacity rather than a switch,
+			// so each view's NavigationStack retains its push state when the user
+			// navigates between sidebar items and returns.
+			ZStack {
 				calendarStack
-			case .members:
+					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
 				NavigationStack { MembersView() }
-			case .expenditures:
+					.opacity(router.selectedTab == .members ? 1 : 0)
 				ExpendituresView()
+					.opacity(router.selectedTab == .expenditures ? 1 : 0)
 			}
 		}
 	}
