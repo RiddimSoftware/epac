@@ -11,6 +11,7 @@
 // and no SwiftUI view observes its properties. @Observable is intentionally
 // absent.
 
+@MainActor
 class MemberDownloadCoordinator {
 	private var pendingDownloads: Set<String> = []
 

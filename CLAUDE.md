@@ -101,6 +101,30 @@ How to verify this works. Steps for the reviewer to follow.
 Resolves EPAC-N
 ```
 
+### Automated Pre-Merge Review (mandatory)
+
+Every PR gets a dedicated agent review before merging. After `gh pr create`, spawn a new agent with this prompt:
+
+```
+Review PR #N (https://github.com/sunnypurewal/epac/pull/N) on branch <branch>.
+Repo root: /Users/sunny/code/epac
+
+1. Read the PR description and diff: `gh pr diff N`
+2. Read CLAUDE.md for architecture rules and standards
+3. Check for: Swift 6 actor-isolation issues, forced unwraps, test coverage
+   gaps, style inconsistency, correctness vs the ticket's acceptance criteria
+4. Make ONE consolidated pass of concrete fixes directly on the branch
+5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac
+   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237'
+   build 2>&1 | tail -3
+6. Run relevant tests, commit changes, push
+7. Report: what changed and why; what was left alone and why
+```
+
+The agent commits directly to the branch. The PR is merged only after the agent's pass completes without build failures.
+
+**Why this exists:** PR #3 introduced a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second-pass review would have caught it. The agent acts as the second pair of eyes that runs every time.
+
 ### PR Reviewer Expectations
 
 - Respond within one working day.
