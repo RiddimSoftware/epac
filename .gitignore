@@ -16,6 +16,7 @@ hansard/
 
 !**/*/fixtures/*.csv
 !**/*/fixtures/*.xml
+!website/*.xml
 
 # Xcode
 #
