@@ -17,6 +17,7 @@ struct MemberProfileView: View {
 	@State private var comparisonTarget: ParliamentMember?
 	@State private var navigateToComparison = false
 	@State private var pickerSearch = ""
+	@State private var showVotingHistory = false
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -91,6 +92,14 @@ struct MemberProfileView: View {
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
 		.toolbar {
+			ToolbarItem(placement: .topBarLeading) {
+				Button {
+					showVotingHistory = true
+				} label: {
+					Label(NSLocalizedString("votes.toolbarLabel", comment: ""), systemImage: "hand.raised")
+				}
+				.accessibilityLabel(NSLocalizedString("votes.navTitle", comment: ""))
+			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					pickerSearch = ""
@@ -105,6 +114,10 @@ struct MemberProfileView: View {
 			if let other = comparisonTarget {
 				MemberComparisonView(memberA: member, memberB: other)
 			}
+		}
+		.navigationDestination(isPresented: $showVotingHistory) {
+			MemberVotingHistoryView(member: member)
+				.environmentObject(fetch)
 		}
 		.sheet(isPresented: $showingComparePicker) {
 			NavigationStack {

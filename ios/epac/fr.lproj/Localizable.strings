@@ -100,6 +100,15 @@
 "Province" = "Province";
 "Status" = "Statut";
 
+/* Voting history */
+"votes.navTitle" = "Votes";
+"votes.toolbarLabel" = "Dossier de vote";
+"votes.empty.title" = "Aucun vote chargé";
+"votes.empty.description" = "L'historique des votes apparaîtra après la synchronisation.";
+"votes.error.title" = "Impossible de charger les votes";
+"votes.error.description" = "Vérifiez votre connexion et réessayez.";
+"votes.error.retry" = "Réessayer";
+
 /* MP Contact */
 "contact.email" = "Courriel";
 "contact.hillOffice" = "Bureau sur la Colline";
