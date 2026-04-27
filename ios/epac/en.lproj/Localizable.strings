@@ -4,6 +4,10 @@
 "Members" = "Members";
 "Expenditures" = "Expenditures";
 "My MP" = "My MP";
+"Home" = "Home";
+"Parliament" = "Parliament";
+"Accountability" = "Accountability";
+"accountability.navTitle" = "Accountability";
 
 /* Search view */
 "Search debates" = "Search debates";
