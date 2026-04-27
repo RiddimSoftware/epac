@@ -14,47 +14,64 @@ struct MemberVotingRecordView: View {
 	init(member: ParliamentMember) {
 		self.member = member
 		let memberID = member.memberID
-		_memberVotes = Query(
-			filter: #Predicate<MemberVote> { $0.memberID == memberID },
-			sort: \.voteID, order: .reverse
+		var descriptor = FetchDescriptor<MemberVote>(
+			predicate: #Predicate<MemberVote> { $0.memberID == memberID },
+			sortBy: [SortDescriptor(\.voteID, order: .reverse)]
 		)
+		descriptor.fetchLimit = 100
+		_memberVotes = Query(descriptor)
 	}
 
 	// MARK: - Computed stats
 
-	private var yeaCount: Int  { memberVotes.filter { $0.recordedVote == "Yea" }.count }
-	private var nayCount: Int  { memberVotes.filter { $0.recordedVote == "Nay" }.count }
-	private var absentCount: Int { memberVotes.filter { $0.recordedVote == "Paired" || $0.recordedVote == "Abstained" }.count }
+	/// Aggregates vote tallies in a single pass to avoid repeated traversals.
+	private struct VoteStats {
+		var yea = 0; var nay = 0; var absent = 0
+		var decisiveTotal = 0; var aligned = 0
+	}
+
+	private var voteStats: VoteStats {
+		memberVotes.reduce(into: VoteStats()) { s, mv in
+			switch mv.recordedVote {
+			case "Yea": s.yea += 1
+			case "Nay": s.nay += 1
+			default:    s.absent += 1
+			}
+			guard let v = mv.vote,
+				  mv.recordedVote == "Yea" || mv.recordedVote == "Nay" else { return }
+			s.decisiveTotal += 1
+			let isAligned = (mv.recordedVote == "Yea" && v.resultEn.localizedCaseInsensitiveContains("Agreed")) ||
+				            (mv.recordedVote == "Nay" && v.resultEn.localizedCaseInsensitiveContains("Negatived"))
+			if isAligned { s.aligned += 1 }
+		}
+	}
+
+	private var yeaCount: Int    { voteStats.yea }
+	private var nayCount: Int    { voteStats.nay }
+	private var absentCount: Int { voteStats.absent }
 
 	/// Fraction of decisive (Yea/Nay) votes aligned with the final result.
 	private var winnerAlignmentScore: Double {
-		let decisive = memberVotes.filter {
-			$0.vote != nil && ($0.recordedVote == "Yea" || $0.recordedVote == "Nay")
-		}
-		guard !decisive.isEmpty else { return 0 }
-		let aligned = decisive.filter { mv in
-			guard let v = mv.vote else { return false }
-			return (mv.recordedVote == "Yea" && v.resultEn.localizedCaseInsensitiveContains("Agreed")) ||
-			       (mv.recordedVote == "Nay" && v.resultEn.localizedCaseInsensitiveContains("Negatived"))
-		}
-		return Double(aligned.count) / Double(decisive.count)
+		let s = voteStats
+		guard s.decisiveTotal > 0 else { return 0 }
+		return Double(s.aligned) / Double(s.decisiveTotal)
 	}
 
 	var body: some View {
 		Group {
 			if memberVotes.isEmpty {
 				ContentUnavailableView {
-					Label("No voting records", systemImage: "checkmark.ballot")
+					Label(NSLocalizedString("voting.empty.title", comment: ""), systemImage: "checkmark.ballot")
 				} description: {
-					Text("Voting data for this member has not been loaded yet.")
+					Text(NSLocalizedString("voting.empty.description", comment: ""))
 				}
 			} else {
 				List {
 					Section {
 						voteSummaryCard
 					}
-					Section("Recent Votes") {
-						ForEach(memberVotes.prefix(100)) { mv in
+					Section(NSLocalizedString("voting.recentVotes", comment: "")) {
+						ForEach(memberVotes) { mv in
 							VoteRow(memberVote: mv)
 						}
 					}
@@ -62,7 +79,7 @@ struct MemberVotingRecordView: View {
 				.listStyle(.insetGrouped)
 			}
 		}
-		.navigationTitle("Voting Record")
+		.navigationTitle(NSLocalizedString("voting.title", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)
 	}
 
@@ -79,7 +96,7 @@ struct MemberVotingRecordView: View {
 
 			if yeaCount + nayCount > 0 {
 				HStack {
-					Text("Votes with the majority")
+					Text(NSLocalizedString("voting.withMajority", comment: ""))
 						.font(.caption)
 						.foregroundStyle(.secondary)
 					Spacer()

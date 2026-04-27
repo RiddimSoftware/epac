@@ -105,3 +105,10 @@
 "contact.hillOffice" = "Hill Office";
 "contact.constituencyPhone" = "Constituency Office";
 "contact.constituencyAddress" = "Constituency Address";
+
+/* Voting Record */
+"voting.title" = "Voting Record";
+"voting.empty.title" = "No Voting Records";
+"voting.empty.description" = "Voting data for this member has not been loaded yet.";
+"voting.recentVotes" = "Recent Votes";
+"voting.withMajority" = "Votes with the majority";

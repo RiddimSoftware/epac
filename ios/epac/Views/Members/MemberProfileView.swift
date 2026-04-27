@@ -85,7 +85,7 @@ struct MemberProfileView: View {
 
 				NavigationLink(destination: MemberVotingRecordView(member: member)) {
 					HStack {
-						Label("Voting Record", systemImage: "checkmark.ballot")
+						Label(NSLocalizedString("voting.title", comment: ""), systemImage: "checkmark.ballot")
 						Spacer()
 						Image(systemName: "chevron.right")
 							.font(.caption)
