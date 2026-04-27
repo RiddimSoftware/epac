@@ -22,51 +22,44 @@ platform :ios do
     )
 
     # ------------------------------------------------------------------
-    # Provisioning profiles.
+    # Provisioning profiles via sigh.
     #
-    # sigh requires the distribution certificate to already be installed
-    # in the keychain. The workflow imports it from the
-    # DISTRIBUTION_CERT_P12 GitHub secret (see .github/workflows/build-
-    # deploy.yml for setup instructions). Until that secret is added,
-    # skip sigh and let build_app use -allowProvisioningUpdates instead.
+    # The distribution certificate was pre-installed into the ephemeral
+    # keychain by the "Import distribution certificate" workflow step
+    # (from the DISTRIBUTION_CERT_P12 secret). sigh uses the cert already
+    # in the keychain to create or download matching profiles — it does
+    # NOT create a new certificate, so the 2-cert account limit is safe.
     #
-    # Once DISTRIBUTION_CERT_P12 is set, uncomment these two blocks:
-    #
-    # sigh(
-    #   api_key:        api_key,
-    #   app_identifier: "net.dinglebox.cabinetdoor",
-    #   force:          false
-    # )
-    # sigh(
-    #   api_key:        api_key,
-    #   app_identifier: "net.dinglebox.cabinetdoor.Clip",
-    #   force:          false
-    # )
+    # The App Clip profile (net.dinglebox.cabinetdoor.Clip) didn't exist
+    # until this lane creates it. sigh creates it automatically on first
+    # run, then reuses it on subsequent runs.
     # ------------------------------------------------------------------
+    sigh(
+      api_key:        api_key,
+      app_identifier: "net.dinglebox.cabinetdoor",
+      force:          false
+    )
+
+    sigh(
+      api_key:        api_key,
+      app_identifier: "net.dinglebox.cabinetdoor.Clip",
+      force:          false
+    )
 
     # ------------------------------------------------------------------
     # Archive and export.
     #
-    # -allowProvisioningUpdates lets Xcode download and create profiles
-    # via the ASC API key. It will also CREATE a new distribution cert
-    # if none is found in the keychain — this hits Apple's 2-cert limit.
-    # Adding DISTRIBUTION_CERT_P12 to GitHub secrets pre-installs the
-    # cert and eliminates that problem.
+    # No -allowProvisioningUpdates: the cert and profiles are already
+    # installed by the steps above. Passing -allowProvisioningUpdates
+    # alongside a keychain that has an imported cert still causes Xcode
+    # to call the ASC API to "verify" the certificate, which triggers a
+    # new-cert creation attempt and hits the 2-cert limit.
     # ------------------------------------------------------------------
-    key_path = File.expand_path(
-      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
-    )
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           [
-        "-allowProvisioningUpdates",
-        "-authenticationKeyPath #{key_path}",
-        "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
-        "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}",
-        "DEVELOPMENT_TEAM=ZG82TFXU3C"
-      ].join(" "),
+      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C CODE_SIGN_STYLE=Automatic",
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true
