@@ -12,6 +12,8 @@ import Sentry
 
 @main
 struct epacApp: App {
+	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
 	var sharedModelContainer: ModelContainer = {
 		do {
 			return try ModelContainer(
@@ -54,7 +56,7 @@ struct epacApp: App {
 
 	var body: some Scene {
 		WindowGroup {
-			ContentView(modelContainer: sharedModelContainer)
+			ContentView(modelContainer: sharedModelContainer, appDelegate: appDelegate)
 				.environment(notificationManager)
 		}
 		.modelContainer(sharedModelContainer)
