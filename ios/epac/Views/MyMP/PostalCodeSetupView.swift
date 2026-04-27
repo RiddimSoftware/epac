@@ -108,6 +108,7 @@ struct PostalCodeSetupView: View {
 
             Button {
                 viewModel.confirm()
+                HapticEngine.success()
                 onDone()
                 ReviewRequestManager.shared.requestReviewIfAppropriate()
             } label: {

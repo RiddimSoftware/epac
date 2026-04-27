@@ -110,6 +110,7 @@ Sincerely,
 		]
 		guard let url = components.url else { return }
 		UIApplication.shared.open(url)
+		HapticEngine.medium()
 		ReviewRequestManager.shared.requestReviewIfAppropriate()
 	}
 }
