@@ -11,7 +11,7 @@ import SwiftUI
 struct epac_clipApp: App {
 	var body: some Scene {
 		WindowGroup {
-			ContentView()
+			ClipRootView()
 		}
 	}
 }

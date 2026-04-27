@@ -76,7 +76,7 @@ struct ContentView: View {
 					.background(Color(.secondarySystemGroupedBackground))
 					.cornerRadius(16)
 
-					if let url = URL(string: "https://apps.apple.com/app/id6479895893 // TODO: verify ID before launch") {
+					if let url = URL(string: "https://apps.apple.com/app/id6479895893") {
 						Link(destination: url) {
 							Label("Open in epac for full details", systemImage: "arrow.up.right.square")
 								.font(.subheadline)

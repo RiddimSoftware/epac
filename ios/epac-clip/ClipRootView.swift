@@ -26,7 +26,7 @@ private func lookupMP(postalCode: String) async throws -> ClipMP {
     let (data, _) = try await URLSession.shared.data(from: url)
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let reps = json["representatives_centroid"] as? [[String: Any]],
-          let mp = reps.first(where: { ($0["elected_office"] as? String) == "MP" }),
+          let mp = reps.first(where: { ($0["elected_office"] as? String)?.lowercased() == "mp" }),
           let name = mp["name"] as? String, !name.isEmpty,
           let riding = mp["district_name"] as? String else {
         throw URLError(.cannotParseResponse)

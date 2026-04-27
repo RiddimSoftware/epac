@@ -202,10 +202,12 @@
 				A38427BF2D062C8D00271C34 /* Sources */,
 				A38427C02D062C8D00271C34 /* Frameworks */,
 				A38427C12D062C8D00271C34 /* Resources */,
+				A327A9212D18F75B00A2D292 /* Embed App Clips */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A327A91D2D18F75B00A2D292 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A38427C52D062C8D00271C34 /* epac */,
