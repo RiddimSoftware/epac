@@ -145,6 +145,11 @@ struct SittingCalendarView: View {
 						.minimumScaleFactor(1)
 				}
 			}
+			ToolbarItem(placement: .topBarTrailing) {
+				NavigationLink(destination: OrderPaperView()) {
+					Label("Order Paper", systemImage: "doc.text.below.ecg")
+				}
+			}
 		}
 	}
 }
