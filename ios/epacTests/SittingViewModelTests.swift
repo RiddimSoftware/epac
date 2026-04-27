@@ -8,7 +8,7 @@ struct SittingViewModelTests {
 
 	private func makeContainer() throws -> ModelContainer {
 		let config = ModelConfiguration(isStoredInMemoryOnly: true)
-		return try ModelContainer(for: Schema(SchemaV3.models), configurations: config)
+		return try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
 	}
 
 	private func subject(title: String, hansardID: String, withSpeeches: Bool = true, context: ModelContext) -> SubjectOfBusiness {

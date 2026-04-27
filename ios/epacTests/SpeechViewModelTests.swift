@@ -10,7 +10,7 @@ struct SpeechViewModelTests {
 
 	private func makeContainer() throws -> ModelContainer {
 		let config = ModelConfiguration(isStoredInMemoryOnly: true)
-		return try ModelContainer(for: Schema(SchemaV3.models), configurations: config)
+		return try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
 	}
 
 	/// Creates a Hansard with one subject → one speech → `messageCount` messages,

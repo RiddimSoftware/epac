@@ -7,11 +7,12 @@ import Foundation
 // and clearAllFilters() operate on plain values. We still create ParliamentMember
 // instances via an in-memory container to stay consistent with SwiftData's
 // @Model contract.
+@MainActor
 struct MembersViewModelTests {
 
 	private func makeContainer() throws -> ModelContainer {
 		let config = ModelConfiguration(isStoredInMemoryOnly: true)
-		return try ModelContainer(for: Schema(SchemaV3.models), configurations: config)
+		return try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
 	}
 
 	private func member(
