@@ -14,7 +14,7 @@
 "Recess" = "Ajournement";
 "The House is not sitting today." = "La Chambre ne siège pas aujourd'hui.";
 "Committee Meetings" = "Réunions de comités";
-"Committees often meet even when the House is not in session to study legislation and specific issues in depth." = "Les comités se réunissent souvent même lorsque la Chambre ne siège pas pour étudier les projets de loi et des questions spécifiques en profondeur.";
+"Committees often meet even when the House is not in session to study legislation and specific issues in depth." = "Les comités se réunissent souvent même lorsque la Chambre ne siège pas pour étudier les projets de loi et des questions particulières en profondeur.";
 "Historical Throwback" = "Retour historique";
 "Did you know? The first session of Canada's 1st Parliament opened on November 6, 1867." = "Le saviez-vous? La première session du 1er Parlement du Canada a ouvert le 6 novembre 1867.";
 
@@ -41,7 +41,7 @@
 "Name" = "Nom";
 "Total" = "Total";
 "Travel" = "Voyage";
-"Hospitality" = "Hospitalité";
+"Hospitality" = "Accueil";
 "Contracts" = "Contrats";
 "Search for a member" = "Rechercher un membre";
 "Fetching expenditure data..." = "Récupération des données de dépenses...";

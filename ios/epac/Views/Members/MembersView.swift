@@ -95,7 +95,7 @@ struct MembersView: View {
 				Menu {
 					Picker("Status", selection: $viewModel.selectedStatus) {
 						ForEach(MembersViewModel.MemberStatus.allCases, id: \.self) { status in
-							Text(status.rawValue).tag(status)
+							Text(LocalizedStringKey(status.rawValue)).tag(status)
 						}
 					}
 				} label: {
@@ -190,7 +190,7 @@ private struct StatusFilterView: View {
 						showingStatusFilter = false
 					}) {
 						HStack {
-							Text(status.rawValue)
+							Text(LocalizedStringKey(status.rawValue))
 							Spacer()
 							if selectedStatus == status {
 								Image(systemName: "checkmark")
