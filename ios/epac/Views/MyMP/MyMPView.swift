@@ -64,7 +64,7 @@ private enum MPActivity: Identifiable {
                 ? NSLocalizedString("myMP.activity.speech", comment: "")
                 : s.title
         case .vote(let mv, let rv):
-            let bill = (rv?.billNumberCode.isEmpty == false) ? rv!.billNumberCode : "Vote #\(mv.voteID)"
+            let bill = (rv?.billNumberCode.isEmpty == false) ? rv?.billNumberCode ?? "Vote #\(mv.voteID)" : "Vote #\(mv.voteID)"
             return "\(bill) — \(mv.recordedVote)"
         case .expenditure(let e):
             return String(format: NSLocalizedString("myMP.activity.expenditure", comment: ""), e.year, e.quarter)
@@ -174,17 +174,31 @@ struct MyMPView: View {
 
         var all: [MPActivity] = []
 
-        // Speeches: filter speeches where at least one message matches the MP's name
-        let speeches = (try? modelContext.fetch(FetchDescriptor<Speech>())) ?? []
+        // Speeches: query SpeechMessage by name (predicate-filtered at DB level) to collect
+        // matching hansardIDs, then fetch only those Speech objects. This avoids faulting
+        // every speech's messages relationship, which would be O(speeches × messages).
         let mpFirstName = mp.firstName
         let mpLastName = mp.lastName
-        let mySpeeches = speeches.filter { speech in
-            speech.messages.contains {
-                $0.lastName.localizedCaseInsensitiveCompare(mpLastName) == .orderedSame &&
-                $0.firstName.localizedCaseInsensitiveContains(String(mpFirstName.prefix(3)))
-            }
+        let firstThreeFirst = String(mpFirstName.prefix(3))
+        let matchingMessages = (try? modelContext.fetch(
+            FetchDescriptor<SpeechMessage>(predicate: #Predicate {
+                $0.lastName == mpLastName
+            })
+        )) ?? []
+        let matchingHansardIDs = Set(
+            matchingMessages
+                .filter { $0.firstName.localizedCaseInsensitiveContains(firstThreeFirst) }
+                .map(\.hansardID)
+        )
+        let mySpeeches: [Speech]
+        if matchingHansardIDs.isEmpty {
+            mySpeeches = []
+        } else {
+            mySpeeches = (try? modelContext.fetch(FetchDescriptor<Speech>())) ?? []
         }
-        all += mySpeeches.map { .speech($0) }
+        all += mySpeeches
+            .filter { matchingHansardIDs.contains($0.hansardID) }
+            .map { .speech($0) }
 
         // Votes: predicate on memberID
         let mid = mp.memberID
@@ -195,10 +209,9 @@ struct MyMPView: View {
 
         // Expenditures: match by last name and first-name prefix
         let exps = (try? modelContext.fetch(FetchDescriptor<SummaryExpenditure>())) ?? []
-        let firstThree = String(mpFirstName.prefix(3))
         let myExps = exps.filter {
             $0.lastName.localizedCaseInsensitiveCompare(mpLastName) == .orderedSame &&
-            $0.firstName.localizedCaseInsensitiveContains(firstThree)
+            $0.firstName.localizedCaseInsensitiveContains(firstThreeFirst)
         }
         all += myExps.map { .expenditure($0) }
 
