@@ -533,6 +533,7 @@ actor Fetch: ObservableObject {
 			// Write next sitting to App Group for widget. No-op if App Group is not registered.
 			let nextSitting = dates.filter { $0 >= Calendar.current.startOfDay(for: Date()) }.last
 			WidgetDataWriter.writeNextSitting(nextSitting)
+			WidgetDataWriter.writeParliamentStatus(sittingDates: dates)
 			WidgetDataWriter.reloadWidgets()
 			return dates
 		} else {
@@ -657,7 +658,10 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadVotingRecords(parliament: Int = 44) async throws {
-		guard (try modelContext.fetchCount(FetchDescriptor<RecordedVote>())) == 0 else { return }
+		if try modelContext.fetchCount(FetchDescriptor<RecordedVote>()) > 0 {
+			writeLatestVoteSummaryForWidgets()
+			return
+		}
 
 		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
 		do {
@@ -707,11 +711,29 @@ actor Fetch: ObservableObject {
 				try modelContext.save()
 				UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
 			}
+			writeLatestVoteSummaryForWidgets()
 			transaction.finish(status: .ok)
 		} catch {
 			transaction.finish(status: .internalError)
 			throw error
 		}
+	}
+
+	private func writeLatestVoteSummaryForWidgets() {
+		let descriptor = FetchDescriptor<RecordedVote>(
+			sortBy: [SortDescriptor(\RecordedVote.date, order: .reverse)]
+		)
+		guard let vote = try? modelContext.fetch(descriptor).first else { return }
+		let title = vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn
+		WidgetDataWriter.writeLastVote(
+			title: title,
+			billNumber: vote.billNumberCode,
+			result: vote.resultEn,
+			date: vote.date,
+			yea: vote.yea,
+			nay: vote.nay
+		)
+		WidgetDataWriter.reloadWidgets()
 	}
 
 	/// Force-refreshes vote history for a member by deleting stored votes and re-downloading.
