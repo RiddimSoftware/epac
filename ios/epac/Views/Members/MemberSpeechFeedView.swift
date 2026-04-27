@@ -1,6 +1,16 @@
 import SwiftUI
 import SwiftData
 
+// Shared formatter for parsing "yyyy-MM-dd" sitting-date strings from the API.
+// Declared at file scope so both MemberSpeechFeedView and SpeechEntryRow share
+// a single instance rather than allocating two identical static formatters.
+private let speechFeedISODateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "yyyy-MM-dd"
+    f.locale = Locale(identifier: "en_US_POSIX")
+    return f
+}()
+
 // MARK: - Response models (Codable mirrors of the member-speeches Lambda response)
 
 struct MemberSpeechEntry: Codable, Identifiable {
@@ -139,13 +149,6 @@ struct MemberSpeechFeedView: View {
     @State private var targetHansard: Hansard?
     @State private var targetSubject: SubjectOfBusiness?
     @State private var isLoadingSitting = false
-
-    private static let isoDate: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
 
     init(member: ParliamentMember) {
         self.member = member
@@ -324,7 +327,7 @@ struct MemberSpeechFeedView: View {
 
     private func navigateToSpeech(_ entry: MemberSpeechEntry) async {
         guard let dateStr = entry.sittingDate,
-              let date = Self.isoDate.date(from: dateStr) else { return }
+              let date = speechFeedISODateFormatter.date(from: dateStr) else { return }
 
         isLoadingSitting = true
         defer { isLoadingSitting = false }
@@ -343,8 +346,11 @@ struct MemberSpeechFeedView: View {
     }
 
     private func findHansard(for date: Date) -> Hansard? {
-        let all = (try? modelContext.fetch(FetchDescriptor<Hansard>())) ?? []
-        return all.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+        // Use a predicate so SwiftData filters in SQL rather than loading all Hansards into memory.
+        // Dates stored by XMLBro are Calendar.current midnight values; speechFeedISODateFormatter
+        // produces the same midnight value for the same calendar day, so equality is safe here.
+        // This matches the pattern used in ContentViewModel.swift.
+        try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
     }
 }
 
@@ -353,16 +359,9 @@ struct MemberSpeechFeedView: View {
 private struct SpeechEntryRow: View {
     let entry: MemberSpeechEntry
 
-    private static let isoDate: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
     private var formattedDate: String? {
         guard let s = entry.sittingDate,
-              let d = Self.isoDate.date(from: s) else { return nil }
+              let d = speechFeedISODateFormatter.date(from: s) else { return nil }
         return d.formatted(date: .abbreviated, time: .omitted)
     }
 
