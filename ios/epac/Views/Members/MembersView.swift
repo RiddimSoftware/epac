@@ -81,6 +81,14 @@ struct MembersView: View {
 				}
 			}
 		}
+		.safeAreaInset(edge: .bottom) {
+			HStack {
+				Spacer()
+				DataSourceBadge(source: .members())
+			}
+			.padding(.horizontal)
+			.padding(.vertical, 6)
+		}
 		.navigationTitle("Members")
 		.navigationBarTitleDisplayMode(.large)
 		.animation(reduceMotion ? nil : .default, value: filteredMembers)

@@ -52,6 +52,11 @@ final class BillFollowStore {
 
     var followedNumbers: Set<String> { Set(followed.keys) }
 
+    func unfollowAll() {
+        followed.removeAll()
+        save()
+    }
+
     /// Call after BillsService.fetchBills() to detect stage or status changes for followed bills.
     /// Returns notification payloads that should be scheduled.
     func detectChanges(in freshBills: [Bill]) -> [BillChangeNotification] {

@@ -131,7 +131,8 @@ struct SittingCalendarView: View {
 		}
 		.frame(maxWidth: 500)
 		.frame(maxWidth: .infinity)
-		.task {
+		.task(id: viewModel.currentYear) {
+			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
 			if viewModel.dates.isEmpty {
 				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
 				calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)

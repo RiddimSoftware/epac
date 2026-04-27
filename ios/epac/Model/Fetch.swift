@@ -511,6 +511,7 @@ actor Fetch: ObservableObject {
 				}
 			}
 		}
+		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}
 	                func downloadMember(_ firstName: String, _ lastName: String) async throws {
 	                        let identifier = "\(firstName) \(lastName)"
