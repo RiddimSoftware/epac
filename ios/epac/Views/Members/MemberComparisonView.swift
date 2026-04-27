@@ -99,23 +99,26 @@ private struct ComparisonRow: View {
 	let valueB: Double
 	var bold = false
 
-	private let currency = Decimal.FormatStyle.Currency(code: "CAD")
-
 	private func formatted(_ v: Double) -> String {
 		Decimal(v).formatted(.currency(code: "CAD"))
 	}
 
 	var body: some View {
+		// When values are equal neither side "wins", so both render primary.
+		// When one is strictly higher it gets primary emphasis; the lower gets secondary.
+		let aStyle: HierarchicalShapeStyle = valueA >= valueB ? .primary : .secondary
+		let bStyle: HierarchicalShapeStyle = valueB >= valueA ? .primary : .secondary
+
 		HStack {
 			Text(formatted(valueA))
 				.frame(maxWidth: .infinity, alignment: .leading)
-				.foregroundStyle(valueA > valueB ? Color.primary : .secondary)
+				.foregroundStyle(aStyle)
 			Text(label)
 				.frame(maxWidth: .infinity, alignment: .center)
 				.foregroundStyle(.secondary)
 			Text(formatted(valueB))
 				.frame(maxWidth: .infinity, alignment: .trailing)
-				.foregroundStyle(valueB > valueA ? Color.primary : .secondary)
+				.foregroundStyle(bStyle)
 		}
 		.font(bold ? .headline : .subheadline)
 		.padding(.vertical, 6)
