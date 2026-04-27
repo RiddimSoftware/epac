@@ -24,6 +24,7 @@ struct SpeechView: View {
 
 	@State var viewModel: SpeechViewModel
 	@State private var item: ActivityItem?
+	@State private var followStore = MemberFollowStore.shared
 
 	init(hansard: Hansard, subject: SubjectOfBusiness) {
 		self.hansard = hansard
@@ -80,6 +81,40 @@ struct SpeechView: View {
 							.foregroundStyle(.white)
 						}
 					}
+					.contextMenu {
+						if let speaker = viewModel.speakers[message.id] {
+							Button {
+								item = viewModel.shareMessage(message, subject: subject, hansard: hansard)
+							} label: {
+								Label(NSLocalizedString("speech.share", comment: ""), systemImage: "square.and.arrow.up")
+							}
+							Button {
+								if followStore.isFollowing(speaker.memberID) {
+									followStore.unfollow(speaker.memberID)
+								} else {
+									followStore.follow(speaker.memberID)
+								}
+							} label: {
+								Label(
+									followStore.isFollowing(speaker.memberID)
+										? String(format: NSLocalizedString("speech.unfollow", comment: ""), speaker.firstName)
+										: String(format: NSLocalizedString("speech.follow", comment: ""), speaker.firstName),
+									systemImage: followStore.isFollowing(speaker.memberID) ? "person.badge.minus" : "person.badge.plus"
+								)
+							}
+							Button {
+								router.selectedMember = speaker
+								router.selectedTab = .members
+							} label: {
+								Label(String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName), systemImage: "person.circle")
+							}
+							Button {
+								UIPasteboard.general.string = message.text
+							} label: {
+								Label(NSLocalizedString("speech.copyQuote", comment: ""), systemImage: "doc.on.doc")
+							}
+						}
+					}
 					.accessibilityElement(children: .combine)
 					.accessibilityLabel({
 						if let speaker = viewModel.speakers[message.id] {
@@ -87,6 +122,9 @@ struct SpeechView: View {
 						}
 						return message.text
 					}())
+					.accessibilityAction(named: NSLocalizedString("speech.copyQuote", comment: "")) {
+						UIPasteboard.general.string = message.text
+					}
 					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
 						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 							.onTapGesture {

@@ -16,6 +16,7 @@ struct BillsView: View {
     @State private var typeFilter: BillTypeGroup? = nil
     @State private var billStore = BillFollowStore.shared
     @State private var shareItems: ActivityItem?
+    @Environment(NavigationRouter.self) private var router
 
     private var filtered: [Bill] {
         bills.filter {
@@ -78,6 +79,12 @@ struct BillsView: View {
                             shareItems = BillSharer.activityItem(for: bill)
                         } label: {
                             Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            router.pendingSearchQuery = bill.number
+                            router.selectedTab = .search
+                        } label: {
+                            Label(NSLocalizedString("bill.contextMenu.seeVotes", comment: ""), systemImage: "checkmark.ballot")
                         }
                     }
                 }

@@ -112,6 +112,29 @@ struct MemberVotingRecordView: View {
 										.tint(.orange)
 									}
 								}
+								.contextMenu {
+									if let vote = rv {
+										Button {
+											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.share", comment: ""), systemImage: "square.and.arrow.up")
+										}
+										if !vote.billNumberCode.isEmpty {
+											Button {
+												router.pendingSearchQuery = vote.billNumberCode
+												router.selectedTab = .search
+											} label: {
+												Label(NSLocalizedString("vote.contextMenu.searchDebates", comment: ""), systemImage: "magnifyingglass")
+											}
+										}
+										Button {
+											let template = ContactMyMP.voteTemplate(vote: vote, memberVote: mv.recordedVote)
+											ContactMyMP.open(to: member, template: template)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.writeMP", comment: ""), systemImage: "envelope")
+										}
+									}
+								}
 						}
 					}
 				}

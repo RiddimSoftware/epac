@@ -435,3 +435,18 @@
 "empty.home.title" = "Configurez votre fil civique";
 "empty.home.message" = "Ajoutez votre code postal pour suivre votre député, ou abonnez-vous aux sujets et projets de loi qui vous intéressent.";
 "empty.home.action" = "Trouver mon député";
+
+/* Menus contextuels — bulles de discours (EPAC-170) */
+"speech.share" = "Partager ce discours";
+"speech.follow" = "Suivre %@";
+"speech.unfollow" = "Ne plus suivre %@";
+"speech.goToProfile" = "Profil de %@";
+"speech.copyQuote" = "Copier la citation";
+
+/* Menus contextuels — rangées de vote (EPAC-170) */
+"vote.contextMenu.share" = "Partager ce vote";
+"vote.contextMenu.searchDebates" = "Voir le débat sur ce projet de loi";
+"vote.contextMenu.writeMP" = "Écrire au député";
+
+/* Menus contextuels — rangées de projet de loi (EPAC-170) */
+"bill.contextMenu.seeVotes" = "Voir les votes sur ce projet de loi";
