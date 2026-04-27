@@ -150,11 +150,43 @@ struct SittingCalendarView: View {
 		}
 		.toolbar {
 			ToolbarItem(placement: .principal) {
-				VStack {
-					Text("House of Commons Sitting Calendar")
-						.lineLimit(0)
-						.minimumScaleFactor(1)
+				// Year picker: tap ‹ or › to jump by one year; the calendar scrolls to that year's January.
+				HStack(spacing: 4) {
+					Button {
+						let prev = viewModel.currentYear - 1
+						if prev >= 2016 {
+							Task { await viewModel.fetchSittingCalendar(prev, modelContext: modelContext, fetch: fetch) }
+							if let jan = Calendar.current.date(from: DateComponents(year: prev, month: 1, day: 1)) {
+								calendarViewProxy.scrollToMonth(containing: jan, scrollPosition: .firstFullyVisiblePosition, animated: true)
+							}
+						}
+					} label: {
+						Image(systemName: "chevron.left")
+							.font(.caption.weight(.semibold))
+					}
+					.disabled(viewModel.currentYear <= 2016)
+					.accessibilityLabel("Previous year")
+
+					Text(verbatim: "\(viewModel.currentYear)")
+						.font(.headline)
+						.monospacedDigit()
+
+					Button {
+						let next = viewModel.currentYear + 1
+						if next <= Calendar.current.dateComponents([.year], from: .now).year! {
+							Task { await viewModel.fetchSittingCalendar(next, modelContext: modelContext, fetch: fetch) }
+							if let jan = Calendar.current.date(from: DateComponents(year: next, month: 1, day: 1)) {
+								calendarViewProxy.scrollToMonth(containing: jan, scrollPosition: .firstFullyVisiblePosition, animated: true)
+							}
+						}
+					} label: {
+						Image(systemName: "chevron.right")
+							.font(.caption.weight(.semibold))
+					}
+					.disabled(viewModel.currentYear >= Calendar.current.dateComponents([.year], from: .now).year!)
+					.accessibilityLabel("Next year")
 				}
+				.accessibilityElement(children: .contain)
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				NavigationLink(destination: OrderPaperView()) {
