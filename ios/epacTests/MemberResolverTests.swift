@@ -91,6 +91,33 @@ struct MemberResolverTests {
 		#expect(resolved.province == Province.BC)
 	}
 
+	@Test func usesConstituencyProvinceWhenRidingMatchesByPrefix() throws {
+		let context = try makeContext()
+		// Constituency stored with full riding name; message only contains the prefix
+		let constituency = Constituency(
+			name: "Burnaby Central",
+			province: Province.BC,
+			currentMemberFirstName: "Jagmeet",
+			currentMemberLastName: "Singh",
+			currentMemberParty: Party.newdemocratic
+		)
+		context.insert(constituency)
+		try context.save()
+
+		let resolved = MemberResolver().resolve(
+			firstName: "Jagmeet",
+			lastName: "Singh",
+			partyAbbreviation: "NDP",
+			ridingName: "Burnaby",
+			parliamentNumber: 45,
+			modelContext: context,
+			fetch: makeFetch(context)
+		)
+
+		#expect(resolved.province == Province.BC)
+		#expect(resolved.riding == "Burnaby Central")
+	}
+
 	@Test func fallsBackToOntarioWhenNoConstituencyMatch() throws {
 		let context = try makeContext()
 
