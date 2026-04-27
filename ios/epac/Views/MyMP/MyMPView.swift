@@ -151,8 +151,20 @@ struct MyMPView: View {
     }
 
     private var activityList: some View {
-        List(activities) { activity in
-            ActivityRow(activity: activity)
+        List {
+            Section(NSLocalizedString("petitions.navTitle", comment: "")) {
+                NavigationLink(destination: PetitionsView()) {
+                    Label(
+                        NSLocalizedString("petitions.browseAll", comment: ""),
+                        systemImage: "person.wave.2"
+                    )
+                }
+            }
+            Section(NSLocalizedString("myMP.activity.section", comment: "")) {
+                ForEach(activities) { activity in
+                    ActivityRow(activity: activity)
+                }
+            }
         }
         .listStyle(.plain)
     }

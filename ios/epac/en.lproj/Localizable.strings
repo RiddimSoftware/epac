@@ -172,3 +172,30 @@
 
 /* Contact MP */
 "contact.writeToMP" = "Write to MP";
+
+/* e-Petitions */
+"petitions.navTitle" = "e-Petitions";
+"petitions.browseAll" = "Browse open petitions";
+"petitions.filter" = "Filter";
+"petitions.loading" = "Loading petitions";
+"petition.filter.all" = "All petitions";
+"petition.status.open" = "Open";
+"petition.status.closed" = "Closed";
+"petition.status.certified" = "Certified";
+"petition.status.responseReceived" = "Response received";
+"petition.status.unknown" = "Unknown";
+"petitions.signatures" = "%d signatures";
+"petitions.number" = "Petition";
+"petitions.status" = "Status";
+"petitions.deadline" = "Deadline";
+"petitions.sponsor" = "Presenting MP";
+"petitions.subject" = "Subject";
+"petitions.sign" = "Sign this petition on ourcommons.ca";
+"petitions.sign.footer" = "Opens in Safari. The app does not collect signatures.";
+"petitions.empty.title" = "No Petitions";
+"petitions.empty.description" = "No petitions found.";
+"petitions.error.title" = "Couldn't Load Petitions";
+"petitions.error.description" = "Check your connection and try again.";
+
+/* My MP activity section header */
+"myMP.activity.section" = "Recent Activity";
