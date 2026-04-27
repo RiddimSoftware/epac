@@ -35,10 +35,11 @@ TOPICS = [
 
 
 def make_svg(line1: str, line2: str, tag: str) -> str:
+    raw_len = len(line1)  # measure before escaping — HTML entities inflate length
     line1 = html_lib.escape(line1)
     line2 = html_lib.escape(line2)
     tag   = html_lib.escape(tag)
-    font1 = 72 if len(line1) <= 24 else 56 if len(line1) <= 36 else 44
+    font1 = 72 if raw_len <= 24 else 56 if raw_len <= 36 else 44 if raw_len <= 44 else 36
     font2 = 36
     tag_width = min(len(tag) * 14 + 32, 400)
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
