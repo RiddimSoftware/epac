@@ -82,6 +82,20 @@ struct MemberProfileView: View {
 				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 					contactSection
 				}
+
+				NavigationLink(destination: MemberVotingRecordView(member: member)) {
+					HStack {
+						Label("Voting Record", systemImage: "checkmark.ballot")
+						Spacer()
+						Image(systemName: "chevron.right")
+							.font(.caption)
+							.foregroundStyle(.tertiary)
+					}
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+				}
+				.foregroundStyle(.primary)
 			}
 			.padding()
 		}
