@@ -159,6 +159,7 @@ private struct MemberRow: View {
 		HStack(alignment: .center, spacing: 12) {
 			MemberAvatar(member: member)
 				.frame(width: 52, height: 52)
+				.accessibilityHidden(true)
 			VStack(alignment: .leading, spacing: 2) {
 				Text(member.name)
 					.font(.headline)
@@ -174,6 +175,8 @@ private struct MemberRow: View {
 				.foregroundColor(.secondary)
 				.multilineTextAlignment(.trailing)
 		}
+		.accessibilityElement(children: .combine)
+		.accessibilityLabel("\(member.name), \(member.party.fullName), \(member.riding), \(member.province.rawValue)")
 	}
 }
 
