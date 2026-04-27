@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ActivityView
 
 struct BillsView: View {
     @State private var bills: [Bill] = []
@@ -13,6 +14,8 @@ struct BillsView: View {
     @State private var loadFailed = false
     @State private var statusFilter: BillStatus? = nil
     @State private var typeFilter: BillTypeGroup? = nil
+    @State private var billStore = BillFollowStore.shared
+    @State private var shareItems: ActivityItem?
 
     private var filtered: [Bill] {
         bills.filter {
@@ -60,6 +63,23 @@ struct BillsView: View {
                     NavigationLink(destination: BillDetailView(bill: bill)) {
                         BillRow(bill: bill)
                     }
+                    .contextMenu {
+                        Button {
+                            billStore.toggle(bill)
+                        } label: {
+                            Label(
+                                billStore.isFollowing(bill.number)
+                                    ? NSLocalizedString("bill.unfollow", comment: "")
+                                    : NSLocalizedString("bill.follow", comment: ""),
+                                systemImage: billStore.isFollowing(bill.number) ? "doc.badge.clock.fill" : "doc.badge.clock"
+                            )
+                        }
+                        Button {
+                            shareItems = BillSharer.activityItem(for: bill)
+                        } label: {
+                            Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+                        }
+                    }
                 }
                 .listStyle(.plain)
                 .refreshable {
@@ -103,6 +123,7 @@ struct BillsView: View {
             }
         }
         .task { await load() }
+        .activitySheet($shareItems)
     }
 
     private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }

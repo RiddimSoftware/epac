@@ -32,10 +32,22 @@ struct MemberProfileView: View {
 	private var contactSection: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			if let email = member.email, let url = URL(string: "mailto:\(email)") {
-				Button { UIApplication.shared.open(url) } label: {
-					ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
+				HStack(spacing: 0) {
+					Button { UIApplication.shared.open(url) } label: {
+						ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
+					}
+					.foregroundStyle(.primary)
+					Button {
+						UIPasteboard.general.string = email
+					} label: {
+						Image(systemName: "doc.on.doc")
+							.font(.caption)
+							.foregroundStyle(.secondary)
+							.padding(.horizontal, 8)
+					}
+					.accessibilityLabel("Copy email address")
+					.accessibilityHint("Copies \(email) to clipboard")
 				}
-				.foregroundStyle(.primary)
 			}
 			if let phone = member.hillPhone,
 			   let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {

@@ -13,6 +13,7 @@ struct MemberVotingRecordView: View {
 	@Environment(NavigationRouter.self) private var router
 	@Query private var memberVotes: [MemberVote]
 	@State private var shareItem: ActivityItem?
+	@State private var cachedStats = VoteStats()
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -33,8 +34,18 @@ struct MemberVotingRecordView: View {
 		var decisiveTotal = 0; var aligned = 0
 	}
 
-	private var voteStats: VoteStats {
-		memberVotes.reduce(into: VoteStats()) { s, mv in
+	// voteStats is computed once when memberVotes changes, not on every render.
+	private var yeaCount: Int    { cachedStats.yea }
+	private var nayCount: Int    { cachedStats.nay }
+	private var absentCount: Int { cachedStats.absent }
+
+	private var winnerAlignmentScore: Double {
+		guard cachedStats.decisiveTotal > 0 else { return 0 }
+		return Double(cachedStats.aligned) / Double(cachedStats.decisiveTotal)
+	}
+
+	private func recomputeStats() {
+		cachedStats = memberVotes.reduce(into: VoteStats()) { s, mv in
 			switch mv.recordedVote {
 			case "Yea": s.yea += 1
 			case "Nay": s.nay += 1
@@ -47,17 +58,6 @@ struct MemberVotingRecordView: View {
 				            (mv.recordedVote == "Nay" && v.resultEn.localizedCaseInsensitiveContains("Negatived"))
 			if isAligned { s.aligned += 1 }
 		}
-	}
-
-	private var yeaCount: Int    { voteStats.yea }
-	private var nayCount: Int    { voteStats.nay }
-	private var absentCount: Int { voteStats.absent }
-
-	/// Fraction of decisive (Yea/Nay) votes aligned with the final result.
-	private var winnerAlignmentScore: Double {
-		let s = voteStats
-		guard s.decisiveTotal > 0 else { return 0 }
-		return Double(s.aligned) / Double(s.decisiveTotal)
 	}
 
 	var body: some View {
@@ -119,6 +119,8 @@ struct MemberVotingRecordView: View {
 			}
 		}
 		.activitySheet($shareItem)
+		.onAppear { recomputeStats() }
+		.onChange(of: memberVotes.count) { recomputeStats() }
 		.safeAreaInset(edge: .bottom) {
 			HStack {
 				Spacer()
