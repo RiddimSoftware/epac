@@ -163,6 +163,10 @@
 "debate.navTitle" = "Debate Activity";
 "debate.empty.title" = "No debate records";
 "debate.empty.description" = "Open sitting days to load debate transcripts for this member.";
+"debate.empty.noSpeeches" = "No speeches found in recent sitting days.";
+"debate.empty.loadMore" = "Search more sitting days";
+"debate.loading.start" = "Loading recent sitting days…";
+"debate.loading.progress" = "Loaded %d sitting days…";
 "debate.recentSittingDays" = "Recent Sitting Days";
 "debate.contributionCount" = "%d contribution(s)";
 "debate.stat.contributions" = "Contributions";
