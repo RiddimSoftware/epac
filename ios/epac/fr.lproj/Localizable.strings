@@ -327,6 +327,12 @@
 "home.seeAllBills" = "Voir tous les projets →";
 "home.manageTopics" = "Gérer les sujets →";
 
+/* Temps d'attente en santé ICIS */
+"cihi.sectionTitle" = "Temps d'attente en santé (%d)";
+"cihi.sectionTitle.short" = "Temps d'attente en santé (ICIS)";
+"cihi.viewSource" = "Source : ICIS — icis.ca →";
+"cihi.contextCard.title" = "Temps d'attente en santé dans votre province (%@)";
+
 /* Analyse de coût indépendante du DPB */
 "pbo.sectionTitle" = "Analyse de coût indépendante (DPB)";
 "pbo.estimate.pbo" = "Estimation du DPB :";

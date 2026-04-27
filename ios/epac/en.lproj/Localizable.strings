@@ -327,6 +327,12 @@
 "home.seeAllBills" = "See all bills →";
 "home.manageTopics" = "Manage topics →";
 
+/* CIHI health wait times */
+"cihi.sectionTitle" = "Health Wait Times (%d)";
+"cihi.sectionTitle.short" = "Health Wait Times (CIHI)";
+"cihi.viewSource" = "Source: CIHI — cihi.ca →";
+"cihi.contextCard.title" = "Health wait times in your province (%@)";
+
 /* PBO independent cost analysis */
 "pbo.sectionTitle" = "Independent Cost Analysis (PBO)";
 "pbo.estimate.pbo" = "PBO estimate:";
