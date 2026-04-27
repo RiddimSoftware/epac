@@ -67,7 +67,6 @@ We follow the spirit of continuous integration: keep branches short-lived (aim f
 
 Before requesting review, the author must:
 
-- [ ] **TestFlight build uploaded.** Before merging to `main`, run `cd ios && bundle exec fastlane deploy` to upload a TestFlight build. See `docs/development/local-build.md` for one-time setup. (GitHub Actions no longer builds automatically — EPAC-370.)
 - [ ] **Build passes.** Run `xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
 - [ ] **App runs.** Install and launch on the simulator: `xcrun simctl install FCFAF817-6694-402D-B116-A86EDAF34237 <DerivedData>/epac.app && xcrun simctl launch FCFAF817-6694-402D-B116-A86EDAF34237 net.dinglebox.cabinetdoor`
 - [ ] **Screenshot taken and committed.** `xcrun simctl io FCFAF817-6694-402D-B116-A86EDAF34237 screenshot /tmp/epac-screenshot.png`, then copy to `docs/build-evidence/<ticket>-running.png` and commit to the branch. Reference via raw GitHub URL — never use placeholder asset URLs (they render as broken images).
@@ -122,36 +121,41 @@ Release-Note: Fixed bill sharing link on older iOS versions
 
 The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-US/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
 
-### Automated Pre-Merge Review (mandatory)
+### Post-PR-open review
 
-Every PR gets a dedicated agent review before merging. After `gh pr create`, spawn a new agent with this prompt:
+After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
+
+Spawn prompt template (Claude Code, via the Agent tool):
 
 ```
-Review PR #N (https://github.com/sunnypurewal/epac/pull/N) on branch <branch>.
+You are the Autonomous Code Reviewer for PR #N (https://github.com/sunnypurewal/epac/pull/N), branch <branch>.
 Repo root: /Users/sunny/code/epac
 
-1. Read the PR description and diff: `gh pr diff N`
-2. Read CLAUDE.md for architecture rules and standards
-3. Check for: Swift 6 actor-isolation issues, forced unwraps, test coverage
-   gaps, style inconsistency, correctness vs the ticket's acceptance criteria
-4. Make ONE consolidated pass of concrete fixes directly on the branch
-5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac
-   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237'
-   build 2>&1 | tail -3
-6. Run relevant tests, commit changes, push
-7. Report: what changed and why; what was left alone and why
+Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
+
+1. `gh pr diff N` — read the full diff
+2. Read /Users/sunny/code/epac/CLAUDE.md (architecture rules, PR standards)
+3. Read the linked Jira ticket's acceptance criteria
+4. Make ONE consolidated pass of fixes directly on the branch (commit + push)
+5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac \
+   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build 2>&1 | tail -3
+6. Run relevant tests
+7. Post one PR comment with: build status, what changed and why, what was left alone and why
+8. Squash-merge: gh pr merge N --squash --delete-branch
+9. Transition the Jira ticket to Done
+10. Report back: merged (commit SHA) OR blocked (reasons)
 ```
 
-The agent commits directly to the branch. The PR is merged only after the agent's pass completes without build failures.
-
-**Why this exists:** PR #3 introduced a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second-pass review would have caught it. The agent acts as the second pair of eyes that runs every time.
+**Why this is structured as a subagent rather than a human-attended review:** PR #3 shipped a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second pass would have caught it. Splitting Developer and Reviewer into separate roles — even when the Reviewer runs as a subagent of the same session — gives the review a clean context window and forces the Reviewer to re-read CLAUDE.md and the diff from scratch.
 
 ### PR Reviewer Expectations
 
-- Respond within one working day.
-- Distinguish blocking from non-blocking comments: prefix suggestions with `nit:` or `optional:` if they are not required for merge.
-- Approve if the approach is sound, even if you would have done it differently; leave a `nit:` comment for style.
-- Never ask "why didn't you use X?" without also explaining why X would be better for *this specific case*.
+The Reviewer is spawned synchronously by the Developer at PR-open and is expected to complete the review-fix-merge cycle **immediately**, in the same session. There is no queue, no waiting, no "I'll get to it." The Developer is blocked on the Reviewer's return.
+
+- **Review immediately.** Do not defer. Do not return control until the PR is merged or definitively blocked with reasons.
+- Distinguish blocking from non-blocking findings: prefix non-blocking suggestions with `nit:` or `optional:` in the review comment.
+- Approve and merge if the approach is sound, even if you would have done it differently; leave a `nit:` for style.
+- Never raise "why didn't you use X?" without also explaining why X would be better for *this specific case*.
 
 ### What makes a review delightful
 
