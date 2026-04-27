@@ -28,10 +28,4 @@ enum GazettePart: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var subtitle: String {
-        switch self {
-        case .partI:  return NSLocalizedString("gazette.part.i.subtitle", comment: "")
-        case .partII: return NSLocalizedString("gazette.part.ii.subtitle", comment: "")
-        }
-    }
 }

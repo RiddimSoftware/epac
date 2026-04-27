@@ -45,7 +45,7 @@ struct GazetteDetailView: View {
                 }
                 LabeledContent(
                     NSLocalizedString("gazette.detail.sourceLabel", comment: ""),
-                    value: "Canada Gazette, \(entry.part.localizedName), \(entry.publicationDate.formatted(date: .abbreviated, time: .omitted))"
+                    value: "\(NSLocalizedString("gazette.navTitle", comment: "")), \(entry.part.localizedName), \(entry.publicationDate.formatted(date: .abbreviated, time: .omitted))"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

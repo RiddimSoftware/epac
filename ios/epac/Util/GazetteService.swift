@@ -106,7 +106,7 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
             .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let category = currentCategory.trimmingCharacters(in: .whitespacesAndNewlines)
-        let id = linkStr.isEmpty ? UUID().uuidString : linkStr
+        let id = linkStr
 
         entries.append(GazetteEntry(
             id: id,
