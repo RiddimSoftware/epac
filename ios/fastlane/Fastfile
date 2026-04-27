@@ -22,43 +22,51 @@ platform :ios do
     )
 
     # ------------------------------------------------------------------
-    # Provisioning profiles — one per bundle ID.
+    # Provisioning profiles.
     #
-    # sigh downloads the profile from App Store Connect via the API key.
-    # It creates the profile if it does not exist yet (handles the App
-    # Clip profile added in EPAC-75). The distribution certificate must
-    # already be in the ephemeral keychain; the workflow imports it from
-    # the DISTRIBUTION_CERT_P12 GitHub secret before calling this lane.
+    # sigh requires the distribution certificate to already be installed
+    # in the keychain. The workflow imports it from the
+    # DISTRIBUTION_CERT_P12 GitHub secret (see .github/workflows/build-
+    # deploy.yml for setup instructions). Until that secret is added,
+    # skip sigh and let build_app use -allowProvisioningUpdates instead.
+    #
+    # Once DISTRIBUTION_CERT_P12 is set, uncomment these two blocks:
+    #
+    # sigh(
+    #   api_key:        api_key,
+    #   app_identifier: "net.dinglebox.cabinetdoor",
+    #   force:          false
+    # )
+    # sigh(
+    #   api_key:        api_key,
+    #   app_identifier: "net.dinglebox.cabinetdoor.Clip",
+    #   force:          false
+    # )
     # ------------------------------------------------------------------
-    sigh(
-      api_key:        api_key,
-      app_identifier: "net.dinglebox.cabinetdoor",
-      force:          false     # reuse the existing valid profile
-    )
-
-    sigh(
-      api_key:        api_key,
-      app_identifier: "net.dinglebox.cabinetdoor.Clip",
-      force:          false
-    )
 
     # ------------------------------------------------------------------
     # Archive and export.
-    # DEVELOPMENT_TEAM: prevents Xcode from trying to discover the team
-    # via the ASC API, which would otherwise attempt to create a new
-    # certificate when the keychain has no matching cert — filling the
-    # 2-cert account limit.
-    # CODE_SIGN_STYLE=Automatic: lets Xcode pick the cert already in the
-    # keychain (installed by the workflow "Import distribution certificate"
-    # step). When that step is skipped (secret not set), Xcode will still
-    # try automatic signing and may create a new cert — which is why the
-    # secret must be added for stable CI (see workflow for setup steps).
+    #
+    # -allowProvisioningUpdates lets Xcode download and create profiles
+    # via the ASC API key. It will also CREATE a new distribution cert
+    # if none is found in the keychain — this hits Apple's 2-cert limit.
+    # Adding DISTRIBUTION_CERT_P12 to GitHub secrets pre-installs the
+    # cert and eliminates that problem.
     # ------------------------------------------------------------------
+    key_path = File.expand_path(
+      "~/.appstoreconnect/private_keys/AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8"
+    )
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C CODE_SIGN_STYLE=Automatic",
+      xcargs:           [
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath #{key_path}",
+        "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
+        "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}",
+        "DEVELOPMENT_TEAM=ZG82TFXU3C"
+      ].join(" "),
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true
