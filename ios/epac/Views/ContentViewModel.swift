@@ -26,6 +26,10 @@ class ContentViewModel {
 				do {
 					try await fetch.downloadHansard(date)
 					selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
+					if let h = selectedHansard {
+						let subjects = h.orders.flatMap { $0.subjects }.map { (title: $0.title, date: h.date) }
+						await TopicNotificationScheduler.checkAndNotify(subjectTitles: subjects)
+					}
 				} catch {
 					Log.debug("Failed to fetch hansard \(date)")
 					nonSittingDate = date

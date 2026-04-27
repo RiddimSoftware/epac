@@ -243,6 +243,35 @@
 "bills.stage.senateThird" = "Senate — Third Reading";
 "bills.stage.royalAssent" = "Royal Assent";
 
+/* Topic following */
+"topics.navTitle" = "Topics";
+"topics.browseAll" = "Browse topics";
+"topic.follow" = "Follow topic";
+"topic.unfollow" = "Unfollow topic";
+"topic.source.debate" = "New debate";
+"topic.source.bill" = "New bill";
+/* Topic names (controlled vocabulary) */
+"topic.housing" = "Housing";
+"topic.healthcare" = "Healthcare";
+"topic.climate" = "Climate & Environment";
+"topic.economy" = "Economy & Finance";
+"topic.indigenous" = "Indigenous Affairs";
+"topic.immigration" = "Immigration";
+"topic.defence" = "Defence";
+"topic.justice" = "Justice & Public Safety";
+"topic.seniors" = "Seniors & Pensions";
+"topic.agriculture" = "Agriculture";
+"topic.transport" = "Transport & Infrastructure";
+"topic.taxation" = "Taxation";
+"topic.foreign" = "Foreign Affairs";
+"topic.education" = "Education";
+"topic.childcare" = "Child Care";
+"topic.energy" = "Energy";
+"topic.pharma" = "Pharmaceuticals";
+"topic.digital" = "Digital & AI";
+"topic.labour" = "Labour";
+"topic.trade" = "Trade";
+
 /* Follow bill */
 "bill.follow" = "Follow";
 "bill.unfollow" = "Unfollow";

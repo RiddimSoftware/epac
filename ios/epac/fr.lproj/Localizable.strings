@@ -243,6 +243,35 @@
 "bills.stage.senateThird" = "Sénat — Troisième lecture";
 "bills.stage.royalAssent" = "Sanction royale";
 
+/* Suivi des sujets */
+"topics.navTitle" = "Sujets";
+"topics.browseAll" = "Parcourir les sujets";
+"topic.follow" = "Suivre ce sujet";
+"topic.unfollow" = "Ne plus suivre ce sujet";
+"topic.source.debate" = "Nouveau débat";
+"topic.source.bill" = "Nouveau projet de loi";
+/* Noms des sujets (vocabulaire contrôlé) */
+"topic.housing" = "Logement";
+"topic.healthcare" = "Santé";
+"topic.climate" = "Climat et environnement";
+"topic.economy" = "Économie et finances";
+"topic.indigenous" = "Affaires autochtones";
+"topic.immigration" = "Immigration";
+"topic.defence" = "Défense";
+"topic.justice" = "Justice et sécurité publique";
+"topic.seniors" = "Aînés et retraite";
+"topic.agriculture" = "Agriculture";
+"topic.transport" = "Transport et infrastructure";
+"topic.taxation" = "Fiscalité";
+"topic.foreign" = "Affaires étrangères";
+"topic.education" = "Éducation";
+"topic.childcare" = "Services de garde";
+"topic.energy" = "Énergie";
+"topic.pharma" = "Produits pharmaceutiques";
+"topic.digital" = "Numérique et IA";
+"topic.labour" = "Travail";
+"topic.trade" = "Commerce";
+
 /* Suivi des projets de loi — notifications */
 "bill.follow" = "Suivre";
 "bill.unfollow" = "Ne plus suivre";

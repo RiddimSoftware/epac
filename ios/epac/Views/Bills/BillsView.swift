@@ -111,6 +111,7 @@ struct BillsView: View {
             for change in changes {
                 BillNotificationScheduler.schedule(change)
             }
+            await TopicNotificationScheduler.checkAndNotify(bills: bills)
         } catch {
             loadFailed = true
         }
