@@ -76,7 +76,7 @@ struct MemberVotingRecordView: View {
 						PartyLineScoreView(member: member)
 							.padding(.vertical, 4)
 					}
-					Section(NSLocalizedString("voting.recentVotes", comment: "")) {
+					Section(header: Text(NSLocalizedString("voting.recentVotes", comment: "")).accessibilityAddTraits(.isHeader)) {
 						ForEach(memberVotes) { mv in
 							let rv = mv.vote  // pre-resolve relationship before SwiftUI render pass
 							VoteRow(memberVote: mv, rv: rv)
