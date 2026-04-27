@@ -12,7 +12,7 @@ import UIKit
 
 @MainActor
 final class ReviewRequestManager {
-    static let shared = ReviewRequestManager()
+    @MainActor static let shared = ReviewRequestManager()
 
     private let installDateKey     = "epac.review.installDate"
     private let openCountKey       = "epac.review.openCount"

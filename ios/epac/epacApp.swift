@@ -31,6 +31,7 @@ struct epacApp: App {
 	}()
 
 	@State private var notificationManager = NotificationManager()
+	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
 		MetricKitSubscriber.shared.start()
@@ -40,8 +41,12 @@ struct epacApp: App {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer)
 				.environment(notificationManager)
-				.onAppear { ReviewRequestManager.shared.recordAppOpen() }
 		}
 		.modelContainer(sharedModelContainer)
+		.onChange(of: scenePhase) { oldPhase, newPhase in
+			if newPhase == .active {
+				ReviewRequestManager.shared.recordAppOpen()
+			}
+		}
 	}
 }
