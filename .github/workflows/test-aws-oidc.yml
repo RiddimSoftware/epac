@@ -32,8 +32,8 @@ jobs:
           assert 'key_id' in d, 'missing key_id'
           assert 'issuer_id' in d, 'missing issuer_id'
           assert 'private_key' in d, 'missing private_key'
-          print('key_id:', d['key_id'])
-          print('issuer_id:', d['issuer_id'])
+          print('key_id: [present, not shown]')
+          print('issuer_id: [present, not shown]')
           print('private_key: [present, not shown]')
           print('All expected keys found — OIDC role and secret access confirmed.')
           "
