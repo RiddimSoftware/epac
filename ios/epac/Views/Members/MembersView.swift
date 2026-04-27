@@ -12,6 +12,8 @@ import UIKit
 struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
 	@State private var viewModel = MembersViewModel()
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@EnvironmentObject private var fetch: Fetch
 
 	private var filteredMembers: [ParliamentMember] {
 		viewModel.filteredMembers(from: members)
@@ -80,9 +82,17 @@ struct MembersView: View {
 				}
 			}
 		}
+		.safeAreaInset(edge: .bottom) {
+			HStack {
+				Spacer()
+				DataSourceBadge(source: .members())
+			}
+			.padding(.horizontal)
+			.padding(.vertical, 6)
+		}
 		.navigationTitle("Members")
 		.navigationBarTitleDisplayMode(.large)
-		.animation(.default, value: filteredMembers)
+		.animation(reduceMotion ? nil : .default, value: filteredMembers)
 	}
 
 	private var loadingView: some View {
@@ -121,10 +131,13 @@ struct MembersView: View {
 			}
 		}
 		.listStyle(.plain)
+		.refreshable {
+			try? await fetch.downloadMembers()
+		}
 	}
 }
 
-private struct MemberRow: View {
+struct MemberRow: View {
 	let member: ParliamentMember
 
 	var body: some View {

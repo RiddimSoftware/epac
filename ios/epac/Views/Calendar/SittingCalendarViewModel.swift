@@ -7,6 +7,7 @@ import Foundation
 import Observation
 import SwiftData
 import HorizonCalendar
+import Sentry
 
 @MainActor
 @Observable
@@ -37,6 +38,32 @@ class SittingCalendarViewModel {
 			}.forEach { futureDates.insert($0) }
 		} catch {
 			Log.debug("Failed to fetch SittingCalendar count")
+			SentrySDK.capture(error: error)
+			loadFailed = true
+		}
+	}
+
+	/// Force-reloads the current year from the network, bypassing the SwiftData cache.
+	func refresh(modelContext: ModelContext, fetch: Fetch) async {
+		loadFailed = false
+		do {
+			try await fetch.downloadSittingCalendar(currentYear)
+			let calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == currentYear })).first
+			let today = Foundation.Calendar.current.startOfDay(for: .now)
+			// Rebuild both sets from scratch so stale dates are cleared.
+			var newDates = Set<DateComponents>()
+			var newFutureDates = Set<DateComponents>()
+			calendar?.sittings.filter { $0 < today }.map {
+				Foundation.Calendar.current.dateComponents([.year, .month, .day], from: $0)
+			}.forEach { newDates.insert($0) }
+			calendar?.sittings.filter { $0 >= today }.map {
+				Foundation.Calendar.current.dateComponents([.year, .month, .day], from: $0)
+			}.forEach { newFutureDates.insert($0) }
+			dates = newDates
+			futureDates = newFutureDates
+		} catch {
+			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")
+			SentrySDK.capture(error: error)
 			loadFailed = true
 		}
 	}

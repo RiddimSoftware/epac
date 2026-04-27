@@ -57,9 +57,7 @@ class SpeechViewModel {
 					nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				}
 			}
-			withAnimation {
-				isResuming = !didFinish
-			}
+			isResuming = !didFinish
 		}
 	}
 
@@ -170,9 +168,9 @@ class SpeechViewModel {
 					VStack(alignment: .leading, spacing: 4) {
 						VStack(alignment: .leading, spacing: 0) {
 							Text(speaker.name)
-								.font(.system(size: 12, weight: .bold, design: .rounded))
+								.font(.system(.caption, design: .rounded, weight: .bold))
 							Text("\(speaker.riding), \(speaker.province.rawValue)")
-								.font(.system(size: 10, weight: .regular, design: .rounded))
+								.font(.system(.caption2, design: .rounded))
 						}
 						.foregroundStyle(.white.opacity(0.8))
 						Text(verbatim: message.text)

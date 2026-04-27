@@ -156,6 +156,11 @@ struct CommitteeMeetingsView: View {
                     }())
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    meetings = []
+                    loadFailed = false
+                    await load()
+                }
             }
         }
         .navigationTitle(committee.acronym)

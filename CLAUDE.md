@@ -4,6 +4,12 @@
 
 epac is an iOS civic-engagement app that displays Canada's House of Commons Hansard debates in a group-chat format. Stack: SwiftUI + SwiftData (iOS 17+), Python backend, static website.
 
+Brand and copy decisions live in `docs/brand/brand-brief-v1.md`. Treat that brief as the source of truth for product positioning, tagline, voice, tone, audience, and anti-positioning.
+
+Search backend decisions live in `docs/architecture/search-index-choice-epac452.md`. Use Postgres `tsvector` for v1 search and treat any Meilisearch work as a later migration after canonical records and ranking needs are proven.
+
+Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
+
 ---
 
 ## Architecture
@@ -71,6 +77,7 @@ Before requesting review, the author must:
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
 - [ ] **Jira link.** Reference the ticket (`Resolves EPAC-N`) in the description.
+- [ ] **Release note.** If the change is user-facing, add a `Release-Note:` line to the PR description (see below). The daily release pipeline collects these automatically.
 - [ ] **Description structure** (see below).
 
 ### PR Description Template
@@ -99,38 +106,56 @@ How to verify this works. Steps for the reviewer to follow.
 | img    | img   |
 
 Resolves EPAC-N
+
+Release-Note: One-line plain-English summary for App Store What's New (omit if not user-facing)
 ```
 
-### Automated Pre-Merge Review (mandatory)
+### Release-Note convention
 
-Every PR gets a dedicated agent review before merging. After `gh pr create`, spawn a new agent with this prompt:
+Every PR that ships a user-facing change must include one line in the description:
 
 ```
-Review PR #N (https://github.com/sunnypurewal/epac/pull/N) on branch <branch>.
+Release-Note: Added onboarding flow with topic picker and notification opt-in
+Release-Note: Fixed bill sharing link on older iOS versions
+```
+
+The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-US/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
+
+### Post-PR-open review
+
+After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
+
+Spawn prompt template (Claude Code, via the Agent tool):
+
+```
+You are the Autonomous Code Reviewer for PR #N (https://github.com/sunnypurewal/epac/pull/N), branch <branch>.
 Repo root: /Users/sunny/code/epac
 
-1. Read the PR description and diff: `gh pr diff N`
-2. Read CLAUDE.md for architecture rules and standards
-3. Check for: Swift 6 actor-isolation issues, forced unwraps, test coverage
-   gaps, style inconsistency, correctness vs the ticket's acceptance criteria
-4. Make ONE consolidated pass of concrete fixes directly on the branch
-5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac
-   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237'
-   build 2>&1 | tail -3
-6. Run relevant tests, commit changes, push
-7. Report: what changed and why; what was left alone and why
+Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
+
+1. `gh pr diff N` — read the full diff
+2. Read /Users/sunny/code/epac/CLAUDE.md (architecture rules, PR standards)
+3. Read the linked Jira ticket's acceptance criteria
+4. Make ONE consolidated pass of fixes directly on the branch (commit + push)
+5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac \
+   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build 2>&1 | tail -3
+6. Run relevant tests
+7. Post one PR comment with: build status, what changed and why, what was left alone and why
+8. Squash-merge: gh pr merge N --squash --delete-branch
+9. Transition the Jira ticket to Done
+10. Report back: merged (commit SHA) OR blocked (reasons)
 ```
 
-The agent commits directly to the branch. The PR is merged only after the agent's pass completes without build failures.
-
-**Why this exists:** PR #3 introduced a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second-pass review would have caught it. The agent acts as the second pair of eyes that runs every time.
+**Why this is structured as a subagent rather than a human-attended review:** PR #3 shipped a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second pass would have caught it. Splitting Developer and Reviewer into separate roles — even when the Reviewer runs as a subagent of the same session — gives the review a clean context window and forces the Reviewer to re-read CLAUDE.md and the diff from scratch.
 
 ### PR Reviewer Expectations
 
-- Respond within one working day.
-- Distinguish blocking from non-blocking comments: prefix suggestions with `nit:` or `optional:` if they are not required for merge.
-- Approve if the approach is sound, even if you would have done it differently; leave a `nit:` comment for style.
-- Never ask "why didn't you use X?" without also explaining why X would be better for *this specific case*.
+The Reviewer is spawned synchronously by the Developer at PR-open and is expected to complete the review-fix-merge cycle **immediately**, in the same session. There is no queue, no waiting, no "I'll get to it." The Developer is blocked on the Reviewer's return.
+
+- **Review immediately.** Do not defer. Do not return control until the PR is merged or definitively blocked with reasons.
+- Distinguish blocking from non-blocking findings: prefix non-blocking suggestions with `nit:` or `optional:` in the review comment.
+- Approve and merge if the approach is sound, even if you would have done it differently; leave a `nit:` for style.
+- Never raise "why didn't you use X?" without also explaining why X would be better for *this specific case*.
 
 ### What makes a review delightful
 
@@ -266,3 +291,46 @@ Adopt a 5-tab structure that groups features thematically and positions the pers
 - All 5 existing tabs must continue to function during and after the transition.
 - iPad uses NavigationSplitView (`AppTab.allCases` sidebar); the tab order maps directly to sidebar order — no separate iPad logic needed.
 - New features must state their navigation home in the PR description before merging.
+
+---
+
+## SwiftData Schema Migration (ADR-002)
+
+**Date:** 2026-04-27
+**Status:** Accepted
+**Ticket:** EPAC-128
+
+### Convention: every schema change requires a new `SchemaVN`
+
+**Rule:** Any change to a SwiftData `@Model` — adding a property, removing one, renaming one, changing a type, or adding a new model class — requires a new versioned schema enum and a new migration stage in `EpacMigrationPlan`.
+
+**Never** change an existing `SchemaVN` enum after it has shipped in production. Existing versions are immutable; they define what real users' databases look like on disk.
+
+### How to add a new schema version
+
+1. Copy the current latest `SchemaVN` enum in `Model.swift` to a new `SchemaV(N+1)` enum.
+2. Make your changes inside `SchemaV(N+1)`.
+3. Update the `typealias` block at the top of `Model.swift` to point to `SchemaV(N+1)`.
+4. Add a migration stage to `EpacMigrationPlan` in `Migration.swift`:
+   - Adding optional properties or new model types → `MigrationStage.lightweight`
+   - Adding non-optional properties, renaming, or transforming data → `MigrationStage.custom` with a `didMigrate` closure
+5. Add `SchemaV(N+1).self` to `EpacMigrationPlan.schemas`.
+
+### When to use lightweight vs custom migration
+
+| Change | Stage |
+|--------|-------|
+| New optional property | Lightweight |
+| New `@Model` class | Lightweight |
+| New non-optional property (needs default) | Custom — set value in `didMigrate` |
+| Rename a property | Custom — read old, write new, nil out old |
+| Remove a property | Lightweight (SwiftData ignores unknown columns) |
+| Change a property type | Custom |
+
+### Migration plan location
+
+`ios/epac/Model/Migration.swift` contains `EpacMigrationPlan`. The `ModelContainer` in `epacApp.swift` initializes with this plan. The plan accumulates all migration stages in chronological order; do not remove old stages.
+
+### Why not destructive migration
+
+The previous fallback — delete the SQLite files on schema incompatibility — silently destroyed all locally cached Hansard data, votes, and expenditures on every schema update. For a civic app users rely on during active political moments, losing the local cache is a bad experience. Proper migrations preserve data across updates.

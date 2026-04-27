@@ -7,26 +7,52 @@
 
 import SwiftUI
 import SwiftData
+import BackgroundTasks
+import Sentry
+import UIKit
+
+// AppDelegate receives UIKit callbacks that SwiftUI lifecycle doesn't expose.
+// didRegisterForRemoteNotificationsWithDeviceToken persists the APNs token and
+// triggers backend device registration whenever the system issues a new token.
+@MainActor
+class AppDelegate: NSObject, UIApplicationDelegate {
+	/// Injected by ContentView once it has created the router.
+	var router: NavigationRouter? {
+		didSet {
+			if let action = coldLaunchAction {
+				router?.pendingQuickAction = action
+				coldLaunchAction = nil
+			}
+		}
+	}
+
+	var coldLaunchAction: QuickAction?
+
+	func application(
+		_ application: UIApplication,
+		didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+	) {
+		let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+		UserDefaults.standard.set(token, forKey: "epac.apnsToken")
+		Log.debug("APNs token registered: \(token.prefix(12))...")
+		Task {
+			await TopicFollowStore.shared.registerDevice()
+		}
+	}
+}
 
 @main
 struct epacApp: App {
+	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
-		let schema = Schema(versionedSchema: SchemaV5.self)
-		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 		do {
-			return try ModelContainer(for: schema, configurations: [modelConfiguration])
+			return try ModelContainer(
+				for: Schema(versionedSchema: SchemaV7.self),
+				migrationPlan: EpacMigrationPlan.self,
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: false)]
+			)
 		} catch {
-			// Destructive migration: delete existing data if schema is incompatible
-			let url = modelConfiguration.url
-			let fileManager = FileManager.default
-			try? fileManager.removeItem(at: url)
-			try? fileManager.removeItem(at: url.deletingPathExtension().appendingPathExtension("sqlite-shm"))
-			try? fileManager.removeItem(at: url.deletingPathExtension().appendingPathExtension("sqlite-wal"))
-			do {
-				return try ModelContainer(for: schema, configurations: [modelConfiguration])
-			} catch {
-				fatalError("Could not create ModelContainer: \(error)")
-			}
+			fatalError("Could not create ModelContainer: \(error)")
 		}
 	}()
 
@@ -34,18 +60,41 @@ struct epacApp: App {
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
+		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
+			SentrySDK.start { options in
+				options.dsn = dsn
+				options.enableCrashHandler = true
+				options.tracesSampleRate = 0.1
+			}
+		}
+
 		MetricKitSubscriber.shared.start()
+
+		BGTaskScheduler.shared.register(
+			forTaskWithIdentifier: BackgroundRefreshManager.taskIdentifier,
+			using: nil
+		) { task in
+			guard let refreshTask = task as? BGAppRefreshTask else {
+				task.setTaskCompleted(success: false)
+				return
+			}
+			Task { @MainActor in
+				BackgroundRefreshManager.shared.handle(refreshTask)
+			}
+		}
 	}
 
 	var body: some Scene {
 		WindowGroup {
-			ContentView(modelContainer: sharedModelContainer)
+			ContentView(modelContainer: sharedModelContainer, appDelegate: appDelegate)
 				.environment(notificationManager)
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { oldPhase, newPhase in
 			if newPhase == .active {
+				BackgroundRefreshManager.shared.modelContainer = sharedModelContainer
 				ReviewRequestManager.shared.recordAppOpen()
+				BackgroundRefreshManager.shared.scheduleRefresh()
 			}
 		}
 	}

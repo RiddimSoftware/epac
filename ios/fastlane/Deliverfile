@@ -1,0 +1,14 @@
+app_identifier "net.dinglebox.cabinetdoor"
+team_id "ZG82TFXU3C"
+
+# Metadata paths (relative to ios/ working directory)
+metadata_path "./fastlane/metadata"
+
+# Don't upload screenshots automatically — managed separately (EPAC-301)
+skip_screenshots true
+
+# Don't automatically release after approval — release manager controls rollout
+automatic_release false
+
+# 7-day phased release on approval
+phased_release true

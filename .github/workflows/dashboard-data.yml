@@ -1,0 +1,62 @@
+name: Dashboard Data Refresh
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'   # Every 2 hours
+  workflow_dispatch:          # Manual trigger for testing
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write         # To commit JSON files back to repo
+      id-token: write         # To authenticate to AWS via OIDC
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Fetch ASC credentials from Secrets Manager
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id appstore/connect-api --query SecretString --output text)
+          echo "ASC_KEY_ID=$(printf '%s' "$SECRET" | jq -r '.key_id')" >> $GITHUB_ENV
+          echo "ASC_ISSUER_ID=$(printf '%s' "$SECRET" | jq -r '.issuer_id')" >> $GITHUB_ENV
+          printf '%s' "$SECRET" | jq -r '.private_key' > /tmp/AuthKey.p8
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests "PyJWT[cryptography]"
+
+      - name: Fetch Jira metrics
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_CLOUD_ID: 7443b107-f2a1-4d38-a0c5-d17ad2469c94
+        run: python scripts/dashboard/fetch_jira.py
+
+      - name: Fetch App Store Connect metrics
+        run: |
+          python scripts/dashboard/fetch_asc.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key /tmp/AuthKey.p8
+
+      - name: Commit updated data files
+        run: |
+          git config user.name "epac-dashboard-bot"
+          git config user.email "actions@github.com"
+          git add dashboard/data/
+          git diff --staged --quiet || git commit -m "chore: refresh dashboard data [skip ci]"
+          git push origin HEAD

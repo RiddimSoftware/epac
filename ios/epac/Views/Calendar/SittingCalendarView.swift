@@ -19,6 +19,7 @@ struct SittingCalendarView: View {
 	@StateObject private var calendarViewProxy = CalendarViewProxy()
 
 	@State private var viewModel = SittingCalendarViewModel()
+	@State private var isRefreshing = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -84,6 +85,7 @@ struct SittingCalendarView: View {
 					RoundedRectangle(cornerRadius: 6)
 						.fill(Color.appPositive)
 						.frame(width: 24, height: 24)
+						.accessibilityHidden(true)
 					Text("Sitting days")
 						.font(.subheadline)
 						.fontWeight(.medium)
@@ -93,25 +95,34 @@ struct SittingCalendarView: View {
 							.foregroundColor(.secondary)
 					}
 				}
-				
+				.accessibilityElement(children: .combine)
+				.accessibilityLabel(viewModel.sittingDayCount > 0
+					? "Sitting days: \(viewModel.sittingDayCount) in \(viewModel.currentYear)"
+					: "Sitting days legend")
+
 				HStack(spacing: 20) {
 					HStack(spacing: 8) {
 						Circle()
 							.fill(Color.appDestructive)
 							.frame(width: 16, height: 16)
+							.accessibilityHidden(true)
 						Text("Today")
 					}
 					.contentShape(Rectangle())
 					.onTapGesture {
 						calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
 					}
-					
+					.accessibilityLabel("Today — tap to scroll to current month")
+					.accessibilityAddTraits(.isButton)
+
 					HStack(spacing: 8) {
 						RoundedRectangle(cornerRadius: 4)
 							.stroke(Color.appPositive, lineWidth: 2)
 							.frame(width: 16, height: 16)
+							.accessibilityHidden(true)
 						Text("Upcoming")
 					}
+					.accessibilityLabel("Upcoming scheduled sittings")
 				}
 				.font(.caption)
 				.foregroundColor(.secondary)
@@ -121,7 +132,8 @@ struct SittingCalendarView: View {
 		}
 		.frame(maxWidth: 500)
 		.frame(maxWidth: .infinity)
-		.task {
+		.task(id: viewModel.currentYear) {
+			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
 			if viewModel.dates.isEmpty {
 				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
 				calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
@@ -166,6 +178,7 @@ struct SittingCalendarView: View {
 					}
 					.disabled(viewModel.currentYear <= 2016)
 					.accessibilityLabel("Previous year")
+					.accessibilityHint(viewModel.currentYear > 2016 ? "Shows \(viewModel.currentYear - 1)" : "Not available before 2016")
 
 					Text(verbatim: "\(viewModel.currentYear)")
 						.font(.headline)
@@ -185,8 +198,26 @@ struct SittingCalendarView: View {
 					}
 					.disabled(viewModel.currentYear >= Calendar.current.dateComponents([.year], from: .now).year!)
 					.accessibilityLabel("Next year")
+					.accessibilityHint("Shows \(viewModel.currentYear + 1)")
 				}
 				.accessibilityElement(children: .contain)
+			}
+			ToolbarItem(placement: .topBarTrailing) {
+				if isRefreshing {
+					ProgressView()
+						.accessibilityLabel("Refreshing sitting calendar")
+				} else {
+					Button {
+						Task {
+							isRefreshing = true
+							await viewModel.refresh(modelContext: modelContext, fetch: fetch)
+							isRefreshing = false
+						}
+					} label: {
+						Image(systemName: "arrow.clockwise")
+					}
+					.accessibilityLabel("Refresh sitting calendar")
+				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				NavigationLink(destination: OrderPaperView()) {

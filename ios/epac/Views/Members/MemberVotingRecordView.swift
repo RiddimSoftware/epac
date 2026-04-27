@@ -11,8 +11,11 @@ struct MemberVotingRecordView: View {
 	let member: ParliamentMember
 
 	@Environment(NavigationRouter.self) private var router
+	@EnvironmentObject private var fetch: Fetch
 	@Query private var memberVotes: [MemberVote]
 	@State private var shareItem: ActivityItem?
+	@State private var cachedStats = VoteStats()
+	@State private var sortByBillNumber = false
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -33,8 +36,27 @@ struct MemberVotingRecordView: View {
 		var decisiveTotal = 0; var aligned = 0
 	}
 
-	private var voteStats: VoteStats {
-		memberVotes.reduce(into: VoteStats()) { s, mv in
+	// voteStats is computed once when memberVotes changes, not on every render.
+	private var sortedVotes: [MemberVote] {
+		if sortByBillNumber {
+			return memberVotes
+				.filter { !($0.vote?.billNumberCode ?? "").isEmpty }
+				.sorted { ($0.vote?.billNumberCode ?? "") < ($1.vote?.billNumberCode ?? "") }
+		}
+		return memberVotes  // already sorted voteID desc from @Query
+	}
+
+	private var yeaCount: Int    { cachedStats.yea }
+	private var nayCount: Int    { cachedStats.nay }
+	private var absentCount: Int { cachedStats.absent }
+
+	private var winnerAlignmentScore: Double {
+		guard cachedStats.decisiveTotal > 0 else { return 0 }
+		return Double(cachedStats.aligned) / Double(cachedStats.decisiveTotal)
+	}
+
+	private func recomputeStats() {
+		cachedStats = memberVotes.reduce(into: VoteStats()) { s, mv in
 			switch mv.recordedVote {
 			case "Yea": s.yea += 1
 			case "Nay": s.nay += 1
@@ -47,17 +69,6 @@ struct MemberVotingRecordView: View {
 				            (mv.recordedVote == "Nay" && v.resultEn.localizedCaseInsensitiveContains("Negatived"))
 			if isAligned { s.aligned += 1 }
 		}
-	}
-
-	private var yeaCount: Int    { voteStats.yea }
-	private var nayCount: Int    { voteStats.nay }
-	private var absentCount: Int { voteStats.absent }
-
-	/// Fraction of decisive (Yea/Nay) votes aligned with the final result.
-	private var winnerAlignmentScore: Double {
-		let s = voteStats
-		guard s.decisiveTotal > 0 else { return 0 }
-		return Double(s.aligned) / Double(s.decisiveTotal)
 	}
 
 	var body: some View {
@@ -78,7 +89,7 @@ struct MemberVotingRecordView: View {
 							.padding(.vertical, 4)
 					}
 					Section(header: Text(NSLocalizedString("voting.recentVotes", comment: "")).accessibilityAddTraits(.isHeader)) {
-						ForEach(memberVotes) { mv in
+						ForEach(sortedVotes) { mv in
 							let rv = mv.vote  // pre-resolve relationship before SwiftUI render pass
 							VoteRow(memberVote: mv, rv: rv)
 								.swipeActions(edge: .leading) {
@@ -88,7 +99,7 @@ struct MemberVotingRecordView: View {
 												vote: vote, memberVote: mv.recordedVote)
 											ContactMyMP.open(to: member, template: template)
 										} label: {
-											Label("Write to MP", systemImage: "envelope.badge")
+											Label(NSLocalizedString("vote.contextMenu.writeMP", comment: ""), systemImage: "envelope.badge")
 										}
 										.tint(.blue)
 									}
@@ -99,7 +110,7 @@ struct MemberVotingRecordView: View {
 											router.pendingSearchQuery = vote.billNumberCode
 											router.selectedTab = .search
 										} label: {
-											Label("Search Debates", systemImage: "magnifyingglass")
+											Label(NSLocalizedString("vote.contextMenu.searchDebates", comment: ""), systemImage: "magnifyingglass")
 										}
 										.tint(.teal)
 									}
@@ -107,18 +118,47 @@ struct MemberVotingRecordView: View {
 										Button {
 											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
 										} label: {
-											Label("Share", systemImage: "square.and.arrow.up")
+											Label(NSLocalizedString("vote.contextMenu.share", comment: ""), systemImage: "square.and.arrow.up")
 										}
 										.tint(.orange)
+									}
+								}
+								.contextMenu {
+									if let vote = rv {
+										Button {
+											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.share", comment: ""), systemImage: "square.and.arrow.up")
+										}
+										if !vote.billNumberCode.isEmpty {
+											Button {
+												router.pendingSearchQuery = vote.billNumberCode
+												router.selectedTab = .search
+											} label: {
+												Label(NSLocalizedString("vote.contextMenu.searchDebates", comment: ""), systemImage: "magnifyingglass")
+											}
+										}
+										Button {
+											let template = ContactMyMP.voteTemplate(vote: vote, memberVote: mv.recordedVote)
+											ContactMyMP.open(to: member, template: template)
+										} label: {
+											Label(NSLocalizedString("vote.contextMenu.writeMP", comment: ""), systemImage: "envelope")
+										}
 									}
 								}
 						}
 					}
 				}
 				.listStyle(.insetGrouped)
+				.refreshable {
+					guard member.memberID > 0 else { return }
+					try? await fetch.refreshMemberVotes(memberID: member.memberID)
+				}
 			}
 		}
 		.activitySheet($shareItem)
+		.onAppear { recomputeStats() }
+		.onChange(of: memberVotes.count) { recomputeStats() }
 		.safeAreaInset(edge: .bottom) {
 			HStack {
 				Spacer()
@@ -126,6 +166,19 @@ struct MemberVotingRecordView: View {
 			}
 			.padding(.horizontal)
 			.padding(.vertical, 6)
+		}
+		.toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					sortByBillNumber.toggle()
+				} label: {
+					Label(
+						sortByBillNumber ? "Sort by Date" : "Sort by Bill",
+						systemImage: sortByBillNumber ? "calendar" : "number"
+					)
+				}
+				.accessibilityLabel(sortByBillNumber ? "Sort by date" : "Sort by bill number")
+			}
 		}
 		.navigationTitle(NSLocalizedString("voting.title", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)

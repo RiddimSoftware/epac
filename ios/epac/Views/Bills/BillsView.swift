@@ -6,18 +6,25 @@
 //
 
 import SwiftUI
+import ActivityView
 
 struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var statusFilter: BillStatus? = nil
+    @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
     @State private var typeFilter: BillTypeGroup? = nil
+    @State private var billStore = BillFollowStore.shared
+    @State private var searchText = ""
+    @State private var shareItems: ActivityItem?
+    @Environment(NavigationRouter.self) private var router
 
     private var filtered: [Bill] {
-        bills.filter {
+        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return bills.filter {
             (statusFilter == nil || $0.status == statusFilter) &&
-            (typeFilter == nil || typeFilter!.matches($0))
+            (typeFilter == nil || typeFilter!.matches($0)) &&
+            (q.isEmpty || $0.number.localizedCaseInsensitiveContains(q) || $0.title.localizedCaseInsensitiveContains(q))
         }
     }
 
@@ -60,6 +67,29 @@ struct BillsView: View {
                     NavigationLink(destination: BillDetailView(bill: bill)) {
                         BillRow(bill: bill)
                     }
+                    .contextMenu {
+                        Button {
+                            billStore.toggle(bill)
+                        } label: {
+                            Label(
+                                billStore.isFollowing(bill.number)
+                                    ? NSLocalizedString("bill.unfollow", comment: "")
+                                    : NSLocalizedString("bill.follow", comment: ""),
+                                systemImage: billStore.isFollowing(bill.number) ? "doc.badge.clock.fill" : "doc.badge.clock"
+                            )
+                        }
+                        Button {
+                            shareItems = BillSharer.activityItem(for: bill)
+                        } label: {
+                            Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            router.pendingSearchQuery = bill.number
+                            router.selectedTab = .search
+                        } label: {
+                            Label(NSLocalizedString("bill.contextMenu.seeVotes", comment: ""), systemImage: "checkmark.ballot")
+                        }
+                    }
                 }
                 .listStyle(.plain)
                 .refreshable {
@@ -68,6 +98,7 @@ struct BillsView: View {
                 }
             }
         }
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: NSLocalizedString("bills.search.prompt", comment: ""))
         .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -103,9 +134,28 @@ struct BillsView: View {
             }
         }
         .task { await load() }
+        .onChange(of: statusFilter) { saveStatusFilter() }
+        .activitySheet($shareItems)
     }
 
     private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }
+
+    // MARK: - Filter persistence
+
+    private static let statusFilterKey = "bills.filter.status.persisted"
+
+    private static func loadStatusFilter() -> BillStatus? {
+        guard let raw = UserDefaults.standard.string(forKey: statusFilterKey) else { return nil }
+        return BillStatus(rawValue: raw)
+    }
+
+    private func saveStatusFilter() {
+        if let status = statusFilter {
+            UserDefaults.standard.set(status.rawValue, forKey: Self.statusFilterKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.statusFilterKey)
+        }
+    }
 
     @ViewBuilder
     private func filterButton(label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
@@ -188,7 +238,7 @@ struct BillRow: View {
                 Text(bill.currentStage)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
         .padding(.vertical, 4)

@@ -74,7 +74,7 @@ struct LobbyistRow: View {
             Text(comm.organizationName)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .lineLimit(1)
+                .lineLimit(2)
 
             if !comm.subjectMatter.isEmpty {
                 Text(comm.subjectMatter)

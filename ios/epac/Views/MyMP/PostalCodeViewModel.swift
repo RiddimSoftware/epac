@@ -1,6 +1,7 @@
 import Observation
 import SwiftUI
 import SwiftData
+import Sentry
 
 private let ridingNameKey = "epac.myMP.ridingName"
 private let memberNameKey = "epac.myMP.memberName"
@@ -44,6 +45,7 @@ class PostalCodeViewModel {
             errorMessage = error.errorDescription
         } catch {
             errorMessage = NSLocalizedString("riding.error.networkError", comment: "")
+            SentrySDK.capture(error: error)
         }
     }
 

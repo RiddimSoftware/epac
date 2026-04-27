@@ -165,6 +165,10 @@
 "debate.navTitle" = "Activité de débat";
 "debate.empty.title" = "Aucun enregistrement de débat";
 "debate.empty.description" = "Ouvrez des jours de séance pour charger les transcriptions de débats pour ce membre.";
+"debate.empty.noSpeeches" = "Aucun discours trouvé dans les jours de séance récents.";
+"debate.empty.loadMore" = "Rechercher plus de jours de séance";
+"debate.loading.start" = "Chargement des jours de séance récents…";
+"debate.loading.progress" = "%d jours de séance chargés…";
 "debate.recentSittingDays" = "Jours de séance récents";
 "debate.contributionCount" = "%d intervention(s)";
 "debate.stat.contributions" = "Interventions";
@@ -206,6 +210,7 @@
 "petition.status.unknown" = "Inconnu";
 "petitions.signatures" = "%d signatures";
 "petitions.signatures.label" = "Signatures";
+"petitions.signatures.threshold" = "%d de plus pour une réponse du gouvernement";
 "petitions.number" = "Pétition";
 "petitions.status" = "Statut";
 "petitions.deadline" = "Date limite";
@@ -226,6 +231,7 @@
 
 /* Suivi des projets de loi */
 "bills.navTitle" = "Projets de loi";
+"bills.search.prompt" = "Numéro ou titre du projet de loi";
 "bills.browseAll" = "Parcourir les projets de loi";
 "bills.filter" = "Filtrer";
 "bills.filter.all" = "Tous";
@@ -251,6 +257,8 @@
 "bills.noMatch.title" = "Aucun résultat";
 "bills.noMatch.description" = "Aucun projet de loi ne correspond aux filtres actuels. Effacez les filtres pour tout afficher.";
 "bills.detail.number" = "Numéro";
+"bills.detail.parliament" = "Parlement";
+"bills.detail.parliament.value" = "%d-%d";
 "bills.detail.status" = "Statut";
 "bills.detail.sponsor" = "Parrain";
 "bills.detail.stage" = "Étape actuelle";
@@ -260,6 +268,10 @@
 "bills.detail.votes" = "Votes enregistrés";
 "bills.detail.debates" = "Débats";
 "bills.detail.legisinfo" = "Voir sur LEGISinfo";
+"bills.detail.keyFacts" = "Faits clés";
+"bills.detail.originatingChamber" = "Chambre d'origine";
+"bills.chamber.house" = "Chambre des communes";
+"bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";
 "bills.stage.houseSecond" = "Chambre — Deuxième lecture";
 "bills.stage.houseThird" = "Chambre — Troisième lecture";
@@ -267,9 +279,13 @@
 "bills.stage.senateSecond" = "Sénat — Deuxième lecture";
 "bills.stage.senateThird" = "Sénat — Troisième lecture";
 "bills.stage.royalAssent" = "Sanction royale";
+"bills.timeline.completed" = "Terminée";
+"bills.timeline.current" = "Étape actuelle ou suivante";
+"bills.timeline.future" = "Étape future";
 
 /* Suivi des sujets */
 "topics.navTitle" = "Sujets";
+"topics.search.prompt" = "Rechercher des sujets";
 "topics.browseAll" = "Parcourir les sujets";
 "topic.follow" = "Suivre ce sujet";
 "topic.unfollow" = "Ne plus suivre ce sujet";
@@ -341,12 +357,14 @@
 
 /* Fil d'accueil personnalisé */
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
+"home.parliament.notSitting" = "La Chambre ne siège pas aujourd\'hui";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";
 "home.followedTopics" = "Sujets suivis";
 "home.recentDebates" = "Récent au Hansard";
 "home.seeAllBills" = "Voir tous les projets →";
+"home.clearAllBills" = "Tout effacer";
 "home.manageTopics" = "Gérer les sujets →";
 "home.seeAllDebates" = "Ouvrir l'onglet Parlement →";
 
@@ -430,3 +448,119 @@
 "empty.home.title" = "Configurez votre fil civique";
 "empty.home.message" = "Ajoutez votre code postal pour suivre votre député, ou abonnez-vous aux sujets et projets de loi qui vous intéressent.";
 "empty.home.action" = "Trouver mon député";
+
+/* Menus contextuels — bulles de discours (EPAC-170) */
+"speech.share" = "Partager ce discours";
+"speech.follow" = "Suivre %@";
+"speech.unfollow" = "Ne plus suivre %@";
+"speech.goToProfile" = "Profil de %@";
+"speech.copyQuote" = "Copier la citation";
+
+/* Menus contextuels — rangées de vote (EPAC-170) */
+"vote.contextMenu.share" = "Partager ce vote";
+"vote.contextMenu.searchDebates" = "Voir le débat sur ce projet de loi";
+"vote.contextMenu.writeMP" = "Écrire au député";
+
+/* Menus contextuels — rangées de projet de loi (EPAC-170) */
+"bill.contextMenu.seeVotes" = "Voir les votes sur ce projet de loi";
+
+/* Onboarding (EPAC-296) */
+"onboarding.skip" = "Passer";
+"onboarding.getStarted" = "Commencer →";
+
+"onboarding.what.title" = "L'application du Parlement canadien";
+"onboarding.what.subtitle" = "Fondée sur le dossier officiel du gouvernement.";
+"onboarding.what.point1" = "Chaque discours de votre député — du hansard officiel";
+"onboarding.what.point2" = "Chaque vote — de l'API officielle de Parliament.ca";
+"onboarding.what.point3" = "Qui les influence — du registre du commissaire au lobbying";
+"onboarding.what.trust" = "Toutes les sources officielles du gouvernement. Rien de généré ou d'éditorialisé.";
+
+"onboarding.topics.title" = "Ce qui vous importe";
+"onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets. Soyez averti quand le Parlement en débat.";
+"onboarding.topics.follow" = "Suivre %d sujet(s) →";
+
+"onboarding.notifications.title" = "Restez informé";
+"onboarding.notifications.subtitle" = "Nous vous alerterons quand le Parlement agit sur ce qui vous tient à cœur.";
+"onboarding.notifications.preview1" = "Quand votre député parle ou vote";
+"onboarding.notifications.preview2" = "Quand un projet de loi suivi avance";
+"onboarding.notifications.preview3" = "Quand le Parlement débat d'un sujet suivi";
+"onboarding.notifications.privacy" = "Notifications seulement. Aucun suivi. Aucune publicité.";
+"onboarding.notifications.allow" = "Autoriser les notifications →";
+"onboarding.notifications.skip" = "Pas maintenant";
+
+"onboarding.promise.title" = "Vous êtes prêt";
+"onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
+"onboarding.promise.point1" = "Les votes et discours de votre député, en temps réel";
+"onboarding.promise.point2" = "Notifications quand le Parlement débat de vos %d sujet(s)";
+"onboarding.promise.point3" = "Aucun compte requis. Aucune donnée vendue. Sans publicité.";
+"onboarding.promise.start" = "Commencer à explorer →";
+
+/* Settings (EPAC-143) */
+"settings.title" = "Paramètres";
+"settings.done" = "Terminé";
+
+"settings.location.title" = "Ma localisation";
+"settings.location.riding" = "Circonscription";
+"settings.location.mp" = "Député";
+"settings.location.change" = "Modifier le code postal";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.hansard" = "Nouvelles séances du Hansard";
+"settings.notifications.billVotes" = "Résultats de vote sur les projets de loi suivis";
+"settings.notifications.memberActivity" = "Activité des députés suivis";
+"settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
+"settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
+
+"settings.followed.bills" = "Projets de loi suivis";
+"settings.followed.members" = "Députés suivis";
+"settings.followed.topics" = "Sujets suivis";
+
+"settings.about.title" = "À propos";
+"settings.about.version" = "Version";
+"settings.about.privacy" = "Politique de confidentialité";
+"settings.about.dataSources" = "Sources de données";
+"settings.about.github" = "GitHub (code source ouvert)";
+"settings.about.brandBrief" = "Brief de marque";
+"settings.about.feedback" = "Envoyer des commentaires";
+
+/* Canada Gazette (EPAC-116) */
+"gazette.navTitle" = "Gazette du Canada";
+"gazette.loading" = "Chargement de la Gazette du Canada";
+"gazette.error.title" = "Impossible de charger la Gazette";
+"gazette.error.description" = "Le flux de la Gazette du Canada est temporairement indisponible. Vérifiez votre connexion et réessayez.";
+"gazette.empty.title" = "Aucun avis trouvé";
+"gazette.empty.description" = "Aucun avis de la Gazette ne correspond à votre filtre actuel.";
+"gazette.filter.all" = "Toutes les parties";
+"gazette.filter.label" = "Filtrer par partie";
+"gazette.search.prompt" = "Rechercher des avis";
+"gazette.part.i" = "Partie I";
+"gazette.part.ii" = "Partie II";
+"gazette.part.i.subtitle" = "Règlements proposés et avis";
+"gazette.part.ii.subtitle" = "Règlements définitifs";
+"gazette.category.notice" = "Avis";
+"gazette.detail.navTitle" = "Avis";
+"gazette.detail.summary" = "Résumé";
+"gazette.detail.source" = "Source";
+"gazette.detail.fullText" = "Lire le texte intégral sur canadagazette.gc.ca";
+"gazette.detail.sourceLabel" = "Source officielle";
+
+/* Federal Contracts (EPAC-117) */
+"contracts.navTitle" = "Contrats fédéraux";
+"contracts.loading" = "Chargement des contrats fédéraux";
+"contracts.error.title" = "Impossible de charger les contrats";
+"contracts.error.description" = "Le flux de divulgation proactive est temporairement indisponible. Vérifiez votre connexion et réessayez.";
+"contracts.empty.title" = "Aucun contrat trouvé";
+"contracts.empty.description" = "Aucun contrat ne correspond à votre recherche. Essayez un nom de fournisseur ou de ministère.";
+"contracts.search.prompt" = "Rechercher par fournisseur ou ministère";
+"contracts.detail.navTitle" = "Contrat";
+"contracts.detail.info" = "Détails";
+"contracts.detail.date" = "Date du contrat";
+"contracts.detail.fiscal" = "Exercice financier";
+"contracts.detail.original" = "Valeur originale";
+"contracts.detail.refNumber" = "Numéro de référence";
+"contracts.detail.amendments" = "%d modification(s)";
+"contracts.detail.purpose" = "Description des travaux";
+"contracts.detail.source" = "Source";
+"contracts.detail.openData" = "Voir sur données.canada.ca";
+"contracts.detail.sourceLabel" = "Source officielle";
+"contracts.detail.sourceName" = "Secrétariat du Conseil du Trésor — Divulgation proactive des contrats";

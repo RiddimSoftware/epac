@@ -69,11 +69,12 @@ platform :ios do
     # ------------------------------------------------------------------
     # 3. Archive and export — no ASC API calls during the build.
     # ------------------------------------------------------------------
+    sentry_dsn = ENV.fetch("SENTRY_DSN", "")
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C",
+      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C SENTRY_DSN=#{sentry_dsn}",
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true

@@ -7,6 +7,9 @@ gpt2_*/
 function.zip
 bootstrap
 .build/
+# Go binaries
+backend/health/health
+backend/daily-fetch/daily-fetch
 *.log
 *.txt
 *.xml
@@ -81,3 +84,4 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 *.sketch
+__pycache__

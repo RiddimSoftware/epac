@@ -23,6 +23,86 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-senate-public-bill.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-ethics-commissioner-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-commissioner-of-official-languages-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-chief-electoral-officer-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-privacy-commissioner-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/how-to-understand-government-expenditure-data.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-auditor-general-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-parliamentary-budget-officer-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-cabinet-shuffle.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-are-governor-general-reserve-powers.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-are-orders-in-council.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-party-whip.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/minority-vs-majority-government-canada.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-are-standing-orders.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-canadian-senate-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-does-the-lieutenant-governor-do.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-filibuster-in-canada.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/how-federal-ridings-are-drawn.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-a-supply-day.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/blog/what-is-committee-of-the-whole-house.html</loc>
+    <lastmod>2026-04-27</lastmod><changefreq>yearly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://epac.riddimsoftware.com/blog/what-is-prorogation.html</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>yearly</changefreq>
@@ -167,6 +247,12 @@
   </url>
   <url>
     <loc>https://epac.riddimsoftware.com/features.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/faq.html</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -3741,6 +3827,78 @@
   </url>
   <url>
     <loc>https://epac.riddimsoftware.com/ridings/yukon.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/housing.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/healthcare.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/climate.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/immigration.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/indigenous.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/economy.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/defence.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/agriculture.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/infrastructure.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/seniors.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/topics/</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://epac.riddimsoftware.com/subscribe.html</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

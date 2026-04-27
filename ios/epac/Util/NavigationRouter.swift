@@ -45,4 +45,19 @@ class NavigationRouter {
 	var selectedMember: ParliamentMember?
 	// Pre-fills the Search tab search bar when set; cleared after SearchView reads it.
 	var pendingSearchQuery: String?
+	// Triggers postal code setup sheet when true; caller resets to false after handling.
+	var pendingShowPostalCodeSetup = false
+	// Set by QuickActionHandler when a Home Screen Quick Action fires.
+	// ContentView consumes and clears this via .onChange.
+	var pendingQuickAction: QuickAction?
+}
+
+/// The three Home Screen Quick Actions available on long-press of the app icon.
+enum QuickAction: String {
+	/// Navigate to the Parliament tab (sitting calendar).
+	case todayInParliament = "today"
+	/// Navigate to Home and open Find My MP or postal code setup if needed.
+	case findMyMP = "my-mp"
+	/// Navigate to the Search tab.
+	case searchDebates = "search"
 }

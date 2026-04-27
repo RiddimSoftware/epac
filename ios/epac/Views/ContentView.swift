@@ -16,16 +16,18 @@ struct ContentView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
 	var fetch: Fetch
+	var appDelegate: AppDelegate
 	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
 	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
-	@Query private var members: [ParliamentMember]
-	@Query private var constituencies: [Constituency]
+	@State private var showOnboarding = !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
+	@State private var showWhatsNew = false
 
-	init(modelContainer: ModelContainer) {
+	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
+		self.appDelegate = appDelegate
 	}
 
 	var body: some View {
@@ -49,6 +51,12 @@ struct ContentView: View {
 			router.selectedTab = .parliament
 			notificationManager.clearPendingDate()
 		}
+		.onChange(of: notificationManager.pendingTopicId) { _, topicId in
+			guard topicId != nil else { return }
+			// Topic-debate notifications navigate to Accountability (Topics live there per ADR-001).
+			router.selectedTab = .accountability
+			notificationManager.clearPendingDate()
+		}
 		.onContinueUserActivity(CSSearchableItemActionType) { activity in
 			guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
 			if let memberID = SpotlightIndexer.memberID(from: id) {
@@ -61,10 +69,24 @@ struct ContentView: View {
 			}
 		}
 		.task {
+			// Wire the router to the AppDelegate so Home Screen Quick Actions
+			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
+			appDelegate.router = router
 			networkMonitor.start()
+			showWhatsNew = WhatsNewManager.shared.shouldShow()
+			// Fetch members and constituencies inside the task so the @Query
+			// table scans don't block the main thread before first frame.
+			let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+			let constituencies = (try? modelContext.fetch(FetchDescriptor<Constituency>())) ?? []
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
-			// Notification permission is user-visible; show it promptly.
-			await notificationManager.requestAuthorization()
+			// Skip the permission request when onboarding is showing — the
+			// onboarding flow presents a contextual prompt on screen 4. For
+			// returning users (onboarding already completed) we request here as
+			// before, so the prompt appears if they declined earlier and then
+			// changed their mind in Settings.
+			if !showOnboarding {
+				await notificationManager.requestAuthorization()
+			}
 			// Snapshot lightweight name data on @MainActor (no imageData access).
 			let nameEntries = members.map {
 				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)
@@ -77,8 +99,32 @@ struct ContentView: View {
 				await SpotlightIndexer.indexMembers(spotlightEntries)
 			}
 		}
+		.sheet(isPresented: $showOnboarding) {
+			OnboardingView {
+				showOnboarding = false
+				// Postal code may have been set during onboarding.
+				showMyMPSetup = false
+			}
+			.interactiveDismissDisabled()
+		}
 		.sheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }
+		}
+		.onChange(of: router.pendingShowPostalCodeSetup) { _, pending in
+			if pending {
+				showMyMPSetup = true
+				router.pendingShowPostalCodeSetup = false
+			}
+		}
+		.onChange(of: router.pendingQuickAction) { _, action in
+			guard let action else { return }
+			handleQuickAction(action)
+			router.pendingQuickAction = nil
+		}
+		.sheet(isPresented: $showWhatsNew) {
+			WhatsNewView { showWhatsNew = false }
+				.presentationDetents([.medium])
+				.presentationDragIndicator(.visible)
 		}
 	}
 
@@ -191,19 +237,22 @@ struct ContentView: View {
 	// MARK: - Deep-link navigation helpers
 
 	/// Routes all incoming URLs. Custom scheme `cabinetdoor://` is handled first;
-	/// everything else falls through to ContentViewModel for Hansard date links.
+	/// Universal Links (https://epac.riddimsoftware.com/...) use path-based routing;
+	/// legacy query-parameter links (/app?date=...) fall through to ContentViewModel.
 	private func handleOpenURL(_ url: URL) {
 		guard let scheme = url.scheme?.lowercased() else { return }
 		if scheme == "cabinetdoor" {
 			handleCustomScheme(url)
-		} else {
-			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		} else if scheme == "https" || scheme == "http" {
+			handleUniversalLink(url)
 		}
+		// Other schemes (mailto:, etc.) are ignored.
 	}
 
 	private func handleCustomScheme(_ url: URL) {
 		// cabinetdoor://member/[memberID]
-		// cabinetdoor://vote/[voteID]  → switches to search tab (standalone vote view TBD)
+		// cabinetdoor://vote/[voteID]  → switches to accountability tab
+		// cabinetdoor://sitting/[yyyy-MM-dd]  → Parliament tab, first sitting day
 		let host = url.host?.lowercased() ?? ""
 		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
 		switch host {
@@ -211,13 +260,73 @@ struct ContentView: View {
 			if let id = pathID { navigateToMember(memberID: id) }
 		case "vote":
 			router.selectedTab = .accountability
+		case "sitting":
+			// Rebuild as a path-based URL so ContentViewModel's sitting parser can consume it.
+			let dateStr = url.pathComponents.dropFirst().first ?? ""
+			if let rebuilt = URL(string: "cabinetdoor:///sitting/\(dateStr)") {
+				viewModel.onOpenURL(rebuilt, modelContext: modelContext, fetch: fetch)
+			}
+			router.selectedTab = .parliament
 		default:
 			break
 		}
 	}
 
+	/// Handles Universal Links from epac.riddimsoftware.com.
+	/// Each path pattern maps to a specific in-app destination; unrecognised paths fall back to Home.
+	private func handleUniversalLink(_ url: URL) {
+		let segments = url.pathComponents.filter { $0 != "/" }
+
+		switch segments.first {
+		case "member":
+			// /member/[member-id] → MP profile
+			if let idStr = segments.dropFirst().first, let id = Int(idStr) {
+				navigateToMember(memberID: id)
+			}
+		case "vote":
+			// /vote/[parliament]-[session]/[number] → Search tab pre-filled
+			let voteRef = segments.dropFirst().joined(separator: "/")
+			if !voteRef.isEmpty { router.pendingSearchQuery = voteRef }
+			router.selectedTab = .search
+		case "bill":
+			// /bill/[bill-number] e.g. /bill/C-50 → Search tab pre-filled
+			if let billNumber = segments.dropFirst().first {
+				router.pendingSearchQuery = billNumber
+				router.selectedTab = .search
+			}
+		case "sitting":
+			// /sitting/[date] → Parliament tab (date routing in ContentViewModel)
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+			router.selectedTab = .parliament
+		case "topic":
+			// /topic/[topic-slug] → Search tab pre-filled
+			if let slug = segments.dropFirst().first {
+				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.selectedTab = .search
+			}
+		case "riding":
+			// /riding/[riding-slug] → Search tab pre-filled (riding detail view planned)
+			if let slug = segments.dropFirst().first {
+				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.selectedTab = .search
+			}
+		case "setup":
+			// /setup/postal-code → postal code setup sheet on Home tab
+			router.pendingShowPostalCodeSetup = true
+			router.selectedTab = .home
+		case "app", nil:
+			// Legacy query-parameter format: /app?date=...&subjectID=...
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		default:
+			// Home fallback for unrecognised paths — never crashes
+			router.selectedTab = .home
+		}
+	}
+
 	private func navigateToMember(memberID: Int) {
-		if let match = members.first(where: { $0.memberID == memberID }) {
+		if let match = try? modelContext.fetch(
+			FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.memberID == memberID })
+		).first {
 			router.selectedMember = match
 			router.selectedTab = .members
 		}
@@ -228,6 +337,32 @@ struct ContentView: View {
 		guard let memberID = UserDefaults.standard.object(forKey: key) as? Int else { return }
 		UserDefaults.standard.removeObject(forKey: key)
 		navigateToMember(memberID: memberID)
+	}
+
+
+	// MARK: - Home Screen Quick Actions (EPAC-351)
+
+	/// Routes a Home Screen Quick Action to the correct tab and state.
+	private func handleQuickAction(_ action: QuickAction) {
+		switch action {
+		case .todayInParliament:
+			// Navigate to Parliament tab — the sitting calendar shows today.
+			router.selectedTab = .parliament
+
+		case .findMyMP:
+			// If the user has not set up their MP yet, show the postal code sheet;
+			// otherwise navigate to the Home tab where the My MP section is prominent.
+			if PostalCodeViewModel.savedRidingName == nil {
+				router.pendingShowPostalCodeSetup = true
+				router.selectedTab = .home
+			} else {
+				router.selectedTab = .home
+			}
+
+		case .searchDebates:
+			// Navigate to Search tab; SearchView auto-focuses the search bar on appear.
+			router.selectedTab = .search
+		}
 	}
 
 	// MARK: - Parliament navigation stack

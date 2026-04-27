@@ -21,6 +21,7 @@ struct HomeFeedView: View {
     @State private var isSittingToday = false
     @State private var myMPActivityCount = 0
     @State private var showPostalCodeSetup = false
+    @State private var showSettings = false
     @State private var recentSubjects: [SubjectOfBusiness] = []
     @State private var latestHansard: Hansard?
     @State private var billStore = BillFollowStore.shared
@@ -31,9 +32,8 @@ struct HomeFeedView: View {
     var body: some View {
         NavigationStack {
             List {
-                if isSittingToday {
-                    todaySection
-                }
+                // Always show today's Parliament status — VoiceOver users need to know whether sitting.
+                todaySection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
                     followedBillsSection
@@ -67,11 +67,27 @@ struct HomeFeedView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable {
+                await loadFeed()
+            }
             .navigationTitle(NSLocalizedString("Home", comment: ""))
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Label(NSLocalizedString("settings.title", comment: ""), systemImage: "gearshape")
+                    }
+                    .accessibilityLabel(NSLocalizedString("settings.title", comment: ""))
+                }
+            }
             .task { await loadFeed() }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
         }
     }
@@ -84,13 +100,15 @@ struct HomeFeedView: View {
                 router.selectedTab = .parliament
             } label: {
                 HStack {
-                    Image(systemName: "building.columns.fill")
-                        .foregroundStyle(.tint)
+                    Image(systemName: isSittingToday ? "building.columns.fill" : "building.columns")
+                        .foregroundStyle(isSittingToday ? Color.accentColor : Color.secondary)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(NSLocalizedString("home.parliament.sitting", comment: ""))
+                        Text(isSittingToday
+                            ? NSLocalizedString("home.parliament.sitting", comment: "")
+                            : NSLocalizedString("home.parliament.notSitting", comment: ""))
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(isSittingToday ? .primary : .secondary)
                         Text(Date(), style: .date)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -102,7 +120,9 @@ struct HomeFeedView: View {
                 }
             }
             .padding(.vertical, 2)
-            .accessibilityLabel(NSLocalizedString("home.parliament.sitting", comment: ""))
+            .accessibilityLabel(isSittingToday
+                ? NSLocalizedString("home.parliament.sitting", comment: "")
+                : NSLocalizedString("home.parliament.notSitting", comment: ""))
             .accessibilityHint("Opens Parliament tab")
         }
     }
@@ -120,7 +140,7 @@ struct HomeFeedView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(name)
                                 .font(.subheadline.weight(.semibold))
-                                .lineLimit(1)
+                                .lineLimit(2)
                             Text(String(format: NSLocalizedString("home.myMP.activityCount", comment: ""), myMPActivityCount))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -153,7 +173,7 @@ struct HomeFeedView: View {
     // MARK: - Section 3: Followed bills
 
     private var followedBillsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedBills", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.followedBills", comment: "")).accessibilityAddTraits(.isHeader)) {
             let sorted = billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt }
             ForEach(Array(sorted.prefix(3)), id: \.key) { number, state in
                 HStack {
@@ -166,17 +186,31 @@ struct HomeFeedView: View {
                         Text(state.lastKnownStage)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
                     }
                     Spacer()
                 }
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
+                .accessibilityLabel("Bill \(number), \(state.lastKnownStage), Followed")
             }
-            NavigationLink(destination: BillsView()) {
-                Text(NSLocalizedString("home.seeAllBills", comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.tint)
+            HStack {
+                NavigationLink(destination: BillsView()) {
+                    Text(NSLocalizedString("home.seeAllBills", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                }
+                if billStore.followed.count > 3 {
+                    Spacer()
+                    Button {
+                        billStore.unfollowAll()
+                    } label: {
+                        Text(NSLocalizedString("home.clearAllBills", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    .accessibilityLabel("Unfollow all bills")
+                }
             }
         }
     }
@@ -184,7 +218,7 @@ struct HomeFeedView: View {
     // MARK: - Section 4: Followed topics
 
     private var followedTopicsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedTopics", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.followedTopics", comment: "")).accessibilityAddTraits(.isHeader)) {
             let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -211,7 +245,7 @@ struct HomeFeedView: View {
     // MARK: - Section 4b: My Senators (shown when province is known)
 
     private var senatorsSection: some View {
-        Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: ""))) {
+        Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(mySenators.prefix(3)) { senator in
                 Link(destination: senator.senateURL) {
                     HStack(spacing: 10) {
@@ -268,7 +302,7 @@ struct HomeFeedView: View {
     // MARK: - Section 5: Recent debates
 
     private var recentDebatesSection: some View {
-        Section(header: Text(NSLocalizedString("home.recentDebates", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.recentDebates", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(recentSubjects) { subject in
                 Text(subject.title)
                     .font(.subheadline)

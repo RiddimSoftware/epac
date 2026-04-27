@@ -8,12 +8,15 @@
 import SwiftUI
 import SwiftData
 import ActivityView
+import AppIntents
 
 struct MemberProfileView: View {
 	let member: ParliamentMember
 
 	@EnvironmentObject private var fetch: Fetch
-	@Query(sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
+	// Compare picker only needs current MPs — predicate avoids loading all historical members.
+	@Query(filter: #Predicate<ParliamentMember> { $0.toDateTime == nil },
+	       sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
 	@State private var showingComparePicker = false
 	@State private var comparisonTarget: ParliamentMember?
 	@State private var navigateToComparison = false
@@ -22,6 +25,7 @@ struct MemberProfileView: View {
 	@State private var followStore = MemberFollowStore.shared
 	@State private var showLobbying = false
 	@State private var lobbyingComms: [LobbyistCommunication] = []
+	@State private var showCopiedConfirmation = false
 	@State private var lobbyingLoaded = false
 	@State private var shareItem: ActivityItem?
 
@@ -32,10 +36,29 @@ struct MemberProfileView: View {
 	private var contactSection: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			if let email = member.email, let url = URL(string: "mailto:\(email)") {
-				Button { UIApplication.shared.open(url) } label: {
-					ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
+				HStack(spacing: 0) {
+					Button { UIApplication.shared.open(url) } label: {
+						ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
+					}
+					.foregroundStyle(.primary)
+					Button {
+						UIPasteboard.general.string = email
+						showCopiedConfirmation = true
+						Task {
+							try? await Task.sleep(nanoseconds: 1_500_000_000)
+							showCopiedConfirmation = false
+						}
+					} label: {
+						ZStack {
+							Image(systemName: showCopiedConfirmation ? "checkmark" : "doc.on.doc")
+								.font(.caption)
+								.foregroundStyle(showCopiedConfirmation ? Color.appPositive : Color.secondary)
+								.padding(.horizontal, 8)
+						}
+					}
+					.accessibilityLabel(showCopiedConfirmation ? "Copied" : "Copy email address")
+					.accessibilityHint("Copies \(email) to clipboard")
 				}
-				.foregroundStyle(.primary)
 			}
 			if let phone = member.hillPhone,
 			   let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
@@ -77,6 +100,8 @@ struct MemberProfileView: View {
 					.frame(width: 150, height: 150)
 					.padding(.top, 20)
 
+				MemberHighlightsCard(member: member)
+
 				PartyLineScoreView(member: member)
 
 				VStack(alignment: .leading, spacing: 10) {
@@ -117,9 +142,9 @@ struct MemberProfileView: View {
 				}
 				.foregroundStyle(.primary)
 
-				NavigationLink(destination: MemberDebateActivityView(member: member)) {
+				NavigationLink(destination: MemberSpeechFeedView(member: member)) {
 					HStack {
-						Label("Debate Activity", systemImage: "text.bubble")
+						Label("Speeches", systemImage: "text.bubble.fill")
 						Spacer()
 						Image(systemName: "chevron.right")
 							.font(.caption)
@@ -159,12 +184,12 @@ struct MemberProfileView: View {
 								VStack(alignment: .leading, spacing: 3) {
 									Text(comm.organizationName)
 										.font(.subheadline)
-										.lineLimit(1)
+										.lineLimit(2)
 									if !comm.subjectMatter.isEmpty {
 										Text(comm.subjectMatter)
 											.font(.caption2)
 											.foregroundStyle(.secondary)
-											.lineLimit(1)
+											.lineLimit(2)
 									}
 									if let d = comm.communicationDate {
 										Text(d, style: .date)
@@ -208,6 +233,15 @@ struct MemberProfileView: View {
 					}
 				}
 			}
+			// MARK: Written Questions
+			WrittenQuestionsSection(member: member)
+
+			// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
+			ShortcutsLink()
+				.shortcutsLinkStyle(.automaticOutline)
+				.padding(.top, 4)
+				.accessibilityLabel("Add epac to Siri and Shortcuts")
+
 			#if DEBUG
 			Text("Member ID: \(member.memberID)")
 				.font(.caption2)
@@ -217,8 +251,12 @@ struct MemberProfileView: View {
 			#endif
 		}
 		.padding()
+		.animation(.none, value: showLobbying)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
+			if member.memberID > 0 {
+				try? await fetch.downloadWrittenQuestions(memberID: member.memberID)
+			}
 		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
@@ -314,6 +352,45 @@ struct MemberProfileView: View {
 			}
 		}
 	}
+}
+
+// MARK: - Member highlights (total votes, speeches, score)
+
+struct MemberHighlightsCard: View {
+    let member: ParliamentMember
+    @Query private var memberVotes: [MemberVote]
+    @Query private var speeches: [SpeechMessage]
+
+    init(member: ParliamentMember) {
+        self.member = member
+        let mid = member.memberID
+        _memberVotes = Query(FetchDescriptor<MemberVote>(predicate: #Predicate { $0.memberID == mid }))
+        let last = member.lastName
+        _speeches = Query(FetchDescriptor<SpeechMessage>(predicate: #Predicate { $0.lastName == last }))
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+            Divider().frame(height: 40)
+            statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+        }
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private func statCell(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon).font(.caption).foregroundStyle(Color.party(member.party))
+                .accessibilityHidden(true)
+            Text(value).font(.title3.bold())
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
+    }
 }
 
 struct ProfileDetailRow: View {

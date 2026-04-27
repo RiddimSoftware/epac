@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct PetitionsView: View {
     @State private var petitions: [EPetition] = []
     @State private var isLoading = false

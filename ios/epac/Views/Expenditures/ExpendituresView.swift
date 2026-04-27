@@ -64,6 +64,9 @@ struct ExpendituresView: View {
                         }
                     }
                     .listStyle(.plain)
+                    .refreshable {
+                        await viewModel.refresh(fetch: fetch)
+                    }
                 }
 
                 VStack {
@@ -254,6 +257,8 @@ struct ExpenditureRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(expenditure.lastName), \(expenditure.firstName), \(expenditure.party.fullName), \(expenditure.constituency), total \(expenditure.total.formatted(.currency(code: "CAD")))")
     }
 }
 

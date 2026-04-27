@@ -163,6 +163,10 @@
 "debate.navTitle" = "Debate Activity";
 "debate.empty.title" = "No debate records";
 "debate.empty.description" = "Open sitting days to load debate transcripts for this member.";
+"debate.empty.noSpeeches" = "No speeches found in recent sitting days.";
+"debate.empty.loadMore" = "Search more sitting days";
+"debate.loading.start" = "Loading recent sitting days…";
+"debate.loading.progress" = "Loaded %d sitting days…";
 "debate.recentSittingDays" = "Recent Sitting Days";
 "debate.contributionCount" = "%d contribution(s)";
 "debate.stat.contributions" = "Contributions";
@@ -204,6 +208,7 @@
 "petition.status.unknown" = "Unknown";
 "petitions.signatures" = "%d signatures";
 "petitions.signatures.label" = "Signatures";
+"petitions.signatures.threshold" = "%d more needed for a government response";
 "petitions.number" = "Petition";
 "petitions.status" = "Status";
 "petitions.deadline" = "Deadline";
@@ -223,6 +228,7 @@
 
 /* Bill tracker */
 "bills.navTitle" = "Bills";
+"bills.search.prompt" = "Search by bill number or title";
 "bills.browseAll" = "Browse bills";
 "bills.filter" = "Filter";
 "bills.filter.all" = "All";
@@ -248,6 +254,8 @@
 "bills.noMatch.title" = "No Bills Found";
 "bills.noMatch.description" = "No bills match the current filters. Try clearing filters to see all bills.";
 "bills.detail.number" = "Number";
+"bills.detail.parliament" = "Parliament";
+"bills.detail.parliament.value" = "%d-%d";
 "bills.detail.status" = "Status";
 "bills.detail.sponsor" = "Sponsor";
 "bills.detail.stage" = "Current Stage";
@@ -257,6 +265,10 @@
 "bills.detail.votes" = "Recorded Votes";
 "bills.detail.debates" = "Debates";
 "bills.detail.legisinfo" = "View on LEGISinfo";
+"bills.detail.keyFacts" = "Key Facts";
+"bills.detail.originatingChamber" = "Originating Chamber";
+"bills.chamber.house" = "House of Commons";
+"bills.chamber.senate" = "Senate";
 "bills.stage.houseFirst" = "House — First Reading";
 "bills.stage.houseSecond" = "House — Second Reading";
 "bills.stage.houseThird" = "House — Third Reading";
@@ -264,9 +276,13 @@
 "bills.stage.senateSecond" = "Senate — Second Reading";
 "bills.stage.senateThird" = "Senate — Third Reading";
 "bills.stage.royalAssent" = "Royal Assent";
+"bills.timeline.completed" = "Completed";
+"bills.timeline.current" = "Current or next stage";
+"bills.timeline.future" = "Future stage";
 
 /* Topic following */
 "topics.navTitle" = "Topics";
+"topics.search.prompt" = "Search topics";
 "topics.browseAll" = "Browse topics";
 "topic.follow" = "Follow topic";
 "topic.unfollow" = "Unfollow topic";
@@ -338,12 +354,14 @@
 
 /* Home feed */
 "home.parliament.sitting" = "Parliament is sitting today";
+"home.parliament.notSitting" = "Parliament is not sitting today";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";
 "home.followedTopics" = "Topics You Follow";
 "home.recentDebates" = "Recent in Hansard";
 "home.seeAllBills" = "See all bills →";
+"home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
 "home.seeAllDebates" = "Open Parliament tab →";
 
@@ -427,3 +445,119 @@
 "empty.home.title" = "Set up your civic feed";
 "empty.home.message" = "Add your postal code to track your MP, or follow topics and bills that matter to you.";
 "empty.home.action" = "Find my MP";
+
+/* Contextual menus — speech bubbles (EPAC-170) */
+"speech.share" = "Share Speech";
+"speech.follow" = "Follow %@";
+"speech.unfollow" = "Unfollow %@";
+"speech.goToProfile" = "%@'s Profile";
+"speech.copyQuote" = "Copy Quote";
+
+/* Contextual menus — vote rows (EPAC-170) */
+"vote.contextMenu.share" = "Share Vote";
+"vote.contextMenu.searchDebates" = "See Debate on Bill";
+"vote.contextMenu.writeMP" = "Write to MP";
+
+/* Contextual menus — bill rows (EPAC-170) */
+"bill.contextMenu.seeVotes" = "See Votes on This Bill";
+
+/* Onboarding (EPAC-296) */
+"onboarding.skip" = "Skip";
+"onboarding.getStarted" = "Get Started →";
+
+"onboarding.what.title" = "Canada's Parliament App";
+"onboarding.what.subtitle" = "Built on the official government record.";
+"onboarding.what.point1" = "Every speech your MP makes — from the Hansard verbatim transcript";
+"onboarding.what.point2" = "Every vote they cast — from Parliament.ca's official voting API";
+"onboarding.what.point3" = "Who's lobbying them — from the Commissioner of Lobbying Registry";
+"onboarding.what.trust" = "All from official government sources. Nothing generated or editorialized.";
+
+"onboarding.topics.title" = "What matters to you?";
+"onboarding.topics.subtitle" = "Follow up to 4 topics. Get notified when Parliament debates them.";
+"onboarding.topics.follow" = "Follow %d topic(s) →";
+
+"onboarding.notifications.title" = "Stay informed";
+"onboarding.notifications.subtitle" = "We'll tell you when Parliament acts on things that matter to you.";
+"onboarding.notifications.preview1" = "When your MP speaks or votes";
+"onboarding.notifications.preview2" = "When a bill you follow advances";
+"onboarding.notifications.preview3" = "When Parliament debates a topic you follow";
+"onboarding.notifications.privacy" = "Notifications only. No tracking. No analytics.";
+"onboarding.notifications.allow" = "Allow Notifications →";
+"onboarding.notifications.skip" = "Not now";
+
+"onboarding.promise.title" = "You're set up";
+"onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
+"onboarding.promise.point1" = "Your MP's votes and speeches, as they happen";
+"onboarding.promise.point2" = "Notifications when Parliament debates your %d topic(s)";
+"onboarding.promise.point3" = "No account required. No data sold. No ads.";
+"onboarding.promise.start" = "Start Exploring →";
+
+/* Settings (EPAC-143) */
+"settings.title" = "Settings";
+"settings.done" = "Done";
+
+"settings.location.title" = "My Location";
+"settings.location.riding" = "Riding";
+"settings.location.mp" = "MP";
+"settings.location.change" = "Change postal code";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.hansard" = "New Hansard sittings";
+"settings.notifications.billVotes" = "Vote results on followed bills";
+"settings.notifications.memberActivity" = "Activity from followed MPs";
+"settings.notifications.topicConsultations" = "New consultations on followed topics";
+"settings.notifications.morningBriefing" = "Morning sitting-day briefing";
+
+"settings.followed.bills" = "Followed Bills";
+"settings.followed.members" = "Followed MPs";
+"settings.followed.topics" = "Followed Topics";
+
+"settings.about.title" = "About";
+"settings.about.version" = "Version";
+"settings.about.privacy" = "Privacy Policy";
+"settings.about.dataSources" = "Data Sources";
+"settings.about.github" = "GitHub (open source)";
+"settings.about.brandBrief" = "Brand brief";
+"settings.about.feedback" = "Send feedback";
+
+/* Canada Gazette (EPAC-116) */
+"gazette.navTitle" = "Canada Gazette";
+"gazette.loading" = "Loading Canada Gazette";
+"gazette.error.title" = "Couldn't load Gazette";
+"gazette.error.description" = "The Canada Gazette feed is temporarily unavailable. Check your connection and try again.";
+"gazette.empty.title" = "No notices found";
+"gazette.empty.description" = "No Gazette notices match your current filter.";
+"gazette.filter.all" = "All Parts";
+"gazette.filter.label" = "Filter by part";
+"gazette.search.prompt" = "Search notices";
+"gazette.part.i" = "Part I";
+"gazette.part.ii" = "Part II";
+"gazette.part.i.subtitle" = "Proposed regulations and notices";
+"gazette.part.ii.subtitle" = "Final regulations";
+"gazette.category.notice" = "Notice";
+"gazette.detail.navTitle" = "Notice";
+"gazette.detail.summary" = "Summary";
+"gazette.detail.source" = "Source";
+"gazette.detail.fullText" = "Read full text on canadagazette.gc.ca";
+"gazette.detail.sourceLabel" = "Official source";
+
+/* Federal Contracts (EPAC-117) */
+"contracts.navTitle" = "Federal Contracts";
+"contracts.loading" = "Loading federal contracts";
+"contracts.error.title" = "Couldn't load contracts";
+"contracts.error.description" = "The proactive disclosure feed is temporarily unavailable. Check your connection and try again.";
+"contracts.empty.title" = "No contracts found";
+"contracts.empty.description" = "No contracts match your search. Try a vendor or department name.";
+"contracts.search.prompt" = "Search by vendor or department";
+"contracts.detail.navTitle" = "Contract";
+"contracts.detail.info" = "Details";
+"contracts.detail.date" = "Contract date";
+"contracts.detail.fiscal" = "Fiscal year";
+"contracts.detail.original" = "Original value";
+"contracts.detail.refNumber" = "Reference number";
+"contracts.detail.amendments" = "%d amendment(s)";
+"contracts.detail.purpose" = "Description of work";
+"contracts.detail.source" = "Source";
+"contracts.detail.openData" = "View on open.canada.ca";
+"contracts.detail.sourceLabel" = "Official source";
+"contracts.detail.sourceName" = "Treasury Board Secretariat — Proactive Disclosure of Contracts";

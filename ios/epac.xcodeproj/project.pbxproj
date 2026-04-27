@@ -16,6 +16,7 @@
 		A3BB28C82F2909BE00F9F1EB /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A33253CD2F2852E500531242 /* ExyteChat */; };
 		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
 		A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D5168F2DE4FD4C00148AA8 /* Logging */; };
+		A3DEAD0BEEF00000CAFE0003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = A3DEAD0BEEF00000CAFE0002 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +125,7 @@
 				A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */,
 				A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */,
 				A38138C52DD39D6F0062421F /* HorizonCalendar in Frameworks */,
+				A3DEAD0BEEF00000CAFE0003 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,6 +222,7 @@
 				A38138C42DD39D6F0062421F /* HorizonCalendar */,
 				A3D5168F2DE4FD4C00148AA8 /* Logging */,
 				A33253CD2F2852E500531242 /* ExyteChat */,
+				A3DEAD0BEEF00000CAFE0002 /* Sentry */,
 			);
 			productName = epac;
 			productReference = A38427C32D062C8D00271C34 /* epac.app */;
@@ -243,6 +246,7 @@
 			);
 			name = epacTests;
 			packageProductDependencies = (
+				A3FADE01DEAD00001DEAD002 /* SnapshotTesting */,
 			);
 			productName = epacTests;
 			productReference = A38427D62D062C8E00271C34 /* epacTests.xctest */;
@@ -336,6 +340,8 @@
 				A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */,
 				A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */,
 				A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */,
+				A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -848,6 +854,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.6;
+			};
+		};
 		A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/exyte/Chat";
@@ -896,6 +910,14 @@
 				minimumVersion = 1.6.3;
 			};
 		};
+		A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -928,6 +950,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */;
 			productName = Logging;
+		};
+		A3FADE01DEAD00001DEAD002 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+		A3DEAD0BEEF00000CAFE0002 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

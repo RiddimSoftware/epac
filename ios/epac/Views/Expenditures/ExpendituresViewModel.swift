@@ -6,6 +6,7 @@
 import Observation
 import SwiftUI
 import ActivityView
+import Sentry
 
 @MainActor
 @Observable
@@ -78,9 +79,25 @@ class ExpendituresViewModel {
 				try await fetch.expenditures(year: selectedYear, quarter: selectedQuarter)
 			} catch {
 				Log.error("Failed to load expenditures: \(error.localizedDescription)")
+				SentrySDK.capture(error: error)
 				loadFailed = true
 			}
 			isLoading = false
+		}
+	}
+
+	/// Force-reloads the current period from the network, bypassing the SwiftData cache.
+	@MainActor
+	func refresh(fetch: Fetch) async {
+		loadFailed = false
+		isLoading = true
+		defer { isLoading = false }
+		do {
+			try await fetch.downloadExpenditures(year: selectedYear, quarter: selectedQuarter)
+		} catch {
+			Log.error("ExpendituresViewModel.refresh failed: \(error.localizedDescription)")
+			SentrySDK.capture(error: error)
+			loadFailed = true
 		}
 	}
 

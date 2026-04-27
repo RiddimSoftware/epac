@@ -25,7 +25,8 @@ typealias ContractExpenditure = SchemaV5.ContractExpenditure
 typealias SummaryExpenditure = SchemaV5.SummaryExpenditure
 typealias RecordedVote = SchemaV5.RecordedVote
 typealias MemberVote = SchemaV5.MemberVote
-typealias FiscalMonitorEntry = SchemaV5.FiscalMonitorEntry
+typealias WrittenQuestion = SchemaV6.WrittenQuestion
+typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -691,8 +692,7 @@ enum SchemaV5: VersionedSchema {
 			HospitalityExpenditure.self,
 			ContractExpenditure.self,
 			RecordedVote.self,
-			MemberVote.self,
-			FiscalMonitorEntry.self
+			MemberVote.self
 		]
 	}
 
@@ -1046,6 +1046,62 @@ enum SchemaV5: VersionedSchema {
 		}
 	}
 
+}
+
+// MARK: - SchemaV6
+
+enum SchemaV6: VersionedSchema {
+	static var versionIdentifier: Schema.Version { .init(6, 0, 0) }
+	static var models: [any PersistentModel.Type] {
+		// All V5 models unchanged + WrittenQuestion
+		SchemaV5.models + [WrittenQuestion.self]
+	}
+
+	@Model
+	final class WrittenQuestion {
+		@Attribute(.unique) var questionID: Int
+		var memberID: Int
+		var parliament: Int
+		var session: Int
+		var number: Int
+		var dateSubmitted: Date
+		var subject: String
+		var questionTextEn: String
+		var statusEn: String
+		var responseDate: Date?
+		var responseTextEn: String?
+		var daysElapsed: Int
+
+		var isOverdue: Bool { responseTextEn == nil && daysElapsed > 45 }
+
+		init(questionID: Int, memberID: Int, parliament: Int, session: Int, number: Int,
+			 dateSubmitted: Date, subject: String, questionTextEn: String,
+			 statusEn: String, responseDate: Date? = nil, responseTextEn: String? = nil, daysElapsed: Int) {
+			self.questionID = questionID
+			self.memberID = memberID
+			self.parliament = parliament
+			self.session = session
+			self.number = number
+			self.dateSubmitted = dateSubmitted
+			self.subject = subject
+			self.questionTextEn = questionTextEn
+			self.statusEn = statusEn
+			self.responseDate = responseDate
+			self.responseTextEn = responseTextEn
+			self.daysElapsed = daysElapsed
+		}
+	}
+}
+
+// MARK: - SchemaV7
+
+enum SchemaV7: VersionedSchema {
+	static var versionIdentifier: Schema.Version { .init(7, 0, 0) }
+	static var models: [any PersistentModel.Type] {
+		// All V6 models unchanged + FiscalMonitorEntry.
+		SchemaV6.models + [FiscalMonitorEntry.self]
+	}
+
 	@Model
 	final class FiscalMonitorEntry: Identifiable {
 		@Attribute(.unique) var id: String
@@ -1099,7 +1155,6 @@ enum SchemaV5: VersionedSchema {
 			self.sourceURL = sourceURL
 		}
 	}
-
 }
 
 	enum Province: String, Codable, CaseIterable, Identifiable {

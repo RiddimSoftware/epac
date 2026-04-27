@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import Kanna
 import SWXMLHash
+import Sentry
 
 @ModelActor
 actor Fetch: ObservableObject {
@@ -53,9 +54,21 @@ actor Fetch: ObservableObject {
 	func downloadSittingCalendar(_ year: Int) async throws {
 		Log.debug("Fetch.downloadSittingCalendar(year: \(year))")
 		let dates = try await downloadCalendar(year: year)
-		let calendar = SittingCalendar(year: year, sittings: dates)
-		modelContext.insert(calendar)
+		// Upsert: update existing record if present, insert if not
+		let existing = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
+		if let record = existing.first {
+			record.sittings = dates
+		} else {
+			let calendar = SittingCalendar(year: year, sittings: dates)
+			modelContext.insert(calendar)
+		}
 		try modelContext.save()
+	}
+
+	func backgroundRefresh() async {
+		Log.debug("Fetch.backgroundRefresh()")
+		let year = Calendar.current.component(.year, from: Date())
+		try? await downloadSittingCalendar(year)
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
@@ -71,11 +84,18 @@ actor Fetch: ObservableObject {
 	
 	func downloadHansard(_ date: Date) async throws {
 		Log.debug("Fetch.downloadHansard(date: \(date))")
-		let xml = try await downloadXML(forDate: date)
-		let hansard = Hansard(xml: xml)
-		modelContext.insert(hansard)
-		try modelContext.save()
-		UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
+		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
+		do {
+			let xml = try await downloadXML(forDate: date)
+			let hansard = Hansard(xml: xml)
+			modelContext.insert(hansard)
+			try modelContext.save()
+			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
+			transaction.finish(status: .ok)
+		} catch {
+			transaction.finish(status: .internalError)
+			throw error
+		}
 	}
 
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {
@@ -171,8 +191,8 @@ actor Fetch: ObservableObject {
 		let path = String(format: expenditurePath, year, quarter)
 		let url = hosturl.appending(path: path)
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
-		
+		let (data, _) = try await NetworkService.shared.data(for: request)
+
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "Fetch", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
@@ -216,7 +236,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await URLSession.shared.data(from: csvURL)
+		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
 		Log.debug("Downloaded \(csvData.count) bytes of CSV data")
 		
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("expenditures-\(year)-Q\(quarter).csv")
@@ -321,7 +341,7 @@ actor Fetch: ObservableObject {
 	private func downloadDetail(url: URL, type: DetailType, member: SummaryExpenditure) async throws {
 		Log.debug("Downloading detail from \(url.absoluteString)")
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
@@ -355,7 +375,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found detailed CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await URLSession.shared.data(from: csvURL)
+		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("detail-\(UUID().uuidString).csv")
 		try csvData.write(to: tempURL)
 		
@@ -438,7 +458,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Fetch.downloadXML(date: \(date))")
 		let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
 		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		var (data, _) = try await URLSession.shared.data(for: request)
+		var (data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: 1)
@@ -462,7 +482,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		request = URLRequest(url: url)
-		(data, _) = try await URLSession.shared.data(for: request)
+		(data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: 1)
@@ -477,7 +497,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		request = URLRequest(url: xmllink, cachePolicy: .reloadIgnoringLocalCacheData)
-		(data, _) = try await URLSession.shared.data(for: request)
+		(data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
 		}
@@ -489,7 +509,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Downloading calendar \(year)")
 		let path = String(format: calendarPath, year)
 		let request = URLRequest(url: hosturl.appending(path: path), cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("Downloaded \(data.count) bytes")
 
 		if let htmlstring = String(data: data, encoding: .utf8),
@@ -526,7 +546,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("got data \(data.count)")
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
@@ -546,6 +566,7 @@ actor Fetch: ObservableObject {
 				}
 			}
 		}
+		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}
 	                func downloadMember(_ firstName: String, _ lastName: String) async throws {
 	                        let identifier = "\(firstName) \(lastName)"
@@ -562,7 +583,7 @@ actor Fetch: ObservableObject {
 	                        request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
 	                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 	                        request.setValue("application/json", forHTTPHeaderField: "Accept")
-	                        let (data, _) = try await URLSession.shared.data(for: request)
+	                        let (data, _) = try await NetworkService.shared.data(for: request)
 	                        guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 	                                failedDownloads.insert(identifier)
 	                                throw NSError(domain: "", code: 7)
@@ -601,7 +622,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
 		}
@@ -622,7 +643,7 @@ actor Fetch: ObservableObject {
 			.folding(options: .diacriticInsensitive, locale: .current)
 		let path = String(format: memberPath, first, last, String(member.memberID))
 		guard let url = URL(string: path, relativeTo: hosturl) else { return }
-		let (data, response) = try await URLSession.shared.data(from: url)
+		let (data, response) = try await NetworkService.shared.data(from: url)
 		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let xmlString = String(data: data, encoding: .utf8) else { return }
 		let contact = XMLBro.parseMemberContact(xmlString)
@@ -637,52 +658,69 @@ actor Fetch: ObservableObject {
 	func downloadVotingRecords(parliament: Int = 44) async throws {
 		guard (try modelContext.fetchCount(FetchDescriptor<RecordedVote>())) == 0 else { return }
 
-		var page = 1
-		var hasMore = true
-		let isoFormatter = ISO8601DateFormatter()
-		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-		while hasMore {
-			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-			components.path = "/ocd/votes/"
-			components.queryItems = [
-				URLQueryItem(name: "parliament", value: String(parliament)),
-				URLQueryItem(name: "pageSize", value: "200"),
-				URLQueryItem(name: "page", value: String(page)),
-				URLQueryItem(name: "format", value: "json")
-			]
-			guard let url = components.url else { break }
-			let (data, response) = try await URLSession.shared.data(from: url)
-			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-				  let items = json["items"] as? [[String: Any]] else { break }
-			hasMore = !items.isEmpty && items.count == 200
-			page += 1
-			for item in items {
-				guard let id = item["id"] as? Int else { continue }
-				let dateStr = item["date"] as? String ?? ""
-				let date = isoFormatter.date(from: dateStr) ?? Date()
-				let descObj = item["description"] as? [String: String]
-				let desc = descObj?["en"] ?? item["description"] as? String ?? ""
-				let resultObj = item["result"] as? [String: String]
-				let result = resultObj?["en"] ?? item["result"] as? String ?? ""
-				let vote = RecordedVote(
-					voteID: id,
-					parliament: item["parliament"] as? Int ?? parliament,
-					session: item["session"] as? Int ?? 0,
-					number: item["number"] as? Int ?? 0,
-					date: date,
-					descriptionEn: desc,
-					billNumberCode: item["billNumberCode"] as? String ?? "",
-					yea: item["yea"] as? Int ?? 0,
-					nay: item["nay"] as? Int ?? 0,
-					paired: item["paired"] as? Int ?? 0,
-					resultEn: result
-				)
-				modelContext.insert(vote)
+		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
+		do {
+			var page = 1
+			var hasMore = true
+			let isoFormatter = ISO8601DateFormatter()
+			isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+			while hasMore {
+				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+				components.path = "/ocd/votes/"
+				components.queryItems = [
+					URLQueryItem(name: "parliament", value: String(parliament)),
+					URLQueryItem(name: "pageSize", value: "200"),
+					URLQueryItem(name: "page", value: String(page)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				guard let url = components.url else { break }
+				let (data, response) = try await NetworkService.shared.data(from: url)
+				guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+					  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+					  let items = json["items"] as? [[String: Any]] else { break }
+				hasMore = !items.isEmpty && items.count == 200
+				page += 1
+				for item in items {
+					guard let id = item["id"] as? Int else { continue }
+					let dateStr = item["date"] as? String ?? ""
+					let date = isoFormatter.date(from: dateStr) ?? Date()
+					let descObj = item["description"] as? [String: String]
+					let desc = descObj?["en"] ?? item["description"] as? String ?? ""
+					let resultObj = item["result"] as? [String: String]
+					let result = resultObj?["en"] ?? item["result"] as? String ?? ""
+					let vote = RecordedVote(
+						voteID: id,
+						parliament: item["parliament"] as? Int ?? parliament,
+						session: item["session"] as? Int ?? 0,
+						number: item["number"] as? Int ?? 0,
+						date: date,
+						descriptionEn: desc,
+						billNumberCode: item["billNumberCode"] as? String ?? "",
+						yea: item["yea"] as? Int ?? 0,
+						nay: item["nay"] as? Int ?? 0,
+						paired: item["paired"] as? Int ?? 0,
+						resultEn: result
+					)
+					modelContext.insert(vote)
+				}
+				try modelContext.save()
+				UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
 			}
-			try modelContext.save()
-			UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
+			transaction.finish(status: .ok)
+		} catch {
+			transaction.finish(status: .internalError)
+			throw error
 		}
+	}
+
+	/// Force-refreshes vote history for a member by deleting stored votes and re-downloading.
+	func refreshMemberVotes(memberID: Int) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<MemberVote>(
+			predicate: #Predicate { $0.memberID == memberID }
+		))
+		for vote in existing { modelContext.delete(vote) }
+		try modelContext.save()
+		try await downloadMemberVotes(memberID: memberID)
 	}
 
 	func downloadMemberVotes(memberID: Int) async throws {
@@ -702,7 +740,7 @@ actor Fetch: ObservableObject {
 				URLQueryItem(name: "format", value: "json")
 			]
 			guard let url = components.url else { break }
-			let (data, response) = try await URLSession.shared.data(from: url)
+			let (data, response) = try await NetworkService.shared.data(from: url)
 			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 				  let items = json["items"] as? [[String: Any]] else { break }
@@ -717,6 +755,60 @@ actor Fetch: ObservableObject {
 					predicate: #Predicate { $0.voteID == voteID }
 				)).first
 				modelContext.insert(mv)
+			}
+			try modelContext.save()
+		}
+	}
+
+	func downloadWrittenQuestions(memberID: Int, parliament: Int = 45) async throws {
+		let existing = try modelContext.fetch(FetchDescriptor<WrittenQuestion>(
+			predicate: #Predicate { $0.memberID == memberID }
+		))
+		guard existing.isEmpty else { return }
+
+		let isoFormatter = ISO8601DateFormatter()
+		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+
+		var page = 1
+		var hasMore = true
+		while hasMore {
+			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+			components.path = "/ocd/questions/"
+			components.queryItems = [
+				URLQueryItem(name: "parliament", value: String(parliament)),
+				URLQueryItem(name: "memberId", value: String(memberID)),
+				URLQueryItem(name: "pageSize", value: "100"),
+				URLQueryItem(name: "page", value: String(page)),
+				URLQueryItem(name: "format", value: "json")
+			]
+			guard let url = components.url else { break }
+			let (data, response) = try await NetworkService.shared.data(from: url)
+			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+				  let items = json["items"] as? [[String: Any]] else { break }
+			hasMore = !items.isEmpty && items.count == 100
+			page += 1
+			for item in items {
+				guard let id = item["id"] as? Int else { continue }
+				let dateStr = item["dateSubmitted"] as? String ?? ""
+				let date = isoFormatter.date(from: dateStr) ?? Date()
+				let responseDateStr = item["responseDate"] as? String
+				let responseDate = responseDateStr.flatMap { isoFormatter.date(from: $0) }
+				let q = WrittenQuestion(
+					questionID: id,
+					memberID: memberID,
+					parliament: item["parliament"] as? Int ?? parliament,
+					session: item["session"] as? Int ?? 0,
+					number: item["questionNumber"] as? Int ?? 0,
+					dateSubmitted: date,
+					subject: item["subject"] as? String ?? "",
+					questionTextEn: item["textEn"] as? String ?? item["text"] as? String ?? "",
+					statusEn: item["statusEn"] as? String ?? item["status"] as? String ?? "Pending",
+					responseDate: responseDate,
+					responseTextEn: item["responseTextEn"] as? String ?? item["responseText"] as? String,
+					daysElapsed: item["daysElapsed"] as? Int ?? 0
+				)
+				modelContext.insert(q)
 			}
 			try modelContext.save()
 		}
