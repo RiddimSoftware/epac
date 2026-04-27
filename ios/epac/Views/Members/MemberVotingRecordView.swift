@@ -113,8 +113,8 @@ struct MemberVotingRecordView: View {
 	private var voteSummaryCard: some View {
 		VStack(spacing: 12) {
 			HStack(spacing: 0) {
-				SummaryPill(label: "Yea", count: yeaCount, color: .green)
-				SummaryPill(label: "Nay", count: nayCount, color: .red)
+				SummaryPill(label: "Yea", count: yeaCount, color: .appPositive)
+				SummaryPill(label: "Nay", count: nayCount, color: .appDestructive)
 				SummaryPill(label: "Absent", count: absentCount, color: .secondary)
 			}
 			.clipShape(RoundedRectangle(cornerRadius: 8))
@@ -127,7 +127,7 @@ struct MemberVotingRecordView: View {
 					Spacer()
 					Text(winnerAlignmentScore, format: .percent.precision(.fractionLength(0)))
 						.font(.caption.bold())
-						.foregroundStyle(winnerAlignmentScore >= 0.5 ? .green : .orange)
+						.foregroundStyle(winnerAlignmentScore >= 0.5 ? Color.appPositive : Color.appWarning)
 				}
 			}
 		}
@@ -161,11 +161,7 @@ private struct VoteRow: View {
 	let memberVote: MemberVote
 
 	private var voteColor: Color {
-		switch memberVote.recordedVote {
-		case "Yea":   return .green
-		case "Nay":   return .red
-		default:       return .secondary
-		}
+		Color.ballot(memberVote.recordedVote)
 	}
 
 	private var voteIcon: String {

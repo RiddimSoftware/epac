@@ -274,7 +274,7 @@ struct MemberAvatar: View {
 
 	private var placeholder: some View {
 		ZStack {
-			Color.partySubtle(member.party)
+			Color.party(member.party).opacity(0.2)
 			Text(member.initials)
 				.font(.headline)
 				.foregroundColor(Color.party(member.party))

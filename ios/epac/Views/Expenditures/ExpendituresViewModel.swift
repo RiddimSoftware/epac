@@ -106,7 +106,7 @@ class ExpendituresViewModel {
 			}
 		}
 		.frame(width: 400)
-		.background(Color(UIColor.systemBackground))
+		.background(Color.appBackground)
 
 		let renderer = ImageRenderer(content: view)
 		renderer.scale = UIScreen.main.scale
