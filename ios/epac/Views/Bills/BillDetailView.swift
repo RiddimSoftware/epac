@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ActivityView
 
 struct BillDetailView: View {
     let bill: Bill
@@ -15,6 +16,7 @@ struct BillDetailView: View {
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
+    @State private var shareItem: ActivityItem?
 
     var body: some View {
         List {
@@ -126,7 +128,14 @@ struct BillDetailView: View {
         .navigationTitle(bill.number)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    shareItem = BillSharer.activityItem(for: bill)
+                } label: {
+                    Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+                }
+                .accessibilityLabel(NSLocalizedString("bill.share", comment: ""))
+
                 Button {
                     billStore.toggle(bill)
                 } label: {
@@ -143,6 +152,7 @@ struct BillDetailView: View {
             }
         }
         .task { await loadCrossReferences() }
+        .activitySheet($shareItem)
     }
 
     // MARK: - Cross-reference loading
