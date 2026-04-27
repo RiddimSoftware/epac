@@ -34,6 +34,9 @@
 "Share recent messages" = "Partager les messages récents";
 "View member profile" = "Voir le profil du membre";
 
+/* Offline banner */
+"You're offline. Showing cached content." = "Vous êtes hors ligne. Affichage du contenu en cache.";
+
 /* Expenditures view */
 "Sort" = "Trier";
 "Sort By" = "Trier par";
