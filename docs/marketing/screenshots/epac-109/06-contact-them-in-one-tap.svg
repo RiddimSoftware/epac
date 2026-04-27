@@ -24,22 +24,22 @@
     <text x="204" y="1068" font-family="Helvetica Neue, Arial, sans-serif" font-size="38" font-weight="800" fill="#FFFFFF">Contact</text>
     <text x="204" y="1196" font-family="Helvetica Neue, Arial, sans-serif" font-size="52" font-weight="900" fill="#1C1C1E">Email your MP</text>
     
-            <rect x="192" y="1270" width="904" height="150" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="192" y="1270" width="904" height="166" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="246" cy="1345" r="20" fill="#0071E3"/>
             <text x="284" y="1332" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">To</text>
-            <text x="284" y="1376" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">Member of Parliament</text>
+            <text x="284" y="1370" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Member of Parliament</text>
             
 
-            <rect x="192" y="1480" width="904" height="150" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="192" y="1480" width="904" height="166" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="246" cy="1555" r="20" fill="#5856D6"/>
             <text x="284" y="1542" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">Subject</text>
-            <text x="284" y="1586" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">Re: Bill C-5 vote record</text>
+            <text x="284" y="1580" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Re: Bill C-5 vote record</text>
             
 
-            <rect x="192" y="1690" width="904" height="150" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="192" y="1690" width="904" height="166" rx="30" fill="#FFFFFF" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="246" cy="1765" r="20" fill="#007D3C"/>
             <text x="284" y="1752" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">Source</text>
-            <text x="284" y="1796" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">OurCommons vote link included</text>
+            <text x="284" y="1790" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">OurCommons vote link included</text>
             
     <rect x="192" y="2282" width="904" height="88" rx="24" fill="#EEF5FF"/>
     <text x="232" y="2338" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#0071E3">Source: Official MP contact information</text>

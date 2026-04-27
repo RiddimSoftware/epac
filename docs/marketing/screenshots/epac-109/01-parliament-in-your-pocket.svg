@@ -24,22 +24,25 @@
     <text x="204" y="1068" font-family="Helvetica Neue, Arial, sans-serif" font-size="38" font-weight="800" fill="#FFFFFF">Debate</text>
     <text x="204" y="1196" font-family="Helvetica Neue, Arial, sans-serif" font-size="52" font-weight="900" fill="#1C1C1E">Hansard</text>
     
-            <rect x="192" y="1270" width="710" height="150" rx="30" fill="#F2F2F7" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="192" y="1270" width="710" height="166" rx="30" fill="#F2F2F7" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="246" cy="1345" r="20" fill="#8E8E93"/>
             <text x="284" y="1332" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">The Speaker</text>
-            <text x="284" y="1376" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">Government Orders. Bill C-5, One Canadian Economy Act.</text>
+            <text x="284" y="1370" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Government Orders. Bill C-5, One</text>
+<text x="284" y="1401" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Canadian Economy Act.</text>
             
 
-            <rect x="385" y="1480" width="710" height="150" rx="30" fill="#E8F2FF" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="385" y="1480" width="710" height="166" rx="30" fill="#E8F2FF" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="439" cy="1555" r="20" fill="#D01D1D"/>
             <text x="477" y="1542" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">Minister</text>
-            <text x="477" y="1586" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">This bill advances internal trade and labour mobility across Canada.</text>
+            <text x="477" y="1580" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Internal trade and labour</text>
+<text x="477" y="1611" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">mobility across Canada.</text>
             
 
-            <rect x="192" y="1690" width="710" height="150" rx="30" fill="#F2F2F7" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="192" y="1690" width="710" height="166" rx="30" fill="#F2F2F7" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="246" cy="1765" r="20" fill="#003F7D"/>
             <text x="284" y="1752" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">Opposition MP</text>
-            <text x="284" y="1796" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">Parliament still needs scrutiny, timelines, and public accountability.</text>
+            <text x="284" y="1790" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">Scrutiny, timelines, and</text>
+<text x="284" y="1821" font-family="Outfit, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="500" fill="#6E6E73">accountability.</text>
             
     <rect x="192" y="2282" width="904" height="88" rx="24" fill="#EEF5FF"/>
     <text x="232" y="2338" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#0071E3">Source: House of Commons Hansard</text>

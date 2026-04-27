@@ -29,8 +29,8 @@ SCENES = [
         "accent": "#0071E3",
         "content": [
             ("The Speaker", "Government Orders. Bill C-5, One Canadian Economy Act.", "left", "#8E8E93"),
-            ("Minister", "This bill advances internal trade and labour mobility across Canada.", "right", "#D01D1D"),
-            ("Opposition MP", "Parliament still needs scrutiny, timelines, and public accountability.", "left", "#003F7D"),
+            ("Minister", "Internal trade and labour mobility across Canada.", "right", "#D01D1D"),
+            ("Opposition MP", "Scrutiny, timelines, and accountability.", "left", "#003F7D"),
         ],
     },
     {
@@ -154,13 +154,15 @@ def phone_rows(scene: dict[str, object]) -> str:
             x = 192
             width = 904
             fill = "#FFFFFF"
+        detail_lines = wrap(str(detail), 39 if width > 800 else 32)[:2]
+        detail_svg = text_block(detail_lines, x + 92, y + 100, 25, 500, "#6E6E73", 31)
 
         rows.append(
             f"""
-            <rect x="{x}" y="{y}" width="{width}" height="150" rx="30" fill="{fill}" stroke="#E5E5EA" stroke-width="2"/>
+            <rect x="{x}" y="{y}" width="{width}" height="166" rx="30" fill="{fill}" stroke="#E5E5EA" stroke-width="2"/>
             <circle cx="{x + 54}" cy="{y + 75}" r="20" fill="{color}"/>
             <text x="{x + 92}" y="{y + 62}" font-family="Helvetica Neue, Arial, sans-serif" font-size="33" font-weight="800" fill="#1C1C1E">{html.escape(str(title))}</text>
-            <text x="{x + 92}" y="{y + 106}" font-family="Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="500" fill="#6E6E73">{html.escape(str(detail))}</text>
+            {detail_svg}
             """
         )
     return "\n".join(rows)
@@ -209,7 +211,7 @@ def main() -> None:
         svg = OUT / f"{stem}.svg"
         png = OUT / f"{stem}.png"
         svg.write_text(render(scene), encoding="utf-8")
-        subprocess.run(["magick", str(svg), str(png)], check=True)
+        subprocess.run(["magick", str(svg), "-depth", "8", str(png)], check=True)
 
 
 if __name__ == "__main__":
