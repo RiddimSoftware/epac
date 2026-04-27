@@ -81,9 +81,6 @@ enum SchemaV3: VersionedSchema {
 			self.fromDateTime = fromDateTime
 			self.toDateTime = toDateTime
 		}
-		var isCurrentUser: Bool {
-			return party == .liberal
-		}
 		var initials: String {
 			let first = firstName.first.map(String.init) ?? ""
 			let last = lastName.first.map(String.init) ?? ""
