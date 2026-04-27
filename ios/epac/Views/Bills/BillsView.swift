@@ -180,7 +180,7 @@ struct BillsView: View {
             // Track the newest introduction date so the next session knows what's "new".
             if let maxDate = bills.compactMap(\.introducedDate).max() {
                 let current = UserDefaults.standard.object(forKey: "epac.bills.latestSeen") as? Date
-                if current == nil || maxDate > current! {
+                if current.map({ maxDate > $0 }) ?? true {
                     UserDefaults.standard.set(maxDate, forKey: "epac.bills.latestSeen")
                 }
             }
