@@ -484,3 +484,30 @@
 "onboarding.promise.point2" = "Notifications when Parliament debates your %d topic(s)";
 "onboarding.promise.point3" = "No account required. No data sold. No ads.";
 "onboarding.promise.start" = "Start Exploring →";
+
+/* Settings (EPAC-143) */
+"settings.title" = "Settings";
+"settings.done" = "Done";
+
+"settings.location.title" = "My Location";
+"settings.location.riding" = "Riding";
+"settings.location.mp" = "MP";
+"settings.location.change" = "Change postal code";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.hansard" = "New Hansard sittings";
+"settings.notifications.billVotes" = "Vote results on followed bills";
+"settings.notifications.memberActivity" = "Activity from followed MPs";
+"settings.notifications.topicConsultations" = "New consultations on followed topics";
+"settings.notifications.morningBriefing" = "Morning sitting-day briefing";
+
+"settings.followed.bills" = "Followed Bills";
+"settings.followed.members" = "Followed MPs";
+"settings.followed.topics" = "Followed Topics";
+
+"settings.about.title" = "About";
+"settings.about.version" = "Version";
+"settings.about.privacy" = "Privacy Policy";
+"settings.about.dataSources" = "Data Sources";
+"settings.about.github" = "GitHub (open source)";
+"settings.about.feedback" = "Send feedback";

@@ -28,6 +28,7 @@ struct BillNotificationScheduler {
     // MARK: - Stage / status change notification
 
     static func schedule(_ change: BillChangeNotification) {
+        guard NotificationPreferenceStore.shared.billVoteResults else { return }
         let bill = change.bill
         let content = UNMutableNotificationContent()
         content.title = bill.number
@@ -72,6 +73,7 @@ struct BillNotificationScheduler {
 
     /// Schedules a vote-result notification for a followed bill.
     static func scheduleVoteResult(billNumber: String, billTitle: String, yea: Int, nay: Int, mpName: String?, mpVote: String?) {
+        guard NotificationPreferenceStore.shared.billVoteResults else { return }
         let content = UNMutableNotificationContent()
         content.title = billNumber
         content.subtitle = billTitle

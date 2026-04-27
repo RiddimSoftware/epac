@@ -20,6 +20,7 @@ struct TopicNotificationScheduler {
 
     /// Call after new Hansard subjects are added to SwiftData.
     static func checkAndNotify(subjectTitles: [(title: String, date: Date)]) {
+        guard NotificationPreferenceStore.shared.topicConsultations else { return }
         let store = TopicFollowStore.shared
         guard !store.followedIDs.isEmpty else { return }
         for item in subjectTitles {
