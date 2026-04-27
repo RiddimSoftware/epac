@@ -25,15 +25,18 @@ struct SearchView: View {
     @State private var selectedHansard: Hansard?
     @State private var selectedSubject: SubjectOfBusiness?
     @State private var selectedMember: ParliamentMember?
+    // Debounced query — updated 300ms after the user stops typing to avoid
+    // running 6000+ string comparisons on every keystroke.
+    @State private var debouncedQuery = ""
 
     private var results: SearchViewModel.SearchResults {
-        viewModel.results(members: members, votes: votes, bills: bills, hansards: hansards)
+        viewModel.results(members: members, votes: votes, bills: bills, hansards: hansards, query: debouncedQuery)
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isQueryTooShort {
+                if debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines).count < 2 {
                     promptView
                 } else if results.isEmpty {
                     ContentUnavailableView.search(text: viewModel.searchText)
@@ -61,6 +64,15 @@ struct SearchView: View {
         .task {
             if bills.isEmpty {
                 bills = (try? await BillsService.fetchBills()) ?? []
+            }
+        }
+        .task(id: viewModel.searchText) {
+            // 300ms debounce: cancel the task if the user types again before it fires.
+            do {
+                try await Task.sleep(nanoseconds: 300_000_000)
+                debouncedQuery = viewModel.searchText
+            } catch {
+                // Task cancelled by a newer keystroke — do nothing.
             }
         }
         .environmentObject(fetch)

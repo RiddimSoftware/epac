@@ -377,6 +377,7 @@
 
 /* Sénat */
 "senate.mySenators.title" = "Mes sénateurs";
+"senate.mySenators.empty" = "Aucun sénateur trouvé pour cette province.";
 "senate.card.name" = "Sénateur(trice) %@";
 "senate.card.accessibility" = "Sénateur(trice) %@, %@";
 
