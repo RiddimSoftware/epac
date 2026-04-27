@@ -24,10 +24,19 @@ struct BillDetailView: View {
         List {
             // MARK: Summary
             Section {
-                LabeledContent(
-                    NSLocalizedString("bills.detail.number", comment: ""),
-                    value: bill.number
-                )
+                LabeledContent(NSLocalizedString("bills.detail.number", comment: "")) {
+                    HStack(spacing: 6) {
+                        Text(bill.number).foregroundStyle(.primary)
+                        if !bill.billType.shortName.isEmpty {
+                            Text(bill.billType.shortName)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 5).padding(.vertical, 2)
+                                .background(Color.accentColor.opacity(0.8))
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
                 LabeledContent(
                     NSLocalizedString("bills.detail.parliament", comment: ""),
                     value: String(format: NSLocalizedString("bills.detail.parliament.value", comment: ""),

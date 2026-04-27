@@ -177,6 +177,7 @@ struct SittingCalendarView: View {
 					}
 					.disabled(viewModel.currentYear <= 2016)
 					.accessibilityLabel("Previous year")
+					.accessibilityHint(viewModel.currentYear > 2016 ? "Shows \(viewModel.currentYear - 1)" : "Not available before 2016")
 
 					Text(verbatim: "\(viewModel.currentYear)")
 						.font(.headline)
@@ -196,6 +197,7 @@ struct SittingCalendarView: View {
 					}
 					.disabled(viewModel.currentYear >= Calendar.current.dateComponents([.year], from: .now).year!)
 					.accessibilityLabel("Next year")
+					.accessibilityHint("Shows \(viewModel.currentYear + 1)")
 				}
 				.accessibilityElement(children: .contain)
 			}

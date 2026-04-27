@@ -231,6 +231,7 @@
 
 /* Suivi des projets de loi */
 "bills.navTitle" = "Projets de loi";
+"bills.search.prompt" = "Numéro ou titre du projet de loi";
 "bills.browseAll" = "Parcourir les projets de loi";
 "bills.filter" = "Filtrer";
 "bills.filter.all" = "Tous";
