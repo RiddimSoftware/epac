@@ -48,10 +48,10 @@ struct BillDetailView: View {
                     }
                 }
                 if !bill.currentStage.isEmpty {
-                    LabeledContent(
-                        NSLocalizedString("bills.detail.stage", comment: ""),
-                        value: bill.currentStage
-                    )
+                    LabeledContent(NSLocalizedString("bills.detail.stage", comment: "")) {
+                        Text(bill.currentStage)
+                            .explainerTip(for: bill.currentStage)
+                    }
                 }
                 if let introduced = bill.introducedDate {
                     LabeledContent(
@@ -60,10 +60,10 @@ struct BillDetailView: View {
                     )
                 }
                 if !bill.billType.displayName.isEmpty {
-                    LabeledContent(
-                        NSLocalizedString("bills.detail.type", comment: ""),
-                        value: bill.billType.displayName
-                    )
+                    LabeledContent(NSLocalizedString("bills.detail.type", comment: "")) {
+                        Text(bill.billType.displayName)
+                            .explainerTip(for: bill.billType.displayName)
+                    }
                 }
             }
 
@@ -82,7 +82,9 @@ struct BillDetailView: View {
                                 : Color.appNeutral)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(stage.name).font(.subheadline)
+                            Text(stage.name)
+                                .font(.subheadline)
+                                .explainerTip(for: stage.name)
                             if let date = stage.completedDate {
                                 Text(date.formatted(date: .abbreviated, time: .omitted))
                                     .font(.caption2)
@@ -90,7 +92,6 @@ struct BillDetailView: View {
                             }
                         }
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
 
