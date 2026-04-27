@@ -272,6 +272,9 @@
 "bills.stage.senateSecond" = "Senate — Second Reading";
 "bills.stage.senateThird" = "Senate — Third Reading";
 "bills.stage.royalAssent" = "Royal Assent";
+"bills.timeline.completed" = "Completed";
+"bills.timeline.current" = "Current or next stage";
+"bills.timeline.future" = "Future stage";
 
 /* Topic following */
 "topics.navTitle" = "Topics";

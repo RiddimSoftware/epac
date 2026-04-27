@@ -145,11 +145,6 @@ struct BillsService {
             ]
         }
 
-        // Drop trailing incomplete stages to keep the timeline readable,
-        // but always keep at least the first completed stage.
-        let lastCompleted = stages.lastIndex(where: { $0.isCompleted }) ?? 0
-        stages = Array(stages.prefix(lastCompleted + 2))   // show up to one future stage
-
         let currentStage = raw.LatestCompletedMajorStageEn ?? raw.CurrentStatusEn ?? ""
 
         // LEGISinfo detail URL  e.g. https://www.parl.ca/legisinfo/en/bill/45-1/c-5
