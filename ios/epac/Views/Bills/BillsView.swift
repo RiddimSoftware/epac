@@ -17,6 +17,7 @@ struct BillsView: View {
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
+    @State private var newSince: Date? = UserDefaults.standard.object(forKey: "epac.bills.newSince") as? Date
     @Environment(NavigationRouter.self) private var router
 
     private var filtered: [Bill] {
@@ -65,7 +66,7 @@ struct BillsView: View {
             } else {
                 List(filtered) { bill in
                     NavigationLink(destination: BillDetailView(bill: bill)) {
-                        BillRow(bill: bill)
+                        BillRow(bill: bill, newSince: newSince)
                     }
                     .contextMenu {
                         Button {
@@ -176,6 +177,13 @@ struct BillsView: View {
         do {
             bills = try await BillsService.fetchBills()
             UserDefaults.standard.set(Date(), forKey: "epac.sync.bills")
+            // Track the newest introduction date so the next session knows what's "new".
+            if let maxDate = bills.compactMap(\.introducedDate).max() {
+                let current = UserDefaults.standard.object(forKey: "epac.bills.latestSeen") as? Date
+                if current == nil || maxDate > current! {
+                    UserDefaults.standard.set(maxDate, forKey: "epac.bills.latestSeen")
+                }
+            }
             // Detect stage changes for followed bills and schedule notifications
             let store = BillFollowStore.shared
             let changes = store.detectChanges(in: bills)
@@ -211,6 +219,12 @@ enum BillTypeGroup: Equatable {
 
 struct BillRow: View {
     let bill: Bill
+    var newSince: Date? = nil
+
+    private var isNew: Bool {
+        guard let newSince, let introduced = bill.introducedDate else { return false }
+        return introduced > newSince
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -218,6 +232,11 @@ struct BillRow: View {
                 Text(bill.number)
                     .font(.caption.monospacedDigit())
                     .fontWeight(.bold)
+                if isNew {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 6))
+                        .foregroundStyle(.tint)
+                }
                 BillStatusBadge(status: bill.status)
                 Spacer()
                 if !bill.billType.shortName.isEmpty {
@@ -247,7 +266,9 @@ struct BillRow: View {
     }
 
     private var billAccessibilityLabel: String {
-        var parts = [bill.number, bill.status.displayName]
+        var parts: [String] = []
+        if isNew { parts.append(NSLocalizedString("bill.new.accessibility", comment: "")) }
+        parts += [bill.number, bill.status.displayName]
         if !bill.title.isEmpty { parts.append(bill.title) }
         if !bill.sponsorName.isEmpty { parts.append(bill.sponsorName) }
         if !bill.currentStage.isEmpty && bill.currentStage != bill.status.displayName {

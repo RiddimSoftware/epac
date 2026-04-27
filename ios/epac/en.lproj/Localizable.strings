@@ -460,6 +460,8 @@
 
 /* Contextual menus — bill rows (EPAC-170) */
 "bill.contextMenu.seeVotes" = "See Votes on This Bill";
+/* New badge accessibility label (EPAC-381) */
+"bill.new.accessibility" = "New";
 
 /* Onboarding (EPAC-296) */
 "onboarding.skip" = "Skip";
