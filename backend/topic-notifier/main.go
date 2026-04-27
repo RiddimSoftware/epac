@@ -6,15 +6,17 @@
 // all subscribed devices whose granularity preferences are satisfied.
 //
 // Schedule the Lambda via:
-//   cd backend && make schedule-lambda SERVICE=topic-notifier TIME=0200
+//
+//	cd backend && make schedule-lambda SERVICE=topic-notifier TIME=0200
 //
 // Required environment variables:
-//   DATABASE_URL     - PostgreSQL connection string
-//   APNS_KEY_ID      - 10-char key ID from App Store Connect → Keys
-//   APNS_TEAM_ID     - 10-char Apple Developer team ID
-//   APNS_PRIVATE_KEY - PEM-encoded ECDSA p8 private key (the .p8 file contents)
-//   APNS_BUNDLE_ID   - App bundle ID: net.dinglebox.cabinetdoor
-//   APNS_PRODUCTION  - "true" for prod APNs; omit or "false" for sandbox
+//
+//	DATABASE_URL     - PostgreSQL connection string
+//	APNS_KEY_ID      - 10-char key ID from App Store Connect → Keys
+//	APNS_TEAM_ID     - 10-char Apple Developer team ID
+//	APNS_PRIVATE_KEY - PEM-encoded ECDSA p8 private key (the .p8 file contents)
+//	APNS_BUNDLE_ID   - App bundle ID: net.dinglebox.cabinetdoor
+//	APNS_PRODUCTION  - "true" for prod APNs; omit or "false" for sandbox
 package main
 
 import (
@@ -34,6 +36,7 @@ import (
 	"strings"
 	"time"
 
+	"epac/observability"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
@@ -434,5 +437,5 @@ func fixedWidthBytes(r, s *big.Int) []byte {
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(observability.WrapEvent("topic-notifier", HandleRequest))
 }

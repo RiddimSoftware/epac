@@ -18,20 +18,21 @@ import (
 	"strings"
 	"time"
 
+	"epac/observability"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
 
 type SpeechEntry struct {
-	InterventionId  string  `json:"id"`
-	SittingDate     *string `json:"sitting_date,omitempty"`
-	ParliamentNum   *int    `json:"parliament_num,omitempty"`
-	SessionNum      *int    `json:"session_num,omitempty"`
-	SubjectTitle    *string `json:"subject_title,omitempty"`
-	Preview         string  `json:"preview"`
-	WordCount       *int    `json:"word_count,omitempty"`
-	Filename        string  `json:"filename"`
+	InterventionId string  `json:"id"`
+	SittingDate    *string `json:"sitting_date,omitempty"`
+	ParliamentNum  *int    `json:"parliament_num,omitempty"`
+	SessionNum     *int    `json:"session_num,omitempty"`
+	SubjectTitle   *string `json:"subject_title,omitempty"`
+	Preview        string  `json:"preview"`
+	WordCount      *int    `json:"word_count,omitempty"`
+	Filename       string  `json:"filename"`
 }
 
 type MemberStats struct {
@@ -237,5 +238,5 @@ func jsonError(status int, msg string) events.APIGatewayProxyResponse {
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(observability.WrapAPIGateway("member-speeches", HandleRequest))
 }

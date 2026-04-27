@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"epac/observability"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
@@ -168,5 +169,5 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(observability.WrapAPIGateway("search", HandleRequest))
 }
