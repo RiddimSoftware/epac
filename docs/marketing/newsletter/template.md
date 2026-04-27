@@ -79,6 +79,6 @@ Source: [Votes](https://www.ourcommons.ca/members/en/votes)
 
 ---
 
-*You're receiving this because you signed up at epac.ca. [Unsubscribe](MAILCHIMP_UNSUBSCRIBE_URL) · [Privacy policy](https://epac.riddimsoftware.com/privacy.html)*
+*You're receiving this because you signed up at epac.riddimsoftware.com. [Unsubscribe](MAILCHIMP_UNSUBSCRIBE_URL) · [Privacy policy](https://epac.riddimsoftware.com/privacy.html)*
 
 *Data sourced from Parliament of Canada, Elections Canada, and the Office of the Parliamentary Budget Officer. epac is not affiliated with or endorsed by any government body.*
