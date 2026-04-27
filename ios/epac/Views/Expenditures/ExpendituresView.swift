@@ -94,6 +94,10 @@ struct ExpendituresView: View {
                             Image(systemName: "building.2.crop.circle")
                         }
                         .accessibilityLabel("Federal Project Costs")
+                        NavigationLink(destination: FederalFinancesView()) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                        }
+                        .accessibilityLabel("Federal Finances")
                         sortSelector
                         Button {
                             item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))

@@ -159,6 +159,17 @@ struct DataSource {
         )
     }
 
+    static func fiscalMonitor(lastSync: Date? = nil) -> DataSource {
+        DataSource(
+            name: "Finance Canada",
+            description: "The Fiscal Monitor is the Department of Finance Canada's monthly statement of federal revenues, expenses, and the budgetary balance.",
+            url: URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor.html")!,
+            lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.fiscalMonitor") as? Date,
+            vintage: nil,
+            stalenessThreshold: 86400 * 45
+        )
+    }
+
     static var lobbyist: DataSource {
         DataSource(
             name: "Commissioner of Lobbying",

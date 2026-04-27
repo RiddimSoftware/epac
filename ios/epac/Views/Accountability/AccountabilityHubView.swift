@@ -33,6 +33,9 @@ struct AccountabilityHubView: View {
 					NavigationLink(destination: FederalProjectCostView()) {
 						Label(NSLocalizedString("accountability.projectCosts", comment: ""), systemImage: "chart.bar.doc.horizontal.fill")
 					}
+					NavigationLink(destination: FederalFinancesView()) {
+						Label("Federal Finances", systemImage: "chart.line.uptrend.xyaxis")
+					}
 				}
 			}
 			.listStyle(.insetGrouped)

@@ -25,6 +25,7 @@ typealias ContractExpenditure = SchemaV5.ContractExpenditure
 typealias SummaryExpenditure = SchemaV5.SummaryExpenditure
 typealias RecordedVote = SchemaV5.RecordedVote
 typealias MemberVote = SchemaV5.MemberVote
+typealias FiscalMonitorEntry = SchemaV5.FiscalMonitorEntry
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -690,7 +691,8 @@ enum SchemaV5: VersionedSchema {
 			HospitalityExpenditure.self,
 			ContractExpenditure.self,
 			RecordedVote.self,
-			MemberVote.self
+			MemberVote.self,
+			FiscalMonitorEntry.self
 		]
 	}
 
@@ -1041,6 +1043,60 @@ enum SchemaV5: VersionedSchema {
 		var vote: SchemaV5.RecordedVote?
 		init(voteID: Int, memberID: Int, recordedVote: String) {
 			self.voteID = voteID; self.memberID = memberID; self.recordedVote = recordedVote
+		}
+	}
+
+	@Model
+	final class FiscalMonitorEntry: Identifiable {
+		@Attribute(.unique) var id: String
+		var fiscalYearStart: Int
+		var month: Int
+		var monthName: String
+		var periodDate: Date
+		var publicationDate: Date
+		var revenueMillions: Double
+		var programExpenseMillions: Double
+		var publicDebtChargesMillions: Double
+		var netActuarialLossesMillions: Double
+		var totalSpendingMillions: Double
+		var budgetaryBalanceMillions: Double
+		var yearToDateBudgetaryBalanceMillions: Double
+		var annualBudgetProjectionMillions: Double?
+		var sourceTitle: String
+		var sourceURL: String
+
+		init(
+			fiscalYearStart: Int,
+			month: Int,
+			monthName: String,
+			periodDate: Date,
+			publicationDate: Date,
+			revenueMillions: Double,
+			programExpenseMillions: Double,
+			publicDebtChargesMillions: Double,
+			netActuarialLossesMillions: Double,
+			budgetaryBalanceMillions: Double,
+			yearToDateBudgetaryBalanceMillions: Double,
+			annualBudgetProjectionMillions: Double?,
+			sourceTitle: String,
+			sourceURL: String
+		) {
+			self.id = "\(fiscalYearStart)-\(String(format: "%02d", month))"
+			self.fiscalYearStart = fiscalYearStart
+			self.month = month
+			self.monthName = monthName
+			self.periodDate = periodDate
+			self.publicationDate = publicationDate
+			self.revenueMillions = revenueMillions
+			self.programExpenseMillions = programExpenseMillions
+			self.publicDebtChargesMillions = publicDebtChargesMillions
+			self.netActuarialLossesMillions = netActuarialLossesMillions
+			self.totalSpendingMillions = programExpenseMillions + publicDebtChargesMillions + netActuarialLossesMillions
+			self.budgetaryBalanceMillions = budgetaryBalanceMillions
+			self.yearToDateBudgetaryBalanceMillions = yearToDateBudgetaryBalanceMillions
+			self.annualBudgetProjectionMillions = annualBudgetProjectionMillions
+			self.sourceTitle = sourceTitle
+			self.sourceURL = sourceURL
 		}
 	}
 
