@@ -17,6 +17,7 @@ struct ContentView: View {
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
+	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
 	@Query private var members: [ParliamentMember]
 	@Query private var constituencies: [Constituency]
 
@@ -40,6 +41,9 @@ struct ContentView: View {
 		.task {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, fetch: fetch)
+		}
+		.sheet(isPresented: $showMyMPSetup) {
+			PostalCodeSetupView { showMyMPSetup = false }
 		}
 	}
 
@@ -69,7 +73,7 @@ struct ContentView: View {
 				.tabItem { Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName) }
 				.tag(AppTab.sittingCalendar)
 
-			NavigationStack { MembersView() }
+			membersStack
 				.tabItem { Label(AppTab.members.title, systemImage: AppTab.members.systemImageName) }
 				.tag(AppTab.members)
 
@@ -107,13 +111,31 @@ struct ContentView: View {
 			ZStack {
 				calendarStack
 					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
-				NavigationStack { MembersView() }
+				membersStack
 					.opacity(router.selectedTab == .members ? 1 : 0)
 				ExpendituresView()
 					.opacity(router.selectedTab == .expenditures ? 1 : 0)
 			}
 		}
 		.safeAreaInset(edge: .bottom) { offlineBanner }
+	}
+
+	// MARK: - Members navigation stack
+
+	private var membersStack: some View {
+		NavigationStack {
+			MembersView()
+				.toolbar {
+					ToolbarItem(placement: .topBarTrailing) {
+						Button {
+							showMyMPSetup = true
+						} label: {
+							Label(NSLocalizedString("riding.myMP.toolbarLabel", comment: ""), systemImage: "mappin.and.ellipse")
+						}
+						.accessibilityLabel(NSLocalizedString("riding.setup.navTitle", comment: ""))
+					}
+				}
+		}
 	}
 
 	// MARK: - Shared calendar navigation stack
