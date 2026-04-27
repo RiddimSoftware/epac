@@ -6,6 +6,7 @@
 import Observation
 import SwiftUI
 import ActivityView
+import Sentry
 
 @MainActor
 @Observable
@@ -71,6 +72,7 @@ class ExpenditureDetailViewModel {
 			try await fetch.downloadDetailedExpenditures(identifier: expenditure.id)
 		} catch {
 			Log.error("Failed to download details: \(error.localizedDescription)")
+			SentrySDK.capture(error: error)
 		}
 		isLoading = false
 	}

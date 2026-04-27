@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import Kanna
 import SWXMLHash
+import Sentry
 
 @ModelActor
 actor Fetch: ObservableObject {
@@ -83,11 +84,18 @@ actor Fetch: ObservableObject {
 	
 	func downloadHansard(_ date: Date) async throws {
 		Log.debug("Fetch.downloadHansard(date: \(date))")
-		let xml = try await downloadXML(forDate: date)
-		let hansard = Hansard(xml: xml)
-		modelContext.insert(hansard)
-		try modelContext.save()
-		UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
+		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
+		do {
+			let xml = try await downloadXML(forDate: date)
+			let hansard = Hansard(xml: xml)
+			modelContext.insert(hansard)
+			try modelContext.save()
+			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
+			transaction.finish(status: .ok)
+		} catch {
+			transaction.finish(status: .internalError)
+			throw error
+		}
 	}
 
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {
@@ -603,51 +611,58 @@ actor Fetch: ObservableObject {
 	func downloadVotingRecords(parliament: Int = 44) async throws {
 		guard (try modelContext.fetchCount(FetchDescriptor<RecordedVote>())) == 0 else { return }
 
-		var page = 1
-		var hasMore = true
-		let isoFormatter = ISO8601DateFormatter()
-		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-		while hasMore {
-			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-			components.path = "/ocd/votes/"
-			components.queryItems = [
-				URLQueryItem(name: "parliament", value: String(parliament)),
-				URLQueryItem(name: "pageSize", value: "200"),
-				URLQueryItem(name: "page", value: String(page)),
-				URLQueryItem(name: "format", value: "json")
-			]
-			guard let url = components.url else { break }
-			let (data, response) = try await NetworkService.shared.data(from: url)
-			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-				  let items = json["items"] as? [[String: Any]] else { break }
-			hasMore = !items.isEmpty && items.count == 200
-			page += 1
-			for item in items {
-				guard let id = item["id"] as? Int else { continue }
-				let dateStr = item["date"] as? String ?? ""
-				let date = isoFormatter.date(from: dateStr) ?? Date()
-				let descObj = item["description"] as? [String: String]
-				let desc = descObj?["en"] ?? item["description"] as? String ?? ""
-				let resultObj = item["result"] as? [String: String]
-				let result = resultObj?["en"] ?? item["result"] as? String ?? ""
-				let vote = RecordedVote(
-					voteID: id,
-					parliament: item["parliament"] as? Int ?? parliament,
-					session: item["session"] as? Int ?? 0,
-					number: item["number"] as? Int ?? 0,
-					date: date,
-					descriptionEn: desc,
-					billNumberCode: item["billNumberCode"] as? String ?? "",
-					yea: item["yea"] as? Int ?? 0,
-					nay: item["nay"] as? Int ?? 0,
-					paired: item["paired"] as? Int ?? 0,
-					resultEn: result
-				)
-				modelContext.insert(vote)
+		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
+		do {
+			var page = 1
+			var hasMore = true
+			let isoFormatter = ISO8601DateFormatter()
+			isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+			while hasMore {
+				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+				components.path = "/ocd/votes/"
+				components.queryItems = [
+					URLQueryItem(name: "parliament", value: String(parliament)),
+					URLQueryItem(name: "pageSize", value: "200"),
+					URLQueryItem(name: "page", value: String(page)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				guard let url = components.url else { break }
+				let (data, response) = try await NetworkService.shared.data(from: url)
+				guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+					  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+					  let items = json["items"] as? [[String: Any]] else { break }
+				hasMore = !items.isEmpty && items.count == 200
+				page += 1
+				for item in items {
+					guard let id = item["id"] as? Int else { continue }
+					let dateStr = item["date"] as? String ?? ""
+					let date = isoFormatter.date(from: dateStr) ?? Date()
+					let descObj = item["description"] as? [String: String]
+					let desc = descObj?["en"] ?? item["description"] as? String ?? ""
+					let resultObj = item["result"] as? [String: String]
+					let result = resultObj?["en"] ?? item["result"] as? String ?? ""
+					let vote = RecordedVote(
+						voteID: id,
+						parliament: item["parliament"] as? Int ?? parliament,
+						session: item["session"] as? Int ?? 0,
+						number: item["number"] as? Int ?? 0,
+						date: date,
+						descriptionEn: desc,
+						billNumberCode: item["billNumberCode"] as? String ?? "",
+						yea: item["yea"] as? Int ?? 0,
+						nay: item["nay"] as? Int ?? 0,
+						paired: item["paired"] as? Int ?? 0,
+						resultEn: result
+					)
+					modelContext.insert(vote)
+				}
+				try modelContext.save()
+				UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
 			}
-			try modelContext.save()
-			UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
+			transaction.finish(status: .ok)
+		} catch {
+			transaction.finish(status: .internalError)
+			throw error
 		}
 	}
 

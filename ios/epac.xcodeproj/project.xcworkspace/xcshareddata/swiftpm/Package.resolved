@@ -1,5 +1,5 @@
 {
-  "originHash" : "fe5601ced885d9227b3cf634371b7507cb5dd9fa93b58630803433d7b4900fad",
+  "originHash" : "7afabbaf3beda7ef86c5f3069d7f61f039cd55914dfea7ac3e74c045d5bec55f",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -89,6 +89,15 @@
       "state" : {
         "revision" : "fd71c0b560aa79eee1b87f73ce93fac5576a01df",
         "version" : "3.2.4"
+      }
+    },
+    {
+      "identity" : "sentry-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-swift.git",
+      "state" : {
+        "revision" : "cf44aa8cb4147f39e698c1f28be0b6b2c89f79d2",
+        "version" : "8.58.2"
       }
     },
     {

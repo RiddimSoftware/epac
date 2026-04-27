@@ -7,6 +7,7 @@ import Foundation
 import Observation
 import SwiftData
 import HorizonCalendar
+import Sentry
 
 @MainActor
 @Observable
@@ -37,6 +38,7 @@ class SittingCalendarViewModel {
 			}.forEach { futureDates.insert($0) }
 		} catch {
 			Log.debug("Failed to fetch SittingCalendar count")
+			SentrySDK.capture(error: error)
 			loadFailed = true
 		}
 	}

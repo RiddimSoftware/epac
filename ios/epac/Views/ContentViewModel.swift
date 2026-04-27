@@ -6,6 +6,7 @@
 import Observation
 import SwiftUI
 import SwiftData
+import Sentry
 
 @MainActor
 @Observable
@@ -53,6 +54,7 @@ class ContentViewModel {
 					}
 				} catch {
 					Log.debug("Failed to fetch hansard \(date)")
+					SentrySDK.capture(error: error)
 					nonSittingDate = date
 				}
 			}
@@ -117,6 +119,7 @@ class ContentViewModel {
 					}
 				} catch {
 					Log.debug("Failed to fetch hansard \(error.localizedDescription)")
+					SentrySDK.capture(error: error)
 				}
 			}
 		}
@@ -134,8 +137,8 @@ class ContentViewModel {
 		async let constituenciesDownload: Void = needsConstituencies ? fetch.downloadConstituencies() : ()
 		async let votesDownload: Void = fetch.downloadVotingRecords()
 
-		do { try await membersDownload } catch { Log.debug("Failed to download members: \(error.localizedDescription)") }
-		do { try await constituenciesDownload } catch { Log.debug("Failed to download constituencies: \(error.localizedDescription)") }
-		do { try await votesDownload } catch { Log.debug("Failed to download voting records: \(error.localizedDescription)") }
+		do { try await membersDownload } catch { Log.debug("Failed to download members: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
+		do { try await constituenciesDownload } catch { Log.debug("Failed to download constituencies: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
+		do { try await votesDownload } catch { Log.debug("Failed to download voting records: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
 	}
 }
