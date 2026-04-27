@@ -8,6 +8,8 @@ Brand and copy decisions live in `docs/brand/brand-brief-v1.md`. Treat that brie
 
 Search backend decisions live in `docs/architecture/search-index-choice-epac452.md`. Use Postgres `tsvector` for v1 search and treat any Meilisearch work as a later migration after canonical records and ranking needs are proven.
 
+Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
+
 ---
 
 ## Architecture
