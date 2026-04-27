@@ -13,6 +13,13 @@
 "Search debates" = "Search debates";
 "Search debate topics" = "Search debate topics";
 "Searches across all sitting days you've opened." = "Searches across all sitting days you've opened.";
+"search.prompt" = "Members, bills, votes, debates";
+"search.prompt.title" = "Search everything";
+"search.prompt.description" = "Search MPs by name or riding, bills by number, votes, and debate topics.";
+"search.section.members" = "Members";
+"search.section.votes" = "Votes";
+"search.section.bills" = "Bills";
+"search.section.debates" = "Debates";
 
 /* Sitting calendar view */
 "House of Commons Sitting Calendar" = "House of Commons Sitting Calendar";

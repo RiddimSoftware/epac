@@ -27,6 +27,11 @@ class SearchViewModel {
         let vote: RecordedVote
     }
 
+    struct BillResult: Identifiable {
+        let id: String  // bill number
+        let bill: Bill
+    }
+
     struct DebateResult: Identifiable {
         let id: String  // subject hansardID
         let hansardDate: Date
@@ -37,9 +42,10 @@ class SearchViewModel {
     struct SearchResults {
         var members: [MemberResult] = []
         var votes: [VoteResult] = []
+        var bills: [BillResult] = []
         var debates: [DebateResult] = []
 
-        var isEmpty: Bool { members.isEmpty && votes.isEmpty && debates.isEmpty }
+        var isEmpty: Bool { members.isEmpty && votes.isEmpty && bills.isEmpty && debates.isEmpty }
     }
 
     var isQueryTooShort: Bool {
@@ -49,6 +55,7 @@ class SearchViewModel {
     func results(
         members: [ParliamentMember],
         votes: [RecordedVote],
+        bills: [Bill],
         hansards: [Hansard]
     ) -> SearchResults {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -72,6 +79,15 @@ class SearchViewModel {
                 || vote.billNumberCode.localizedCaseInsensitiveContains(q) {
                 out.votes.append(VoteResult(id: vote.voteID, vote: vote))
                 if out.votes.count >= Self.maxPerSection { break }
+            }
+        }
+
+        // Bills: match bill number or title
+        for bill in bills {
+            if bill.number.localizedCaseInsensitiveContains(q)
+                || bill.title.localizedCaseInsensitiveContains(q) {
+                out.bills.append(BillResult(id: bill.number, bill: bill))
+                if out.bills.count >= 10 { break }
             }
         }
 
