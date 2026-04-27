@@ -99,3 +99,9 @@
 "Party" = "Parti";
 "Province" = "Province";
 "Status" = "Statut";
+
+/* MP Contact */
+"contact.email" = "Courriel";
+"contact.hillOffice" = "Bureau sur la Colline";
+"contact.constituencyPhone" = "Bureau de circonscription";
+"contact.constituencyAddress" = "Adresse du bureau de circonscription";

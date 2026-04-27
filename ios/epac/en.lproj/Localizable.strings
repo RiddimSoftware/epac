@@ -99,3 +99,9 @@
 "Party" = "Party";
 "Province" = "Province";
 "Status" = "Status";
+
+/* MP Contact */
+"contact.email" = "Email";
+"contact.hillOffice" = "Hill Office";
+"contact.constituencyPhone" = "Constituency Office";
+"contact.constituencyAddress" = "Constituency Address";

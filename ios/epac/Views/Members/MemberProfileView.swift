@@ -11,6 +11,7 @@ import SwiftData
 struct MemberProfileView: View {
 	let member: ParliamentMember
 
+	@EnvironmentObject private var fetch: Fetch
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
 	@State private var showingComparePicker = false
 	@State private var comparisonTarget: ParliamentMember?
@@ -19,6 +20,35 @@ struct MemberProfileView: View {
 
 	init(member: ParliamentMember) {
 		self.member = member
+	}
+
+	private var contactSection: some View {
+		VStack(alignment: .leading, spacing: 10) {
+			if let email = member.email {
+				Button { UIApplication.shared.open(URL(string: "mailto:\(email)")!) } label: {
+					ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
+				}
+				.foregroundStyle(.primary)
+			}
+			if let phone = member.hillPhone {
+				Button { UIApplication.shared.open(URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })")!) } label: {
+					ProfileDetailRow(icon: "phone.fill", label: NSLocalizedString("contact.hillOffice", comment: ""), value: phone)
+				}
+				.foregroundStyle(.primary)
+			}
+			if let phone = member.constituencyPhone {
+				Button { UIApplication.shared.open(URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })")!) } label: {
+					ProfileDetailRow(icon: "phone.fill", label: NSLocalizedString("contact.constituencyPhone", comment: ""), value: phone)
+				}
+				.foregroundStyle(.primary)
+			}
+			if let address = member.constituencyAddress {
+				ProfileDetailRow(icon: "building.2.fill", label: NSLocalizedString("contact.constituencyAddress", comment: ""), value: address)
+			}
+		}
+		.padding()
+		.background(Color(.secondarySystemBackground))
+		.cornerRadius(12)
 	}
 
 	private var pickableMembers: [ParliamentMember] {
@@ -46,8 +76,15 @@ struct MemberProfileView: View {
 				.padding()
 				.background(Color(.secondarySystemBackground))
 				.cornerRadius(12)
+
+				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
+					contactSection
+				}
 			}
 			.padding()
+		}
+		.task(id: member.memberID) {
+			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
 		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
