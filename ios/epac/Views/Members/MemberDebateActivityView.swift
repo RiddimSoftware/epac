@@ -28,41 +28,53 @@ struct MemberDebateActivityView: View {
 
 	// MARK: - Derived stats
 
-	/// Groups messages by calendar day (UTC), most recent first.
-	private var byDay: [(date: Date, count: Int)] {
+	/// Single-pass computation: builds the by-day list and locates the most-active
+	/// day in the same dictionary traversal, avoiding a second `.max` pass.
+	private struct DayStats {
+		let byDay: [(date: Date, count: Int)]
+		let mostActiveDay: (date: Date, count: Int)?
+	}
+
+	private var dayStats: DayStats {
 		var counts: [Date: Int] = [:]
 		let cal = Calendar.current
 		for msg in messages {
 			let day = cal.startOfDay(for: msg.timestamp)
 			counts[day, default: 0] += 1
 		}
-		return counts
-			.sorted { $0.key > $1.key }
-			.map { (date: $0.key, count: $0.value) }
+		var maxCount = 0
+		var maxDate: Date?
+		let sorted = counts.sorted { $0.key > $1.key }.map { entry -> (date: Date, count: Int) in
+			if entry.value > maxCount { maxCount = entry.value; maxDate = entry.key }
+			return (date: entry.key, count: entry.value)
+		}
+		let best = maxDate.map { (date: $0, count: maxCount) }
+		return DayStats(byDay: sorted, mostActiveDay: best)
 	}
 
-	private var mostActiveDay: (date: Date, count: Int)? { byDay.max(by: { $0.count < $1.count }) }
-
 	var body: some View {
+		let stats = dayStats
 		Group {
 			if messages.isEmpty {
 				ContentUnavailableView {
-					Label("No debate records", systemImage: "text.bubble")
+					Label(NSLocalizedString("debate.empty.title", comment: ""), systemImage: "text.bubble")
 				} description: {
-					Text("Open sitting days to load debate transcripts for this member.")
+					Text(NSLocalizedString("debate.empty.description", comment: ""))
 				}
 			} else {
 				List {
 					Section {
-						summaryCard
+						summaryCard(stats: stats)
 					}
-					Section("Recent Sitting Days") {
-						ForEach(byDay.prefix(50), id: \.date) { entry in
+					Section(NSLocalizedString("debate.recentSittingDays", comment: "")) {
+						ForEach(stats.byDay.prefix(50), id: \.date) { entry in
 							HStack {
 								VStack(alignment: .leading, spacing: 2) {
 									Text(entry.date.formatted(date: .long, time: .omitted))
 										.font(.subheadline)
-									Text("\(entry.count) contribution\(entry.count == 1 ? "" : "s")")
+									Text(String.localizedStringWithFormat(
+										NSLocalizedString("debate.contributionCount", comment: ""),
+										entry.count))
 										.font(.caption)
 										.foregroundStyle(.secondary)
 								}
@@ -77,26 +89,26 @@ struct MemberDebateActivityView: View {
 				.listStyle(.insetGrouped)
 			}
 		}
-		.navigationTitle("Debate Activity")
+		.navigationTitle(NSLocalizedString("debate.navTitle", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)
 	}
 
 	// MARK: - Summary card
 
-	private var summaryCard: some View {
+	private func summaryCard(stats: DayStats) -> some View {
 		VStack(spacing: 12) {
 			HStack(spacing: 0) {
-				StatPill(value: messages.count, label: "Contributions")
-				StatPill(value: byDay.count, label: "Sitting Days")
-				if let best = mostActiveDay {
-					StatPill(value: best.count, label: "Best Day")
+				StatPill(value: messages.count, label: NSLocalizedString("debate.stat.contributions", comment: ""))
+				StatPill(value: stats.byDay.count, label: NSLocalizedString("debate.stat.sittingDays", comment: ""))
+				if let best = stats.mostActiveDay {
+					StatPill(value: best.count, label: NSLocalizedString("debate.stat.bestDay", comment: ""))
 				}
 			}
 			.clipShape(RoundedRectangle(cornerRadius: 8))
 
-			if let best = mostActiveDay {
+			if let best = stats.mostActiveDay {
 				HStack {
-					Text("Most active:")
+					Text(NSLocalizedString("debate.mostActive", comment: ""))
 						.font(.caption)
 						.foregroundStyle(.secondary)
 					Text(best.date.formatted(date: .abbreviated, time: .omitted))
