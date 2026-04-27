@@ -61,6 +61,8 @@ struct RidingStatisticsView: View {
 				cmhcRow
 			}
 
+			healthSection
+
 			Section {
 				VStack(alignment: .leading, spacing: 6) {
 					Text("About this data")
@@ -142,6 +144,36 @@ struct RidingStatisticsView: View {
 				Image(systemName: "arrow.up.right.square")
 					.font(.caption)
 					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Health section
+
+	@ViewBuilder
+	private var healthSection: some View {
+		let waitTimes = CIHIWaitTimeDatabase.waitTimes(for: member.province.shortCode)
+		if !waitTimes.isEmpty {
+			Section {
+				ForEach(waitTimes, id: \.procedure) { wt in
+					HStack {
+						Text(wt.procedure).font(.subheadline)
+						Spacer()
+						VStack(alignment: .trailing, spacing: 2) {
+							Text("\(Int(wt.medianWeeks))w median")
+								.font(.caption.monospacedDigit())
+							Text("\(Int(wt.p90Weeks))w (90th)")
+								.font(.caption2).foregroundStyle(.secondary)
+						}
+					}
+					.padding(.vertical, 2)
+				}
+				Link(NSLocalizedString("cihi.viewSource", comment: ""), destination: CIHIWaitTimeDatabase.sourceURL)
+					.font(.caption2)
+			} header: {
+				Text(String(format: NSLocalizedString("cihi.sectionTitle", comment: ""), CIHIWaitTimeDatabase.dataYear))
+			} footer: {
+				Text(CIHIWaitTimeDatabase.citation).font(.caption2).foregroundStyle(.secondary)
 			}
 		}
 	}

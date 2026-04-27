@@ -23,6 +23,7 @@ struct HomeFeedView: View {
     @State private var recentSubjects: [SubjectOfBusiness] = []
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
+    @State private var provinceAbbrev: String = ""
 
     var body: some View {
         NavigationStack {
@@ -37,6 +38,7 @@ struct HomeFeedView: View {
                 if !topicStore.followedIDs.isEmpty {
                     followedTopicsSection
                 }
+                healthcareContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
                 }
@@ -173,6 +175,34 @@ struct HomeFeedView: View {
         }
     }
 
+    // MARK: - Healthcare contextual card (shown when "healthcare" topic followed + province known)
+
+    @ViewBuilder
+    private var healthcareContextCard: some View {
+        if topicStore.isFollowing("healthcare") && !provinceAbbrev.isEmpty {
+            let healthData = CIHIWaitTimeDatabase.waitTimes(for: provinceAbbrev)
+            if !healthData.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(String(format: NSLocalizedString("cihi.contextCard.title", comment: ""), provinceAbbrev))
+                            .font(.subheadline.weight(.semibold))
+                        ForEach(healthData.prefix(2), id: \.procedure) { wt in
+                            HStack {
+                                Text(wt.procedure).font(.caption)
+                                Spacer()
+                                Text("\(Int(wt.medianWeeks))w median").font(.caption.monospacedDigit())
+                            }
+                        }
+                        Link(NSLocalizedString("cihi.viewSource", comment: ""), destination: CIHIWaitTimeDatabase.sourceURL)
+                            .font(.caption2)
+                    }
+                } header: {
+                    Text(NSLocalizedString("cihi.sectionTitle.short", comment: ""))
+                }
+            }
+        }
+    }
+
     // MARK: - Section 5: Recent debates
 
     private var recentDebatesSection: some View {
@@ -203,6 +233,15 @@ struct HomeFeedView: View {
             myMPActivityCount = msgs.filter {
                 $0.lastName.localizedCaseInsensitiveContains(lastName)
             }.count
+
+            // Resolve province for healthcare contextual card
+            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+            if let mp = allMembers.first(where: {
+                $0.name.localizedCaseInsensitiveContains(name) ||
+                name.localizedCaseInsensitiveContains($0.lastName)
+            }) {
+                provinceAbbrev = mp.province.shortCode
+            }
         }
 
         // Section 5: Recent subjects from latest Hansard
