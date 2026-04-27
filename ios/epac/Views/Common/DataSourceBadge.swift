@@ -54,10 +54,9 @@ struct DataSourceBadge: View {
     }
 
     private var badgeColor: Color {
-        guard let age = ageSeconds, source.stalenessThreshold != nil else {
+        guard let age = ageSeconds, let threshold = source.stalenessThreshold else {
             return Color(UIColor.systemGray)
         }
-        let threshold = source.stalenessThreshold!
         if age > threshold * 3 { return Color(UIColor.systemRed) }
         if age > threshold     { return Color(UIColor.systemOrange) }
         return Color(UIColor.systemGray)
