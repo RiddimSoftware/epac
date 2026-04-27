@@ -323,9 +323,13 @@ struct SpeechEntryRow: View {
     private func findHansard(for date: Date) -> Hansard? {
         let cal = Calendar.current
         let target = cal.startOfDay(for: date)
-        let descriptor = FetchDescriptor<Hansard>()
-        guard let all = try? modelContext.fetch(descriptor) else { return nil }
-        return all.first { cal.startOfDay(for: $0.date) == target }
+        guard let nextDay = cal.date(byAdding: .day, value: 1, to: target) else { return nil }
+        let descriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { hansard in
+                hansard.date >= target && hansard.date < nextDay
+            }
+        )
+        return try? modelContext.fetch(descriptor).first
     }
 
     private func findSubject(in hansard: Hansard, interventionId: String) -> SubjectOfBusiness? {
@@ -341,4 +345,3 @@ struct SpeechEntryRow: View {
         return nil
     }
 }
-
