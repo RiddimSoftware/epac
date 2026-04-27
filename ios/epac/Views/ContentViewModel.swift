@@ -84,26 +84,19 @@ class ContentViewModel {
 	}
 
 	func downloadInitialData(members: [ParliamentMember], constituencies: [Constituency], modelContext: ModelContext, fetch: Fetch) async {
-		if members.isEmpty {
-			do {
-				try await fetch.downloadMembers()
-			} catch {
-				Log.debug("Failed to download members \(error.localizedDescription)")
-			}
-		}
-		if constituencies.isEmpty {
-			do {
-				try await fetch.downloadConstituencies()
-			} catch {
-				Log.debug("Failed to download constituencies \(error.localizedDescription)")
-			}
-		}
-		if (try? modelContext.fetch(FetchDescriptor<RecordedVote>()))?.isEmpty == true {
-			do {
-				try await fetch.downloadVotingRecords()
-			} catch {
-				Log.debug("Failed to download voting records: \(error.localizedDescription)")
-			}
-		}
+		// Snapshot Sendable Bools before async let to avoid Swift 6 data-race warnings
+		// from capturing @MainActor-bound @Model arrays across task boundaries.
+		let needsMembers = members.isEmpty
+		let needsConstituencies = constituencies.isEmpty
+
+		// All three downloads are independent — run concurrently to minimize cold-launch sync time.
+		// downloadVotingRecords guards itself internally (fetchCount == 0), so no outer check needed.
+		async let membersDownload: Void = needsMembers ? fetch.downloadMembers() : ()
+		async let constituenciesDownload: Void = needsConstituencies ? fetch.downloadConstituencies() : ()
+		async let votesDownload: Void = fetch.downloadVotingRecords()
+
+		do { try await membersDownload } catch { Log.debug("Failed to download members: \(error.localizedDescription)") }
+		do { try await constituenciesDownload } catch { Log.debug("Failed to download constituencies: \(error.localizedDescription)") }
+		do { try await votesDownload } catch { Log.debug("Failed to download voting records: \(error.localizedDescription)") }
 	}
 }
