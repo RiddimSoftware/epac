@@ -16,6 +16,14 @@ struct FederalProjectCostView: View {
 	@Environment(\.openURL) private var openURL
 	@Query private var topContracts: [ContractExpenditure]
 
+	init() {
+		var descriptor = FetchDescriptor<ContractExpenditure>(
+			sortBy: [SortDescriptor(\.total, order: .reverse)]
+		)
+		descriptor.fetchLimit = 20
+		_topContracts = Query(descriptor)
+	}
+
 	var body: some View {
 		List {
 			Section {
@@ -24,7 +32,7 @@ struct FederalProjectCostView: View {
 
 			if !topContracts.isEmpty {
 				Section("Largest MP Office Contracts (All MPs)") {
-					ForEach(topContracts.prefix(20)) { contract in
+					ForEach(topContracts) { contract in
 						contractRow(contract)
 					}
 					Text("Showing top 20 by value. Full contract data is available in each MP's profile.")
@@ -78,7 +86,7 @@ struct FederalProjectCostView: View {
 				.font(.headline)
 
 			HStack(alignment: .top, spacing: 0) {
-				ForEach(lifecycleSteps, id: \.title) { step in
+				ForEach(Self.lifecycleSteps, id: \.title) { step in
 					VStack(spacing: 4) {
 						ZStack {
 							Circle()
@@ -94,7 +102,7 @@ struct FederalProjectCostView: View {
 							.foregroundStyle(.secondary)
 					}
 					.frame(maxWidth: .infinity)
-					if step.title != lifecycleSteps.last?.title {
+					if step.title != Self.lifecycleSteps.last?.title {
 						Image(systemName: "arrow.right")
 							.font(.caption2)
 							.foregroundStyle(.tertiary)
@@ -113,7 +121,7 @@ struct FederalProjectCostView: View {
 	}
 
 	private struct LifecycleStep { let title: String; let icon: String; let color: Color }
-	private let lifecycleSteps: [LifecycleStep] = [
+	private static let lifecycleSteps: [LifecycleStep] = [
 		LifecycleStep(title: "Estimate",  icon: "pencil",         color: .blue),
 		LifecycleStep(title: "Budget",    icon: "dollarsign",     color: .orange),
 		LifecycleStep(title: "Contracts", icon: "doc.text",       color: .purple),
