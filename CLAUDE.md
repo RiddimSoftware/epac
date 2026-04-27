@@ -6,6 +6,8 @@ epac is an iOS civic-engagement app that displays Canada's House of Commons Hans
 
 Brand and copy decisions live in `docs/brand/brand-brief-v1.md`. Treat that brief as the source of truth for product positioning, tagline, voice, tone, audience, and anti-positioning.
 
+Search backend decisions live in `docs/architecture/search-index-choice-epac452.md`. Use Postgres `tsvector` for v1 search and treat any Meilisearch work as a later migration after canonical records and ranking needs are proven.
+
 ---
 
 ## Architecture
