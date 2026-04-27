@@ -57,9 +57,7 @@ class SpeechViewModel {
 					nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				}
 			}
-			withAnimation {
-				isResuming = !didFinish
-			}
+			isResuming = !didFinish
 		}
 	}
 

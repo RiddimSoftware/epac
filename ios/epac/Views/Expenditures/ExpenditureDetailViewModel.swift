@@ -50,14 +50,15 @@ class ExpenditureDetailViewModel {
 		}
 	}
 
-	func handleHeaderTap(isCollapsed: Binding<Bool>, firstItemId: String, proxy: ScrollViewProxy) {
+	func handleHeaderTap(isCollapsed: Binding<Bool>, firstItemId: String, proxy: ScrollViewProxy, reduceMotion: Bool = false) {
+		let animation: Animation? = reduceMotion ? nil : .snappy
 		if isCollapsed.wrappedValue {
-			withAnimation(.snappy) { isCollapsed.wrappedValue = false }
+			withAnimation(animation) { isCollapsed.wrappedValue = false }
 		} else {
 			if visibleIds.contains(firstItemId) {
-				withAnimation(.snappy) { isCollapsed.wrappedValue = true }
+				withAnimation(animation) { isCollapsed.wrappedValue = true }
 			} else {
-				withAnimation(.snappy) { proxy.scrollTo(firstItemId, anchor: .top) }
+				withAnimation(animation) { proxy.scrollTo(firstItemId, anchor: .top) }
 			}
 		}
 	}
