@@ -55,7 +55,7 @@ struct MemberComparisonView: View {
 				.multilineTextAlignment(.center)
 			Text(member.party.fullName)
 				.font(.caption)
-				.foregroundStyle(Color(uiColor: member.party.colour))
+				.foregroundStyle(member.party.swiftUIColor)
 			Text(member.riding)
 				.font(.caption2)
 				.foregroundStyle(.secondary)

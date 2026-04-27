@@ -36,7 +36,7 @@ struct PartyLineScoreView: View {
             Text(String(format: NSLocalizedString("partyLine.score", comment: ""), Int(result.score * 100)))
                 .font(.title2.weight(.semibold))
             ProgressView(value: result.score)
-                .tint(Color(uiColor: member.party.colour))
+                .tint(member.party.swiftUIColor)
             Text(String(format: NSLocalizedString("partyLine.denominator", comment: ""),
                         result.withPartyCount, result.totalVotes))
                 .font(.caption2).foregroundStyle(.secondary)
