@@ -170,6 +170,7 @@ struct NonSittingDayView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.accentColor)
                 .padding(.top, 40)
+                .accessibilityHidden(true)
             
             VStack(spacing: 8) {
                 Text(date.formatted(date: .long, time: .omitted))
