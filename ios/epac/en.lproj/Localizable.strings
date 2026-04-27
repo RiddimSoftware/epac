@@ -358,3 +358,8 @@
 "election.research.financing" = "Party & Candidate Financing";
 "election.research.financing.subtitle" = "Donations, spending limits, and disclosures";
 "election.disclaimer" = "Data links to Elections Canada official sources. epac has no affiliation with Elections Canada or any political party.";
+
+/* Senate */
+"senate.mySenators.title" = "My Senators";
+"senate.card.name" = "Senator %@";
+"senate.card.accessibility" = "Senator %@, %@";

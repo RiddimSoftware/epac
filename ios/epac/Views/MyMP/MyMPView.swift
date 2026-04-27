@@ -106,6 +106,7 @@ struct MyMPView: View {
     @State private var followStore = MemberFollowStore.shared
     @State private var showConsultations = false
     @State private var showElectionResources = false
+    @State private var senators: [Senator] = []
 
     var body: some View {
         NavigationStack {
@@ -198,6 +199,13 @@ struct MyMPView: View {
                     )
                 }
             }
+            if !senators.isEmpty {
+                Section(NSLocalizedString("senate.mySenators.title", comment: "")) {
+                    ForEach(senators) { senator in
+                        SenatorCard(senator: senator)
+                    }
+                }
+            }
             Section(NSLocalizedString("myMP.activity.section", comment: "")) {
                 ForEach(activities) { activity in
                     ActivityRow(activity: activity)
@@ -225,6 +233,15 @@ struct MyMPView: View {
             })
         }
         member = primaryMP
+
+        // Load senators for the primary MP's province
+        if let mp = primaryMP {
+            let provinceAbbrev = mp.province.shortCode
+            if !provinceAbbrev.isEmpty {
+                let allSenators = await SenatorsService.fetchSenators()
+                senators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
+            }
+        }
 
         // Build the union of members to load: saved MP + all followed MPs
         var memberIDsToShow: Set<Int> = []
