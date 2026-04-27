@@ -6,11 +6,21 @@ struct RidingLookupResult {
     let partyName: String
 }
 
-enum RidingLookupError: LocalizedError {
+enum RidingLookupError: LocalizedError, Equatable {
     case invalidPostalCode
     case networkError(Error)
     case noFederalRepresentative
     case noResults
+
+    static func == (lhs: RidingLookupError, rhs: RidingLookupError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidPostalCode, .invalidPostalCode): return true
+        case (.networkError, .networkError): return true
+        case (.noFederalRepresentative, .noFederalRepresentative): return true
+        case (.noResults, .noResults): return true
+        default: return false
+        }
+    }
 
     var errorDescription: String? {
         switch self {
