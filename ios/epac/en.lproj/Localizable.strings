@@ -265,6 +265,10 @@
 "bills.detail.votes" = "Recorded Votes";
 "bills.detail.debates" = "Debates";
 "bills.detail.legisinfo" = "View on LEGISinfo";
+"bills.detail.keyFacts" = "Key Facts";
+"bills.detail.originatingChamber" = "Originating Chamber";
+"bills.chamber.house" = "House of Commons";
+"bills.chamber.senate" = "Senate";
 "bills.stage.houseFirst" = "House — First Reading";
 "bills.stage.houseSecond" = "House — Second Reading";
 "bills.stage.houseThird" = "House — Third Reading";

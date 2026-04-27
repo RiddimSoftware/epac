@@ -22,59 +22,8 @@ struct BillDetailView: View {
 
     var body: some View {
         List {
-            // MARK: Summary
-            Section {
-                LabeledContent(NSLocalizedString("bills.detail.number", comment: "")) {
-                    HStack(spacing: 6) {
-                        Text(bill.number).foregroundStyle(.primary)
-                        if !bill.billType.shortName.isEmpty {
-                            Text(bill.billType.shortName)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 5).padding(.vertical, 2)
-                                .background(Color.accentColor.opacity(0.8))
-                                .clipShape(Capsule())
-                        }
-                    }
-                }
-                LabeledContent(
-                    NSLocalizedString("bills.detail.parliament", comment: ""),
-                    value: String(format: NSLocalizedString("bills.detail.parliament.value", comment: ""),
-                                  bill.parliament, bill.session)
-                )
-                LabeledContent(
-                    NSLocalizedString("bills.detail.status", comment: ""),
-                    value: bill.status.displayName
-                )
-                if !bill.sponsorName.isEmpty {
-                    LabeledContent(NSLocalizedString("bills.detail.sponsor", comment: "")) {
-                        HStack(spacing: 6) {
-                            Text(bill.sponsorName)
-                            if let party = sponsorMember?.party {
-                                PartyBadge(party: party)
-                            }
-                        }
-                    }
-                }
-                if !bill.currentStage.isEmpty {
-                    LabeledContent(NSLocalizedString("bills.detail.stage", comment: "")) {
-                        Text(bill.currentStage)
-                            .explainerTip(for: bill.currentStage)
-                    }
-                }
-                if let introduced = bill.introducedDate {
-                    LabeledContent(
-                        NSLocalizedString("bills.detail.introduced", comment: ""),
-                        value: introduced.formatted(date: .abbreviated, time: .omitted)
-                    )
-                }
-                if !bill.billType.displayName.isEmpty {
-                    LabeledContent(NSLocalizedString("bills.detail.type", comment: "")) {
-                        Text(bill.billType.displayName)
-                            .explainerTip(for: bill.billType.displayName)
-                    }
-                }
-            }
+            billHeaderSection
+            keyFactsSection
 
             // MARK: PBO independent cost analysis
             PBOCostCard(bill: bill)
@@ -201,6 +150,110 @@ struct BillDetailView: View {
         .activitySheet($shareItem)
     }
 
+    private var billHeaderSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(bill.number)
+                        .font(.title3.weight(.semibold).monospacedDigit())
+                    Spacer(minLength: 8)
+                    if !bill.billType.shortName.isEmpty {
+                        BillHeaderBadge(
+                            text: bill.billType.shortName,
+                            foreground: .white,
+                            background: Color.accentColor.opacity(0.85)
+                        )
+                    }
+                    BillHeaderBadge(
+                        text: bill.status.displayName,
+                        foreground: .white,
+                        background: bill.status.color
+                    )
+                }
+
+                Text(bill.title)
+                    .font(.headline)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if !bill.currentStage.isEmpty {
+                    Text(bill.currentStage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .explainerTip(for: bill.currentStage)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(headerAccessibilityLabel)
+        }
+    }
+
+    private var keyFactsSection: some View {
+        Section(NSLocalizedString("bills.detail.keyFacts", comment: "")) {
+            if !bill.sponsorName.isEmpty {
+                LabeledContent(NSLocalizedString("bills.detail.sponsor", comment: "")) {
+                    HStack(spacing: 6) {
+                        Text(bill.sponsorName)
+                        if let party = sponsorMember?.party {
+                            PartyBadge(party: party)
+                        }
+                    }
+                }
+            }
+            if let chamber = originatingChamberName {
+                LabeledContent(NSLocalizedString("bills.detail.originatingChamber", comment: ""), value: chamber)
+            }
+            if let introduced = bill.introducedDate {
+                LabeledContent(
+                    NSLocalizedString("bills.detail.introduced", comment: ""),
+                    value: introduced.formatted(date: .abbreviated, time: .omitted)
+                )
+            }
+            if !bill.currentStage.isEmpty {
+                LabeledContent(NSLocalizedString("bills.detail.stage", comment: "")) {
+                    Text(bill.currentStage)
+                        .explainerTip(for: bill.currentStage)
+                }
+            }
+            if !bill.billType.displayName.isEmpty {
+                LabeledContent(NSLocalizedString("bills.detail.type", comment: "")) {
+                    Text(bill.billType.displayName)
+                        .explainerTip(for: bill.billType.displayName)
+                }
+            }
+            LabeledContent(
+                NSLocalizedString("bills.detail.parliament", comment: ""),
+                value: String(format: NSLocalizedString("bills.detail.parliament.value", comment: ""),
+                              bill.parliament, bill.session)
+            )
+            Link(NSLocalizedString("bills.detail.legisinfo", comment: ""), destination: bill.legisInfoURL)
+                .foregroundStyle(Color.accentColor)
+        }
+    }
+
+    private var originatingChamberName: String? {
+        switch bill.billType {
+        case .houseGovernment, .privateMember:
+            return NSLocalizedString("bills.chamber.house", comment: "")
+        case .senateGovernment, .senatePublic, .senatePrivate:
+            return NSLocalizedString("bills.chamber.senate", comment: "")
+        case .unknown:
+            return nil
+        }
+    }
+
+    private var headerAccessibilityLabel: String {
+        [
+            bill.number,
+            bill.title,
+            bill.status.displayName,
+            bill.billType.displayName,
+            bill.currentStage,
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: ", ")
+    }
+
     private func timelineState(forStageAt index: Int) -> BillTimelineStageState {
         let stage = bill.stages[index]
         if stage.isCompleted {
@@ -290,5 +343,22 @@ private enum BillTimelineStageState: Equatable {
 
     var displayName: String {
         accessibilityStatus
+    }
+}
+
+private struct BillHeaderBadge: View {
+    let text: String
+    let foreground: Color
+    let background: Color
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(background, in: Capsule())
     }
 }

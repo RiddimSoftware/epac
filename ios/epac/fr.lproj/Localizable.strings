@@ -268,6 +268,10 @@
 "bills.detail.votes" = "Votes enregistrés";
 "bills.detail.debates" = "Débats";
 "bills.detail.legisinfo" = "Voir sur LEGISinfo";
+"bills.detail.keyFacts" = "Faits clés";
+"bills.detail.originatingChamber" = "Chambre d'origine";
+"bills.chamber.house" = "Chambre des communes";
+"bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";
 "bills.stage.houseSecond" = "Chambre — Deuxième lecture";
 "bills.stage.houseThird" = "Chambre — Troisième lecture";
