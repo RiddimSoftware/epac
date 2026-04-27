@@ -112,7 +112,8 @@ struct MyMPView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if PostalCodeViewModel.savedMemberName == nil {
+                if PostalCodeViewModel.savedMemberName == nil && followStore.followedIDs.isEmpty {
+                    // No postal code and no followed members → prompt to set up
                     noMPSetView
                 } else if isLoading && activities.isEmpty {
                     ProgressView()

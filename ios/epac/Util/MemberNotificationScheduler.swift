@@ -13,6 +13,20 @@ import UserNotifications
 
 @MainActor
 struct MemberNotificationScheduler {
+
+    // MARK: - Stable identifier helpers
+
+    /// Returns a stable, process-launch-independent identifier fragment for a string.
+    /// `String.hash` is randomised per-process in Swift; we use a simple djb2 digest
+    /// so that `UNNotificationCenter` can deduplicate across launches.
+    private static func stableID(_ s: String) -> String {
+        var hash: UInt64 = 5381
+        for byte in s.utf8 { hash = hash &* 127 &+ UInt64(byte) }
+        return String(hash, radix: 16, uppercase: false)
+    }
+
+    // MARK: - Schedule helpers
+
     static func scheduleVoteNotification(memberName: String, ballot: String, description: String, memberID: Int) {
         guard MemberFollowStore.shared.preferences(for: memberID).votes else { return }
         let content = UNMutableNotificationContent()
@@ -20,7 +34,7 @@ struct MemberNotificationScheduler {
         content.body = String(format: NSLocalizedString("follow.notification.vote", comment: ""), ballot, description)
         content.sound = .default
         let request = UNNotificationRequest(
-            identifier: "vote-\(memberID)-\(description.hash)",
+            identifier: "vote-\(memberID)-\(stableID(description))",
             content: content,
             trigger: nil  // deliver immediately
         )
@@ -34,7 +48,7 @@ struct MemberNotificationScheduler {
         content.body = String(format: NSLocalizedString("follow.notification.speech", comment: ""), subject)
         content.sound = .default
         let request = UNNotificationRequest(
-            identifier: "speech-\(memberID)-\(subject.hash)",
+            identifier: "speech-\(memberID)-\(stableID(subject))",
             content: content,
             trigger: nil
         )
