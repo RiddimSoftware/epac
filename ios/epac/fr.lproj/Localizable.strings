@@ -326,3 +326,11 @@
 "home.recentDebates" = "Récent au Hansard";
 "home.seeAllBills" = "Voir tous les projets →";
 "home.manageTopics" = "Gérer les sujets →";
+
+/* Analyse de coût indépendante du DPB */
+"pbo.sectionTitle" = "Analyse de coût indépendante (DPB)";
+"pbo.estimate.pbo" = "Estimation du DPB :";
+"pbo.estimate.government" = "Estimation du gouvernement :";
+"pbo.estimatesDiffer" = "Les estimations diffèrent de plus de 10 %";
+"pbo.viewReport" = "Voir le rapport complet du DPB →";
+"pbo.viewReport.accessibility" = "Voir le rapport complet du DPB pour %@";

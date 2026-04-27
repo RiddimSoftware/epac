@@ -54,6 +54,9 @@ struct BillDetailView: View {
                 }
             }
 
+            // MARK: PBO independent cost analysis
+            PBOCostCard(bill: bill)
+
             // MARK: Stage timeline
             Section(NSLocalizedString("bills.detail.timeline", comment: "")) {
                 ForEach(bill.stages) { stage in

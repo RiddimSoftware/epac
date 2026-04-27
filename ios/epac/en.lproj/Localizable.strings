@@ -326,3 +326,11 @@
 "home.recentDebates" = "Recent in Hansard";
 "home.seeAllBills" = "See all bills →";
 "home.manageTopics" = "Manage topics →";
+
+/* PBO independent cost analysis */
+"pbo.sectionTitle" = "Independent Cost Analysis (PBO)";
+"pbo.estimate.pbo" = "PBO estimate:";
+"pbo.estimate.government" = "Government estimate:";
+"pbo.estimatesDiffer" = "Estimates differ by more than 10%";
+"pbo.viewReport" = "View full PBO report →";
+"pbo.viewReport.accessibility" = "View full PBO report for %@";
