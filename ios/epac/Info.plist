@@ -13,5 +13,13 @@
 			<string>net.dinglebox.cabinetdoor</string>
 		</dict>
 	</array>
+	<key>BGTaskScheduler-permitted-identifiers</key>
+	<array>
+		<string>net.dinglebox.cabinetdoor.refresh</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

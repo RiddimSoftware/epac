@@ -53,9 +53,21 @@ actor Fetch: ObservableObject {
 	func downloadSittingCalendar(_ year: Int) async throws {
 		Log.debug("Fetch.downloadSittingCalendar(year: \(year))")
 		let dates = try await downloadCalendar(year: year)
-		let calendar = SittingCalendar(year: year, sittings: dates)
-		modelContext.insert(calendar)
+		// Upsert: update existing record if present, insert if not
+		let existing = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
+		if let record = existing.first {
+			record.sittings = dates
+		} else {
+			let calendar = SittingCalendar(year: year, sittings: dates)
+			modelContext.insert(calendar)
+		}
 		try modelContext.save()
+	}
+
+	func backgroundRefresh() async {
+		Log.debug("Fetch.backgroundRefresh()")
+		let year = Calendar.current.component(.year, from: Date())
+		try? await downloadSittingCalendar(year)
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
@@ -124,8 +136,8 @@ actor Fetch: ObservableObject {
 		let path = String(format: expenditurePath, year, quarter)
 		let url = hosturl.appending(path: path)
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
-		
+		let (data, _) = try await NetworkService.shared.data(for: request)
+
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "Fetch", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
@@ -169,7 +181,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await URLSession.shared.data(from: csvURL)
+		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
 		Log.debug("Downloaded \(csvData.count) bytes of CSV data")
 		
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("expenditures-\(year)-Q\(quarter).csv")
@@ -274,7 +286,7 @@ actor Fetch: ObservableObject {
 	private func downloadDetail(url: URL, type: DetailType, member: SummaryExpenditure) async throws {
 		Log.debug("Downloading detail from \(url.absoluteString)")
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
@@ -308,7 +320,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found detailed CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await URLSession.shared.data(from: csvURL)
+		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("detail-\(UUID().uuidString).csv")
 		try csvData.write(to: tempURL)
 		
@@ -391,7 +403,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Fetch.downloadXML(date: \(date))")
 		let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
 		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		var (data, _) = try await URLSession.shared.data(for: request)
+		var (data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: 1)
@@ -415,7 +427,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		request = URLRequest(url: url)
-		(data, _) = try await URLSession.shared.data(for: request)
+		(data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: 1)
@@ -430,7 +442,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		request = URLRequest(url: xmllink, cachePolicy: .reloadIgnoringLocalCacheData)
-		(data, _) = try await URLSession.shared.data(for: request)
+		(data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
 		}
@@ -442,7 +454,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Downloading calendar \(year)")
 		let path = String(format: calendarPath, year)
 		let request = URLRequest(url: hosturl.appending(path: path), cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("Downloaded \(data.count) bytes")
 
 		if let htmlstring = String(data: data, encoding: .utf8),
@@ -479,7 +491,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("got data \(data.count)")
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
@@ -515,7 +527,7 @@ actor Fetch: ObservableObject {
 	                        request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
 	                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 	                        request.setValue("application/json", forHTTPHeaderField: "Accept")
-	                        let (data, _) = try await URLSession.shared.data(for: request)
+	                        let (data, _) = try await NetworkService.shared.data(for: request)
 	                        guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 	                                failedDownloads.insert(identifier)
 	                                throw NSError(domain: "", code: 7)
@@ -554,7 +566,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await URLSession.shared.data(for: request)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
 		}
@@ -575,7 +587,7 @@ actor Fetch: ObservableObject {
 			.folding(options: .diacriticInsensitive, locale: .current)
 		let path = String(format: memberPath, first, last, String(member.memberID))
 		guard let url = URL(string: path, relativeTo: hosturl) else { return }
-		let (data, response) = try await URLSession.shared.data(from: url)
+		let (data, response) = try await NetworkService.shared.data(from: url)
 		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let xmlString = String(data: data, encoding: .utf8) else { return }
 		let contact = XMLBro.parseMemberContact(xmlString)
@@ -604,7 +616,7 @@ actor Fetch: ObservableObject {
 				URLQueryItem(name: "format", value: "json")
 			]
 			guard let url = components.url else { break }
-			let (data, response) = try await URLSession.shared.data(from: url)
+			let (data, response) = try await NetworkService.shared.data(from: url)
 			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 				  let items = json["items"] as? [[String: Any]] else { break }
@@ -655,7 +667,7 @@ actor Fetch: ObservableObject {
 				URLQueryItem(name: "format", value: "json")
 			]
 			guard let url = components.url else { break }
-			let (data, response) = try await URLSession.shared.data(from: url)
+			let (data, response) = try await NetworkService.shared.data(from: url)
 			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 				  let items = json["items"] as? [[String: Any]] else { break }
