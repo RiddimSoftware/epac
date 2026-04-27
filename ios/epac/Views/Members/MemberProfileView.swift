@@ -161,22 +161,35 @@ struct ProfileDetailRow: View {
 
 struct MemberAvatar: View {
 	let member: ParliamentMember
+	@State private var cachedImage: UIImage?
 
 	init(member: ParliamentMember) {
 		self.member = member
 	}
 
 	var body: some View {
-		AsyncImage(url: member.photoURL) { phase in
-			switch phase {
-			case .success(let image):
-				image
-					.resizable()
-					.scaledToFill()
-			case .failure:
-				placeholder
-			default:
-				placeholder
+		Group {
+			if let data = member.imageData, let img = UIImage(data: data) {
+				Image(uiImage: img).resizable().scaledToFill()
+			} else if let img = cachedImage {
+				Image(uiImage: img).resizable().scaledToFill()
+			} else {
+				AsyncImage(url: member.photoURL) { phase in
+					if case .success(let image) = phase {
+						image.resizable().scaledToFill()
+					} else {
+						placeholder
+					}
+				}
+				.task {
+					if let img = MemberImageCache.shared.image(for: member.photoURL) {
+						cachedImage = img
+					} else if let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
+					          let img = UIImage(data: data) {
+						MemberImageCache.shared.store(img, for: member.photoURL)
+						cachedImage = img
+					}
+				}
 			}
 		}
 		.clipShape(Circle())

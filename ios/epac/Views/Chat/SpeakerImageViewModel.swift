@@ -54,6 +54,7 @@ class SpeakerImageViewModel {
 		if !data.isEmpty, UIKit.UIImage(data: data) != nil {
 			speaker.imageData = data
 			imageData = data
+			MemberImageCache.shared.store(data: data, for: speaker.photoURL)
 			do {
 				let id = speaker.id
 				if let fetched = modelContext.model(for: id) as? ParliamentMember {
