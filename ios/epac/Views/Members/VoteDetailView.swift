@@ -8,6 +8,15 @@
 import SwiftUI
 import SwiftData
 
+private struct DebateSelection: Identifiable, Hashable {
+    let id = UUID()
+    let subject: SubjectOfBusiness
+    let hansard: Hansard
+
+    static func == (lhs: DebateSelection, rhs: DebateSelection) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
 struct VoteDetailView: View {
     let mv: MemberVote
     let rv: RecordedVote?
@@ -15,8 +24,7 @@ struct VoteDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var fetch: Fetch
     @State private var matchingSubjects: [(subject: SubjectOfBusiness, hansard: Hansard)] = []
-    @State private var selectedSubject: SubjectOfBusiness?
-    @State private var selectedHansard: Hansard?
+    @State private var selectedDebate: DebateSelection?
 
     var body: some View {
         List {
@@ -27,8 +35,7 @@ struct VoteDetailView: View {
                 Section(header: Text(NSLocalizedString("voteDetail.debates.header", comment: ""))) {
                     ForEach(matchingSubjects, id: \.subject.hansardID) { pair in
                         Button {
-                            selectedSubject = pair.subject
-                            selectedHansard = pair.hansard
+                            selectedDebate = DebateSelection(subject: pair.subject, hansard: pair.hansard)
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 3) {
@@ -51,12 +58,10 @@ struct VoteDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(rv?.billNumberCode.isEmpty == false ? rv!.billNumberCode : "Vote #\(mv.voteID)")
+        .navigationTitle(rv.flatMap { $0.billNumberCode.isEmpty ? nil : $0.billNumberCode } ?? "Vote #\(mv.voteID)")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $selectedSubject) { subject in
-            if let hansard = selectedHansard {
-                SpeechView(hansard: hansard, subject: subject)
-            }
+        .navigationDestination(item: $selectedDebate) { selection in
+            SpeechView(hansard: selection.hansard, subject: selection.subject)
         }
         .task { findMatchingDebates() }
     }
