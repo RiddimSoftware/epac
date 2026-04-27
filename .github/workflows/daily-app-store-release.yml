@@ -1,0 +1,239 @@
+name: Daily App Store Release
+
+on:
+  schedule:
+    # 19:00 UTC = 3pm EDT / 2pm EST — always after the 2pm ET submission cutoff
+    - cron: '0 19 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      override_build_number:
+        description: 'Override: specific build number to submit (leave blank for automatic)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run — find build and run quality gates, but skip actual submission'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: app-store-release
+  cancel-in-progress: false   # never cancel a release mid-flight
+
+permissions:
+  id-token: write   # OIDC AWS auth
+  contents: write   # create GitHub Release tags
+  checks: read      # read CI check results for quality gate
+
+env:
+  APP_BUNDLE_ID: net.dinglebox.cabinetdoor
+  APPLE_APP_ID: '1224459142'
+
+jobs:
+  # ─── Job 1: Find the qualifying TestFlight build ──────────────────────────
+  find-build:
+    name: Find qualifying TestFlight build
+    runs-on: ubuntu-latest
+    outputs:
+      build_number: ${{ steps.find.outputs.build_number }}
+      build_version: ${{ steps.find.outputs.build_version }}
+      upload_time: ${{ steps.find.outputs.upload_time }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Fetch App Store Connect credentials
+        id: fetch-creds
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id appstore/connect-api \
+            --region us-east-1 \
+            --query SecretString \
+            --output text)
+          echo "key_id=$(echo "$SECRET" | jq -r '.key_id')" >> "$GITHUB_OUTPUT"
+          echo "issuer_id=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_OUTPUT"
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$SECRET" | jq -r '.private_key' \
+            > ~/.appstoreconnect/private_keys/AuthKey_$(echo "$SECRET" | jq -r '.key_id').p8
+          chmod 600 ~/.appstoreconnect/private_keys/*.p8
+
+      - name: Install Python dependencies
+        run: pip3 install PyJWT requests cryptography --quiet
+
+      - name: Find qualifying build
+        id: find
+        env:
+          OVERRIDE_BUILD: ${{ inputs.override_build_number }}
+        run: |
+          python3 scripts/release/find_qualifying_build.py \
+            --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
+            --issuer-id "${{ steps.fetch-creds.outputs.issuer_id }}" \
+            --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
+            --app-id "${{ env.APPLE_APP_ID }}" \
+            --cutoff-hour 14 \
+            --override "$OVERRIDE_BUILD" \
+            --output-format github-output
+
+  # ─── Job 2: Quality gates ─────────────────────────────────────────────────
+  quality-gates:
+    name: Verify quality gates
+    needs: find-build
+    runs-on: ubuntu-latest
+    outputs:
+      gates_passed: ${{ steps.gates.outputs.passed }}
+      gate_failures: ${{ steps.gates.outputs.failures }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check latest CI status on main
+        id: ci-check
+        run: |
+          SHA=$(git rev-parse HEAD)
+          STATUS=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
+            --jq '[.check_runs[] | select(.name | test("Build|Test"; "i")) | .conclusion] | if length == 0 then "no-checks" elif all(. == "success") then "pass" else "fail" end')
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "CI check status: $STATUS"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify build evidence
+        id: evidence-check
+        run: |
+          python3 scripts/release/verify_evidence.py \
+            --evidence-dir docs/build-evidence
+
+      - name: Summarize gate results
+        id: gates
+        run: |
+          FAILURES=""
+          CI_STATUS="${{ steps.ci-check.outputs.status }}"
+          if [ "$CI_STATUS" = "fail" ]; then
+            FAILURES="CI checks failed on main. "
+          fi
+          MISSING="${{ steps.evidence-check.outputs.missing_count }}"
+          if [ -n "$MISSING" ] && [ "$MISSING" -gt 0 ]; then
+            MISSING_TICKETS="${{ steps.evidence-check.outputs.missing_tickets }}"
+            FAILURES="${FAILURES}Missing evidence for: ${MISSING_TICKETS}. "
+          fi
+          if [ -z "$FAILURES" ]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+            echo "failures=" >> "$GITHUB_OUTPUT"
+            echo "All quality gates passed."
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+            echo "failures=$FAILURES" >> "$GITHUB_OUTPUT"
+            echo "Quality gate failures: $FAILURES"
+          fi
+
+  # ─── Job 3: Human approval gate ───────────────────────────────────────────
+  approve-release:
+    name: Approve release
+    needs: [find-build, quality-gates]
+    runs-on: ubuntu-latest
+    environment:
+      name: app-store-release
+    if: needs.quality-gates.outputs.gates_passed == 'true'
+    steps:
+      - name: Release candidate summary
+        run: |
+          echo "## Release candidate ready for approval"
+          echo ""
+          echo "- **Build**: ${{ needs.find-build.outputs.build_version }} (#${{ needs.find-build.outputs.build_number }})"
+          echo "- **Uploaded**: ${{ needs.find-build.outputs.upload_time }}"
+          echo "- **Quality gates**: PASSED"
+          echo ""
+          echo "Approve this deployment to submit to App Store review."
+
+  # ─── Job 4: Submit to App Store ───────────────────────────────────────────
+  submit:
+    name: Submit for App Store review
+    needs: [find-build, quality-gates, approve-release]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Fetch App Store Connect credentials
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id appstore/connect-api \
+            --region us-east-1 \
+            --query SecretString \
+            --output text)
+          KEY_ID=$(echo "$SECRET" | jq -r '.key_id')
+          echo "ASC_KEY_ID=$KEY_ID" >> "$GITHUB_ENV"
+          echo "ASC_ISSUER_ID=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_ENV"
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$SECRET" | jq -r '.private_key' \
+            > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/*.p8
+
+      - name: Set up Ruby and Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Generate release notes from merged PRs
+        run: |
+          python3 scripts/release/generate_release_notes.py \
+            --output ios/fastlane/metadata/en-US/release_notes.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload metadata to App Store
+        working-directory: ios
+        run: |
+          bundle exec fastlane run deliver \
+            app_identifier:"${{ env.APP_BUNDLE_ID }}" \
+            skip_binary_upload:true \
+            skip_screenshots:true \
+            skip_metadata:false \
+            submit_for_review:false
+
+      - name: Submit build for App Store review
+        working-directory: ios
+        run: |
+          bundle exec fastlane run deliver \
+            app_identifier:"${{ env.APP_BUNDLE_ID }}" \
+            build_number:"${{ needs.find-build.outputs.build_number }}" \
+            skip_binary_upload:true \
+            skip_screenshots:true \
+            skip_metadata:true \
+            submit_for_review:true \
+            automatic_release:false \
+            phased_release:true \
+            reject_if_possible:true
+
+      - name: Create GitHub Release
+        run: |
+          VERSION="${{ needs.find-build.outputs.build_version }}"
+          BUILD="${{ needs.find-build.outputs.build_number }}"
+          gh release create "v${VERSION}-${BUILD}" \
+            --title "v${VERSION} (Build ${BUILD})" \
+            --notes-file ios/fastlane/metadata/en-US/release_notes.txt \
+            --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## App Store submission complete"
+          echo ""
+          echo "- **Version**: ${{ needs.find-build.outputs.build_version }} (Build ${{ needs.find-build.outputs.build_number }})"
+          echo "- **Status**: Submitted for review"
+          echo "- **Phased release**: enabled"
+          echo ""
+          echo "The build typically enters review within a few hours."

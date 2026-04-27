@@ -72,6 +72,7 @@ Before requesting review, the author must:
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
 - [ ] **Jira link.** Reference the ticket (`Resolves EPAC-N`) in the description.
+- [ ] **Release note.** If the change is user-facing, add a `Release-Note:` line to the PR description (see below). The daily release pipeline collects these automatically.
 - [ ] **Description structure** (see below).
 
 ### PR Description Template
@@ -100,7 +101,20 @@ How to verify this works. Steps for the reviewer to follow.
 | img    | img   |
 
 Resolves EPAC-N
+
+Release-Note: One-line plain-English summary for App Store What's New (omit if not user-facing)
 ```
+
+### Release-Note convention
+
+Every PR that ships a user-facing change must include one line in the description:
+
+```
+Release-Note: Added onboarding flow with topic picker and notification opt-in
+Release-Note: Fixed bill sharing link on older iOS versions
+```
+
+The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-US/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
 
 ### Automated Pre-Merge Review (mandatory)
 
