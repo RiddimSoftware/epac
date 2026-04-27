@@ -22,17 +22,22 @@ private func lookupMP(postalCode: String) async throws -> ClipMP {
     guard normalized.range(of: "^[A-Z]\\d[A-Z]\\d[A-Z]\\d$", options: .regularExpression) != nil else {
         throw URLError(.badURL)
     }
-    let url = URL(string: "https://api.represent.opennorth.ca/postcodes/\(normalized)/?sets=federal-electoral-districts")!
+    let url = URL(string: "https://represent.opennorth.ca/postcodes/\(normalized)/?sets=federal-electoral-districts")!
     let (data, _) = try await URLSession.shared.data(from: url)
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-          let reps = json["representatives_centroid"] as? [[String: Any]],
-          let mp = reps.first(where: { ($0["elected_office"] as? String)?.lowercased() == "mp" }),
-          let name = mp["name"] as? String, !name.isEmpty,
-          let riding = mp["district_name"] as? String else {
+          let boundaries = json["boundaries_centroid"] as? [[String: Any]] else {
         throw URLError(.cannotParseResponse)
     }
-    let party = mp["party_name"] as? String ?? ""
-    return ClipMP(name: name, riding: riding, party: party)
+    let federalBoundary = boundaries.first {
+        let setName = ($0["boundary_set_name"] as? String) ?? ""
+        let relatedURL = (($0["related"] as? [String: Any])?["boundary_set_url"] as? String) ?? ""
+        return setName == "Federal electoral district"
+            && !relatedURL.contains("2003-representation-order")
+    }
+    guard let ridingName = federalBoundary?["name"] as? String, !ridingName.isEmpty else {
+        throw URLError(.cannotParseResponse)
+    }
+    return ClipMP(name: "", riding: ridingName, party: "")
 }
 
 private func fetchRecentBills() async -> [ClipBill] {
