@@ -18,6 +18,7 @@ struct MemberProfileView: View {
 	@State private var navigateToComparison = false
 	@State private var pickerSearch = ""
 	@State private var showVotingHistory = false
+	@State private var followStore = MemberFollowStore.shared
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -138,6 +139,23 @@ struct MemberProfileView: View {
 					Label("Compare", systemImage: "person.2.badge.gearshape")
 				}
 				.accessibilityLabel("Compare with another member")
+			}
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					followStore.toggle(member.memberID)
+				} label: {
+					Label(
+						followStore.isFollowing(member.memberID)
+							? NSLocalizedString("follow.unfollow", comment: "")
+							: NSLocalizedString("follow.follow", comment: ""),
+						systemImage: followStore.isFollowing(member.memberID) ? "bell.fill" : "bell"
+					)
+				}
+				.accessibilityLabel(
+					followStore.isFollowing(member.memberID)
+						? NSLocalizedString("follow.unfollow", comment: "")
+						: NSLocalizedString("follow.follow", comment: "")
+				)
 			}
 		}
 		.navigationDestination(isPresented: $navigateToComparison) {
