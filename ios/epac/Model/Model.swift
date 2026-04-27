@@ -806,6 +806,8 @@ enum SchemaV5: VersionedSchema {
 
 	@Model
 	final class SpeechMessage {
+		#Index<SpeechMessage>([\.lastName])
+
 		var firstName: String
 		var lastName: String
 		var partyAbbreviation: String
