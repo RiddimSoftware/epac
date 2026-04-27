@@ -54,6 +54,7 @@ struct FiscalMonitorService {
 		let table1 = try parseSummaryStatement(from: text)
 		let annualProjection = parseAnnualProjection(from: text)
 		let fiscalYear = fiscalYearLabel(for: issue)
+		let officialSourceURL = pdfSourceURL(from: html) ?? sourceURL
 
 		return FiscalMonitorParsedEntry(
 			id: issue.formatted(.iso8601.year().month()),
@@ -66,7 +67,7 @@ struct FiscalMonitorService {
 			yearToDateBalanceMillions: table1.ytdBalance,
 			annualBudgetProjectionMillions: annualProjection,
 			sourceTitle: "Finance Canada Fiscal Monitor, \(issue.formatted(.dateTime.month(.wide).year()))",
-			sourceURL: sourceURL
+			sourceURL: officialSourceURL
 		)
 	}
 
@@ -119,6 +120,15 @@ struct FiscalMonitorService {
 			return nil
 		}
 		return values.first == 1 && values.count >= 3 ? values[2] : values[1]
+	}
+
+	private static func pdfSourceURL(from html: String) -> URL? {
+		guard let regex = try? NSRegularExpression(pattern: #"href="([^"]+\.pdf)""#, options: [.caseInsensitive]),
+			  let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+			  let range = Range(match.range(at: 1), in: html) else {
+			return nil
+		}
+		return URL(string: String(html[range]), relativeTo: baseURL)?.absoluteURL
 	}
 
 	private static func captureLastTwoNumbers(after startPattern: String, before endPattern: String, in text: String) throws -> (currentMonth: Double, yearToDate: Double) {

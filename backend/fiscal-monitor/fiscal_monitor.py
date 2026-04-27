@@ -83,6 +83,7 @@ def parse_issue_html(html: str, source_url: str) -> FiscalMonitorEntry:
     )
     expense_current = revenue_current - balance_current
     projection = _annual_budget_projection(text)
+    source_url = _pdf_source_url(html) or source_url
 
     fiscal_start = year if month_number >= 4 else year - 1
     fiscal_year = f"{fiscal_start}-{(fiscal_start + 1) % 100:02d}"
@@ -139,6 +140,14 @@ def _annual_budget_projection(text: str) -> float | None:
     if len(numbers) >= 3 and numbers[0] == 1:
         return numbers[2]
     return numbers[1] if len(numbers) >= 2 else None
+
+
+def _pdf_source_url(html: str) -> str | None:
+    match = re.search(r'href="([^"]+\.pdf)"', html, flags=re.IGNORECASE)
+    if not match:
+        return None
+    href = match.group(1)
+    return href if href.startswith("http") else f"{BASE_URL}{href}"
 
 
 def _last_two_numbers_between(text: str, start: str, end: str) -> tuple[float, float]:

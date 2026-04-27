@@ -9,6 +9,7 @@ struct FiscalMonitorServiceTests {
 		<head><title>The Fiscal Monitor - February 2026</title></head>
 		<body>
 		<h1>The Fiscal Monitor - February 2026</h1>
+		<a class="gc-dwnld-lnk" href="/content/dam/fin/publications/fm-rf/2026/02/2026-02-eng.pdf">PDF</a>
 		<p>Table 1</p>
 		<p>Summary statement of transactions</p>
 		<p>$ millions February April to February 2025 2026 2024-25 2025-26</p>
@@ -32,5 +33,6 @@ struct FiscalMonitorServiceTests {
 		#expect(entry.yearToDateBalanceMillions == -25_549)
 		#expect(entry.annualBudgetProjectionMillions == -78_349)
 		#expect(entry.sourceTitle == "Finance Canada Fiscal Monitor, February 2026")
+		#expect(entry.sourceURL.absoluteString == "https://www.canada.ca/content/dam/fin/publications/fm-rf/2026/02/2026-02-eng.pdf")
 	}
 }

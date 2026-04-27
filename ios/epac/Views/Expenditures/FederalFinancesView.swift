@@ -15,6 +15,7 @@ struct FederalFinancesView: View {
 	@State private var loadFailed = false
 
 	private var latest: FiscalMonitorEntry? { entries.last }
+	private var latestProjection: Double? { latest?.annualBudgetProjectionMillions }
 
 	var body: some View {
 		Group {
@@ -118,17 +119,24 @@ struct FederalFinancesView: View {
 	}
 
 	private var balanceChart: some View {
-		Chart(entries) { entry in
-			BarMark(
-				x: .value("Month", entry.month, unit: .month),
-				y: .value("Monthly balance", entry.budgetaryBalanceMillions / 1_000)
-			)
-			.foregroundStyle(entry.budgetaryBalanceMillions >= 0 ? Color.green : Color.red)
-			LineMark(
-				x: .value("Month", entry.month, unit: .month),
-				y: .value("Year to date", entry.yearToDateBalanceMillions / 1_000)
-			)
-			.foregroundStyle(Color.accentColor)
+		Chart {
+			ForEach(entries) { entry in
+				BarMark(
+					x: .value("Month", entry.month, unit: .month),
+					y: .value("Monthly balance", entry.budgetaryBalanceMillions / 1_000)
+				)
+				.foregroundStyle(entry.budgetaryBalanceMillions >= 0 ? Color.green : Color.red)
+				LineMark(
+					x: .value("Month", entry.month, unit: .month),
+					y: .value("Year to date", entry.yearToDateBalanceMillions / 1_000)
+				)
+				.foregroundStyle(Color.accentColor)
+			}
+			if let latestProjection {
+				RuleMark(y: .value("Budget projection", latestProjection / 1_000))
+					.foregroundStyle(.secondary)
+					.lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+			}
 		}
 		.chartYAxisLabel("CAD billions")
 	}
