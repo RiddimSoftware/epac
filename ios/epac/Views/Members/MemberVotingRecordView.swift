@@ -5,11 +5,13 @@
 
 import SwiftUI
 import SwiftData
+import ActivityView
 
 struct MemberVotingRecordView: View {
 	let member: ParliamentMember
 
 	@Query private var memberVotes: [MemberVote]
+	@State private var shareItem: ActivityItem?
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -85,12 +87,23 @@ struct MemberVotingRecordView: View {
 										.tint(.blue)
 									}
 								}
+								.swipeActions(edge: .trailing, allowsFullSwipe: false) {
+									if let vote = mv.vote {
+										Button {
+											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
+										} label: {
+											Label("Share", systemImage: "square.and.arrow.up")
+										}
+										.tint(.orange)
+									}
+								}
 						}
 					}
 				}
 				.listStyle(.insetGrouped)
 			}
 		}
+		.activitySheet($shareItem)
 		.navigationTitle(NSLocalizedString("voting.title", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)
 	}
