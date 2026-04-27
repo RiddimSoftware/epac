@@ -58,12 +58,11 @@ enum FiscalMonitorServiceError: LocalizedError {
 
 struct FiscalMonitorService {
 	private let indexURL = URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor.html")!
+	private let publicationsJSONURL = URL(string: "https://www.canada.ca/content/dam/fin/documents/publications/pub-rep/json.json")!
 	private let session: URLSession
-	private let calendar: Calendar
 
-	init(session: URLSession = .shared, calendar: Calendar = Calendar(identifier: .gregorian)) {
+	init(session: URLSession = .shared) {
 		self.session = session
-		self.calendar = calendar
 	}
 
 	func currentFiscalYearEntries() async throws -> [FiscalMonitorParsedEntry] {
@@ -80,11 +79,17 @@ struct FiscalMonitorService {
 	}
 
 	func currentFiscalYearIssues() async throws -> [FiscalMonitorIssue] {
-		let (data, _) = try await session.data(from: indexURL)
-		guard let html = String(data: data, encoding: .utf8) else {
-			throw FiscalMonitorServiceError.invalidHTML
+		let issues: [FiscalMonitorIssue]
+		do {
+			let (data, _) = try await session.data(from: publicationsJSONURL)
+			issues = try Self.parsePublicationIssues(json: data, baseURL: publicationsJSONURL)
+		} catch {
+			let (data, _) = try await session.data(from: indexURL)
+			guard let html = String(data: data, encoding: .utf8) else {
+				throw FiscalMonitorServiceError.invalidHTML
+			}
+			issues = try Self.parseIssueLinks(html: html, baseURL: indexURL)
 		}
-		let issues = try Self.parseIssueLinks(html: html, baseURL: indexURL)
 		guard let latestFiscalYear = issues.map(\.fiscalYearStart).max() else {
 			throw FiscalMonitorServiceError.noIssueLinks
 		}
@@ -116,15 +121,37 @@ struct FiscalMonitorService {
 		return Array(issues)
 	}
 
+	static func parsePublicationIssues(json data: Data, baseURL: URL) throws -> [FiscalMonitorIssue] {
+		let decoder = JSONDecoder()
+		let publications = try decoder.decode(FiscalMonitorPublicationResponse.self, from: data)
+		let pattern = #"/fiscal-monitor/(\d{4})/(\d{2})\.html"#
+		let regex = try NSRegularExpression(pattern: pattern)
+		var issues: Set<FiscalMonitorIssue> = []
+
+		for publication in publications.data where publication.publicationType == "Fiscal Monitor" {
+			guard let match = regex.firstMatch(in: publication.link, range: NSRange(publication.link.startIndex..., in: publication.link)),
+				  let yearRange = Range(match.range(at: 1), in: publication.link),
+				  let monthRange = Range(match.range(at: 2), in: publication.link),
+				  let year = Int(publication.link[yearRange]),
+				  let month = Int(publication.link[monthRange]),
+				  let url = URL(string: publication.link, relativeTo: baseURL)?.absoluteURL else {
+				continue
+			}
+			issues.insert(FiscalMonitorIssue(year: year, month: month, url: url))
+		}
+		return Array(issues)
+	}
+
 	static func parseIssue(html: String, url: URL) throws -> FiscalMonitorParsedEntry {
 		guard let doc = try? HTML(html: html, url: url.absoluteString, encoding: .utf8) else {
 			throw FiscalMonitorServiceError.invalidHTML
 		}
-		let title = normalized(doc.at_css("title")?.text).replacingOccurrences(of: " - Canada.ca", with: "")
+		let issue = try issueFrom(url: url)
+		let sourceTitle = "Finance Canada Fiscal Monitor, \(monthName(issue.month)) \(issue.year)"
+		let sourceURL = sourceURL(doc: doc, baseURL: url).absoluteString
 		let publicationDate = parseMetadataDate(doc.at_xpath("//meta[@name='dcterms.issued']")?["content"])
 			?? parseMetadataDate(doc.at_xpath("//meta[@name='dcterms.modified']")?["content"])
 			?? Date()
-		let issue = try issueFrom(url: url)
 		guard let table = doc.css("table").first(where: { normalized($0.at_css("caption")?.text).contains("Summary statement of transactions") }) else {
 			throw FiscalMonitorServiceError.summaryTableMissing(url)
 		}
@@ -151,9 +178,17 @@ struct FiscalMonitorService {
 			budgetaryBalanceMillions: balance,
 			yearToDateBudgetaryBalanceMillions: yearToDateBalance,
 			annualBudgetProjectionMillions: annualProjection,
-			sourceTitle: title.isEmpty ? "The Fiscal Monitor" : title,
-			sourceURL: url.absoluteString
+			sourceTitle: sourceTitle,
+			sourceURL: sourceURL
 		)
+	}
+
+	private static func sourceURL(doc: HTMLDocument, baseURL: URL) -> URL {
+		if let href = doc.at_css("a.gc-dwnld-lnk")?["href"],
+		   let url = URL(string: href, relativeTo: baseURL)?.absoluteURL {
+			return url
+		}
+		return baseURL
 	}
 
 	private static func tableValues(_ table: XMLElement) -> [String: [Double]] {
@@ -245,5 +280,19 @@ struct FiscalMonitorService {
 
 	private static func fiscalMonthOrder(_ month: Int) -> Int {
 		month >= 4 ? month - 4 : month + 8
+	}
+}
+
+private struct FiscalMonitorPublicationResponse: Decodable {
+	let data: [FiscalMonitorPublication]
+}
+
+private struct FiscalMonitorPublication: Decodable {
+	let link: String
+	let publicationType: String
+
+	private enum CodingKeys: String, CodingKey {
+		case link
+		case publicationType = "pub-type"
 	}
 }

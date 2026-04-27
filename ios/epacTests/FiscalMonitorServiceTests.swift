@@ -11,6 +11,7 @@ struct FiscalMonitorServiceTests {
 			<meta name="dcterms.issued" content="2026-02-27"/>
 		</head>
 		<body>
+			<a class="gc-dwnld-lnk" href="/content/dam/fin/publications/fm-rf/2025/12/2025-12-eng.pdf">Download PDF</a>
 			<table class="table table-bordered">
 				<caption>Table 1<br><strong>Summary statement of transactions</strong><br><small>$ millions</small></caption>
 				<tbody>
@@ -43,6 +44,8 @@ struct FiscalMonitorServiceTests {
 		#expect(entry.budgetaryBalanceMillions == 245)
 		#expect(entry.yearToDateBudgetaryBalanceMillions == -26_140)
 		#expect(entry.annualBudgetProjectionMillions == -78_349)
+		#expect(entry.sourceTitle == "Finance Canada Fiscal Monitor, December 2025")
+		#expect(entry.sourceURL == "https://www.canada.ca/content/dam/fin/publications/fm-rf/2025/12/2025-12-eng.pdf")
 	}
 
 	@Test func parseIssueLinksFindsCurrentFiscalYearCandidates() throws {
@@ -63,5 +66,38 @@ struct FiscalMonitorServiceTests {
 		#expect(issues.count == 4)
 		#expect(issues.contains { $0.year == 2025 && $0.month == 4 && $0.fiscalYearStart == 2025 })
 		#expect(issues.contains { $0.year == 2026 && $0.month == 1 && $0.fiscalYearStart == 2025 })
+	}
+
+	@Test func parsePublicationJSONFindsFiscalMonitorIssues() throws {
+		let json = """
+		{
+			"data": [
+				{
+					"title": "The Fiscal Monitor - February 2026",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2026/02.html",
+					"pub-type": "Fiscal Monitor"
+				},
+				{
+					"title": "Official International Reserves - April 7, 2026",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/monthly-official-international-reserves/2026/04.html",
+					"pub-type": "Official International Reserves"
+				},
+				{
+					"title": "The Fiscal Monitor - April 2025",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2025/04.html",
+					"pub-type": "Fiscal Monitor"
+				}
+			]
+		}
+		"""
+
+		let issues = try FiscalMonitorService.parsePublicationIssues(
+			json: Data(json.utf8),
+			baseURL: URL(string: "https://www.canada.ca/content/dam/fin/documents/publications/pub-rep/json.json")!
+		)
+
+		#expect(issues.count == 2)
+		#expect(issues.contains { $0.year == 2026 && $0.month == 2 && $0.fiscalYearStart == 2025 })
+		#expect(issues.contains { $0.year == 2025 && $0.month == 4 && $0.fiscalYearStart == 2025 })
 	}
 }

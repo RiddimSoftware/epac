@@ -65,11 +65,11 @@ struct FederalFinancesView: View {
 					}
 				}
 
-				Section("Monthly Budgetary Balance") {
-					balanceChart
+				Section("Year-to-Date Balance vs Budget") {
+					ytdBudgetChart
 						.frame(height: 220)
 						.listRowInsets(EdgeInsets(top: 14, leading: 12, bottom: 14, trailing: 12))
-					Text("Positive values are surpluses. Negative values are deficits. Amounts are shown in billions of Canadian dollars.")
+					Text("The line shows the running year-to-date budgetary balance. The budget marker is the annual projection from the Fiscal Monitor. Amounts are shown in billions of Canadian dollars.")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
@@ -162,6 +162,30 @@ struct FederalFinancesView: View {
 			}
 		}
 		.padding(.vertical, 4)
+	}
+
+	private var ytdBudgetChart: some View {
+		Chart {
+			ForEach(currentFiscalYearEntries) { entry in
+				LineMark(
+					x: .value("Month", entry.monthName),
+					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / 1_000)
+				)
+				.foregroundStyle(.blue)
+				PointMark(
+					x: .value("Month", entry.monthName),
+					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / 1_000)
+				)
+				.foregroundStyle(.blue)
+			}
+
+			if let projection = latestEntry?.annualBudgetProjectionMillions {
+				RuleMark(y: .value("Budget projection", projection / 1_000))
+					.foregroundStyle(.orange)
+					.lineStyle(StrokeStyle(lineWidth: 2, dash: [5]))
+			}
+		}
+		.chartYAxisLabel("$B")
 	}
 
 	private var balanceChart: some View {
