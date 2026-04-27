@@ -4,6 +4,8 @@
 
 epac is an iOS civic-engagement app that displays Canada's House of Commons Hansard debates in a group-chat format. Stack: SwiftUI + SwiftData (iOS 17+), Python backend, static website.
 
+Brand and copy decisions live in `docs/brand/brand-brief-v1.md`. Treat that brief as the source of truth for product positioning, tagline, voice, tone, audience, and anti-positioning.
+
 ---
 
 ## Architecture
