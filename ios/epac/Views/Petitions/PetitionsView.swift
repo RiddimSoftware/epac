@@ -31,16 +31,18 @@ struct PetitionsView: View {
                 ProgressView()
                     .accessibilityLabel(Text("petitions.loading", comment: ""))
             } else if loadFailed && petitions.isEmpty {
-                ContentUnavailableView(
-                    NSLocalizedString("petitions.error.title", comment: ""),
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(NSLocalizedString("petitions.error.description", comment: ""))
+                EmptyStateView(
+                    icon: "exclamationmark.triangle",
+                    title: NSLocalizedString("petitions.error.title", comment: ""),
+                    message: NSLocalizedString("petitions.error.description", comment: ""),
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
                 )
             } else if filtered.isEmpty {
-                ContentUnavailableView(
-                    NSLocalizedString("petitions.empty.title", comment: ""),
-                    systemImage: "person.wave.2",
-                    description: Text(NSLocalizedString("petitions.empty.description", comment: ""))
+                EmptyStateView(
+                    icon: "person.wave.2",
+                    title: NSLocalizedString("petitions.empty.title", comment: ""),
+                    message: NSLocalizedString("petitions.empty.description", comment: ""),
+                    action: nil
                 )
             } else {
                 List(filtered) { petition in

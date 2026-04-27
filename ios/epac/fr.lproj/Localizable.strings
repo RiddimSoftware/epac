@@ -416,3 +416,8 @@
 "search.section.members" = "Membres";
 "search.section.votes" = "Votes";
 "search.section.debates" = "Débats";
+
+/* États vides (EPAC-107) */
+"empty.home.title" = "Configurez votre fil civique";
+"empty.home.message" = "Ajoutez votre code postal pour suivre votre député, ou abonnez-vous aux sujets et projets de loi qui vous intéressent.";
+"empty.home.action" = "Trouver mon député";

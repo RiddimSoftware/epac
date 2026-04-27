@@ -118,10 +118,11 @@ struct MyMPView: View {
                 } else if isLoading && activities.isEmpty {
                     ProgressView()
                 } else if activities.isEmpty {
-                    ContentUnavailableView(
-                        NSLocalizedString("myMP.empty.title", comment: ""),
-                        systemImage: "person.fill.viewfinder",
-                        description: Text(NSLocalizedString("myMP.empty.description", comment: ""))
+                    EmptyStateView(
+                        icon: "sparkles",
+                        title: NSLocalizedString("myMP.empty.title", comment: ""),
+                        message: NSLocalizedString("myMP.empty.description", comment: ""),
+                        action: nil
                     )
                 } else {
                     activityList
@@ -162,16 +163,15 @@ struct MyMPView: View {
     // MARK: - Subviews
 
     private var noMPSetView: some View {
-        ContentUnavailableView {
-            Label(NSLocalizedString("myMP.noMP.title", comment: ""), systemImage: "person.fill.viewfinder")
-        } description: {
-            Text(NSLocalizedString("myMP.noMP.description", comment: ""))
-        } actions: {
-            Button(NSLocalizedString("riding.setup.lookupButton", comment: "")) {
-                showPostalCodeSetup = true
-            }
-            .buttonStyle(.borderedProminent)
-        }
+        EmptyStateView(
+            icon: "mappin.and.ellipse",
+            title: NSLocalizedString("myMP.noMP.title", comment: ""),
+            message: NSLocalizedString("myMP.noMP.description", comment: ""),
+            action: EmptyStateAction(
+                label: NSLocalizedString("riding.setup.lookupButton", comment: ""),
+                handler: { showPostalCodeSetup = true }
+            )
+        )
     }
 
     private var activityList: some View {

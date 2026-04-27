@@ -414,3 +414,8 @@
 "search.section.members" = "Members";
 "search.section.votes" = "Votes";
 "search.section.debates" = "Debates";
+
+/* Empty states (EPAC-107) */
+"empty.home.title" = "Set up your civic feed";
+"empty.home.message" = "Add your postal code to track your MP, or follow topics and bills that matter to you.";
+"empty.home.action" = "Find my MP";
