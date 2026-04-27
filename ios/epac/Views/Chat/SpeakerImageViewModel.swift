@@ -43,7 +43,8 @@ class SpeakerImageViewModel {
 					Log.debug("\(error.localizedDescription)")
 					if fns.isEmpty {
 						Log.debug("Failed to download speaker image \(speaker.name)")
-						SentrySDK.capture(error: error)
+						// All fallback URLs exhausted — expected for MPs with no hosted photo.
+						// Not reported to Sentry: this is predictable URL-retry noise, not a crash.
 					}
 				}
 			}
