@@ -12,6 +12,7 @@ import Observation
 import CoreSpotlight
 
 struct ContentView: View {
+	private static let isAppStoreScreenshotMode = ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
@@ -21,8 +22,8 @@ struct ContentView: View {
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
-	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
-	@State private var showOnboarding = !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
+	@State private var showMyMPSetup = !Self.isAppStoreScreenshotMode && PostalCodeViewModel.savedRidingName == nil
+	@State private var showOnboarding = !Self.isAppStoreScreenshotMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
@@ -32,7 +33,9 @@ struct ContentView: View {
 
 	var body: some View {
 		Group {
-			if horizontalSizeClass == .compact {
+			if Self.isAppStoreScreenshotMode {
+				AppStoreScreenshotShowcaseView()
+			} else if horizontalSizeClass == .compact {
 				phoneLayout
 			} else {
 				iPadLayout
@@ -69,6 +72,7 @@ struct ContentView: View {
 			}
 		}
 		.task {
+			guard !Self.isAppStoreScreenshotMode else { return }
 			// Wire the router to the AppDelegate so Home Screen Quick Actions
 			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
 			appDelegate.router = router
@@ -389,4 +393,363 @@ struct ContentView: View {
 	}
 }
 
+// MARK: - App Store screenshot mode
 
+private struct AppStoreScreenshotShowcaseView: View {
+	@State private var selection = 0
+
+	private let pages: [AppStoreScreenshotPage] = [
+		.init(
+			headline: "Parliament in your pocket",
+			subtitle: "Follow bills, debates, votes, and your representatives from official records.",
+			accent: Color(red: 0.0, green: 0.44, blue: 0.89),
+			kind: .overview
+		),
+		.init(
+			headline: "See how your MP votes",
+			subtitle: "Every recorded division, grouped by Yea, Nay, paired, and absent.",
+			accent: .appPositive,
+			kind: .votes
+		),
+		.init(
+			headline: "Your MP. Everything they do.",
+			subtitle: "Speeches, votes, expenses, and contact details in one sourced profile.",
+			accent: Color.party(.liberal),
+			kind: .myMP
+		),
+		.init(
+			headline: "Track a bill start to finish",
+			subtitle: "See each stage from first reading to committee, votes, and Royal Assent.",
+			accent: Color.billStatus(.inProgress),
+			kind: .bill
+		),
+		.init(
+			headline: "Know who's influencing your MP",
+			subtitle: "Lobbying communications stay linked to the public registry source.",
+			accent: Color(red: 0.0, green: 0.64, blue: 0.69),
+			kind: .lobbying
+		),
+		.init(
+			headline: "Contact them in one tap",
+			subtitle: "Start from a real vote or debate and keep the official context attached.",
+			accent: .appWarning,
+			kind: .contact
+		)
+	]
+
+	var body: some View {
+		TabView(selection: $selection) {
+			ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
+				AppStoreScreenshotPageView(page: page)
+					.tag(index)
+			}
+		}
+		.tabViewStyle(.page(indexDisplayMode: .never))
+		.dynamicTypeSize(.large)
+		.preferredColorScheme(.light)
+	}
+}
+
+private struct AppStoreScreenshotPage {
+	enum Kind {
+		case overview
+		case votes
+		case myMP
+		case bill
+		case lobbying
+		case contact
+	}
+
+	let headline: String
+	let subtitle: String
+	let accent: Color
+	let kind: Kind
+}
+
+private struct AppStoreScreenshotPageView: View {
+	let page: AppStoreScreenshotPage
+
+	var body: some View {
+		ZStack(alignment: .topLeading) {
+			LinearGradient(
+				colors: [
+					page.accent.opacity(0.28),
+					Color(UIColor.systemBackground),
+					Color(UIColor.secondarySystemBackground)
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			)
+			.ignoresSafeArea()
+
+			VStack(alignment: .leading, spacing: 20) {
+				VStack(alignment: .leading, spacing: 10) {
+					Text(page.headline)
+						.font(.system(size: 31, weight: .heavy, design: .rounded))
+						.foregroundStyle(.primary)
+						.minimumScaleFactor(0.66)
+						.lineLimit(3)
+						.fixedSize(horizontal: false, vertical: true)
+						.accessibilityIdentifier("appStoreScreenshotHeadline")
+
+					Text(page.subtitle)
+						.font(.system(size: 13, weight: .medium, design: .rounded))
+						.foregroundStyle(.secondary)
+						.lineLimit(3)
+						.fixedSize(horizontal: false, vertical: true)
+				}
+				.padding(.horizontal, 28)
+
+				showcaseContent
+					.padding(.horizontal, 20)
+
+				Spacer(minLength: 18)
+			}
+			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+			.padding(.top, 42)
+		}
+	}
+
+	@ViewBuilder
+	private var showcaseContent: some View {
+		switch page.kind {
+		case .overview:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("Today in Parliament", systemImage: "building.columns.fill")
+					metricGrid([
+						("Bills", "C-226", "Second reading"),
+						("Debate", "Food prices", "Hansard 45-1"),
+						("Vote alerts", "On", "Followed bills")
+					])
+					activityRow(title: "Bill C-226 moved at second reading", detail: "National Framework for Food Price Transparency Act", color: page.accent)
+					activityRow(title: "Question from Andrew Lawton", detail: "Elgin-St. Thomas-London South, CPC", color: Color.party(.conservative))
+					sourceBadge("Source: House of Commons Hansard, 45th Parliament")
+				}
+			}
+		case .votes:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("Voting record", systemImage: "checklist.checked")
+					Text("Gurbux Saini")
+						.font(.system(size: 30, weight: .bold, design: .rounded))
+					Text("Fleetwood-Port Kells - Liberal")
+						.font(.system(size: 18, weight: .medium, design: .rounded))
+						.foregroundStyle(.secondary)
+					HStack(spacing: 14) {
+						votePill("Yea", count: "42", color: .appPositive)
+						votePill("Nay", count: "11", color: .appDestructive)
+						votePill("Paired", count: "2", color: .appWarning)
+					}
+					activityRow(title: "Bill C-226", detail: "Second reading - moved to committee", color: .appPositive)
+					activityRow(title: "Bill C-48", detail: "Referenced in debate on project reviews", color: .appDestructive)
+					sourceBadge("Source: Parliament of Canada recorded divisions")
+				}
+			}
+		case .myMP:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("My MP", systemImage: "person.crop.circle.fill")
+					HStack(spacing: 18) {
+						Circle()
+							.fill(Color.party(.liberal).opacity(0.18))
+							.frame(width: 72, height: 72)
+							.overlay(Text("GS").font(.system(size: 25, weight: .heavy, design: .rounded)).foregroundStyle(Color.party(.liberal)))
+						VStack(alignment: .leading, spacing: 6) {
+							Text("Gurbux Saini")
+								.font(.system(size: 23, weight: .bold, design: .rounded))
+							Text("Fleetwood-Port Kells")
+								.font(.system(size: 15, weight: .medium, design: .rounded))
+								.foregroundStyle(.secondary)
+								Text("Liberal")
+									.font(.system(size: 12, weight: .semibold, design: .rounded))
+									.padding(.horizontal, 12)
+									.padding(.vertical, 6)
+									.background(Color.party(.liberal).opacity(0.16))
+									.clipShape(Capsule())
+						}
+					}
+					activityRow(title: "Speech", detail: "Food price transparency second reading", color: Color.party(.liberal))
+					activityRow(title: "Question", detail: "Transparency in grocery pricing", color: Color.party(.conservative))
+					activityRow(title: "Follow", detail: "Get vote and debate notifications", color: page.accent)
+				}
+			}
+		case .bill:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("Bill C-226", systemImage: "doc.text.fill")
+					Text("National Framework for Food Price Transparency Act")
+						.font(.system(size: 21, weight: .bold, design: .rounded))
+						.fixedSize(horizontal: false, vertical: true)
+					VStack(alignment: .leading, spacing: 14) {
+						stage("First reading", done: true)
+						stage("Second reading", done: true)
+						stage("Committee", done: false, current: true)
+						stage("Report stage", done: false)
+						stage("Third reading", done: false)
+					}
+					sourceBadge("Source: LEGISinfo and House of Commons Hansard")
+				}
+			}
+		case .lobbying:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("Lobbying", systemImage: "person.2.wave.2.fill")
+					Text("Public registry links stay attached")
+						.font(.system(size: 21, weight: .bold, design: .rounded))
+					activityRow(title: "Agriculture and Agri-Food", detail: "Consumer pricing and supply chain policy", color: Color.party(.liberal))
+					activityRow(title: "Industry", detail: "Market transparency and competition", color: page.accent)
+					activityRow(title: "Finance", detail: "Affordability measures", color: .appWarning)
+					sourceBadge("Source: Commissioner of Lobbying registry")
+				}
+			}
+		case .contact:
+			phoneFrame {
+				VStack(alignment: .leading, spacing: 18) {
+					header("Contact your MP", systemImage: "envelope.fill")
+					VStack(alignment: .leading, spacing: 10) {
+						Text("Subject")
+							.font(.system(size: 16, weight: .semibold, design: .rounded))
+							.foregroundStyle(.secondary)
+						Text("Bill C-226 second reading")
+							.font(.system(size: 19, weight: .bold, design: .rounded))
+					}
+					Divider()
+					Text("I am writing about Bill C-226, An Act to establish a national framework to improve food price transparency. Please share how you plan to vote and why.")
+						.font(.system(size: 17, weight: .regular, design: .rounded))
+						.lineSpacing(5)
+					Text("Send")
+						.font(.system(size: 18, weight: .bold, design: .rounded))
+						.frame(maxWidth: .infinity)
+						.padding(.vertical, 16)
+						.background(page.accent)
+						.foregroundStyle(.white)
+						.clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+				}
+			}
+		}
+	}
+
+	private func phoneFrame<Content: View>(@ViewBuilder content: () -> Content) -> AnyView {
+		AnyView(
+			VStack(alignment: .leading, spacing: 0) {
+				content()
+					.padding(18)
+			}
+			.frame(maxWidth: .infinity, minHeight: 560, alignment: .topLeading)
+			.background(Color(UIColor.systemBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+			.shadow(color: .black.opacity(0.16), radius: 16, y: 10)
+		)
+	}
+
+	private func header(_ title: String, systemImage: String) -> AnyView {
+		AnyView(
+			HStack(spacing: 12) {
+				Image(systemName: systemImage)
+					.font(.system(size: 18, weight: .bold))
+					.foregroundStyle(page.accent)
+				Text(title)
+					.font(.system(size: 19, weight: .heavy, design: .rounded))
+				Spacer()
+			}
+		)
+	}
+
+	private func metricGrid(_ metrics: [(String, String, String)]) -> AnyView {
+		AnyView(
+			VStack(spacing: 10) {
+				ForEach(metrics, id: \.0) { metric in
+					HStack(spacing: 10) {
+						Text(metric.0)
+							.font(.system(size: 12, weight: .semibold, design: .rounded))
+							.foregroundStyle(.secondary)
+							.frame(width: 70, alignment: .leading)
+						Text(metric.1)
+							.font(.system(size: 18, weight: .heavy, design: .rounded))
+							.frame(width: 72, alignment: .leading)
+						Text(metric.2)
+							.font(.system(size: 12, weight: .medium, design: .rounded))
+							.foregroundStyle(.secondary)
+							.frame(maxWidth: .infinity, alignment: .leading)
+					}
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.padding(12)
+					.background(Color(UIColor.secondarySystemBackground))
+					.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+				}
+			}
+		)
+	}
+
+	private func activityRow(title: String, detail: String, color: Color) -> AnyView {
+		AnyView(
+			HStack(spacing: 14) {
+				RoundedRectangle(cornerRadius: 7, style: .continuous)
+					.fill(color)
+					.frame(width: 7, height: 40)
+				VStack(alignment: .leading, spacing: 5) {
+					Text(title)
+						.font(.system(size: 17, weight: .bold, design: .rounded))
+					Text(detail)
+						.font(.system(size: 13, weight: .medium, design: .rounded))
+						.foregroundStyle(.secondary)
+						.lineLimit(2)
+				}
+				Spacer()
+			}
+			.padding(12)
+			.background(Color(UIColor.secondarySystemBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+		)
+	}
+
+	private func votePill(_ label: String, count: String, color: Color) -> AnyView {
+		AnyView(
+			VStack(spacing: 6) {
+				Text(count)
+					.font(.system(size: 22, weight: .heavy, design: .rounded))
+				Text(label)
+					.font(.system(size: 12, weight: .bold, design: .rounded))
+			}
+			.frame(maxWidth: .infinity)
+			.padding(.vertical, 16)
+			.background(color.opacity(0.14))
+			.foregroundStyle(color)
+			.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+		)
+	}
+
+	private func stage(_ label: String, done: Bool, current: Bool = false) -> AnyView {
+		AnyView(
+			HStack(spacing: 12) {
+				Image(systemName: done ? "checkmark.circle.fill" : current ? "circle.dotted" : "circle")
+					.foregroundStyle(done ? .appPositive : current ? page.accent : .secondary)
+				Text(label)
+					.font(.system(size: 17, weight: current ? .heavy : .semibold, design: .rounded))
+				Spacer()
+				if current {
+					Text("Current")
+						.font(.system(size: 14, weight: .bold, design: .rounded))
+						.padding(.horizontal, 10)
+						.padding(.vertical, 5)
+						.background(page.accent.opacity(0.14))
+						.foregroundStyle(page.accent)
+						.clipShape(Capsule())
+				}
+			}
+		)
+	}
+
+	private func sourceBadge(_ text: String) -> AnyView {
+		AnyView(
+			Text(text)
+				.font(.system(size: 11, weight: .semibold, design: .rounded))
+				.foregroundStyle(.secondary)
+				.padding(.horizontal, 12)
+				.padding(.vertical, 8)
+				.background(Color(UIColor.tertiarySystemBackground))
+				.clipShape(Capsule())
+		)
+	}
+}
