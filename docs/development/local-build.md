@@ -55,10 +55,10 @@ bundle install
 
 ## Per-PR workflow
 
-Run this **after your changes are committed and before opening your PR**:
+Run this **after your changes are committed and before merging to `main`**:
 
 ```bash
-cd /path/to/epac-impl-X/ios
+cd ios
 bundle exec fastlane deploy
 ```
 
