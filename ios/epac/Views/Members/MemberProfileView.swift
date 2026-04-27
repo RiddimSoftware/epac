@@ -142,9 +142,9 @@ struct MemberProfileView: View {
 				}
 				.foregroundStyle(.primary)
 
-				NavigationLink(destination: MemberDebateActivityView(member: member)) {
+				NavigationLink(destination: MemberSpeechFeedView(member: member)) {
 					HStack {
-						Label("Debate Activity", systemImage: "text.bubble")
+						Label("Speeches", systemImage: "text.bubble.fill")
 						Spacer()
 						Image(systemName: "chevron.right")
 							.font(.caption)
