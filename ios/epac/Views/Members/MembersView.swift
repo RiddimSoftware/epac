@@ -22,42 +22,14 @@ struct MembersView: View {
 			if members.isEmpty {
 				loadingView
 			} else {
-				ZStack {
-					memberList
-					VStack {
-						Spacer()
-						HStack {
-							TextField("Search by name or riding", text: $viewModel.searchText)
-								.padding(7)
-								.padding(.horizontal, 25)
-								.background(Color.clear)
-								.overlay(
-									HStack {
-										Image(systemName: "magnifyingglass")
-											.foregroundColor(.gray)
-											.frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-											.padding(.leading, 8)
-	
-										if !viewModel.searchText.isEmpty {
-											Button(action: {
-												viewModel.searchText = ""
-											}) {
-												Image(systemName: "multiply.circle.fill")
-													.foregroundColor(.gray)
-													.padding(.trailing, 8)
-											}
-										}
-									}
-								)
-								.padding(.horizontal, 10)
-						}
-						.padding(.vertical, 5)
-						.glassHeaderStyle()
-					}
-					.padding(.bottom, 10)
-				}
+				memberList
 			}
 		}
+		.searchable(
+			text: $viewModel.searchText,
+			placement: .navigationBarDrawer(displayMode: .always),
+			prompt: NSLocalizedString("Search by name or riding", comment: "")
+		)
 		.toolbar {
 			ToolbarItemGroup(placement: .topBarTrailing) {
 				Menu {
@@ -307,16 +279,6 @@ private struct PartyFilterView: View {
 	)
 }
 
-extension View {
-	@ViewBuilder
-	func glassHeaderStyle() -> some View {
-		if #available(iOS 26.0, *) {
-			self.glassEffect()
-		} else {
-			self.background(.ultraThinMaterial)
-		}
-	}
-}
 
 
 

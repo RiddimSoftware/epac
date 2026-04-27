@@ -78,9 +78,10 @@ struct MemberVotingRecordView: View {
 					}
 					Section(NSLocalizedString("voting.recentVotes", comment: "")) {
 						ForEach(memberVotes) { mv in
-							VoteRow(memberVote: mv)
+							let rv = mv.vote  // pre-resolve relationship before SwiftUI render pass
+							VoteRow(memberVote: mv, rv: rv)
 								.swipeActions(edge: .leading) {
-									if let vote = mv.vote {
+									if let vote = rv {
 										Button {
 											let template = ContactMyMP.voteTemplate(
 												vote: vote, memberVote: mv.recordedVote)
@@ -92,7 +93,7 @@ struct MemberVotingRecordView: View {
 									}
 								}
 								.swipeActions(edge: .trailing, allowsFullSwipe: false) {
-									if let vote = mv.vote {
+									if let vote = rv {
 										Button {
 											shareItem = VoteSharer.shareItem(vote: vote, memberVote: mv, member: member)
 										} label: {
@@ -163,6 +164,7 @@ private struct SummaryPill: View {
 
 private struct VoteRow: View {
 	let memberVote: MemberVote
+	let rv: RecordedVote?  // pre-resolved by caller to avoid per-render relationship faults
 
 	private var voteColor: Color {
 		Color.ballot(memberVote.recordedVote)
@@ -185,7 +187,7 @@ private struct VoteRow: View {
 				.accessibilityHidden(true)
 
 			VStack(alignment: .leading, spacing: 3) {
-				if let vote = memberVote.vote {
+				if let vote = rv {
 					Text(vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn)
 						.font(.subheadline)
 						.lineLimit(2)
@@ -220,6 +222,6 @@ private struct VoteRow: View {
 		}
 		.padding(.vertical, 2)
 		.accessibilityElement(children: .combine)
-		.accessibilityLabel("\(memberVote.vote?.descriptionEn ?? "Vote \(memberVote.voteID)"), \(memberVote.recordedVote)")
+		.accessibilityLabel("\(rv?.descriptionEn ?? "Vote \(memberVote.voteID)"), \(memberVote.recordedVote)")
 	}
 }
