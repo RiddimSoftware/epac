@@ -166,9 +166,21 @@ struct SettingsView: View {
                 .sorted { $0.localizedName < $1.localizedName }
             Section(NSLocalizedString("settings.followed.topics", comment: "")) {
                 ForEach(followedTopics) { topic in
-                    Text(topic.localizedName)
-                        .font(.subheadline)
-                        .padding(.vertical, 2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(topic.localizedName)
+                            .font(.subheadline)
+                        Picker("", selection: Binding(
+                            get: { topicStore.granularity(for: topic.id) },
+                            set: { topicStore.setGranularity($0, for: topic.id) }
+                        )) {
+                            Text("Every debate").tag(TopicNotificationGranularity.everyDebate)
+                            Text("Only my MP").tag(TopicNotificationGranularity.onlyMyMP)
+                            Text("Off").tag(TopicNotificationGranularity.off)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 4)
                 }
                 .onDelete { indexSet in
                     let sorted = ParliamentaryTopic.all

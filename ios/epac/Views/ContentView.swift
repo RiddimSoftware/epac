@@ -49,6 +49,12 @@ struct ContentView: View {
 			router.selectedTab = .parliament
 			notificationManager.clearPendingDate()
 		}
+		.onChange(of: notificationManager.pendingTopicId) { _, topicId in
+			guard topicId != nil else { return }
+			// Topic-debate notifications navigate to Accountability (Topics live there per ADR-001).
+			router.selectedTab = .accountability
+			notificationManager.clearPendingDate()
+		}
 		.onContinueUserActivity(CSSearchableItemActionType) { activity in
 			guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
 			if let memberID = SpotlightIndexer.memberID(from: id) {

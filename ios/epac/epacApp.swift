@@ -9,9 +9,28 @@ import SwiftUI
 import SwiftData
 import BackgroundTasks
 import Sentry
+import UIKit
+
+// AppDelegate receives UIKit callbacks that SwiftUI lifecycle doesn't expose.
+// didRegisterForRemoteNotificationsWithDeviceToken persists the APNs token and
+// triggers backend device registration whenever the system issues a new token.
+class AppDelegate: NSObject, UIApplicationDelegate {
+	func application(
+		_ application: UIApplication,
+		didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+	) {
+		let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+		UserDefaults.standard.set(token, forKey: "epac.apnsToken")
+		Log.debug("APNs token registered: \(token.prefix(12))...")
+		Task {
+			await TopicFollowStore.shared.registerDevice()
+		}
+	}
+}
 
 @main
 struct epacApp: App {
+	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
 		do {
 			return try ModelContainer(
