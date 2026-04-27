@@ -20,6 +20,9 @@ struct MemberDebateActivityView: View {
 
 	@State private var isLoading = false
 	@State private var loadedCount = 0
+	/// True once the initial auto-load has been attempted (even if it returned no results).
+	/// Prevents the emptyView from flashing before the first load begins.
+	@State private var hasAttemptedLoad = false
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -60,7 +63,7 @@ struct MemberDebateActivityView: View {
 	var body: some View {
 		let stats = dayStats
 		Group {
-			if messages.isEmpty && isLoading {
+			if messages.isEmpty && (isLoading || !hasAttemptedLoad) {
 				loadingView
 			} else if messages.isEmpty {
 				emptyView
@@ -75,6 +78,7 @@ struct MemberDebateActivityView: View {
 			if messages.isEmpty && !isLoading {
 				await loadRecentSittings()
 			}
+			hasAttemptedLoad = true
 		}
 	}
 
@@ -110,6 +114,7 @@ struct MemberDebateActivityView: View {
 			}
 			.buttonStyle(.borderedProminent)
 			.controlSize(.regular)
+			.disabled(isLoading)
 		}
 		.padding(32)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
