@@ -16,15 +16,21 @@ struct SpeechViewModelTests {
 	/// Creates a Hansard with one subject → one speech → `messageCount` messages,
 	/// all attributed to a single Liberal speaker. Everything is saved to context.
 	private func setup(messageCount: Int = 3) throws -> (ModelContainer, ModelContext, Hansard, SubjectOfBusiness) {
+		try setup(parties: Array(repeating: "Lib", count: messageCount))
+	}
+
+	/// Creates a Hansard whose single speech has one message per entry in `parties`.
+	/// Each message gets a distinct speaker name so party changes produce distinct members.
+	private func setup(parties: [String]) throws -> (ModelContainer, ModelContext, Hansard, SubjectOfBusiness) {
 		let container = try makeContainer()
 		let context = ModelContext(container)
 
-		let messages = (0..<messageCount).map { i in
+		let messages = parties.enumerated().map { i, party in
 			SpeechMessage(
-				firstName: "Justin",
-				lastName: "Trudeau",
-				partyAbbreviation: "Lib",
-				ridingName: "Papineau",
+				firstName: "Speaker\(i)",
+				lastName: "Last\(i)",
+				partyAbbreviation: party,
+				ridingName: "Riding\(i)",
 				hansardID: String(format: "msg-%04d", i),
 				content: "Content \(i)",
 				timestamp: Date(timeIntervalSince1970: Double(i))
@@ -108,7 +114,7 @@ struct SpeechViewModelTests {
 
 		let membersAfter = try context.fetch(FetchDescriptor<ParliamentMember>())
 		#expect(membersAfter.count == 1)
-		#expect(membersAfter.first?.firstName == "Justin")
+		#expect(membersAfter.first?.firstName == "Speaker0")
 	}
 
 	// MARK: - reset
@@ -168,6 +174,75 @@ struct SpeechViewModelTests {
 		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
 		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
 		#expect(vm.tapAnywhereOpacity == 0.0)
+	}
+
+	/// isResuming overrides the message-count check: opacity stays 1 while replaying saved position.
+	@Test func tapAnywhereOpacityIsOneWhenIsResuming() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 3)
+
+		// Save a position at the second message so prepareResume replays 2 messages.
+		let speech = subject.speeches.first!
+		subject.currentSpeech = speech
+		subject.currentSpeechID = speech.hansardID
+		let savedMessage = speech.messages.first(where: { $0.hansardID == "msg-0001" })!
+		speech.currentMessage = savedMessage
+		speech.currentMessageID = savedMessage.hansardID
+		try context.save()
+
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		// 2 messages visible, but isResuming is true, so opacity must be 1.
+		#expect(vm.messages.count == 2)
+		#expect(vm.isResuming)
+		#expect(vm.tapAnywhereOpacity == 1.0)
+	}
+
+	// MARK: - isCurrentUser assignment
+
+	/// The first speaker in a fresh chat is Liberal, so they appear on the right (isCurrentUser = true).
+	@Test func nextMessageFirstLiberalSpeakerIsCurrentUser() throws {
+		let (container, context, hansard, subject) = try setup(parties: ["Lib"])
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		#expect(vm.messages.first?.user.isCurrentUser == true)
+	}
+
+	/// The first speaker in a fresh chat is Conservative (non-Liberal), so they appear on the left.
+	@Test func nextMessageFirstNonLiberalSpeakerIsNotCurrentUser() throws {
+		let (container, context, hansard, subject) = try setup(parties: ["CPC"])
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		#expect(vm.messages.first?.user.isCurrentUser == false)
+	}
+
+	/// When the speaker changes, isCurrentUser toggles so consecutive speakers
+	/// appear on opposite sides of the chat UI.
+	@Test func nextMessageTogglesIsCurrentUserOnSpeakerChange() throws {
+		// Lib speaker followed by a CPC speaker — distinct members, so toggle fires.
+		let (container, context, hansard, subject) = try setup(parties: ["Lib", "CPC"])
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		let firstSide = vm.messages[0].user.isCurrentUser
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		let secondSide = vm.messages[1].user.isCurrentUser
+
+		#expect(secondSide == !firstSide)
 	}
 
 	// MARK: - prepareResume
