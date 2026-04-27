@@ -37,6 +37,7 @@ struct TopicNotificationScheduler {
 
     /// Call after new bills are loaded.
     static func checkAndNotify(bills: [Bill]) {
+        guard NotificationPreferenceStore.shared.topicConsultations else { return }
         let store = TopicFollowStore.shared
         guard !store.followedIDs.isEmpty else { return }
         for bill in bills {
