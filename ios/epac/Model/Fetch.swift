@@ -460,6 +460,10 @@ actor Fetch: ObservableObject {
 			}
 			dates.sort(by: >)
 			UserDefaults.standard.set(dates, forKey: "calendardates_v2")
+			// Write next sitting to App Group for widget. No-op if App Group is not registered.
+			let nextSitting = dates.filter { $0 >= Calendar.current.startOfDay(for: Date()) }.last
+			WidgetDataWriter.writeNextSitting(nextSitting)
+			WidgetDataWriter.reloadWidgets()
 			return dates
 		} else {
 			return []
