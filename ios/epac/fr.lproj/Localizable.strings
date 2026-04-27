@@ -340,3 +340,8 @@
 "pbo.estimatesDiffer" = "Les estimations diffèrent de plus de 10 %";
 "pbo.viewReport" = "Voir le rapport complet du DPB →";
 "pbo.viewReport.accessibility" = "Voir le rapport complet du DPB pour %@";
+
+/* Sénat */
+"senate.mySenators.title" = "Mes sénateurs";
+"senate.card.name" = "Sénateur(trice) %@";
+"senate.card.accessibility" = "Sénateur(trice) %@, %@";

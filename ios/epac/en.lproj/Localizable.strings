@@ -340,3 +340,8 @@
 "pbo.estimatesDiffer" = "Estimates differ by more than 10%";
 "pbo.viewReport" = "View full PBO report →";
 "pbo.viewReport.accessibility" = "View full PBO report for %@";
+
+/* Senate */
+"senate.mySenators.title" = "My Senators";
+"senate.card.name" = "Senator %@";
+"senate.card.accessibility" = "Senator %@, %@";
