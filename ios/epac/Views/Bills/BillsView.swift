@@ -12,7 +12,7 @@ struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var statusFilter: BillStatus? = nil
+    @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
     @State private var typeFilter: BillTypeGroup? = nil
     @State private var billStore = BillFollowStore.shared
     @State private var shareItems: ActivityItem?
@@ -123,10 +123,28 @@ struct BillsView: View {
             }
         }
         .task { await load() }
+        .onChange(of: statusFilter) { saveStatusFilter() }
         .activitySheet($shareItems)
     }
 
     private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }
+
+    // MARK: - Filter persistence
+
+    private static let statusFilterKey = "bills.filter.status.persisted"
+
+    private static func loadStatusFilter() -> BillStatus? {
+        guard let raw = UserDefaults.standard.string(forKey: statusFilterKey) else { return nil }
+        return BillStatus(rawValue: raw)
+    }
+
+    private func saveStatusFilter() {
+        if let status = statusFilter {
+            UserDefaults.standard.set(status.rawValue, forKey: Self.statusFilterKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.statusFilterKey)
+        }
+    }
 
     @ViewBuilder
     private func filterButton(label: String, isActive: Bool, action: @escaping () -> Void) -> some View {

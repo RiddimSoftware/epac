@@ -37,6 +37,8 @@ struct PartyLineScoreView: View {
                 .font(.title2.weight(.semibold))
             ProgressView(value: result.score)
                 .tint(Color.party(member.party))
+                .accessibilityLabel(NSLocalizedString("partyLine.title", comment: ""))
+                .accessibilityValue(String(format: "%.0f%%", result.score * 100))
             Text(String(format: NSLocalizedString("partyLine.denominator", comment: ""),
                         result.withPartyCount, result.totalVotes))
                 .font(.caption2).foregroundStyle(.secondary)
