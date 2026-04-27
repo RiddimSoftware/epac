@@ -14,6 +14,7 @@ struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	var fetch: Fetch
+	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
@@ -36,6 +37,14 @@ struct ContentView: View {
 		.environment(router)
 		.onOpenURL { url in
 			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		}
+		.onChange(of: notificationManager.pendingDate) { _, date in
+			guard let date else { return }
+			let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+			viewModel.selectedDate = components
+			viewModel.onSelectedDateChanged(to: components, modelContext: modelContext, fetch: fetch)
+			router.selectedTab = .sittingCalendar
+			notificationManager.clearPendingDate()
 		}
 		.task {
 			networkMonitor.start()
@@ -68,6 +77,10 @@ struct ContentView: View {
 			calendarStack
 				.tabItem { Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName) }
 				.tag(AppTab.sittingCalendar)
+
+			SearchView()
+				.tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImageName) }
+				.tag(AppTab.search)
 
 			NavigationStack { MembersView() }
 				.tabItem { Label(AppTab.members.title, systemImage: AppTab.members.systemImageName) }
@@ -107,6 +120,8 @@ struct ContentView: View {
 			ZStack {
 				calendarStack
 					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
+				SearchView()
+					.opacity(router.selectedTab == .search ? 1 : 0)
 				NavigationStack { MembersView() }
 					.opacity(router.selectedTab == .members ? 1 : 0)
 				ExpendituresView()

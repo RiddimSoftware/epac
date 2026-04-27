@@ -30,9 +30,13 @@ struct epacApp: App {
 		}
 	}()
 
+	@State private var notificationManager = NotificationManager()
+
 	var body: some Scene {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer)
+				.environment(notificationManager)
+				.task { await notificationManager.requestAuthorization() }
 		}
 		.modelContainer(sharedModelContainer)
 	}
