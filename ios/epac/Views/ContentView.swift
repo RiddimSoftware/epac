@@ -63,16 +63,19 @@ struct ContentView: View {
 		.task {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
-			// Populate name cache for App Intents (OpenMemberIntent).
-			MemberNameCache.shared.populate(entries: members.map {
-				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)
-			})
-			// Index data into Spotlight after the initial sync so results are available system-wide.
-			let entries = SpotlightIndexer.makeEntries(from: members)
-			await SpotlightIndexer.indexMembers(entries)
-			// Request notification permission after initial content is loaded,
-			// so the system prompt appears in context rather than at cold launch.
+			// Notification permission is user-visible; show it promptly.
 			await notificationManager.requestAuthorization()
+			// Snapshot lightweight name data on @MainActor (no imageData access).
+			let nameEntries = members.map {
+				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)
+			}
+			let spotlightEntries = SpotlightIndexer.makeEntries(from: members)
+			// Run caching and Spotlight index at utility priority so the main thread
+			// stays free for keyboard animations immediately after first-launch sync.
+			Task(priority: .utility) {
+				MemberNameCache.shared.populate(entries: nameEntries)
+				await SpotlightIndexer.indexMembers(spotlightEntries)
+			}
 		}
 		.sheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }

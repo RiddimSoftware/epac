@@ -25,7 +25,9 @@ enum SpotlightIndexer {
         let partyFullName: String
         let partyAbbrev: String
         let province: String
-        let imageData: Data?
+        // imageData intentionally excluded: loading photo data for 338 members on the
+        // main thread (required for @MainActor makeEntries) caused a multi-second stall
+        // that delayed keyboard appearance. Spotlight thumbnails are optional cosmetic.
     }
 
     // Called after @Query members are available on the main actor.
@@ -41,8 +43,7 @@ enum SpotlightIndexer {
                 riding: $0.riding,
                 partyFullName: $0.party.fullName,
                 partyAbbrev: $0.party.abbreviation,
-                province: $0.province.rawValue,
-                imageData: $0.imageData
+                province: $0.province.rawValue
             )
         }
     }
@@ -55,7 +56,6 @@ enum SpotlightIndexer {
             attrs.contentDescription = "\(e.partyFullName) · \(e.riding)"
             attrs.keywords = [e.name, e.firstName, e.lastName, e.riding,
                               e.partyFullName, e.partyAbbrev, e.province]
-            attrs.thumbnailData = e.imageData
             return CSSearchableItem(
                 uniqueIdentifier: "\(memberDomain).\(e.memberID)",
                 domainIdentifier: memberDomain,
