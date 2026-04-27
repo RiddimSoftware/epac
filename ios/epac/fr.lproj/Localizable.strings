@@ -200,3 +200,45 @@
 
 /* Section d'activité Mon député */
 "myMP.activity.section" = "Activité récente";
+
+/* Suivi des projets de loi */
+"bills.navTitle" = "Projets de loi";
+"bills.browseAll" = "Parcourir les projets de loi";
+"bills.filter" = "Filtrer";
+"bills.filter.all" = "Tous";
+"bills.filter.status" = "Statut";
+"bills.filter.type" = "Type";
+"bills.loading" = "Chargement des projets de loi";
+"bill.status.inProgress" = "En cours";
+"bill.status.royalAssent" = "Sanction royale";
+"bill.status.defeated" = "Rejeté";
+"bill.status.unknown" = "Inconnu";
+"bill.type.houseGovernment" = "Projet de loi du gouvernement (Cdc)";
+"bill.type.privateMember" = "Projet de loi d'initiative parlementaire";
+"bill.type.senateGovernment" = "Projet de loi du gouvernement (Sénat)";
+"bill.type.senatePublic" = "Projet de loi d'intérêt public du Sénat";
+"bill.type.senatePrivate" = "Projet de loi d'intérêt privé (Sénat)";
+"bill.type.short.gov" = "Gouvernement";
+"bill.type.short.pmb" = "Initiative parlementaire";
+"bill.type.short.senate" = "Sénat";
+"bills.error.title" = "Impossible de charger les projets de loi";
+"bills.error.description" = "Vérifiez votre connexion et réessayez.";
+"bills.empty.title" = "Aucun projet de loi";
+"bills.empty.description" = "Aucun projet de loi ne correspond à votre filtre.";
+"bills.detail.number" = "Numéro";
+"bills.detail.status" = "Statut";
+"bills.detail.sponsor" = "Parrain";
+"bills.detail.stage" = "Étape actuelle";
+"bills.detail.introduced" = "Déposé";
+"bills.detail.type" = "Type";
+"bills.detail.timeline" = "Parcours législatif";
+"bills.detail.votes" = "Votes enregistrés";
+"bills.detail.debates" = "Débats";
+"bills.detail.legisinfo" = "Voir sur LEGISinfo";
+"bills.stage.houseFirst" = "Chambre — Première lecture";
+"bills.stage.houseSecond" = "Chambre — Deuxième lecture";
+"bills.stage.houseThird" = "Chambre — Troisième lecture";
+"bills.stage.senateFirst" = "Sénat — Première lecture";
+"bills.stage.senateSecond" = "Sénat — Deuxième lecture";
+"bills.stage.senateThird" = "Sénat — Troisième lecture";
+"bills.stage.royalAssent" = "Sanction royale";
