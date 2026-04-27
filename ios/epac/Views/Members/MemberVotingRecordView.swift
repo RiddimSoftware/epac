@@ -11,6 +11,7 @@ struct MemberVotingRecordView: View {
 	let member: ParliamentMember
 
 	@Environment(NavigationRouter.self) private var router
+	@EnvironmentObject private var fetch: Fetch
 	@Query private var memberVotes: [MemberVote]
 	@State private var shareItem: ActivityItem?
 	@State private var cachedStats = VoteStats()
@@ -149,6 +150,10 @@ struct MemberVotingRecordView: View {
 					}
 				}
 				.listStyle(.insetGrouped)
+				.refreshable {
+					guard member.memberID > 0 else { return }
+					try? await fetch.refreshMemberVotes(memberID: member.memberID)
+				}
 			}
 		}
 		.activitySheet($shareItem)

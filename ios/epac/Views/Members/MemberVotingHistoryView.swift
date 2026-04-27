@@ -69,6 +69,9 @@ struct MemberVotingHistoryView: View {
                     }
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    await loadVotes(forceRefresh: true)
+                }
                 .navigationDestination(item: $selectedVote) { selection in
                     VoteDetailView(mv: selection.mv, rv: selection.rv)
                         .environmentObject(fetch)
@@ -83,7 +86,7 @@ struct MemberVotingHistoryView: View {
     }
 
     @MainActor
-    private func loadVotes() async {
+    private func loadVotes(forceRefresh: Bool = false) async {
         isLoading = true
         loadFailed = false
         let mid = member.memberID
@@ -91,7 +94,11 @@ struct MemberVotingHistoryView: View {
             predicate: #Predicate { $0.memberID == mid }
         ))) ?? 0
         do {
-            try await fetch.downloadMemberVotes(memberID: mid)
+            if forceRefresh {
+                try await fetch.refreshMemberVotes(memberID: mid)
+            } else {
+                try await fetch.downloadMemberVotes(memberID: mid)
+            }
         } catch {
             loadFailed = true
         }

@@ -43,6 +43,31 @@ class SittingCalendarViewModel {
 		}
 	}
 
+	/// Force-reloads the current year from the network, bypassing the SwiftData cache.
+	func refresh(modelContext: ModelContext, fetch: Fetch) async {
+		loadFailed = false
+		do {
+			try await fetch.downloadSittingCalendar(currentYear)
+			let calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == currentYear })).first
+			let today = Foundation.Calendar.current.startOfDay(for: .now)
+			// Rebuild both sets from scratch so stale dates are cleared.
+			var newDates = Set<DateComponents>()
+			var newFutureDates = Set<DateComponents>()
+			calendar?.sittings.filter { $0 < today }.map {
+				Foundation.Calendar.current.dateComponents([.year, .month, .day], from: $0)
+			}.forEach { newDates.insert($0) }
+			calendar?.sittings.filter { $0 >= today }.map {
+				Foundation.Calendar.current.dateComponents([.year, .month, .day], from: $0)
+			}.forEach { newFutureDates.insert($0) }
+			dates = newDates
+			futureDates = newFutureDates
+		} catch {
+			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")
+			SentrySDK.capture(error: error)
+			loadFailed = true
+		}
+	}
+
 	func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange, modelContext: ModelContext, fetch: Fetch) {
 		if visibleDayRange.lowerBound.components.year! != currentYear {
 			currentYear = visibleDayRange.lowerBound.components.year!

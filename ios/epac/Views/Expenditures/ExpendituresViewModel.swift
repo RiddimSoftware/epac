@@ -86,6 +86,21 @@ class ExpendituresViewModel {
 		}
 	}
 
+	/// Force-reloads the current period from the network, bypassing the SwiftData cache.
+	@MainActor
+	func refresh(fetch: Fetch) async {
+		loadFailed = false
+		isLoading = true
+		do {
+			try await fetch.downloadExpenditures(year: selectedYear, quarter: selectedQuarter)
+		} catch {
+			Log.error("ExpendituresViewModel.refresh failed: \(error.localizedDescription)")
+			SentrySDK.capture(error: error)
+			loadFailed = true
+		}
+		isLoading = false
+	}
+
 	@MainActor
 	func shareExpenditures(expenditures: [SummaryExpenditure], members: [ParliamentMember]) -> ActivityItem? {
 		let view = VStack(spacing: 0) {
