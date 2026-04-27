@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct EPetition: Identifiable {
     let id: String           // petition number, e.g. "e-7344"
@@ -35,12 +36,12 @@ enum PetitionStatus: String {
         }
     }
 
-    var colorName: String {
+    var color: Color {
         switch self {
-        case .open:             return "green"
-        case .certified:        return "blue"
-        case .responseReceived: return "purple"
-        default:                return "gray"
+        case .open:             return Color(UIColor.systemGreen)
+        case .certified:        return Color(UIColor.systemBlue)
+        case .responseReceived: return Color(UIColor.systemPurple)
+        default:                return Color(UIColor.systemGray)
         }
     }
 }

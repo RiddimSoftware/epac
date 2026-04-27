@@ -57,7 +57,9 @@ struct PetitionsService {
         let rowMatches = rowRegex.matches(in: html, range: NSRange(location: 0, length: nsHtml.length))
 
         return rowMatches.compactMap { match -> EPetition? in
-            let rowContent = nsHtml.substring(with: match.range(at: 1))
+            let r = match.range(at: 1)
+            guard r.location != NSNotFound else { return nil }
+            let rowContent = nsHtml.substring(with: r)
             return parseRow(rowContent)
         }
     }

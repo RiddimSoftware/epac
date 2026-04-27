@@ -23,7 +23,7 @@ struct PetitionDetailView: View {
                     value: petition.status.displayName
                 )
                 LabeledContent(
-                    NSLocalizedString("petitions.signatures", comment: ""),
+                    NSLocalizedString("petitions.signatures.label", comment: ""),
                     value: "\(petition.signatureCount)"
                 )
                 if let deadline = petition.deadline {

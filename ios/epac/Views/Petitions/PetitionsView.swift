@@ -158,7 +158,7 @@ struct StatusBadge: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(Color(status.colorName))
+            .background(status.color)
             .clipShape(Capsule())
     }
 }

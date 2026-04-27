@@ -185,6 +185,7 @@
 "petition.status.responseReceived" = "Réponse reçue";
 "petition.status.unknown" = "Inconnu";
 "petitions.signatures" = "%d signatures";
+"petitions.signatures.label" = "Signatures";
 "petitions.number" = "Pétition";
 "petitions.status" = "Statut";
 "petitions.deadline" = "Date limite";
