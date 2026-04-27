@@ -41,7 +41,7 @@ def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     return jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
 
 
-def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, override: str | None) -> dict:
+def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, override: str | None, version: str | None = None) -> dict:
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.appstoreconnect.apple.com/v1/builds"
     params = {
@@ -81,6 +81,9 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, o
         prv_id = (prv_rel.get("data") or {}).get("id", "")
         build_version = version_map.get(prv_id, "unknown")
 
+        if version and build_version != version:
+            continue
+
         return {
             "build_number": build_number,
             "build_version": build_version,
@@ -103,6 +106,7 @@ def main() -> None:
     parser.add_argument("--latest", action="store_true", help="Return the most recent valid build (no cutoff)")
     parser.add_argument("--cutoff-hour", type=int, default=14, help="Hour (24h) in Eastern Time; ignored when --latest is set")
     parser.add_argument("--override", default="", help="Force a specific build number")
+    parser.add_argument("--version", default="", help="Filter by marketing version string (CFBundleShortVersionString)")
     parser.add_argument(
         "--output-format",
         choices=["github-output", "text"],
@@ -118,7 +122,7 @@ def main() -> None:
         cutoff_dt = datetime(today.year, today.month, today.day, args.cutoff_hour, 0, 0, tzinfo=et).astimezone(timezone.utc)
 
     token = get_asc_token(args.key_id, args.issuer_id, args.private_key_path)
-    result = find_qualifying_build(args.app_id, cutoff_dt, token, args.override or None)
+    result = find_qualifying_build(args.app_id, cutoff_dt, token, args.override or None, args.version or None)
 
     if args.output_format == "github-output":
         output_file = os.environ.get("GITHUB_OUTPUT", "/dev/stdout")

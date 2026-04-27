@@ -1,16 +1,17 @@
 name: Release to App Store
 
-# Trigger by pushing a version tag: git tag v1.2.3 && git push --tags
-# The tag itself is the signal that this build is ready to ship.
+# Triggered when a draft GitHub Release is published.
+# To start a release: run the "Create Release" workflow, smoke-test on
+# TestFlight, then publish the draft from the GitHub Releases page.
+
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
-      build_number:
-        description: 'Override: specific TestFlight build number (leave blank for latest)'
-        required: false
+      tag:
+        description: 'Release tag to submit (e.g. v1.2.3)'
+        required: true
         type: string
       dry_run:
         description: 'Dry run — find build and approve, but skip actual App Store submission'
@@ -24,14 +25,14 @@ concurrency:
 
 permissions:
   id-token: write   # OIDC AWS auth
-  contents: write   # create GitHub Release tags
+  contents: write   # update GitHub Release after submit
 
 env:
   APP_BUNDLE_ID: net.dinglebox.cabinetdoor
   APPLE_APP_ID: '1224459142'
 
 jobs:
-  # ─── Job 1: Find the TestFlight build to submit ───────────────────────────
+  # ─── Job 1: Find the TestFlight build matching this release ───────────────
   find-build:
     name: Find TestFlight build
     runs-on: ubuntu-latest
@@ -39,8 +40,18 @@ jobs:
       build_number: ${{ steps.find.outputs.build_number }}
       build_version: ${{ steps.find.outputs.build_version }}
       upload_time: ${{ steps.find.outputs.upload_time }}
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: tag
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -66,10 +77,8 @@ jobs:
       - name: Install Python dependencies
         run: pip3 install PyJWT requests cryptography --quiet
 
-      - name: Find build
+      - name: Find build matching release version
         id: find
-        env:
-          OVERRIDE_BUILD: ${{ inputs.build_number }}
         run: |
           python3 scripts/release/find_qualifying_build.py \
             --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
@@ -77,7 +86,7 @@ jobs:
             --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
             --app-id "${{ env.APPLE_APP_ID }}" \
             --latest \
-            --override "$OVERRIDE_BUILD" \
+            --version "${{ steps.tag.outputs.version }}" \
             --output-format github-output
 
   # ─── Job 2: Human approval gate ───────────────────────────────────────────
@@ -92,7 +101,9 @@ jobs:
         run: |
           echo "## Release candidate ready for approval"
           echo ""
-          echo "- **Build**: ${{ needs.find-build.outputs.build_version }} (#${{ needs.find-build.outputs.build_number }})"
+          echo "- **Version**: ${{ needs.find-build.outputs.build_version }}"
+          echo "- **Build**: #${{ needs.find-build.outputs.build_number }}"
+          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
           echo "- **Uploaded**: ${{ needs.find-build.outputs.upload_time }}"
           echo ""
           echo "Approve this deployment to submit to App Store review."
@@ -134,10 +145,11 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      - name: Generate release notes from merged PRs
+      - name: Write release notes from GitHub Release
         run: |
-          python3 scripts/release/generate_release_notes.py \
-            --output ios/fastlane/metadata/en-US/release_notes.txt
+          gh release view "${{ needs.find-build.outputs.tag }}" \
+            --json body --jq '.body' \
+            > ios/fastlane/metadata/en-US/release_notes.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -165,23 +177,13 @@ jobs:
             phased_release:true \
             reject_if_possible:true
 
-      - name: Create GitHub Release
-        run: |
-          TAG="${{ github.ref_name }}"
-          gh release create "$TAG" \
-            --title "$TAG (Build ${{ needs.find-build.outputs.build_number }})" \
-            --notes-file ios/fastlane/metadata/en-US/release_notes.txt \
-            --latest
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Summary
         run: |
           echo "## App Store submission complete"
           echo ""
           echo "- **Version**: ${{ needs.find-build.outputs.build_version }} (Build ${{ needs.find-build.outputs.build_number }})"
-          echo "- **Tag**: ${{ github.ref_name }}"
+          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
           echo "- **Status**: Submitted for review"
-          echo "- **Phased release**: enabled"
+          echo "- **Phased release**: enabled (7-day rollout)"
           echo ""
           echo "The build typically enters review within a few hours."

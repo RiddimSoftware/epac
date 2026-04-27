@@ -1,10 +1,20 @@
-name: Build and Deploy to App Store Connect
+name: Create Release
+
+# Manually triggered to build, upload to TestFlight, and create a draft
+# GitHub Release. Publish the draft when you're ready to submit to the
+# App Store — publishing fires the "Release to App Store" workflow.
 
 on:
   workflow_dispatch:
     inputs:
+      bump:
+        description: 'Version bump type'
+        required: false
+        type: choice
+        default: patch
+        options: [patch, minor, major]
       reason:
-        description: 'Reason for this build (optional)'
+        description: 'Reason for this release (optional, appears in the run log)'
         required: false
         type: string
 
@@ -12,23 +22,74 @@ concurrency:
   group: app-store-deploy
   cancel-in-progress: false   # never cancel a deploy mid-flight
 
+permissions:
+  contents: write   # create draft GitHub Release
+
+env:
+  APPLE_APP_ID: '1224459142'
+
 jobs:
-  deploy:
+  # ─── Job 1: Determine the next version ────────────────────────────────────
+  compute-version:
+    name: Compute next version
+    runs-on: ubuntu-latest
+    outputs:
+      next_version: ${{ steps.version.outputs.next_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so git tags are visible
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Fetch App Store Connect credentials
+        id: fetch-creds
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id appstore/connect-api \
+            --region us-east-1 \
+            --query SecretString \
+            --output text)
+          echo "key_id=$(echo "$SECRET" | jq -r '.key_id')" >> "$GITHUB_OUTPUT"
+          echo "issuer_id=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_OUTPUT"
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$SECRET" | jq -r '.private_key' \
+            > ~/.appstoreconnect/private_keys/AuthKey_$(echo "$SECRET" | jq -r '.key_id').p8
+          chmod 600 ~/.appstoreconnect/private_keys/*.p8
+
+      - name: Install Python dependencies
+        run: pip3 install PyJWT requests cryptography --quiet
+
+      - name: Compute next version
+        id: version
+        run: |
+          python3 scripts/release/compute_next_version.py \
+            --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
+            --issuer-id "${{ steps.fetch-creds.outputs.issuer_id }}" \
+            --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
+            --app-id "${{ env.APPLE_APP_ID }}" \
+            --bump "${{ inputs.bump }}" \
+            --output-format github-output
+
+  # ─── Job 2: Build and upload to TestFlight ────────────────────────────────
+  build-upload:
     name: Archive, sign, and upload to TestFlight
     runs-on: macos-15
-
+    needs: compute-version
+    outputs:
+      build_number: ${{ steps.build-number.outputs.build_number }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Pin Xcode. Update this when the project requires a newer release.
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      # Cache resolved SPM packages so dependency resolution is skipped on
-      # cache hits. Key changes whenever Package.resolved changes.
       - name: Cache Swift packages
         uses: actions/cache@v4
         with:
@@ -37,8 +98,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      # Install fastlane via Bundler. `bundler-cache: true` caches gems
-      # between runs using the Gemfile.lock as the cache key.
       - name: Set up Ruby and Bundler
         uses: ruby/setup-ruby@v1
         with:
@@ -46,15 +105,12 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      # Write the .p8 file to the standard location xcodebuild and fastlane
-      # both look for API keys. The filename must match AuthKey_<keyID>.p8.
       - name: Write App Store Connect API key
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.ASC_PRIVATE_KEY }}" \
             > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
 
-      # Create a short-lived keychain isolated from the user's login keychain.
       - name: Create ephemeral keychain
         run: |
           security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
@@ -66,11 +122,9 @@ jobs:
       #
       # Why: Apple caps distribution certificates at 2 per account. Letting
       # xcodebuild or the ASC API create a new cert on every CI run exhausts
-      # this limit within days (error: "Choose a certificate to revoke").
-      # The fix is to export the existing cert+key as a .p12 from Keychain
-      # Access on a developer machine, base64-encode it, and store it as the
-      # DISTRIBUTION_CERT_P12 secret. CI then installs this one cert each
-      # run instead of creating new ones.
+      # this limit within days. The fix is to export the existing cert+key as
+      # a .p12 from Keychain Access, base64-encode it, and store it as the
+      # DISTRIBUTION_CERT_P12 secret. CI then installs this one cert each run.
       #
       # Setup (one-time):
       #   1. Open Keychain Access → My Certificates
@@ -78,22 +132,14 @@ jobs:
       #   3. base64 -i DistributionCert.p12 | pbcopy
       #   4. Add GitHub secret DISTRIBUTION_CERT_P12 = (clipboard)
       #   5. Add GitHub secret DISTRIBUTION_CERT_PASSWORD = (the .p12 password)
-      #
-      # This step is skipped when the secret is absent (first-time setup or
-      # secret rotation). Without it, signing falls back to xcodebuild
-      # automatic provisioning, which will fail if the cert limit is exhausted.
       - name: Import distribution certificate
         env:
           DIST_CERT_P12: ${{ secrets.DISTRIBUTION_CERT_P12 }}
           DIST_CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERT_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Skip gracefully when the secret has not been configured yet.
-          # See the comment above for setup instructions.
           if [ -z "$DIST_CERT_P12" ]; then
             echo "⚠️  DISTRIBUTION_CERT_P12 secret is not set — skipping cert import."
-            echo "    Without it, xcodebuild may hit the 2-cert account limit."
-            echo "    See .github/workflows/build-deploy.yml for one-time setup steps."
             exit 0
           fi
           echo "$DIST_CERT_P12" | base64 --decode > /tmp/dist_cert.p12
@@ -115,7 +161,13 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          NEW_VERSION: ${{ needs.compute-version.outputs.next_version }}
         run: bundle exec fastlane deploy
+
+      - name: Read build number
+        id: build-number
+        working-directory: ios
+        run: echo "build_number=$(cat build_number.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Upload dSYMs to Sentry
         if: success()
@@ -134,3 +186,42 @@ jobs:
       - name: Delete ephemeral keychain
         if: always()
         run: security delete-keychain build.keychain 2>/dev/null || true
+
+  # ─── Job 3: Create draft GitHub Release ───────────────────────────────────
+  create-draft-release:
+    name: Create draft GitHub Release
+    runs-on: ubuntu-latest
+    needs: [compute-version, build-upload]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so generate_release_notes.py can find the last tag
+
+      - name: Generate release notes
+        run: |
+          python3 scripts/release/generate_release_notes.py \
+            --output /tmp/release_notes.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create draft release
+        run: |
+          VERSION="${{ needs.compute-version.outputs.next_version }}"
+          BUILD="${{ needs.build-upload.outputs.build_number }}"
+          gh release create "v${VERSION}" \
+            --title "v${VERSION} (Build ${BUILD})" \
+            --notes-file /tmp/release_notes.txt \
+            --draft \
+            --target "${{ github.sha }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Draft release created"
+          echo ""
+          echo "- **Version**: ${{ needs.compute-version.outputs.next_version }}"
+          echo "- **Build**: ${{ needs.build-upload.outputs.build_number }}"
+          echo ""
+          echo "Smoke-test this build on TestFlight, then publish the draft release"
+          echo "in GitHub to submit it to App Store review."
