@@ -154,6 +154,13 @@
 "debate.stat.bestDay" = "Meilleur jour";
 "debate.mostActive" = "Le plus actif :";
 
+/* Follow member */
+"follow.follow" = "Suivre";
+"follow.unfollow" = "Ne plus suivre";
+"follow.notification.vote" = "A voté %@ sur %@";
+"follow.notification.speech" = "A pris la parole aujourd'hui : %@";
+"follow.notification.expense" = "Les dépenses du T%d %d sont maintenant disponibles";
+
 /* Party-line voting score */
 "partyLine.title" = "Solidarité de parti";
 "partyLine.infoButton" = "À propos de ce score";

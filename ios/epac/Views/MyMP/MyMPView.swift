@@ -107,6 +107,7 @@ struct MyMPView: View {
     @State private var activities: [MPActivity] = []
     @State private var isLoading = false
     @State private var showPostalCodeSetup = false
+    @State private var followStore = MemberFollowStore.shared
 
     var body: some View {
         NavigationStack {
@@ -162,24 +163,55 @@ struct MyMPView: View {
         isLoading = true
         defer { isLoading = false }
 
-        guard let memberName = PostalCodeViewModel.savedMemberName else { return }
+        let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
 
-        // Resolve ParliamentMember
-        let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-        guard let mp = members.first(where: {
-            $0.name.localizedCaseInsensitiveContains(memberName) ||
-            memberName.localizedCaseInsensitiveContains($0.lastName)
-        }) else { return }
-        member = mp
+        // Resolve the saved MP (may be nil if no postal code set)
+        var primaryMP: ParliamentMember?
+        if let memberName = PostalCodeViewModel.savedMemberName {
+            primaryMP = allMembers.first(where: {
+                $0.name.localizedCaseInsensitiveContains(memberName) ||
+                memberName.localizedCaseInsensitiveContains($0.lastName)
+            })
+        }
+        member = primaryMP
+
+        // Build the union of members to load: saved MP + all followed MPs
+        var memberIDsToShow: Set<Int> = []
+        if let mp = primaryMP { memberIDsToShow.insert(mp.memberID) }
+        memberIDsToShow.formUnion(followStore.followedIDs)
+
+        guard !memberIDsToShow.isEmpty else { return }
+
+        let mpsToLoad = allMembers.filter { memberIDsToShow.contains($0.memberID) }
+
+        // Fetch all speeches and expenditures once; filter per member below
+        let allSpeeches = (try? modelContext.fetch(FetchDescriptor<Speech>())) ?? []
+        let allExps = (try? modelContext.fetch(FetchDescriptor<SummaryExpenditure>())) ?? []
 
         var all: [MPActivity] = []
+        for mp in mpsToLoad {
+            all += activitiesFor(mp: mp, allSpeeches: allSpeeches, allExps: allExps)
+        }
+
+        activities = all.sorted { $0.date > $1.date }
+    }
+
+    /// Collects MPActivity items for a single member from pre-fetched speech and expenditure arrays.
+    @MainActor
+    private func activitiesFor(
+        mp: ParliamentMember,
+        allSpeeches: [Speech],
+        allExps: [SummaryExpenditure]
+    ) -> [MPActivity] {
+        var result: [MPActivity] = []
 
         // Speeches: query SpeechMessage by name (predicate-filtered at DB level) to collect
-        // matching hansardIDs, then fetch only those Speech objects. This avoids faulting
+        // matching hansardIDs, then filter the pre-fetched Speech list. This avoids faulting
         // every speech's messages relationship, which would be O(speeches × messages).
         let mpFirstName = mp.firstName
         let mpLastName = mp.lastName
         let firstThreeFirst = String(mpFirstName.prefix(3))
+
         let matchingMessages = (try? modelContext.fetch(
             FetchDescriptor<SpeechMessage>(predicate: #Predicate {
                 $0.lastName == mpLastName
@@ -190,31 +222,26 @@ struct MyMPView: View {
                 .filter { $0.firstName.localizedCaseInsensitiveContains(firstThreeFirst) }
                 .map(\.hansardID)
         )
-        let mySpeeches: [Speech]
-        if matchingHansardIDs.isEmpty {
-            mySpeeches = []
-        } else {
-            mySpeeches = (try? modelContext.fetch(FetchDescriptor<Speech>())) ?? []
+        if !matchingHansardIDs.isEmpty {
+            result += allSpeeches
+                .filter { matchingHansardIDs.contains($0.hansardID) }
+                .map { .speech($0) }
         }
-        all += mySpeeches
-            .filter { matchingHansardIDs.contains($0.hansardID) }
-            .map { .speech($0) }
 
         // Votes: predicate on memberID
         let mid = mp.memberID
         let votes = (try? modelContext.fetch(FetchDescriptor<MemberVote>(
             predicate: #Predicate { $0.memberID == mid }
         ))) ?? []
-        all += votes.map { mv in .vote(mv, mv.vote) }
+        result += votes.map { mv in .vote(mv, mv.vote) }
 
         // Expenditures: match by last name and first-name prefix
-        let exps = (try? modelContext.fetch(FetchDescriptor<SummaryExpenditure>())) ?? []
-        let myExps = exps.filter {
+        let myExps = allExps.filter {
             $0.lastName.localizedCaseInsensitiveCompare(mpLastName) == .orderedSame &&
             $0.firstName.localizedCaseInsensitiveContains(firstThreeFirst)
         }
-        all += myExps.map { .expenditure($0) }
+        result += myExps.map { .expenditure($0) }
 
-        activities = all.sorted { $0.date > $1.date }
+        return result
     }
 }
