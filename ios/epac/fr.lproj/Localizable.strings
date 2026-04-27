@@ -535,3 +535,29 @@
 "gazette.detail.source" = "Source";
 "gazette.detail.fullText" = "Lire le texte intégral sur canadagazette.gc.ca";
 "gazette.detail.sourceLabel" = "Source officielle";
+
+/* Federal Contracts (EPAC-117) */
+"contracts.navTitle" = "Contrats fédéraux";
+"contracts.loading" = "Chargement des contrats fédéraux";
+"contracts.error.title" = "Impossible de charger les contrats";
+"contracts.error.description" = "Le flux de divulgation proactive est temporairement indisponible. Vérifiez votre connexion et réessayez.";
+"contracts.empty.title" = "Aucun contrat trouvé";
+"contracts.empty.description" = "Aucun contrat ne correspond à votre recherche. Essayez un nom de fournisseur ou de ministère.";
+"contracts.search.prompt" = "Rechercher par fournisseur ou ministère";
+"contracts.detail.navTitle" = "Contrat";
+"contracts.detail.info" = "Détails";
+"contracts.detail.date" = "Date du contrat";
+"contracts.detail.fiscal" = "Exercice financier";
+"contracts.detail.original" = "Valeur originale";
+"contracts.detail.refNumber" = "Numéro de référence";
+"contracts.detail.amendments" = "%d modification(s)";
+"contracts.detail.purpose" = "Description des travaux";
+"contracts.detail.source" = "Source";
+"contracts.detail.openData" = "Voir sur données.canada.ca";
+"contracts.detail.sourceLabel" = "Source officielle";
+"contracts.detail.sourceName" = "Secrétariat du Conseil du Trésor — Divulgation proactive des contrats";
+
+/* Home Screen Quick Actions (EPAC-351) */
+"quick.action.today.title" = "Aujourd'hui au Parlement";
+"quick.action.mymp.title" = "Trouver mon député";
+"quick.action.search.title" = "Rechercher des débats";
