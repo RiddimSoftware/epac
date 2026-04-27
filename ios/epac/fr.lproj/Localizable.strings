@@ -1,7 +1,13 @@
 /* Tab bar */
 "Sitting Calendar" = "Calendrier des séances";
+"Search" = "Recherche";
 "Members" = "Membres";
 "Expenditures" = "Dépenses";
+
+/* Search view */
+"Search debates" = "Rechercher des débats";
+"Search debate topics" = "Rechercher des sujets de débat";
+"Searches across all sitting days you've opened." = "Recherche dans tous les jours de séance que vous avez ouverts.";
 
 /* Sitting calendar view */
 "House of Commons Sitting Calendar" = "Calendrier des séances de la Chambre des communes";
