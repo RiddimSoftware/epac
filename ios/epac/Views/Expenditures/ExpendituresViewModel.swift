@@ -91,6 +91,7 @@ class ExpendituresViewModel {
 	func refresh(fetch: Fetch) async {
 		loadFailed = false
 		isLoading = true
+		defer { isLoading = false }
 		do {
 			try await fetch.downloadExpenditures(year: selectedYear, quarter: selectedQuarter)
 		} catch {
@@ -98,7 +99,6 @@ class ExpendituresViewModel {
 			SentrySDK.capture(error: error)
 			loadFailed = true
 		}
-		isLoading = false
 	}
 
 	@MainActor
