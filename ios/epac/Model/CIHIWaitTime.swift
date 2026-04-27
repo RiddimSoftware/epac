@@ -13,12 +13,13 @@ struct CIHIWaitTime {
     let dataYear: Int           // 2023
 }
 
-/// 2023 CIHI Wait Times for Health Services data.
-/// Source: Canadian Institute for Health Information, "Wait Times for Health Services" (2023).
-/// https://www.cihi.ca/en/wait-times-for-health-services
-/// Published November 2023. All figures in weeks (median and 90th percentile).
+/// 2023 CIHI Wait Times for Priority Procedures data.
+/// Source: Canadian Institute for Health Information, "Wait Times for Priority Procedures in Canada, 2024"
+/// (covers April 2022–March 2023 fiscal year data). Published April 4, 2024.
+/// https://www.cihi.ca/en/wait-times-for-priority-procedures-in-canada-2024
+/// All figures in weeks (median and 90th percentile).
 struct CIHIWaitTimeDatabase {
-    static let sourceURL = URL(string: "https://www.cihi.ca/en/wait-times-for-health-services")!
+    static let sourceURL = URL(string: "https://www.cihi.ca/en/wait-times-for-priority-procedures-in-canada-2024")!
     static let dataYear = 2023
     static let citation = "Canadian Institute for Health Information, 2023"
 
