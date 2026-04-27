@@ -17,6 +17,7 @@ struct BillDetailView: View {
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
     @State private var shareItem: ActivityItem?
+    @State private var myMP: ParliamentMember?
 
     var body: some View {
         List {
@@ -117,8 +118,12 @@ struct BillDetailView: View {
                 }
             }
 
-            // MARK: External link
+            // MARK: Actions
             Section {
+                ContactMyMPButton(
+                    myMP: myMP,
+                    template: ContactMyMP.billTemplate(bill: bill)
+                )
                 Link(NSLocalizedString("bills.detail.legisinfo", comment: ""),
                      destination: bill.legisInfoURL)
                     .foregroundStyle(Color.accentColor)
@@ -172,6 +177,15 @@ struct BillDetailView: View {
         let allSubjects = (try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>())) ?? []
         matchingDebates = allSubjects.filter {
             $0.title.localizedCaseInsensitiveContains(billNumber)
+        }
+
+        // My MP: resolve from postal code for Contact button
+        if let name = PostalCodeViewModel.savedMemberName {
+            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+            myMP = allMembers.first(where: {
+                $0.name.localizedCaseInsensitiveContains(name) ||
+                name.localizedCaseInsensitiveContains($0.lastName)
+            })
         }
     }
 }

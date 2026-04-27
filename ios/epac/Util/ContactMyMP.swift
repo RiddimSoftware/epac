@@ -47,6 +47,34 @@ Sincerely,
 		)
 	}
 
+	static func billTemplate(bill: Bill) -> Template {
+		let statusLine: String
+		switch bill.status {
+		case .royalAssent: statusLine = "Status: Received Royal Assent"
+		case .defeated:    statusLine = "Status: Defeated"
+		case .inProgress:  statusLine = "Status: \(bill.currentStage)"
+		case .unknown:     statusLine = "Status: \(bill.currentStage)"
+		}
+		return Template(
+			subject: "Regarding \(bill.number): \(bill.title)",
+			body: """
+Hello,
+
+I am writing to you as your constituent regarding the following bill currently before Parliament:
+
+\(bill.number): \(bill.title)
+Sponsored by: \(bill.sponsorName)
+\(statusLine)
+
+[Write your message here]
+
+Sincerely,
+[Your name]
+[Your address]
+"""
+		)
+	}
+
 	static func speechTemplate(subjectTitle: String, speakerName: String, date: Date) -> Template {
 		Template(
 			subject: "Regarding the debate on \(subjectTitle)",
