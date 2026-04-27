@@ -44,6 +44,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("gazette.navTitle", comment: ""), systemImage: "newspaper.fill")
 					}
 					.accessibilityHint("Opens Canada Gazette regulations and notices")
+					NavigationLink(destination: ContractsView()) {
+						Label(NSLocalizedString("contracts.navTitle", comment: ""), systemImage: "building.columns.fill")
+					}
+					.accessibilityHint("Opens federal government contracts from proactive disclosure")
 				}
 			}
 			.listStyle(.insetGrouped)
