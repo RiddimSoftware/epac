@@ -133,7 +133,7 @@ struct MembersView: View {
 	}
 }
 
-private struct MemberRow: View {
+struct MemberRow: View {
 	let member: ParliamentMember
 
 	var body: some View {

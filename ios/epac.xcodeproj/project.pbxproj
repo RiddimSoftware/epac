@@ -243,6 +243,7 @@
 			);
 			name = epacTests;
 			packageProductDependencies = (
+				A3FADE01DEAD00001DEAD002 /* SnapshotTesting */,
 			);
 			productName = epacTests;
 			productReference = A38427D62D062C8E00271C34 /* epacTests.xctest */;
@@ -336,6 +337,7 @@
 				A38138C32DD39D6F0062421F /* XCRemoteSwiftPackageReference "HorizonCalendar" */,
 				A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */,
 				A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */,
+				A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -848,6 +850,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.6;
+			};
+		};
 		A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/exyte/Chat";
@@ -928,6 +938,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */;
 			productName = Logging;
+		};
+		A3FADE01DEAD00001DEAD002 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
