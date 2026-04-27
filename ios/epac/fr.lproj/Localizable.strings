@@ -564,3 +564,20 @@
 "contracts.detail.openData" = "Voir sur données.canada.ca";
 "contracts.detail.sourceLabel" = "Source officielle";
 "contracts.detail.sourceName" = "Secrétariat du Conseil du Trésor — Divulgation proactive des contrats";
+
+/* Fiscal Monitor (EPAC-118) */
+"fiscalMonitor.navTitle" = "Finances fédérales";
+"fiscalMonitor.loading" = "Chargement des finances fédérales";
+"fiscalMonitor.error.title" = "Impossible de charger le Moniteur fiscal";
+"fiscalMonitor.error.description" = "Le Moniteur fiscal de Finances Canada est temporairement indisponible. Vérifiez votre connexion et réessayez.";
+"fiscalMonitor.empty.title" = "Aucune donnée du Moniteur fiscal";
+"fiscalMonitor.empty.description" = "Les résultats mensuels de Finances Canada apparaîtront ici après le téléchargement.";
+"fiscalMonitor.chart.title" = "Solde mensuel et cumul annuel";
+"fiscalMonitor.monthly.title" = "Résultats mensuels";
+"fiscalMonitor.source.title" = "Source officielle";
+"fiscalMonitor.published" = "Publié le %@";
+"fiscalMonitor.revenue" = "Revenus";
+"fiscalMonitor.expenses" = "Dépenses";
+"fiscalMonitor.ytd" = "Solde cumulé";
+"fiscalMonitor.alert" = "Le solde cumulé diffère de la projection budgétaire annuelle de plus de 5 %.";
+"fiscalMonitor.row.detail" = "Revenus %.1f G$ · Dépenses %.1f G$";

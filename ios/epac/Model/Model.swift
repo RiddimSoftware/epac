@@ -26,6 +26,7 @@ typealias SummaryExpenditure = SchemaV5.SummaryExpenditure
 typealias RecordedVote = SchemaV5.RecordedVote
 typealias MemberVote = SchemaV5.MemberVote
 typealias WrittenQuestion = SchemaV6.WrittenQuestion
+typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -1088,6 +1089,68 @@ enum SchemaV6: VersionedSchema {
 			self.responseDate = responseDate
 			self.responseTextEn = responseTextEn
 			self.daysElapsed = daysElapsed
+		}
+	}
+}
+
+// MARK: - SchemaV7
+
+enum SchemaV7: VersionedSchema {
+	static var versionIdentifier: Schema.Version { .init(7, 0, 0) }
+	static var models: [any PersistentModel.Type] {
+		// All V6 models unchanged + FiscalMonitorEntry.
+		SchemaV6.models + [FiscalMonitorEntry.self]
+	}
+
+	@Model
+	final class FiscalMonitorEntry: Identifiable {
+		@Attribute(.unique) var id: String
+		var fiscalYear: String
+		var month: Date
+		var publicationDate: Date
+		var revenueMillions: Double
+		var expenseMillions: Double
+		var budgetaryBalanceMillions: Double
+		var yearToDateBalanceMillions: Double
+		var annualBudgetProjectionMillions: Double?
+		var sourceTitle: String
+		var sourceURL: URL
+
+		var surplusOrDeficitLabel: String {
+			budgetaryBalanceMillions >= 0 ? "Surplus" : "Deficit"
+		}
+
+		var isBudgetVarianceAlert: Bool {
+			guard let annualBudgetProjectionMillions, annualBudgetProjectionMillions != 0 else {
+				return false
+			}
+			return abs(yearToDateBalanceMillions - annualBudgetProjectionMillions) / abs(annualBudgetProjectionMillions) > 0.05
+		}
+
+		init(
+			id: String,
+			fiscalYear: String,
+			month: Date,
+			publicationDate: Date,
+			revenueMillions: Double,
+			expenseMillions: Double,
+			budgetaryBalanceMillions: Double,
+			yearToDateBalanceMillions: Double,
+			annualBudgetProjectionMillions: Double?,
+			sourceTitle: String,
+			sourceURL: URL
+		) {
+			self.id = id
+			self.fiscalYear = fiscalYear
+			self.month = month
+			self.publicationDate = publicationDate
+			self.revenueMillions = revenueMillions
+			self.expenseMillions = expenseMillions
+			self.budgetaryBalanceMillions = budgetaryBalanceMillions
+			self.yearToDateBalanceMillions = yearToDateBalanceMillions
+			self.annualBudgetProjectionMillions = annualBudgetProjectionMillions
+			self.sourceTitle = sourceTitle
+			self.sourceURL = sourceURL
 		}
 	}
 }

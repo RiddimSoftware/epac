@@ -7,11 +7,11 @@ import SwiftData
 
 enum EpacMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self]
+        [SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self, SchemaV7.self]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV3toV4, migrateV4toV5, migrateV5toV6]
+        [migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7]
     }
 
     // Custom stage: V4 added contact fields to ParliamentMember, including the
@@ -43,5 +43,12 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
     static let migrateV5toV6 = MigrationStage.lightweight(
         fromVersion: SchemaV5.self,
         toVersion: SchemaV6.self
+    )
+
+    // Lightweight stage: V7 adds FiscalMonitorEntry. Pure new table, no
+    // existing model changes.
+    static let migrateV6toV7 = MigrationStage.lightweight(
+        fromVersion: SchemaV6.self,
+        toVersion: SchemaV7.self
     )
 }

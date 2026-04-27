@@ -561,3 +561,20 @@
 "contracts.detail.openData" = "View on open.canada.ca";
 "contracts.detail.sourceLabel" = "Official source";
 "contracts.detail.sourceName" = "Treasury Board Secretariat — Proactive Disclosure of Contracts";
+
+/* Fiscal Monitor (EPAC-118) */
+"fiscalMonitor.navTitle" = "Federal Finances";
+"fiscalMonitor.loading" = "Loading federal finances";
+"fiscalMonitor.error.title" = "Couldn't load Fiscal Monitor";
+"fiscalMonitor.error.description" = "Finance Canada's Fiscal Monitor is temporarily unavailable. Check your connection and try again.";
+"fiscalMonitor.empty.title" = "No Fiscal Monitor data";
+"fiscalMonitor.empty.description" = "Monthly Finance Canada results will appear here once downloaded.";
+"fiscalMonitor.chart.title" = "Monthly and year-to-date balance";
+"fiscalMonitor.monthly.title" = "Monthly results";
+"fiscalMonitor.source.title" = "Official source";
+"fiscalMonitor.published" = "Published %@";
+"fiscalMonitor.revenue" = "Revenue";
+"fiscalMonitor.expenses" = "Expenses";
+"fiscalMonitor.ytd" = "YTD balance";
+"fiscalMonitor.alert" = "Year-to-date balance differs from the annual budget projection by more than 5%.";
+"fiscalMonitor.row.detail" = "Revenue $%.1fB · Expenses $%.1fB";

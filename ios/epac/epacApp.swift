@@ -47,7 +47,7 @@ struct epacApp: App {
 	var sharedModelContainer: ModelContainer = {
 		do {
 			return try ModelContainer(
-				for: Schema(versionedSchema: SchemaV6.self),
+				for: Schema(versionedSchema: SchemaV7.self),
 				migrationPlan: EpacMigrationPlan.self,
 				configurations: [ModelConfiguration(isStoredInMemoryOnly: false)]
 			)

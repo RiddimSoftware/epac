@@ -69,6 +69,52 @@ actor Fetch: ObservableObject {
 		Log.debug("Fetch.backgroundRefresh()")
 		let year = Calendar.current.component(.year, from: Date())
 		try? await downloadSittingCalendar(year)
+		try? await downloadFiscalMonitorEntries()
+	}
+
+	func fiscalMonitorEntries() async throws {
+		Log.debug("Fetch.fiscalMonitorEntries()")
+		let fetched = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>())
+		if fetched.isEmpty {
+			try await downloadFiscalMonitorEntries()
+		}
+	}
+
+	func downloadFiscalMonitorEntries() async throws {
+		Log.debug("Fetch.downloadFiscalMonitorEntries()")
+		let parsedEntries = try await FiscalMonitorService.fetchCurrentFiscalYearEntries()
+		for parsed in parsedEntries {
+			let id = parsed.id
+			let existing = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>(predicate: #Predicate { $0.id == id }))
+			if let entry = existing.first {
+				entry.fiscalYear = parsed.fiscalYear
+				entry.month = parsed.month
+				entry.publicationDate = parsed.publicationDate
+				entry.revenueMillions = parsed.revenueMillions
+				entry.expenseMillions = parsed.expenseMillions
+				entry.budgetaryBalanceMillions = parsed.budgetaryBalanceMillions
+				entry.yearToDateBalanceMillions = parsed.yearToDateBalanceMillions
+				entry.annualBudgetProjectionMillions = parsed.annualBudgetProjectionMillions
+				entry.sourceTitle = parsed.sourceTitle
+				entry.sourceURL = parsed.sourceURL
+			} else {
+				modelContext.insert(FiscalMonitorEntry(
+					id: parsed.id,
+					fiscalYear: parsed.fiscalYear,
+					month: parsed.month,
+					publicationDate: parsed.publicationDate,
+					revenueMillions: parsed.revenueMillions,
+					expenseMillions: parsed.expenseMillions,
+					budgetaryBalanceMillions: parsed.budgetaryBalanceMillions,
+					yearToDateBalanceMillions: parsed.yearToDateBalanceMillions,
+					annualBudgetProjectionMillions: parsed.annualBudgetProjectionMillions,
+					sourceTitle: parsed.sourceTitle,
+					sourceURL: parsed.sourceURL
+				))
+			}
+		}
+		try modelContext.save()
+		UserDefaults.standard.set(Date(), forKey: "epac.sync.fiscalMonitor")
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
