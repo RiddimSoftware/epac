@@ -3,6 +3,5 @@ Allow: /
 
 # Don't crawl raw data files
 Disallow: /generate_ridings.py
-Disallow: /2024-12-11.xml
 
 Sitemap: https://epac.riddimsoftware.com/sitemap.xml
