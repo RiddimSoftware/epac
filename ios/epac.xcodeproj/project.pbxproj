@@ -341,7 +341,7 @@
 				A3D5168E2DE4FD4C00148AA8 /* XCRemoteSwiftPackageReference "swift-log" */,
 				A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */,
 				A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
-				A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-swift" */,
+				A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -910,9 +910,9 @@
 				minimumVersion = 1.6.3;
 			};
 		};
-		A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-swift" */ = {
+		A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/getsentry/sentry-swift.git";
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 8.0.0;
