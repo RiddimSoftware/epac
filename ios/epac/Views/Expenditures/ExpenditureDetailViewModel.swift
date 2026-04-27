@@ -7,6 +7,7 @@ import Observation
 import SwiftUI
 import ActivityView
 
+@MainActor
 @Observable
 class ExpenditureDetailViewModel {
 	enum SortOption: String, CaseIterable, Identifiable {
