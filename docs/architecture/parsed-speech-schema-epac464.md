@@ -1,7 +1,7 @@
 # Parsed Speech Schema (EPAC-464)
 
-**Status:** Accepted for v1  
-**Last updated:** 2026-04-27  
+**Status:** Accepted for v1
+**Last updated:** 2026-04-27
 **Decision owner:** Riddim Software
 
 ## Decision
