@@ -31,9 +31,8 @@ struct HomeFeedView: View {
     var body: some View {
         NavigationStack {
             List {
-                if isSittingToday {
-                    todaySection
-                }
+                // Always show today's Parliament status — VoiceOver users need to know whether sitting.
+                todaySection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
                     followedBillsSection
@@ -84,13 +83,15 @@ struct HomeFeedView: View {
                 router.selectedTab = .parliament
             } label: {
                 HStack {
-                    Image(systemName: "building.columns.fill")
-                        .foregroundStyle(.tint)
+                    Image(systemName: isSittingToday ? "building.columns.fill" : "building.columns")
+                        .foregroundStyle(isSittingToday ? Color.accentColor : Color.secondary)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(NSLocalizedString("home.parliament.sitting", comment: ""))
+                        Text(isSittingToday
+                            ? NSLocalizedString("home.parliament.sitting", comment: "")
+                            : NSLocalizedString("home.parliament.notSitting", comment: ""))
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(isSittingToday ? .primary : .secondary)
                         Text(Date(), style: .date)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -102,7 +103,9 @@ struct HomeFeedView: View {
                 }
             }
             .padding(.vertical, 2)
-            .accessibilityLabel(NSLocalizedString("home.parliament.sitting", comment: ""))
+            .accessibilityLabel(isSittingToday
+                ? NSLocalizedString("home.parliament.sitting", comment: "")
+                : NSLocalizedString("home.parliament.notSitting", comment: ""))
             .accessibilityHint("Opens Parliament tab")
         }
     }

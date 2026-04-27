@@ -206,6 +206,7 @@
 "petition.status.unknown" = "Inconnu";
 "petitions.signatures" = "%d signatures";
 "petitions.signatures.label" = "Signatures";
+"petitions.signatures.threshold" = "%d de plus pour une réponse du gouvernement";
 "petitions.number" = "Pétition";
 "petitions.status" = "Statut";
 "petitions.deadline" = "Date limite";
@@ -344,6 +345,7 @@
 
 /* Fil d'accueil personnalisé */
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
+"home.parliament.notSitting" = "La Chambre ne siège pas aujourd\'hui";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";

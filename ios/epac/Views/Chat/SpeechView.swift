@@ -159,6 +159,14 @@ struct SpeechView: View {
 		}
 		.activitySheet($item)
 		.toolbar {
+			ToolbarItem(placement: .topBarLeading) {
+				if let url = URL(string: "https://openparliament.ca/debates/\(hansard.parliamentNumber)/\(hansard.sessionNumber)/\(DateUtils.getCSVStringFromDate(hansard.date))/") {
+					Link(destination: url) {
+						Image(systemName: "safari")
+					}
+					.accessibilityLabel("Open in openparliament.ca")
+				}
+			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					withAnimation {
