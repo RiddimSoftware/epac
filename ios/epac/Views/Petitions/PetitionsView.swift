@@ -37,6 +37,15 @@ struct PetitionsView: View {
                     message: NSLocalizedString("petitions.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
                 )
+            } else if filtered.isEmpty && showOpenOnly {
+                EmptyStateView(
+                    icon: "checkmark.circle",
+                    title: NSLocalizedString("petitions.noOpen.title", comment: ""),
+                    message: NSLocalizedString("petitions.noOpen.description", comment: ""),
+                    action: EmptyStateAction(label: NSLocalizedString("petition.filter.all", comment: ""), handler: {
+                        showOpenOnly = false
+                    })
+                )
             } else if filtered.isEmpty {
                 EmptyStateView(
                     icon: "person.wave.2",

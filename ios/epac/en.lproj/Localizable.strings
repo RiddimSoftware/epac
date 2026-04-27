@@ -213,6 +213,8 @@
 "petitions.sign.footer" = "Opens in Safari. The app does not collect signatures.";
 "petitions.empty.title" = "No Petitions";
 "petitions.empty.description" = "No petitions found.";
+"petitions.noOpen.title" = "No Open Petitions";
+"petitions.noOpen.description" = "There are no open petitions right now. Tap below to see all petitions including closed ones.";
 "petitions.error.title" = "Couldn't Load Petitions";
 "petitions.error.description" = "Check your connection and try again.";
 
