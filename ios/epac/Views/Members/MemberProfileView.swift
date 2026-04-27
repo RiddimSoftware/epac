@@ -99,6 +99,20 @@ struct MemberProfileView: View {
 					.cornerRadius(12)
 				}
 				.foregroundStyle(.primary)
+
+				NavigationLink(destination: MemberDebateActivityView(member: member)) {
+					HStack {
+						Label("Debate Activity", systemImage: "text.bubble")
+						Spacer()
+						Image(systemName: "chevron.right")
+							.font(.caption)
+							.foregroundStyle(.tertiary)
+					}
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+				}
+				.foregroundStyle(.primary)
 			}
 			.padding()
 		}
