@@ -55,18 +55,27 @@ struct SpeakerView: View {
 		.accessibilityElement(children: .combine)
 		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName), \(speaker.riding), \(speaker.province.rawValue)")
 		.task {
+			// L1: NSCache fast path — already decoded in memory, zero cost.
+			if let cached = MemberImageCache.shared.image(for: speaker.photoURL) {
+				photo = cached
+				return
+			}
 			if let data = speaker.imageData {
-				// Decode stored image data off the main thread.
-				photo = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
+				// L2: SwiftData blob — decode off the main thread.
+				let decoded = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
+				if let decoded {
+					MemberImageCache.shared.store(decoded, for: speaker.photoURL)
+					photo = decoded
+				}
 			} else {
-				// Download then decode off the main thread.
+				// L3: Network download then decode off the main thread.
 				guard let (data, _) = try? await URLSession.shared.data(from: speaker.photoURL),
 					  !data.isEmpty else { return }
 				let decoded = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
 				guard let decoded else { return }
+				MemberImageCache.shared.store(decoded, for: speaker.photoURL)
 				photo = decoded
 				speaker.imageData = data
-				MemberImageCache.shared.store(decoded, for: speaker.photoURL)
 			}
 		}
 	}
