@@ -18,14 +18,13 @@ struct VancouverVotesView: View {
     }
 
     private var groupedVotes: [(key: String, votes: [VancouverCouncilVote])] {
-        let grouped = Dictionary(grouping: filteredVotes) { vote in
-            vote.voteNumber
+        let grouped = Dictionary(grouping: filteredVotes) { $0.voteNumber }
+        // Build a date-lookup dict so the sort is O(n log n) rather than O(n^2).
+        let latestDate: [String: Date] = grouped.mapValues { votes in
+            votes.map(\.date).max() ?? .distantPast
         }
         return grouped
-            .sorted { a, b in
-                (filteredVotes.first(where: { $0.voteNumber == a.key })?.date ?? .distantPast) >
-                (filteredVotes.first(where: { $0.voteNumber == b.key })?.date ?? .distantPast)
-            }
+            .sorted { latestDate[$0.key, default: .distantPast] > latestDate[$1.key, default: .distantPast] }
             .map { (key: $0.key, votes: $0.value) }
     }
 

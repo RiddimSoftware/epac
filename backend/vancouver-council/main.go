@@ -174,7 +174,6 @@ func parseVotes(r io.Reader) ([]VoteRecord, error) {
 			continue
 		}
 		voteDate := dateParser(dateStr)
-		id := fmt.Sprintf("%s-%s", voteNum, strings.ToLower(last))
 		votes = append(votes, VoteRecord{
 			VoteNumber:      voteNum,
 			MotionTitle:     title,
@@ -184,7 +183,6 @@ func parseVotes(r io.Reader) ([]VoteRecord, error) {
 			VoteDetail:      detail,
 			Category:        classifyVote(title),
 		})
-		_ = id
 	}
 	return votes, nil
 }

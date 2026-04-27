@@ -564,3 +564,14 @@
 "contracts.detail.openData" = "Voir sur données.canada.ca";
 "contracts.detail.sourceLabel" = "Source officielle";
 "contracts.detail.sourceName" = "Secrétariat du Conseil du Trésor — Divulgation proactive des contrats";
+
+/* Vancouver City Council */
+"vancouver.myCouncil.title" = "Mon conseil municipal (Vancouver)";
+"vancouver.councillor.nameLabel" = "%1$@ %2$@";
+"vancouver.votes.navTitle" = "Votes du conseil de Vancouver";
+"vancouver.votes.browseButton" = "Parcourir les votes du conseil";
+"vancouver.votes.filter" = "Filtrer par sujet";
+"vancouver.votes.allCategories" = "Tous les sujets";
+"vancouver.votes.empty.title" = "Aucun vote trouvé";
+"vancouver.votes.empty.description" = "Les votes du conseil municipal de Vancouver apparaîtront ici.";
+"vancouver.votes.sourceLink" = "Source : Données ouvertes de la Ville de Vancouver";
