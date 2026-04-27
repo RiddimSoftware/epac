@@ -190,6 +190,7 @@
 "petitions.navTitle" = "e-Petitions";
 "petitions.browseAll" = "Browse open petitions";
 "petitions.filter" = "Filter";
+"petitions.search.prompt" = "Search petitions";
 "petitions.loading" = "Loading petitions";
 "petition.filter.all" = "All petitions";
 "petition.status.open" = "Open";

@@ -12,9 +12,17 @@ struct PetitionsView: View {
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var showOpenOnly = true
+    @State private var searchText = ""
 
     private var filtered: [EPetition] {
-        showOpenOnly ? petitions.filter { $0.status == .open } : petitions
+        let statusFiltered = showOpenOnly ? petitions.filter { $0.status == .open } : petitions
+        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q.count >= 2 else { return statusFiltered }
+        return statusFiltered.filter {
+            $0.subject.localizedCaseInsensitiveContains(q) ||
+            $0.id.localizedCaseInsensitiveContains(q) ||
+            $0.keywords.contains { $0.localizedCaseInsensitiveContains(q) }
+        }
     }
 
     var body: some View {
@@ -47,6 +55,11 @@ struct PetitionsView: View {
         }
         .navigationTitle(NSLocalizedString("petitions.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .automatic),
+            prompt: NSLocalizedString("petitions.search.prompt", comment: "")
+        )
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

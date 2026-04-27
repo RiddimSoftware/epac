@@ -192,6 +192,7 @@
 "petitions.navTitle" = "e-Pétitions";
 "petitions.browseAll" = "Parcourir les pétitions ouvertes";
 "petitions.filter" = "Filtrer";
+"petitions.search.prompt" = "Rechercher des pétitions";
 "petitions.loading" = "Chargement des pétitions";
 "petition.filter.all" = "Toutes les pétitions";
 "petition.status.open" = "Ouverte";
