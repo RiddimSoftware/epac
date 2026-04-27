@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write         # To commit JSON files back to repo
+      id-token: write         # To authenticate to AWS via OIDC
 
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +27,9 @@ jobs:
         run: |
           SECRET=$(aws secretsmanager get-secret-value \
             --secret-id appstore/connect-api --query SecretString --output text)
-          echo "ASC_KEY_ID=$(echo $SECRET | jq -r '.key_id')" >> $GITHUB_ENV
-          echo "ASC_ISSUER_ID=$(echo $SECRET | jq -r '.issuer_id')" >> $GITHUB_ENV
-          echo "$SECRET" | jq -r '.private_key' > /tmp/AuthKey.p8
+          echo "ASC_KEY_ID=$(printf '%s' "$SECRET" | jq -r '.key_id')" >> $GITHUB_ENV
+          echo "ASC_ISSUER_ID=$(printf '%s' "$SECRET" | jq -r '.issuer_id')" >> $GITHUB_ENV
+          printf '%s' "$SECRET" | jq -r '.private_key' > /tmp/AuthKey.p8
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
