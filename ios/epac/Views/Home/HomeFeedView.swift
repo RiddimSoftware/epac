@@ -120,7 +120,7 @@ struct HomeFeedView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(name)
                                 .font(.subheadline.weight(.semibold))
-                                .lineLimit(1)
+                                .lineLimit(2)
                             Text(String(format: NSLocalizedString("home.myMP.activityCount", comment: ""), myMPActivityCount))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -166,7 +166,7 @@ struct HomeFeedView: View {
                         Text(state.lastKnownStage)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
                     }
                     Spacer()
                 }

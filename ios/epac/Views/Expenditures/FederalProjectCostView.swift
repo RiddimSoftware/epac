@@ -97,7 +97,7 @@ struct FederalProjectCostView: View {
 								.font(.system(size: 14))
 						}
 						Text(step.title)
-							.font(.system(size: 9, weight: .semibold))
+							.font(.system(.caption2, weight: .semibold))
 							.multilineTextAlignment(.center)
 							.foregroundStyle(.secondary)
 					}
@@ -135,11 +135,11 @@ struct FederalProjectCostView: View {
 		VStack(alignment: .leading, spacing: 3) {
 			Text(contract.supplier)
 				.font(.subheadline)
-				.lineLimit(1)
+				.lineLimit(2)
 			Text(contract.details.isEmpty ? "Contract" : contract.details)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(1)
+				.lineLimit(2)
 			HStack {
 				Text(contract.date.formatted(date: .abbreviated, time: .omitted))
 					.font(.caption2)
