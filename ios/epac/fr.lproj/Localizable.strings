@@ -215,6 +215,9 @@
 "petitions.sign.footer" = "S'ouvre dans Safari. L'application ne recueille pas de signatures.";
 "petitions.empty.title" = "Aucune pétition";
 "petitions.empty.description" = "Aucune pétition trouvée.";
+"petitions.noOpen.title" = "Aucune pétition ouverte";
+"petitions.noOpen.description" = "Il n'y a pas de pétitions ouvertes en ce moment. Appuyez ci-dessous pour voir toutes les pétitions.";
+"petitions.empty.description" = "Aucune pétition trouvée.";
 "petitions.error.title" = "Impossible de charger les pétitions";
 "petitions.error.description" = "Vérifiez votre connexion et réessayez.";
 

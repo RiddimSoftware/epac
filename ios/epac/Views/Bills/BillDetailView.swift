@@ -18,6 +18,7 @@ struct BillDetailView: View {
     @State private var matchingDebates: [SubjectOfBusiness] = []
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
+    @State private var sponsorMember: ParliamentMember?
 
     var body: some View {
         List {
@@ -32,10 +33,14 @@ struct BillDetailView: View {
                     value: bill.status.displayName
                 )
                 if !bill.sponsorName.isEmpty {
-                    LabeledContent(
-                        NSLocalizedString("bills.detail.sponsor", comment: ""),
-                        value: bill.sponsorName
-                    )
+                    LabeledContent(NSLocalizedString("bills.detail.sponsor", comment: "")) {
+                        HStack(spacing: 6) {
+                            Text(bill.sponsorName)
+                            if let party = sponsorMember?.party {
+                                PartyBadge(party: party)
+                            }
+                        }
+                    }
                 }
                 if !bill.currentStage.isEmpty {
                     LabeledContent(
@@ -190,12 +195,21 @@ struct BillDetailView: View {
             $0.title.localizedCaseInsensitiveContains(billNumber)
         }
 
-        // My MP: resolve from postal code for Contact button
+        // Resolve members once for both myMP and sponsorMember
+        let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
         if let name = PostalCodeViewModel.savedMemberName {
-            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
             myMP = allMembers.first(where: {
                 $0.name.localizedCaseInsensitiveContains(name) ||
                 name.localizedCaseInsensitiveContains($0.lastName)
+            })
+        }
+        // Sponsor party: match bill.sponsorName against member list for party badge
+        if !bill.sponsorName.isEmpty {
+            let parts = bill.sponsorName.components(separatedBy: " ")
+            let lastName = parts.last ?? ""
+            sponsorMember = allMembers.first(where: {
+                $0.lastName.localizedCaseInsensitiveCompare(lastName) == .orderedSame &&
+                bill.sponsorName.localizedCaseInsensitiveContains($0.firstName.prefix(3))
             })
         }
     }
