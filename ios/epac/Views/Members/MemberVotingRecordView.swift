@@ -14,6 +14,7 @@ struct MemberVotingRecordView: View {
 	@Query private var memberVotes: [MemberVote]
 	@State private var shareItem: ActivityItem?
 	@State private var cachedStats = VoteStats()
+	@State private var sortByBillNumber = false
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -35,6 +36,15 @@ struct MemberVotingRecordView: View {
 	}
 
 	// voteStats is computed once when memberVotes changes, not on every render.
+	private var sortedVotes: [MemberVote] {
+		if sortByBillNumber {
+			return memberVotes
+				.filter { !($0.vote?.billNumberCode ?? "").isEmpty }
+				.sorted { ($0.vote?.billNumberCode ?? "") < ($1.vote?.billNumberCode ?? "") }
+		}
+		return memberVotes  // already sorted voteID desc from @Query
+	}
+
 	private var yeaCount: Int    { cachedStats.yea }
 	private var nayCount: Int    { cachedStats.nay }
 	private var absentCount: Int { cachedStats.absent }
@@ -78,7 +88,7 @@ struct MemberVotingRecordView: View {
 							.padding(.vertical, 4)
 					}
 					Section(header: Text(NSLocalizedString("voting.recentVotes", comment: "")).accessibilityAddTraits(.isHeader)) {
-						ForEach(memberVotes) { mv in
+						ForEach(sortedVotes) { mv in
 							let rv = mv.vote  // pre-resolve relationship before SwiftUI render pass
 							VoteRow(memberVote: mv, rv: rv)
 								.swipeActions(edge: .leading) {
@@ -128,6 +138,19 @@ struct MemberVotingRecordView: View {
 			}
 			.padding(.horizontal)
 			.padding(.vertical, 6)
+		}
+		.toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					sortByBillNumber.toggle()
+				} label: {
+					Label(
+						sortByBillNumber ? "Sort by Date" : "Sort by Bill",
+						systemImage: sortByBillNumber ? "calendar" : "number"
+					)
+				}
+				.accessibilityLabel(sortByBillNumber ? "Sort by date" : "Sort by bill number")
+			}
 		}
 		.navigationTitle(NSLocalizedString("voting.title", comment: ""))
 		.navigationBarTitleDisplayMode(.inline)
