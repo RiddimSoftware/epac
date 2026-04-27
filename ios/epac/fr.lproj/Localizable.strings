@@ -363,3 +363,16 @@
 "senate.mySenators.title" = "Mes sénateurs";
 "senate.card.name" = "Sénateur(trice) %@";
 "senate.card.accessibility" = "Sénateur(trice) %@, %@";
+
+/* Comités */
+"committees.navTitle" = "Comités";
+"committees.error.title" = "Impossible de charger les comités";
+"committees.error.description" = "Vérifiez votre connexion et réessayez.";
+"committees.empty.title" = "Aucun comité";
+"committees.noMeetings" = "Aucune réunion récente";
+"committees.meeting.number" = "Réunion %d";
+"committees.agenda" = "Ordre du jour";
+"committees.viewTranscript" = "Voir la transcription complète sur parl.ca →";
+"committees.transcript.source" = "Les transcriptions complètes sont publiées par le Parlement du Canada sur parl.ca";
+"committees.witness" = "Témoin";
+"committees.mp" = "député(e)";
