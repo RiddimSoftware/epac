@@ -63,7 +63,8 @@ Before requesting review, the author must:
 
 - [ ] **Build passes.** Run `xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
 - [ ] **App runs.** Install and launch on the simulator: `xcrun simctl install FCFAF817-6694-402D-B116-A86EDAF34237 <DerivedData>/epac.app && xcrun simctl launch FCFAF817-6694-402D-B116-A86EDAF34237 net.dinglebox.cabinetdoor`
-- [ ] **Evidence posted.** Add a PR comment (and Jira comment) with: build result, a simulator screenshot showing the app running, and confirmation of the specific change (e.g. grep output showing removed code is gone).
+- [ ] **Screenshot taken and committed.** `xcrun simctl io FCFAF817-6694-402D-B116-A86EDAF34237 screenshot /tmp/epac-screenshot.png`, then copy to `docs/build-evidence/<ticket>-running.png` and commit to the branch. Reference via raw GitHub URL — never use placeholder asset URLs (they render as broken images).
+- [ ] **Evidence posted.** Add a PR comment and a Jira comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
 - [ ] **Size.** Aim for < 400 changed lines. Larger changes need a written justification in the description.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
