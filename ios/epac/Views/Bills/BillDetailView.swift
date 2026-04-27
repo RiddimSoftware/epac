@@ -92,6 +92,14 @@ struct BillDetailView: View {
                             }
                         }
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel({
+                        let status = stage.isCompleted ? "Completed" : "Pending"
+                        if let date = stage.completedDate {
+                            return "\(stage.name), \(status), \(date.formatted(date: .abbreviated, time: .omitted))"
+                        }
+                        return "\(stage.name), \(status)"
+                    }())
                 }
             }
 

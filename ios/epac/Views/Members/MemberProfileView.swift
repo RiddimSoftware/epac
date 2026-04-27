@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import ActivityView
+import AppIntents
 
 struct MemberProfileView: View {
 	let member: ParliamentMember
@@ -230,6 +231,12 @@ struct MemberProfileView: View {
 					}
 				}
 			}
+			// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
+			ShortcutsLink()
+				.shortcutsLinkStyle(.automaticOutline)
+				.padding(.top, 4)
+				.accessibilityLabel("Add epac to Siri and Shortcuts")
+
 			#if DEBUG
 			Text("Member ID: \(member.memberID)")
 				.font(.caption2)
