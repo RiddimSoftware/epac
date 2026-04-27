@@ -68,15 +68,9 @@
       Factual. Sourced. Short. Free.
     </p>
 
-    <!-- Mailchimp signup form -->
-    <!-- Replace ACTION_URL with your Mailchimp form action URL from:
-         Audience → Signup forms → Embedded forms → Form action URL -->
-    <form class="subscribe-form" action="MAILCHIMP_FORM_ACTION_URL" method="post" novalidate>
+    <form class="subscribe-form" action="mailto:sunny@riddimsoftware.com?subject=Parliament%20Monthly%20signup" method="post" enctype="text/plain" novalidate>
       <input type="email" name="EMAIL" placeholder="your@email.com" required aria-label="Email address">
-      <!-- Mailchimp anti-bot field — must be hidden and empty -->
-      <div style="position:absolute;left:-5000px" aria-hidden="true">
-        <input type="text" name="b_MAILCHIMP_PLACEHOLDER" tabindex="-1" value="">
-      </div>
+      <input type="hidden" name="SOURCE" value="subscribe-page">
       <button type="submit">Subscribe — it's free</button>
     </form>
     <p class="privacy-note">Monthly digest of parliamentary activity. Unsubscribe any time. No data sold.</p>
@@ -95,7 +89,7 @@
   </main>
 
   <footer style="text-align:center;padding:2rem;color:#888;font-size:.8rem;opacity:.6">
-    <p><a href="/">epac</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/privacy.html">Privacy</a></p>
+    <p><a href="/">epac</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/faq.html">FAQ</a> &middot; <a href="/privacy.html">Privacy</a></p>
   </footer>
 </body>
 </html>
