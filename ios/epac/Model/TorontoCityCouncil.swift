@@ -187,7 +187,7 @@ struct TorontoCouncilService {
         parser.locale = Locale(identifier: "en_CA_POSIX")
         parser.timeZone = TimeZone(identifier: "America/Toronto")
         for candidate in [trimmed, withoutMeridiem] {
-            for format in ["yyyy-MM-dd HH:mm a", "yyyy-MM-dd h:mm a", "yyyy-MM-dd HH:mm"] {
+            for format in ["yyyy-MM-dd HH:mm a", "yyyy-MM-dd h:mm a", "yyyy-MM-dd HH:mm", "yyyy-MM-dd"] {
                 parser.dateFormat = format
                 if let date = parser.date(from: candidate) { return date }
             }

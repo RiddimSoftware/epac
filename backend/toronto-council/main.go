@@ -229,7 +229,7 @@ func parseTorontoDate(value string) time.Time {
 	withoutMeridiem := strings.TrimSuffix(strings.TrimSuffix(value, " AM"), " PM")
 	location, _ := time.LoadLocation("America/Toronto")
 	for _, candidate := range []string{value, withoutMeridiem} {
-		for _, layout := range []string{"2006-01-02 15:04 PM", "2006-01-02 3:04 PM", "2006-01-02 15:04"} {
+		for _, layout := range []string{"2006-01-02 15:04 PM", "2006-01-02 3:04 PM", "2006-01-02 15:04", "2006-01-02"} {
 			if t, err := time.ParseInLocation(layout, candidate, location); err == nil {
 				return t
 			}

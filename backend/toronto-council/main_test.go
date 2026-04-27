@@ -62,6 +62,16 @@ func TestNormalizeVote(t *testing.T) {
 	}
 }
 
+func TestParseTorontoDateAcceptsDateOnlyOpenDataValue(t *testing.T) {
+	date := parseTorontoDate("2026-04-16")
+	if date.IsZero() {
+		t.Fatal("expected parsed date")
+	}
+	if got := date.Format("2006-01-02"); got != "2026-04-16" {
+		t.Fatalf("got %q, want 2026-04-16", got)
+	}
+}
+
 func TestClassifyVote(t *testing.T) {
 	if got := classifyVote("Transit priority traffic lane"); got != "Transportation" {
 		t.Fatalf("got %q, want Transportation", got)

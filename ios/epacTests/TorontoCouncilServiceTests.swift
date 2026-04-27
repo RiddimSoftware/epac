@@ -35,6 +35,23 @@ struct TorontoCouncilServiceTests {
         #expect(!TorontoCouncilService.isTorontoRiding("Vancouver East"))
     }
 
+    @Test func parsesDateOnlyOpenDataVoteRecord() {
+        let records: [[String: Any]] = [[
+            "_id": 41710,
+            "First Name": "Paul",
+            "Last Name": "Ainslie",
+            "Date/Time": "2026-04-16",
+            "Agenda Item #": "2026.TTC14.18",
+            "Agenda Item Title": "Motion without Notice - Responding to Bill 98",
+            "Vote": "Absent"
+        ]]
+
+        let votes = TorontoCouncilService.parseVoteRecords(records)
+
+        #expect(votes.count == 1)
+        #expect(votes[0].date > Date.distantPast)
+    }
+
     @Test func matchesCouncillorByTorontoWardName() {
         let councillors = [
             TorontoCouncillor(
