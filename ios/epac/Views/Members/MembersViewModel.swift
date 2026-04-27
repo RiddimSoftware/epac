@@ -5,6 +5,7 @@
 
 import Observation
 
+@MainActor
 @Observable
 class MembersViewModel {
 	enum MemberStatus: String, CaseIterable {
