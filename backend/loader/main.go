@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,22 +14,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type Intervention struct {
-	Id      string
-	Speaker string
-	Content string
-}
-
+// Member matches the members XML format from Parliament.ca.
 type Member struct {
-	PersonId     string    `xml:"PersonId"`
-	Honorific    string    `xml:"PersonShortHonorific"`
-	FirstName    string    `xml:"PersonOfficialFirstName"`
-	LastName     string    `xml:"PersonOfficialLastName"`
-	Constituency string    `xml:"ConstituencyName"`
-	Province     string    `xml:"ConstituencyProvinceTerritoryName"`
-	Caucus       string    `xml:"CaucusShortName"`
-	FromDate     string    `xml:"FromDateTime"`
-	ToDate       *string   `xml:"ToDateTime"`
+	PersonId     string  `xml:"PersonId"`
+	Honorific    string  `xml:"PersonShortHonorific"`
+	FirstName    string  `xml:"PersonOfficialFirstName"`
+	LastName     string  `xml:"PersonOfficialLastName"`
+	Constituency string  `xml:"ConstituencyName"`
+	Province     string  `xml:"ConstituencyProvinceTerritoryName"`
+	Caucus       string  `xml:"CaucusShortName"`
+	FromDate     string  `xml:"FromDateTime"`
+	ToDate       *string `xml:"ToDateTime"`
 }
 
 type MemberArray struct {
@@ -61,23 +55,18 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
-	// Ensure schema exists
-	err = ensureSchema(ctx, conn)
-	if err != nil {
+	if err := ensureSchema(ctx, conn); err != nil {
 		fmt.Printf("Error ensuring schema: %v\n", err)
 		return
 	}
 
-	// 1. Load Members
 	if passedFlags["members"] {
 		fmt.Printf("Loading members from %s...\n", *membersPath)
-		err = loadMembers(ctx, conn, *membersPath)
-		if err != nil {
+		if err := loadMembers(ctx, conn, *membersPath); err != nil {
 			fmt.Printf("Error loading members: %v\n", err)
 		}
 	}
 
-	// 2. Load Speeches
 	if passedFlags["speeches"] {
 		files, err := filepath.Glob(filepath.Join(*speechesDir, "*.XML"))
 		if err != nil {
@@ -85,30 +74,40 @@ func main() {
 			return
 		}
 
+		total := 0
 		for _, file := range files {
+			// Skip pre-44th Parliament files (filenames like 44-1-HAN001-E.XML)
 			base := filepath.Base(file)
 			parts := strings.Split(base, "-")
 			if len(parts) > 0 {
-				parliament, err := strconv.Atoi(parts[0])
-				if err == nil && parliament < 40 {
+				parl, err := strconv.Atoi(parts[0])
+				if err == nil && parl < 40 {
 					continue
 				}
 			}
 
-			fmt.Printf("Loading speeches from %s...\n", file)
-			interventions, err := parseHansardFile(file)
+			fmt.Printf("Loading speeches from %s...\n", base)
+			f, err := os.Open(file)
 			if err != nil {
-				fmt.Printf("  Error parsing %s: %v\n", file, err)
+				fmt.Printf("  Error opening %s: %v\n", base, err)
+				continue
+			}
+			interventions, err := ParseHansardXML(f)
+			f.Close()
+			if err != nil {
+				fmt.Printf("  Error parsing %s: %v\n", base, err)
 				continue
 			}
 
-			err = bulkInsertSpeeches(ctx, conn, file, interventions)
+			n, err := bulkInsertSpeeches(ctx, conn, base, interventions)
 			if err != nil {
-				fmt.Printf("  Error inserting %s: %v\n", file, err)
+				fmt.Printf("  Error inserting %s: %v\n", base, err)
 			} else {
-				fmt.Printf("  Successfully loaded %d entries\n", len(interventions))
+				fmt.Printf("  Loaded %d interventions\n", n)
+				total += n
 			}
 		}
+		fmt.Printf("Total interventions loaded: %d\n", total)
 	}
 }
 
@@ -120,23 +119,19 @@ func loadMembers(ctx context.Context, conn *pgx.Conn, filename string) error {
 	defer f.Close()
 
 	var memberArray MemberArray
-	decoder := xml.NewDecoder(f)
-	if err := decoder.Decode(&memberArray); err != nil {
+	if err := xml.NewDecoder(f).Decode(&memberArray); err != nil {
 		return err
 	}
 
-	rows := [][]interface{}{}
+	rows := make([][]interface{}, 0, len(memberArray.Members))
 	for _, m := range memberArray.Members {
-		// Clean up dates
 		fromDate, _ := time.Parse("2006-01-02T15:04:05", m.FromDate)
 		var toDate interface{}
 		if m.ToDate != nil && *m.ToDate != "" {
-			t, err := time.Parse("2006-01-02T15:04:05", *m.ToDate)
-			if err == nil {
+			if t, err := time.Parse("2006-01-02T15:04:05", *m.ToDate); err == nil {
 				toDate = t
 			}
 		}
-
 		rows = append(rows, []interface{}{
 			m.PersonId, m.Honorific, m.FirstName, m.LastName,
 			m.Constituency, m.Province, m.Caucus, fromDate, toDate,
@@ -146,122 +141,106 @@ func loadMembers(ctx context.Context, conn *pgx.Conn, filename string) error {
 	_, err = conn.CopyFrom(
 		ctx,
 		pgx.Identifier{"members"},
-		[]string{"person_id", "honorific", "first_name", "last_name", "constituency", "province", "caucus", "from_date", "to_date"},
+		[]string{"person_id", "honorific", "first_name", "last_name",
+			"constituency", "province", "caucus", "from_date", "to_date"},
 		pgx.CopyFromRows(rows),
 	)
 	if err == nil {
-		fmt.Printf("  Successfully loaded %d members\n", len(memberArray.Members))
+		fmt.Printf("  Loaded %d members\n", len(memberArray.Members))
 	}
 	return err
 }
 
-func parseHansardFile(filename string) ([]Intervention, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+// bulkInsertSpeeches upserts interventions using ON CONFLICT DO NOTHING so
+// re-running the loader on the same file is safe.
+func bulkInsertSpeeches(ctx context.Context, conn *pgx.Conn, filename string, interventions []Intervention) (int, error) {
+	if len(interventions) == 0 {
+		return 0, nil
 	}
-	defer f.Close()
 
-	decoder := xml.NewDecoder(f)
-	var interventions []Intervention
-	var current *Intervention
-	var inParaText, inAffiliation int
-
-	for {
-		t, err := decoder.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		switch se := t.(type) {
-		case xml.StartElement:
-			if se.Name.Local == "Intervention" {
-				current = &Intervention{}
-				for _, attr := range se.Attr {
-					if attr.Name.Local == "id" {
-						current.Id = attr.Value
-					}
-				}
-			} else if se.Name.Local == "Affiliation" {
-				inAffiliation++
-			} else if se.Name.Local == "ParaText" {
-				inParaText++
-			} else if inParaText > 0 {
-				inParaText++ // Treat nested tags as part of the text
-			}
-		case xml.CharData:
-			if current == nil {
-				continue
-			}
-			if inAffiliation > 0 {
-				current.Speaker += string(se)
-			} else if inParaText > 0 {
-				current.Content += string(se)
-			}
-		case xml.EndElement:
-			if se.Name.Local == "Intervention" {
-				current.Content = strings.TrimSpace(current.Content)
-				interventions = append(interventions, *current)
-				current = nil
-			} else if se.Name.Local == "Affiliation" {
-				inAffiliation--
-			} else if se.Name.Local == "ParaText" {
-				inParaText--
-				if current != nil {
-					current.Content += " "
-				}
-			} else if inParaText > 0 {
-				inParaText--
-			}
-		}
-	}
-	return interventions, nil
-}
-
-func bulkInsertSpeeches(ctx context.Context, conn *pgx.Conn, filename string, interventions []Intervention) error {
-	rows := [][]interface{}{}
+	// Use a batch of individual upserts rather than COPY so we can use
+	// ON CONFLICT DO NOTHING for idempotency.
+	batch := &pgx.Batch{}
 	for _, inv := range interventions {
-		rows = append(rows, []interface{}{
-			inv.Id,
-			filepath.Base(filename),
-			inv.Speaker,
-			inv.Content,
-		})
+		var sittingDate interface{}
+		if !inv.SittingDate.IsZero() {
+			sittingDate = inv.SittingDate
+		}
+		var memberDbId interface{}
+		if inv.MemberDbId != "" {
+			memberDbId = inv.MemberDbId
+		}
+		batch.Queue(
+			`INSERT INTO speeches
+			    (intervention_id, filename, speaker_name, content,
+			     sitting_date, parliament_num, session_num,
+			     member_id, subject_id, subject_title,
+			     intervention_sequence, word_count)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+			 ON CONFLICT (intervention_id) DO NOTHING`,
+			inv.Id, filename, inv.SpeakerName, inv.Content,
+			sittingDate, nullableInt(inv.ParliamentNum), nullableInt(inv.SessionNum),
+			memberDbId, nullableStr(inv.SubjectId), nullableStr(inv.SubjectTitle),
+			nullableInt(inv.InterventionSequence), nullableInt(inv.WordCount),
+		)
 	}
 
-	_, err := conn.CopyFrom(
-		ctx,
-		pgx.Identifier{"speeches"},
-		[]string{"intervention_id", "filename", "speaker_name", "content"},
-		pgx.CopyFromRows(rows),
-	)
-	return err
+	results := conn.SendBatch(ctx, batch)
+	defer results.Close()
+
+	inserted := 0
+	for range interventions {
+		tag, err := results.Exec()
+		if err != nil {
+			return inserted, err
+		}
+		inserted += int(tag.RowsAffected())
+	}
+	return inserted, results.Close()
+}
+
+func nullableInt(v int) interface{} {
+	if v == 0 {
+		return nil
+	}
+	return v
+}
+
+func nullableStr(v string) interface{} {
+	if v == "" {
+		return nil
+	}
+	return v
 }
 
 func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS members (
-		person_id TEXT PRIMARY KEY,
-		honorific TEXT,
-		first_name TEXT,
-		last_name TEXT,
-		constituency TEXT,
-		province TEXT,
-		caucus TEXT,
-		from_date TIMESTAMP,
-		to_date TIMESTAMP
-	);
+	_, err := conn.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS members (
+			person_id     TEXT PRIMARY KEY,
+			honorific     TEXT,
+			first_name    TEXT,
+			last_name     TEXT,
+			constituency  TEXT,
+			province      TEXT,
+			caucus        TEXT,
+			from_date     TIMESTAMP,
+			to_date       TIMESTAMP
+		);
 
-	CREATE TABLE IF NOT EXISTS speeches (
-		intervention_id TEXT PRIMARY KEY,
-		filename TEXT,
-		speaker_name TEXT,
-		content TEXT
-	);
-	`
-	_, err := conn.Exec(ctx, schema)
+		CREATE TABLE IF NOT EXISTS speeches (
+			intervention_id       TEXT PRIMARY KEY,
+			filename              TEXT,
+			speaker_name          TEXT,
+			content               TEXT,
+			sitting_date          DATE,
+			parliament_num        INT,
+			session_num           INT,
+			member_id             TEXT,
+			subject_id            TEXT,
+			subject_title         TEXT,
+			intervention_sequence INT,
+			word_count            INT
+		);
+	`)
 	return err
 }
