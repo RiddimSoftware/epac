@@ -74,15 +74,13 @@ struct DeepLinkRoutingTests {
 
     // MARK: - Sitting date parsing (ContentViewModel.onOpenURL path branch)
 
-    @Test func sittingDateParsing() {
+    @Test func sittingDateParsing() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.locale = Locale(identifier: "en_US_POSIX")
 
-        let date = formatter.date(from: "2024-04-29")
-        #expect(date != nil)
-
-        let roundTripped = formatter.string(from: date!)
+        let date = try #require(formatter.date(from: "2024-04-29"))
+        let roundTripped = formatter.string(from: date)
         #expect(roundTripped == "2024-04-29")
     }
 

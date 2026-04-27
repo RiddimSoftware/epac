@@ -210,9 +210,10 @@ struct ContentView: View {
 		guard let scheme = url.scheme?.lowercased() else { return }
 		if scheme == "cabinetdoor" {
 			handleCustomScheme(url)
-		} else {
+		} else if scheme == "https" || scheme == "http" {
 			handleUniversalLink(url)
 		}
+		// Other schemes (mailto:, etc.) are ignored.
 	}
 
 	private func handleCustomScheme(_ url: URL) {
