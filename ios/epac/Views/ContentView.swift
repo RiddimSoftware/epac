@@ -81,6 +81,10 @@ struct ContentView: View {
 				.tabItem { Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName) }
 				.tag(AppTab.sittingCalendar)
 
+			SearchView()
+				.tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImageName) }
+				.tag(AppTab.search)
+
 			NavigationStack { MembersView() }
 				.tabItem { Label(AppTab.members.title, systemImage: AppTab.members.systemImageName) }
 				.tag(AppTab.members)
@@ -119,6 +123,8 @@ struct ContentView: View {
 			ZStack {
 				calendarStack
 					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
+				SearchView()
+					.opacity(router.selectedTab == .search ? 1 : 0)
 				NavigationStack { MembersView() }
 					.opacity(router.selectedTab == .members ? 1 : 0)
 				ExpendituresView()
