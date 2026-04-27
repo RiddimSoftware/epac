@@ -137,6 +137,7 @@
 "votes.error.retry" = "Réessayer";
 
 /* MP Contact */
+"member.contact.loading" = "Chargement des coordonnées…";
 "contact.email" = "Courriel";
 "contact.hillOffice" = "Bureau sur la Colline";
 "contact.constituencyPhone" = "Bureau de circonscription";

@@ -135,6 +135,7 @@
 "votes.error.retry" = "Retry";
 
 /* MP Contact */
+"member.contact.loading" = "Loading contact info…";
 "contact.email" = "Email";
 "contact.hillOffice" = "Hill Office";
 "contact.constituencyPhone" = "Constituency Office";
