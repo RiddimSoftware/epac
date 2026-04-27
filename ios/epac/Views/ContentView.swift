@@ -12,6 +12,7 @@ import Observation
 
 struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
+	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	var fetch: Fetch
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
@@ -23,37 +24,12 @@ struct ContentView: View {
 	}
 
 	var body: some View {
-		TabView(selection: $router.selectedTab) {
-			NavigationStack {
-				SittingCalendarView(selectedDate: $viewModel.selectedDate)
-					.environmentObject(fetch)
-					.navigationDestination(item: $viewModel.selectedHansard) { hansard in
-						SittingView(hansard: hansard, selectedSubject: $viewModel.selectedSubject)
-							.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
-							.navigationDestination(item: $viewModel.selectedSubject, destination: { subject in
-								SpeechView(hansard: hansard, subject: subject)
-									.onDisappear {
-										Log.debug("onDisappear")
-									}
-							})
-					}
-					.navigationDestination(item: $viewModel.nonSittingDate) { date in
-						NonSittingDayView(date: date)
-					}
-					.onChange(of: viewModel.selectedDate) { _, newValue in
-						viewModel.onSelectedDateChanged(to: newValue, modelContext: modelContext, fetch: fetch)
-					}
+		Group {
+			if horizontalSizeClass == .compact {
+				phoneLayout
+			} else {
+				iPadLayout
 			}
-			.tabItem {
-				Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName)
-			}
-			.tag(AppTab.sittingCalendar)
-
-			ExpendituresView()
-				.tabItem {
-					Label(AppTab.expenditures.title, systemImage: AppTab.expenditures.systemImageName)
-				}
-				.tag(AppTab.expenditures)
 		}
 		.environmentObject(fetch)
 		.environment(router)
@@ -62,6 +38,82 @@ struct ContentView: View {
 		}
 		.task {
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, fetch: fetch)
+		}
+	}
+
+	// MARK: - Phone layout (compact size class)
+
+	private var phoneLayout: some View {
+		TabView(selection: $router.selectedTab) {
+			calendarStack
+				.tabItem { Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName) }
+				.tag(AppTab.sittingCalendar)
+
+			NavigationStack { MembersView() }
+				.tabItem { Label(AppTab.members.title, systemImage: AppTab.members.systemImageName) }
+				.tag(AppTab.members)
+
+			ExpendituresView()
+				.tabItem { Label(AppTab.expenditures.title, systemImage: AppTab.expenditures.systemImageName) }
+				.tag(AppTab.expenditures)
+		}
+	}
+
+	// MARK: - iPad layout (regular size class)
+
+	private var iPadLayout: some View {
+		NavigationSplitView {
+			List {
+				ForEach(AppTab.allCases) { tab in
+					Button {
+						router.selectedTab = tab
+					} label: {
+						Label(tab.title, systemImage: tab.systemImageName)
+							.foregroundStyle(router.selectedTab == tab ? Color.accentColor : .primary)
+					}
+					.listRowBackground(
+						router.selectedTab == tab
+							? Color.accentColor.opacity(0.12)
+							: Color.clear
+					)
+				}
+			}
+			.navigationTitle("epac")
+		} detail: {
+			// Keep all three detail views alive with opacity rather than a switch,
+			// so each view's NavigationStack retains its push state when the user
+			// navigates between sidebar items and returns.
+			ZStack {
+				calendarStack
+					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
+				NavigationStack { MembersView() }
+					.opacity(router.selectedTab == .members ? 1 : 0)
+				ExpendituresView()
+					.opacity(router.selectedTab == .expenditures ? 1 : 0)
+			}
+		}
+	}
+
+	// MARK: - Shared calendar navigation stack
+
+	private var calendarStack: some View {
+		NavigationStack {
+			SittingCalendarView(selectedDate: $viewModel.selectedDate)
+				.environmentObject(fetch)
+				.navigationDestination(item: $viewModel.selectedHansard) { hansard in
+					SittingView(hansard: hansard, selectedSubject: $viewModel.selectedSubject)
+						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
+						.navigationDestination(item: $viewModel.selectedSubject) { subject in
+							SpeechView(hansard: hansard, subject: subject)
+								.onDisappear { Log.debug("onDisappear") }
+						}
+				}
+				.navigationDestination(item: $viewModel.nonSittingDate) { date in
+					NonSittingDayView(date: date)
+				}
+				.onChange(of: viewModel.selectedDate) { _, newValue in
+					viewModel.onSelectedDateChanged(to: newValue, modelContext: modelContext, fetch: fetch)
+				}
 		}
 	}
 }
