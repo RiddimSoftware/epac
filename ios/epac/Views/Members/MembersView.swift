@@ -150,8 +150,6 @@ struct MembersView: View {
 		}
 		.listStyle(.plain)
 	}
-
-	}
 }
 
 private struct MemberRow: View {
