@@ -126,10 +126,16 @@ struct MyMPView: View {
             .navigationTitle(PostalCodeViewModel.savedMemberName ?? NSLocalizedString("myMP.navTitle", comment: ""))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: GovernmentConsultationsView()) {
-                        Label("Consultations", systemImage: "bubble.left.and.text.bubble.right")
+                    Menu {
+                        NavigationLink(destination: GovernmentConsultationsView()) {
+                            Label(NSLocalizedString("consult.navTitle", comment: ""), systemImage: "bubble.left.and.text.bubble.right")
+                        }
+                        NavigationLink(destination: ElectionResourcesView()) {
+                            Label(NSLocalizedString("election.navTitle", comment: ""), systemImage: "checklist")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
-                    .accessibilityLabel("Government consultations")
                 }
             }
             .task { await loadActivities() }

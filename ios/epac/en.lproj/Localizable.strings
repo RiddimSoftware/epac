@@ -340,3 +340,21 @@
 "pbo.estimatesDiffer" = "Estimates differ by more than 10%";
 "pbo.viewReport" = "View full PBO report →";
 "pbo.viewReport.accessibility" = "View full PBO report for %@";
+
+/* Election resources view (EPAC-78) */
+"election.navTitle" = "Election Resources";
+"election.register.header" = "Register & Vote";
+"election.register.check" = "Check Voter Registration";
+"election.register.check.subtitle" = "Confirm you're on the voters list — Elections Canada";
+"election.register.polling" = "Find Your Polling Station";
+"election.register.polling.subtitle" = "Locate your riding's polling places";
+"election.register.id" = "Accepted Voter ID";
+"election.register.id.subtitle" = "What identification you can bring on election day";
+"election.research.header" = "Research Candidates";
+"election.research.candidates" = "Past Election Results";
+"election.research.candidates.subtitle" = "Historical riding results from Elections Canada";
+"election.research.results" = "Electoral Reports";
+"election.research.results.subtitle" = "Official post-election reports and data";
+"election.research.financing" = "Party & Candidate Financing";
+"election.research.financing.subtitle" = "Donations, spending limits, and disclosures";
+"election.disclaimer" = "Data links to Elections Canada official sources. epac has no affiliation with Elections Canada or any political party.";

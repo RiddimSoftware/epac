@@ -40,6 +40,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://epac.riddimsoftware.com/blog/epac-for-elections.html</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://epac.riddimsoftware.com/blog/epac-launch.html</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>yearly</changefreq>
