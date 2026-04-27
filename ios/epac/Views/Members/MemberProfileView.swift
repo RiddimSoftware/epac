@@ -181,12 +181,12 @@ struct MemberProfileView: View {
 								VStack(alignment: .leading, spacing: 3) {
 									Text(comm.organizationName)
 										.font(.subheadline)
-										.lineLimit(1)
+										.lineLimit(2)
 									if !comm.subjectMatter.isEmpty {
 										Text(comm.subjectMatter)
 											.font(.caption2)
 											.foregroundStyle(.secondary)
-											.lineLimit(1)
+											.lineLimit(2)
 									}
 									if let d = comm.communicationDate {
 										Text(d, style: .date)

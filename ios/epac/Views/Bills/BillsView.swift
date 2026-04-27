@@ -227,7 +227,7 @@ struct BillRow: View {
                 Text(bill.currentStage)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
         .padding(.vertical, 4)

@@ -246,9 +246,9 @@ struct MultiMessageShareView: View {
 						if !group.isCurrentUser {
 							VStack(alignment: .leading, spacing: 0) {
 								Text(group.speaker.name)
-									.font(.system(size: 12, weight: .bold, design: .rounded))
+									.font(.system(.caption, design: .rounded, weight: .bold))
 								Text("\(group.speaker.riding), \(group.speaker.province.rawValue)")
-									.font(.system(size: 10, weight: .regular, design: .rounded))
+									.font(.system(.caption2, design: .rounded))
 							}
 							.foregroundStyle(.white.opacity(0.8))
 						}
