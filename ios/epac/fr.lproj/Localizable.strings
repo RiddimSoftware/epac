@@ -341,6 +341,24 @@
 "pbo.viewReport" = "Voir le rapport complet du DPB →";
 "pbo.viewReport.accessibility" = "Voir le rapport complet du DPB pour %@";
 
+/* Ressources électorales (EPAC-78) */
+"election.navTitle" = "Ressources électorales";
+"election.register.header" = "S'inscrire et voter";
+"election.register.check" = "Vérifier l'inscription électorale";
+"election.register.check.subtitle" = "Confirmez votre présence sur la liste électorale — Élections Canada";
+"election.register.polling" = "Trouver votre bureau de vote";
+"election.register.polling.subtitle" = "Localisez les lieux de vote dans votre circonscription";
+"election.register.id" = "Pièces d'identité acceptées";
+"election.register.id.subtitle" = "Ce que vous pouvez apporter le jour du scrutin";
+"election.research.header" = "Rechercher les candidats";
+"election.research.candidates" = "Résultats électoraux passés";
+"election.research.candidates.subtitle" = "Résultats historiques par circonscription d'Élections Canada";
+"election.research.results" = "Rapports électoraux";
+"election.research.results.subtitle" = "Rapports et données officiels post-élection";
+"election.research.financing" = "Financement des partis et candidats";
+"election.research.financing.subtitle" = "Dons, limites de dépenses et divulgations";
+"election.disclaimer" = "Les liens pointent vers des sources officielles d'Élections Canada. epac n'est affilié ni à Élections Canada ni à aucun parti politique.";
+
 /* Sénat */
 "senate.mySenators.title" = "Mes sénateurs";
 "senate.card.name" = "Sénateur(trice) %@";
