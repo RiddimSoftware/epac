@@ -117,6 +117,26 @@ struct SittingCalendarView: View {
 			}
 			selectedDate = nil
 		}
+		.safeAreaInset(edge: .bottom) {
+			if viewModel.loadFailed {
+				HStack(spacing: 12) {
+					Image(systemName: "wifi.exclamationmark")
+						.foregroundStyle(.red)
+					Text("Couldn't load sitting dates.")
+						.font(.footnote)
+					Spacer()
+					Button("Retry") {
+						Task {
+							await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
+						}
+					}
+					.font(.footnote.bold())
+				}
+				.padding(.horizontal)
+				.padding(.vertical, 10)
+				.background(.ultraThinMaterial)
+			}
+		}
 		.toolbar {
 			ToolbarItem(placement: .principal) {
 				VStack {

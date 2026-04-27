@@ -203,4 +203,55 @@ struct ExpendituresViewModelTests {
 		let result = vm.filteredExpenditures(from: expenditures)
 		#expect(result[0].firstName == "B")
 	}
+
+	// MARK: - loadFailed
+
+	@Test func loadFailedStartsFalse() {
+		let vm = ExpendituresViewModel()
+		#expect(vm.loadFailed == false)
+	}
+
+	/// When the selected period already has cached data, loadData returns early
+	/// without a network call. loadFailed must be cleared (reset to false) at the
+	/// top of loadData so that a stale error from a previous period does not bleed
+	/// into the new one.
+	@Test func loadFailedClearedWhenDataAlreadyExists() async throws {
+		let container = try makeContainer()
+		let ctx = ModelContext(container)
+		let fetch = Fetch(modelContainer: container)
+
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+		// Simulate a stale error left over from a prior period.
+		vm.loadFailed = true
+
+		let cached = expenditure(firstName: "Alice", lastName: "Smith", year: 2024, quarter: 1, context: ctx)
+		try ctx.save()
+
+		await vm.loadData(expenditures: [cached], fetch: fetch)
+
+		#expect(vm.loadFailed == false)
+		#expect(vm.isLoading == false)
+	}
+
+	/// When no cached data exists, loadData sets isLoading=true then isLoading=false
+	/// regardless of whether the fetch succeeds or fails.  Here the fetch will fail
+	/// (no network in tests), so we also expect loadFailed=true.
+	@Test func loadFailedSetOnNetworkError() async throws {
+		let container = try makeContainer()
+		let fetch = Fetch(modelContainer: container)
+
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		// Pass an empty expenditures list so exists=false and a network call is made.
+		await vm.loadData(expenditures: [], fetch: fetch)
+
+		// After a failed network call the loading indicator must be off.
+		#expect(vm.isLoading == false)
+		// loadFailed must be true so the error state is shown.
+		#expect(vm.loadFailed == true)
+	}
 }
