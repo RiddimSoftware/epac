@@ -12,22 +12,14 @@ import BackgroundTasks
 @main
 struct epacApp: App {
 	var sharedModelContainer: ModelContainer = {
-		let schema = Schema(versionedSchema: SchemaV5.self)
-		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 		do {
-			return try ModelContainer(for: schema, configurations: [modelConfiguration])
+			return try ModelContainer(
+				for: Schema(versionedSchema: SchemaV5.self),
+				migrationPlan: EpacMigrationPlan.self,
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: false)]
+			)
 		} catch {
-			// Destructive migration: delete existing data if schema is incompatible
-			let url = modelConfiguration.url
-			let fileManager = FileManager.default
-			try? fileManager.removeItem(at: url)
-			try? fileManager.removeItem(at: url.deletingPathExtension().appendingPathExtension("sqlite-shm"))
-			try? fileManager.removeItem(at: url.deletingPathExtension().appendingPathExtension("sqlite-wal"))
-			do {
-				return try ModelContainer(for: schema, configurations: [modelConfiguration])
-			} catch {
-				fatalError("Could not create ModelContainer: \(error)")
-			}
+			fatalError("Could not create ModelContainer: \(error)")
 		}
 	}()
 
