@@ -105,6 +105,12 @@ struct BillsView: View {
         defer { isLoading = false }
         do {
             bills = try await BillsService.fetchBills()
+            // Detect stage changes for followed bills and schedule notifications
+            let store = BillFollowStore.shared
+            let changes = store.detectChanges(in: bills)
+            for change in changes {
+                BillNotificationScheduler.schedule(change)
+            }
         } catch {
             loadFailed = true
         }

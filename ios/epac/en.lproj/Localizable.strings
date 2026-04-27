@@ -242,3 +242,12 @@
 "bills.stage.senateSecond" = "Senate — Second Reading";
 "bills.stage.senateThird" = "Senate — Third Reading";
 "bills.stage.royalAssent" = "Royal Assent";
+
+/* Follow bill */
+"bill.follow" = "Follow";
+"bill.unfollow" = "Unfollow";
+"bill.notification.stageChange" = "%@ advanced: %@";
+"bill.notification.royalAssent" = "%@ received Royal Assent";
+"bill.notification.defeated" = "%@ was defeated";
+"bill.notification.voteResult" = "Vote: %d Yea \u{2013} %d Nay.";
+"bill.notification.mpVote" = "%@ voted %@.";

@@ -12,6 +12,7 @@ struct BillDetailView: View {
     let bill: Bill
     @Environment(\.modelContext) private var modelContext
 
+    @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
 
@@ -121,6 +122,23 @@ struct BillDetailView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(bill.number)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    billStore.toggle(bill)
+                } label: {
+                    Label(
+                        billStore.isFollowing(bill.number)
+                            ? NSLocalizedString("bill.unfollow", comment: "")
+                            : NSLocalizedString("bill.follow", comment: ""),
+                        systemImage: billStore.isFollowing(bill.number) ? "doc.badge.clock.fill" : "doc.badge.clock"
+                    )
+                }
+                .accessibilityLabel(billStore.isFollowing(bill.number)
+                    ? NSLocalizedString("bill.unfollow", comment: "")
+                    : NSLocalizedString("bill.follow", comment: ""))
+            }
+        }
         .task { await loadCrossReferences() }
     }
 
