@@ -594,3 +594,13 @@
 "vancouver.votes.empty.title" = "Aucun vote trouvé";
 "vancouver.votes.empty.description" = "Les votes du conseil municipal de Vancouver apparaîtront ici.";
 "vancouver.votes.sourceLink" = "Source : Données ouvertes de la Ville de Vancouver";
+"toronto.myCouncil.title" = "Mon conseil municipal (Toronto)";
+"toronto.councillor.nameLabel" = "%1$@ %2$@";
+"toronto.councillor.wardLabel" = "Quartier %1$d, %2$@";
+"toronto.votes.navTitle" = "Votes du conseil de Toronto";
+"toronto.votes.browseButton" = "Parcourir les votes du conseil";
+"toronto.votes.filter" = "Filtrer par sujet";
+"toronto.votes.allCategories" = "Tous les sujets";
+"toronto.votes.empty.title" = "Aucun vote trouvé";
+"toronto.votes.empty.description" = "Les votes du conseil municipal de Toronto apparaîtront ici.";
+"toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";

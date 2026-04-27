@@ -591,3 +591,13 @@
 "vancouver.votes.empty.title" = "No Votes Found";
 "vancouver.votes.empty.description" = "Vancouver City Council vote records will appear here.";
 "vancouver.votes.sourceLink" = "Source: City of Vancouver Open Data";
+"toronto.myCouncil.title" = "My City Council (Toronto)";
+"toronto.councillor.nameLabel" = "%1$@ %2$@";
+"toronto.councillor.wardLabel" = "Ward %1$d, %2$@";
+"toronto.votes.navTitle" = "Toronto Council Votes";
+"toronto.votes.browseButton" = "Browse Council Votes";
+"toronto.votes.filter" = "Filter by Topic";
+"toronto.votes.allCategories" = "All Topics";
+"toronto.votes.empty.title" = "No Votes Found";
+"toronto.votes.empty.description" = "Toronto City Council vote records will appear here.";
+"toronto.votes.sourceLink" = "Source: Open Data Toronto";

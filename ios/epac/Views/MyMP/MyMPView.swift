@@ -111,6 +111,8 @@ struct MyMPView: View {
     @State private var ontarioMPP: OntarioMPP?
     @State private var vancouverCouncillors: [VancouverCouncillor] = []
     @State private var showVancouverVotes = false
+    @State private var torontoCouncillors: [TorontoCouncillor] = []
+    @State private var showTorontoVotes = false
 
     var body: some View {
         NavigationStack {
@@ -158,6 +160,9 @@ struct MyMPView: View {
             }
             .navigationDestination(isPresented: $showVancouverVotes) {
                 VancouverVotesView()
+            }
+            .navigationDestination(isPresented: $showTorontoVotes) {
+                TorontoVotesView()
             }
             .task { await loadActivities() }
         }
@@ -237,6 +242,19 @@ struct MyMPView: View {
                     }
                 }
             }
+            if !torontoCouncillors.isEmpty {
+                Section(NSLocalizedString("toronto.myCouncil.title", comment: "")) {
+                    ForEach(torontoCouncillors) { councillor in
+                        TorontoCouncillorCard(councillor: councillor)
+                    }
+                    Button {
+                        showTorontoVotes = true
+                    } label: {
+                        Label(NSLocalizedString("toronto.votes.browseButton", comment: ""),
+                              systemImage: "building.2")
+                    }
+                }
+            }
             Section(NSLocalizedString("myMP.activity.section", comment: "")) {
                 ForEach(activities) { activity in
                     ActivityRow(activity: activity)
@@ -292,6 +310,13 @@ struct MyMPView: View {
                 if let savedRiding = PostalCodeViewModel.savedRidingName,
                    VancouverCouncilService.isVancouverRiding(savedRiding) {
                     vancouverCouncillors = await VancouverCouncilService.fetchCouncillors()
+                }
+
+                // Load Toronto City Council when the federal riding is in Toronto.
+                if let savedRiding = PostalCodeViewModel.savedRidingName,
+                   TorontoCouncilService.isTorontoRiding(savedRiding) {
+                    let councillors = await TorontoCouncilService.fetchCouncillors()
+                    torontoCouncillors = TorontoCouncilService.councillors(for: savedRiding, in: councillors)
                 }
             }
         }
