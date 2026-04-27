@@ -73,6 +73,18 @@ struct MemberVotingRecordView: View {
 					Section(NSLocalizedString("voting.recentVotes", comment: "")) {
 						ForEach(memberVotes) { mv in
 							VoteRow(memberVote: mv)
+								.swipeActions(edge: .leading) {
+									if let vote = mv.vote {
+										Button {
+											let template = ContactMyMP.voteTemplate(
+												vote: vote, memberVote: mv.recordedVote)
+											ContactMyMP.open(to: member, template: template)
+										} label: {
+											Label("Write to MP", systemImage: "envelope.badge")
+										}
+										.tint(.blue)
+									}
+								}
 						}
 					}
 				}

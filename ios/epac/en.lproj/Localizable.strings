@@ -143,6 +143,17 @@
 "myMP.activity.speech" = "Hansard Speech";
 "myMP.activity.expenditure" = "%d Q%d Expenditures";
 
+/* Debate activity view */
+"debate.navTitle" = "Debate Activity";
+"debate.empty.title" = "No debate records";
+"debate.empty.description" = "Open sitting days to load debate transcripts for this member.";
+"debate.recentSittingDays" = "Recent Sitting Days";
+"debate.contributionCount" = "%d contribution(s)";
+"debate.stat.contributions" = "Contributions";
+"debate.stat.sittingDays" = "Sitting Days";
+"debate.stat.bestDay" = "Best Day";
+"debate.mostActive" = "Most active:";
+
 /* Party-line voting score */
 "partyLine.title" = "Party solidarity";
 "partyLine.infoButton" = "About this score";
