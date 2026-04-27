@@ -270,6 +270,7 @@
 
 /* Suivi des sujets */
 "topics.navTitle" = "Sujets";
+"topics.search.prompt" = "Rechercher des sujets";
 "topics.browseAll" = "Parcourir les sujets";
 "topic.follow" = "Suivre ce sujet";
 "topic.unfollow" = "Ne plus suivre ce sujet";

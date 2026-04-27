@@ -2,18 +2,24 @@
 //  TopicsView.swift
 //  epac
 //
-//  Browse all 20 Parliamentary topics and follow / unfollow each one.
-//  Followed topics trigger local notifications when new matching Hansard
-//  subjects or bills are detected.
-//
 
 import SwiftUI
 
 struct TopicsView: View {
     @State private var store = TopicFollowStore.shared
+    @State private var searchText = ""
+
+    private var filtered: [ParliamentaryTopic] {
+        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard q.count >= 2 else { return ParliamentaryTopic.all }
+        return ParliamentaryTopic.all.filter {
+            $0.localizedName.localizedCaseInsensitiveContains(q) ||
+            $0.keywords.contains { $0.localizedCaseInsensitiveContains(q) }
+        }
+    }
 
     var body: some View {
-        List(ParliamentaryTopic.all) { topic in
+        List(filtered) { topic in
             HStack {
                 VStack(alignment: .leading) {
                     Text(topic.localizedName)
@@ -37,6 +43,11 @@ struct TopicsView: View {
             .padding(.vertical, 2)
         }
         .listStyle(.plain)
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .automatic),
+            prompt: NSLocalizedString("topics.search.prompt", comment: "")
+        )
         .navigationTitle(NSLocalizedString("topics.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
     }
