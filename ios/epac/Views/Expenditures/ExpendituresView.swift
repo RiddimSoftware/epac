@@ -81,6 +81,10 @@ struct ExpendituresView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {
+                        NavigationLink(destination: PoliticalDonationsView()) {
+                            Image(systemName: "dollarsign.circle")
+                        }
+                        .accessibilityLabel("Political Donations")
                         sortSelector
                         Button {
                             item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
