@@ -54,7 +54,7 @@ final class epacUITests: XCTestCase {
         let firstCell = app.tables.cells.firstMatch
         let exists = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true"),
                                                object: firstCell)
-        XCTWaiter.wait(for: [exists], timeout: 5)
+        _ = XCTWaiter.wait(for: [exists], timeout: 5)
 
         if firstCell.exists {
             firstCell.tap()
@@ -132,7 +132,7 @@ final class epacUITests: XCTestCase {
         let prompt = app.staticTexts["Search everything"]
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
                                              object: prompt)
-        XCTWaiter.wait(for: [gone], timeout: 3)
-        XCTAssertTrue(true, "Search query was accepted without crash")
+        _ = XCTWaiter.wait(for: [gone], timeout: 3)
+        // Test passes by reaching this point without a crash.
     }
 }
