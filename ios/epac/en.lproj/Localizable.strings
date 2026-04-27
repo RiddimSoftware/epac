@@ -3,6 +3,7 @@
 "Search" = "Search";
 "Members" = "Members";
 "Expenditures" = "Expenditures";
+"My MP" = "My MP";
 
 /* Search view */
 "Search debates" = "Search debates";
@@ -121,6 +122,15 @@
 "voting.empty.description" = "Voting data for this member has not been loaded yet.";
 "voting.recentVotes" = "Recent Votes";
 "voting.withMajority" = "Votes with the majority";
+
+/* My MP tab */
+"myMP.navTitle" = "My MP";
+"myMP.empty.title" = "No Activity Yet";
+"myMP.empty.description" = "Activity will appear once vote and speech data has synced.";
+"myMP.noMP.title" = "No MP Selected";
+"myMP.noMP.description" = "Enter your postal code to identify your Member of Parliament.";
+"myMP.activity.speech" = "Hansard Speech";
+"myMP.activity.expenditure" = "%d Q%d Expenditures";
 
 /* Party-line voting score */
 "partyLine.title" = "Party solidarity";
