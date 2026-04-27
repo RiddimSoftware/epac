@@ -153,6 +153,7 @@ struct BillDetailView: View {
 
                 Button {
                     billStore.toggle(bill)
+                    HapticEngine.light()
                 } label: {
                     Label(
                         billStore.isFollowing(bill.number)

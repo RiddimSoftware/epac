@@ -233,6 +233,7 @@ struct MemberProfileView: View {
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					followStore.toggle(member.memberID)
+					HapticEngine.light()
 				} label: {
 					Label(
 						followStore.isFollowing(member.memberID)
