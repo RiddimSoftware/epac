@@ -153,7 +153,7 @@ struct HomeFeedView: View {
     // MARK: - Section 3: Followed bills
 
     private var followedBillsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedBills", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.followedBills", comment: "")).accessibilityAddTraits(.isHeader)) {
             let sorted = billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt }
             ForEach(Array(sorted.prefix(3)), id: \.key) { number, state in
                 HStack {
@@ -184,7 +184,7 @@ struct HomeFeedView: View {
     // MARK: - Section 4: Followed topics
 
     private var followedTopicsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedTopics", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.followedTopics", comment: "")).accessibilityAddTraits(.isHeader)) {
             let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -211,7 +211,7 @@ struct HomeFeedView: View {
     // MARK: - Section 4b: My Senators (shown when province is known)
 
     private var senatorsSection: some View {
-        Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: ""))) {
+        Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(mySenators.prefix(3)) { senator in
                 Link(destination: senator.senateURL) {
                     HStack(spacing: 10) {
@@ -268,7 +268,7 @@ struct HomeFeedView: View {
     // MARK: - Section 5: Recent debates
 
     private var recentDebatesSection: some View {
-        Section(header: Text(NSLocalizedString("home.recentDebates", comment: ""))) {
+        Section(header: Text(NSLocalizedString("home.recentDebates", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(recentSubjects) { subject in
                 Text(subject.title)
                     .font(.subheadline)

@@ -267,6 +267,7 @@
 
 /* Topic following */
 "topics.navTitle" = "Topics";
+"topics.search.prompt" = "Search topics";
 "topics.browseAll" = "Browse topics";
 "topic.follow" = "Follow topic";
 "topic.unfollow" = "Unfollow topic";

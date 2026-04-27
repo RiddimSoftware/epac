@@ -22,6 +22,7 @@ struct MemberProfileView: View {
 	@State private var followStore = MemberFollowStore.shared
 	@State private var showLobbying = false
 	@State private var lobbyingComms: [LobbyistCommunication] = []
+	@State private var showCopiedConfirmation = false
 	@State private var lobbyingLoaded = false
 	@State private var shareItem: ActivityItem?
 
@@ -39,13 +40,20 @@ struct MemberProfileView: View {
 					.foregroundStyle(.primary)
 					Button {
 						UIPasteboard.general.string = email
+						showCopiedConfirmation = true
+						Task {
+							try? await Task.sleep(nanoseconds: 1_500_000_000)
+							showCopiedConfirmation = false
+						}
 					} label: {
-						Image(systemName: "doc.on.doc")
-							.font(.caption)
-							.foregroundStyle(.secondary)
-							.padding(.horizontal, 8)
+						ZStack {
+							Image(systemName: showCopiedConfirmation ? "checkmark" : "doc.on.doc")
+								.font(.caption)
+								.foregroundStyle(showCopiedConfirmation ? Color.appPositive : Color.secondary)
+								.padding(.horizontal, 8)
+						}
 					}
-					.accessibilityLabel("Copy email address")
+					.accessibilityLabel(showCopiedConfirmation ? "Copied" : "Copy email address")
 					.accessibilityHint("Copies \(email) to clipboard")
 				}
 			}
