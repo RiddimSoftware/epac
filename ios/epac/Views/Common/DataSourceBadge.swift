@@ -30,6 +30,7 @@ struct DataSourceBadge: View {
             .clipShape(Capsule())
         }
         .accessibilityLabel("\(source.name) — \(badgeText)")
+        .accessibilityHint("Opens source details")
         .sheet(isPresented: $showDetail) {
             DataSourceDetailSheet(source: source)
         }

@@ -53,6 +53,10 @@ struct BillsView: View {
                     }
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    bills = []
+                    await load()
+                }
             }
         }
         .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
