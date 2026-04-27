@@ -1,111 +1,137 @@
 //
 //  ContentView.swift
-//  epac
+//  epac-clip
 //
-//  Created by Sunny on 2024-12-11.
+//  "Who is my MP?" — lightweight App Clip experience.
+//  Users enter their postal code to instantly find their federal representative.
+//  No account required. Data from represent.opennorth.ca (Open North).
 //
 
 import SwiftUI
-import SwiftData
-import Foundation
 
 struct ContentView: View {
-	@Environment(\.modelContext) var modelContext
-	var modelContainer: ModelContainer
-	var fetch: Fetch
-	@State private var selectedDate: DateComponents?
-	@State private var selectedHansard: Hansard?
-	@State private var selectedSubject: SubjectOfBusiness?
-	@Query private var members: [ParliamentMember]
-	@State private var wasForwarded = false
-
-	init(modelContainer: ModelContainer) {
-		self.modelContainer = modelContainer
-		self.fetch = Fetch(modelContainer: modelContainer)
-	}
+	@State private var postalCode = ""
+	@State private var result: ClipMPResult?
+	@State private var isLoading = false
+	@State private var errorMessage: String?
+	@FocusState private var fieldFocused: Bool
 
 	var body: some View {
-		NavigationStack {
-			SittingCalendarView(selectedDate: $selectedDate)
-				.navigationTitle("Parliament")
-				.environmentObject(fetch)
-				.navigationDestination(item: $selectedHansard) { hansard in
-					SittingView(hansard: hansard, selectedSubject: $selectedSubject)
-						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
-						.navigationDestination(item: $selectedSubject, destination: { subject in
-							SpeechView(hansard: hansard, subject: subject)
-								.onDisappear {
-									Log.debug("onDisappear")
-								}
-						})
-						.onAppear {
-							if !wasForwarded {
-								wasForwarded = true
-								selectedSubject = selectedHansard?.orders.first(where: { order in
-									order.subjects.contains { subject in
-										subject.hansardID == "13061553"
-									}
-								})?.subjects.first(where: { subject in
-									subject.hansardID == "13061553"
-								})
-							}
+		VStack(spacing: 0) {
+			VStack(spacing: 8) {
+				Image(systemName: "building.columns.fill")
+					.font(.system(size: 48))
+					.foregroundStyle(.tint)
+					.accessibilityHidden(true)
+					.padding(.top, 32)
+				Text("Who is my MP?")
+					.font(.largeTitle.bold())
+				Text("Enter your postal code to find your federal representative.")
+					.font(.subheadline)
+					.foregroundStyle(.secondary)
+					.multilineTextAlignment(.center)
+			}
+
+			Spacer()
+
+			VStack(spacing: 12) {
+				TextField("Postal code (e.g. M5V 3A8)", text: $postalCode)
+					.textInputAutocapitalization(.characters)
+					.autocorrectionDisabled()
+					.padding()
+					.background(Color(.secondarySystemGroupedBackground))
+					.cornerRadius(12)
+					.focused($fieldFocused)
+					.onSubmit { Task { await lookup() } }
+
+				Button {
+					Task { await lookup() }
+				} label: {
+					Group {
+						if isLoading {
+							ProgressView().tint(.white)
+						} else {
+							Text("Find my MP").fontWeight(.semibold)
 						}
+					}
+					.frame(maxWidth: .infinity)
+					.padding()
+					.background(postalCode.trimmingCharacters(in: .whitespaces).isEmpty ? Color.secondary : Color.accentColor)
+					.foregroundStyle(.white)
+					.cornerRadius(12)
 				}
-				.onChange(of: selectedDate) { oldValue, newValue in
-					if let newValue, let date = Calendar.current.date(from: newValue) {
-						Task {
-							let id = try await fetch.hansard(date)
-							selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.id == id })).first
+				.disabled(postalCode.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
+			}
+			.padding(.vertical)
+
+			if let r = result {
+				VStack(spacing: 16) {
+					VStack(spacing: 6) {
+						Text(r.memberName).font(.title2.bold())
+						Text(r.partyName).font(.subheadline).foregroundStyle(.secondary)
+						Text(r.ridingName).font(.caption).foregroundStyle(.secondary)
+					}
+					.padding()
+					.frame(maxWidth: .infinity)
+					.background(Color(.secondarySystemGroupedBackground))
+					.cornerRadius(16)
+
+					if let url = URL(string: "https://apps.apple.com/app/id6479895893 // TODO: verify ID before launch") {
+						Link(destination: url) {
+							Label("Open in epac for full details", systemImage: "arrow.up.right.square")
+								.font(.subheadline)
 						}
 					}
 				}
-		}
-		.onOpenURL { url in
-			Log.debug("\(url.absoluteString)")
-			let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-			if let items = components.queryItems {
-				let date = items.first(where: { $0.name == "date" })?.value
-				let subjectID = items.first(where: { $0.name == "subjectID" })?.value
-				let speechID = items.first(where: { $0.name == "speechID" })?.value
-				let messageID = items.first(where: { $0.name == "messageID" })?.value
-				if let dateString = date, let d = ISO8601DateFormatter().date(from: dateString) {
-					Task {
-						do {
-							let id = try await fetch.hansard(d)
-							selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.id == id })).first
-							if let subjectID {
-								let subject = try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>(predicate: #Predicate { $0.hansardID == subjectID })).first
-								if let speechID {
-									subject?.currentSpeech = subject?.speeches.first(where: { $0.hansardID == speechID })
-									if let messageID {
-										subject?.currentSpeech?.currentMessage = subject?.currentSpeech?.messages.first(where: { $0.hansardID == messageID })
-									}
-								}
-								selectedSubject = subject
-							}
-						} catch {
-							Log.debug("\(error.localizedDescription)")
-						}
-					}
+			} else if let error = errorMessage {
+				HStack(spacing: 8) {
+					Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+					Text(error).font(.subheadline).foregroundStyle(.secondary)
 				}
+				.padding()
+				.background(Color(.secondarySystemGroupedBackground))
+				.cornerRadius(12)
 			}
+
+			Spacer()
+
+			Text("Data from represent.opennorth.ca")
+				.font(.caption2).foregroundStyle(.tertiary).padding(.bottom, 8)
 		}
-		.task {
-			if members.count == 0 {
-				do {
-					try await fetch.downloadMembers()
-				} catch {
-					Log.debug("Failed to download members \(error.localizedDescription)")
-				}
-			}
-			if !wasForwarded {
-				self.selectedDate = DateComponents(year: 2024, month: 12, day: 11)
-			}
+		.padding()
+		.background(Color(.systemGroupedBackground).ignoresSafeArea())
+	}
+
+	private func lookup() async {
+		let trimmed = postalCode.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "")
+		guard trimmed.count >= 3 else { return }
+		fieldFocused = false
+		isLoading = true; errorMessage = nil; result = nil
+		defer { isLoading = false }
+		do {
+			result = try await ClipRidingLookup.find(postalCode: trimmed)
+		} catch {
+			errorMessage = "Could not find your riding. Check your postal code and try again."
 		}
-		.fontDesign(.serif)
 	}
 }
 
-//#Preview {
-//	ContentView()
-//}
+struct ClipMPResult { let memberName: String; let partyName: String; let ridingName: String }
+
+enum ClipRidingLookup {
+	static func find(postalCode: String) async throws -> ClipMPResult {
+		let upper = postalCode.uppercased().replacingOccurrences(of: " ", with: "")
+		guard let url = URL(string: "https://represent.opennorth.ca/postcodes/\(upper)/?sets=federal-electoral-districts&format=json") else { throw URLError(.badURL) }
+		let (data, response) = try await URLSession.shared.data(from: url)
+		guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+		guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+		      let reps = json["representatives_centroid"] as? [[String: Any]],
+		      let rep = reps.first(where: { ($0["elected_office"] as? String)?.lowercased() == "mp" })
+		else { throw URLError(.cannotParseResponse) }
+		return ClipMPResult(
+			memberName: rep["name"] as? String ?? "Unknown",
+			partyName:  rep["party_name"] as? String ?? "",
+			ridingName: rep["district_name"] as? String ?? ""
+		)
+	}
+}
