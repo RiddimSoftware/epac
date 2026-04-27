@@ -233,6 +233,9 @@ struct MemberProfileView: View {
 					}
 				}
 			}
+			// MARK: Written Questions
+			WrittenQuestionsSection(member: member)
+
 			// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
 			ShortcutsLink()
 				.shortcutsLinkStyle(.automaticOutline)
@@ -251,6 +254,9 @@ struct MemberProfileView: View {
 		.animation(.none, value: showLobbying)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
+			if member.memberID > 0 {
+				try? await fetch.downloadWrittenQuestions(memberID: member.memberID)
+			}
 		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
