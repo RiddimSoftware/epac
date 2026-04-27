@@ -46,10 +46,11 @@ struct epacApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
 		do {
+			let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 			return try ModelContainer(
 				for: Schema(versionedSchema: SchemaV7.self),
 				migrationPlan: EpacMigrationPlan.self,
-				configurations: [ModelConfiguration(isStoredInMemoryOnly: false)]
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: isRunningTests)]
 			)
 		} catch {
 			fatalError("Could not create ModelContainer: \(error)")

@@ -69,6 +69,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Fetch.backgroundRefresh()")
 		let year = Calendar.current.component(.year, from: Date())
 		try? await downloadSittingCalendar(year)
+		try? await downloadFiscalMonitorEntries()
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
