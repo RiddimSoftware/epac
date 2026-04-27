@@ -83,9 +83,7 @@ struct VoteDetailView: View {
     private func findMatchingDebates() {
         guard let bill = rv?.billNumberCode, !bill.isEmpty else { return }
 
-        var subjDescriptor = FetchDescriptor<SubjectOfBusiness>()
-        subjDescriptor.fetchLimit = 2000
-        let allSubjects = (try? modelContext.fetch(subjDescriptor)) ?? []
+        let allSubjects = (try? modelContext.fetch(FetchDescriptor<SubjectOfBusiness>())) ?? []
         let matched = allSubjects.filter { $0.title.localizedCaseInsensitiveContains(bill) }
         guard !matched.isEmpty else { return }
 
