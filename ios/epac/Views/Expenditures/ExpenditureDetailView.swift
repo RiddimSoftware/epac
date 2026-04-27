@@ -165,7 +165,7 @@ struct ExpenditureDetailView: View {
                         Menu {
                             Picker("Sort By", selection: $viewModel.sortOption) {
                                 ForEach(ExpenditureDetailViewModel.SortOption.allCases) { option in
-                                    Text(option.rawValue).tag(option)
+                                    Text(LocalizedStringKey(option.rawValue)).tag(option)
                                 }
                             }
                         } label: {
@@ -191,9 +191,9 @@ struct ExpenditureDetailView: View {
 }
 
 struct SummarySection: View {
-    let title: String
+    let title: LocalizedStringKey
     let total: Double
-    
+
     var body: some View {
         HStack {
             Text(title)
@@ -205,7 +205,7 @@ struct SummarySection: View {
 }
 
 struct SectionHeader: View {
-    let title: String
+    let title: LocalizedStringKey
     let total: Double
     let isCollapsed: Bool
     let shareAction: () -> Void
@@ -219,7 +219,7 @@ struct SectionHeader: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("\(title) - Total: \(total.formatted(.currency(code: "CAD")))")
+                (Text(title) + Text(" – Total: \(total.formatted(.currency(code: "CAD")))"))
                     .font(.headline)
                 
                 Spacer()

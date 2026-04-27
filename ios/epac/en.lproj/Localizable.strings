@@ -48,6 +48,21 @@
 "This may take a moment." = "This may take a moment.";
 "Couldn't Load Expenditures" = "Couldn't Load Expenditures";
 
+/* Expenditure detail view */
+"No detailed travel records found." = "No detailed travel records found.";
+"No detailed hospitality records found." = "No detailed hospitality records found.";
+"No detailed contract records found." = "No detailed contract records found.";
+"Fetching details..." = "Fetching details...";
+"Date" = "Date";
+"Amount" = "Amount";
+
+/* Member comparison */
+"Compare" = "Compare";
+"Compare with another member" = "Compare with another member";
+"Compare with…" = "Compare with…";
+"Comparison" = "Comparison";
+"Expenditures (all periods)" = "Expenditures (all periods)";
+
 /* Members view */
 "Search by name or riding" = "Search by name or riding";
 "Loading members..." = "Loading members...";

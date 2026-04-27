@@ -48,6 +48,21 @@
 "This may take a moment." = "Cela peut prendre un moment.";
 "Couldn't Load Expenditures" = "Impossible de charger les dépenses";
 
+/* Expenditure detail view */
+"No detailed travel records found." = "Aucun enregistrement de voyage détaillé trouvé.";
+"No detailed hospitality records found." = "Aucun enregistrement d'accueil détaillé trouvé.";
+"No detailed contract records found." = "Aucun enregistrement de contrat détaillé trouvé.";
+"Fetching details..." = "Récupération des détails...";
+"Date" = "Date";
+"Amount" = "Montant";
+
+/* Member comparison */
+"Compare" = "Comparer";
+"Compare with another member" = "Comparer avec un autre membre";
+"Compare with…" = "Comparer avec…";
+"Comparison" = "Comparaison";
+"Expenditures (all periods)" = "Dépenses (toutes les périodes)";
+
 /* Members view */
 "Search by name or riding" = "Rechercher par nom ou circonscription";
 "Loading members..." = "Chargement des membres...";
