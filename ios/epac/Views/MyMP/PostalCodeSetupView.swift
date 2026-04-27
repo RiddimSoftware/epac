@@ -1,6 +1,8 @@
 import SwiftUI
+import SwiftData
 
 struct PostalCodeSetupView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = PostalCodeViewModel()
     var onDone: () -> Void
 
@@ -33,10 +35,10 @@ struct PostalCodeSetupView: View {
                             .padding()
                             .background(Color(.secondarySystemBackground))
                             .cornerRadius(12)
-                            .onSubmit { Task { await viewModel.lookup() } }
+                            .onSubmit { Task { await viewModel.lookup(modelContext: modelContext) } }
 
                         Button {
-                            Task { await viewModel.lookup() }
+                            Task { await viewModel.lookup(modelContext: modelContext) }
                         } label: {
                             Group {
                                 if viewModel.isLoading {
@@ -89,16 +91,24 @@ struct PostalCodeSetupView: View {
     private func resultCard(_ result: RidingLookupResult) -> some View {
         VStack(spacing: 16) {
             VStack(spacing: 4) {
-                Text(result.memberName)
+                Text(result.ridingName)
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text(result.ridingName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if !result.partyName.isEmpty {
-                    Text(result.partyName)
+                    .multilineTextAlignment(.center)
+                if !result.memberName.isEmpty {
+                    Text(result.memberName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if !result.partyName.isEmpty {
+                        Text(result.partyName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text(NSLocalizedString("riding.result.mpLoadingLater", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding()

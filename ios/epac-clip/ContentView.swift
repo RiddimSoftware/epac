@@ -146,17 +146,24 @@ struct ClipMPResult { let memberName: String; let partyName: String; let ridingN
 enum ClipRidingLookup {
 	static func find(postalCode: String) async throws -> ClipMPResult {
 		let upper = postalCode.uppercased().replacingOccurrences(of: " ", with: "")
-		guard let url = URL(string: "https://api.represent.opennorth.ca/postcodes/\(upper)/?sets=federal-electoral-districts&format=json") else { throw URLError(.badURL) }
+		guard let url = URL(string: "https://represent.opennorth.ca/postcodes/\(upper)/?sets=federal-electoral-districts") else { throw URLError(.badURL) }
 		let (data, response) = try await URLSession.shared.data(from: url)
 		guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
 		guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-		      let reps = json["representatives_centroid"] as? [[String: Any]],
-		      let rep = reps.first(where: { ($0["elected_office"] as? String)?.lowercased() == "mp" })
+		      let boundaries = json["boundaries_centroid"] as? [[String: Any]]
+		else { throw URLError(.cannotParseResponse) }
+		let federalBoundary = boundaries.first {
+			let setName = ($0["boundary_set_name"] as? String) ?? ""
+			let relatedURL = (($0["related"] as? [String: Any])?["boundary_set_url"] as? String) ?? ""
+			return setName == "Federal electoral district"
+				&& !relatedURL.contains("2003-representation-order")
+		}
+		guard let ridingName = federalBoundary?["name"] as? String, !ridingName.isEmpty
 		else { throw URLError(.cannotParseResponse) }
 		return ClipMPResult(
-			memberName: rep["name"] as? String ?? "Unknown",
-			partyName:  rep["party_name"] as? String ?? "",
-			ridingName: rep["district_name"] as? String ?? ""
+			memberName: ridingName,
+			partyName:  "",
+			ridingName: ridingName
 		)
 	}
 }

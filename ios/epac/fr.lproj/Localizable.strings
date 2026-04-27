@@ -100,6 +100,8 @@
 "riding.error.invalidPostalCode" = "Code postal invalide. Veuillez saisir un code postal canadien valide (ex. : K1A 0A6).";
 "riding.error.noFederalRepresentative" = "Aucun député fédéral trouvé pour ce code postal. Veuillez vérifier sur le site d'Élections Canada.";
 "riding.error.noResults" = "Aucun résultat trouvé. Veuillez vérifier votre code postal et réessayer.";
+"riding.error.networkError" = "Impossible de se connecter au serveur. Vérifiez votre connexion et réessayez.";
+"riding.result.mpLoadingLater" = "Circonscription trouvée. Les informations de votre député apparaîtront une fois les données chargées.";
 
 /* Members view */
 "Search by name or riding" = "Rechercher par nom ou circonscription";
