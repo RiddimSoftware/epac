@@ -172,3 +172,31 @@
 
 /* Contact MP */
 "contact.writeToMP" = "Écrire à mon député";
+
+/* e-Pétitions */
+"petitions.navTitle" = "e-Pétitions";
+"petitions.browseAll" = "Parcourir les pétitions ouvertes";
+"petitions.filter" = "Filtrer";
+"petitions.loading" = "Chargement des pétitions";
+"petition.filter.all" = "Toutes les pétitions";
+"petition.status.open" = "Ouverte";
+"petition.status.closed" = "Fermée";
+"petition.status.certified" = "Certifiée";
+"petition.status.responseReceived" = "Réponse reçue";
+"petition.status.unknown" = "Inconnu";
+"petitions.signatures" = "%d signatures";
+"petitions.signatures.label" = "Signatures";
+"petitions.number" = "Pétition";
+"petitions.status" = "Statut";
+"petitions.deadline" = "Date limite";
+"petitions.sponsor" = "Député présentateur";
+"petitions.subject" = "Sujet";
+"petitions.sign" = "Signer cette pétition sur noscommunes.ca";
+"petitions.sign.footer" = "S'ouvre dans Safari. L'application ne recueille pas de signatures.";
+"petitions.empty.title" = "Aucune pétition";
+"petitions.empty.description" = "Aucune pétition trouvée.";
+"petitions.error.title" = "Impossible de charger les pétitions";
+"petitions.error.description" = "Vérifiez votre connexion et réessayez.";
+
+/* Section d'activité Mon député */
+"myMP.activity.section" = "Activité récente";
