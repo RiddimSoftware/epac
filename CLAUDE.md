@@ -266,3 +266,46 @@ Adopt a 5-tab structure that groups features thematically and positions the pers
 - All 5 existing tabs must continue to function during and after the transition.
 - iPad uses NavigationSplitView (`AppTab.allCases` sidebar); the tab order maps directly to sidebar order — no separate iPad logic needed.
 - New features must state their navigation home in the PR description before merging.
+
+---
+
+## SwiftData Schema Migration (ADR-002)
+
+**Date:** 2026-04-27
+**Status:** Accepted
+**Ticket:** EPAC-128
+
+### Convention: every schema change requires a new `SchemaVN`
+
+**Rule:** Any change to a SwiftData `@Model` — adding a property, removing one, renaming one, changing a type, or adding a new model class — requires a new versioned schema enum and a new migration stage in `EpacMigrationPlan`.
+
+**Never** change an existing `SchemaVN` enum after it has shipped in production. Existing versions are immutable; they define what real users' databases look like on disk.
+
+### How to add a new schema version
+
+1. Copy the current latest `SchemaVN` enum in `Model.swift` to a new `SchemaV(N+1)` enum.
+2. Make your changes inside `SchemaV(N+1)`.
+3. Update the `typealias` block at the top of `Model.swift` to point to `SchemaV(N+1)`.
+4. Add a migration stage to `EpacMigrationPlan` in `Migration.swift`:
+   - Adding optional properties or new model types → `MigrationStage.lightweight`
+   - Adding non-optional properties, renaming, or transforming data → `MigrationStage.custom` with a `didMigrate` closure
+5. Add `SchemaV(N+1).self` to `EpacMigrationPlan.schemas`.
+
+### When to use lightweight vs custom migration
+
+| Change | Stage |
+|--------|-------|
+| New optional property | Lightweight |
+| New `@Model` class | Lightweight |
+| New non-optional property (needs default) | Custom — set value in `didMigrate` |
+| Rename a property | Custom — read old, write new, nil out old |
+| Remove a property | Lightweight (SwiftData ignores unknown columns) |
+| Change a property type | Custom |
+
+### Migration plan location
+
+`ios/epac/Model/Migration.swift` contains `EpacMigrationPlan`. The `ModelContainer` in `epacApp.swift` initializes with this plan. The plan accumulates all migration stages in chronological order; do not remove old stages.
+
+### Why not destructive migration
+
+The previous fallback — delete the SQLite files on schema incompatibility — silently destroyed all locally cached Hansard data, votes, and expenditures on every schema update. For a civic app users rely on during active political moments, losing the local cache is a bad experience. Proper migrations preserve data across updates.
