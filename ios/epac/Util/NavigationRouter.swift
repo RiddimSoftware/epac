@@ -45,4 +45,6 @@ class NavigationRouter {
 	var selectedMember: ParliamentMember?
 	// Pre-fills the Search tab search bar when set; cleared after SearchView reads it.
 	var pendingSearchQuery: String?
+	// Triggers postal code setup sheet when true; caller resets to false after handling.
+	var pendingShowPostalCodeSetup = false
 }
