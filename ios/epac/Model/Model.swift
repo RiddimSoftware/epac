@@ -389,6 +389,7 @@ enum SchemaV4: VersionedSchema {
 		var hillPhone: String?
 		var constituencyPhone: String?
 		var constituencyAddress: String?
+		var contactFetched: Bool
 		init(name: String, lastName: String, firstName: String, photoURL: URL, riding: String, province: Province, party: Party, websiteURL: URL? = nil, memberID: Int = 0, fromDateTime: Date? = nil, toDateTime: Date? = nil) {
 			self.name = name
 			self.memberID = memberID
@@ -405,6 +406,7 @@ enum SchemaV4: VersionedSchema {
 			self.hillPhone = nil
 			self.constituencyPhone = nil
 			self.constituencyAddress = nil
+			self.contactFetched = false
 		}
 		var initials: String {
 			let first = firstName.first.map(String.init) ?? ""

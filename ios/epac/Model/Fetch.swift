@@ -559,7 +559,7 @@ actor Fetch: ObservableObject {
 	func downloadMemberContact(identifier: PersistentIdentifier) async throws {
 		guard let member = modelContext.model(for: identifier) as? ParliamentMember,
 			  member.memberID > 0,
-			  member.email == nil, member.hillPhone == nil else { return }
+			  !member.contactFetched else { return }
 		let first = member.firstName.lowercased()
 			.replacingOccurrences(of: " ", with: "-")
 			.folding(options: .diacriticInsensitive, locale: .current)
@@ -576,6 +576,7 @@ actor Fetch: ObservableObject {
 		member.hillPhone = contact.hillPhone
 		member.constituencyPhone = contact.constituencyPhone
 		member.constituencyAddress = contact.constituencyAddress
+		member.contactFetched = true
 		try? modelContext.save()
 	}
 }

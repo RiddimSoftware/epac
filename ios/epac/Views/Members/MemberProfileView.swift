@@ -24,20 +24,22 @@ struct MemberProfileView: View {
 
 	private var contactSection: some View {
 		VStack(alignment: .leading, spacing: 10) {
-			if let email = member.email {
-				Button { UIApplication.shared.open(URL(string: "mailto:\(email)")!) } label: {
+			if let email = member.email, let url = URL(string: "mailto:\(email)") {
+				Button { UIApplication.shared.open(url) } label: {
 					ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
 				}
 				.foregroundStyle(.primary)
 			}
-			if let phone = member.hillPhone {
-				Button { UIApplication.shared.open(URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })")!) } label: {
+			if let phone = member.hillPhone,
+			   let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+				Button { UIApplication.shared.open(url) } label: {
 					ProfileDetailRow(icon: "phone.fill", label: NSLocalizedString("contact.hillOffice", comment: ""), value: phone)
 				}
 				.foregroundStyle(.primary)
 			}
-			if let phone = member.constituencyPhone {
-				Button { UIApplication.shared.open(URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })")!) } label: {
+			if let phone = member.constituencyPhone,
+			   let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+				Button { UIApplication.shared.open(url) } label: {
 					ProfileDetailRow(icon: "phone.fill", label: NSLocalizedString("contact.constituencyPhone", comment: ""), value: phone)
 				}
 				.foregroundStyle(.primary)
