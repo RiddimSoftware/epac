@@ -169,7 +169,7 @@ struct BillRow: View {
             }
             Text(bill.title)
                 .font(.subheadline)
-                .lineLimit(2)
+                .lineLimit(3)
             if !bill.sponsorName.isEmpty {
                 Text(bill.sponsorName)
                     .font(.caption2)

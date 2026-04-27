@@ -163,6 +163,7 @@ private struct PetitionRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(petition.status.displayName): \(petition.subject)")
     }
 }
 
