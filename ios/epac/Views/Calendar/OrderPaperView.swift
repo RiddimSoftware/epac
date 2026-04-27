@@ -21,12 +21,11 @@ struct OrderPaperView: View {
 
 	private var upcomingSittings: [Date] {
 		let today = Calendar.current.startOfDay(for: .now)
-		return calendars
+		return Array(calendars
 			.flatMap { $0.sittings }
 			.filter { $0 >= today }
 			.sorted()
-			.prefix(15)
-			.map { $0 }
+			.prefix(15))
 	}
 
 	private var nextSitting: Date? { upcomingSittings.first }
@@ -134,15 +133,19 @@ struct OrderPaperView: View {
 
 	// MARK: - Helpers
 
+	private static let orderPaperDateFormatter: DateFormatter = {
+		let f = DateFormatter()
+		f.dateFormat = "yyyyMMdd"
+		return f
+	}()
+
 	private func openOrderPaper(for date: Date) {
 		// The official Order Paper is published at a date-specific URL.
 		// Format: /DocumentViewer/en/44-1/house/order-paper/[YYYYMMDD]
 		// We use the index page since we don't know the exact parliament/session
 		// without joining calendar data to parliament metadata.
 		let fallback = URL(string: "https://www.ourcommons.ca/en/parliamentary-business/order-papers")!
-		let formatter = DateFormatter()
-		formatter.dateFormat = "yyyyMMdd"
-		let dateStr = formatter.string(from: date)
+		let dateStr = Self.orderPaperDateFormatter.string(from: date)
 		let url = URL(string: "https://www.ourcommons.ca/en/parliamentary-business/order-paper/\(dateStr)") ?? fallback
 		openURL(url)
 	}
