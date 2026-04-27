@@ -30,11 +30,14 @@ func recordHealth(ctx context.Context, conn *pgx.Conn, count int, runErr error) 
 	now := time.Now().UTC()
 	var errMsg *string
 	var successAt *time.Time
+	var recordCount *int
 	if runErr == nil {
 		successAt = &now
+		recordCount = &count
 	} else {
 		s := runErr.Error()
 		errMsg = &s
+		// recordCount stays nil on error; COALESCE preserves the last-known good count.
 	}
 	_, _ = conn.Exec(ctx, `
 		INSERT INTO pipeline_health (name, last_run_at, last_success_at, last_error, record_count, expected_interval_hours)
@@ -43,8 +46,8 @@ func recordHealth(ctx context.Context, conn *pgx.Conn, count int, runErr error) 
 			last_run_at     = EXCLUDED.last_run_at,
 			last_success_at = COALESCE(EXCLUDED.last_success_at, pipeline_health.last_success_at),
 			last_error      = EXCLUDED.last_error,
-			record_count    = EXCLUDED.record_count
-	`, pipelineName, now, successAt, errMsg, count)
+			record_count    = COALESCE(EXCLUDED.record_count, pipeline_health.record_count)
+	`, pipelineName, now, successAt, errMsg, recordCount)
 }
 
 func HandleRequest(ctx context.Context) error {

@@ -72,6 +72,9 @@ func handler(ctx context.Context, _ events.APIGatewayV2HTTPRequest) (events.APIG
 		}
 		pipelines = append(pipelines, p)
 	}
+	if err := rows.Err(); err != nil {
+		return apiError(503, fmt.Sprintf("rows iteration: %v", err)), nil
+	}
 
 	status := "ok"
 	if !allHealthy {
