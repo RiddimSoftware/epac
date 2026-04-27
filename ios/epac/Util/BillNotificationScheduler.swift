@@ -74,6 +74,7 @@ struct BillNotificationScheduler {
     static func scheduleVoteResult(billNumber: String, billTitle: String, yea: Int, nay: Int, mpName: String?, mpVote: String?) {
         let content = UNMutableNotificationContent()
         content.title = billNumber
+        content.subtitle = billTitle
         var body = String(
             format: NSLocalizedString("bill.notification.voteResult", comment: ""),
             yea, nay
