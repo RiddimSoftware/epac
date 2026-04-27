@@ -958,7 +958,7 @@
 		};
 		A3DEAD0BEEF00000CAFE0002 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-swift" */;
+			package = A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
