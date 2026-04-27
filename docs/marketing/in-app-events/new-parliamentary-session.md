@@ -11,7 +11,7 @@
 | Event type | Major update |
 | Badge | NEW SESSION |
 | Short description (30 chars max) | Parliament is back in session |
-| Long description (120 chars max) | A new parliamentary session begins [DATE]. Follow the throne speech, upcoming bills, and your MP's activity in real time. |
+| Long description (120 chars max) | A new parliamentary session begins [DATE]. Track the throne speech, bills, and your MP's activity. |
 | Start date | First sitting day of the session |
 | End date | Start date + 14 days |
 | Deep link | `https://epac.riddimsoftware.com/sitting/[YYYY-MM-DD]` |
