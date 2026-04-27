@@ -3,36 +3,101 @@ import Testing
 @testable import epac
 
 struct FiscalMonitorServiceTests {
-	@Test func parsesFinanceCanadaFiscalMonitorHTML() throws {
+	@Test func parseFiscalMonitorIssue() throws {
 		let html = """
 		<html>
-		<head><title>The Fiscal Monitor - February 2026</title></head>
+		<head>
+			<title>The Fiscal Monitor - December 2025 - Canada.ca</title>
+			<meta name="dcterms.issued" content="2026-02-27"/>
+		</head>
 		<body>
-		<h1>The Fiscal Monitor - February 2026</h1>
-		<a class="gc-dwnld-lnk" href="/content/dam/fin/publications/fm-rf/2026/02/2026-02-eng.pdf">PDF</a>
-		<p>Table 1</p>
-		<p>Summary statement of transactions</p>
-		<p>$ millions February April to February 2025 2026 2024-25 2025-26</p>
-		<p>Budgetary transactions Revenues 51,247 48,415 449,834 453,246 Expenses Program expenses, excluding net actuarial losses -39,541 -38,449 -416,082 -424,924 Public debt charges -3,797 -3,892 -49,341 -49,306 Budgetary balance, excluding net actuarial losses 7,909 6,074 -15,589 -20,984 Net actuarial losses -335 -415 -3,685 -4,565 Budgetary balance (deficit/surplus) 7,574 5,659 -19,274 -25,549 Non-budgetary transactions</p>
-		<p>Actual/projected annual budgetary balance 1 -36,348 -78,349 -32,328 -73,372 Table 1</p>
-		<p>Page details 2026-04-24</p>
+			<a class="gc-dwnld-lnk" href="/content/dam/fin/publications/fm-rf/2025/12/2025-12-eng.pdf">Download PDF</a>
+			<table class="table table-bordered">
+				<caption>Table 1<br><strong>Summary statement of transactions</strong><br><small>$ millions</small></caption>
+				<tbody>
+					<tr><th scope="row" class="fnt-nrml">Revenues</th><td>44,335</td><td>46,116</td><td>355,624</td><td>363,361</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Program expenses, excluding net actuarial losses</th><td>-38,277</td><td>-40,906</td><td>-333,201</td><td>-344,910</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Public debt charges</th><td>-4,721</td><td>-4,550</td><td>-41,123</td><td>-40,856</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Net actuarial losses</th><td>-335</td><td>-415</td><td>-3,015</td><td>-3,735</td></tr>
+					<tr><th scope="row">Budgetary balance (deficit/surplus)</th><td>1,002</td><td>245</td><td>-21,715</td><td>-26,140</td></tr>
+				</tbody>
+			</table>
+			<table>
+				<tbody>
+					<tr><th>Actual/projected annual budgetary balance</th><td>-36,348</td><td>-78,349</td></tr>
+				</tbody>
+			</table>
 		</body>
 		</html>
 		"""
 
-		let entry = try FiscalMonitorService.parseIssueHTML(
-			html,
-			sourceURL: URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2026/02.html")!
+		let url = URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2025/12.html")!
+		let entry = try FiscalMonitorService.parseIssue(html: html, url: url)
+
+		#expect(entry.fiscalYearStart == 2025)
+		#expect(entry.month == 12)
+		#expect(entry.monthName == "December")
+		#expect(entry.revenueMillions == 46_116)
+		#expect(entry.programExpenseMillions == 40_906)
+		#expect(entry.publicDebtChargesMillions == 4_550)
+		#expect(entry.netActuarialLossesMillions == 415)
+		#expect(entry.budgetaryBalanceMillions == 245)
+		#expect(entry.yearToDateBudgetaryBalanceMillions == -26_140)
+		#expect(entry.annualBudgetProjectionMillions == -78_349)
+		#expect(entry.sourceTitle == "Finance Canada Fiscal Monitor, December 2025")
+		#expect(entry.sourceURL == "https://www.canada.ca/content/dam/fin/publications/fm-rf/2025/12/2025-12-eng.pdf")
+	}
+
+	@Test func parseIssueLinksFindsCurrentFiscalYearCandidates() throws {
+		let html = """
+		<html><body>
+			<a href="/en/department-finance/services/publications/fiscal-monitor/2025/03.html">March</a>
+			<a href="/en/department-finance/services/publications/fiscal-monitor/2025/04.html">April</a>
+			<a href="/en/department-finance/services/publications/fiscal-monitor/2025/12.html">December</a>
+			<a href="/en/department-finance/services/publications/fiscal-monitor/2026/01.html">January</a>
+		</body></html>
+		"""
+
+		let issues = try FiscalMonitorService.parseIssueLinks(
+			html: html,
+			baseURL: URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor.html")!
 		)
 
-		#expect(entry.id == "2026-02")
-		#expect(entry.fiscalYear == "2025-26")
-		#expect(entry.revenueMillions == 48_415)
-		#expect(entry.expenseMillions == 42_756)
-		#expect(entry.budgetaryBalanceMillions == 5_659)
-		#expect(entry.yearToDateBalanceMillions == -25_549)
-		#expect(entry.annualBudgetProjectionMillions == -78_349)
-		#expect(entry.sourceTitle == "Finance Canada Fiscal Monitor, February 2026")
-		#expect(entry.sourceURL.absoluteString == "https://www.canada.ca/content/dam/fin/publications/fm-rf/2026/02/2026-02-eng.pdf")
+		#expect(issues.count == 4)
+		#expect(issues.contains { $0.year == 2025 && $0.month == 4 && $0.fiscalYearStart == 2025 })
+		#expect(issues.contains { $0.year == 2026 && $0.month == 1 && $0.fiscalYearStart == 2025 })
+	}
+
+	@Test func parsePublicationJSONFindsFiscalMonitorIssues() throws {
+		let json = """
+		{
+			"data": [
+				{
+					"title": "The Fiscal Monitor - February 2026",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2026/02.html",
+					"pub-type": "Fiscal Monitor"
+				},
+				{
+					"title": "Official International Reserves - April 7, 2026",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/monthly-official-international-reserves/2026/04.html",
+					"pub-type": "Official International Reserves"
+				},
+				{
+					"title": "The Fiscal Monitor - April 2025",
+					"link": "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2025/04.html",
+					"pub-type": "Fiscal Monitor"
+				}
+			]
+		}
+		"""
+
+		let issues = try FiscalMonitorService.parsePublicationIssues(
+			json: Data(json.utf8),
+			baseURL: URL(string: "https://www.canada.ca/content/dam/fin/documents/publications/pub-rep/json.json")!
+		)
+
+		#expect(issues.count == 2)
+		#expect(issues.contains { $0.year == 2026 && $0.month == 2 && $0.fiscalYearStart == 2025 })
+		#expect(issues.contains { $0.year == 2025 && $0.month == 4 && $0.fiscalYearStart == 2025 })
 	}
 }

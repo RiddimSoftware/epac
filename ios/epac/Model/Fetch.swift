@@ -72,51 +72,6 @@ actor Fetch: ObservableObject {
 		try? await downloadFiscalMonitorEntries()
 	}
 
-	func fiscalMonitorEntries() async throws {
-		Log.debug("Fetch.fiscalMonitorEntries()")
-		let fetched = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>())
-		if fetched.isEmpty {
-			try await downloadFiscalMonitorEntries()
-		}
-	}
-
-	func downloadFiscalMonitorEntries() async throws {
-		Log.debug("Fetch.downloadFiscalMonitorEntries()")
-		let parsedEntries = try await FiscalMonitorService.fetchCurrentFiscalYearEntries()
-		for parsed in parsedEntries {
-			let id = parsed.id
-			let existing = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>(predicate: #Predicate { $0.id == id }))
-			if let entry = existing.first {
-				entry.fiscalYear = parsed.fiscalYear
-				entry.month = parsed.month
-				entry.publicationDate = parsed.publicationDate
-				entry.revenueMillions = parsed.revenueMillions
-				entry.expenseMillions = parsed.expenseMillions
-				entry.budgetaryBalanceMillions = parsed.budgetaryBalanceMillions
-				entry.yearToDateBalanceMillions = parsed.yearToDateBalanceMillions
-				entry.annualBudgetProjectionMillions = parsed.annualBudgetProjectionMillions
-				entry.sourceTitle = parsed.sourceTitle
-				entry.sourceURL = parsed.sourceURL
-			} else {
-				modelContext.insert(FiscalMonitorEntry(
-					id: parsed.id,
-					fiscalYear: parsed.fiscalYear,
-					month: parsed.month,
-					publicationDate: parsed.publicationDate,
-					revenueMillions: parsed.revenueMillions,
-					expenseMillions: parsed.expenseMillions,
-					budgetaryBalanceMillions: parsed.budgetaryBalanceMillions,
-					yearToDateBalanceMillions: parsed.yearToDateBalanceMillions,
-					annualBudgetProjectionMillions: parsed.annualBudgetProjectionMillions,
-					sourceTitle: parsed.sourceTitle,
-					sourceURL: parsed.sourceURL
-				))
-			}
-		}
-		try modelContext.save()
-		UserDefaults.standard.set(Date(), forKey: "epac.sync.fiscalMonitor")
-	}
-
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
 		Log.debug("Fetch.hansard(date: \(date))")
 		let fetched = try modelContext.fetchIdentifiers(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date }))
@@ -183,6 +138,53 @@ actor Fetch: ObservableObject {
 		if fetched.isEmpty {
 			try await downloadExpenditures(year: year, quarter: quarter)
 		}
+	}
+
+	func fiscalMonitorEntries() async throws {
+		Log.debug("Fetch.fiscalMonitorEntries()")
+		let fetched = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>())
+		if fetched.isEmpty || shouldRefreshFiscalMonitor() {
+			try await downloadFiscalMonitorEntries()
+		}
+	}
+
+	func downloadFiscalMonitorEntries() async throws {
+		Log.debug("Fetch.downloadFiscalMonitorEntries()")
+		let parsedEntries = try await FiscalMonitorService().currentFiscalYearEntries()
+		guard !parsedEntries.isEmpty else { return }
+
+		let existing = try modelContext.fetch(FetchDescriptor<FiscalMonitorEntry>())
+		for entry in existing where entry.fiscalYearStart == parsedEntries[0].fiscalYearStart {
+			modelContext.delete(entry)
+		}
+
+		for parsed in parsedEntries {
+			modelContext.insert(FiscalMonitorEntry(
+				fiscalYearStart: parsed.fiscalYearStart,
+				month: parsed.month,
+				monthName: parsed.monthName,
+				periodDate: parsed.periodDate,
+				publicationDate: parsed.publicationDate,
+				revenueMillions: parsed.revenueMillions,
+				programExpenseMillions: parsed.programExpenseMillions,
+				publicDebtChargesMillions: parsed.publicDebtChargesMillions,
+				netActuarialLossesMillions: parsed.netActuarialLossesMillions,
+				budgetaryBalanceMillions: parsed.budgetaryBalanceMillions,
+				yearToDateBudgetaryBalanceMillions: parsed.yearToDateBudgetaryBalanceMillions,
+				annualBudgetProjectionMillions: parsed.annualBudgetProjectionMillions,
+				sourceTitle: parsed.sourceTitle,
+				sourceURL: parsed.sourceURL
+			))
+		}
+		try modelContext.save()
+		UserDefaults.standard.set(Date(), forKey: "epac.sync.fiscalMonitor")
+	}
+
+	private func shouldRefreshFiscalMonitor() -> Bool {
+		guard let lastSync = UserDefaults.standard.object(forKey: "epac.sync.fiscalMonitor") as? Date else {
+			return true
+		}
+		return Date().timeIntervalSince(lastSync) > 60 * 60 * 24
 	}
 
 	func downloadExpenditures(year: Int, quarter: Int) async throws {

@@ -41,9 +41,9 @@ struct AccountabilityHubView: View {
 					}
 					.accessibilityHint("Opens federal project cost lifecycle view")
 					NavigationLink(destination: FederalFinancesView()) {
-						Label(NSLocalizedString("fiscalMonitor.navTitle", comment: ""), systemImage: "chart.line.uptrend.xyaxis")
+						Label("Federal Finances", systemImage: "chart.line.uptrend.xyaxis")
 					}
-					.accessibilityHint("Opens Finance Canada Fiscal Monitor charts")
+					.accessibilityHint("Opens federal Fiscal Monitor revenue and spending view")
 					NavigationLink(destination: GazetteView()) {
 						Label(NSLocalizedString("gazette.navTitle", comment: ""), systemImage: "newspaper.fill")
 					}

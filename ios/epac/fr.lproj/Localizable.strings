@@ -463,6 +463,8 @@
 
 /* Menus contextuels — rangées de projet de loi (EPAC-170) */
 "bill.contextMenu.seeVotes" = "Voir les votes sur ce projet de loi";
+/* Étiquette d'accessibilité du badge Nouveau (EPAC-381) */
+"bill.new.accessibility" = "Nouveau";
 
 /* Onboarding (EPAC-296) */
 "onboarding.skip" = "Passer";

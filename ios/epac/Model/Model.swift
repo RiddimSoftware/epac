@@ -1105,49 +1105,51 @@ enum SchemaV7: VersionedSchema {
 	@Model
 	final class FiscalMonitorEntry: Identifiable {
 		@Attribute(.unique) var id: String
-		var fiscalYear: String
-		var month: Date
+		var fiscalYearStart: Int
+		var month: Int
+		var monthName: String
+		var periodDate: Date
 		var publicationDate: Date
 		var revenueMillions: Double
-		var expenseMillions: Double
+		var programExpenseMillions: Double
+		var publicDebtChargesMillions: Double
+		var netActuarialLossesMillions: Double
+		var totalSpendingMillions: Double
 		var budgetaryBalanceMillions: Double
-		var yearToDateBalanceMillions: Double
+		var yearToDateBudgetaryBalanceMillions: Double
 		var annualBudgetProjectionMillions: Double?
 		var sourceTitle: String
-		var sourceURL: URL
-
-		var surplusOrDeficitLabel: String {
-			budgetaryBalanceMillions >= 0 ? "Surplus" : "Deficit"
-		}
-
-		var isBudgetVarianceAlert: Bool {
-			guard let annualBudgetProjectionMillions, annualBudgetProjectionMillions != 0 else {
-				return false
-			}
-			return abs(yearToDateBalanceMillions - annualBudgetProjectionMillions) / abs(annualBudgetProjectionMillions) > 0.05
-		}
+		var sourceURL: String
 
 		init(
-			id: String,
-			fiscalYear: String,
-			month: Date,
+			fiscalYearStart: Int,
+			month: Int,
+			monthName: String,
+			periodDate: Date,
 			publicationDate: Date,
 			revenueMillions: Double,
-			expenseMillions: Double,
+			programExpenseMillions: Double,
+			publicDebtChargesMillions: Double,
+			netActuarialLossesMillions: Double,
 			budgetaryBalanceMillions: Double,
-			yearToDateBalanceMillions: Double,
+			yearToDateBudgetaryBalanceMillions: Double,
 			annualBudgetProjectionMillions: Double?,
 			sourceTitle: String,
-			sourceURL: URL
+			sourceURL: String
 		) {
-			self.id = id
-			self.fiscalYear = fiscalYear
+			self.id = "\(fiscalYearStart)-\(String(format: "%02d", month))"
+			self.fiscalYearStart = fiscalYearStart
 			self.month = month
+			self.monthName = monthName
+			self.periodDate = periodDate
 			self.publicationDate = publicationDate
 			self.revenueMillions = revenueMillions
-			self.expenseMillions = expenseMillions
+			self.programExpenseMillions = programExpenseMillions
+			self.publicDebtChargesMillions = publicDebtChargesMillions
+			self.netActuarialLossesMillions = netActuarialLossesMillions
+			self.totalSpendingMillions = programExpenseMillions + publicDebtChargesMillions + netActuarialLossesMillions
 			self.budgetaryBalanceMillions = budgetaryBalanceMillions
-			self.yearToDateBalanceMillions = yearToDateBalanceMillions
+			self.yearToDateBudgetaryBalanceMillions = yearToDateBudgetaryBalanceMillions
 			self.annualBudgetProjectionMillions = annualBudgetProjectionMillions
 			self.sourceTitle = sourceTitle
 			self.sourceURL = sourceURL

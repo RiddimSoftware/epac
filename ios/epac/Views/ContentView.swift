@@ -252,6 +252,7 @@ struct ContentView: View {
 	private func handleCustomScheme(_ url: URL) {
 		// cabinetdoor://member/[memberID]
 		// cabinetdoor://vote/[voteID]  → switches to accountability tab
+		// cabinetdoor://sitting/[yyyy-MM-dd]  → Parliament tab, first sitting day
 		let host = url.host?.lowercased() ?? ""
 		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
 		switch host {
@@ -259,6 +260,13 @@ struct ContentView: View {
 			if let id = pathID { navigateToMember(memberID: id) }
 		case "vote":
 			router.selectedTab = .accountability
+		case "sitting":
+			// Rebuild as a path-based URL so ContentViewModel's sitting parser can consume it.
+			let dateStr = url.pathComponents.dropFirst().first ?? ""
+			if let rebuilt = URL(string: "cabinetdoor:///sitting/\(dateStr)") {
+				viewModel.onOpenURL(rebuilt, modelContext: modelContext, fetch: fetch)
+			}
+			router.selectedTab = .parliament
 		default:
 			break
 		}
