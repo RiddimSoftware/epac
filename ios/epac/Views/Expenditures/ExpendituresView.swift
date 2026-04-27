@@ -130,7 +130,7 @@ struct ExpendituresView: View {
         Menu {
             Picker("Sort By", selection: $viewModel.sortOrder) {
                 ForEach(ExpendituresViewModel.SortOrder.allCases) { order in
-                    Text(order.rawValue).tag(order)
+                    Text(LocalizedStringKey(order.rawValue)).tag(order)
                 }
             }
         } label: {

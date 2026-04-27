@@ -15,14 +15,12 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 
 	public var id: String { rawValue }
 
-	public var title: String {
+	// LocalizedStringKey so SwiftUI auto-resolves from Localizable.strings
+	public var title: LocalizedStringKey {
 		switch self {
-		case .sittingCalendar:
-			return "Sitting Calendar"
-		case .members:
-			return "Members"
-		case .expenditures:
-			return "Expenditures"
+		case .sittingCalendar: return "Sitting Calendar"
+		case .members:         return "Members"
+		case .expenditures:    return "Expenditures"
 		}
 	}
 
