@@ -71,6 +71,7 @@ struct PartyLineScoreView: View {
 
     @MainActor
     private func computeScore() async {
+        result = nil
         let mid = member.memberID
         let party = member.party
 
