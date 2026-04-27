@@ -22,7 +22,7 @@ private func lookupMP(postalCode: String) async throws -> ClipMP {
     guard normalized.range(of: "^[A-Z]\\d[A-Z]\\d[A-Z]\\d$", options: .regularExpression) != nil else {
         throw URLError(.badURL)
     }
-    let url = URL(string: "https://represent.opennorth.ca/postcodes/\(normalized)/?sets=federal-electoral-districts")!
+    let url = URL(string: "https://api.represent.opennorth.ca/postcodes/\(normalized)/?sets=federal-electoral-districts")!
     let (data, _) = try await URLSession.shared.data(from: url)
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let reps = json["representatives_centroid"] as? [[String: Any]],

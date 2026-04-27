@@ -72,6 +72,10 @@ struct MemberVotingRecordView: View {
 					Section {
 						voteSummaryCard
 					}
+					Section {
+						PartyLineScoreView(member: member)
+							.padding(.vertical, 4)
+					}
 					Section(NSLocalizedString("voting.recentVotes", comment: "")) {
 						ForEach(memberVotes) { mv in
 							VoteRow(memberVote: mv)

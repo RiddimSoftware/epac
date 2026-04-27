@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ActivityView
 
 struct MemberProfileView: View {
 	let member: ParliamentMember
@@ -22,6 +23,7 @@ struct MemberProfileView: View {
 	@State private var showLobbying = false
 	@State private var lobbyingComms: [LobbyistCommunication] = []
 	@State private var lobbyingLoaded = false
+	@State private var shareItem: ActivityItem?
 
 	init(member: ParliamentMember) {
 		self.member = member
@@ -213,6 +215,14 @@ struct MemberProfileView: View {
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
+					shareItem = MPSharer.activityItem(for: member)
+				} label: {
+					Label(NSLocalizedString("member.share", comment: ""), systemImage: "square.and.arrow.up")
+				}
+				.accessibilityLabel(NSLocalizedString("member.share", comment: ""))
+			}
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
 					pickerSearch = ""
 					showingComparePicker = true
 				} label: {
@@ -247,6 +257,7 @@ struct MemberProfileView: View {
 			MemberVotingHistoryView(member: member)
 				.environmentObject(fetch)
 		}
+		.activitySheet($shareItem)
 		.sheet(isPresented: $showingComparePicker) {
 			NavigationStack {
 				List(pickableMembers) { other in

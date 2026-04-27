@@ -121,7 +121,7 @@ struct ClipMPResult { let memberName: String; let partyName: String; let ridingN
 enum ClipRidingLookup {
 	static func find(postalCode: String) async throws -> ClipMPResult {
 		let upper = postalCode.uppercased().replacingOccurrences(of: " ", with: "")
-		guard let url = URL(string: "https://represent.opennorth.ca/postcodes/\(upper)/?sets=federal-electoral-districts&format=json") else { throw URLError(.badURL) }
+		guard let url = URL(string: "https://api.represent.opennorth.ca/postcodes/\(upper)/?sets=federal-electoral-districts&format=json") else { throw URLError(.badURL) }
 		let (data, response) = try await URLSession.shared.data(from: url)
 		guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
 		guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
