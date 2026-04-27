@@ -204,6 +204,7 @@
 "petition.status.unknown" = "Unknown";
 "petitions.signatures" = "%d signatures";
 "petitions.signatures.label" = "Signatures";
+"petitions.signatures.threshold" = "%d more needed for a government response";
 "petitions.number" = "Petition";
 "petitions.status" = "Status";
 "petitions.deadline" = "Deadline";
@@ -341,6 +342,7 @@
 
 /* Home feed */
 "home.parliament.sitting" = "Parliament is sitting today";
+"home.parliament.notSitting" = "Parliament is not sitting today";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";

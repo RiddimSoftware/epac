@@ -12,6 +12,30 @@ struct PetitionDetailView: View {
 
     var body: some View {
         List {
+            // MARK: - Signature count hero
+            Section {
+                VStack(spacing: 4) {
+                    Text("\(petition.signatureCount)")
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .foregroundStyle(petition.status == .open ? Color.accentColor : Color.secondary)
+                    Text(NSLocalizedString("petitions.signatures.label", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if petition.status == .open && petition.signatureCount < 500 {
+                        ProgressView(value: Double(petition.signatureCount), total: 500)
+                            .tint(.accentColor)
+                            .padding(.top, 4)
+                        Text(String(format: NSLocalizedString("petitions.signatures.threshold", comment: ""), 500 - petition.signatureCount))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(petition.signatureCount) \(NSLocalizedString("petitions.signatures.label", comment: ""))")
+            }
+
             // MARK: - Meta section
             Section {
                 LabeledContent(
@@ -21,10 +45,6 @@ struct PetitionDetailView: View {
                 LabeledContent(
                     NSLocalizedString("petitions.status", comment: ""),
                     value: petition.status.displayName
-                )
-                LabeledContent(
-                    NSLocalizedString("petitions.signatures.label", comment: ""),
-                    value: "\(petition.signatureCount)"
                 )
                 if let deadline = petition.deadline {
                     LabeledContent(
