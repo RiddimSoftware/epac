@@ -53,6 +53,10 @@ struct PetitionsView: View {
                     }
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    petitions = []
+                    await load()
+                }
             }
         }
         .navigationTitle(NSLocalizedString("petitions.navTitle", comment: ""))
