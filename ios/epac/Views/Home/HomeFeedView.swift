@@ -21,6 +21,7 @@ struct HomeFeedView: View {
     @State private var isSittingToday = false
     @State private var myMPActivityCount = 0
     @State private var showPostalCodeSetup = false
+    @State private var showSettings = false
     @State private var recentSubjects: [SubjectOfBusiness] = []
     @State private var latestHansard: Hansard?
     @State private var billStore = BillFollowStore.shared
@@ -68,9 +69,22 @@ struct HomeFeedView: View {
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("Home", comment: ""))
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Label(NSLocalizedString("settings.title", comment: ""), systemImage: "gearshape")
+                    }
+                    .accessibilityLabel(NSLocalizedString("settings.title", comment: ""))
+                }
+            }
             .task { await loadFeed() }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
         }
     }

@@ -67,10 +67,14 @@ class ContentViewModel {
 		// Path-based format: /sitting/[yyyy-MM-dd]
 		let segments = url.pathComponents.filter { $0 != "/" }
 		if segments.first == "sitting", let dateStr = segments.dropFirst().first {
+			// Guard with a regex before parsing: DateFormatter on Darwin is lenient
+			// about separator characters and would accept "2024/04/29" as valid.
+			let iso8601Pattern = /^\d{4}-\d{2}-\d{2}$/
 			let formatter = DateFormatter()
 			formatter.dateFormat = "yyyy-MM-dd"
 			formatter.locale = Locale(identifier: "en_US_POSIX")
-			if let date = formatter.date(from: dateStr) {
+			if dateStr.wholeMatch(of: iso8601Pattern) != nil,
+			   let date = formatter.date(from: dateStr) {
 				navigateToHansard(date: date, subjectID: nil, speechID: nil, messageID: nil,
 				                  modelContext: modelContext, fetch: fetch)
 			}

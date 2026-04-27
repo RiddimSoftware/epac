@@ -28,7 +28,8 @@ struct MemberNotificationScheduler {
     // MARK: - Schedule helpers
 
     static func scheduleVoteNotification(memberName: String, ballot: String, description: String, memberID: Int) {
-        guard MemberFollowStore.shared.preferences(for: memberID).votes else { return }
+        guard NotificationPreferenceStore.shared.memberActivity,
+              MemberFollowStore.shared.preferences(for: memberID).votes else { return }
         let content = UNMutableNotificationContent()
         content.title = memberName
         content.body = String(format: NSLocalizedString("follow.notification.vote", comment: ""), ballot, description)
@@ -42,7 +43,8 @@ struct MemberNotificationScheduler {
     }
 
     static func scheduleSpeechNotification(memberName: String, subject: String, memberID: Int) {
-        guard MemberFollowStore.shared.preferences(for: memberID).speeches else { return }
+        guard NotificationPreferenceStore.shared.memberActivity,
+              MemberFollowStore.shared.preferences(for: memberID).speeches else { return }
         let content = UNMutableNotificationContent()
         content.title = memberName
         content.body = String(format: NSLocalizedString("follow.notification.speech", comment: ""), subject)
@@ -56,7 +58,8 @@ struct MemberNotificationScheduler {
     }
 
     static func scheduleExpenseNotification(memberName: String, quarter: Int, year: Int, memberID: Int) {
-        guard MemberFollowStore.shared.preferences(for: memberID).expenses else { return }
+        guard NotificationPreferenceStore.shared.memberActivity,
+              MemberFollowStore.shared.preferences(for: memberID).expenses else { return }
         let content = UNMutableNotificationContent()
         content.title = memberName
         content.body = String(format: NSLocalizedString("follow.notification.expense", comment: ""), quarter, year)

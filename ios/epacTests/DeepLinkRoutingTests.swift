@@ -85,11 +85,19 @@ struct DeepLinkRoutingTests {
     }
 
     @Test func sittingDateParsingRejectsMalformed() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        // DateFormatter on Darwin is lenient about separator characters, so we
+        // guard with a regex before parsing — exactly as ContentViewModel does.
+        let iso8601Pattern = /^\d{4}-\d{2}-\d{2}$/
+        func parseSittingDate(_ s: String) -> Date? {
+            guard s.wholeMatch(of: iso8601Pattern) != nil else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            return formatter.date(from: s)
+        }
 
-        #expect(formatter.date(from: "not-a-date") == nil)
-        #expect(formatter.date(from: "2024/04/29") == nil)
+        #expect(parseSittingDate("not-a-date") == nil)
+        #expect(parseSittingDate("2024/04/29") == nil)
+        #expect(parseSittingDate("2024-04-29") != nil)
     }
 }

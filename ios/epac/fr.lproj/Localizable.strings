@@ -487,3 +487,30 @@
 "onboarding.promise.point2" = "Notifications quand le Parlement débat de vos %d sujet(s)";
 "onboarding.promise.point3" = "Aucun compte requis. Aucune donnée vendue. Sans publicité.";
 "onboarding.promise.start" = "Commencer à explorer →";
+
+/* Settings (EPAC-143) */
+"settings.title" = "Paramètres";
+"settings.done" = "Terminé";
+
+"settings.location.title" = "Ma localisation";
+"settings.location.riding" = "Circonscription";
+"settings.location.mp" = "Député";
+"settings.location.change" = "Modifier le code postal";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.hansard" = "Nouvelles séances du Hansard";
+"settings.notifications.billVotes" = "Résultats de vote sur les projets de loi suivis";
+"settings.notifications.memberActivity" = "Activité des députés suivis";
+"settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
+"settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
+
+"settings.followed.bills" = "Projets de loi suivis";
+"settings.followed.members" = "Députés suivis";
+"settings.followed.topics" = "Sujets suivis";
+
+"settings.about.title" = "À propos";
+"settings.about.version" = "Version";
+"settings.about.privacy" = "Politique de confidentialité";
+"settings.about.dataSources" = "Sources de données";
+"settings.about.github" = "GitHub (code source ouvert)";
+"settings.about.feedback" = "Envoyer des commentaires";
