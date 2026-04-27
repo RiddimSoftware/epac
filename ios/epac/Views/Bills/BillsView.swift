@@ -28,16 +28,18 @@ struct BillsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityLabel(NSLocalizedString("bills.loading", comment: ""))
             } else if loadFailed && bills.isEmpty {
-                ContentUnavailableView(
-                    NSLocalizedString("bills.error.title", comment: ""),
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(NSLocalizedString("bills.error.description", comment: ""))
+                EmptyStateView(
+                    icon: "exclamationmark.triangle",
+                    title: NSLocalizedString("bills.error.title", comment: ""),
+                    message: NSLocalizedString("bills.error.description", comment: ""),
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
                 )
             } else if filtered.isEmpty {
-                ContentUnavailableView(
-                    NSLocalizedString("bills.empty.title", comment: ""),
-                    systemImage: "doc.text",
-                    description: Text(NSLocalizedString("bills.empty.description", comment: ""))
+                EmptyStateView(
+                    icon: "doc.text",
+                    title: NSLocalizedString("bills.empty.title", comment: ""),
+                    message: NSLocalizedString("bills.empty.description", comment: ""),
+                    action: nil
                 )
             } else {
                 List(filtered) { bill in

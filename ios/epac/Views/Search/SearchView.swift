@@ -69,20 +69,12 @@ struct SearchView: View {
     // MARK: - Subviews
 
     private var promptView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            Text(NSLocalizedString("search.emptyTitle", comment: ""))
-                .font(.headline)
-            Text(NSLocalizedString("search.emptyDescription", comment: ""))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyStateView(
+            icon: "magnifyingglass",
+            title: NSLocalizedString("search.prompt.title", comment: ""),
+            message: NSLocalizedString("search.prompt.description", comment: ""),
+            action: nil
+        )
     }
 
     private var resultsList: some View {

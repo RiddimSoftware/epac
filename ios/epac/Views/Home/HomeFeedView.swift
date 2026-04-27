@@ -48,6 +48,23 @@ struct HomeFeedView: View {
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
                 }
+                if PostalCodeViewModel.savedMemberName == nil
+                    && billStore.followedNumbers.isEmpty
+                    && topicStore.followedIDs.isEmpty {
+                    Section {
+                        EmptyStateView(
+                            icon: "person.wave.2",
+                            title: NSLocalizedString("empty.home.title", comment: ""),
+                            message: NSLocalizedString("empty.home.message", comment: ""),
+                            action: EmptyStateAction(
+                                label: NSLocalizedString("empty.home.action", comment: ""),
+                                handler: { showPostalCodeSetup = true }
+                            )
+                        )
+                        .listRowInsets(.init())
+                        .listRowBackground(Color.clear)
+                    }
+                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("Home", comment: ""))
