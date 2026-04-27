@@ -17,10 +17,12 @@ import SwiftData
 @MainActor
 struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(NavigationRouter.self) private var router
     @State private var isSittingToday = false
     @State private var myMPActivityCount = 0
     @State private var showPostalCodeSetup = false
     @State private var recentSubjects: [SubjectOfBusiness] = []
+    @State private var latestHansard: Hansard?
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
     @State private var provinceAbbrev: String = ""
@@ -57,20 +59,30 @@ struct HomeFeedView: View {
 
     private var todaySection: some View {
         Section {
-            HStack {
-                Image(systemName: "building.columns.fill")
-                    .foregroundStyle(.tint)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("home.parliament.sitting", comment: ""))
-                        .font(.subheadline.weight(.semibold))
-                    Text(Date(), style: .date)
+            Button {
+                router.selectedTab = .parliament
+            } label: {
+                HStack {
+                    Image(systemName: "building.columns.fill")
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(NSLocalizedString("home.parliament.sitting", comment: ""))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(Date(), style: .date)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(.vertical, 2)
-            .accessibilityElement(children: .combine)
+            .accessibilityLabel(NSLocalizedString("home.parliament.sitting", comment: ""))
+            .accessibilityHint("Opens Parliament tab")
         }
     }
 
@@ -213,6 +225,15 @@ struct HomeFeedView: View {
                     .lineLimit(2)
                     .padding(.vertical, 2)
             }
+            if latestHansard != nil {
+                Button {
+                    router.selectedTab = .parliament
+                } label: {
+                    Text(NSLocalizedString("home.seeAllDebates", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                }
+            }
         }
     }
 
@@ -248,6 +269,7 @@ struct HomeFeedView: View {
         let hansards = (try? modelContext.fetch(FetchDescriptor<Hansard>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         ))) ?? []
+        latestHansard = hansards.first
         recentSubjects = Array(
             (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
         )
