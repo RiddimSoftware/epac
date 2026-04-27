@@ -1,13 +1,17 @@
 //
-//  SittingViewModel.swift
+//  MemberDownloadCoordinator.swift
 //  epac
 //
 
-import Observation
+// Coordinates member data fetching for SittingView. Deduplicates concurrent
+// download requests for the same member so the network layer isn't hammered
+// when the same MP appears across multiple subjects in a sitting.
+//
+// This is a coordinator, not a ViewModel: it holds no presentation state
+// and no SwiftUI view observes its properties. @Observable is intentionally
+// absent.
 
-@MainActor
-@Observable
-class SittingViewModel {
+class MemberDownloadCoordinator {
 	private var pendingDownloads: Set<String> = []
 
 	func getMember(_ firstName: String, _ lastName: String, from members: [ParliamentMember], fetch: Fetch) -> ParliamentMember? {
