@@ -21,6 +21,7 @@ struct ContentView: View {
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
 	@State private var showMyMPSetup = PostalCodeViewModel.savedRidingName == nil
+	@State private var showWhatsNew = false
 	@Query private var members: [ParliamentMember]
 	@Query private var constituencies: [Constituency]
 
@@ -62,6 +63,7 @@ struct ContentView: View {
 		}
 		.task {
 			networkMonitor.start()
+			showWhatsNew = WhatsNewManager.shared.shouldShow()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
 			// Notification permission is user-visible; show it promptly.
 			await notificationManager.requestAuthorization()
@@ -79,6 +81,11 @@ struct ContentView: View {
 		}
 		.sheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }
+		}
+		.sheet(isPresented: $showWhatsNew) {
+			WhatsNewView { showWhatsNew = false }
+				.presentationDetents([.medium])
+				.presentationDragIndicator(.visible)
 		}
 	}
 

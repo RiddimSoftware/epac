@@ -1,0 +1,23 @@
+[
+  {
+    "version": "1.9",
+    "headline": "What's new in epac",
+    "items": [
+      {
+        "icon": "📜",
+        "title": "Bills Tracker",
+        "body": "Follow any bill through Parliament and filter by status, party, or keyword."
+      },
+      {
+        "icon": "📋",
+        "title": "E-Petitions",
+        "body": "Browse open e-petitions and see how many Canadians have signed each one."
+      },
+      {
+        "icon": "🔄",
+        "title": "Pull to Refresh",
+        "body": "Pull down on Bills and Petitions to fetch the latest data from Parliament."
+      }
+    ]
+  }
+]

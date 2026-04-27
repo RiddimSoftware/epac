@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import BackgroundTasks
 
 @main
 struct epacApp: App {
@@ -35,6 +36,19 @@ struct epacApp: App {
 
 	init() {
 		MetricKitSubscriber.shared.start()
+
+		BGTaskScheduler.shared.register(
+			forTaskWithIdentifier: BackgroundRefreshManager.taskIdentifier,
+			using: nil
+		) { task in
+			guard let refreshTask = task as? BGAppRefreshTask else {
+				task.setTaskCompleted(success: false)
+				return
+			}
+			Task { @MainActor in
+				BackgroundRefreshManager.shared.handle(refreshTask)
+			}
+		}
 	}
 
 	var body: some Scene {
@@ -45,7 +59,9 @@ struct epacApp: App {
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { oldPhase, newPhase in
 			if newPhase == .active {
+				BackgroundRefreshManager.shared.modelContainer = sharedModelContainer
 				ReviewRequestManager.shared.recordAppOpen()
+				BackgroundRefreshManager.shared.scheduleRefresh()
 			}
 		}
 	}
