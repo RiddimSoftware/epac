@@ -10,11 +10,34 @@
 import SwiftUI
 
 struct ContentView: View {
-	@State private var postalCode = ""
-	@State private var result: ClipMPResult?
+	@State private var postalCode = UserDefaults.standard.string(forKey: "clip.lastMP.postalCode") ?? ""
+	@State private var result: ClipMPResult? = ContentView.loadSavedResult()
 	@State private var isLoading = false
 	@State private var errorMessage: String?
 	@FocusState private var fieldFocused: Bool
+
+	private static let savedNameKey    = "clip.lastMP.name"
+	private static let savedPartyKey   = "clip.lastMP.party"
+	private static let savedRidingKey  = "clip.lastMP.riding"
+	private static let savedPostalKey  = "clip.lastMP.postalCode"
+
+	private static func loadSavedResult() -> ClipMPResult? {
+		let d = UserDefaults.standard
+		guard let name = d.string(forKey: savedNameKey), !name.isEmpty else { return nil }
+		return ClipMPResult(
+			memberName: name,
+			partyName:  d.string(forKey: savedPartyKey) ?? "",
+			ridingName: d.string(forKey: savedRidingKey) ?? ""
+		)
+	}
+
+	private func saveResult(_ r: ClipMPResult, postalCode: String) {
+		let d = UserDefaults.standard
+		d.set(r.memberName, forKey: ContentView.savedNameKey)
+		d.set(r.partyName,  forKey: ContentView.savedPartyKey)
+		d.set(r.ridingName, forKey: ContentView.savedRidingKey)
+		d.set(postalCode,   forKey: ContentView.savedPostalKey)
+	}
 
 	var body: some View {
 		VStack(spacing: 0) {
@@ -109,7 +132,9 @@ struct ContentView: View {
 		isLoading = true; errorMessage = nil; result = nil
 		defer { isLoading = false }
 		do {
-			result = try await ClipRidingLookup.find(postalCode: trimmed)
+			let r = try await ClipRidingLookup.find(postalCode: trimmed)
+			result = r
+			saveResult(r, postalCode: trimmed)
 		} catch {
 			errorMessage = "Could not find your riding. Check your postal code and try again."
 		}
