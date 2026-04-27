@@ -2,6 +2,13 @@ import Foundation
 
 // Response types matching the member-speeches Lambda (EPAC-293).
 
+private let memberSpeechISODateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    return formatter
+}()
+
 struct MemberSpeechEntry: Identifiable, Decodable {
     let id: String              // intervention_id
     let sittingDate: String?
@@ -25,10 +32,7 @@ struct MemberSpeechEntry: Identifiable, Decodable {
 
     var parsedDate: Date? {
         guard let s = sittingDate else { return nil }
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.date(from: s)
+        return memberSpeechISODateFormatter.date(from: s)
     }
 }
 
@@ -102,4 +106,3 @@ struct MemberSpeechService {
         }
     }
 }
-
