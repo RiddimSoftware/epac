@@ -66,10 +66,6 @@ struct HomeFeedView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
             }
             .padding(.vertical, 2)
             .accessibilityElement(children: .combine)
@@ -123,7 +119,8 @@ struct HomeFeedView: View {
 
     private var followedBillsSection: some View {
         Section(header: Text(NSLocalizedString("home.followedBills", comment: ""))) {
-            ForEach(Array(billStore.followed.prefix(3)), id: \.key) { number, state in
+            let sorted = billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt }
+            ForEach(Array(sorted.prefix(3)), id: \.key) { number, state in
                 HStack {
                     Image(systemName: "doc.badge.clock.fill")
                         .foregroundStyle(.blue)
@@ -191,7 +188,6 @@ struct HomeFeedView: View {
 
     // MARK: - Data loading
 
-    @MainActor
     private func loadFeed() async {
         // Section 1: Check sitting calendar
         let today = Calendar.current.startOfDay(for: Date())
