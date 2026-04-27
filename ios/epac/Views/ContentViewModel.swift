@@ -32,6 +32,24 @@ class ContentViewModel {
 						let titles = h.orders.flatMap { $0.subjects }.map { $0.title }
 						WidgetDataWriter.writeRecentSubjects(titles)
 						WidgetDataWriter.reloadWidgets()
+						// Notify followed members who spoke in this Hansard.
+						let followedIDs = MemberFollowStore.shared.followedIDs
+						if !followedIDs.isEmpty {
+							let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+							let followed = allMembers.filter { followedIDs.contains($0.memberID) }
+							let messages = h.orders.flatMap { $0.subjects }.flatMap { $0.speeches }.flatMap { $0.messages }
+							let firstSubject = subjects.first?.title ?? ""
+							for mp in followed {
+								let spoke = messages.contains { $0.lastName.localizedCaseInsensitiveCompare(mp.lastName) == .orderedSame }
+								if spoke {
+									MemberNotificationScheduler.scheduleSpeechNotification(
+										memberName: mp.name,
+										subject: firstSubject,
+										memberID: mp.memberID
+									)
+								}
+							}
+						}
 					}
 				} catch {
 					Log.debug("Failed to fetch hansard \(date)")
