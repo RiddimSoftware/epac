@@ -104,6 +104,8 @@ struct MyMPView: View {
     @State private var isLoading = false
     @State private var showPostalCodeSetup = false
     @State private var followStore = MemberFollowStore.shared
+    @State private var showConsultations = false
+    @State private var showElectionResources = false
 
     var body: some View {
         NavigationStack {
@@ -127,16 +129,26 @@ struct MyMPView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        NavigationLink(destination: GovernmentConsultationsView()) {
+                        Button {
+                            showConsultations = true
+                        } label: {
                             Label(NSLocalizedString("consult.navTitle", comment: ""), systemImage: "bubble.left.and.text.bubble.right")
                         }
-                        NavigationLink(destination: ElectionResourcesView()) {
+                        Button {
+                            showElectionResources = true
+                        } label: {
                             Label(NSLocalizedString("election.navTitle", comment: ""), systemImage: "checklist")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
                 }
+            }
+            .navigationDestination(isPresented: $showConsultations) {
+                GovernmentConsultationsView()
+            }
+            .navigationDestination(isPresented: $showElectionResources) {
+                ElectionResourcesView()
             }
             .task { await loadActivities() }
         }
