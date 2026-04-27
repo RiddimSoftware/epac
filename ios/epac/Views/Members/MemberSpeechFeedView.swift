@@ -1,131 +1,6 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Response models (Codable mirrors of the member-speeches Lambda response)
-
-struct MemberSpeechEntry: Codable, Identifiable {
-    let id: String           // intervention_id
-    let sittingDate: String?
-    let parliamentNum: Int?
-    let sessionNum: Int?
-    let subjectTitle: String?
-    let preview: String
-    let wordCount: Int?
-    let filename: String
-}
-
-struct MemberSpeechStats: Codable {
-    let totalSpeeches: Int
-    let avgWordCount: Int
-    let topTopic: String
-}
-
-private struct SpeechFeedPage: Codable {
-    let memberId: String
-    let page: Int
-    let perPage: Int
-    let total: Int
-    let pages: Int
-    let stats: MemberSpeechStats
-    let speeches: [MemberSpeechEntry]
-}
-
-// MARK: - ViewModel
-
-@Observable
-@MainActor
-final class MemberSpeechFeedViewModel {
-
-    let memberId: Int
-    private(set) var speeches: [MemberSpeechEntry] = []
-    private(set) var stats: MemberSpeechStats?
-    private(set) var isLoading = false
-    private(set) var hasMore = true
-    private(set) var errorMessage: String?
-    private(set) var selectedTopic: String? = nil
-
-    // Unique topics from loaded speeches, ordered by frequency.
-    var topicCounts: [(topic: String, count: Int)] {
-        Self.buildTopicCounts(from: speeches)
-    }
-
-    /// Pure helper — extracted for testability.
-    static func buildTopicCounts(from speeches: [MemberSpeechEntry]) -> [(topic: String, count: Int)] {
-        var counts: [String: Int] = [:]
-        for s in speeches {
-            if let t = s.subjectTitle, !t.isEmpty {
-                counts[t, default: 0] += 1
-            }
-        }
-        return counts.sorted { $0.value > $1.value }.map { (topic: $0.key, count: $0.value) }
-    }
-
-    private var currentPage = 0
-    private let perPage = 20
-    private var loadTask: Task<Void, Never>?
-
-    // TODO(EPAC-299): Replace with the deployed member-speeches Lambda URL from AWS API Gateway.
-    // Run: cd backend && make create-api SERVICE=member-speeches, then update this constant.
-    private static let apiBase = URL(string: "https://placeholder.execute-api.us-east-1.amazonaws.com/production")!
-
-    init(memberId: Int) {
-        self.memberId = memberId
-    }
-
-    func selectTopic(_ topic: String?) {
-        selectedTopic = topic
-        loadTask?.cancel()
-        loadTask = Task { await loadFirstPage() }
-    }
-
-    func loadFirstPage() async {
-        currentPage = 0
-        speeches = []
-        hasMore = true
-        errorMessage = nil
-        await loadNextPage()
-    }
-
-    func loadNextPage() async {
-        guard !isLoading, hasMore, memberId > 0 else { return }
-        isLoading = true
-        defer { isLoading = false }
-
-        let nextPage = currentPage + 1
-        guard var components = URLComponents(
-            url: Self.apiBase.appending(path: "members/\(memberId)/speeches"),
-            resolvingAgainstBaseURL: false
-        ) else { return }
-
-        var items = [
-            URLQueryItem(name: "page", value: "\(nextPage)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)"),
-        ]
-        if let topic = selectedTopic {
-            items.append(URLQueryItem(name: "topic", value: topic))
-        }
-        components.queryItems = items
-        guard let url = components.url else { return }
-
-        do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-                errorMessage = "Server error — check that the member-speeches Lambda is deployed."
-                return
-            }
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let page = try decoder.decode(SpeechFeedPage.self, from: data)
-            if nextPage == 1 { stats = page.stats }
-            speeches.append(contentsOf: page.speeches)
-            currentPage = page.page
-            hasMore = page.page < page.pages
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-}
-
 // MARK: - View
 
 struct MemberSpeechFeedView: View {
@@ -139,13 +14,6 @@ struct MemberSpeechFeedView: View {
     @State private var targetHansard: Hansard?
     @State private var targetSubject: SubjectOfBusiness?
     @State private var isLoadingSitting = false
-
-    private static let isoDate: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
 
     init(member: ParliamentMember) {
         self.member = member
@@ -190,7 +58,7 @@ struct MemberSpeechFeedView: View {
             } else {
                 ForEach(viewModel.speeches) { entry in
                     Button { Task { await navigateToSpeech(entry) } } label: {
-                        SpeechEntryRow(entry: entry)
+                        MemberSpeechFeedRow(entry: entry)
                     }
                     .foregroundStyle(.primary)
                     .disabled(isLoadingSitting)
@@ -216,7 +84,7 @@ struct MemberSpeechFeedView: View {
 
     // MARK: - Stats bar
 
-    private func statsBar(_ s: MemberSpeechStats) -> some View {
+    private func statsBar(_ s: MemberStats) -> some View {
         HStack(spacing: 0) {
             statCell(value: "\(s.totalSpeeches)", label: "speeches")
             if s.avgWordCount > 0 {
@@ -323,8 +191,7 @@ struct MemberSpeechFeedView: View {
     // MARK: - Navigation
 
     private func navigateToSpeech(_ entry: MemberSpeechEntry) async {
-        guard let dateStr = entry.sittingDate,
-              let date = Self.isoDate.date(from: dateStr) else { return }
+        guard let date = entry.parsedDate else { return }
 
         isLoadingSitting = true
         defer { isLoadingSitting = false }
@@ -350,7 +217,7 @@ struct MemberSpeechFeedView: View {
 
 // MARK: - Speech entry row
 
-private struct SpeechEntryRow: View {
+private struct MemberSpeechFeedRow: View {
     let entry: MemberSpeechEntry
 
     private static let isoDate: DateFormatter = {
