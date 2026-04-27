@@ -39,7 +39,7 @@ struct ContentView: View {
 		.environmentObject(fetch)
 		.environment(router)
 		.onOpenURL { url in
-			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+			handleOpenURL(url)
 		}
 		.onChange(of: notificationManager.pendingDate) { _, date in
 			guard let date else { return }
@@ -186,6 +186,32 @@ struct ContentView: View {
 	}
 
 	// MARK: - Deep-link navigation helpers
+
+	/// Routes all incoming URLs. Custom scheme `cabinetdoor://` is handled first;
+	/// everything else falls through to ContentViewModel for Hansard date links.
+	private func handleOpenURL(_ url: URL) {
+		guard let scheme = url.scheme?.lowercased() else { return }
+		if scheme == "cabinetdoor" {
+			handleCustomScheme(url)
+		} else {
+			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		}
+	}
+
+	private func handleCustomScheme(_ url: URL) {
+		// cabinetdoor://member/[memberID]
+		// cabinetdoor://vote/[voteID]  → switches to search tab (standalone vote view TBD)
+		let host = url.host?.lowercased() ?? ""
+		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
+		switch host {
+		case "member":
+			if let id = pathID { navigateToMember(memberID: id) }
+		case "vote":
+			router.selectedTab = .accountability
+		default:
+			break
+		}
+	}
 
 	private func navigateToMember(memberID: Int) {
 		if let match = members.first(where: { $0.memberID == memberID }) {
