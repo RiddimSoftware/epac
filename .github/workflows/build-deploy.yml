@@ -69,15 +69,26 @@ jobs:
       # DISTRIBUTION_CERT_P12 secret. CI then installs this one cert each
       # run instead of creating new ones.
       #
-      # To rotate: export a new .p12 from Keychain Access and update the secret.
-      # base64 encoding: `base64 -i DistributionCert.p12 | pbcopy`
+      # Setup (one-time):
+      #   1. Open Keychain Access → My Certificates
+      #   2. Right-click "Apple Distribution: ..." → Export → save as .p12
+      #   3. base64 -i DistributionCert.p12 | pbcopy
+      #   4. Add GitHub secret DISTRIBUTION_CERT_P12 = (clipboard)
+      #   5. Add GitHub secret DISTRIBUTION_CERT_PASSWORD = (the .p12 password)
+      #
+      # This step is skipped when the secret is absent (first-time setup or
+      # secret rotation). Without it, signing falls back to xcodebuild
+      # automatic provisioning, which will fail if the cert limit is exhausted.
       - name: Import distribution certificate
+        if: ${{ secrets.DISTRIBUTION_CERT_P12 != '' }}
+        env:
+          DIST_CERT_P12: ${{ secrets.DISTRIBUTION_CERT_P12 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERT_PASSWORD }}
         run: |
-          echo "${{ secrets.DISTRIBUTION_CERT_P12 }}" \
-            | base64 --decode > /tmp/dist_cert.p12
+          echo "$DIST_CERT_P12" | base64 --decode > /tmp/dist_cert.p12
           security import /tmp/dist_cert.p12 \
             -k ~/Library/Keychains/build.keychain \
-            -P "${{ secrets.DISTRIBUTION_CERT_PASSWORD }}" \
+            -P "$DIST_CERT_PASSWORD" \
             -T /usr/bin/codesign \
             -T /usr/bin/security
           # Allow codesign to access the key without a UI prompt.

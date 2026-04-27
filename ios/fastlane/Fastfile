@@ -44,15 +44,21 @@ platform :ios do
 
     # ------------------------------------------------------------------
     # Archive and export.
-    # The DEVELOPMENT_TEAM xcarg prevents Xcode from trying to discover
-    # the team via the API, which would otherwise attempt to download or
-    # create a certificate on ASC — filling the 2-cert limit.
+    # DEVELOPMENT_TEAM: prevents Xcode from trying to discover the team
+    # via the ASC API, which would otherwise attempt to create a new
+    # certificate when the keychain has no matching cert — filling the
+    # 2-cert account limit.
+    # CODE_SIGN_STYLE=Automatic: lets Xcode pick the cert already in the
+    # keychain (installed by the workflow "Import distribution certificate"
+    # step). When that step is skipped (secret not set), Xcode will still
+    # try automatic signing and may create a new cert — which is why the
+    # secret must be added for stable CI (see workflow for setup steps).
     # ------------------------------------------------------------------
     build_app(
       scheme:           "epac",
       configuration:    "Release",
       export_method:    "app-store",
-      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C",
+      xcargs:           "DEVELOPMENT_TEAM=ZG82TFXU3C CODE_SIGN_STYLE=Automatic",
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            true
