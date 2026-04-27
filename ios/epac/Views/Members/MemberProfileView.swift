@@ -372,5 +372,6 @@ struct PartyBadge: View {
 			.padding(.vertical, 2)
 			.background(Color.party(party))
 			.clipShape(Capsule())
+			.accessibilityLabel(party.fullName)
 	}
 }

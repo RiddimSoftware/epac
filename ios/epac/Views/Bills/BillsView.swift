@@ -172,6 +172,17 @@ struct BillRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(billAccessibilityLabel)
+    }
+
+    private var billAccessibilityLabel: String {
+        var parts = [bill.number, bill.status.displayName]
+        if !bill.title.isEmpty { parts.append(bill.title) }
+        if !bill.sponsorName.isEmpty { parts.append(bill.sponsorName) }
+        if !bill.currentStage.isEmpty && bill.currentStage != bill.status.displayName {
+            parts.append(bill.currentStage)
+        }
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -188,5 +199,7 @@ struct BillStatusBadge: View {
             .padding(.vertical, 2)
             .background(status.color)
             .clipShape(Capsule())
+            // BillRow composes the full label; badge is redundant for VoiceOver
+            .accessibilityHidden(true)
     }
 }
