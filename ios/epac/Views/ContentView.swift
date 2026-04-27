@@ -756,4 +756,4 @@ private struct AppStoreScreenshotPageView: View {
 				.clipShape(Capsule())
 		)
 	}
-	}
+}
