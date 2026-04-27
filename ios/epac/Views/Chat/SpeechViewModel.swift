@@ -192,7 +192,7 @@ class SpeechViewModel {
 			}
 		}
 		.padding()
-		.background(Color(UIColor.systemBackground))
+		.background(Color.appBackground)
 		.fixedSize(horizontal: false, vertical: true)
 		.frame(width: 400)
 	}

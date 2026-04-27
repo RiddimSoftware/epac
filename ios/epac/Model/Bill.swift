@@ -54,14 +54,7 @@ enum BillStatus: String, Codable, Equatable {
         }
     }
 
-    var color: Color {
-        switch self {
-        case .inProgress:  return Color(UIColor.systemBlue)
-        case .royalAssent: return Color(UIColor.systemPurple)
-        case .defeated:    return Color(UIColor.systemRed)
-        case .unknown:     return Color(UIColor.systemGray)
-        }
-    }
+    var color: Color { Color.billStatus(self) }
 
     init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)

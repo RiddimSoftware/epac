@@ -56,7 +56,7 @@ struct RidingElectionHistoryView: View {
 	private var currentSeatRow: some View {
 		HStack(spacing: 12) {
 			Circle()
-				.fill(Color(uiColor: member.party.colour))
+				.fill(Color.party(member.party))
 				.frame(width: 14, height: 14)
 				.accessibilityHidden(true)
 			VStack(alignment: .leading, spacing: 3) {

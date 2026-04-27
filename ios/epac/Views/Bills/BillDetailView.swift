@@ -62,8 +62,8 @@ struct BillDetailView: View {
                               ? "checkmark.circle.fill"
                               : "circle.dotted")
                             .foregroundStyle(stage.isCompleted
-                                ? Color(UIColor.systemGreen)
-                                : Color(UIColor.systemGray3))
+                                ? Color.appPositive
+                                : Color.appNeutral)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(stage.name).font(.subheadline)

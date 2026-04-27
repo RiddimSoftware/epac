@@ -36,6 +36,7 @@ enum PetitionStatus: String {
         }
     }
 
+    // System colors — not party tokens; petition status uses its own semantic palette.
     var color: Color {
         switch self {
         case .open:             return Color(UIColor.systemGreen)

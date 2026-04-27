@@ -133,7 +133,7 @@ struct PoliticalDonationsView: View {
 		} label: {
 			HStack(spacing: 12) {
 				Circle()
-					.fill(Color(uiColor: party.colour))
+					.fill(Color.party(party))
 					.frame(width: 12, height: 12)
 					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 2) {
