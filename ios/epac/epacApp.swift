@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import BackgroundTasks
+import Sentry
 
 @main
 struct epacApp: App {
@@ -27,6 +28,14 @@ struct epacApp: App {
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
+		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
+			SentrySDK.start { options in
+				options.dsn = dsn
+				options.enableCrashHandler = true
+				options.tracesSampleRate = 0.1
+			}
+		}
+
 		MetricKitSubscriber.shared.start()
 
 		BGTaskScheduler.shared.register(

@@ -6,6 +6,7 @@
 import Observation
 import SwiftData
 import UIKit
+import Sentry
 
 @MainActor
 @Observable
@@ -42,6 +43,8 @@ class SpeakerImageViewModel {
 					Log.debug("\(error.localizedDescription)")
 					if fns.isEmpty {
 						Log.debug("Failed to download speaker image \(speaker.name)")
+						// All fallback URLs exhausted — expected for MPs with no hosted photo.
+						// Not reported to Sentry: this is predictable URL-retry noise, not a crash.
 					}
 				}
 			}
@@ -63,6 +66,7 @@ class SpeakerImageViewModel {
 				}
 			} catch {
 				Log.debug("Failed to updateImageData \(speaker.name)")
+				SentrySDK.capture(error: error)
 			}
 		} else {
 			throw NSError(domain: "", code: 100)
