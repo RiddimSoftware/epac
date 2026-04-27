@@ -1023,13 +1023,13 @@ enum SchemaV5: VersionedSchema {
 		var nay: Int
 		var paired: Int
 		var resultEn: String
-		var memberVotes: [SchemaV5.MemberVote]
+		@Relationship(deleteRule: .cascade, inverse: \SchemaV5.MemberVote.vote) var memberVotes: [SchemaV5.MemberVote] = []
 		init(voteID: Int, parliament: Int, session: Int, number: Int, date: Date,
 			 descriptionEn: String, billNumberCode: String, yea: Int, nay: Int, paired: Int, resultEn: String) {
 			self.voteID = voteID; self.parliament = parliament; self.session = session
 			self.number = number; self.date = date; self.descriptionEn = descriptionEn
 			self.billNumberCode = billNumberCode; self.yea = yea; self.nay = nay
-			self.paired = paired; self.resultEn = resultEn; self.memberVotes = []
+			self.paired = paired; self.resultEn = resultEn
 		}
 	}
 
