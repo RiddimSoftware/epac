@@ -580,3 +580,14 @@
 "fiscalMonitor.ytd" = "YTD balance";
 "fiscalMonitor.alert" = "Year-to-date balance differs from the annual budget projection by more than 5%.";
 "fiscalMonitor.row.detail" = "Revenue $%.1fB · Expenses $%.1fB";
+
+/* Vancouver City Council */
+"vancouver.myCouncil.title" = "My City Council (Vancouver)";
+"vancouver.councillor.nameLabel" = "%1$@ %2$@";
+"vancouver.votes.navTitle" = "Vancouver Council Votes";
+"vancouver.votes.browseButton" = "Browse Council Votes";
+"vancouver.votes.filter" = "Filter by Topic";
+"vancouver.votes.allCategories" = "All Topics";
+"vancouver.votes.empty.title" = "No Votes Found";
+"vancouver.votes.empty.description" = "Vancouver City Council vote records will appear here.";
+"vancouver.votes.sourceLink" = "Source: City of Vancouver Open Data";

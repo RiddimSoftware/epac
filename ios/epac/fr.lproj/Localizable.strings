@@ -583,3 +583,14 @@
 "fiscalMonitor.ytd" = "Solde cumulé";
 "fiscalMonitor.alert" = "Le solde cumulé diffère de la projection budgétaire annuelle de plus de 5 %.";
 "fiscalMonitor.row.detail" = "Revenus %.1f G$ · Dépenses %.1f G$";
+
+/* Vancouver City Council */
+"vancouver.myCouncil.title" = "Mon conseil municipal (Vancouver)";
+"vancouver.councillor.nameLabel" = "%1$@ %2$@";
+"vancouver.votes.navTitle" = "Votes du conseil de Vancouver";
+"vancouver.votes.browseButton" = "Parcourir les votes du conseil";
+"vancouver.votes.filter" = "Filtrer par sujet";
+"vancouver.votes.allCategories" = "Tous les sujets";
+"vancouver.votes.empty.title" = "Aucun vote trouvé";
+"vancouver.votes.empty.description" = "Les votes du conseil municipal de Vancouver apparaîtront ici.";
+"vancouver.votes.sourceLink" = "Source : Données ouvertes de la Ville de Vancouver";
