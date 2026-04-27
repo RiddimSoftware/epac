@@ -3,6 +3,10 @@ name: Build and Deploy to App Store Connect
 on:
   push:
     branches: [main]
+    paths:
+      - 'ios/**'
+      - 'fastlane/**'
+      - '.github/workflows/build-deploy.yml'
   workflow_dispatch:
 
 concurrency:
