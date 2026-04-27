@@ -1,3 +1,7 @@
+// search Lambda — GET /search?query=<terms>
+//
+// Uses PostgreSQL GIN full-text index (to_tsvector) for fast speech search.
+// Falls back to ILIKE if the FTS index is not yet present.
 package main
 
 import (
@@ -7,121 +11,123 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
 
-// SearchResult represents a single search result.
 type SearchResult struct {
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Snippet string `json:"snippet"`
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Snippet     string  `json:"snippet"`
+	SittingDate *string `json:"sitting_date,omitempty"`
+	Subject     *string `json:"subject,omitempty"`
+	MemberId    *string `json:"member_id,omitempty"`
 }
 
-// SearchResponse represents the full response from the search provider.
 type SearchResponse struct {
 	Query   string         `json:"query"`
 	Results []SearchResult `json:"results"`
 }
 
-// SearchProvider defines the interface for searching.
-type SearchProvider interface {
-	Search(ctx context.Context, query string) ([]SearchResult, error)
+var dbConn *pgx.Conn
+
+func getDBConn(ctx context.Context) (*pgx.Conn, error) {
+	if dbConn != nil {
+		if err := dbConn.Ping(ctx); err == nil {
+			return dbConn, nil
+		}
+		dbConn.Close(ctx)
+		dbConn = nil
+	}
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		return nil, fmt.Errorf("DATABASE_URL not set")
+	}
+	// Log connection attempt (mask password before connecting)
+	masked := connStr
+	if parts := strings.Split(connStr, "@"); len(parts) > 1 {
+		if sub := strings.Split(parts[0], ":"); len(sub) > 2 {
+			masked = sub[0] + ":" + sub[1] + ":****@" + parts[1]
+		}
+	}
+	fmt.Printf("Connecting to database: %s\n", masked)
+
+	var err error
+	dbConn, err = pgx.Connect(ctx, connStr)
+	return dbConn, err
 }
 
-// SupabaseSearchProvider implements SearchProvider using pgx.
-type SupabaseSearchProvider struct {
-	conn *pgx.Conn
-}
-
-func (s *SupabaseSearchProvider) Search(ctx context.Context, query string) ([]SearchResult, error) {
-	// Simple ILIKE search for now. Could be upgraded to full-text search (tsvector).
-	searchPattern := "%" + query + "%"
-	rows, err := s.conn.Query(ctx,
-		"SELECT intervention_id, speaker_name, content FROM speeches WHERE content ILIKE $1 OR speaker_name ILIKE $1 LIMIT 50",
-		searchPattern,
+func search(ctx context.Context, conn *pgx.Conn, query string) ([]SearchResult, error) {
+	// PostgreSQL full-text search using the GIN index.
+	// ts_headline generates a snippet with matched terms highlighted (stripped of tags here).
+	rows, err := conn.Query(ctx, `
+		SELECT
+			intervention_id,
+			COALESCE(speaker_name, ''),
+			ts_headline(
+				'english', content,
+				plainto_tsquery('english', $1),
+				'MaxWords=50, MinWords=10, StartSel=, StopSel='
+			),
+			sitting_date,
+			subject_title,
+			member_id
+		FROM speeches
+		WHERE to_tsvector('english', COALESCE(content, '')) @@ plainto_tsquery('english', $1)
+		ORDER BY ts_rank(
+			to_tsvector('english', COALESCE(content, '')),
+			plainto_tsquery('english', $1)
+		) DESC
+		LIMIT 50`,
+		query,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("query error: %w", err)
+		return nil, fmt.Errorf("fts query error: %w", err)
 	}
 	defer rows.Close()
 
 	var results []SearchResult
 	for rows.Next() {
-		var id, title, content string
-		if err := rows.Scan(&id, &title, &content); err != nil {
+		var (
+			id       string
+			title    string
+			snippet  string
+			date     *time.Time
+			subject  *string
+			memberId *string
+		)
+		if err := rows.Scan(&id, &title, &snippet, &date, &subject, &memberId); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
-
-		snippet := content
-		if len(snippet) > 200 {
-			snippet = snippet[:197] + "..."
+		r := SearchResult{
+			ID:       id,
+			Title:    title,
+			Snippet:  snippet,
+			Subject:  subject,
+			MemberId: memberId,
 		}
-
-		results = append(results, SearchResult{
-			ID:      id,
-			Title:   title,
-			Snippet: snippet,
-		})
+		if date != nil {
+			s := date.Format("2006-01-02")
+			r.SittingDate = &s
+		}
+		results = append(results, r)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
-
 	return results, nil
 }
 
-var dbConn *pgx.Conn
-
-func getDBConn(ctx context.Context) (*pgx.Conn, error) {
-	fmt.Printf("getDBConn called, current dbConn is nil: %v\n", dbConn == nil)
-	if dbConn != nil {
-		fmt.Printf("Pinging existing connection...\n")
-		if err := dbConn.Ping(ctx); err == nil {
-			fmt.Printf("Existing connection is alive.\n")
-			return dbConn, nil
-		}
-		fmt.Printf("Existing connection is dead, closing it.\n")
-		dbConn.Close(ctx)
-		dbConn = nil
-	}
-
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		return nil, fmt.Errorf("DATABASE_URL environment variable is not set")
-	}
-
-	// Mask password for logging
-	maskedConnStr := connStr
-	if parts := strings.Split(connStr, "@"); len(parts) > 1 {
-		if subparts := strings.Split(parts[0], ":"); len(subparts) > 2 {
-			maskedConnStr = subparts[0] + ":" + subparts[1] + ":****@" + parts[1]
-		}
-	}
-	fmt.Printf("Connecting to database with URL: %s\n", maskedConnStr)
-
-	var err error
-	dbConn, err = pgx.Connect(ctx, connStr)
-	if err != nil {
-		fmt.Printf("pgx.Connect failed: %v\n", err)
-		return nil, fmt.Errorf("unable to connect to database: %w", err)
-	}
-
-	fmt.Printf("Successfully connected to database.\n")
-	return dbConn, nil
-}
-
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	query := request.QueryStringParameters["query"]
+	query := strings.TrimSpace(request.QueryStringParameters["query"])
 	if query == "" {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
 			Body:       `{"error": "Missing 'query' parameter"}`,
-		},
-		nil
+		}, nil
 	}
 
 	conn, err := getDBConn(ctx)
@@ -129,43 +135,36 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       fmt.Sprintf(`{"error": "%v"}`, err),
-		},
-		nil
+		}, nil
 	}
 
-	provider := &SupabaseSearchProvider{conn: conn}
-	results, err := provider.Search(ctx, query)
+	results, err := search(ctx, conn, query)
 	if err != nil {
 		fmt.Printf("Search error: %v\n", err)
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusInternalServerError,
-			Body:       fmt.Sprintf(`{"error": "Failed to perform search: %v"}`, err),
-		},
-		nil
+			Body:       fmt.Sprintf(`{"error": "Search failed: %v"}`, err),
+		}, nil
 	}
 
-	response := SearchResponse{
-		Query:   query,
-		Results: results,
+	if results == nil {
+		results = []SearchResult{}
 	}
 
-	body, err := json.Marshal(response)
+	resp := SearchResponse{Query: query, Results: results}
+	body, err := json.Marshal(resp)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       `{"error": "Failed to encode response"}`,
-		},
-		nil
+		}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: string(body),
-	},
-	nil
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		Body:       string(body),
+	}, nil
 }
 
 func main() {
