@@ -80,6 +80,13 @@ struct SpeechView: View {
 							.foregroundStyle(.white)
 						}
 					}
+					.accessibilityElement(children: .combine)
+					.accessibilityLabel({
+						if let speaker = viewModel.speakers[message.id] {
+							return "\(speaker.name), \(speaker.party.fullName): \(message.text)"
+						}
+						return message.text
+					}())
 					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
 						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 							.onTapGesture {
