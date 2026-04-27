@@ -20,7 +20,7 @@ struct SittingView: View {
 
 	@Query var members: [ParliamentMember]
 
-	@State private var viewModel = SittingViewModel()
+	@State private var coordinator = MemberDownloadCoordinator()
 
 	var body: some View {
 		List {
@@ -35,7 +35,7 @@ struct SittingView: View {
 							HStack {
 								Spacer()
 								VStack(alignment: .trailing, spacing: 4) {
-									ForEach(viewModel.speakers(for: subject, from: members, fetch: fetch)) { member in
+									ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
 										SittingSpeakerView(member: member)
 									}
 								}
