@@ -386,3 +386,11 @@
 "committees.transcript.source" = "Full transcripts are published by Parliament of Canada at parl.ca";
 "committees.witness" = "Witness";
 "committees.mp" = "MP";
+
+/* Extended search (EPAC-85) */
+"search.prompt" = "Search MPs, votes, debates";
+"search.emptyTitle" = "Search Parliament";
+"search.emptyDescription" = "Search MPs by name, votes by bill number, and debates by topic.";
+"search.section.members" = "Members";
+"search.section.votes" = "Votes";
+"search.section.debates" = "Debates";

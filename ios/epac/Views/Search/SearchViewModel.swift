@@ -6,52 +6,92 @@
 import Foundation
 import Observation
 
-// Filters cached Hansard subjects by title across all fetched sittings.
-// SearchResults are capped so SwiftUI doesn't choke on huge datasets.
+// Filters cached parliamentary data across four corpora: MPs, votes, bills, debate subjects.
+// Results per section are capped to keep SwiftUI responsive on large datasets.
 @MainActor
 @Observable
 class SearchViewModel {
-	var searchText = ""
+    var searchText = ""
 
-	private static let maxSearchResults = 200
+    private static let maxPerSection = 50
 
-	// A result bundles the info needed to navigate: the hansard (for date +
-	// navigation context) and the matched subject.
-	struct SearchResult: Identifiable {
-		let id: String  // subject hansardID
-		let hansardDate: Date
-		let parliamentNumber: Int
-		let subject: SubjectOfBusiness
-		let hansard: Hansard
-	}
+    // MARK: - Result types
 
-	/// True when the query is too short to search (checked against trimmed text).
-	var isQueryTooShort: Bool {
-		searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
-	}
+    struct MemberResult: Identifiable {
+        let id: Int  // memberID
+        let member: ParliamentMember
+    }
 
-	func results(from hansards: [Hansard]) -> [SearchResult] {
-		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		guard trimmed.count >= 2 else { return [] }
+    struct VoteResult: Identifiable {
+        let id: Int  // voteID
+        let vote: RecordedVote
+    }
 
-		// hansards arrive pre-sorted most-recent-first from @Query; no re-sort needed.
-		var found: [SearchResult] = []
-		for hansard in hansards {
-			for order in hansard.orders {
-				for subject in order.subjects where !subject.speeches.isEmpty {
-					if subject.title.localizedCaseInsensitiveContains(trimmed) {
-						found.append(SearchResult(
-							id: subject.hansardID,
-							hansardDate: hansard.date,
-							parliamentNumber: hansard.parliamentNumber,
-							subject: subject,
-							hansard: hansard
-						))
-					}
-					if found.count >= Self.maxSearchResults { return found }
-				}
-			}
-		}
-		return found
-	}
+    struct DebateResult: Identifiable {
+        let id: String  // subject hansardID
+        let hansardDate: Date
+        let subject: SubjectOfBusiness
+        let hansard: Hansard
+    }
+
+    struct SearchResults {
+        var members: [MemberResult] = []
+        var votes: [VoteResult] = []
+        var debates: [DebateResult] = []
+
+        var isEmpty: Bool { members.isEmpty && votes.isEmpty && debates.isEmpty }
+    }
+
+    var isQueryTooShort: Bool {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
+    }
+
+    func results(
+        members: [ParliamentMember],
+        votes: [RecordedVote],
+        hansards: [Hansard]
+    ) -> SearchResults {
+        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q.count >= 2 else { return SearchResults() }
+
+        var out = SearchResults()
+
+        // Members: match name, riding, party full name
+        for member in members {
+            if member.name.localizedCaseInsensitiveContains(q)
+                || member.riding.localizedCaseInsensitiveContains(q)
+                || member.party.fullName.localizedCaseInsensitiveContains(q) {
+                out.members.append(MemberResult(id: member.memberID, member: member))
+                if out.members.count >= Self.maxPerSection { break }
+            }
+        }
+
+        // Votes: match description, bill number
+        for vote in votes {
+            if vote.descriptionEn.localizedCaseInsensitiveContains(q)
+                || vote.billNumberCode.localizedCaseInsensitiveContains(q) {
+                out.votes.append(VoteResult(id: vote.voteID, vote: vote))
+                if out.votes.count >= Self.maxPerSection { break }
+            }
+        }
+
+        // Debates: match subject title (hansards arrive sorted newest-first)
+        outer: for hansard in hansards {
+            for order in hansard.orders {
+                for subject in order.subjects where !subject.speeches.isEmpty {
+                    if subject.title.localizedCaseInsensitiveContains(q) {
+                        out.debates.append(DebateResult(
+                            id: subject.hansardID,
+                            hansardDate: hansard.date,
+                            subject: subject,
+                            hansard: hansard
+                        ))
+                        if out.debates.count >= Self.maxPerSection { break outer }
+                    }
+                }
+            }
+        }
+
+        return out
+    }
 }
