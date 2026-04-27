@@ -96,6 +96,10 @@ struct ContentView: View {
 			ExpendituresView()
 				.tabItem { Label(AppTab.expenditures.title, systemImage: AppTab.expenditures.systemImageName) }
 				.tag(AppTab.expenditures)
+
+			MyMPView()
+				.tabItem { Label(AppTab.myMP.title, systemImage: AppTab.myMP.systemImageName) }
+				.tag(AppTab.myMP)
 		}
 		.safeAreaInset(edge: .bottom) { offlineBanner }
 	}
@@ -133,6 +137,8 @@ struct ContentView: View {
 					.opacity(router.selectedTab == .members ? 1 : 0)
 				ExpendituresView()
 					.opacity(router.selectedTab == .expenditures ? 1 : 0)
+				MyMPView()
+					.opacity(router.selectedTab == .myMP ? 1 : 0)
 			}
 		}
 		.safeAreaInset(edge: .bottom) { offlineBanner }

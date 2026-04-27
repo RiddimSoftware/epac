@@ -13,6 +13,7 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 	case search
 	case members
 	case expenditures
+	case myMP
 
 	public var id: String { rawValue }
 
@@ -23,6 +24,7 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 		case .search:          return "Search"
 		case .members:         return "Members"
 		case .expenditures:    return "Expenditures"
+		case .myMP:            return "My MP"
 		}
 	}
 
@@ -32,6 +34,7 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 		case .search:          return "magnifyingglass"
 		case .members:         return "person.3"
 		case .expenditures:    return "dollarsign.circle"
+		case .myMP:            return "person.fill.viewfinder"
 		}
 	}
 }

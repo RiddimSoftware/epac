@@ -3,6 +3,7 @@
 "Search" = "Recherche";
 "Members" = "Membres";
 "Expenditures" = "Dépenses";
+"My MP" = "Mon député";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";
@@ -121,6 +122,15 @@
 "voting.empty.description" = "Les données de vote pour ce membre n'ont pas encore été chargées.";
 "voting.recentVotes" = "Votes récents";
 "voting.withMajority" = "Votes avec la majorité";
+
+/* My MP tab */
+"myMP.navTitle" = "Mon député";
+"myMP.empty.title" = "Aucune activité";
+"myMP.empty.description" = "L'activité apparaîtra une fois les données de votes et de discours synchronisées.";
+"myMP.noMP.title" = "Aucun député sélectionné";
+"myMP.noMP.description" = "Entrez votre code postal pour identifier votre député.";
+"myMP.activity.speech" = "Discours au hansard";
+"myMP.activity.expenditure" = "%d T%d Dépenses";
 
 /* Party-line voting score */
 "partyLine.title" = "Solidarité de parti";
