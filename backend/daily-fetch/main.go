@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"epac/observability"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
@@ -30,7 +31,7 @@ type Intervention struct {
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(observability.WrapNoEvent("daily-fetch", HandleRequest))
 }
 
 const pipelineName = "hansard-daily-fetch"

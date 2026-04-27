@@ -24,16 +24,17 @@ import (
 	"strings"
 	"time"
 
+	"epac/observability"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
 
 type RegisterRequest struct {
-	Token         string            `json:"token"`
-	TopicIds      []string          `json:"topic_ids"`
-	Granularity   map[string]string `json:"granularity"`
-	MyMPMemberId  string            `json:"my_mp_member_id"`
+	Token        string            `json:"token"`
+	TopicIds     []string          `json:"topic_ids"`
+	Granularity  map[string]string `json:"granularity"`
+	MyMPMemberId string            `json:"my_mp_member_id"`
 }
 
 var dbConn *pgx.Conn
@@ -114,5 +115,5 @@ func errResp(status int, msg string) events.APIGatewayProxyResponse {
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(observability.WrapAPIGateway("device-register", HandleRequest))
 }
