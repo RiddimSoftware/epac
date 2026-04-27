@@ -7,6 +7,9 @@ gpt2_*/
 function.zip
 bootstrap
 .build/
+# Go binaries
+backend/health/health
+backend/daily-fetch/daily-fetch
 *.log
 *.txt
 *.xml
