@@ -168,6 +168,14 @@ struct MyMPView: View {
                     )
                 }
             }
+            Section(NSLocalizedString("topics.navTitle", comment: "")) {
+                NavigationLink(destination: TopicsView()) {
+                    Label(
+                        NSLocalizedString("topics.browseAll", comment: ""),
+                        systemImage: "tag"
+                    )
+                }
+            }
             Section(NSLocalizedString("myMP.activity.section", comment: "")) {
                 ForEach(activities) { activity in
                     ActivityRow(activity: activity)
