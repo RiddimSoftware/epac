@@ -121,3 +121,12 @@
 "voting.empty.description" = "Les données de vote pour ce membre n'ont pas encore été chargées.";
 "voting.recentVotes" = "Votes récents";
 "voting.withMajority" = "Votes avec la majorité";
+
+/* Party-line voting score */
+"partyLine.title" = "Solidarité de parti";
+"partyLine.infoButton" = "À propos de ce score";
+"partyLine.score" = "A voté avec son parti %d%% du temps";
+"partyLine.denominator" = "%d de %d votes enregistrés correspondent à la majorité du parti";
+"partyLine.info.title" = "À propos de la solidarité de parti";
+"partyLine.info.body" = "Ce score indique à quelle fréquence ce député a voté de la même façon que la majorité de son caucus lors des votes enregistrés. Les votes jumelés et les absences sont exclus. Un score élevé signifie que le député suit presque toujours la ligne du parti; un score faible indique une indépendance. Le score est calculé à partir des dossiers de vote publiés par le Parlement du Canada.";
+"partyLine.info.done" = "Terminé";

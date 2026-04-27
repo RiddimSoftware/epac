@@ -71,6 +71,8 @@ struct MemberProfileView: View {
 					.frame(width: 150, height: 150)
 					.padding(.top, 20)
 
+				PartyLineScoreView(member: member)
+
 				VStack(alignment: .leading, spacing: 10) {
 					ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
 					ProfileDetailRow(icon: "mappin.and.ellipse", label: "Riding", value: member.riding)
