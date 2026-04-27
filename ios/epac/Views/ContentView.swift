@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import Foundation
 import Observation
+import CoreSpotlight
 
 struct ContentView: View {
 	@Environment(\.modelContext) var modelContext
@@ -47,9 +48,21 @@ struct ContentView: View {
 			router.selectedTab = .parliament
 			notificationManager.clearPendingDate()
 		}
+		.onContinueUserActivity(CSSearchableItemActionType) { activity in
+			guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+			if let memberID = SpotlightIndexer.memberID(from: id) {
+				if let match = members.first(where: { $0.memberID == memberID }) {
+					router.selectedMember = match
+					router.selectedTab = .members
+				}
+			}
+		}
 		.task {
 			networkMonitor.start()
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
+			// Index data into Spotlight after the initial sync so results are available system-wide.
+			let entries = SpotlightIndexer.makeEntries(from: members)
+			await SpotlightIndexer.indexMembers(entries)
 			// Request notification permission after initial content is loaded,
 			// so the system prompt appears in context rather than at cold launch.
 			await notificationManager.requestAuthorization()
@@ -158,6 +171,9 @@ struct ContentView: View {
 						}
 						.accessibilityLabel(NSLocalizedString("riding.setup.navTitle", comment: ""))
 					}
+				}
+				.navigationDestination(item: $router.selectedMember) { member in
+					MemberProfileView(member: member)
 				}
 		}
 	}
