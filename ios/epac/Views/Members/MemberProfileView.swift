@@ -11,8 +11,24 @@ import SwiftData
 struct MemberProfileView: View {
 	let member: ParliamentMember
 
+	@Query(sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
+	@State private var showingComparePicker = false
+	@State private var comparisonTarget: ParliamentMember?
+	@State private var navigateToComparison = false
+	@State private var pickerSearch = ""
+
 	init(member: ParliamentMember) {
 		self.member = member
+	}
+
+	private var pickableMembers: [ParliamentMember] {
+		let trimmed = pickerSearch.trimmingCharacters(in: .whitespaces)
+		let others = allMembers.filter { $0.name != member.name }
+		guard !trimmed.isEmpty else { return others }
+		return others.filter {
+			$0.name.localizedCaseInsensitiveContains(trimmed) ||
+			$0.riding.localizedCaseInsensitiveContains(trimmed)
+		}
 	}
 
 	var body: some View {
@@ -35,6 +51,51 @@ struct MemberProfileView: View {
 		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
+		.toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					pickerSearch = ""
+					showingComparePicker = true
+				} label: {
+					Label("Compare", systemImage: "person.2.badge.gearshape")
+				}
+				.accessibilityLabel("Compare with another member")
+			}
+		}
+		.navigationDestination(isPresented: $navigateToComparison) {
+			if let other = comparisonTarget {
+				MemberComparisonView(memberA: member, memberB: other)
+			}
+		}
+		.sheet(isPresented: $showingComparePicker) {
+			NavigationStack {
+				List(pickableMembers) { other in
+					Button {
+						comparisonTarget = other
+						showingComparePicker = false
+						navigateToComparison = true
+					} label: {
+						HStack(spacing: 12) {
+							MemberAvatar(member: other)
+								.frame(width: 36, height: 36)
+							VStack(alignment: .leading, spacing: 2) {
+								Text(other.name).font(.headline)
+								Text(other.riding).font(.caption).foregroundStyle(.secondary)
+							}
+						}
+					}
+					.foregroundStyle(.primary)
+				}
+				.searchable(text: $pickerSearch, prompt: "Search members")
+				.navigationTitle("Compare with…")
+				.navigationBarTitleDisplayMode(.inline)
+				.toolbar {
+					ToolbarItem(placement: .cancellationAction) {
+						Button("Cancel") { showingComparePicker = false }
+					}
+				}
+			}
+		}
 	}
 }
 
