@@ -63,8 +63,7 @@ func ParseHansardXML(r io.Reader) ([]Intervention, error) {
 		}
 		headerDone = true
 		if yearStr != "" && monthStr != "" && dayStr != "" {
-			dateStr := fmt.Sprintf("%s-%02s-%02s", yearStr,
-				zeroPad(monthStr), zeroPad(dayStr))
+			dateStr := fmt.Sprintf("%s-%s-%s", yearStr, zeroPad(monthStr), zeroPad(dayStr))
 			t, err := time.Parse("2006-01-02", dateStr)
 			if err == nil {
 				sittingDate = t
