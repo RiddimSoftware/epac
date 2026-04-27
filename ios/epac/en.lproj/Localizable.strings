@@ -510,6 +510,7 @@
 "settings.about.privacy" = "Privacy Policy";
 "settings.about.dataSources" = "Data Sources";
 "settings.about.github" = "GitHub (open source)";
+"settings.about.brandBrief" = "Brand brief";
 "settings.about.feedback" = "Send feedback";
 
 /* Canada Gazette (EPAC-116) */

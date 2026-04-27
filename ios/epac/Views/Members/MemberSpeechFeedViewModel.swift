@@ -11,13 +11,17 @@ final class MemberSpeechFeedViewModel {
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var error: String?
+    var errorMessage: String? { error }
 
     // Filter state
     var selectedTopic: String? = nil  // nil = "All"
     private(set) var topicChips: [SpeechTopicChip] = []
+    var topicCounts: [(topic: String, count: Int)] {
+        Self.buildTopicCounts(from: speeches)
+    }
 
     private var currentPage = 0
-    private var hasMore = true
+    private(set) var hasMore = true
     private let perPage = 20
 
     init(memberId: Int) {
@@ -34,6 +38,14 @@ final class MemberSpeechFeedViewModel {
         topicChips = []
         await loadNextPage()
         isLoading = false
+    }
+
+    func loadFirstPage() async {
+        await loadInitial()
+    }
+
+    func selectTopic(_ topic: String?) {
+        Task { await applyTopicFilter(topic) }
     }
 
     func loadMoreIfNeeded(currentItem: MemberSpeechEntry) async {
@@ -58,8 +70,8 @@ final class MemberSpeechFeedViewModel {
 
     // MARK: - Private
 
-    private func loadNextPage() async {
-        guard hasMore else { return }
+    func loadNextPage() async {
+        guard hasMore, memberId > 0 else { return }
         let nextPage = currentPage + 1
         do {
             let page = try await MemberSpeechService.fetchPage(
@@ -82,16 +94,22 @@ final class MemberSpeechFeedViewModel {
     }
 
     private func updateTopicChips() {
+        // Keep top 8 topics sorted by frequency
+        topicChips = Self.buildTopicCounts(from: speeches)
+            .prefix(8)
+            .map { SpeechTopicChip(id: $0.topic, count: $0.count) }
+    }
+
+    /// Pure helper extracted for tests and reused by both speech feed surfaces.
+    static func buildTopicCounts(from speeches: [MemberSpeechEntry]) -> [(topic: String, count: Int)] {
         var counts: [String: Int] = [:]
         for entry in speeches {
             if let title = entry.subjectTitle, !title.isEmpty {
                 counts[title, default: 0] += 1
             }
         }
-        // Keep top 8 topics sorted by frequency
-        topicChips = counts
+        return counts
             .sorted { $0.value > $1.value }
-            .prefix(8)
-            .map { SpeechTopicChip(id: $0.key, count: $0.value) }
+            .map { (topic: $0.key, count: $0.value) }
     }
 }

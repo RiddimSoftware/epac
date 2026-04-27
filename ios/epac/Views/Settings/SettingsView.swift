@@ -209,6 +209,10 @@ struct SettingsView: View {
                 NSLocalizedString("settings.about.github", comment: ""),
                 destination: URL(string: "https://github.com/sunnypurewal/epac")!
             )
+            Link(
+                NSLocalizedString("settings.about.brandBrief", comment: ""),
+                destination: URL(string: "https://github.com/sunnypurewal/epac/blob/main/docs/brand/brand-brief-v1.md")!
+            )
             Button(NSLocalizedString("settings.about.feedback", comment: "")) {
                 let subject = "epac%20feedback"
                 if let url = URL(string: "mailto:sunny@riddimsoftware.com?subject=\(subject)") {
