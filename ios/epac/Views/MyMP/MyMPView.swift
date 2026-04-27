@@ -107,6 +107,7 @@ struct MyMPView: View {
     @State private var showConsultations = false
     @State private var showElectionResources = false
     @State private var senators: [Senator] = []
+    @State private var ontarioMPP: OntarioMPP?
 
     var body: some View {
         NavigationStack {
@@ -206,6 +207,11 @@ struct MyMPView: View {
                     }
                 }
             }
+            if let mpp = ontarioMPP {
+                Section(NSLocalizedString("ontario.myMPP.title", comment: "")) {
+                    OntarioMPPCard(mpp: mpp)
+                }
+            }
             Section(NSLocalizedString("myMP.activity.section", comment: "")) {
                 ForEach(activities) { activity in
                     ActivityRow(activity: activity)
@@ -240,6 +246,20 @@ struct MyMPView: View {
             if !provinceAbbrev.isEmpty {
                 let allSenators = await SenatorsService.fetchSenators()
                 senators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
+
+                // Load Ontario MPP when the federal riding is in Ontario
+                if provinceAbbrev == "ON" {
+                    let allMPPs = await OntarioLegislatureService.fetchMPPs()
+                    // Federal and provincial ridings don't align perfectly; match on
+                    // the first significant word of each riding name as a heuristic.
+                    if let savedRiding = PostalCodeViewModel.savedRidingName {
+                        let firstWord = savedRiding.components(separatedBy: " ").first ?? ""
+                        ontarioMPP = allMPPs.first { mpp in
+                            mpp.riding.localizedCaseInsensitiveContains(firstWord) ||
+                            firstWord.localizedCaseInsensitiveContains(mpp.riding.components(separatedBy: " ").first ?? "")
+                        }
+                    }
+                }
             }
         }
 

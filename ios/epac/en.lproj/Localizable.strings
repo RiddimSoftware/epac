@@ -364,6 +364,16 @@
 "senate.card.name" = "Senator %@";
 "senate.card.accessibility" = "Senator %@, %@";
 
+/* Ontario Legislature */
+"ontario.debates.navTitle" = "Queen's Park Debates";
+"ontario.debates.toolbarLabel" = "Queen's Park";
+"ontario.debates.title" = "Debates and Proceedings";
+"ontario.debates.empty.title" = "No Debates Found";
+"ontario.debates.empty.description" = "Recent Ontario Hansard will appear here.";
+"ontario.mpp.name" = "MPP %@";
+"ontario.mpp.for" = "for";
+"ontario.myMPP.title" = "My MPP (Ontario)";
+
 /* Committees */
 "committees.navTitle" = "Committees";
 "committees.error.title" = "Couldn't Load Committees";
