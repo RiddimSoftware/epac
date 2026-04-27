@@ -114,6 +114,20 @@ struct MemberProfileView: View {
 					.cornerRadius(12)
 				}
 				.foregroundStyle(.primary)
+
+				NavigationLink(destination: RidingElectionHistoryView(member: member)) {
+					HStack {
+						Label("Riding History", systemImage: "chart.bar.xaxis.ascending")
+						Spacer()
+						Image(systemName: "chevron.right")
+							.font(.caption)
+							.foregroundStyle(.tertiary)
+					}
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+				}
+				.foregroundStyle(.primary)
 			}
 			.padding()
 		}
