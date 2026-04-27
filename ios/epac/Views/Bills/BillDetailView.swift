@@ -87,7 +87,6 @@ struct BillDetailView: View {
                             }
                         }
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
 

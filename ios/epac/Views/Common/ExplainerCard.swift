@@ -34,6 +34,17 @@ final class ExplainerRepository: @unchecked Sendable {
         index = Dictionary(uniqueKeysWithValues: list.map { ($0.term.lowercased(), $0) })
     }
 
+    /// Internal initializer for unit tests — accepts a JSON string directly
+    /// so tests don't depend on the main bundle.
+    init(json: String) {
+        guard let data = json.data(using: .utf8),
+              let list = try? JSONDecoder().decode([Explainer].self, from: data) else {
+            index = [:]
+            return
+        }
+        index = Dictionary(uniqueKeysWithValues: list.map { ($0.term.lowercased(), $0) })
+    }
+
     func explainer(for term: String) -> Explainer? {
         index[term.lowercased()]
     }
