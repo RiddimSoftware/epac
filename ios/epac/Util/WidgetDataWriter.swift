@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import WidgetKit
 
 // Writes sitting data into the shared App Group so the home-screen widget
 // can read it without launching the full app.
@@ -34,5 +35,11 @@ enum WidgetDataWriter {
 	/// Write up to 3 recent subject titles for the medium widget.
 	static func writeRecentSubjects(_ titles: [String]) {
 		defaults?.set(Array(titles.prefix(3)), forKey: recentSubjectsKey)
+	}
+
+	/// Signal WidgetKit to reload all epac widget timelines.
+	/// Call after any write so the widget reflects fresh data immediately.
+	static func reloadWidgets() {
+		WidgetCenter.shared.reloadAllTimelines()
 	}
 }

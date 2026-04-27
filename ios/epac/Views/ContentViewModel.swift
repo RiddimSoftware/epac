@@ -29,6 +29,9 @@ class ContentViewModel {
 					if let h = selectedHansard {
 						let subjects = h.orders.flatMap { $0.subjects }.map { (title: $0.title, date: h.date) }
 						await TopicNotificationScheduler.checkAndNotify(subjectTitles: subjects)
+						let titles = h.orders.flatMap { $0.subjects }.map { $0.title }
+						WidgetDataWriter.writeRecentSubjects(titles)
+						WidgetDataWriter.reloadWidgets()
 					}
 				} catch {
 					Log.debug("Failed to fetch hansard \(date)")
