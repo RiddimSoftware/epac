@@ -17,6 +17,9 @@ final class epacUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-UIAnimationsDisabled", "YES"]
+        if name.contains("testCaptureAppStoreScreenshotSources") {
+            app.launchArguments += ["-AppStoreScreenshots"]
+        }
         app.launch()
         // Dismiss the postal code setup sheet if it appears on first launch.
         let skip = app.buttons["Skip"]
@@ -135,4 +138,39 @@ final class epacUITests: XCTestCase {
         _ = XCTWaiter.wait(for: [gone], timeout: 3)
         // Test passes by reaching this point without a crash.
     }
+
+    // MARK: - App Store screenshots
+
+    func testCaptureAppStoreScreenshotSources() throws {
+        let outputDir = ProcessInfo.processInfo.environment["APPSTORE_SCREENSHOT_DIR"] ?? "/tmp/epac-appstore-screenshots"
+
+        XCUIDevice.shared.orientation = .portrait
+        try FileManager.default.createDirectory(
+            at: URL(fileURLWithPath: outputDir),
+            withIntermediateDirectories: true
+        )
+
+        func save(_ name: String) throws {
+            let url = URL(fileURLWithPath: outputDir).appendingPathComponent(name)
+            try app.screenshot().pngRepresentation.write(to: url)
+        }
+
+        let captures = [
+            ("Parliament in your pocket", "01-parliament-in-your-pocket.png"),
+            ("See how your MP votes", "02-see-how-your-mp-votes.png"),
+            ("Your MP. Everything they do.", "03-your-mp-everything-they-do.png"),
+            ("Track a bill start to finish", "04-track-a-bill-start-to-finish.png"),
+            ("Know who's influencing your MP", "05-know-whos-influencing-your-mp.png"),
+            ("Contact them in one tap", "06-contact-them-in-one-tap.png")
+        ]
+
+        for (index, capture) in captures.enumerated() {
+            XCTAssertTrue(app.staticTexts[capture.0].waitForExistence(timeout: 5), "Expected screenshot page: \(capture.0)")
+            try save(capture.1)
+            if index < captures.count - 1 {
+                app.swipeLeft()
+            }
+        }
+    }
+
 }
