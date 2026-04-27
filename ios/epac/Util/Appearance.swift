@@ -28,6 +28,19 @@ extension Font {
 	static let messagePartyNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 12)!
 }
 
+extension View {
+	/// Applies a glass-style header background: `glassEffect()` on iOS 26+,
+	/// `.ultraThinMaterial` on earlier releases.
+	@ViewBuilder
+	func glassHeaderStyle() -> some View {
+		if #available(iOS 26.0, *) {
+			self.glassEffect()
+		} else {
+			self.background(.ultraThinMaterial)
+		}
+	}
+}
+
 extension UIColor {
 	convenience init(red: Int, green: Int, blue: Int) {
 		assert(red >= 0 && red <= 255, "Invalid red component")
