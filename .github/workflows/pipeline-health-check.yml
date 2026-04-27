@@ -1,0 +1,39 @@
+name: Pipeline health check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /health endpoint
+        env:
+          HEALTH_URL: ${{ secrets.HEALTH_ENDPOINT_URL }}
+        run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "⚠️  HEALTH_ENDPOINT_URL secret not set — skipping health check."
+            exit 0
+          fi
+
+          HTTP_STATUS=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 10 "$HEALTH_URL")
+          echo "HTTP status: $HTTP_STATUS"
+          cat /tmp/health.json | python3 -m json.tool || cat /tmp/health.json
+
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ All pipelines healthy."
+          elif [ "$HTTP_STATUS" = "503" ]; then
+            echo "🔴 One or more pipelines are stale."
+            python3 - <<'PYEOF'
+          import json, sys
+          d = json.load(open('/tmp/health.json'))
+          bad = [p['name'] for p in d.get('pipelines', []) if not p.get('healthy')]
+          print("Stale pipelines:", ', '.join(bad))
+          PYEOF
+            exit 1
+          else
+            echo "❌ Health endpoint returned unexpected status: $HTTP_STATUS"
+            exit 1
+          fi

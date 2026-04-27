@@ -24,6 +24,29 @@ func main() {
 	lambda.Start(HandleRequest)
 }
 
+const pipelineName = "hansard-daily-fetch"
+
+func recordHealth(ctx context.Context, conn *pgx.Conn, count int, runErr error) {
+	now := time.Now().UTC()
+	var errMsg *string
+	var successAt *time.Time
+	if runErr == nil {
+		successAt = &now
+	} else {
+		s := runErr.Error()
+		errMsg = &s
+	}
+	_, _ = conn.Exec(ctx, `
+		INSERT INTO pipeline_health (name, last_run_at, last_success_at, last_error, record_count, expected_interval_hours)
+		VALUES ($1, $2, $3, $4, $5, 24)
+		ON CONFLICT (name) DO UPDATE SET
+			last_run_at     = EXCLUDED.last_run_at,
+			last_success_at = COALESCE(EXCLUDED.last_success_at, pipeline_health.last_success_at),
+			last_error      = EXCLUDED.last_error,
+			record_count    = EXCLUDED.record_count
+	`, pipelineName, now, successAt, errMsg, count)
+}
+
 func HandleRequest(ctx context.Context) error {
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
@@ -60,20 +83,26 @@ func HandleRequest(ctx context.Context) error {
 	// 2. Download the Hansard XML
 	interventions, err := downloadAndParse(url)
 	if err != nil {
-		return fmt.Errorf("failed to download or parse Hansard: %w", err)
+		fetchErr := fmt.Errorf("failed to download or parse Hansard: %w", err)
+		recordHealth(ctx, conn, 0, fetchErr)
+		return fetchErr
 	}
 
 	if len(interventions) == 0 {
 		fmt.Printf("No interventions found for sitting %d. It might not be available yet.\n", nextSitting)
+		recordHealth(ctx, conn, 0, nil)
 		return nil
 	}
 
 	// 3. Insert into database
 	err = bulkInsertSpeeches(ctx, conn, filename, interventions)
 	if err != nil {
-		return fmt.Errorf("failed to insert speeches: %w", err)
+		insertErr := fmt.Errorf("failed to insert speeches: %w", err)
+		recordHealth(ctx, conn, 0, insertErr)
+		return insertErr
 	}
 
+	recordHealth(ctx, conn, len(interventions), nil)
 	fmt.Printf("Successfully loaded %d entries from sitting %d\n", len(interventions), nextSitting)
 	return nil
 }
