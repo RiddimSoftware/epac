@@ -75,27 +75,18 @@ func HandleRequest(ctx context.Context) error {
 	sess := "1"
 	sessionCode := parl + sess
 
+	// Derive the last sitting number from the filename column.
+	// WHERE filters to parliament 44 session 1 when those columns are populated;
+	// rows from before the schema migration have NULL values and are excluded by
+	// the IS NOT DISTINCT FROM guard. COALESCE returns 0 for an empty table.
 	var lastSitting int
-	err = conn.QueryRow(ctx,
-		`SELECT COALESCE(MAX(parliament_num * 1000 + session_num), 0) FROM speeches WHERE parliament_num = 44 AND session_num = 1`,
+	err = conn.QueryRow(ctx, `
+		SELECT COALESCE(MAX(CAST(substring(filename FROM 'HAN([0-9]+)-E.XML') AS INTEGER)), 0)
+		FROM speeches
+		WHERE (parliament_num IS NULL OR (parliament_num = 44 AND session_num = 1))`,
 	).Scan(&lastSitting)
-
-	// Fallback: derive from filename pattern if new columns not populated yet
-	if err != nil || lastSitting == 0 {
-		err = conn.QueryRow(ctx,
-			`SELECT COALESCE(MAX(CAST(substring(filename FROM 'HAN([0-9]+)-E.XML') AS INTEGER)), 0) FROM speeches`,
-		).Scan(&lastSitting)
-		if err != nil {
-			lastSitting = 0
-		}
-	} else {
-		// Get actual last sitting number
-		err = conn.QueryRow(ctx,
-			`SELECT COALESCE(MAX(CAST(substring(filename FROM 'HAN([0-9]+)-E.XML') AS INTEGER)), 0) FROM speeches WHERE parliament_num = 44 AND session_num = 1`,
-		).Scan(&lastSitting)
-		if err != nil {
-			lastSitting = 0
-		}
+	if err != nil {
+		lastSitting = 0
 	}
 
 	nextSitting := lastSitting + 1

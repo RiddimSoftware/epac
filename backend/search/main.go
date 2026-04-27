@@ -46,10 +46,7 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 	if connStr == "" {
 		return nil, fmt.Errorf("DATABASE_URL not set")
 	}
-	var err error
-	dbConn, err = pgx.Connect(ctx, connStr)
-
-	// Log connection (mask password)
+	// Log connection attempt (mask password before connecting)
 	masked := connStr
 	if parts := strings.Split(connStr, "@"); len(parts) > 1 {
 		if sub := strings.Split(parts[0], ":"); len(sub) > 2 {
@@ -57,6 +54,9 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 		}
 	}
 	fmt.Printf("Connecting to database: %s\n", masked)
+
+	var err error
+	dbConn, err = pgx.Connect(ctx, connStr)
 	return dbConn, err
 }
 
