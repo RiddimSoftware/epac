@@ -34,6 +34,15 @@
 "Retry" = "Réessayer";
 "Check your connection and try again." = "Vérifiez votre connexion et réessayez.";
 
+/* Search view extended */
+"search.prompt" = "Membres, projets de loi, votes, débats";
+"search.prompt.title" = "Rechercher tout";
+"search.prompt.description" = "Recherchez des députés par nom ou circonscription, des projets de loi par numéro, des votes et des sujets de débat.";
+"search.section.members" = "Membres";
+"search.section.votes" = "Votes";
+"search.section.bills" = "Projets de loi";
+"search.section.debates" = "Débats";
+
 /* Sitting view */
 "Search debates" = "Rechercher des débats";
 "Open debate" = "Ouvrir le débat";

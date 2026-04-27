@@ -21,12 +21,13 @@ struct SearchView: View {
     private var votes: [RecordedVote]
 
     @State private var viewModel = SearchViewModel()
+    @State private var bills: [Bill] = []
     @State private var selectedHansard: Hansard?
     @State private var selectedSubject: SubjectOfBusiness?
     @State private var selectedMember: ParliamentMember?
 
     private var results: SearchViewModel.SearchResults {
-        viewModel.results(members: members, votes: votes, hansards: hansards)
+        viewModel.results(members: members, votes: votes, bills: bills, hansards: hansards)
     }
 
     var body: some View {
@@ -55,6 +56,11 @@ struct SearchView: View {
             }
             .navigationDestination(item: $selectedMember) { member in
                 MemberProfileView(member: member)
+            }
+        }
+        .task {
+            if bills.isEmpty {
+                bills = (try? await BillsService.fetchBills()) ?? []
             }
         }
         .environmentObject(fetch)
@@ -129,6 +135,23 @@ struct SearchView: View {
                         }
                         .padding(.vertical, 2)
                         .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+
+
+            if !results.bills.isEmpty {
+                Section(NSLocalizedString("search.section.bills", comment: "")) {
+                    ForEach(results.bills) { result in
+                        NavigationLink(destination: BillDetailView(bill: result.bill)) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(result.bill.number)
+                                    .font(.caption.monospacedDigit().weight(.bold))
+                                    .foregroundStyle(.tint)
+                                Text(result.bill.title).font(.subheadline).lineLimit(2)
+                            }
+                            .padding(.vertical, 2)
+                        }
                     }
                 }
             }
