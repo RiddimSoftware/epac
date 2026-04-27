@@ -44,7 +44,7 @@ struct ContentView: View {
 			let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
 			viewModel.selectedDate = components
 			viewModel.onSelectedDateChanged(to: components, modelContext: modelContext, fetch: fetch)
-			router.selectedTab = .sittingCalendar
+			router.selectedTab = .parliament
 			notificationManager.clearPendingDate()
 		}
 		.task {
@@ -81,25 +81,25 @@ struct ContentView: View {
 
 	private var phoneLayout: some View {
 		TabView(selection: $router.selectedTab) {
-			calendarStack
-				.tabItem { Label(AppTab.sittingCalendar.title, systemImage: AppTab.sittingCalendar.systemImageName) }
-				.tag(AppTab.sittingCalendar)
+			MyMPView()
+				.tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImageName) }
+				.tag(AppTab.home)
 
-			SearchView()
-				.tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImageName) }
-				.tag(AppTab.search)
+			parliamentStack
+				.tabItem { Label(AppTab.parliament.title, systemImage: AppTab.parliament.systemImageName) }
+				.tag(AppTab.parliament)
 
 			membersStack
 				.tabItem { Label(AppTab.members.title, systemImage: AppTab.members.systemImageName) }
 				.tag(AppTab.members)
 
-			ExpendituresView()
-				.tabItem { Label(AppTab.expenditures.title, systemImage: AppTab.expenditures.systemImageName) }
-				.tag(AppTab.expenditures)
+			AccountabilityHubView()
+				.tabItem { Label(AppTab.accountability.title, systemImage: AppTab.accountability.systemImageName) }
+				.tag(AppTab.accountability)
 
-			MyMPView()
-				.tabItem { Label(AppTab.myMP.title, systemImage: AppTab.myMP.systemImageName) }
-				.tag(AppTab.myMP)
+			SearchView()
+				.tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImageName) }
+				.tag(AppTab.search)
 		}
 		.safeAreaInset(edge: .bottom) { offlineBanner }
 	}
@@ -125,20 +125,20 @@ struct ContentView: View {
 			}
 			.navigationTitle("epac")
 		} detail: {
-			// Keep all three detail views alive with opacity rather than a switch,
+			// Keep all detail views alive with opacity rather than a switch,
 			// so each view's NavigationStack retains its push state when the user
 			// navigates between sidebar items and returns.
 			ZStack {
-				calendarStack
-					.opacity(router.selectedTab == .sittingCalendar ? 1 : 0)
-			SearchView()
-					.opacity(router.selectedTab == .search ? 1 : 0)
+				MyMPView()
+					.opacity(router.selectedTab == .home ? 1 : 0)
+				parliamentStack
+					.opacity(router.selectedTab == .parliament ? 1 : 0)
 				membersStack
 					.opacity(router.selectedTab == .members ? 1 : 0)
-				ExpendituresView()
-					.opacity(router.selectedTab == .expenditures ? 1 : 0)
-				MyMPView()
-					.opacity(router.selectedTab == .myMP ? 1 : 0)
+				AccountabilityHubView()
+					.opacity(router.selectedTab == .accountability ? 1 : 0)
+				SearchView()
+					.opacity(router.selectedTab == .search ? 1 : 0)
 			}
 		}
 		.safeAreaInset(edge: .bottom) { offlineBanner }
@@ -162,9 +162,9 @@ struct ContentView: View {
 		}
 	}
 
-	// MARK: - Shared calendar navigation stack
+	// MARK: - Parliament navigation stack
 
-	private var calendarStack: some View {
+	private var parliamentStack: some View {
 		NavigationStack {
 			SittingCalendarView(selectedDate: $viewModel.selectedDate)
 				.environmentObject(fetch)

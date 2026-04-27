@@ -23,8 +23,7 @@ struct ExpendituresView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
+        ZStack {
                 if filteredExpenditures.isEmpty && viewModel.isLoading {
                     VStack(spacing: 16) {
                         ProgressView()
@@ -104,7 +103,6 @@ struct ExpendituresView: View {
             .onChange(of: expenditures) { oldValue, newValue in
                 Log.debug("Expenditures query updated. New count: \(newValue.count)")
             }
-        }
     }
 
     private var periodSelector: some View {

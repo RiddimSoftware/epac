@@ -4,6 +4,10 @@
 "Members" = "Membres";
 "Expenditures" = "Dépenses";
 "My MP" = "Mon député";
+"Home" = "Accueil";
+"Parliament" = "Parlement";
+"Accountability" = "Responsabilité";
+"accountability.navTitle" = "Responsabilité";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";
