@@ -1,0 +1,4 @@
+/* Home Screen Quick Actions (EPAC-351) */
+"quick.action.today.title" = "Today in Parliament";
+"quick.action.mymp.title" = "Find My MP";
+"quick.action.search.title" = "Search Debates";
