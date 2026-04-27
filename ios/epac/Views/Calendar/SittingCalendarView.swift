@@ -53,6 +53,16 @@ struct SittingCalendarView: View {
 								Color.clear
 							}
 						}
+						.accessibilityLabel({
+							if let date = Calendar.current.date(from: day.components) {
+								let formatted = date.formatted(date: .long, time: .omitted)
+								if isToday { return "\(formatted), today, sitting" }
+								if isPastSitting { return "\(formatted), sitting day" }
+								if isFutureSitting { return "\(formatted), scheduled sitting" }
+								return formatted
+							}
+							return "\(day.day)"
+						}())
 				})
 				.onDragEnd({ visibleDayRange, willDecelerate in
 					guard !willDecelerate else { return }
