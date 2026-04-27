@@ -84,6 +84,7 @@ struct SittingCalendarView: View {
 					RoundedRectangle(cornerRadius: 6)
 						.fill(Color.appPositive)
 						.frame(width: 24, height: 24)
+						.accessibilityHidden(true)
 					Text("Sitting days")
 						.font(.subheadline)
 						.fontWeight(.medium)
@@ -93,25 +94,34 @@ struct SittingCalendarView: View {
 							.foregroundColor(.secondary)
 					}
 				}
-				
+				.accessibilityElement(children: .combine)
+				.accessibilityLabel(viewModel.sittingDayCount > 0
+					? "Sitting days: \(viewModel.sittingDayCount) in \(viewModel.currentYear)"
+					: "Sitting days legend")
+
 				HStack(spacing: 20) {
 					HStack(spacing: 8) {
 						Circle()
 							.fill(Color.appDestructive)
 							.frame(width: 16, height: 16)
+							.accessibilityHidden(true)
 						Text("Today")
 					}
 					.contentShape(Rectangle())
 					.onTapGesture {
 						calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
 					}
-					
+					.accessibilityLabel("Today — tap to scroll to current month")
+					.accessibilityAddTraits(.isButton)
+
 					HStack(spacing: 8) {
 						RoundedRectangle(cornerRadius: 4)
 							.stroke(Color.appPositive, lineWidth: 2)
 							.frame(width: 16, height: 16)
+							.accessibilityHidden(true)
 						Text("Upcoming")
 					}
+					.accessibilityLabel("Upcoming scheduled sittings")
 				}
 				.font(.caption)
 				.foregroundColor(.secondary)
