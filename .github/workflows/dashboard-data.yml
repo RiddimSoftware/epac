@@ -28,7 +28,7 @@ jobs:
             --secret-id appstore/connect-api --query SecretString --output text)
           echo "ASC_KEY_ID=$(echo $SECRET | jq -r '.key_id')" >> $GITHUB_ENV
           echo "ASC_ISSUER_ID=$(echo $SECRET | jq -r '.issuer_id')" >> $GITHUB_ENV
-          echo $SECRET | jq -r '.private_key' > /tmp/AuthKey.p8
+          echo "$SECRET" | jq -r '.private_key' > /tmp/AuthKey.p8
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -36,7 +36,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install requests PyJWT
+        run: pip install requests "PyJWT[cryptography]"
 
       - name: Fetch Jira metrics
         env:
@@ -58,4 +58,4 @@ jobs:
           git config user.email "actions@github.com"
           git add dashboard/data/
           git diff --staged --quiet || git commit -m "chore: refresh dashboard data [skip ci]"
-          git push
+          git push origin HEAD

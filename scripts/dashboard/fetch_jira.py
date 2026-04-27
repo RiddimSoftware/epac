@@ -9,7 +9,6 @@ Required environment variables:
 """
 import json
 import os
-import sys
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -34,6 +33,7 @@ def jql(query: str, fields: list[str], max_results: int = 200) -> list:
                 "maxResults": page_size,
                 "startAt": start,
             },
+            timeout=30,
         )
         r.raise_for_status()
         data = r.json()
