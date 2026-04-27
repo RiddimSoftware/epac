@@ -108,7 +108,7 @@ final class TopicFollowStore {
         req.httpBody = data
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        _ = try? await URLSession.shared.data(for: req)
+        _ = try? await NetworkService.shared.data(for: req)
     }
 
     // MARK: - Private

@@ -5,6 +5,7 @@ struct ContractsView: View {
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var searchText = ""
+    @State private var isRetryDisabled = false
 
     private var filtered: [GovernmentContract] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -31,7 +32,11 @@ struct ContractsView: View {
                     icon: "exclamationmark.triangle",
                     title: NSLocalizedString("contracts.error.title", comment: ""),
                     message: NSLocalizedString("contracts.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { await load() }
+                    })
                 )
             } else if filtered.isEmpty {
                 EmptyStateView(

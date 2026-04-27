@@ -17,6 +17,7 @@ struct ExpendituresView: View {
 
     @State private var viewModel = ExpendituresViewModel()
     @State private var item: ActivityItem?
+    @State private var isRetryDisabled = false
 
     private var filteredExpenditures: [SummaryExpenditure] {
         viewModel.filteredExpenditures(from: expenditures)
@@ -43,11 +44,13 @@ struct ExpendituresView: View {
                         Text("Check your connection and try again.")
                     } actions: {
                         Button("Retry") {
-                            Task {
-                                await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
-                            }
+                            guard !isRetryDisabled else { return }
+                            isRetryDisabled = true
+                            Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                            Task { await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch) }
                         }
                         .buttonStyle(.borderedProminent)
+                        .disabled(isRetryDisabled)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {

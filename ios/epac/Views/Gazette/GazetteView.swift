@@ -6,6 +6,7 @@ struct GazetteView: View {
     @State private var loadFailed = false
     @State private var partFilter: GazettePart? = nil
     @State private var searchText = ""
+    @State private var isRetryDisabled = false
 
     private var filtered: [GazetteEntry] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -33,7 +34,11 @@ struct GazetteView: View {
                     icon: "exclamationmark.triangle",
                     title: NSLocalizedString("gazette.error.title", comment: ""),
                     message: NSLocalizedString("gazette.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), handler: { Task { await load() } })
+                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { await load() }
+                    })
                 )
             } else if filtered.isEmpty {
                 EmptyStateView(

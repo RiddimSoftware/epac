@@ -59,17 +59,17 @@ enum FiscalMonitorServiceError: LocalizedError {
 struct FiscalMonitorService {
 	private let indexURL = URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor.html")!
 	private let publicationsJSONURL = URL(string: "https://www.canada.ca/content/dam/fin/documents/publications/pub-rep/json.json")!
-	private let session: URLSession
+	private let network: NetworkService
 
 	init(session: URLSession = .shared) {
-		self.session = session
+		self.network = NetworkService(session: session)
 	}
 
 	func currentFiscalYearEntries() async throws -> [FiscalMonitorParsedEntry] {
 		let issues = try await currentFiscalYearIssues()
 		var entries: [FiscalMonitorParsedEntry] = []
 		for issue in issues.sorted(by: { fiscalMonthOrder($0.month) < fiscalMonthOrder($1.month) }) {
-			let (data, _) = try await session.data(from: issue.url)
+			let (data, _) = try await network.data(from: issue.url)
 			guard let html = String(data: data, encoding: .utf8) else {
 				throw FiscalMonitorServiceError.invalidHTML
 			}
@@ -81,10 +81,10 @@ struct FiscalMonitorService {
 	func currentFiscalYearIssues() async throws -> [FiscalMonitorIssue] {
 		let issues: [FiscalMonitorIssue]
 		do {
-			let (data, _) = try await session.data(from: publicationsJSONURL)
+			let (data, _) = try await network.data(from: publicationsJSONURL)
 			issues = try Self.parsePublicationIssues(json: data, baseURL: publicationsJSONURL)
 		} catch {
-			let (data, _) = try await session.data(from: indexURL)
+			let (data, _) = try await network.data(from: indexURL)
 			guard let html = String(data: data, encoding: .utf8) else {
 				throw FiscalMonitorServiceError.invalidHTML
 			}

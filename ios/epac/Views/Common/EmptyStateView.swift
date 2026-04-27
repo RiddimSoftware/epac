@@ -30,6 +30,7 @@ struct EmptyStateView: View {
                 Button(action.label, action: action.handler)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
+                    .disabled(!action.isEnabled)
             }
         }
         .padding(32)
@@ -39,5 +40,6 @@ struct EmptyStateView: View {
 
 struct EmptyStateAction {
     let label: String
+    var isEnabled: Bool = true
     let handler: () -> Void
 }

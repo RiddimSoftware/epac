@@ -53,7 +53,7 @@ class SpeakerImageViewModel {
 
 	private func updateImageData(_ speaker: ParliamentMember, modelContext: ModelContext) async throws {
 		Log.debug("Fetching \(speaker.photoURL.absoluteString)")
-		let (data, _) = try await URLSession.shared.data(from: speaker.photoURL)
+		let (data, _) = try await NetworkService.shared.data(from: speaker.photoURL)
 		if !data.isEmpty, UIKit.UIImage(data: data) != nil {
 			speaker.imageData = data
 			imageData = data

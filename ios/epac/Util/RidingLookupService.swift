@@ -45,7 +45,7 @@ struct RidingLookupService {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(from: url)
+            (data, response) = try await NetworkService.shared.data(from: url)
         } catch {
             throw RidingLookupError.networkError
         }

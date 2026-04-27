@@ -25,6 +25,7 @@ struct MemberVotingHistoryView: View {
     @State private var votes: [(mv: MemberVote, rv: RecordedVote?)] = []
     @State private var isLoading = false
     @State private var loadFailed = false
+    @State private var isRetryDisabled = false
     @State private var selectedVote: VoteSelection?
 
     var body: some View {
@@ -39,9 +40,13 @@ struct MemberVotingHistoryView: View {
                     Text(NSLocalizedString("votes.error.description", comment: ""))
                 } actions: {
                     Button(NSLocalizedString("votes.error.retry", comment: "")) {
+                        guard !isRetryDisabled else { return }
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
                         Task { await loadVotes() }
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(isRetryDisabled)
                 }
             } else if votes.isEmpty {
                 ContentUnavailableView(

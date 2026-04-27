@@ -47,7 +47,7 @@ struct OntarioLegislatureService {
 
     static func fetchRecentDebates() async -> [OntarioDebateDay] {
         guard let url = URL(string: "https://www.ola.org/en/legislative-business/house-documents/parliament-43/session-1/hansard") else { return [] }
-        guard let (data, response) = try? await URLSession.shared.data(from: url),
+        guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else { return [] }
@@ -88,7 +88,7 @@ struct OntarioLegislatureService {
     private static func fetchFromOpenData() async -> [OntarioMPP]? {
         let urlStr = "https://data.ontario.ca/api/3/action/datastore_search?resource_id=971c45c0-9dc3-4e37-ac31-eaee7cd3ff95&limit=200"
         guard let url = URL(string: urlStr),
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -128,7 +128,7 @@ struct OntarioLegislatureService {
 
     private static func fetchFromOLA() async -> [OntarioMPP]? {
         guard let url = URL(string: "https://www.ola.org/en/members/current"),
-              let (data, _) = try? await URLSession.shared.data(from: url),
+              let (data, _) = try? await NetworkService.shared.data(from: url),
               let html = String(data: data, encoding: .utf8) else { return nil }
 
         var results: [OntarioMPP] = []

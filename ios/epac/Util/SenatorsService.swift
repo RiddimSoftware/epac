@@ -47,7 +47,7 @@ struct SenatorsService {
             "https://api.open.ourcommons.ca/ocd/members/?parliament=45&chamber=Senate&pageSize=200&format=json"
         ) else { return nil }
 
-        guard let (data, response) = try? await URLSession.shared.data(from: url),
+        guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -101,7 +101,7 @@ struct SenatorsService {
             "https://www.ourcommons.ca/Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all"
         ) else { return nil }
 
-        guard let (data, _) = try? await URLSession.shared.data(from: url),
+        guard let (data, _) = try? await NetworkService.shared.data(from: url),
               let xml = String(data: data, encoding: .utf8) else { return nil }
 
         var results: [Senator] = []

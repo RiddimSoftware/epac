@@ -450,7 +450,7 @@ struct MemberAvatar: View {
 							}
 						}
 						// Network fetch fallback
-						guard let (data, _) = try? await URLSession.shared.data(from: member.photoURL),
+						guard let (data, _) = try? await NetworkService.shared.data(from: member.photoURL),
 						      let img = UIImage(data: data) else { return }
 						MemberImageCache.shared.store(img, for: member.photoURL)
 						cachedImage = img

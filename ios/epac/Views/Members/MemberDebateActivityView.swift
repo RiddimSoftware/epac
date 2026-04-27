@@ -15,6 +15,7 @@ struct MemberDebateActivityView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var fetch: Fetch
     @State private var viewModel: MemberSpeechFeedViewModel
+    @State private var isRetryDisabled = false
 
     init(member: ParliamentMember) {
         self.member = member
@@ -67,9 +68,13 @@ struct MemberDebateActivityView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry") {
+                guard !isRetryDisabled else { return }
+                isRetryDisabled = true
+                Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
                 Task { await viewModel.loadInitial() }
             }
             .buttonStyle(.borderedProminent)
+            .disabled(isRetryDisabled)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

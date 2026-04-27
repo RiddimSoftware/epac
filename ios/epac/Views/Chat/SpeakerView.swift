@@ -69,7 +69,7 @@ struct SpeakerView: View {
 				}
 			} else {
 				// L3: Network download then decode off the main thread.
-				guard let (data, _) = try? await URLSession.shared.data(from: speaker.photoURL),
+				guard let (data, _) = try? await NetworkService.shared.data(from: speaker.photoURL),
 					  !data.isEmpty else { return }
 				let decoded = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
 				guard let decoded else { return }

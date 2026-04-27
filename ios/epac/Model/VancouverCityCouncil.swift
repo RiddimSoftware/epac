@@ -116,7 +116,7 @@ struct VancouverCouncilService {
     private static func fetchVotesFromOpenData(limit: Int) async -> [VancouverCouncilVote]? {
         let urlStr = "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets/council-voting-records/records?limit=\(limit)&order_by=vote_date%20desc"
         guard let url = URL(string: urlStr),
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
