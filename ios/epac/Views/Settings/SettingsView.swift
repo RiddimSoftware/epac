@@ -229,11 +229,11 @@ struct SettingsView: View {
             )
             Link(
                 NSLocalizedString("settings.about.github", comment: ""),
-                destination: URL(string: "https://github.com/sunnypurewal/epac")!
+                destination: URL(string: "https://github.com/RiddimSoftware/epac")!
             )
             Link(
                 NSLocalizedString("settings.about.brandBrief", comment: ""),
-                destination: URL(string: "https://github.com/sunnypurewal/epac/blob/main/docs/brand/brand-brief-v1.md")!
+                destination: URL(string: "https://github.com/RiddimSoftware/epac/blob/main/docs/brand/brand-brief-v1.md")!
             )
             Button(NSLocalizedString("settings.about.feedback", comment: "")) {
                 let subject = "epac%20feedback"

@@ -36,7 +36,7 @@ The epac App Clip ("Who is my MP?") is ideal for election-season editorial: it w
 ## Screenshots and assets
 
 App screenshots, icon, and App Clip demo video available on request: press@riddimsoftware.com
-GitHub: https://github.com/sunnypurewal/epac
+GitHub: https://github.com/RiddimSoftware/epac
 
 ## Contact
 

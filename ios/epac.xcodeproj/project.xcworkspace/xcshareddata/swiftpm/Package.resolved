@@ -40,7 +40,7 @@
     {
       "identity" : "evidence",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sunnypurewal/evidence",
+      "location" : "https://github.com/RiddimSoftware/evidence",
       "state" : {
         "branch" : "main",
         "revision" : "47b1102b209dc0de16db8b3ffd3b3b400808c5b7"

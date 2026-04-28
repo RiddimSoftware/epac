@@ -186,7 +186,7 @@ After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code R
 Spawn prompt template (Claude Code, via the Agent tool):
 
 ```
-You are the Autonomous Code Reviewer for PR #N (https://github.com/sunnypurewal/epac/pull/N), branch <branch>.
+You are the Autonomous Code Reviewer for PR #N (https://github.com/RiddimSoftware/epac/pull/N), branch <branch>.
 Repo root: /Users/sunny/code/epac
 
 Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
@@ -343,7 +343,7 @@ Every ticket must be kept current. Three moments require action:
 | Event | Jira action |
 |---|---|
 | Picking up a ticket | Transition → **In Progress**; comment with branch name |
-| PR opened | Comment with PR URL (`https://github.com/sunnypurewal/epac/pull/N`) |
+| PR opened | Comment with PR URL (`https://github.com/RiddimSoftware/epac/pull/N`) |
 | PR merged | Transition → **Done** |
 
 Never open a PR without the ticket already In Progress. Never merge without transitioning to Done.
