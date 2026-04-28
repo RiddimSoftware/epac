@@ -52,6 +52,7 @@ struct HomeFeedView: View {
                 if !mySenators.isEmpty {
                     senatorsSection
                 }
+                reconciliationContextCard
                 healthcareContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
@@ -398,6 +399,19 @@ struct HomeFeedView: View {
                     }
                 }
                 .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
+            }
+        }
+    }
+
+    // MARK: - Reconciliation contextual card (shown when Indigenous/reconciliation topic is followed)
+
+    @ViewBuilder
+    private var reconciliationContextCard: some View {
+        if topicStore.isFollowing("indigenous") {
+            Section {
+                ReconciliationContextCard()
+            } header: {
+                Text("Reconciliation")
             }
         }
     }
