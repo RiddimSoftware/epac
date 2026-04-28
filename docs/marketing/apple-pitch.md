@@ -86,7 +86,7 @@ For the App Store Connect Promotions form's **Differentiation** field. Each bull
 | Item | URL / Path |
 |---|---|
 | App Store listing (Canada) | https://apps.apple.com/ca/app/epac/id[FILL-IN-APP-ID] |
-| App Store URL (general) | https://apps.apple.com/app/idDOC[FILL-IN-APP-ID] |
+| App Store URL (general) | https://apps.apple.com/app/id[FILL-IN-APP-ID] |
 | App Preview video (30s · 886×1920 · H.264 · iPhone 6.9") | `docs/marketing/preview/app-preview-final.mp4` (regenerated via `./scripts/marketing/record-app-preview.sh`, see EPAC-538) |
 | Screenshots (6 × 1290×2796) | `docs/marketing/screenshots/` (produced under EPAC-109; uploaded to App Store Connect under en-CA) |
 | Marketing site | https://epac.app |
