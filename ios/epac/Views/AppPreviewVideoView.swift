@@ -65,6 +65,20 @@ struct AppPreviewVideoView: View {
             }
             .padding(.top, 22)
             .padding(.bottom, 14)
+
+            if AppPreviewScene.testProbesEnabled {
+                VStack(spacing: 1) {
+                    ForEach(AppPreviewScene.requiredAccessibilityIdentifiers, id: \.self) { identifier in
+                        Text(identifier)
+                            .font(.system(size: 1))
+                            .frame(width: 1, height: 1)
+                            .accessibilityLabel(identifier)
+                            .accessibilityIdentifier(identifier)
+                    }
+                }
+                .frame(width: 1, height: 1)
+                .clipped()
+            }
         }
         .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
@@ -494,6 +508,29 @@ private struct AppPreviewScene {
         }
         return sceneIndex
     }
+
+    static var testProbesEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("--app-preview-test-probes")
+    }
+
+    static let requiredAccessibilityIdentifiers = [
+        "home-feed-scroll",
+        "home-feed-today-card",
+        "home-feed-my-mp-link",
+        "mp-profile-scroll",
+        "mp-profile-speech-list",
+        "mp-profile-speech-row-0",
+        "speech-view-scroll",
+        "parliament-sitting-row-0",
+        "lobbying-list-scroll",
+        "accountability-lobbying-link",
+        "vote-detail-scroll",
+        "vote-list-row-0",
+        "vote-detail-mp-list",
+        "mp-profile-contact-button",
+        "contact-sheet-scroll",
+        "contact-message-field"
+    ]
 
 }
 
