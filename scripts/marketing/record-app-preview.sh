@@ -9,7 +9,7 @@ SIMULATOR_ID="${SIMULATOR_ID:-FCFAF817-6694-402D-B116-A86EDAF34237}"
 DEVICE_NAME="${DEVICE_NAME:-}"
 SCHEME="${SCHEME:-epac}"
 PROJECT="$ROOT_DIR/ios/epac.xcodeproj"
-TEST_ID="${TEST_ID:-epacUITests/AppPreviewRecordingTests/testAppPreviewSequence}"
+TEST_ID="${TEST_ID:-epacUITests/AppPreviewRecordingTests/testAppPreviewRecordingSequence}"
 OUTPUT_DIR="$ROOT_DIR/docs/marketing/preview"
 RAW_FILE="$OUTPUT_DIR/raw-capture-$(date +%Y%m%d-%H%M%S).mp4"
 FINAL_FILE="$OUTPUT_DIR/app-preview-final.mp4"
@@ -123,7 +123,7 @@ sleep 1
 
 echo "Running AppPreviewRecordingTests..."
 set +e
-APP_PREVIEW_RECORDING=1 xcodebuild test \
+TEST_RUNNER_APP_PREVIEW_RECORDING=1 xcodebuild test \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
   -destination "$DESTINATION" \

@@ -50,10 +50,11 @@ struct epacApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
 		do {
+			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try ModelContainer(
 				for: Schema(versionedSchema: SchemaV8.self),
 				migrationPlan: EpacMigrationPlan.self,
-				configurations: [ModelConfiguration(isStoredInMemoryOnly: AppRuntime.isRunningTests)]
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: usesInMemoryStore)]
 			)
 		} catch {
 			fatalError("Could not create ModelContainer: \(error)")
@@ -64,7 +65,7 @@ struct epacApp: App {
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
-		guard !AppRuntime.isRunningTests else { return }
+		guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
 
 		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
 			SentrySDK.start { options in
@@ -97,7 +98,7 @@ struct epacApp: App {
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { _, newPhase in
-			if newPhase == .active {
+			if newPhase == .active && !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode {
 				// Snapshot the latest-seen bill introduction date so BillsView can mark
 				// bills introduced since the previous session as "New" this session.
 				if let latestSeen = UserDefaults.standard.object(forKey: "epac.bills.latestSeen") as? Date {

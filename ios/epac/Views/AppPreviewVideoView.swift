@@ -80,19 +80,33 @@ struct AppPreviewVideoView: View {
                 .clipped()
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard AppEnvironment.isAppPreviewManualSequence else { return }
+            advanceScene()
+        }
         .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
         .task {
-            guard forcedSceneIndex == nil else { return }
+            guard forcedSceneIndex == nil, !AppEnvironment.isAppPreviewManualSequence else { return }
             for index in scenes.indices.dropFirst() {
                 try? await Task.sleep(nanoseconds: scenes[index - 1].durationNanoseconds)
-                withAnimation(.easeInOut(duration: 0.65)) {
-                    selectedSceneIndex = index
-                }
+                advanceScene()
             }
             if let finalScene = scenes.last {
                 try? await Task.sleep(nanoseconds: finalScene.durationNanoseconds)
             }
+        }
+    }
+
+    private func advanceScene() {
+        guard selectedSceneIndex < scenes.count - 1 else { return }
+        if AppEnvironment.isAppPreviewManualSequence {
+            selectedSceneIndex += 1
+            return
+        }
+        withAnimation(.easeInOut(duration: 0.65)) {
+            selectedSceneIndex += 1
         }
     }
 }
@@ -459,28 +473,28 @@ private struct AppPreviewScene {
             tabTitle: "Home",
             systemImage: "house.fill",
             kind: .homeFeed,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: 3_000_000_000
         ),
         AppPreviewScene(
             headline: "Every word. Every vote.",
             tabTitle: "Members",
             systemImage: "person.2.fill",
             kind: .mpProfile,
-            durationNanoseconds: 6_000_000_000
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
             headline: "Hansard. Finally readable.",
             tabTitle: "Parliament",
             systemImage: "building.columns.fill",
             kind: .debate,
-            durationNanoseconds: 6_000_000_000
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
             headline: "Who's influencing them?",
             tabTitle: "Members",
             systemImage: "person.text.rectangle.fill",
             kind: .lobbying,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: 4_000_000_000
         ),
         AppPreviewScene(
             headline: "They said it. Then voted against it.",
