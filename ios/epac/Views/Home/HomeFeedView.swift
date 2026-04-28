@@ -41,6 +41,7 @@ struct HomeFeedView: View {
             List {
                 // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
+                electionCountdownSection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
                     followedBillsSection
@@ -425,6 +426,25 @@ struct HomeFeedView: View {
                 } header: {
                     Text(NSLocalizedString("cihi.sectionTitle.short", comment: ""))
                 }
+            }
+        }
+    }
+
+    // MARK: - Election countdown
+
+    // The mandated date is statutorily fixed and cheap to compute, so the
+    // values are recalculated on each render rather than cached in @State.
+    private var electionCountdownSection: some View {
+        let lastElection = ElectionDateCalculator.last45thGeneralElection
+        let mandated = ElectionDateCalculator.nextMandatedDate(after: lastElection)
+        let days = ElectionDateCalculator.daysRemaining(now: Date(), mandatedDate: mandated)
+        return Section {
+            NavigationLink(destination: ElectionDetailView(
+                lastElectionDate: lastElection,
+                mandatedDate: mandated,
+                daysRemaining: days
+            )) {
+                ElectionCountdownCard(mandatedDate: mandated, daysRemaining: days)
             }
         }
     }
