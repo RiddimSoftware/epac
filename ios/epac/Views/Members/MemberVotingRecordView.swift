@@ -224,14 +224,17 @@ private struct SummaryPill: View {
 		VStack(spacing: 2) {
 			Text("\(count)")
 				.font(.title3.bold())
-				.foregroundStyle(!isEmpty ? color : .secondary)
+				// `count` is an Int field on this struct, not a collection — empty_count's auto-fix is wrong here.
+				// swiftlint:disable:next empty_count
+				.foregroundStyle(count != 0 ? color : .secondary)
 			Text(label)
 				.font(.caption2)
 				.foregroundStyle(.secondary)
 		}
 		.frame(maxWidth: .infinity)
 		.padding(.vertical, 8)
-		.background(!isEmpty ? color.opacity(0.08) : Color.clear)
+		// swiftlint:disable:next empty_count
+		.background(count != 0 ? color.opacity(0.08) : Color.clear)
 	}
 }
 
