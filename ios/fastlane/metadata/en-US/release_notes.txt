@@ -1,13 +1,10 @@
-What's new in this release:
+What's new in epac:
 
-• Siri integration — ask "Is Parliament sitting today?" or "Open an MP profile in epac"
-• Spotlight Search — search any MP by name directly from iOS Spotlight
-• Extended search — search MPs, votes, and debates all from one screen
-• Bill sharing — share any bill with a verified source link
-• Write to MP from bills — pre-filled contact templates from any bill
-• Ontario Legislature — MPP profiles and Queen's Park debates
-• Committee transcripts — browse standing committee hearings and evidence
-• Senate coverage — senator profiles and My Senators section
-• Election resources — voter registration, polling stations, and Elections Canada links
-• Home feed navigation — Today in Parliament links directly to today's sitting
-• Performance improvements — 60fps portrait scrolling, faster cold launch
+• Home feed — your MP's activity, followed bills, topics, and consultations in one place
+• Topic notifications — get notified when a topic you follow is debated in the House
+• Bill tracker — see new bills introduced since your last visit, with a dot badge on arrival
+• City council coverage — Toronto and Vancouver council votes alongside federal Parliament
+• Offline resilience — debates and votes load gracefully on slow or interrupted connections
+• Apple Watch complication — Parliament sitting status on your wrist
+
+epac only shows verified data from official government sources. Nothing is generated or editorialized.
