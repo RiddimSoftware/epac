@@ -529,6 +529,14 @@
 "settings.notifications.topicConsultations" = "New consultations on followed topics";
 "settings.notifications.morningBriefing" = "Morning sitting-day briefing";
 
+"settings.appIcon.title" = "Appearance";
+"settings.appIcon.picker" = "App Icon";
+"settings.appIcon.standard" = "Standard";
+"settings.appIcon.red" = "Parliament Red";
+"settings.appIcon.gold" = "Parliament Gold";
+"settings.appIcon.unsupported" = "Not available on this device";
+"settings.appIcon.error" = "Could not change app icon: %@";
+
 "settings.followed.bills" = "Followed Bills";
 "settings.followed.members" = "Followed MPs";
 "settings.followed.topics" = "Followed Topics";

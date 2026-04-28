@@ -532,6 +532,14 @@
 "settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
 "settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
 
+"settings.appIcon.title" = "Apparence";
+"settings.appIcon.picker" = "Icône de l’app";
+"settings.appIcon.standard" = "Standard";
+"settings.appIcon.red" = "Rouge parlementaire";
+"settings.appIcon.gold" = "Or parlementaire";
+"settings.appIcon.unsupported" = "Non disponible sur cet appareil";
+"settings.appIcon.error" = "Impossible de modifier l’icône de l’app : %@";
+
 "settings.followed.bills" = "Projets de loi suivis";
 "settings.followed.members" = "Députés suivis";
 "settings.followed.topics" = "Sujets suivis";
