@@ -21,12 +21,12 @@ struct TopicsView: View {
     var body: some View {
         List(filtered) { topic in
             HStack {
-                VStack(alignment: .leading) {
-                    Text(topic.localizedName)
-                        .font(.subheadline)
-                    Text(topic.keywords.prefix(3).joined(separator: " · "))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                if topic.id == "transport" {
+                    NavigationLink(destination: TransportationSafetyView()) {
+                        topicSummary(topic)
+                    }
+                } else {
+                    topicSummary(topic)
                 }
                 Spacer()
                 Button {
@@ -59,5 +59,15 @@ struct TopicsView: View {
         )
         .navigationTitle(NSLocalizedString("topics.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func topicSummary(_ topic: ParliamentaryTopic) -> some View {
+        VStack(alignment: .leading) {
+            Text(topic.localizedName)
+                .font(.subheadline)
+            Text(topic.keywords.prefix(3).joined(separator: " · "))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 }

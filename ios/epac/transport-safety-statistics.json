@@ -1,0 +1,985 @@
+{
+  "datasets": [
+    {
+      "id": "tsb-annual-statistics",
+      "title": "Transportation Safety Board of Canada Annual Statistics",
+      "url": "https://tsb.gc.ca/eng/stats/aviation/stats.html"
+    },
+    {
+      "id": "tc-road-collision-statistics",
+      "title": "Transport Canada Canadian Motor Vehicle Traffic Collision Statistics",
+      "url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023"
+    }
+  ],
+  "generated_at": "2026-04-28T23:28:47.649586Z",
+  "history_years": {
+    "road": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+    ],
+    "tsb": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ]
+  },
+  "modes": {
+    "air": [
+      {
+        "accidents": 170,
+        "fatalities": 16,
+        "incidents": 420,
+        "occurrences": 590,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/aviation/2020/ssea-ssao-2020.html",
+        "year": 2020
+      },
+      {
+        "accidents": 190,
+        "fatalities": 32,
+        "incidents": 499,
+        "occurrences": 689,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/aviation/2021/ssea-ssao-2021.html",
+        "year": 2021
+      },
+      {
+        "accidents": 165,
+        "fatalities": 34,
+        "incidents": 724,
+        "occurrences": 889,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/aviation/2022/ssea-ssao-2022.html",
+        "year": 2022
+      },
+      {
+        "accidents": 182,
+        "fatalities": 33,
+        "incidents": 838,
+        "occurrences": 1020,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/aviation/2023/ssea-ssao-2023.html",
+        "year": 2023
+      },
+      {
+        "accidents": 193,
+        "fatalities": 46,
+        "incidents": 817,
+        "occurrences": 1010,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/aviation/2024/ssea-ssao-2024.html",
+        "year": 2024
+      }
+    ],
+    "marine": [
+      {
+        "accidents": 262,
+        "fatalities": 18,
+        "incidents": 925,
+        "occurrences": 1187,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/marine/2020/ssem-ssmo-2020.html",
+        "year": 2020
+      },
+      {
+        "accidents": 220,
+        "fatalities": 11,
+        "incidents": 855,
+        "occurrences": 1075,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/marine/2021/ssem-ssmo-2021.html",
+        "year": 2021
+      },
+      {
+        "accidents": 241,
+        "fatalities": 7,
+        "incidents": 968,
+        "occurrences": 1209,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/marine/2022/ssem-ssmo-2022.html",
+        "year": 2022
+      },
+      {
+        "accidents": 235,
+        "fatalities": 18,
+        "incidents": 792,
+        "occurrences": 1027,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/marine/2023/ssem-ssmo-2023.html",
+        "year": 2023
+      },
+      {
+        "accidents": 213,
+        "fatalities": 12,
+        "incidents": 738,
+        "occurrences": 951,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/marine/2024/ssem-ssmo-2024.html",
+        "year": 2024
+      }
+    ],
+    "rail": [
+      {
+        "accidents": 965,
+        "fatalities": 59,
+        "incidents": 227,
+        "occurrences": 1192,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/rail/2020/sser-ssro-2020.html",
+        "year": 2020
+      },
+      {
+        "accidents": 1038,
+        "fatalities": 60,
+        "incidents": 194,
+        "occurrences": 1232,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/rail/2021/sser-ssro-2021.html",
+        "year": 2021
+      },
+      {
+        "accidents": 995,
+        "fatalities": 66,
+        "incidents": 381,
+        "occurrences": 1376,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/rail/2022/sser-ssro-2022.html",
+        "year": 2022
+      },
+      {
+        "accidents": 914,
+        "fatalities": 67,
+        "incidents": 321,
+        "occurrences": 1235,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/rail/2023/sser-ssro-2023.html",
+        "year": 2023
+      },
+      {
+        "accidents": 896,
+        "fatalities": 69,
+        "incidents": 302,
+        "occurrences": 1198,
+        "source_url": "https://www.tsb.gc.ca/eng/stats/rail/2024/sser-ssro-2024.html",
+        "year": 2024
+      }
+    ]
+  },
+  "road": {
+    "national": [
+      {
+        "fatalities": 1762,
+        "serious_injuries": 8917,
+        "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+        "total_injuries": 140801,
+        "year": 2019
+      },
+      {
+        "fatalities": 1745,
+        "serious_injuries": 7868,
+        "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+        "total_injuries": 101572,
+        "year": 2020
+      },
+      {
+        "fatalities": 1768,
+        "serious_injuries": 8185,
+        "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+        "total_injuries": 108018,
+        "year": 2021
+      },
+      {
+        "fatalities": 1931,
+        "serious_injuries": 8851,
+        "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+        "total_injuries": 118853,
+        "year": 2022
+      },
+      {
+        "fatalities": 1964,
+        "serious_injuries": 9261,
+        "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+        "total_injuries": 118838,
+        "year": 2023
+      }
+    ],
+    "provinces": [
+      {
+        "fatalities_per_100k": 7.8,
+        "fatalities_per_billion_vkt": 8.3,
+        "history": [
+          {
+            "fatalities_per_100k": 7.6,
+            "fatalities_per_100k_licensed_drivers": 10.3,
+            "fatalities_per_billion_vkt": 7.2,
+            "injuries_per_100k": 510.6,
+            "injuries_per_100k_licensed_drivers": 690.3,
+            "injuries_per_billion_vkt": 480.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 10.7,
+            "fatalities_per_100k_licensed_drivers": 14.2,
+            "fatalities_per_billion_vkt": 11.8,
+            "injuries_per_100k": 413.0,
+            "injuries_per_100k_licensed_drivers": 544.9,
+            "injuries_per_billion_vkt": 453.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 6.7,
+            "fatalities_per_100k_licensed_drivers": 8.9,
+            "fatalities_per_billion_vkt": 7.4,
+            "injuries_per_100k": 408.5,
+            "injuries_per_100k_licensed_drivers": 539.1,
+            "injuries_per_billion_vkt": 448.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 6.6,
+            "fatalities_per_100k_licensed_drivers": 8.9,
+            "fatalities_per_billion_vkt": 7.0,
+            "injuries_per_100k": 400.7,
+            "injuries_per_100k_licensed_drivers": 539.1,
+            "injuries_per_billion_vkt": 423.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 7.8,
+            "fatalities_per_100k_licensed_drivers": 10.6,
+            "fatalities_per_billion_vkt": 8.3,
+            "injuries_per_100k": 408.2,
+            "injuries_per_100k_licensed_drivers": 556.8,
+            "injuries_per_billion_vkt": 437.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 408.2,
+        "province": "Newfoundland and Labrador",
+        "province_code": "NL",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 8.1,
+        "fatalities_per_billion_vkt": 8.4,
+        "history": [
+          {
+            "fatalities_per_100k": 9.5,
+            "fatalities_per_100k_licensed_drivers": 13.3,
+            "fatalities_per_billion_vkt": 9.4,
+            "injuries_per_100k": 384.7,
+            "injuries_per_100k_licensed_drivers": 536.9,
+            "injuries_per_billion_vkt": 378.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 9.3,
+            "fatalities_per_100k_licensed_drivers": 12.9,
+            "fatalities_per_billion_vkt": 10.6,
+            "injuries_per_100k": 287.0,
+            "injuries_per_100k_licensed_drivers": 398.4,
+            "injuries_per_billion_vkt": 325.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 10.5,
+            "fatalities_per_100k_licensed_drivers": 13.9,
+            "fatalities_per_billion_vkt": 12.0,
+            "injuries_per_100k": 287.0,
+            "injuries_per_100k_licensed_drivers": 378.4,
+            "injuries_per_billion_vkt": 325.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 10.8,
+            "fatalities_per_100k_licensed_drivers": 14.1,
+            "fatalities_per_billion_vkt": 10.8,
+            "injuries_per_100k": 297.9,
+            "injuries_per_100k_licensed_drivers": 389.2,
+            "injuries_per_billion_vkt": 297.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 8.1,
+            "fatalities_per_100k_licensed_drivers": 10.8,
+            "fatalities_per_billion_vkt": 8.4,
+            "injuries_per_100k": 287.3,
+            "injuries_per_100k_licensed_drivers": 383.8,
+            "injuries_per_billion_vkt": 299.2,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 287.3,
+        "province": "Prince Edward Island",
+        "province_code": "PE",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 5.3,
+        "fatalities_per_billion_vkt": 4.6,
+        "history": [
+          {
+            "fatalities_per_100k": 7.4,
+            "fatalities_per_100k_licensed_drivers": 10.1,
+            "fatalities_per_billion_vkt": 5.9,
+            "injuries_per_100k": 740.2,
+            "injuries_per_100k_licensed_drivers": 1.0,
+            "injuries_per_billion_vkt": 590.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 6.2,
+            "fatalities_per_100k_licensed_drivers": 8.0,
+            "fatalities_per_billion_vkt": 6.0,
+            "injuries_per_100k": 519.9,
+            "injuries_per_100k_licensed_drivers": 667.4,
+            "injuries_per_billion_vkt": 498.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 7.7,
+            "fatalities_per_100k_licensed_drivers": 9.8,
+            "fatalities_per_billion_vkt": 7.4,
+            "injuries_per_100k": 308.7,
+            "injuries_per_100k_licensed_drivers": 390.9,
+            "injuries_per_billion_vkt": 295.9,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 6.9,
+            "fatalities_per_100k_licensed_drivers": 9.0,
+            "fatalities_per_billion_vkt": 5.9,
+            "injuries_per_100k": 492.1,
+            "injuries_per_100k_licensed_drivers": 636.9,
+            "injuries_per_billion_vkt": 415.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 5.3,
+            "fatalities_per_100k_licensed_drivers": 6.9,
+            "fatalities_per_billion_vkt": 4.6,
+            "injuries_per_100k": 567.6,
+            "injuries_per_100k_licensed_drivers": 738.1,
+            "injuries_per_billion_vkt": 496.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 567.6,
+        "province": "Nova Scotia",
+        "province_code": "NS",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 8.5,
+        "fatalities_per_billion_vkt": 8.1,
+        "history": [
+          {
+            "fatalities_per_100k": 6.4,
+            "fatalities_per_100k_licensed_drivers": 9.0,
+            "fatalities_per_billion_vkt": 5.5,
+            "injuries_per_100k": 345.5,
+            "injuries_per_100k_licensed_drivers": 484.3,
+            "injuries_per_billion_vkt": 294.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 6.4,
+            "fatalities_per_100k_licensed_drivers": 9.0,
+            "fatalities_per_billion_vkt": 6.3,
+            "injuries_per_100k": 342.7,
+            "injuries_per_100k_licensed_drivers": 484.3,
+            "injuries_per_billion_vkt": 340.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 8.6,
+            "fatalities_per_100k_licensed_drivers": 12.1,
+            "fatalities_per_billion_vkt": 8.5,
+            "injuries_per_100k": 342.7,
+            "injuries_per_100k_licensed_drivers": 484.3,
+            "injuries_per_billion_vkt": 340.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 6.2,
+            "fatalities_per_100k_licensed_drivers": 9.0,
+            "fatalities_per_billion_vkt": 5.7,
+            "injuries_per_100k": 331.5,
+            "injuries_per_100k_licensed_drivers": 484.3,
+            "injuries_per_billion_vkt": 308.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 8.5,
+            "fatalities_per_100k_licensed_drivers": 12.8,
+            "fatalities_per_billion_vkt": 8.1,
+            "injuries_per_100k": 257.5,
+            "injuries_per_100k_licensed_drivers": 386.7,
+            "injuries_per_billion_vkt": 245.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 257.5,
+        "province": "New Brunswick",
+        "province_code": "NB",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 4.3,
+        "fatalities_per_billion_vkt": 4.7,
+        "history": [
+          {
+            "fatalities_per_100k": 3.9,
+            "fatalities_per_100k_licensed_drivers": 5.8,
+            "fatalities_per_billion_vkt": 4.1,
+            "injuries_per_100k": 408.6,
+            "injuries_per_100k_licensed_drivers": 608.7,
+            "injuries_per_billion_vkt": 429.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 4.0,
+            "fatalities_per_100k_licensed_drivers": 6.0,
+            "fatalities_per_billion_vkt": 4.8,
+            "injuries_per_100k": 281.3,
+            "injuries_per_100k_licensed_drivers": 423.0,
+            "injuries_per_billion_vkt": 338.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 4.0,
+            "fatalities_per_100k_licensed_drivers": 5.9,
+            "fatalities_per_billion_vkt": 4.9,
+            "injuries_per_100k": 321.1,
+            "injuries_per_100k_licensed_drivers": 470.5,
+            "injuries_per_billion_vkt": 386.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 4.5,
+            "fatalities_per_100k_licensed_drivers": 6.6,
+            "fatalities_per_billion_vkt": 4.7,
+            "injuries_per_100k": 331.1,
+            "injuries_per_100k_licensed_drivers": 484.9,
+            "injuries_per_billion_vkt": 345.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 4.3,
+            "fatalities_per_100k_licensed_drivers": 6.4,
+            "fatalities_per_billion_vkt": 4.7,
+            "injuries_per_100k": 317.1,
+            "injuries_per_100k_licensed_drivers": 473.9,
+            "injuries_per_billion_vkt": 345.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 317.1,
+        "province": "Quebec",
+        "province_code": "QC",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 3.9,
+        "fatalities_per_billion_vkt": 3.4,
+        "history": [
+          {
+            "fatalities_per_100k": 3.9,
+            "fatalities_per_100k_licensed_drivers": 5.4,
+            "fatalities_per_billion_vkt": 3.8,
+            "injuries_per_100k": 318.2,
+            "injuries_per_100k_licensed_drivers": 435.8,
+            "injuries_per_billion_vkt": 307.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 3.6,
+            "fatalities_per_100k_licensed_drivers": 5.0,
+            "fatalities_per_billion_vkt": 4.0,
+            "injuries_per_100k": 213.9,
+            "injuries_per_100k_licensed_drivers": 294.6,
+            "injuries_per_billion_vkt": 238.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 3.8,
+            "fatalities_per_100k_licensed_drivers": 5.1,
+            "fatalities_per_billion_vkt": 4.2,
+            "injuries_per_100k": 216.4,
+            "injuries_per_100k_licensed_drivers": 293.3,
+            "injuries_per_billion_vkt": 241.2,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 4.0,
+            "fatalities_per_100k_licensed_drivers": 5.4,
+            "fatalities_per_billion_vkt": 3.9,
+            "injuries_per_100k": 235.5,
+            "injuries_per_100k_licensed_drivers": 319.4,
+            "injuries_per_billion_vkt": 229.6,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 3.9,
+            "fatalities_per_100k_licensed_drivers": 5.3,
+            "fatalities_per_billion_vkt": 3.4,
+            "injuries_per_100k": 231.0,
+            "injuries_per_100k_licensed_drivers": 312.5,
+            "injuries_per_billion_vkt": 198.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 231.0,
+        "province": "Ontario",
+        "province_code": "ON",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 5.4,
+        "fatalities_per_billion_vkt": 4.7,
+        "history": [
+          {
+            "fatalities_per_100k": 5.5,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 4.9,
+            "injuries_per_100k": 844.7,
+            "injuries_per_100k_licensed_drivers": 1.0,
+            "injuries_per_billion_vkt": 743.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 5.6,
+            "fatalities_per_100k_licensed_drivers": 8.3,
+            "fatalities_per_billion_vkt": 3.8,
+            "injuries_per_100k": 524.2,
+            "injuries_per_100k_licensed_drivers": 769.2,
+            "injuries_per_billion_vkt": 351.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 5.6,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 3.8,
+            "injuries_per_100k": 545.5,
+            "injuries_per_100k_licensed_drivers": 786.4,
+            "injuries_per_billion_vkt": 365.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 5.5,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 4.3,
+            "injuries_per_100k": 532.8,
+            "injuries_per_100k_licensed_drivers": 786.4,
+            "injuries_per_billion_vkt": 411.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 5.4,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 4.7,
+            "injuries_per_100k": 517.7,
+            "injuries_per_100k_licensed_drivers": 786.4,
+            "injuries_per_billion_vkt": 458.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 517.7,
+        "province": "Manitoba",
+        "province_code": "MB",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 7.6,
+        "fatalities_per_billion_vkt": 5.9,
+        "history": [
+          {
+            "fatalities_per_100k": 6.1,
+            "fatalities_per_100k_licensed_drivers": 8.9,
+            "fatalities_per_billion_vkt": 4.6,
+            "injuries_per_100k": 351.8,
+            "injuries_per_100k_licensed_drivers": 514.3,
+            "injuries_per_billion_vkt": 270.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 7.4,
+            "fatalities_per_100k_licensed_drivers": 10.7,
+            "fatalities_per_billion_vkt": 6.6,
+            "injuries_per_100k": 298.3,
+            "injuries_per_100k_licensed_drivers": 434.3,
+            "injuries_per_billion_vkt": 265.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 7.2,
+            "fatalities_per_100k_licensed_drivers": 10.4,
+            "fatalities_per_billion_vkt": 6.4,
+            "injuries_per_100k": 388.2,
+            "injuries_per_100k_licensed_drivers": 557.7,
+            "injuries_per_billion_vkt": 345.6,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 8.8,
+            "fatalities_per_100k_licensed_drivers": 12.3,
+            "fatalities_per_billion_vkt": 6.7,
+            "injuries_per_100k": 487.6,
+            "injuries_per_100k_licensed_drivers": 681.3,
+            "injuries_per_billion_vkt": 368.9,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 7.6,
+            "fatalities_per_100k_licensed_drivers": 11.0,
+            "fatalities_per_billion_vkt": 5.9,
+            "injuries_per_100k": 445.9,
+            "injuries_per_100k_licensed_drivers": 644.9,
+            "injuries_per_billion_vkt": 345.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 445.9,
+        "province": "Saskatchewan",
+        "province_code": "SK",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 6.4,
+        "fatalities_per_billion_vkt": 4.9,
+        "history": [
+          {
+            "fatalities_per_100k": 5.5,
+            "fatalities_per_100k_licensed_drivers": 7.4,
+            "fatalities_per_billion_vkt": 3.7,
+            "injuries_per_100k": 344.3,
+            "injuries_per_100k_licensed_drivers": 460.6,
+            "injuries_per_billion_vkt": 228.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 6.0,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 4.0,
+            "injuries_per_100k": 269.6,
+            "injuries_per_100k_licensed_drivers": 364.7,
+            "injuries_per_billion_vkt": 182.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 6.2,
+            "fatalities_per_100k_licensed_drivers": 8.2,
+            "fatalities_per_billion_vkt": 4.2,
+            "injuries_per_100k": 296.5,
+            "injuries_per_100k_licensed_drivers": 395.3,
+            "injuries_per_billion_vkt": 200.5,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 6.1,
+            "fatalities_per_100k_licensed_drivers": 8.1,
+            "fatalities_per_billion_vkt": 4.3,
+            "injuries_per_100k": 394.5,
+            "injuries_per_100k_licensed_drivers": 523.9,
+            "injuries_per_billion_vkt": 277.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 6.4,
+            "fatalities_per_100k_licensed_drivers": 8.4,
+            "fatalities_per_billion_vkt": 4.9,
+            "injuries_per_100k": 379.9,
+            "injuries_per_100k_licensed_drivers": 502.4,
+            "injuries_per_billion_vkt": 291.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 379.9,
+        "province": "Alberta",
+        "province_code": "AB",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 5.5,
+        "fatalities_per_billion_vkt": 6.2,
+        "history": [
+          {
+            "fatalities_per_100k": 5.3,
+            "fatalities_per_100k_licensed_drivers": 7.5,
+            "fatalities_per_billion_vkt": 6.4,
+            "injuries_per_100k": 315.2,
+            "injuries_per_100k_licensed_drivers": 446.1,
+            "injuries_per_billion_vkt": 381.7,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 4.8,
+            "fatalities_per_100k_licensed_drivers": 6.8,
+            "fatalities_per_billion_vkt": 5.6,
+            "injuries_per_100k": 243.1,
+            "injuries_per_100k_licensed_drivers": 344.0,
+            "injuries_per_billion_vkt": 283.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 5.7,
+            "fatalities_per_100k_licensed_drivers": 7.9,
+            "fatalities_per_billion_vkt": 6.7,
+            "injuries_per_100k": 269.9,
+            "injuries_per_100k_licensed_drivers": 370.8,
+            "injuries_per_billion_vkt": 314.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 5.6,
+            "fatalities_per_100k_licensed_drivers": 7.9,
+            "fatalities_per_billion_vkt": 6.1,
+            "injuries_per_100k": 238.2,
+            "injuries_per_100k_licensed_drivers": 334.5,
+            "injuries_per_billion_vkt": 257.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 5.5,
+            "fatalities_per_100k_licensed_drivers": 7.9,
+            "fatalities_per_billion_vkt": 6.2,
+            "injuries_per_100k": 230.7,
+            "injuries_per_100k_licensed_drivers": 334.5,
+            "injuries_per_billion_vkt": 261.2,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 230.7,
+        "province": "British Columbia",
+        "province_code": "BC",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 19.8,
+        "fatalities_per_billion_vkt": 11.0,
+        "history": [
+          {
+            "fatalities_per_100k": 24.1,
+            "fatalities_per_100k_licensed_drivers": 34.4,
+            "fatalities_per_billion_vkt": 14.0,
+            "injuries_per_100k": 383.3,
+            "injuries_per_100k_licensed_drivers": 546.9,
+            "injuries_per_billion_vkt": 223.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 9.5,
+            "fatalities_per_100k_licensed_drivers": 14.6,
+            "fatalities_per_billion_vkt": 5.6,
+            "injuries_per_100k": 441.0,
+            "injuries_per_100k_licensed_drivers": 679.6,
+            "injuries_per_billion_vkt": 260.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 4.7,
+            "fatalities_per_100k_licensed_drivers": 5.8,
+            "fatalities_per_billion_vkt": 2.8,
+            "injuries_per_100k": 377.0,
+            "injuries_per_100k_licensed_drivers": 464.5,
+            "injuries_per_billion_vkt": 222.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 4.6,
+            "fatalities_per_100k_licensed_drivers": 5.8,
+            "fatalities_per_billion_vkt": 2.5,
+            "injuries_per_100k": 425.9,
+            "injuries_per_100k_licensed_drivers": 546.3,
+            "injuries_per_billion_vkt": 237.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 19.8,
+            "fatalities_per_100k_licensed_drivers": 27.0,
+            "fatalities_per_billion_vkt": 11.0,
+            "injuries_per_100k": 589.5,
+            "injuries_per_100k_licensed_drivers": 804.5,
+            "injuries_per_billion_vkt": 328.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 589.5,
+        "province": "Yukon",
+        "province_code": "YT",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 9.0,
+        "fatalities_per_billion_vkt": 8.0,
+        "history": [
+          {
+            "fatalities_per_100k": 13.3,
+            "fatalities_per_100k_licensed_drivers": 22.5,
+            "fatalities_per_billion_vkt": 13.9,
+            "injuries_per_100k": 171.0,
+            "injuries_per_100k_licensed_drivers": 288.5,
+            "injuries_per_billion_vkt": 177.8,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 8.8,
+            "fatalities_per_100k_licensed_drivers": 15.2,
+            "fatalities_per_billion_vkt": 9.2,
+            "injuries_per_100k": 154.3,
+            "injuries_per_100k_licensed_drivers": 266.1,
+            "injuries_per_billion_vkt": 160.9,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 4.4,
+            "fatalities_per_100k_licensed_drivers": 7.5,
+            "fatalities_per_billion_vkt": 4.6,
+            "injuries_per_100k": 185.1,
+            "injuries_per_100k_licensed_drivers": 315.1,
+            "injuries_per_billion_vkt": 193.1,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 2.2,
+            "fatalities_per_100k_licensed_drivers": 3.8,
+            "fatalities_per_billion_vkt": 2.1,
+            "injuries_per_100k": 185.7,
+            "injuries_per_100k_licensed_drivers": 313.6,
+            "injuries_per_billion_vkt": 173.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 9.0,
+            "fatalities_per_100k_licensed_drivers": 14.9,
+            "fatalities_per_billion_vkt": 8.0,
+            "injuries_per_100k": 190.2,
+            "injuries_per_100k_licensed_drivers": 316.9,
+            "injuries_per_billion_vkt": 171.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 190.2,
+        "province": "Northwest Territories",
+        "province_code": "NT",
+        "reference_year": 2023
+      },
+      {
+        "fatalities_per_100k": 2.5,
+        "fatalities_per_billion_vkt": 20.8,
+        "history": [
+          {
+            "fatalities_per_100k": 5.2,
+            "fatalities_per_100k_licensed_drivers": 74.2,
+            "fatalities_per_billion_vkt": 47.6,
+            "injuries_per_100k": 64.7,
+            "injuries_per_100k_licensed_drivers": 928.0,
+            "injuries_per_billion_vkt": 595.2,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2019/canadian-motor-vehicle-traffic-collision-statistics-2019",
+            "year": 2019
+          },
+          {
+            "fatalities_per_100k": 5.1,
+            "fatalities_per_100k_licensed_drivers": 18.3,
+            "fatalities_per_billion_vkt": 47.6,
+            "injuries_per_100k": 63.8,
+            "injuries_per_100k_licensed_drivers": 229.2,
+            "injuries_per_billion_vkt": 595.2,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2020/canadian-motor-vehicle-traffic-collision-statistics-2020",
+            "year": 2020
+          },
+          {
+            "fatalities_per_100k": 2.6,
+            "fatalities_per_100k_licensed_drivers": 9.2,
+            "fatalities_per_billion_vkt": 23.8,
+            "injuries_per_100k": 40.9,
+            "injuries_per_100k_licensed_drivers": 146.7,
+            "injuries_per_billion_vkt": 381.0,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2021/canadian-motor-vehicle-traffic-collision-statistics-2021",
+            "year": 2021
+          },
+          {
+            "fatalities_per_100k": 2.5,
+            "fatalities_per_100k_licensed_drivers": 9.2,
+            "fatalities_per_billion_vkt": 21.6,
+            "injuries_per_100k": 39.5,
+            "injuries_per_100k_licensed_drivers": 146.7,
+            "injuries_per_billion_vkt": 345.3,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2022/canadian-motor-vehicle-traffic-collision-statistics-2022",
+            "year": 2022
+          },
+          {
+            "fatalities_per_100k": 2.5,
+            "fatalities_per_100k_licensed_drivers": 9.2,
+            "fatalities_per_billion_vkt": 20.8,
+            "injuries_per_100k": 39.3,
+            "injuries_per_100k_licensed_drivers": 146.7,
+            "injuries_per_billion_vkt": 333.4,
+            "source_url": "https://tc.canada.ca/en/road-transportation/statistics-data/canadian-motor-vehicle-traffic-collision-statistics/2023/canadian-motor-vehicle-traffic-collision-statistics-2023",
+            "year": 2023
+          }
+        ],
+        "injuries_per_100k": 39.3,
+        "province": "Nunavut",
+        "province_code": "NU",
+        "reference_year": 2023
+      }
+    ]
+  },
+  "source": {
+    "note": "TSB annual summaries report air, marine, and rail occurrences. Transport Canada's National Collision Database reports road casualty rates by province and national casualty counts.",
+    "title": "TSB Annual Statistics and Transport Canada Road Safety",
+    "url": "https://tsb.gc.ca/eng/stats/aviation/stats.html"
+  }
+}

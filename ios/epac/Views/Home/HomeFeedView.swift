@@ -73,6 +73,7 @@ struct HomeFeedView: View {
                 consumerPriceIndexContextCard
                 studentFinanceContextCard
                 employmentInsuranceContextCard
+                transportationSafetyContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
                 }
@@ -708,6 +709,45 @@ struct HomeFeedView: View {
                 Text("Employment Insurance")
             } footer: {
                 Text("Reference month: \(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))")
+            }
+        }
+    }
+
+    // MARK: - Transportation safety contextual card (shown when "transport" topic followed + province known)
+
+    @ViewBuilder
+    private var transportationSafetyContextCard: some View {
+        if topicStore.isFollowing("transport"),
+           let road = TransportSafetyStatisticsDatabase.roadStatistic(for: provinceAbbrev),
+           let rail = TransportSafetyStatisticsDatabase.latestModeYear("rail") {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Road safety in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Fatalities")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPer100k, unit: "per 100k"))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Rail accidents \(rail.year)")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(rail.accidents.formatted())
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    NavigationLink(destination: TransportationSafetyView()) {
+                        Text("View national transport safety")
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacBrand.accent)
+                    }
+                }
+            } header: {
+                Text("Transport Safety")
+            } footer: {
+                Text("Road reference year: \(road.referenceYear)")
             }
         }
     }

@@ -113,6 +113,8 @@ struct RidingStatisticsView: View {
 
 			infrastructureSection
 
+			transportationSafetySection
+
 			emissionsSection
 
 			healthSection
@@ -717,6 +719,39 @@ struct RidingStatisticsView: View {
 				Image(systemName: "arrow.up.right.square")
 					.font(.caption)
 					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Transportation safety section
+
+	@ViewBuilder
+	private var transportationSafetySection: some View {
+		if let road = TransportSafetyStatisticsDatabase.roadStatistic(for: member.province.shortCode) {
+			Section {
+				LabeledContent("Road fatalities") {
+					Text(TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPer100k, unit: "per 100k"))
+						.monospacedDigit()
+				}
+				LabeledContent("Road injuries") {
+					Text(TransportSafetyStatisticsDatabase.rateLabel(road.injuriesPer100k, unit: "per 100k"))
+						.monospacedDigit()
+				}
+				LabeledContent("Fatalities by distance") {
+					Text(TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPerBillionVKT, unit: "per billion VKT"))
+						.monospacedDigit()
+				}
+				NavigationLink(destination: TransportationSafetyView()) {
+					Label("National transport safety", systemImage: "car.2.fill")
+						.font(.subheadline)
+				}
+				DataSourceBadge(source: .transportSafety())
+			} header: {
+				Text("Transportation Safety")
+			} footer: {
+				Text("Reference year: \(road.referenceYear). Road casualty rates are provincial; air, rail, and marine occurrence counts are national TSB statistics.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
 			}
 		}
 	}

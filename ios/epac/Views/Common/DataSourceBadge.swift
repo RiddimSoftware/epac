@@ -240,6 +240,17 @@ struct DataSource {
         )
     }
 
+    static func transportSafety() -> DataSource {
+        DataSource(
+            name: "TSB / Transport Canada",
+            description: "Air, marine, and rail occurrence counts from Transportation Safety Board annual statistics, with road casualty rates from Transport Canada's National Collision Database.",
+            url: URL(string: "https://tsb.gc.ca/eng/stats/aviation/stats.html")!,
+            lastSyncDate: nil,
+            vintage: "2023-2024",
+            stalenessThreshold: nil
+        )
+    }
+
     static func electionsCanadaBoundaries() -> DataSource {
         DataSource(
             name: "Elections Canada",
