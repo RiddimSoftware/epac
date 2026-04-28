@@ -1,0 +1,2273 @@
+{
+  "generated_at": "2026-04-28T21:52:53.855289Z",
+  "national": {
+    "all_items_index": 167.4,
+    "all_items_yoy_percent": 2.4,
+    "energy_yoy_percent": 3.9,
+    "food_yoy_percent": 4.0,
+    "months": [
+      {
+        "all_items_index": 160.6,
+        "all_items_yoy_percent": 2.7,
+        "energy_yoy_percent": 4.5,
+        "food_yoy_percent": 2.3,
+        "ref_date": "2024-04",
+        "shelter_yoy_percent": 6.4
+      },
+      {
+        "all_items_index": 161.5,
+        "all_items_yoy_percent": 2.9,
+        "energy_yoy_percent": 4.1,
+        "food_yoy_percent": 2.4,
+        "ref_date": "2024-05",
+        "shelter_yoy_percent": 6.4
+      },
+      {
+        "all_items_index": 161.4,
+        "all_items_yoy_percent": 2.7,
+        "energy_yoy_percent": 0.5,
+        "food_yoy_percent": 2.8,
+        "ref_date": "2024-06",
+        "shelter_yoy_percent": 6.2
+      },
+      {
+        "all_items_index": 162.1,
+        "all_items_yoy_percent": 2.5,
+        "energy_yoy_percent": 0.4,
+        "food_yoy_percent": 2.7,
+        "ref_date": "2024-07",
+        "shelter_yoy_percent": 5.7
+      },
+      {
+        "all_items_index": 161.8,
+        "all_items_yoy_percent": 2.0,
+        "energy_yoy_percent": -4.7,
+        "food_yoy_percent": 2.7,
+        "ref_date": "2024-08",
+        "shelter_yoy_percent": 5.3
+      },
+      {
+        "all_items_index": 161.1,
+        "all_items_yoy_percent": 1.6,
+        "energy_yoy_percent": -8.3,
+        "food_yoy_percent": 2.8,
+        "ref_date": "2024-09",
+        "shelter_yoy_percent": 5.0
+      },
+      {
+        "all_items_index": 161.8,
+        "all_items_yoy_percent": 2.0,
+        "energy_yoy_percent": -3.5,
+        "food_yoy_percent": 3.0,
+        "ref_date": "2024-10",
+        "shelter_yoy_percent": 4.8
+      },
+      {
+        "all_items_index": 161.8,
+        "all_items_yoy_percent": 1.9,
+        "energy_yoy_percent": -1.4,
+        "food_yoy_percent": 2.8,
+        "ref_date": "2024-11",
+        "shelter_yoy_percent": 4.6
+      },
+      {
+        "all_items_index": 161.2,
+        "all_items_yoy_percent": 1.8,
+        "energy_yoy_percent": 1.0,
+        "food_yoy_percent": 0.6,
+        "ref_date": "2024-12",
+        "shelter_yoy_percent": 4.5
+      },
+      {
+        "all_items_index": 161.3,
+        "all_items_yoy_percent": 1.9,
+        "energy_yoy_percent": 5.3,
+        "food_yoy_percent": -0.6,
+        "ref_date": "2025-01",
+        "shelter_yoy_percent": 4.5
+      },
+      {
+        "all_items_index": 163.0,
+        "all_items_yoy_percent": 2.6,
+        "energy_yoy_percent": 3.0,
+        "food_yoy_percent": 1.3,
+        "ref_date": "2025-02",
+        "shelter_yoy_percent": 4.2
+      },
+      {
+        "all_items_index": 163.5,
+        "all_items_yoy_percent": 2.3,
+        "energy_yoy_percent": -0.3,
+        "food_yoy_percent": 3.2,
+        "ref_date": "2025-03",
+        "shelter_yoy_percent": 3.9
+      },
+      {
+        "all_items_index": 163.4,
+        "all_items_yoy_percent": 1.7,
+        "energy_yoy_percent": -12.7,
+        "food_yoy_percent": 3.8,
+        "ref_date": "2025-04",
+        "shelter_yoy_percent": 3.4
+      },
+      {
+        "all_items_index": 164.3,
+        "all_items_yoy_percent": 1.7,
+        "energy_yoy_percent": -11.0,
+        "food_yoy_percent": 3.4,
+        "ref_date": "2025-05",
+        "shelter_yoy_percent": 3.0
+      },
+      {
+        "all_items_index": 164.4,
+        "all_items_yoy_percent": 1.9,
+        "energy_yoy_percent": -9.5,
+        "food_yoy_percent": 2.9,
+        "ref_date": "2025-06",
+        "shelter_yoy_percent": 2.9
+      },
+      {
+        "all_items_index": 164.9,
+        "all_items_yoy_percent": 1.7,
+        "energy_yoy_percent": -10.4,
+        "food_yoy_percent": 3.3,
+        "ref_date": "2025-07",
+        "shelter_yoy_percent": 3.0
+      },
+      {
+        "all_items_index": 164.8,
+        "all_items_yoy_percent": 1.9,
+        "energy_yoy_percent": -8.3,
+        "food_yoy_percent": 3.4,
+        "ref_date": "2025-08",
+        "shelter_yoy_percent": 2.6
+      },
+      {
+        "all_items_index": 164.9,
+        "all_items_yoy_percent": 2.4,
+        "energy_yoy_percent": -2.6,
+        "food_yoy_percent": 3.8,
+        "ref_date": "2025-09",
+        "shelter_yoy_percent": 2.6
+      },
+      {
+        "all_items_index": 165.3,
+        "all_items_yoy_percent": 2.2,
+        "energy_yoy_percent": -6.5,
+        "food_yoy_percent": 3.4,
+        "ref_date": "2025-10",
+        "shelter_yoy_percent": 2.5
+      },
+      {
+        "all_items_index": 165.4,
+        "all_items_yoy_percent": 2.2,
+        "energy_yoy_percent": -5.1,
+        "food_yoy_percent": 4.2,
+        "ref_date": "2025-11",
+        "shelter_yoy_percent": 2.3
+      },
+      {
+        "all_items_index": 165.0,
+        "all_items_yoy_percent": 2.4,
+        "energy_yoy_percent": -8.8,
+        "food_yoy_percent": 6.2,
+        "ref_date": "2025-12",
+        "shelter_yoy_percent": 2.1
+      },
+      {
+        "all_items_index": 165.0,
+        "all_items_yoy_percent": 2.3,
+        "energy_yoy_percent": -10.9,
+        "food_yoy_percent": 7.3,
+        "ref_date": "2026-01",
+        "shelter_yoy_percent": 1.7
+      },
+      {
+        "all_items_index": 165.9,
+        "all_items_yoy_percent": 1.8,
+        "energy_yoy_percent": -9.3,
+        "food_yoy_percent": 5.4,
+        "ref_date": "2026-02",
+        "shelter_yoy_percent": 1.5
+      },
+      {
+        "all_items_index": 167.4,
+        "all_items_yoy_percent": 2.4,
+        "energy_yoy_percent": 3.9,
+        "food_yoy_percent": 4.0,
+        "ref_date": "2026-03",
+        "shelter_yoy_percent": 1.7
+      }
+    ],
+    "national_all_items_yoy_percent": 2.4,
+    "province": "Canada",
+    "province_code": "CA",
+    "reference_month": "2026-03",
+    "shelter_yoy_percent": 1.7
+  },
+  "provinces": [
+    {
+      "all_items_index": 175.9,
+      "all_items_yoy_percent": 2.3,
+      "energy_yoy_percent": -1.7,
+      "food_yoy_percent": 3.7,
+      "months": [
+        {
+          "all_items_index": 168.6,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 7.1,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 8.5
+        },
+        {
+          "all_items_index": 169.1,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 3.2,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 8.0
+        },
+        {
+          "all_items_index": 169.4,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": -0.3,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 7.3
+        },
+        {
+          "all_items_index": 170.4,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": -3.0,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 170.2,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -9.3,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 3.8
+        },
+        {
+          "all_items_index": 169.2,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -10.7,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 4.2
+        },
+        {
+          "all_items_index": 170.1,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": -2.5,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 5.6
+        },
+        {
+          "all_items_index": 170.2,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": -0.4,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 5.6
+        },
+        {
+          "all_items_index": 169.7,
+          "all_items_yoy_percent": 2.5,
+          "energy_yoy_percent": 3.5,
+          "food_yoy_percent": 1.7,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 4.6
+        },
+        {
+          "all_items_index": 170.1,
+          "all_items_yoy_percent": 2.5,
+          "energy_yoy_percent": 6.6,
+          "food_yoy_percent": 0.5,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 171.4,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": 0.8,
+          "food_yoy_percent": 2.1,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 3.2
+        },
+        {
+          "all_items_index": 172.0,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": -0.1,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 4.4
+        },
+        {
+          "all_items_index": 171.1,
+          "all_items_yoy_percent": 1.5,
+          "energy_yoy_percent": -17.0,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 2.5
+        },
+        {
+          "all_items_index": 171.9,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -13.7,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 172.3,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -12.8,
+          "food_yoy_percent": 2.5,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 2.8
+        },
+        {
+          "all_items_index": 172.6,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -16.0,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 2.5
+        },
+        {
+          "all_items_index": 172.6,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -14.9,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 1.7
+        },
+        {
+          "all_items_index": 172.4,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -9.8,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 1.7
+        },
+        {
+          "all_items_index": 173.2,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -12.9,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 1.8
+        },
+        {
+          "all_items_index": 173.4,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -10.8,
+          "food_yoy_percent": 4.3,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 1.4
+        },
+        {
+          "all_items_index": 173.3,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -14.3,
+          "food_yoy_percent": 4.9,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 1.5
+        },
+        {
+          "all_items_index": 173.5,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -13.6,
+          "food_yoy_percent": 5.8,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 1.6
+        },
+        {
+          "all_items_index": 174.4,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -15.4,
+          "food_yoy_percent": 4.3,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 1.2
+        },
+        {
+          "all_items_index": 175.9,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -1.7,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 1.2
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Alberta",
+      "province_code": "AB",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 1.2
+    },
+    {
+      "all_items_index": 161.7,
+      "all_items_yoy_percent": 2.5,
+      "energy_yoy_percent": 3.6,
+      "food_yoy_percent": 3.6,
+      "months": [
+        {
+          "all_items_index": 154.7,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 5.6,
+          "food_yoy_percent": 2.6,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 6.8
+        },
+        {
+          "all_items_index": 155.4,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 4.2,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 6.4
+        },
+        {
+          "all_items_index": 155.5,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": -4.1,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 6.9
+        },
+        {
+          "all_items_index": 156.4,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": -2.6,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 6.5
+        },
+        {
+          "all_items_index": 156.2,
+          "all_items_yoy_percent": 2.4,
+          "energy_yoy_percent": -6.4,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 6.4
+        },
+        {
+          "all_items_index": 155.8,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -8.0,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 5.4
+        },
+        {
+          "all_items_index": 156.2,
+          "all_items_yoy_percent": 2.4,
+          "energy_yoy_percent": -3.5,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 5.6
+        },
+        {
+          "all_items_index": 156.3,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -0.9,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 4.6
+        },
+        {
+          "all_items_index": 156.1,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": 1.4,
+          "food_yoy_percent": 0.9,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 156.0,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": 8.9,
+          "food_yoy_percent": 0.3,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.1
+        },
+        {
+          "all_items_index": 157.6,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 8.1,
+          "food_yoy_percent": 1.9,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.3
+        },
+        {
+          "all_items_index": 157.8,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": -0.6,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 157.8,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -14.8,
+          "food_yoy_percent": 4.3,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 159.0,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -10.6,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 158.8,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -8.4,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 2.6
+        },
+        {
+          "all_items_index": 159.1,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -8.5,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 2.7
+        },
+        {
+          "all_items_index": 159.0,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -5.1,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 2.2
+        },
+        {
+          "all_items_index": 158.8,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -2.7,
+          "food_yoy_percent": 3.9,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 1.7
+        },
+        {
+          "all_items_index": 159.4,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -5.6,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 1.9
+        },
+        {
+          "all_items_index": 159.5,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -5.8,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 2.0
+        },
+        {
+          "all_items_index": 158.7,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -9.2,
+          "food_yoy_percent": 5.2,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 1.9
+        },
+        {
+          "all_items_index": 159.1,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -11.4,
+          "food_yoy_percent": 6.1,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 1.8
+        },
+        {
+          "all_items_index": 160.3,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -8.3,
+          "food_yoy_percent": 4.5,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 1.5
+        },
+        {
+          "all_items_index": 161.7,
+          "all_items_yoy_percent": 2.5,
+          "energy_yoy_percent": 3.6,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 1.9
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "British Columbia",
+      "province_code": "BC",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 1.9
+    },
+    {
+      "all_items_index": 168.7,
+      "all_items_yoy_percent": 3.0,
+      "energy_yoy_percent": 0.7,
+      "food_yoy_percent": 4.9,
+      "months": [
+        {
+          "all_items_index": 160.0,
+          "all_items_yoy_percent": 0.4,
+          "energy_yoy_percent": -8.7,
+          "food_yoy_percent": 1.6,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 5.3
+        },
+        {
+          "all_items_index": 161.1,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -7.9,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 4.7
+        },
+        {
+          "all_items_index": 160.7,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -7.7,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 4.7
+        },
+        {
+          "all_items_index": 162.2,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -4.7,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 5.4
+        },
+        {
+          "all_items_index": 161.5,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -5.8,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 4.6
+        },
+        {
+          "all_items_index": 160.4,
+          "all_items_yoy_percent": 0.8,
+          "energy_yoy_percent": -11.8,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 161.4,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -9.9,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 161.2,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": -9.4,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 5.3
+        },
+        {
+          "all_items_index": 160.0,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -3.9,
+          "food_yoy_percent": 1.5,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 161.7,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": 14.5,
+          "food_yoy_percent": 0.9,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 5.1
+        },
+        {
+          "all_items_index": 163.8,
+          "all_items_yoy_percent": 3.5,
+          "energy_yoy_percent": 14.1,
+          "food_yoy_percent": 2.6,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 163.8,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 8.2,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 163.3,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -6.8,
+          "food_yoy_percent": 4.4,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 164.2,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -6.4,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 164.3,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -4.5,
+          "food_yoy_percent": 2.2,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 165.3,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -6.6,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 3.2
+        },
+        {
+          "all_items_index": 164.8,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -6.4,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 3.2
+        },
+        {
+          "all_items_index": 165.0,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": -1.1,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 2.8
+        },
+        {
+          "all_items_index": 166.2,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": -3.8,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 4.3
+        },
+        {
+          "all_items_index": 166.5,
+          "all_items_yoy_percent": 3.3,
+          "energy_yoy_percent": -0.6,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 3.7,
+          "energy_yoy_percent": -6.6,
+          "food_yoy_percent": 5.9,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 3.6
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": -13.9,
+          "food_yoy_percent": 6.8,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 167.1,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -13.5,
+          "food_yoy_percent": 5.6,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 3.2
+        },
+        {
+          "all_items_index": 168.7,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 0.7,
+          "food_yoy_percent": 4.9,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 3.2
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Manitoba",
+      "province_code": "MB",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 3.2
+    },
+    {
+      "all_items_index": 167.6,
+      "all_items_yoy_percent": 2.9,
+      "energy_yoy_percent": 7.9,
+      "food_yoy_percent": 2.9,
+      "months": [
+        {
+          "all_items_index": 162.0,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 6.4,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 6.6
+        },
+        {
+          "all_items_index": 161.9,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 8.8,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 6.5
+        },
+        {
+          "all_items_index": 162.0,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": 5.6,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 7.1
+        },
+        {
+          "all_items_index": 162.9,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 3.5,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 6.3
+        },
+        {
+          "all_items_index": 161.8,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -3.3,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 5.9
+        },
+        {
+          "all_items_index": 160.7,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": -9.2,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 4.6
+        },
+        {
+          "all_items_index": 161.6,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -3.2,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 161.6,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": 0.5,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 5.3
+        },
+        {
+          "all_items_index": 160.3,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": 2.4,
+          "food_yoy_percent": 0.1,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 5.5
+        },
+        {
+          "all_items_index": 159.9,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": 3.9,
+          "food_yoy_percent": -2.0,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.1
+        },
+        {
+          "all_items_index": 162.0,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": 2.2,
+          "food_yoy_percent": 1.2,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.2
+        },
+        {
+          "all_items_index": 162.8,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -1.4,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 3.5
+        },
+        {
+          "all_items_index": 162.4,
+          "all_items_yoy_percent": 0.2,
+          "energy_yoy_percent": -14.0,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 2.3
+        },
+        {
+          "all_items_index": 163.4,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": -11.7,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 2.5
+        },
+        {
+          "all_items_index": 164.0,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": -9.7,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 2.8
+        },
+        {
+          "all_items_index": 164.7,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -10.5,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 2.7
+        },
+        {
+          "all_items_index": 164.4,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -8.0,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 2.5
+        },
+        {
+          "all_items_index": 164.4,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -1.9,
+          "food_yoy_percent": 4.0,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 2.8
+        },
+        {
+          "all_items_index": 165.0,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -2.1,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 2.2
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": -1.0,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 3.1,
+          "energy_yoy_percent": -5.2,
+          "food_yoy_percent": 6.6,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 3.0
+        },
+        {
+          "all_items_index": 164.6,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": -7.4,
+          "food_yoy_percent": 9.0,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 4.0
+        },
+        {
+          "all_items_index": 165.5,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -5.5,
+          "food_yoy_percent": 5.1,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 4.0
+        },
+        {
+          "all_items_index": 167.6,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 7.9,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 5.3
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "New Brunswick",
+      "province_code": "NB",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 5.3
+    },
+    {
+      "all_items_index": 167.8,
+      "all_items_yoy_percent": 2.6,
+      "energy_yoy_percent": 6.7,
+      "food_yoy_percent": 3.2,
+      "months": [
+        {
+          "all_items_index": 162.4,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": 6.4,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 6.2
+        },
+        {
+          "all_items_index": 162.7,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": 9.4,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 5.8
+        },
+        {
+          "all_items_index": 162.5,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": 5.4,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 5.9
+        },
+        {
+          "all_items_index": 163.1,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": 1.3,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 4.2
+        },
+        {
+          "all_items_index": 163.1,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -3.5,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 161.9,
+          "all_items_yoy_percent": 0.7,
+          "energy_yoy_percent": -8.6,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 2.6
+        },
+        {
+          "all_items_index": 161.9,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -2.4,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 3.4
+        },
+        {
+          "all_items_index": 162.1,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": 0.7,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 160.7,
+          "all_items_yoy_percent": 0.6,
+          "energy_yoy_percent": 2.4,
+          "food_yoy_percent": -0.2,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 4.0
+        },
+        {
+          "all_items_index": 161.0,
+          "all_items_yoy_percent": 0.8,
+          "energy_yoy_percent": 6.7,
+          "food_yoy_percent": -2.4,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 162.5,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": 4.4,
+          "food_yoy_percent": -0.1,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 163.6,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": 1.6,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 3.5
+        },
+        {
+          "all_items_index": 163.0,
+          "all_items_yoy_percent": 0.4,
+          "energy_yoy_percent": -9.8,
+          "food_yoy_percent": 4.0,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 2.4
+        },
+        {
+          "all_items_index": 163.5,
+          "all_items_yoy_percent": 0.5,
+          "energy_yoy_percent": -9.0,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 164.4,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": -6.2,
+          "food_yoy_percent": 3.9,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 165.7,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -4.4,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 5.3
+        },
+        {
+          "all_items_index": 165.3,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -4.5,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": 0.9,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 4.1
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -1.2,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 3.5
+        },
+        {
+          "all_items_index": 165.6,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -0.2,
+          "food_yoy_percent": 4.0,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 165.6,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": -3.1,
+          "food_yoy_percent": 7.0,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 164.9,
+          "all_items_yoy_percent": 2.4,
+          "energy_yoy_percent": -7.2,
+          "food_yoy_percent": 9.2,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 2.0
+        },
+        {
+          "all_items_index": 165.5,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -5.2,
+          "food_yoy_percent": 6.3,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 2.7
+        },
+        {
+          "all_items_index": 167.8,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": 6.7,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 4.0
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 4.0
+    },
+    {
+      "all_items_index": 172.4,
+      "all_items_yoy_percent": 3.0,
+      "energy_yoy_percent": 6.3,
+      "food_yoy_percent": 3.4,
+      "months": [
+        {
+          "all_items_index": 164.3,
+          "all_items_yoy_percent": 3.1,
+          "energy_yoy_percent": 8.5,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 6.8
+        },
+        {
+          "all_items_index": 164.7,
+          "all_items_yoy_percent": 3.7,
+          "energy_yoy_percent": 15.0,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 6.4
+        },
+        {
+          "all_items_index": 165.0,
+          "all_items_yoy_percent": 3.5,
+          "energy_yoy_percent": 11.0,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 6.3
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": 2.0,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 5.8
+        },
+        {
+          "all_items_index": 165.0,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": -5.4,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 4.4
+        },
+        {
+          "all_items_index": 164.1,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": -11.2,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 3.0
+        },
+        {
+          "all_items_index": 164.6,
+          "all_items_yoy_percent": 1.5,
+          "energy_yoy_percent": -6.8,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 2.1
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -3.0,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 3.0
+        },
+        {
+          "all_items_index": 163.6,
+          "all_items_yoy_percent": 0.9,
+          "energy_yoy_percent": -0.7,
+          "food_yoy_percent": -1.0,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 2.9
+        },
+        {
+          "all_items_index": 164.1,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": 2.9,
+          "food_yoy_percent": -2.9,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 3.8
+        },
+        {
+          "all_items_index": 166.3,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": 1.5,
+          "food_yoy_percent": 0.5,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.3
+        },
+        {
+          "all_items_index": 167.4,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -1.9,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 166.5,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -11.6,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 4.4
+        },
+        {
+          "all_items_index": 166.9,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -11.9,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 167.7,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -9.6,
+          "food_yoy_percent": 2.1,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 4.3
+        },
+        {
+          "all_items_index": 168.6,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -10.0,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 168.6,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -6.7,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 4.3
+        },
+        {
+          "all_items_index": 168.6,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": -1.1,
+          "food_yoy_percent": 4.1,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 4.7
+        },
+        {
+          "all_items_index": 168.8,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": -4.0,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 169.1,
+          "all_items_yoy_percent": 2.4,
+          "energy_yoy_percent": -3.1,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 4.2
+        },
+        {
+          "all_items_index": 168.7,
+          "all_items_yoy_percent": 3.1,
+          "energy_yoy_percent": -6.0,
+          "food_yoy_percent": 6.9,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 4.7
+        },
+        {
+          "all_items_index": 168.5,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": -11.5,
+          "food_yoy_percent": 9.2,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 3.9
+        },
+        {
+          "all_items_index": 169.2,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -8.8,
+          "food_yoy_percent": 5.2,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 3.6
+        },
+        {
+          "all_items_index": 172.4,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 6.3,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 5.2
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Nova Scotia",
+      "province_code": "NS",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 5.2
+    },
+    {
+      "all_items_index": 168.2,
+      "all_items_yoy_percent": 1.9,
+      "energy_yoy_percent": 3.1,
+      "food_yoy_percent": 4.7,
+      "months": [
+        {
+          "all_items_index": 162.2,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": 5.1,
+          "food_yoy_percent": 2.1,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 5.6
+        },
+        {
+          "all_items_index": 163.2,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 4.7,
+          "food_yoy_percent": 2.0,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 6.1
+        },
+        {
+          "all_items_index": 163.1,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 2.1,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 5.8
+        },
+        {
+          "all_items_index": 163.9,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": 2.4,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 5.4
+        },
+        {
+          "all_items_index": 163.3,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -2.9,
+          "food_yoy_percent": 2.9,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 5.2
+        },
+        {
+          "all_items_index": 162.8,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -6.5,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 163.5,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -1.4,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 4.4
+        },
+        {
+          "all_items_index": 163.5,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -0.1,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 4.4
+        },
+        {
+          "all_items_index": 162.7,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": 1.9,
+          "food_yoy_percent": 0.3,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 4.1
+        },
+        {
+          "all_items_index": 162.6,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": 5.0,
+          "food_yoy_percent": -1.8,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.2
+        },
+        {
+          "all_items_index": 164.6,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": 2.6,
+          "food_yoy_percent": 0.8,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.0
+        },
+        {
+          "all_items_index": 165.1,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -0.3,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 3.4
+        },
+        {
+          "all_items_index": 164.8,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -15.0,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 3.0
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -13.1,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 2.1
+        },
+        {
+          "all_items_index": 166.0,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -12.0,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 2.0
+        },
+        {
+          "all_items_index": 166.5,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -12.2,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 2.2
+        },
+        {
+          "all_items_index": 166.0,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -9.8,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 1.7
+        },
+        {
+          "all_items_index": 166.1,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -3.9,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 1.6
+        },
+        {
+          "all_items_index": 166.4,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -9.6,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 1.2
+        },
+        {
+          "all_items_index": 166.6,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -6.9,
+          "food_yoy_percent": 4.1,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 1.1
+        },
+        {
+          "all_items_index": 166.1,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -11.2,
+          "food_yoy_percent": 7.5,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 0.6
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -12.4,
+          "food_yoy_percent": 9.3,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 0.1
+        },
+        {
+          "all_items_index": 166.7,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -10.1,
+          "food_yoy_percent": 6.6,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": -0.3
+        },
+        {
+          "all_items_index": 168.2,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": 3.1,
+          "food_yoy_percent": 4.7,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 0.1
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Ontario",
+      "province_code": "ON",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 0.1
+    },
+    {
+      "all_items_index": 171.5,
+      "all_items_yoy_percent": 2.3,
+      "energy_yoy_percent": 10.0,
+      "food_yoy_percent": 2.8,
+      "months": [
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": 5.8,
+          "food_yoy_percent": 3.8,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 166.4,
+          "all_items_yoy_percent": 3.2,
+          "energy_yoy_percent": 11.7,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 166.4,
+          "all_items_yoy_percent": 3.4,
+          "energy_yoy_percent": 7.5,
+          "food_yoy_percent": 5.1,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 5.5
+        },
+        {
+          "all_items_index": 167.1,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": 1.5,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 2.9
+        },
+        {
+          "all_items_index": 166.8,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": -8.2,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 3.0
+        },
+        {
+          "all_items_index": 165.3,
+          "all_items_yoy_percent": 1.0,
+          "energy_yoy_percent": -14.3,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 2.4
+        },
+        {
+          "all_items_index": 165.5,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -6.9,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 1.8
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -2.1,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 2.4
+        },
+        {
+          "all_items_index": 163.6,
+          "all_items_yoy_percent": 0.4,
+          "energy_yoy_percent": -2.1,
+          "food_yoy_percent": -1.5,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 1.9
+        },
+        {
+          "all_items_index": 164.7,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": 5.4,
+          "food_yoy_percent": -3.0,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 167.0,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": 3.8,
+          "food_yoy_percent": -0.4,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 2.8
+        },
+        {
+          "all_items_index": 167.7,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -1.7,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 1.6
+        },
+        {
+          "all_items_index": 166.9,
+          "all_items_yoy_percent": 0.6,
+          "energy_yoy_percent": -12.5,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 0.7
+        },
+        {
+          "all_items_index": 167.5,
+          "all_items_yoy_percent": 0.7,
+          "energy_yoy_percent": -12.9,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 1.3
+        },
+        {
+          "all_items_index": 167.7,
+          "all_items_yoy_percent": 0.8,
+          "energy_yoy_percent": -10.5,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 0.8
+        },
+        {
+          "all_items_index": 169.1,
+          "all_items_yoy_percent": 1.2,
+          "energy_yoy_percent": -11.6,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 2.1
+        },
+        {
+          "all_items_index": 168.6,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -8.6,
+          "food_yoy_percent": 4.3,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 0.8
+        },
+        {
+          "all_items_index": 168.1,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -1.4,
+          "food_yoy_percent": 4.4,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 0.6
+        },
+        {
+          "all_items_index": 167.8,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -5.5,
+          "food_yoy_percent": 3.6,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 1.0
+        },
+        {
+          "all_items_index": 168.2,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -5.5,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 2.0
+        },
+        {
+          "all_items_index": 168.1,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": -7.2,
+          "food_yoy_percent": 7.7,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 2.0
+        },
+        {
+          "all_items_index": 167.6,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -12.9,
+          "food_yoy_percent": 10.1,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": -0.1
+        },
+        {
+          "all_items_index": 168.4,
+          "all_items_yoy_percent": 0.8,
+          "energy_yoy_percent": -10.3,
+          "food_yoy_percent": 6.5,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": -0.2
+        },
+        {
+          "all_items_index": 171.5,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": 10.0,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 2.8
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Prince Edward Island",
+      "province_code": "PE",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 2.8
+    },
+    {
+      "all_items_index": 164.3,
+      "all_items_yoy_percent": 2.9,
+      "energy_yoy_percent": 8.9,
+      "food_yoy_percent": 3.0,
+      "months": [
+        {
+          "all_items_index": 157.0,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 4.3,
+          "food_yoy_percent": 1.8,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 7.2
+        },
+        {
+          "all_items_index": 158.2,
+          "all_items_yoy_percent": 3.1,
+          "energy_yoy_percent": 4.4,
+          "food_yoy_percent": 2.3,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 6.9
+        },
+        {
+          "all_items_index": 157.5,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": 0.6,
+          "food_yoy_percent": 1.2,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 6.8
+        },
+        {
+          "all_items_index": 157.9,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": 1.5,
+          "food_yoy_percent": 1.4,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 6.6
+        },
+        {
+          "all_items_index": 157.7,
+          "all_items_yoy_percent": 1.5,
+          "energy_yoy_percent": -4.3,
+          "food_yoy_percent": 1.8,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 6.3
+        },
+        {
+          "all_items_index": 157.4,
+          "all_items_yoy_percent": 1.3,
+          "energy_yoy_percent": -8.9,
+          "food_yoy_percent": 1.8,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 5.6
+        },
+        {
+          "all_items_index": 157.9,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -5.6,
+          "food_yoy_percent": 1.1,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 5.4
+        },
+        {
+          "all_items_index": 157.8,
+          "all_items_yoy_percent": 1.5,
+          "energy_yoy_percent": -2.6,
+          "food_yoy_percent": 1.6,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 5.1
+        },
+        {
+          "all_items_index": 157.5,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -0.9,
+          "food_yoy_percent": 0.7,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 5.4
+        },
+        {
+          "all_items_index": 157.6,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": 2.0,
+          "food_yoy_percent": 0.2,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 5.2
+        },
+        {
+          "all_items_index": 158.6,
+          "all_items_yoy_percent": 2.0,
+          "energy_yoy_percent": -0.1,
+          "food_yoy_percent": 1.2,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 159.7,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -1.8,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 160.4,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -6.3,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 160.9,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -6.3,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 4.6
+        },
+        {
+          "all_items_index": 161.0,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -4.2,
+          "food_yoy_percent": 3.1,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 4.7
+        },
+        {
+          "all_items_index": 161.6,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -6.0,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 161.9,
+          "all_items_yoy_percent": 2.7,
+          "energy_yoy_percent": -3.3,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 5.1
+        },
+        {
+          "all_items_index": 162.6,
+          "all_items_yoy_percent": 3.3,
+          "energy_yoy_percent": 3.7,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 5.9
+        },
+        {
+          "all_items_index": 162.9,
+          "all_items_yoy_percent": 3.2,
+          "energy_yoy_percent": 0.9,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 5.9
+        },
+        {
+          "all_items_index": 162.6,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": 0.9,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 5.5
+        },
+        {
+          "all_items_index": 162.6,
+          "all_items_yoy_percent": 3.2,
+          "energy_yoy_percent": -2.2,
+          "food_yoy_percent": 5.1,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 5.3
+        },
+        {
+          "all_items_index": 162.3,
+          "all_items_yoy_percent": 3.0,
+          "energy_yoy_percent": -5.4,
+          "food_yoy_percent": 5.4,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 4.9
+        },
+        {
+          "all_items_index": 163.1,
+          "all_items_yoy_percent": 2.8,
+          "energy_yoy_percent": -3.5,
+          "food_yoy_percent": 4.4,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 5.0
+        },
+        {
+          "all_items_index": 164.3,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": 8.9,
+          "food_yoy_percent": 3.0,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 4.0
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Quebec",
+      "province_code": "QC",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 4.0
+    },
+    {
+      "all_items_index": 170.0,
+      "all_items_yoy_percent": 2.9,
+      "energy_yoy_percent": -0.3,
+      "food_yoy_percent": 4.8,
+      "months": [
+        {
+          "all_items_index": 162.0,
+          "all_items_yoy_percent": 1.0,
+          "energy_yoy_percent": -4.8,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2024-04",
+          "shelter_yoy_percent": 3.6
+        },
+        {
+          "all_items_index": 162.8,
+          "all_items_yoy_percent": 1.5,
+          "energy_yoy_percent": -5.3,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2024-05",
+          "shelter_yoy_percent": 3.4
+        },
+        {
+          "all_items_index": 162.8,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -6.0,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-06",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 163.6,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -2.3,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-07",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 163.4,
+          "all_items_yoy_percent": 1.1,
+          "energy_yoy_percent": -2.8,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2024-08",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 162.3,
+          "all_items_yoy_percent": 0.7,
+          "energy_yoy_percent": -8.0,
+          "food_yoy_percent": 2.8,
+          "ref_date": "2024-09",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 163.1,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -6.0,
+          "food_yoy_percent": 3.7,
+          "ref_date": "2024-10",
+          "shelter_yoy_percent": 3.8
+        },
+        {
+          "all_items_index": 163.2,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -3.8,
+          "food_yoy_percent": 3.4,
+          "ref_date": "2024-11",
+          "shelter_yoy_percent": 3.8
+        },
+        {
+          "all_items_index": 162.8,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": 0.7,
+          "food_yoy_percent": 2.0,
+          "ref_date": "2024-12",
+          "shelter_yoy_percent": 3.4
+        },
+        {
+          "all_items_index": 163.5,
+          "all_items_yoy_percent": 2.4,
+          "energy_yoy_percent": 9.0,
+          "food_yoy_percent": 0.9,
+          "ref_date": "2025-01",
+          "shelter_yoy_percent": 4.8
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 3.1,
+          "energy_yoy_percent": 7.5,
+          "food_yoy_percent": 2.7,
+          "ref_date": "2025-02",
+          "shelter_yoy_percent": 4.5
+        },
+        {
+          "all_items_index": 165.2,
+          "all_items_yoy_percent": 2.5,
+          "energy_yoy_percent": 1.4,
+          "food_yoy_percent": 3.9,
+          "ref_date": "2025-03",
+          "shelter_yoy_percent": 4.1
+        },
+        {
+          "all_items_index": 165.0,
+          "all_items_yoy_percent": 1.9,
+          "energy_yoy_percent": -9.6,
+          "food_yoy_percent": 4.6,
+          "ref_date": "2025-04",
+          "shelter_yoy_percent": 3.2
+        },
+        {
+          "all_items_index": 165.4,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -9.2,
+          "food_yoy_percent": 3.5,
+          "ref_date": "2025-05",
+          "shelter_yoy_percent": 3.6
+        },
+        {
+          "all_items_index": 165.5,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -9.1,
+          "food_yoy_percent": 3.3,
+          "ref_date": "2025-06",
+          "shelter_yoy_percent": 3.3
+        },
+        {
+          "all_items_index": 165.9,
+          "all_items_yoy_percent": 1.4,
+          "energy_yoy_percent": -11.9,
+          "food_yoy_percent": 3.2,
+          "ref_date": "2025-07",
+          "shelter_yoy_percent": 3.1
+        },
+        {
+          "all_items_index": 166.2,
+          "all_items_yoy_percent": 1.7,
+          "energy_yoy_percent": -12.0,
+          "food_yoy_percent": 3.9,
+          "ref_date": "2025-08",
+          "shelter_yoy_percent": 3.5
+        },
+        {
+          "all_items_index": 166.5,
+          "all_items_yoy_percent": 2.6,
+          "energy_yoy_percent": -5.8,
+          "food_yoy_percent": 4.9,
+          "ref_date": "2025-09",
+          "shelter_yoy_percent": 3.7
+        },
+        {
+          "all_items_index": 166.8,
+          "all_items_yoy_percent": 2.3,
+          "energy_yoy_percent": -8.6,
+          "food_yoy_percent": 4.2,
+          "ref_date": "2025-10",
+          "shelter_yoy_percent": 2.4
+        },
+        {
+          "all_items_index": 166.7,
+          "all_items_yoy_percent": 2.1,
+          "energy_yoy_percent": -8.6,
+          "food_yoy_percent": 5.3,
+          "ref_date": "2025-11",
+          "shelter_yoy_percent": 2.3
+        },
+        {
+          "all_items_index": 166.4,
+          "all_items_yoy_percent": 2.2,
+          "energy_yoy_percent": -11.7,
+          "food_yoy_percent": 6.5,
+          "ref_date": "2025-12",
+          "shelter_yoy_percent": 2.3
+        },
+        {
+          "all_items_index": 166.5,
+          "all_items_yoy_percent": 1.8,
+          "energy_yoy_percent": -14.2,
+          "food_yoy_percent": 6.6,
+          "ref_date": "2026-01",
+          "shelter_yoy_percent": 1.6
+        },
+        {
+          "all_items_index": 167.8,
+          "all_items_yoy_percent": 1.6,
+          "energy_yoy_percent": -14.3,
+          "food_yoy_percent": 5.5,
+          "ref_date": "2026-02",
+          "shelter_yoy_percent": 2.2
+        },
+        {
+          "all_items_index": 170.0,
+          "all_items_yoy_percent": 2.9,
+          "energy_yoy_percent": -0.3,
+          "food_yoy_percent": 4.8,
+          "ref_date": "2026-03",
+          "shelter_yoy_percent": 2.9
+        }
+      ],
+      "national_all_items_yoy_percent": 2.4,
+      "province": "Saskatchewan",
+      "province_code": "SK",
+      "reference_month": "2026-03",
+      "shelter_yoy_percent": 2.9
+    }
+  ],
+  "reference_month": "2026-03",
+  "source": {
+    "note": "Monthly CPI table 18-10-0004-01 is not seasonally adjusted and normally published about three weeks after the reference month.",
+    "title": "Statistics Canada \u2014 Consumer Price Index",
+    "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1810000401"
+  },
+  "statcan_tables": [
+    {
+      "id": "18-10-0004-01",
+      "title": "Consumer Price Index, monthly, not seasonally adjusted",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1810000401"
+    }
+  ]
+}

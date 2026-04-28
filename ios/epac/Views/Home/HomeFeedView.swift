@@ -62,6 +62,7 @@ struct HomeFeedView: View {
                 }
                 reconciliationContextCard
                 healthcareContextCard
+                consumerPriceIndexContextCard
                 employmentInsuranceContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
@@ -523,6 +524,49 @@ struct HomeFeedView: View {
         }
     }
 
+    // MARK: - Consumer Price Index contextual card (shown when "economy" or "agriculture" topic followed + province known)
+
+    @ViewBuilder
+    private var consumerPriceIndexContextCard: some View {
+        if topicStore.isFollowing("economy") || topicStore.isFollowing("agriculture"),
+           let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: provinceAbbrev) {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Inflation in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("All-items")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.allItemsYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Food")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.foodYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Canada")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: ConsumerPriceIndexStatisticsDatabase.snapshot()?.source.url
+                        ?? ConsumerPriceIndexStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Consumer Price Index")
+            } footer: {
+                Text("Reference month: \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))")
+            }
+        }
+    }
+
     // MARK: - Employment Insurance contextual card (shown when "labour" topic followed + province known)
 
     @ViewBuilder
@@ -855,6 +899,13 @@ struct HomeFeedView: View {
         guard cleaned.count > 140 else { return cleaned }
         let end = cleaned.index(cleaned.startIndex, offsetBy: 140)
         return String(cleaned[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+    }
+
+    private func yearOverYearLabel(_ value: Double) -> String {
+        if value > 0 {
+            return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
+        }
+        return "\(value.formatted(.number.precision(.fractionLength(1))))%"
     }
 
     private func trackTodayCardTap(_ target: String) {
