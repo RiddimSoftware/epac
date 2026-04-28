@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest import mock
 
 import fetch_releases
 
@@ -22,6 +23,33 @@ class FetchReleasesTests(unittest.TestCase):
 
         self.assertEqual(len(truncated), fetch_releases.MAX_NOTES_CHARS)
         self.assertTrue(truncated.endswith("..."))
+
+    def test_fetch_app_store_versions_uses_supported_relationship_params(self) -> None:
+        response = {
+            "data": [
+                {
+                    "attributes": {
+                        "versionString": "1.8",
+                        "appStoreState": "READY_FOR_SALE",
+                        "createdDate": "2026-01-26T17:09:00-08:00",
+                    }
+                },
+                {
+                    "attributes": {
+                        "versionString": "1.9",
+                        "appStoreState": "WAITING_FOR_REVIEW",
+                        "createdDate": "2026-02-18T10:44:41-08:00",
+                    }
+                },
+            ]
+        }
+        with mock.patch.object(fetch_releases, "get_json", return_value=response) as get_json:
+            versions = fetch_releases.fetch_app_store_versions({"Authorization": "Bearer token"})
+
+        params = get_json.call_args.kwargs["params"]
+        self.assertNotIn("sort", params)
+        self.assertEqual(versions[0]["version"], "1.9")
+        self.assertEqual(versions[0]["status_label"], "Waiting for Review")
 
     def test_merge_releases_adds_matching_app_store_status(self) -> None:
         github_releases = [

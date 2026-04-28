@@ -64,7 +64,6 @@ def fetch_app_store_versions(headers: dict) -> list[dict]:
         headers=headers,
         params={
             "limit": 10,
-            "sort": "-createdDate",
             "fields[appStoreVersions]": "versionString,appStoreState,createdDate",
         },
     )
@@ -79,7 +78,7 @@ def fetch_app_store_versions(headers: dict) -> list[dict]:
             "status_label": status_label(state),
             "created_at": attrs.get("createdDate"),
         })
-    return versions
+    return sorted(versions, key=lambda item: item.get("created_at") or "", reverse=True)
 
 
 def fetch_github_releases(repository: str, token: str | None) -> list[dict]:
