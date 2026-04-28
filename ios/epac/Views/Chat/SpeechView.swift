@@ -45,6 +45,7 @@ struct SpeechView: View {
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
 			consumerPriceIndexDebateContext
 			employmentInsuranceDebateContext
+			cppOasDebateContext
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
@@ -321,6 +322,34 @@ struct SpeechView: View {
 			|| title.contains("inflation")
 			|| title.contains("grocery")
 			|| title.contains("food")
+	}
+
+	@ViewBuilder
+	private var cppOasDebateContext: some View {
+		if isCPPOASRelevant,
+		   let stat = CPPOASStatisticsDatabase.statistic(for: userProvinceCode) {
+			VStack(alignment: .leading, spacing: 6) {
+				Label("Pensions context", systemImage: "person.text.rectangle.fill")
+					.font(.caption.bold())
+				HStack(spacing: 12) {
+					if let cpp = stat.cppRetirementRecipients {
+						statPill("CPP recipients", cpp.formatted())
+					}
+					if let oas = stat.oasPensionRecipients {
+						statPill("OAS recipients", oas.formatted())
+					}
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isCPPOASRelevant: Bool {
+		ParliamentaryTopic.matching(subject.title).contains { $0.id == "seniors" }
 	}
 
 	private func statPill(_ label: String, _ value: String) -> some View {

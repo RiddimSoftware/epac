@@ -56,11 +56,11 @@ struct DataSourceBadge: View {
 
     private var badgeColor: Color {
         guard let age = ageSeconds, let threshold = source.stalenessThreshold else {
-            return Color(UIColor.systemGray)
+            return Color.secondary
         }
-        if age > threshold * 3 { return Color(UIColor.systemRed) }
-        if age > threshold { return Color(UIColor.systemOrange) }
-        return Color(UIColor.systemGray)
+        if age > threshold * 3 { return Color.red }
+        if age > threshold { return Color.orange }
+        return Color.secondary
     }
 }
 
@@ -91,9 +91,13 @@ struct DataSourceDetailSheet: View {
                         .foregroundStyle(.tint)
                 }
             }
+            #if os(iOS)
             .listStyle(.insetGrouped)
-            .navigationTitle(source.name)
             .navigationBarTitleDisplayMode(.inline)
+            #else
+            .listStyle(.inset)
+            #endif
+            .navigationTitle(source.name)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(NSLocalizedString("dataSource.done", comment: "")) { dismiss() }
@@ -199,6 +203,17 @@ struct DataSource {
             url: URL(string: "https://yellowheadinstitute.org/report/trc/")!,
             lastSyncDate: nil,
             vintage: "Reviewed 2026",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func cppOas() -> DataSource {
+        DataSource(
+            name: "ESDC",
+            description: "Canada Pension Plan and Old Age Security recipient counts by province, published monthly by Employment and Social Development Canada on open.canada.ca.",
+            url: URL(string: "https://www.canada.ca/en/employment-social-development/programs/pensions/reports/statistical-bulletin.html")!,
+            lastSyncDate: nil,
+            vintage: "Monthly — ESDC",
             stalenessThreshold: nil
         )
     }
