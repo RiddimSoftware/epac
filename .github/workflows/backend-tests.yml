@@ -1,0 +1,24 @@
+name: Backend Go tests
+
+on:
+  pull_request:
+    paths: ['backend/**']
+  push:
+    branches: [main]
+    paths: ['backend/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda: [daily-fetch, loader, search, member-speeches, toronto-council]
+    name: Test ${{ matrix.lambda }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/${{ matrix.lambda }}/go.mod
+      - name: Run tests with coverage
+        working-directory: backend/${{ matrix.lambda }}
+        run: go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out

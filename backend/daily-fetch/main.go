@@ -97,7 +97,8 @@ func HandleRequest(ctx context.Context) error {
 
 	fmt.Printf("Attempting to download sitting %d from %s\n", nextSitting, url)
 
-	interventions, err := downloadAndParse(url, filename)
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	interventions, err := downloadAndParse(httpClient, url, filename)
 	if err != nil {
 		fetchErr := fmt.Errorf("failed to download or parse Hansard: %w", err)
 		recordHealth(ctx, conn, 0, fetchErr)
@@ -122,8 +123,7 @@ func HandleRequest(ctx context.Context) error {
 	return nil
 }
 
-func downloadAndParse(url, filename string) ([]Intervention, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
+func downloadAndParse(client *http.Client, url, filename string) ([]Intervention, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
