@@ -18,7 +18,22 @@ enum AppEnvironment {
         ProcessInfo.processInfo.environment["EPAC_APP_PREVIEW_MANUAL_SEQUENCE"] == "1"
     }
 
+    static var isEvidenceCaptureMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("--evidence-mode") ||
+        ProcessInfo.processInfo.environment["EPAC_EVIDENCE_MODE"] == "1" ||
+        debugLiveStatusFixtureIsPresent
+    }
+
     static var isMarketingCaptureMode: Bool {
-        isAppStoreScreenshotMode || isAppPreviewMode
+        isAppStoreScreenshotMode || isAppPreviewMode || isEvidenceCaptureMode
+    }
+
+    private static var debugLiveStatusFixtureIsPresent: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("--live-status-fixture-json") ||
+        ProcessInfo.processInfo.environment["EPAC_DEBUG_LIVE_STATUS_FIXTURE_JSON"] != nil
+        #else
+        false
+        #endif
     }
 }
