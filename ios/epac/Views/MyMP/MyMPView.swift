@@ -45,11 +45,11 @@ private enum MPActivity: Identifiable {
     var color: Color {
         switch self {
         case .speech:
-            return .blue
+            return Color.epacBrand.accent
         case .vote(let mv, _):
             return Color.ballot(mv.recordedVote)
         case .expenditure:
-            return .teal
+            return Color.epacStatus.info
         }
     }
 
@@ -74,23 +74,23 @@ private struct ActivityRow: View {
     let activity: MPActivity
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: activity.systemImage)
                 .foregroundStyle(activity.color)
                 .frame(width: 28)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                 Text(activity.title)
-                    .font(.subheadline)
+                    .font(.epacSubheadline)
                     .lineLimit(2)
                 if activity.date > Date.distantPast {
                     Text(activity.date, style: .date)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacText.secondary)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, EpacSpacing.xs)
         .accessibilityElement(children: .combine)
     }
 }
@@ -220,8 +220,8 @@ struct MyMPView: View {
             } else if senatorsLoaded {
                 Section(NSLocalizedString("senate.mySenators.title", comment: "")) {
                     Text(NSLocalizedString("senate.mySenators.empty", comment: ""))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacText.secondary)
                 }
             }
             if let mpp = ontarioMPP {

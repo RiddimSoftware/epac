@@ -101,17 +101,17 @@ struct HomeFeedView: View {
             } label: {
                 HStack {
                     Image(systemName: isSittingToday ? "building.columns.fill" : "building.columns")
-                        .foregroundStyle(isSittingToday ? Color.accentColor : Color.secondary)
+                        .foregroundStyle(isSittingToday ? Color.epacBrand.accent : Color.epacText.secondary)
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                         Text(isSittingToday
                             ? NSLocalizedString("home.parliament.sitting", comment: "")
                             : NSLocalizedString("home.parliament.notSitting", comment: ""))
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(isSittingToday ? .primary : .secondary)
+                            .font(.epacSubheadline.weight(.semibold))
+                            .foregroundStyle(isSittingToday ? Color.epacText.primary : Color.epacText.secondary)
                         Text(Date(), style: .date)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -135,15 +135,15 @@ struct HomeFeedView: View {
                 NavigationLink(destination: MyMPView()) {
                     HStack {
                         Image(systemName: "person.fill.viewfinder")
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(Color.epacBrand.accent)
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                             Text(name)
-                                .font(.subheadline.weight(.semibold))
+                                .font(.epacSubheadline.weight(.semibold))
                                 .lineLimit(2)
                             Text(String(format: NSLocalizedString("home.myMP.activityCount", comment: ""), myMPActivityCount))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .font(.epacCaption)
+                                .foregroundStyle(Color.epacText.secondary)
                         }
                         Spacer()
                     }
@@ -155,14 +155,14 @@ struct HomeFeedView: View {
                 } label: {
                     HStack {
                         Image(systemName: "mappin.and.ellipse")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.epacStatus.warning)
                             .accessibilityHidden(true)
                         Text(NSLocalizedString("home.myMP.notSet", comment: ""))
-                            .font(.subheadline)
+                            .font(.epacSubheadline)
                         Spacer()
                         Text(NSLocalizedString("riding.setup.lookupButton", comment: ""))
-                            .font(.caption)
-                            .foregroundStyle(.tint)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacBrand.accent)
                     }
                 }
                 .foregroundStyle(.primary)
@@ -178,14 +178,14 @@ struct HomeFeedView: View {
             ForEach(Array(sorted.prefix(3)), id: \.key) { number, state in
                 HStack {
                     Image(systemName: "doc.badge.clock.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.epacBrand.accent)
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                         Text(number)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.epacSubheadline.weight(.semibold))
                         Text(state.lastKnownStage)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
                             .lineLimit(2)
                     }
                     Spacer()
@@ -197,8 +197,8 @@ struct HomeFeedView: View {
             HStack {
                 NavigationLink(destination: BillsView()) {
                     Text(NSLocalizedString("home.seeAllBills", comment: ""))
-                        .font(.caption)
-                        .foregroundStyle(.tint)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacBrand.accent)
                 }
                 if billStore.followed.count > 3 {
                     Spacer()
@@ -206,8 +206,8 @@ struct HomeFeedView: View {
                         billStore.unfollowAll()
                     } label: {
                         Text(NSLocalizedString("home.clearAllBills", comment: ""))
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacStatus.destructive)
                     }
                     .accessibilityLabel("Unfollow all bills")
                 }
@@ -221,23 +221,23 @@ struct HomeFeedView: View {
         Section(header: Text(NSLocalizedString("home.followedTopics", comment: "")).accessibilityAddTraits(.isHeader)) {
             let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: EpacSpacing.s) {
                     ForEach(followedTopics.prefix(6)) { topic in
                         Text(topic.localizedName)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.accentColor)
+                            .font(.epacCaption.weight(.medium))
+                            .foregroundStyle(Color.epacText.onAccent)
+                            .padding(.horizontal, EpacSpacing.s)
+                            .padding(.vertical, EpacSpacing.xs)
+                            .background(Color.epacBrand.accent)
                             .clipShape(Capsule())
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, EpacSpacing.xs)
             }
             NavigationLink(destination: TopicsView()) {
                 Text(NSLocalizedString("home.manageTopics", comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.tint)
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacBrand.accent)
             }
         }
     }
@@ -262,8 +262,8 @@ struct HomeFeedView: View {
                         }
                         Spacer()
                         Image(systemName: "arrow.up.right.square")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.tertiary)
                     }
                 }
                 .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
@@ -279,18 +279,18 @@ struct HomeFeedView: View {
             let healthData = CIHIWaitTimeDatabase.waitTimes(for: provinceAbbrev)
             if !healthData.isEmpty {
                 Section {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.s) {
                         Text(String(format: NSLocalizedString("cihi.contextCard.title", comment: ""), provinceAbbrev))
-                            .font(.subheadline.weight(.semibold))
+                            .font(.epacSubheadline.weight(.semibold))
                         ForEach(healthData.prefix(2), id: \.procedure) { wt in
                             HStack {
-                                Text(wt.procedure).font(.caption)
+                                Text(wt.procedure).font(.epacCallout)
                                 Spacer()
-                                Text("\(Int(wt.medianWeeks))w median").font(.caption.monospacedDigit())
+                                Text("\(Int(wt.medianWeeks))w median").font(.epacCallout.monospacedDigit())
                             }
                         }
                         Link(NSLocalizedString("cihi.viewSource", comment: ""), destination: CIHIWaitTimeDatabase.sourceURL)
-                            .font(.caption2)
+                            .font(.epacCaption)
                     }
                 } header: {
                     Text(NSLocalizedString("cihi.sectionTitle.short", comment: ""))
@@ -305,17 +305,17 @@ struct HomeFeedView: View {
         Section(header: Text(NSLocalizedString("home.recentDebates", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(recentSubjects) { subject in
                 Text(subject.title)
-                    .font(.subheadline)
+                    .font(.epacSubheadline)
                     .lineLimit(2)
-                    .padding(.vertical, 2)
+                    .padding(.vertical, EpacSpacing.xs)
             }
             if latestHansard != nil {
                 Button {
                     router.selectedTab = .parliament
                 } label: {
                     Text(NSLocalizedString("home.seeAllDebates", comment: ""))
-                        .font(.caption)
-                        .foregroundStyle(.tint)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacBrand.accent)
                 }
             }
         }

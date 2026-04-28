@@ -169,4 +169,22 @@ final class SnapshotTests: XCTestCase {
             name: "DataSourceBadge_votes"
         )
     }
+
+    // MARK: - Design system tokens (EPAC-440)
+
+    func testDesignSystem_colorTokens() {
+        snapshot(
+            DesignSystemColorTokensPreview()
+                .frame(width: 375),
+            name: "DesignSystem_colorTokens"
+        )
+    }
+
+    func testDesignSystem_typographyScale() {
+        snapshot(
+            DesignSystemTypographyPreview()
+                .frame(width: 375),
+            name: "DesignSystem_typographyScale"
+        )
+    }
 }
