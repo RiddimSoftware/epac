@@ -265,7 +265,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill("All-items", yearOverYearLabel(cpi.allItemsYearOverYearPercent))
 					statPill("Food", yearOverYearLabel(cpi.foodYearOverYearPercent))
 					statPill("Canada", yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
@@ -292,7 +292,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill("Beneficiaries", ei.beneficiaries.formatted())
 					statPill(
 						"Avg. benefit",
@@ -342,7 +342,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill(
 						"Tuition",
 						tuition.averageUndergraduateTuition.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
@@ -381,7 +381,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill("Indigenous custody", percentLabel(latest.indigenousInCustodyPercent))
 					statPill("Canada share", percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
 					statPill("Recidivism", percentLabel(latest.recidivismRatePercent))
@@ -415,7 +415,7 @@ struct SpeechView: View {
 			VStack(alignment: .leading, spacing: 6) {
 				Label("Pensions context", systemImage: "person.text.rectangle.fill")
 					.font(.caption.bold())
-				HStack(spacing: 12) {
+				statPillRow {
 					if let cpp = stat.cppRetirementRecipients {
 						statPill("CPP recipients", cpp.formatted())
 					}
@@ -451,7 +451,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill("Recipients", summary.disabilityBenefitRecipients.formatted())
 					statPill(
 						"Wait \(latestAnnual.fiscalYear)",
@@ -493,7 +493,7 @@ struct SpeechView: View {
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 12) {
+				statPillRow {
 					statPill("Road deaths", TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPer100k, unit: "/100k"))
 					statPill("Rail accidents", rail.accidents.formatted())
 					if let air = TransportSafetyStatisticsDatabase.latestModeYear("air") {
@@ -528,10 +528,24 @@ struct SpeechView: View {
 			Text(label)
 				.font(.caption2)
 				.foregroundStyle(.secondary)
+				.fixedSize(horizontal: false, vertical: true)
 			Text(value)
 				.font(.caption.monospacedDigit().weight(.semibold))
+				.fixedSize(horizontal: false, vertical: true)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
+	}
+
+	@ViewBuilder
+	private func statPillRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+		ViewThatFits(in: .horizontal) {
+			HStack(spacing: 12) {
+				content()
+			}
+			VStack(alignment: .leading, spacing: 8) {
+				content()
+			}
+		}
 	}
 
 	private func resolveSavedMemberProvince() {
