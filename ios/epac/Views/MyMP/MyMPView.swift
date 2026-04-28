@@ -74,12 +74,12 @@ private struct ActivityRow: View {
     let activity: MPActivity
 
     var body: some View {
-        HStack(alignment: .top, spacing: EpacSpacing.m - 4) {
+        HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: activity.systemImage)
                 .foregroundStyle(activity.color)
                 .frame(width: 28)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: EpacSpacing.xs - 1) {
+            VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                 Text(activity.title)
                     .font(.epacSubheadline)
                     .lineLimit(2)

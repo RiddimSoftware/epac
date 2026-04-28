@@ -221,7 +221,7 @@ struct HomeFeedView: View {
         Section(header: Text(NSLocalizedString("home.followedTopics", comment: "")).accessibilityAddTraits(.isHeader)) {
             let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: EpacSpacing.s) {
                     ForEach(followedTopics.prefix(6)) { topic in
                         Text(topic.localizedName)
                             .font(.epacCaption.weight(.medium))
@@ -279,7 +279,7 @@ struct HomeFeedView: View {
             let healthData = CIHIWaitTimeDatabase.waitTimes(for: provinceAbbrev)
             if !healthData.isEmpty {
                 Section {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.s) {
                         Text(String(format: NSLocalizedString("cihi.contextCard.title", comment: ""), provinceAbbrev))
                             .font(.epacSubheadline.weight(.semibold))
                         ForEach(healthData.prefix(2), id: \.procedure) { wt in
