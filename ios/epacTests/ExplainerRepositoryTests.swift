@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 // ExplainerRepository loads from a JSON string (via the internal init) so
 // these tests run entirely in-process without touching the app bundle.

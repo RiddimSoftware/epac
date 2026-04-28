@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import SWXMLHash
 import SwiftData
+import SWXMLHash
 
 class XMLBro {
 	private var xml: XMLIndexer
@@ -44,8 +44,8 @@ class XMLBro {
 			guard let catchline = oob["CatchLine"].element?.trimmedText() else {
 				continue
 			}
-			if catchline.lowercased() == NSLocalizedString("routine proceedings", comment:"") ||
-					catchline.lowercased() == NSLocalizedString("adjournment proceedings", comment:"") {
+			if catchline.lowercased() == NSLocalizedString("routine proceedings", comment: "") ||
+					catchline.lowercased() == NSLocalizedString("adjournment proceedings", comment: "") {
 				continue
 			}
 			guard let oobID = oob.element?.attribute(by: "id")?.trimmedText() else {
@@ -99,11 +99,11 @@ class XMLBro {
 						subject.speeches.append(speech)
 					}
 				}
-				if subject.speeches.count > 0 {
+				if !subject.speeches.isEmpty {
 					order.subjects.append(subject)
 				}
 			}
-			if order.subjects.count > 0 {
+			if !order.subjects.isEmpty {
 				ordersOfBusiness.append(order)
 			}
 		}
@@ -183,8 +183,6 @@ class XMLBro {
 
 	                        }
 
-	                
-
 	                        func text(fromXMLIndexer indexer: XMLIndexer) -> String {
 
 	                                var text = String()
@@ -217,7 +215,7 @@ class XMLBro {
 
 	func text(fromXMLElement element: XMLElement) -> String {
 		var text = String()
-		if element.children.count > 0 {
+		if !element.children.isEmpty {
 			for node in element.children {
 				if let elem = node as? XMLElement {
 					text.append(self.text(fromXMLElement: elem))

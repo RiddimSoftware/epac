@@ -1,6 +1,6 @@
+@testable import epac
 import Foundation
 import Testing
-@testable import epac
 
 struct TorontoCouncilServiceTests {
     @Test func parsesOpenDataVoteRecord() {

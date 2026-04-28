@@ -5,8 +5,8 @@
 //  Created on 2026-04-28.
 //
 
-import XCTest
 @testable import epac
+import XCTest
 
 final class PromiseTrackerTests: XCTestCase {
 	func testPromiseTrackerDataMeetsAcceptanceCriteria() throws {

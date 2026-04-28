@@ -9,7 +9,7 @@ import SwiftUI
 
 struct VancouverVotesView: View {
     @State private var votes: [VancouverCouncilVote] = []
-    @State private var selectedCategory: VancouverCouncilVote.VoteCategory? = nil
+    @State private var selectedCategory: VancouverCouncilVote.VoteCategory?
     @State private var isLoading = false
 
     private var filteredVotes: [VancouverCouncilVote] {

@@ -32,4 +32,3 @@ struct ParliamentTodayIntent: AppIntent {
         return stored.contains { cal.isDate($0, inSameDayAs: date) }
     }
 }
-

@@ -50,10 +50,10 @@ struct LobbyistService {
         private var inflightTask: Task<Void, Error>?
 
         // Parsed tables — populated once on first download.
-        private(set) var dpohTable:    [String: [(lastName: String, firstName: String, institution: String)]] = [:]
+        private(set) var dpohTable: [String: [(lastName: String, firstName: String, institution: String)]] = [:]
         private(set) var primaryTable: [String: PrimaryRecord] = [:]
         private(set) var subjectTable: [String: [String]] = [:]
-        private(set) var smtDescs:     [String: String] = [:]
+        private(set) var smtDescs: [String: String] = [:]
 
         func markLoaded(dpoh: [String: [(lastName: String, firstName: String, institution: String)]],
                         primary: [String: PrimaryRecord],
@@ -163,10 +163,10 @@ struct LobbyistService {
     // MARK: - ZIP + CSV Parsing
 
     private static func parseZip(_ data: Data) throws -> (
-        dpoh:    [String: [(lastName: String, firstName: String, institution: String)]],
+        dpoh: [String: [(lastName: String, firstName: String, institution: String)]],
         primary: [String: PrimaryRecord],
-        subjects:[String: [String]],
-        smt:     [String: String]
+        subjects: [String: [String]],
+        smt: [String: String]
     ) {
         // Names of the entries we need (in order they appear in the archive).
         let dpohEntry     = "Communication_DpohExport.csv"
@@ -174,10 +174,10 @@ struct LobbyistService {
         let subjectEntry  = "Communication_SubjectMattersExport.csv"
         let smtEntry      = "Codes_SubjectMatterTypesExport.csv"
 
-        let dpohCSV    = try extractZipEntry(named: dpohEntry,    from: data)
-        let primaryCSV = try extractZipEntry(named: primaryEntry,  from: data)
-        let subjectCSV = try extractZipEntry(named: subjectEntry,  from: data)
-        let smtCSV     = try extractZipEntry(named: smtEntry,      from: data)
+        let dpohCSV    = try extractZipEntry(named: dpohEntry, from: data)
+        let primaryCSV = try extractZipEntry(named: primaryEntry, from: data)
+        let subjectCSV = try extractZipEntry(named: subjectEntry, from: data)
+        let smtCSV     = try extractZipEntry(named: smtEntry, from: data)
 
         return (
             parseDpohCSV(dpohCSV),
@@ -356,7 +356,7 @@ struct LobbyistService {
     // MARK: - RFC 4180-compatible CSV Row Parser
 
     private static func parseCSVRows(_ csv: String, skipHeader: Bool, handler: ([String]) -> Void) {
-        var currentRow:   [String] = []
+        var currentRow: [String] = []
         var currentField = ""
         var inQuotes     = false
         var isFirstRow   = true

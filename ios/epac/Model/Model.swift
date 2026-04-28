@@ -5,10 +5,10 @@
 //  Created by Sunny on 2026-01-27.
 //
 
-import SwiftData
 import Foundation
-import UIKit
+import SwiftData
 import SwiftUI
+import UIKit
 
 typealias SittingCalendar = SchemaV5.SittingCalendar
 typealias Hansard = SchemaV5.Hansard
@@ -61,15 +61,15 @@ enum SchemaV3: VersionedSchema {
 
 	@Model
 	final class ParliamentMember: Hashable {
-		@Attribute(.unique) var name:           String
+		@Attribute(.unique) var name: String
 		var memberID: Int
-		var lastName:       String
-		var firstName:      String
+		var lastName: String
+		var firstName: String
 		var photoURL: 			URL
-		var riding:         String
+		var riding: String
 		var province: Province
-		var party:          Party
-		var websiteURL:     URL?
+		var party: Party
+		var websiteURL: URL?
 		var imageData: Data?
 		var fromDateTime: Date?
 		var toDateTime: Date?
@@ -378,15 +378,15 @@ enum SchemaV4: VersionedSchema {
 
 	@Model
 	final class ParliamentMember: Hashable {
-		@Attribute(.unique) var name:           String
+		@Attribute(.unique) var name: String
 		var memberID: Int
-		var lastName:       String
-		var firstName:      String
+		var lastName: String
+		var firstName: String
 		var photoURL: 			URL
-		var riding:         String
+		var riding: String
 		var province: Province
-		var party:          Party
-		var websiteURL:     URL?
+		var party: Party
+		var websiteURL: URL?
 		var imageData: Data?
 		var fromDateTime: Date?
 		var toDateTime: Date?
@@ -709,15 +709,15 @@ enum SchemaV5: VersionedSchema {
 
 	@Model
 	final class ParliamentMember: Hashable {
-		@Attribute(.unique) var name:           String
+		@Attribute(.unique) var name: String
 		var memberID: Int
-		var lastName:       String
-		var firstName:      String
+		var lastName: String
+		var firstName: String
 		var photoURL: 			URL
-		var riding:         String
+		var riding: String
 		var province: Province
-		var party:          Party
-		var websiteURL:     URL?
+		var party: Party
+		var websiteURL: URL?
 		var imageData: Data?
 		var fromDateTime: Date?
 		var toDateTime: Date?

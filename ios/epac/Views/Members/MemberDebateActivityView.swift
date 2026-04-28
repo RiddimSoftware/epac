@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // Speech feed for a member's profile (EPAC-299).
 // Shows every speech this MP has given, most recent first, with topic filters

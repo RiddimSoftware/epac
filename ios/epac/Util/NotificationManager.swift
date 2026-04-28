@@ -4,9 +4,9 @@
 //
 
 import Foundation
-import UserNotifications
-import UIKit
 import Observation
+import UIKit
+import UserNotifications
 
 // Manages APNs registration, token storage, and notification routing.
 //

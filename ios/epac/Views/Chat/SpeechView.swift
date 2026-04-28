@@ -5,11 +5,11 @@
 //  Created by Sunny on 2024-12-16.
 //
 
-import SwiftUI
-import ExyteChat
-import SwiftData
 import ActivityView
+import ExyteChat
 import Observation
+import SwiftData
+import SwiftUI
 
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
@@ -45,7 +45,7 @@ struct SpeechView: View {
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
-			messageBuilder: { message, positionInGroup, positionInMessagesSection, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
+			messageBuilder: { message, positionInGroup, _, _, _, _, _ in
 				HStack(alignment: .bottom) {
 					if message.user.isCurrentUser {
 						Spacer()
@@ -143,7 +143,7 @@ struct SpeechView: View {
 				}
 				.padding()
 			}
-			inputViewBuilder: { text, attachments, inputViewState, inputViewStyle, inputViewActionClosure, dismissKeyboardClosure in
+			inputViewBuilder: { _, _, _, _, _, _ in
 				EmptyView()
 			}
 			.showMessageMenuOnLongPress(false)

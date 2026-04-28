@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 // MemberSpeechFeedViewModel.buildTopicCounts is a pure function — no network,
 // no SwiftData, no async. Tests exercise the sorting and deduplication logic
@@ -52,7 +52,7 @@ struct MemberSpeechFeedViewModelTests {
         let speeches = [
             entry(id: "1", topic: "Economy"),
             entry(id: "2", topic: "Economy"),
-            entry(id: "3", topic: "Economy"),
+            entry(id: "3", topic: "Economy")
         ]
         let result = MemberSpeechFeedViewModel.buildTopicCounts(from: speeches)
         #expect(result.count == 1)
@@ -66,7 +66,7 @@ struct MemberSpeechFeedViewModelTests {
             entry(id: "3", topic: "Economy"),
             entry(id: "4", topic: "Environment"),
             entry(id: "5", topic: "Environment"),
-            entry(id: "6", topic: "Environment"),
+            entry(id: "6", topic: "Environment")
         ]
         let result = MemberSpeechFeedViewModel.buildTopicCounts(from: speeches)
         #expect(result.count == 3)
@@ -83,7 +83,7 @@ struct MemberSpeechFeedViewModelTests {
             entry(id: "1", topic: "Defence"),
             entry(id: "2", topic: nil),
             entry(id: "3", topic: ""),
-            entry(id: "4", topic: "Defence"),
+            entry(id: "4", topic: "Defence")
         ]
         let result = MemberSpeechFeedViewModel.buildTopicCounts(from: speeches)
         #expect(result.count == 1)

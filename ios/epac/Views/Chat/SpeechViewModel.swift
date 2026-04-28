@@ -5,10 +5,10 @@
 //  Created by Sunny on 2025-05-24.
 //
 
-import Observation
-import ExyteChat
-import SwiftData
 import ActivityView
+import ExyteChat
+import Observation
+import SwiftData
 import SwiftUI
 
 @MainActor
@@ -196,5 +196,3 @@ class SpeechViewModel {
 	}
 }
 
-
-	

@@ -125,23 +125,23 @@ struct BillsService {
         var stages: [BillStage]
         if isHouseOriginating {
             stages = [
-                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst",  date: houseFirst),
+                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst", date: houseFirst),
                 makeStage(id: "\(number)-h2", nameKey: "bills.stage.houseSecond", date: houseSecond),
-                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird",  date: houseThird),
+                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird", date: houseThird),
                 makeStage(id: "\(number)-s1", nameKey: "bills.stage.senateFirst", date: senateFirst),
                 makeStage(id: "\(number)-s2", nameKey: "bills.stage.senateSecond", date: senateSecond),
-                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird",  date: senateThird),
-                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent",  date: royalAssent),
+                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird", date: senateThird),
+                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent", date: royalAssent)
             ]
         } else {
             stages = [
-                makeStage(id: "\(number)-s1", nameKey: "bills.stage.senateFirst",  date: senateFirst),
+                makeStage(id: "\(number)-s1", nameKey: "bills.stage.senateFirst", date: senateFirst),
                 makeStage(id: "\(number)-s2", nameKey: "bills.stage.senateSecond", date: senateSecond),
-                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird",  date: senateThird),
-                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst",   date: houseFirst),
-                makeStage(id: "\(number)-h2", nameKey: "bills.stage.houseSecond",  date: houseSecond),
-                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird",   date: houseThird),
-                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent",  date: royalAssent),
+                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird", date: senateThird),
+                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst", date: houseFirst),
+                makeStage(id: "\(number)-h2", nameKey: "bills.stage.houseSecond", date: houseSecond),
+                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird", date: houseThird),
+                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent", date: royalAssent)
             ]
         }
 

@@ -159,20 +159,20 @@ struct SenatorsService {
 
     private static func provinceAbbrev(_ full: String) -> String {
         let map: [String: String] = [
-            "British Columbia":          "BC",
-            "Alberta":                   "AB",
-            "Saskatchewan":              "SK",
-            "Manitoba":                  "MB",
-            "Ontario":                   "ON",
-            "Quebec":                    "QC",
-            "Québec":                    "QC",
-            "New Brunswick":             "NB",
-            "Nova Scotia":               "NS",
-            "Prince Edward Island":      "PE",
+            "British Columbia": "BC",
+            "Alberta": "AB",
+            "Saskatchewan": "SK",
+            "Manitoba": "MB",
+            "Ontario": "ON",
+            "Quebec": "QC",
+            "Québec": "QC",
+            "New Brunswick": "NB",
+            "Nova Scotia": "NS",
+            "Prince Edward Island": "PE",
             "Newfoundland and Labrador": "NL",
-            "Northwest Territories":     "NT",
-            "Nunavut":                   "NU",
-            "Yukon":                     "YT"
+            "Northwest Territories": "NT",
+            "Nunavut": "NU",
+            "Yukon": "YT"
         ]
         return map[full] ?? (full.count == 2 ? full.uppercased() : "")
     }
@@ -191,7 +191,7 @@ struct SenatorsService {
 
     private static func saveToCache(_ senators: [Senator]) {
         guard let data = try? JSONEncoder().encode(senators) else { return }
-        UserDefaults.standard.set(data,  forKey: cacheKey)
+        UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimestampKey)
     }
 }

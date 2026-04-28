@@ -5,10 +5,10 @@
 //  Created by Sunny on 2024-12-08.
 //
 
-import SwiftUI
-import SwiftData
 import BackgroundTasks
 import Sentry
+import SwiftData
+import SwiftUI
 import UIKit
 
 enum AppRuntime {
@@ -96,7 +96,7 @@ struct epacApp: App {
 				.environment(notificationManager)
 		}
 		.modelContainer(sharedModelContainer)
-		.onChange(of: scenePhase) { oldPhase, newPhase in
+		.onChange(of: scenePhase) { _, newPhase in
 			if newPhase == .active {
 				// Snapshot the latest-seen bill introduction date so BillsView can mark
 				// bills introduced since the previous session as "New" this session.

@@ -5,9 +5,9 @@
 //  Created by Sunny on 2026-01-29.
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
+import SwiftData
+import SwiftUI
 
 struct ExpendituresView: View {
     @Environment(\.modelContext) private var modelContext
@@ -83,7 +83,7 @@ struct ExpendituresView: View {
                     searchBar
                 }
                 .padding(.bottom, 10)
-            }
+        }
             .navigationTitle("Expenditures")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -120,7 +120,7 @@ struct ExpendituresView: View {
             .onAppear {
                 Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
             }
-            .onChange(of: expenditures) { oldValue, newValue in
+            .onChange(of: expenditures) { _, newValue in
                 Log.debug("Expenditures query updated. New count: \(newValue.count)")
             }
     }
@@ -265,7 +265,7 @@ struct ExpenditureRow: View {
     }
 }
 
-//private struct MemberAvatar: View {
+// private struct MemberAvatar: View {
 //    let member: ParliamentMember
 //
 //    var body: some View {
@@ -294,4 +294,4 @@ struct ExpenditureRow: View {
 //        }
 //        .background(Color(.systemGray6))
 //    }
-//}
+// }

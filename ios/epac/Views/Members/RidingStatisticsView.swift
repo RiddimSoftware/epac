@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // Shows socioeconomic statistics for a federal electoral district.
 // Primary data source: Statistics Canada 2021 Census Profile for
@@ -34,11 +34,11 @@ struct RidingStatisticsView: View {
 	private static let infrastructurePortfolioURL = URL(string: "https://housing-infrastructure.canada.ca/plan/about-invest-apropos-eng.html")!
 
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
-		("Population & Age",      "person.2.fill",      .blue),
-		("Income & Employment",   "banknote.fill",      .green),
-		("Housing",               "house.fill",         .orange),
-		("Education",             "graduationcap.fill", .purple),
-		("Immigration & Diversity","globe",             .teal),
+		("Population & Age", "person.2.fill", .blue),
+		("Income & Employment", "banknote.fill", .green),
+		("Housing", "house.fill", .orange),
+		("Education", "graduationcap.fill", .purple),
+		("Immigration & Diversity", "globe", .teal)
 	]
 
 	var body: some View {
@@ -386,7 +386,7 @@ struct RidingStatisticsView: View {
 			URLQueryItem(name: "Lang", value: "E"),
 			URLQueryItem(name: "type", value: "0"),
 			URLQueryItem(name: "SurveyID", value: "1178"),
-			URLQueryItem(name: "keyword", value: member.riding),
+			URLQueryItem(name: "keyword", value: member.riding)
 		]
 		return components.url ?? URL(string: Self.statcanBaseURL)!
 	}

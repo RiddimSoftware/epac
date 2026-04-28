@@ -1,5 +1,5 @@
-import SwiftUI
 import StoreKit
+import SwiftUI
 
 // MARK: — Data models (clip-local, no SwiftData)
 
@@ -93,8 +93,7 @@ struct ClipRootView: View {
                         Task { await lookup() }
                     } label: {
                         Group {
-                            if isLoading { ProgressView().tint(.white) }
-                            else { Text("Look Up") }
+                            if isLoading { ProgressView().tint(.white) } else { Text("Look Up") }
                         }
                         .frame(maxWidth: .infinity)
                         .padding()

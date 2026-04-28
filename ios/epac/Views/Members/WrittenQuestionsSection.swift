@@ -5,8 +5,8 @@
 // submitted by an MP. Data from api.open.ourcommons.ca. Overdue questions (no response
 // after 45 days) shown with a distinct badge per Parliament of Canada convention.
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct WrittenQuestionsSection: View {
     let member: ParliamentMember
