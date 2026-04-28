@@ -8,6 +8,11 @@ metadata_path "./fastlane/metadata"
 screenshots_path "./fastlane/screenshots"
 skip_screenshots true
 
+# App preview videos live in ios/fastlane/app-previews/<locale>/ and follow fastlane's
+# device-token naming convention (e.g. IPHONE_67_*.mp4 → iPhone 6.7" Display preview set).
+# Uploaded by the release workflow alongside screenshots; idempotent on re-run via MD5 dedup.
+app_previews_path "./fastlane/app-previews"
+
 # Don't automatically release after approval — release manager controls rollout
 automatic_release false
 

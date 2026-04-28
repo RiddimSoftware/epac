@@ -6,6 +6,9 @@ IOS_DIR="$ROOT_DIR/ios"
 OUTPUT_DIR="$ROOT_DIR/docs/marketing/preview"
 RAW_VIDEO="$OUTPUT_DIR/raw-capture.mp4"
 FINAL_VIDEO="$OUTPUT_DIR/app-preview-final.mp4"
+FASTLANE_PREVIEW_DIR="$ROOT_DIR/ios/fastlane/app-previews/en-US"
+# Fastlane requires a device-token in the filename (IPHONE_67 = iPhone 6.7" Display).
+FASTLANE_PREVIEW_VIDEO="$FASTLANE_PREVIEW_DIR/IPHONE_67_app-preview.mp4"
 DEVICE_NAME="${DEVICE_NAME:-iPhone 17 Pro Max}"
 DESTINATION="${DESTINATION:-platform=iOS Simulator,name=$DEVICE_NAME}"
 
@@ -47,3 +50,7 @@ ffmpeg -y -i "$RAW_VIDEO" -t 30 -vf "scale=886:1920:force_original_aspect_ratio=
 
 ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -show_entries format=duration -of default=noprint_wrappers=1 "$FINAL_VIDEO"
 echo "Wrote $FINAL_VIDEO"
+
+mkdir -p "$FASTLANE_PREVIEW_DIR"
+cp "$FINAL_VIDEO" "$FASTLANE_PREVIEW_VIDEO"
+echo "Wrote $FASTLANE_PREVIEW_VIDEO"
