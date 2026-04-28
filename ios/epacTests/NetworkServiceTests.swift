@@ -243,6 +243,70 @@ struct NetworkServiceTests {
         #expect(seenValidators == [nil, #""bills-v1""#, nil])
     }
 
+    @Test func backendRequestsAttachAnonymousDeviceIDForRateLimiting() async throws {
+        let url = BackendConfig.shared.baseURL.appending(path: "/api/v1/live")
+        let harness = try makeHarness()
+        var seenDeviceIDs: [String?] = []
+
+        MockURLProtocol.requestHandler = { request in
+            seenDeviceIDs.append(request.value(forHTTPHeaderField: "X-Device-ID"))
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data(#"{"status":"ok"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            rateLimitDeviceIDProvider: { "review-device-id" }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        _ = try await service.data(from: url)
+
+        #expect(seenDeviceIDs == ["review-device-id"])
+    }
+
+    @Test func externalRequestsDoNotAttachRateLimitDeviceID() async throws {
+        let url = URL(string: "https://example.test/api/v1/live")!
+        let harness = try makeHarness()
+        var seenDeviceIDs: [String?] = []
+
+        MockURLProtocol.requestHandler = { request in
+            seenDeviceIDs.append(request.value(forHTTPHeaderField: "X-Device-ID"))
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data(#"{"status":"ok"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            rateLimitDeviceIDProvider: { "review-device-id" }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        _ = try await service.data(from: url)
+
+        #expect(seenDeviceIDs == [nil])
+    }
+
     @Test func rateLimitedResponseRetriesAfterRetryAfterDelay() async throws {
         let url = URL(string: "https://example.test/api/v1/live")!
         let harness = try makeHarness()

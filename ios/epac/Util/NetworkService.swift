@@ -13,21 +13,27 @@ struct NetworkService: @unchecked Sendable {
     private let session: URLSession
     private let cacheStore: HTTPResponseCacheStore
     private let sleep: @Sendable (Double) async throws -> Void
+    private let rateLimitDeviceIDProvider: @Sendable () -> String
     // 1 initial attempt + 3 retries = 4 total attempts.
     private let maxAttempts = 4
+    private static let rateLimitDeviceIDDefaultsKey = "NetworkService.RateLimitDeviceID"
 
     init(
         session: URLSession = .shared,
         cacheStore: HTTPResponseCacheStore = .shared,
-        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
+        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
+        rateLimitDeviceIDProvider: @escaping @Sendable () -> String = NetworkService.defaultRateLimitDeviceID
     ) {
         self.session = session
         self.cacheStore = cacheStore
         self.sleep = sleep
+        self.rateLimitDeviceIDProvider = rateLimitDeviceIDProvider
     }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let cachedRequest = cacheStore.prepare(request: request)
+        var outboundRequest = request
+        attachRateLimitDeviceIDIfNeeded(to: &outboundRequest)
+        let cachedRequest = cacheStore.prepare(request: outboundRequest)
         var lastError: Error?
         var pendingDelay: Double?
         for attempt in 0..<maxAttempts {
@@ -74,6 +80,34 @@ struct NetworkService: @unchecked Sendable {
 
     private func backoffDelay(for attempt: Int) -> Double {
         pow(2.0, Double(attempt)) // 1s, 2s, 4s
+    }
+
+    private func attachRateLimitDeviceIDIfNeeded(to request: inout URLRequest) {
+        guard request.value(forHTTPHeaderField: "X-Device-ID") == nil,
+              shouldAttachRateLimitDeviceID(to: request.url) else {
+            return
+        }
+        request.setValue(rateLimitDeviceIDProvider(), forHTTPHeaderField: "X-Device-ID")
+    }
+
+    private func shouldAttachRateLimitDeviceID(to url: URL?) -> Bool {
+        guard let url,
+              let requestHost = url.host?.lowercased(),
+              let backendHost = BackendConfig.shared.baseURL.host?.lowercased() else {
+            return false
+        }
+        return url.scheme == BackendConfig.shared.baseURL.scheme && requestHost == backendHost
+    }
+
+    private static func defaultRateLimitDeviceID() -> String {
+        if let existing = UserDefaults.standard.string(forKey: rateLimitDeviceIDDefaultsKey),
+           !existing.isEmpty {
+            return existing
+        }
+
+        let generated = UUID().uuidString
+        UserDefaults.standard.set(generated, forKey: rateLimitDeviceIDDefaultsKey)
+        return generated
     }
 
     private func retryDelay(from response: HTTPURLResponse) -> Double? {
