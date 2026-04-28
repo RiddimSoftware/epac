@@ -436,10 +436,17 @@
 "committees.noMeetings" = "Aucune réunion récente";
 "committees.meeting.number" = "Réunion %d";
 "committees.agenda" = "Ordre du jour";
+"committees.watchParlVU" = "Regarder la réunion du comité";
+"committees.openParlVUArchive" = "Ouvrir les archives ParlVU";
 "committees.viewTranscript" = "Voir la transcription complète sur parl.ca →";
 "committees.transcript.source" = "Les transcriptions complètes sont publiées par le Parlement du Canada sur parl.ca";
 "committees.witness" = "Témoin";
 "committees.mp" = "député(e)";
+
+/* Liens des débats */
+"speech.sourceLinks" = "Liens sources du débat";
+"speech.openOpenParliament" = "Ouvrir dans openparliament.ca";
+"speech.watchParlVU" = "Regarder sur ParlVU";
 
 /* Insigne de source de données (EPAC-104) */
 "dataSource.source" = "Source";

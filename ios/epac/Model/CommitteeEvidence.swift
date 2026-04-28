@@ -28,6 +28,7 @@ struct CommitteeMeeting: Identifiable, Codable {
     let parliament: Int
     let date: Date?
     let agendaItems: [String]     // list of agenda item titles
+    let webcastURL: URL?          // ParlVU or official House embed watch URL
     let publicationURL: URL?      // link to full transcript on parl.ca
     let evidenceURL: URL?         // direct link to the evidence publication
 }

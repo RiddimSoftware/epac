@@ -103,6 +103,14 @@ struct CommitteesService {
             let pubURL = pubURLStr.flatMap { URL(string: $0) }
             let evidenceURLStr = item["evidenceUrl"] as? String
             let evidenceURL = evidenceURLStr.flatMap { URL(string: $0) }
+            let webcastURL = firstURL(
+                in: item,
+                keys: [
+                    "webcastUrl", "webcastURL", "webcastUrlEn", "webcastURLEN",
+                    "recordingUrl", "recordingURL", "recordingUrlEn",
+                    "parlVuUrl", "parlVUUrl", "parlvuUrl", "videoUrl"
+                ]
+            )
             return CommitteeMeeting(
                 id: "\(committeeId)-\(parl)-\(sessionNum)-\(meetingNum)",
                 committee: committeeId,
@@ -112,6 +120,7 @@ struct CommitteesService {
                 parliament: parl,
                 date: date,
                 agendaItems: agenda,
+                webcastURL: webcastURL,
                 publicationURL: pubURL,
                 evidenceURL: evidenceURL
             )
@@ -166,5 +175,15 @@ struct CommitteesService {
                 timestamp: ts
             )
         }
+    }
+
+    private static func firstURL(in item: [String: Any], keys: [String]) -> URL? {
+        for key in keys {
+            if let value = item[key] as? String,
+               let url = ParlVULinkBuilder.normalizedURL(from: value) {
+                return url
+            }
+        }
+        return nil
     }
 }
