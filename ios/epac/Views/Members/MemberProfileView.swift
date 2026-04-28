@@ -36,6 +36,7 @@ struct MemberProfileView: View {
 	@State private var lobbyingComms: [LobbyistCommunication] = []
 	@State private var showCopiedConfirmation = false
 	@State private var lobbyingLoaded = false
+	@State private var showEthics = false
 	@State private var shareItem: ActivityItem?
 
 	init(member: ParliamentMember) {
@@ -323,6 +324,56 @@ struct MemberProfileView: View {
 					}
 				}
 			}
+
+			// MARK: Ethics disclosures
+			let ethicsInvestigations = EthicsInvestigationsDatabase.investigations(for: member.lastName)
+			DisclosureGroup(
+				isExpanded: $showEthics,
+				content: {
+					if ethicsInvestigations.isEmpty {
+						VStack(alignment: .leading, spacing: 6) {
+							Text("No Commissioner reports found for this MP.")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+								.padding(.vertical, 4)
+							Link("View annual compliance status (CIEC)", destination: EthicsInvestigationsDatabase.complianceStatusURL)
+								.font(.caption)
+							Link("Public registry — disclosures and statements", destination: EthicsInvestigationsDatabase.registryURL)
+								.font(.caption)
+						}
+					} else {
+						ForEach(ethicsInvestigations) { investigation in
+							VStack(alignment: .leading, spacing: 3) {
+								Text(investigation.reportTitle)
+									.font(.subheadline)
+								Text("\(investigation.type) · \(EthicsInvestigationsDatabase.formattedDate(investigation.date))")
+									.font(.caption2)
+									.foregroundStyle(.secondary)
+								Link("Read report →", destination: investigation.pageURL)
+									.font(.caption2)
+									.foregroundStyle(.tint)
+							}
+							.padding(.vertical, 2)
+						}
+						Link("All Commissioner reports", destination: EthicsInvestigationsDatabase.commissionerURL)
+							.font(.caption)
+							.foregroundStyle(.tint)
+					}
+				},
+				label: {
+					HStack {
+						Image(systemName: "checkmark.shield.fill")
+							.foregroundStyle(.tint)
+						Text("Ethics Disclosures")
+							.font(.subheadline)
+							.fontWeight(.semibold)
+					}
+				}
+			)
+			.padding()
+			.background(Color.appSurface)
+			.cornerRadius(12)
+
 			// MARK: Written Questions
 			WrittenQuestionsSection(member: member)
 
@@ -343,6 +394,7 @@ struct MemberProfileView: View {
 		.accessibilityIdentifier("mp-profile-scroll")
 		.padding()
 		.animation(.none, value: showLobbying)
+		.animation(.none, value: showEthics)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
 			if member.memberID > 0 {

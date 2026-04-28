@@ -1,0 +1,274 @@
+{
+  "generated_at": "2026-04-28T00:00:00Z",
+  "source": {
+    "title": "Conflict of Interest and Ethics Commissioner — Investigation Reports",
+    "url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/InvestReport-RapportEnquete.aspx",
+    "note": "Contains Examination Reports under the Conflict of Interest Act (S.C. 2006, c. 9) and Inquiry Reports under the Conflict of Interest Code for Members of the House of Commons. Only reports involving Members of Parliament or Ministers are included. Not all subjects were found in violation."
+  },
+  "investigations": [
+    {
+      "subject_last_name": "Trudeau",
+      "subject_full_name": "Justin Trudeau",
+      "report_title": "The Trudeau Report (Act & Code)",
+      "date": "2017-12-20",
+      "type": "Act and Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/TrudeauReport.aspx"
+    },
+    {
+      "subject_last_name": "Trudeau",
+      "subject_full_name": "Justin Trudeau",
+      "report_title": "Trudeau II Report",
+      "date": "2019-08-14",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/TrudeauIIReport-RapportTrudeauII.aspx"
+    },
+    {
+      "subject_last_name": "Trudeau",
+      "subject_full_name": "Justin Trudeau",
+      "report_title": "Trudeau III Report",
+      "date": "2021-05-13",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/trudeau3Report.aspx"
+    },
+    {
+      "subject_last_name": "Morneau",
+      "subject_full_name": "Bill Morneau",
+      "report_title": "Morneau Report",
+      "date": "2018-06-18",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/MorneauReport.aspx"
+    },
+    {
+      "subject_last_name": "Morneau",
+      "subject_full_name": "Bill Morneau",
+      "report_title": "Morneau II Report",
+      "date": "2021-05-13",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/Morneau2Report.aspx"
+    },
+    {
+      "subject_last_name": "Raitt",
+      "subject_full_name": "Lisa Raitt",
+      "report_title": "The Raitt Report",
+      "date": "2010-05-13",
+      "type": "Act and Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/RaittReport.aspx"
+    },
+    {
+      "subject_last_name": "Raitt",
+      "subject_full_name": "Lisa Raitt",
+      "report_title": "The Raitt Report",
+      "date": "2012-04-26",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/RaittReport2.aspx"
+    },
+    {
+      "subject_last_name": "Clement",
+      "subject_full_name": "Tony Clement",
+      "report_title": "Referral: The Clement Report",
+      "date": "2012-07-18",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ClementReport.aspx"
+    },
+    {
+      "subject_last_name": "Paradis",
+      "subject_full_name": "Christian Paradis",
+      "report_title": "The Paradis Report",
+      "date": "2012-03-22",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ParadisReport.aspx"
+    },
+    {
+      "subject_last_name": "Paradis",
+      "subject_full_name": "Christian Paradis",
+      "report_title": "The Paradis Report",
+      "date": "2013-08-07",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ParadisIIReport.aspx"
+    },
+    {
+      "subject_last_name": "Paradis",
+      "subject_full_name": "Christian Paradis",
+      "report_title": "The Paradis Report (Act & Code)",
+      "date": "2013-12-03",
+      "type": "Act and Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ParadisIIIReport.aspx"
+    },
+    {
+      "subject_last_name": "Hill",
+      "subject_full_name": "Jay Hill",
+      "report_title": "The Hill Report",
+      "date": "2013-03-26",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/HillReport.aspx"
+    },
+    {
+      "subject_last_name": "Glover",
+      "subject_full_name": "Shelly Glover",
+      "report_title": "The Glover Report",
+      "date": "2014-11-20",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/GloverReport.aspx"
+    },
+    {
+      "subject_last_name": "Lynn",
+      "subject_full_name": "Laurie Lynn",
+      "report_title": "The Lynn Report",
+      "date": "2014-06-26",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/LynnReport.aspx"
+    },
+    {
+      "subject_last_name": "Finley",
+      "subject_full_name": "Diane Finley",
+      "report_title": "The Finley Report",
+      "date": "2015-03-10",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/FinleyReport.aspx"
+    },
+    {
+      "subject_last_name": "Gill",
+      "subject_full_name": "Parm Gill",
+      "report_title": "The Gill Report",
+      "date": "2016-02-24",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/GillReport.aspx"
+    },
+    {
+      "subject_last_name": "Philpott",
+      "subject_full_name": "Jane Philpott",
+      "report_title": "The Philpott Report",
+      "date": "2016-12-21",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/PhilpottReport.aspx"
+    },
+    {
+      "subject_last_name": "Bennett",
+      "subject_full_name": "Carolyn Bennett",
+      "report_title": "Referral: The Bennett Report",
+      "date": "2016-11-17",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/BennettReport.aspx"
+    },
+    {
+      "subject_last_name": "Chapman",
+      "subject_full_name": "Chris Chapman",
+      "report_title": "Chapman Report",
+      "date": "2018-06-22",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ChapmanReport.aspx"
+    },
+    {
+      "subject_last_name": "LeBlanc",
+      "subject_full_name": "Dominic LeBlanc",
+      "report_title": "LeBlanc Report",
+      "date": "2018-09-12",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/Leblanc-Report.aspx"
+    },
+    {
+      "subject_last_name": "Qualtrough",
+      "subject_full_name": "Carla Qualtrough",
+      "report_title": "Qualtrough Report",
+      "date": "2020-04-22",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/QualtroughReport.aspx"
+    },
+    {
+      "subject_last_name": "Miller",
+      "subject_full_name": "Marc Miller",
+      "report_title": "Miller Report",
+      "date": "2020-04-22",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/MillerReport.aspx"
+    },
+    {
+      "subject_last_name": "Ng",
+      "subject_full_name": "Mary Ng",
+      "report_title": "Ng Report",
+      "date": "2022-12-13",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/NgReport.aspx"
+    },
+    {
+      "subject_last_name": "Scott",
+      "subject_full_name": "Marc Scott",
+      "report_title": "Scott Report",
+      "date": "2022-08-24",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/Scottreport.aspx"
+    },
+    {
+      "subject_last_name": "Fergus",
+      "subject_full_name": "Greg Fergus",
+      "report_title": "Fergus Report",
+      "date": "2023-02-14",
+      "type": "Act",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/FergusReport-RapportFergus.aspx"
+    },
+    {
+      "subject_last_name": "Guergis",
+      "subject_full_name": "Helena Guergis",
+      "report_title": "The Guergis Report",
+      "date": "2011-07-14",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/GuergisReport.aspx"
+    },
+    {
+      "subject_last_name": "Angus",
+      "subject_full_name": "Charlie Angus",
+      "report_title": "Angus Report I",
+      "date": "2018-06-14",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/Angus1Report.aspx"
+    },
+    {
+      "subject_last_name": "Angus",
+      "subject_full_name": "Charlie Angus",
+      "report_title": "Angus Report II",
+      "date": "2018-06-14",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/Angus2Report.aspx"
+    },
+    {
+      "subject_last_name": "Kusie",
+      "subject_full_name": "Stephanie Kusie",
+      "report_title": "Kusie Report",
+      "date": "2018-12-04",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/KusieReport.aspx"
+    },
+    {
+      "subject_last_name": "Vandenbeld",
+      "subject_full_name": "Anita Vandenbeld",
+      "report_title": "Vandenbeld Report",
+      "date": "2019-07-10",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/VandenbeldReport.aspx"
+    },
+    {
+      "subject_last_name": "Peschisolido",
+      "subject_full_name": "Joe Peschisolido",
+      "report_title": "Peschisolido Report",
+      "date": "2020-02-05",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/PeschisolidoReport.aspx"
+    },
+    {
+      "subject_last_name": "Maloney",
+      "subject_full_name": "Jim Maloney",
+      "report_title": "Maloney Report",
+      "date": "2020-11-19",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/MaloneyReport.aspx"
+    },
+    {
+      "subject_last_name": "Ratansi",
+      "subject_full_name": "Yasmin Ratansi",
+      "report_title": "Ratansi Report",
+      "date": "2021-06-15",
+      "type": "Code",
+      "page_url": "https://ciec-ccie.parl.gc.ca/en/investigations-enquetes/Pages/ratansiReport.aspx"
+    }
+  ]
+}
