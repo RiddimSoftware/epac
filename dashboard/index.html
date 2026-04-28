@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>epac - Project Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d10;
+      --panel: #171a1f;
+      --panel-2: #20242b;
+      --border: #303641;
+      --text: #f4f7fb;
+      --muted: #a8b1bd;
+      --green: #30d158;
+      --amber: #ffd60a;
+      --red: #ff453a;
+      --blue: #64a7ff;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1220px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+      padding: 16px 0 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 4.25rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .mission {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mission p, .meta {
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      text-align: right;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .two-col {
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+      align-items: start;
+    }
+
+    .panel, .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .metric {
+      min-height: 142px;
+      padding: 18px;
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(2.25rem, 5vw, 4rem);
+      line-height: 0.9;
+      letter-spacing: 0;
+    }
+
+    .metric span, .label, .subtle {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .healthy {
+      border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+    }
+
+    .attention {
+      border-color: color-mix(in srgb, var(--amber) 45%, var(--border));
+    }
+
+    .danger {
+      border-color: color-mix(in srgb, var(--red) 50%, var(--border));
+    }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .ticket, .release, .health-row {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      background: var(--panel-2);
+      border: 1px solid transparent;
+      border-radius: 8px;
+    }
+
+    .ticket-main {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .dot.high {
+      background: var(--amber);
+    }
+
+    .key {
+      color: var(--text);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-self: start;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #2c3340;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .summary {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .progress-list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .progress-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .progress-label {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .progress-track {
+      height: 9px;
+      background: #2b3038;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: var(--pct);
+      background: var(--green);
+      border-radius: inherit;
+    }
+
+    .release-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    .release ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .health-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .mission-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mission-stat {
+      padding: 18px;
+      background: var(--panel-2);
+      border-radius: 8px;
+      min-height: 128px;
+    }
+
+    .mission-stat strong {
+      display: block;
+      margin: 10px 0 4px;
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .empty, .error {
+      padding: 18px;
+      color: var(--muted);
+      background: var(--panel-2);
+      border-radius: 8px;
+    }
+
+    .error {
+      color: var(--amber);
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(320px, calc(100vw - 32px));
+        padding-top: 18px;
+      }
+
+      header {
+        display: grid;
+        align-items: start;
+      }
+
+      .meta {
+        text-align: left;
+      }
+
+      .metrics, .two-col, .mission-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .ticket-main {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .key {
+        grid-column: 2;
+      }
+
+      .summary {
+        grid-column: 2;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+      }
+
+      .ticket-main .subtle {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="mission">
+        <h1>epac</h1>
+        <p>The one place Canadians go for true, useful, relevant government data</p>
+      </div>
+      <p class="meta" id="updated">Loading dashboard data...</p>
+    </header>
+
+    <section class="grid metrics" id="metrics" aria-label="At a glance"></section>
+
+    <section class="grid two-col">
+      <div class="panel">
+        <div class="section-head">
+          <h2>Shipping Now</h2>
+          <span class="subtle" id="shipping-count"></span>
+        </div>
+        <div class="list" id="in-progress"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-head">
+          <h2>Backlog Health</h2>
+        </div>
+        <div class="list" id="backlog-health"></div>
+      </div>
+    </section>
+
+    <section class="grid two-col">
+      <div class="panel">
+        <div class="section-head">
+          <h2>Epic Progress</h2>
+          <span class="subtle" id="epic-count"></span>
+        </div>
+        <div class="progress-list" id="epics"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-head">
+          <h2>Recent Releases</h2>
+        </div>
+        <div class="list" id="releases"></div>
+      </div>
+    </section>
+
+    <section class="panel grid">
+      <div class="section-head">
+        <h2>Mission Progress</h2>
+      </div>
+      <div class="grid mission-stats" id="mission-stats"></div>
+    </section>
+  </main>
+
+  <script>
+    const defaultJira = {
+      generated_at: null,
+      summary: {},
+      total_issues: 0,
+      in_progress: [],
+      done_this_week: [],
+      high_priority_bugs: [],
+      epic_progress: []
+    };
+
+    const defaultAsc = {
+      generated_at: null,
+      app_name: "epac",
+      recent_reviews: []
+    };
+
+    const missionStats = [
+      ["Data Sources Live", "15", "official government sources"],
+      ["Provincial Coverage", "3 / 13", "provinces with data"],
+      ["Civic Features", "24", "civic action features"]
+    ];
+
+    async function loadJson(path, fallback) {
+      try {
+        const response = await fetch(path, { cache: "no-store" });
+        if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+        return await response.json();
+      } catch (error) {
+        console.warn(error);
+        return fallback;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function relativeTime(value) {
+      if (!value) return "not refreshed yet";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "not refreshed yet";
+      const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+      if (minutes < 1) return "just now";
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return `${hours}h ago`;
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function metricHealth(kind, value) {
+      if (kind === "bugs") return value > 5 ? "danger" : value > 0 ? "attention" : "healthy";
+      if (kind === "rating") return value && value < 4 ? "danger" : "healthy";
+      if (kind === "backlog") return value < 20 ? "attention" : "healthy";
+      return "healthy";
+    }
+
+    function renderMetrics(jira, asc) {
+      const summary = jira.summary || {};
+      const backlog = summary["To Do"] || 0;
+      const bugs = (jira.high_priority_bugs || []).length;
+      const rating = asc.average_rating || asc.rating || null;
+      const reviewCount = asc.review_count || (asc.recent_reviews || []).length;
+      const cards = [
+        ["Shipping Now", (jira.in_progress || []).length, "In Progress", "shipping"],
+        ["Backlog Depth", backlog || jira.total_issues || 0, backlog ? "To Do items" : "Tracked issues", "backlog"],
+        ["Bugs (High P)", bugs, "Open bugs", "bugs"],
+        ["App Rating", rating ? Number(rating).toFixed(1) : "n/a", `${reviewCount || 0} reviews sampled`, "rating"]
+      ];
+      document.getElementById("metrics").innerHTML = cards.map(([title, value, label, kind]) => (
+        `<article class="metric ${metricHealth(kind, Number(value) || 0)}">
+          <span>${escapeHtml(title)}</span>
+          <div><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>
+        </article>`
+      )).join("");
+    }
+
+    function renderInProgress(items) {
+      const sorted = [...(items || [])].sort((a, b) => {
+        const ap = a.type === "Bug" ? 0 : 1;
+        const bp = b.type === "Bug" ? 0 : 1;
+        return ap - bp || String(b.updated || "").localeCompare(String(a.updated || ""));
+      });
+      document.getElementById("shipping-count").textContent = `${sorted.length} active`;
+      document.getElementById("in-progress").innerHTML = sorted.length ? sorted.slice(0, 8).map(item => (
+        `<article class="ticket">
+          <div class="ticket-main">
+            <span class="dot ${item.type === "Bug" ? "high" : ""}"></span>
+            <span class="key">${escapeHtml(item.key)}</span>
+            <span class="summary">${escapeHtml(item.summary)}</span>
+            <span class="subtle">${relativeTime(item.updated)}</span>
+          </div>
+          <span class="badge">${escapeHtml(item.type || "Issue")}</span>
+        </article>`
+      )).join("") : `<p class="empty">No tickets are currently in progress.</p>`;
+    }
+
+    function renderEpics(epics) {
+      const visible = [...(epics || [])].filter(epic => epic.total > 0).slice(0, 12);
+      document.getElementById("epic-count").textContent = `${visible.length} tracked`;
+      document.getElementById("epics").innerHTML = visible.length ? visible.map(epic => {
+        const pct = Math.max(0, Math.min(100, Number(epic.pct) || 0));
+        return `<div class="progress-row">
+          <div class="progress-label">
+            <span>${escapeHtml(epic.summary)}</span>
+            <span>${pct}% (${escapeHtml(epic.done)}/${escapeHtml(epic.total)})</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="--pct: ${pct}%"></div></div>
+        </div>`;
+      }).join("") : `<p class="empty">Epic progress will appear after dashboard data refreshes.</p>`;
+    }
+
+    function renderReleases(jira) {
+      const done = [...(jira.done_this_week || [])].slice(0, 4);
+      document.getElementById("releases").innerHTML = done.length ? done.map(item => (
+        `<article class="release">
+          <div class="release-title">
+            <span>${escapeHtml(item.key)} shipped</span>
+            <span class="subtle">${relativeTime(item.updated)}</span>
+          </div>
+          <ul><li>${escapeHtml(item.summary)}</li></ul>
+        </article>`
+      )).join("") : `<p class="empty">No completed tickets were reported in the latest dashboard data.</p>`;
+    }
+
+    function renderBacklogHealth(jira) {
+      const summary = jira.summary || {};
+      const rows = [
+        ["Total tracked issues", jira.total_issues || 0],
+        ["To Do", summary["To Do"] || 0],
+        ["In Progress", summary["In Progress"] || 0],
+        ["Done", summary["Done"] || 0],
+        ["High-priority bugs", (jira.high_priority_bugs || []).length]
+      ];
+      document.getElementById("backlog-health").innerHTML = rows.map(([label, value]) => (
+        `<div class="health-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+      )).join("");
+    }
+
+    function renderMissionStats() {
+      document.getElementById("mission-stats").innerHTML = missionStats.map(([label, value, detail]) => (
+        `<article class="mission-stat">
+          <span class="label">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <p class="subtle">${escapeHtml(detail)}</p>
+        </article>`
+      )).join("");
+    }
+
+    async function init() {
+      const [jira, asc] = await Promise.all([
+        loadJson("./data/jira.json", defaultJira),
+        loadJson("./data/asc.json", defaultAsc)
+      ]);
+      const updated = [jira.generated_at, asc.generated_at].filter(Boolean).sort().pop();
+      document.getElementById("updated").textContent =
+        `Last updated: ${relativeTime(updated)} | Data: Jira + App Store Connect`;
+      renderMetrics(jira, asc);
+      renderInProgress(jira.in_progress);
+      renderBacklogHealth(jira);
+      renderEpics(jira.epic_progress);
+      renderReleases(jira);
+      renderMissionStats();
+    }
+
+    init();
+  </script>
+</body>
+</html>

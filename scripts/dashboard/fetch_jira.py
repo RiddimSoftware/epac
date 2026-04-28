@@ -21,27 +21,30 @@ BASE = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3"
 def jql(query: str, fields: list[str], max_results: int = 200) -> list:
     """Run a JQL query, transparently paginating up to max_results."""
     results = []
-    start = 0
     page_size = min(100, max_results)
+    next_page_token = None
     while len(results) < max_results:
+        params = {
+            "jql": query,
+            "fields": ",".join(fields),
+            "maxResults": page_size,
+        }
+        if next_page_token:
+            params["nextPageToken"] = next_page_token
+
         r = requests.get(
-            f"{BASE}/search",
+            f"{BASE}/search/jql",
             auth=AUTH,
-            params={
-                "jql": query,
-                "fields": ",".join(fields),
-                "maxResults": page_size,
-                "startAt": start,
-            },
+            params=params,
             timeout=30,
         )
         r.raise_for_status()
         data = r.json()
         batch = data.get("issues", [])
         results.extend(batch)
-        if len(batch) < page_size or len(results) >= data.get("total", 0):
+        next_page_token = data.get("nextPageToken")
+        if data.get("isLast", True) or not next_page_token:
             break
-        start += len(batch)
     return results[:max_results]
 
 
@@ -50,6 +53,7 @@ def main() -> None:
     all_issues = jql(
         "project = EPAC AND issuetype != Epic ORDER BY updated DESC",
         ["summary", "status", "issuetype", "priority", "created", "updated", "parent"],
+        max_results=1000,
     )
 
     epics = jql(
