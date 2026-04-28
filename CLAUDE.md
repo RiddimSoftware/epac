@@ -74,7 +74,7 @@ Before requesting review, the author must:
 - [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
 - [ ] **Evidence posted.** Add a PR comment and a Jira comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
-- [ ] **Size.** Aim for < 400 changed lines. Larger changes need a written justification in the description.
+- [ ] **Size.** Aim for < 300 changed lines (tighter target for parallel work — see "Multi-developer workflow" below). Anything > 400 lines needs a written justification in the description and should be split if possible. Never mix feature and refactor in the same PR.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
@@ -176,6 +176,70 @@ The goal is for every review to feel like a conversation between two engineers w
 - distinguishes clearly between required changes, suggestions, and observations
 - references concrete evidence (a specific line, a linked article, a test result) for every required change
 - ends with an explicit approval or a clearly numbered list of what must change before approval
+
+---
+
+## Multi-developer workflow (EPAC-332)
+
+The team is sized for four developers shipping in parallel. The conventions below exist so concurrent work doesn't collide — most of them are silent enforcement (CODEOWNERS, branch protection, ruleset regex), and only the async standup needs a daily human action.
+
+### Code ownership — `.github/CODEOWNERS`
+
+`.github/CODEOWNERS` auto-assigns the right reviewer when a PR touches a given area. Today the team is solo so everything routes to `@sunnypurewal`; the future area assignments are commented in the file and uncommented as developers join:
+
+| Area | Pattern | Future owner |
+|---|---|---|
+| ViewModels | `ios/epac/Views/**/*ViewModel.swift` | developer-a |
+| Services / Managers | `ios/epac/Util/*Service.swift`, `*Manager.swift` | developer-b |
+| Backend pipelines | `backend/**` | developer-c |
+| Website | `website/**` | developer-d |
+| SwiftData migrations | `ios/epac/Model/Migration.swift`, `ios/epac/Model/Model.swift` | shared (always also `@sunnypurewal`) |
+
+When you add a developer to GitHub, replace the `@developer-x` placeholder, uncomment the line, commit. CODEOWNERS is plain text — no rebuild required.
+
+### Branch naming convention
+
+All branches must match `^(feature|fix|perf|refactor)/EPAC-\d+-.+$`. This is enforced by `.github/workflows/branch-name-check.yml`, a 5-second Ubuntu job that runs on every `pull_request` event and fails the PR if the head ref doesn't match. (We tried a GitHub repository ruleset `branch_name_pattern` first; the REST API rejected it with HTTP 422 — likely beta-gated for this repo. The workflow is Linux-only so it stays inside the project's CI cost decision.)
+
+| Prefix | Use when |
+|---|---|
+| `feature/` | New user-visible feature, schema addition, new screen |
+| `fix/` | Bug fix that the user (or a system) was experiencing |
+| `perf/` | Measured performance improvement (Instruments / MetricKit evidence required) |
+| `refactor/` | Internal restructuring with no behavioural change |
+
+`main` is always the default branch and is never pushed to directly.
+
+### PR size target
+
+The PR Author Checklist sets the soft target at < 300 lines and the justification threshold at 400. With four developers in flight, large PRs are the single biggest source of review-queue stalls and post-merge regressions — measure twice, cut once, split early. A PR that touches a feature *and* refactors surrounding code is two PRs; ship the refactor first, then the feature on top.
+
+### Shared model change protocol
+
+Any change to a SwiftData `@Model` (`ParliamentMember`, `Sitting`, `RecordedVote`, `Bill`, `Petition`, …) requires:
+
+1. A new `SchemaVN` and a migration stage in `EpacMigrationPlan` per **ADR-002** (see "SwiftData Schema Migration" below — this is non-negotiable, not just a recommendation).
+2. The PR description calls it out under **What changed** with the migration kind (lightweight vs custom) and the rationale.
+3. Comment the model PR in the daily async standup thread the same morning so the rest of the team can avoid touching the same models that day.
+4. Backend rebuilds the local Postgres + tsvector index (EPAC-452) the same day if the schema change has a backend mirror.
+
+The intent: nobody ever rebases on top of a SwiftData schema change without knowing it landed.
+
+### Daily async standup
+
+The team runs an **async** standup as a single GitHub Discussion thread per sprint (category `Standup`). Every developer posts one comment per working day by **10:00 ET**, in this format:
+
+```
+## YYYY-MM-DD — <handle>
+
+- **Today:** EPAC-NNN — <one-line summary> (touching <area / file globs>)
+- **Yesterday:** EPAC-NNN merged / EPAC-NNN paused on <reason>
+- **Blocked:** none / <ticket + what you need>
+```
+
+Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Jira ticket and the open PR list.
+
+The current sprint's Discussion thread is linked from the active sprint's planning ticket in Jira.
 
 ---
 
