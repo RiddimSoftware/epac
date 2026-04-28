@@ -22,10 +22,7 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 		t.Fatalf("content type = %q, want JSON", ct)
 	}
 
-	var spec struct {
-		OpenAPI string                                `json:"openapi"`
-		Paths   map[string]map[string]json.RawMessage `json:"paths"`
-	}
+	var spec openAPISpec
 	if err := json.Unmarshal([]byte(resp.Body), &spec); err != nil {
 		t.Fatalf("spec is not valid JSON: %v", err)
 	}
@@ -47,6 +44,123 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 		if _, ok := spec.Paths[path]; !ok {
 			t.Fatalf("spec missing required path %s", path)
 		}
+	}
+}
+
+func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
+	spec := readEmbeddedSpec(t)
+
+	requiredGETPaths := []string{
+		"/api/v1/sittings",
+		"/api/v1/sittings/{date}/speeches",
+		"/api/v1/members",
+		"/api/v1/members/{id}/votes",
+		"/api/v1/bills",
+		"/api/v1/live",
+		"/api/v1/config",
+		"/health",
+	}
+
+	for _, path := range requiredGETPaths {
+		operation, ok := spec.Paths[path]["get"]
+		if !ok {
+			t.Fatalf("%s missing GET operation", path)
+		}
+		assertDocumentedOperation(t, path, operation)
+	}
+
+	docsOperation, ok := spec.Paths["/docs"]["get"]
+	if !ok {
+		t.Fatal("/docs missing GET operation")
+	}
+	assertDocumentedOperation(t, "/docs", docsOperation)
+}
+
+func TestVersionedSpecEndpoint(t *testing.T) {
+	resp, err := handler(context.Background(), events.APIGatewayV2HTTPRequest{RawPath: "/api/v1/openapi.json"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got status %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+func TestDocsRenderWithQueryToken(t *testing.T) {
+	t.Setenv("OPENAPI_DOCS_TOKEN", "secret")
+	resp, err := handler(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath:               "/docs",
+		QueryStringParameters: map[string]string{"token": "secret"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got status %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+	if !strings.Contains(resp.Body, "/openapi.json") {
+		t.Fatal("docs HTML did not point at /openapi.json")
+	}
+}
+
+type openAPISpec struct {
+	OpenAPI string                             `json:"openapi"`
+	Paths   map[string]map[string]apiOperation `json:"paths"`
+}
+
+type apiOperation struct {
+	Summary   string                     `json:"summary"`
+	Responses map[string]operationResult `json:"responses"`
+}
+
+type operationResult struct {
+	Content map[string]mediaType `json:"content"`
+}
+
+type mediaType struct {
+	Schema   json.RawMessage            `json:"schema"`
+	Examples map[string]json.RawMessage `json:"examples"`
+}
+
+func readEmbeddedSpec(t *testing.T) openAPISpec {
+	t.Helper()
+
+	specBytes, err := specFS.ReadFile("openapi.json")
+	if err != nil {
+		t.Fatalf("read embedded spec: %v", err)
+	}
+
+	var spec openAPISpec
+	if err := json.Unmarshal(specBytes, &spec); err != nil {
+		t.Fatalf("spec is not valid JSON: %v", err)
+	}
+	return spec
+}
+
+func assertDocumentedOperation(t *testing.T, path string, operation apiOperation) {
+	t.Helper()
+
+	if operation.Summary == "" {
+		t.Fatalf("%s missing operation summary", path)
+	}
+
+	hasSchema := false
+	hasExample := false
+	for _, response := range operation.Responses {
+		for _, content := range response.Content {
+			if len(content.Schema) > 0 {
+				hasSchema = true
+			}
+			if len(content.Examples) > 0 {
+				hasExample = true
+			}
+		}
+	}
+	if !hasSchema {
+		t.Fatalf("%s missing response schema", path)
+	}
+	if !hasExample {
+		t.Fatalf("%s missing example response", path)
 	}
 }
 

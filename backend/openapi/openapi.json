@@ -52,7 +52,12 @@
             "description": "Swagger UI HTML",
             "content": {
               "text/html": {
-                "schema": { "type": "string" }
+                "schema": { "type": "string" },
+                "examples": {
+                  "html": {
+                    "value": "<!doctype html><html lang=\"en\"><head><title>epac API Docs</title></head><body><div id=\"swagger-ui\"></div></body></html>"
+                  }
+                }
               }
             }
           },
@@ -496,7 +501,25 @@
             "description": "All pipelines healthy",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+                "schema": { "$ref": "#/components/schemas/HealthResponse" },
+                "examples": {
+                  "ok": {
+                    "value": {
+                      "status": "ok",
+                      "checked_at": "2026-04-28T14:00:00Z",
+                      "pipelines": [
+                        {
+                          "name": "daily-fetch",
+                          "last_run_at": "2026-04-28T12:00:00Z",
+                          "last_success_at": "2026-04-28T12:00:00Z",
+                          "record_count": 42,
+                          "expected_interval_hours": 24,
+                          "healthy": true
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             }
           },
@@ -509,6 +532,31 @@
                     { "$ref": "#/components/schemas/HealthResponse" },
                     { "$ref": "#/components/schemas/ErrorResponse" }
                   ]
+                },
+                "examples": {
+                  "degraded": {
+                    "value": {
+                      "status": "degraded",
+                      "checked_at": "2026-04-28T14:00:00Z",
+                      "pipelines": [
+                        {
+                          "name": "daily-fetch",
+                          "last_run_at": "2026-04-25T12:00:00Z",
+                          "last_success_at": "2026-04-25T12:00:00Z",
+                          "last_error": "source returned 503",
+                          "record_count": 0,
+                          "expected_interval_hours": 24,
+                          "healthy": false,
+                          "stale_for": "72h0m0s"
+                        }
+                      ]
+                    }
+                  },
+                  "storageUnavailable": {
+                    "value": {
+                      "error": "db connect: DATABASE_URL not set"
+                    }
+                  }
                 }
               }
             }
