@@ -2,7 +2,7 @@
 
 **Ticket:** EPAC-535  
 **Duration:** 30 seconds  
-**Format:** H.264 MP4, 886x1920, 30fps, no audio  
+**Format:** H.264 MP4, 886x1920, 30fps, silent AAC audio
 **Output:** `docs/marketing/preview/app-preview-final.mp4`
 
 ## Automated production (recommended)
@@ -13,7 +13,7 @@ Run from the repository root:
 ./scripts/marketing/record-app-preview.sh
 ```
 
-The script builds the app, boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, and delegates final H.264/no-audio encoding to `evidence record-preview`.
+The script builds the app, boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, delegates final H.264 encoding to `evidence record-preview`, then adds the silent AAC audio track required by App Store Connect.
 
 **Prerequisites:**
 
@@ -44,7 +44,7 @@ Only use manual production if the automated script is broken and the video is ne
 2. Launch with `--app-preview-mode`.
 3. Start `simctl recordVideo`.
 4. Let the six-scene storyboard above run to completion.
-5. Stop recording and encode the final video as H.264, 886x1920, 30fps, no audio.
+5. Stop recording and encode the final video as H.264, 886x1920, 30fps, with a silent AAC audio track.
 
 ## Verification
 
@@ -55,9 +55,15 @@ ffprobe -v error \
   -show_entries format=duration \
   -of default=noprint_wrappers=1 \
   docs/marketing/preview/app-preview-final.mp4
+
+ffprobe -v error \
+  -select_streams a:0 \
+  -show_entries stream=codec_name,channels,sample_rate \
+  -of default=noprint_wrappers=1 \
+  docs/marketing/preview/app-preview-final.mp4
 ```
 
-Expected values: H.264 video, 886x1920, 30fps, 30 seconds +/- 1 second, no audio stream.
+Expected values: H.264 video, 886x1920, 30fps, 30 seconds +/- 1 second, plus a silent AAC stereo audio stream at 44.1 kHz.
 
 ## Upload
 

@@ -267,7 +267,8 @@ This script:
 2. Starts `simctl recordVideo`
 3. Runs `AppPreviewRecordingTests/testAppPreviewSequence`
 4. Trims and encodes the output to 30 seconds at 886x1920
-5. Writes `docs/marketing/preview/app-preview-final.mp4`
+5. Adds the silent AAC audio track App Store Connect expects
+6. Writes `docs/marketing/preview/app-preview-final.mp4`
 
 **When to regenerate:** After any change to `HomeFeedView`, `SpeechView`, `VoteDetailView`, lobbying views, or the contact sheet. The test catches navigation regressions; a failing test means the UI changed in a way that breaks the video sequence.
 
