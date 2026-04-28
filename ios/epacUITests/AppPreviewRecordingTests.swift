@@ -107,14 +107,14 @@ final class AppPreviewRecordingTests: XCTestCase {
     }
 
     private func assertIdentifiersExist(_ identifiers: [String], file: StaticString = #filePath, line: UInt = #line) {
-        for identifier in identifiers {
-            let query = app.descendants(matching: .any).matching(identifier: identifier)
-            let deadline = Date().addingTimeInterval(1)
-            while query.count == 0 && Date() < deadline {
-                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
-            }
-            XCTAssertGreaterThan(query.count, 0, "Expected accessibility identifier \(identifier)", file: file, line: line)
-        }
-    }
+		for identifier in identifiers {
+			let query = app.descendants(matching: .any).matching(identifier: identifier)
+			let deadline = Date().addingTimeInterval(1)
+			while !query.firstMatch.exists && Date() < deadline {
+				RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+			}
+			XCTAssertTrue(query.firstMatch.exists, "Expected accessibility identifier \(identifier)", file: file, line: line)
+		}
+	}
 
 }

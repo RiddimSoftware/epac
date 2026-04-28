@@ -1,6 +1,6 @@
+@testable import epac
 import Foundation
 import Testing
-@testable import epac
 
 struct CommitteeSummaryServiceTests {
 	@Test func filtersWitnessInterventionsOnly() {
@@ -74,6 +74,29 @@ struct CommitteeSummaryServiceTests {
 		#expect(first.first?.summary == "Original witness digest.")
 		#expect(second.first?.summary == "Corrected witness digest.")
 		#expect(await generator.promptCount() == 4)
+	}
+
+	@Test func transcriptCorrectionsInvalidateOverviewCache() async throws {
+		let generator = RecordingSummaryGenerator(responses: [
+			"Original intervention summary.",
+			"Original witness digest.",
+			"Original hearing overview.",
+			"Corrected intervention summary.",
+			"Corrected witness digest.",
+			"Corrected hearing overview."
+		])
+		let service = CommitteeSummaryService(generator: generator)
+		let meeting = committeeMeeting()
+		let original = [intervention(content: longText("Original testimony emphasized stable funding for rural care."))]
+		let corrected = [intervention(content: longText("Corrected testimony emphasized stable funding and public reporting for rural care."))]
+
+		let first = try await service.hearingOverview(for: meeting, interventions: original)
+		_ = try await service.witnessDigests(for: meeting, interventions: corrected)
+		let second = try await service.hearingOverview(for: meeting, interventions: corrected)
+
+		#expect(first == "Original hearing overview.")
+		#expect(second == "Corrected hearing overview.")
+		#expect(await generator.promptCount() == 6)
 	}
 
 	private func committeeMeeting() -> CommitteeMeeting {

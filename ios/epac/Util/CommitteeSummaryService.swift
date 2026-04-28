@@ -96,7 +96,7 @@ actor CommitteeSummaryService {
 			}
 		}
 
-		let existingOverview = cache[meeting.id]?.overview
+		let existingOverview = cache[meeting.id]?.cacheVersion == version ? cache[meeting.id]?.overview : nil
 		cache[meeting.id] = CommitteeHearingDigest(
 			meetingID: meeting.id,
 			cacheVersion: version,
