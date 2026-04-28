@@ -510,6 +510,7 @@
 "speech.unfollow" = "Ne plus suivre %@";
 "speech.goToProfile" = "Profil de %@";
 "speech.copyQuote" = "Copier la citation";
+"speech.messageActionsHint" = "Les actions du message sont disponibles dans le rotor";
 
 /* Menus contextuels — rangées de vote (EPAC-170) */
 "vote.contextMenu.share" = "Partager ce vote";

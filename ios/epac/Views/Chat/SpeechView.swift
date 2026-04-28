@@ -126,11 +126,11 @@ struct SpeechView: View {
 					.accessibilityLabel(messageAccessibilityLabel(message))
 					.accessibilityValue(messageAccessibilityValue(message))
 					.accessibilityAddTraits(.isStaticText)
-					.accessibilityHint("Message actions are available from the rotor")
+					.accessibilityHint(NSLocalizedString("speech.messageActionsHint", comment: ""))
 					.accessibilityAction(named: NSLocalizedString("speech.copyQuote", comment: "")) {
 						UIPasteboard.general.string = message.text
 					}
-					.accessibilityAction(named: "View member profile") {
+					.accessibilityAction(named: NSLocalizedString("View member profile", comment: "")) {
 						if let speaker = viewModel.speakers[message.id] {
 							openSpeakerProfile(speaker)
 						}
