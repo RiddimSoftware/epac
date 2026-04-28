@@ -36,6 +36,7 @@ Date: YYYY-MM-DD
 | Campaign Links — riding pages (`epac-web-riding`) | | | |
 | Campaign Links — newsletter (`epac-newsletter`) | | | |
 | Campaign Links — social (`epac-bluesky`, `epac-twitter`) | | | |
+| Campaign Links — Product Hunt (`epac-product-hunt`) | | | |
 
 ### Top 5 App Store search terms (Analytics → Acquisition → App Store Search)
 
@@ -58,6 +59,29 @@ Date: YYYY-MM-DD
 | Riding pages — total clicks | | | |
 | Topic pages — total clicks | | | |
 | Pages indexed | | | target: 338+ riding + topic + main |
+
+---
+
+## Product Hunt Launch
+
+Fill this section only in a Product Hunt launch month.
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Launch URL | | |
+| Launch date | | |
+| End-of-day rank | | |
+| Upvotes | | |
+| Comments | | |
+| Product Hunt referral sessions | | |
+| App Store installs via `epac-product-hunt` | | |
+| Product page conversion rate on launch day | | |
+
+### Product Hunt feedback themes
+
+1. [theme]
+2. [theme]
+3. [theme]
 
 ### Top 5 queries by clicks
 
