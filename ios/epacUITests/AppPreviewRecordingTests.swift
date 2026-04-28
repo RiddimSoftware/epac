@@ -10,12 +10,15 @@ import XCTest
 
 final class AppPreviewRecordingTests: XCTestCase {
     private var app: XCUIApplication!
+    private let recordingSceneHold: TimeInterval = 2.75
     private var isRecordingRun: Bool {
+        name.contains("testAppPreviewRecordingSequence") ||
         ProcessInfo.processInfo.environment["APP_PREVIEW_RECORDING"] == "1"
     }
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        executionTimeAllowance = 60
         app = XCUIApplication()
         if isRecordingRun {
             app.launchArguments = ["--app-preview-mode", "-UIAnimationsDisabled", "YES"]
@@ -40,6 +43,14 @@ final class AppPreviewRecordingTests: XCTestCase {
     }
 
     func testAppPreviewSequence() throws {
+        try runAppPreviewSequence()
+    }
+
+    func testAppPreviewRecordingSequence() throws {
+        try runAppPreviewSequence()
+    }
+
+    private func runAppPreviewSequence() throws {
         if !isRecordingRun {
             try waitForScene(headline: "Your MP. Everything they do.", timeout: 7)
             assertIdentifiersExist([
@@ -63,19 +74,19 @@ final class AppPreviewRecordingTests: XCTestCase {
             return
         }
 
-        // Recording path: deterministic tap-to-advance with 3s holds per scene.
+        // Recording path: deterministic tap-to-advance with short sleep chunks.
         // Manual sequencing avoids the flaky XCTest runner timing in EPAC-537.
-        try waitForScene(headline: "Your MP. Everything they do.", timeout: 10, hold: 3)
+        try waitForScene(headline: "Your MP. Everything they do.", timeout: 10, hold: recordingSceneHold)
         advanceToNextScene()
-        try waitForScene(headline: "Every word. Every vote.", timeout: 5, hold: 3)
+        try waitForScene(headline: "Every word. Every vote.", timeout: 5, hold: recordingSceneHold)
         advanceToNextScene()
-        try waitForScene(headline: "Hansard. Finally readable.", timeout: 5, hold: 3)
+        try waitForScene(headline: "Hansard. Finally readable.", timeout: 5, hold: recordingSceneHold)
         advanceToNextScene()
-        try waitForScene(headline: "Who's influencing them?", timeout: 5, hold: 3)
+        try waitForScene(headline: "Who's influencing them?", timeout: 5, hold: recordingSceneHold)
         advanceToNextScene()
-        try waitForScene(headline: "They said it. Then voted against it.", timeout: 5, hold: 3)
+        try waitForScene(headline: "They said it. Then voted against it.", timeout: 5, hold: recordingSceneHold)
         advanceToNextScene()
-        try waitForScene(headline: "Democracy. One tap.", timeout: 5, hold: 3)
+        try waitForScene(headline: "Democracy. One tap.", timeout: 5, hold: recordingSceneHold)
     }
 
     private func advanceToNextScene() {
@@ -92,18 +103,27 @@ final class AppPreviewRecordingTests: XCTestCase {
         let title = app.staticTexts[headline].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: timeout), "Expected scene headline \(headline)", file: file, line: line)
         if let hold {
-            Thread.sleep(forTimeInterval: hold)
+            holdScene(for: hold)
+        }
+    }
+
+    private func holdScene(for duration: TimeInterval) {
+        var remaining = duration
+        while remaining > 0 {
+            let interval = min(remaining, 1.0)
+            Thread.sleep(forTimeInterval: interval)
+            remaining -= interval
         }
     }
 
     private func assertIdentifiersExist(_ identifiers: [String], file: StaticString = #filePath, line: UInt = #line) {
+        guard let firstIdentifier = identifiers.first else { return }
+        let firstProbe = app.staticTexts[firstIdentifier].firstMatch
+        XCTAssertTrue(firstProbe.waitForExistence(timeout: 2), "Expected accessibility identifier \(firstIdentifier)", file: file, line: line)
+
+        let labels = Set(app.staticTexts.allElementsBoundByIndex.map(\.label))
         for identifier in identifiers {
-            let query = app.descendants(matching: .any).matching(identifier: identifier)
-            let deadline = Date().addingTimeInterval(1)
-            while query.count == 0 && Date() < deadline {
-                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
-            }
-            XCTAssertGreaterThan(query.count, 0, "Expected accessibility identifier \(identifier)", file: file, line: line)
+            XCTAssertTrue(labels.contains(identifier), "Expected accessibility identifier \(identifier)", file: file, line: line)
         }
     }
 
