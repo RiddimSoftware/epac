@@ -1,6 +1,6 @@
 # EPAC-511 Comparison Tools Design Spec
 
-Status: implementation reference for EPAC-511  
+Status: implementation reference for EPAC-511
 Sources: `docs/brand/brand-brief-v1.md`, `docs/design/design-system-v1.md`, `ios/epac/DesignSystem/*`
 
 ## Scope
@@ -101,6 +101,8 @@ Files:
 - `website/og/compare-template.svg`
 - `website/generate_compare_og.py`
 - `docs/design/comparison-tools/og-share-template.png`
+- `docs/design/comparison-tools/og-share-template-dark.svg`
+- `docs/design/comparison-tools/og-share-template-dark.png`
 
 The OG image is 1200x630. It is built for 600x315 feed previews, so the core score and entity names stay in the central safe area.
 
@@ -113,7 +115,7 @@ Template fields:
 - `url`
 - `variant`
 
-The generator writes both SVG and PNG outputs when ImageMagick is available locally:
+The generator writes both SVG and PNG outputs when ImageMagick is available locally. Use `--color-scheme light` or `--color-scheme dark`; light is the default for social crawlers that do not advertise a colour scheme.
 
 ```bash
 python3 website/generate_compare_og.py --entity-a "Leah Taylor Roy" --entity-b "Andrew Lawton" --score "68%" --basis "41 common votes" --url "epac.ca/compare/leah-taylor-roy/andrew-lawton" --output docs/design/comparison-tools/og-share-template

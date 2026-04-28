@@ -13,6 +13,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 TEMPLATE = ROOT / "og" / "compare-template.svg"
 
+PALETTES = {
+    "light": {
+        "BG": "#f5f5f7",
+        "CARD": "#ffffff",
+        "TEXT_PRIMARY": "#1d1d1f",
+        "TEXT_SECONDARY": "#6e6e73",
+        "ACCENT": "#0071e3",
+        "ACCENT_OPACITY": "0.13",
+        "SCORE_OPACITY": "0.12",
+    },
+    "dark": {
+        "BG": "#000000",
+        "CARD": "#1c1c1e",
+        "TEXT_PRIMARY": "#f5f5f7",
+        "TEXT_SECONDARY": "#a1a1a6",
+        "ACCENT": "#64a8ff",
+        "ACCENT_OPACITY": "0.22",
+        "SCORE_OPACITY": "0.22",
+    },
+}
+
 
 def initials(value: str) -> str:
     parts = [part for part in value.replace("-", " ").split() if part]
@@ -33,6 +54,7 @@ def render(args: argparse.Namespace) -> str:
         "URL": args.url,
         "VARIANT": args.variant,
     }
+    replacements.update(PALETTES[args.color_scheme])
     for key, value in replacements.items():
         svg = svg.replace("{{" + key + "}}", html.escape(value))
     return svg
@@ -51,6 +73,7 @@ def main() -> int:
     parser.add_argument("--a-initials", default="")
     parser.add_argument("--b-initials", default="")
     parser.add_argument("--variant", default="MP-vs-MP")
+    parser.add_argument("--color-scheme", default="light", choices=sorted(PALETTES))
     args = parser.parse_args()
 
     output = Path(args.output)
