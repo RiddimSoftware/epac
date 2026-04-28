@@ -249,6 +249,34 @@ The PR number is linked in the Jira ticket as a comment with the full GitHub URL
 
 ---
 
+## Marketing Automation
+
+### App Preview Video
+
+The App Store App Preview video is produced automatically using an XCUITest. Do not record manually.
+
+**To regenerate the App Preview video** after a significant UI change:
+
+```bash
+./scripts/marketing/record-app-preview.sh
+```
+
+This script:
+
+1. Builds epac for the iPhone simulator
+2. Starts `simctl recordVideo`
+3. Runs `AppPreviewRecordingTests/testAppPreviewSequence`
+4. Trims and encodes the output to 30 seconds at 886x1920
+5. Writes `docs/marketing/preview/app-preview-final.mp4`
+
+**When to regenerate:** After any change to `HomeFeedView`, `SpeechView`, `VoteDetailView`, lobbying views, or the contact sheet. The test catches navigation regressions; a failing test means the UI changed in a way that breaks the video sequence.
+
+**Adding a new scene to the video:** Edit `AppPreviewRecordingTests.swift`, add a new scene step, call it from `testAppPreviewSequence()`, and adjust the total duration. Add any new accessibility identifiers needed.
+
+**Upload:** After the script produces the file, upload manually to App Store Connect -> My Apps -> epac -> App Preview (6.9-inch slot). Apple validates the file on upload; check for H.264 format and 886x1920 resolution.
+
+---
+
 ## References
 
 - Fowler, M. *Presentation Model*. martinfowler.com, 2004.

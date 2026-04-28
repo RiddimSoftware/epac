@@ -5,7 +5,7 @@
 **Format:** H.264 MP4, 886x1920, 30fps, no audio  
 **Output:** `docs/marketing/preview/app-preview-final.mp4`
 
-## One-command regeneration
+## Automated production (recommended)
 
 Run from the repository root:
 
@@ -13,7 +13,15 @@ Run from the repository root:
 ./scripts/marketing/record-app-preview.sh
 ```
 
-The script boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, and delegates final H.264/no-audio encoding to `evidence record-preview`.
+The script builds the app, boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, and delegates final H.264/no-audio encoding to `evidence record-preview`.
+
+**Prerequisites:**
+
+- `ffmpeg` and `ffprobe` installed (`brew install ffmpeg`)
+- Simulator `FCFAF817-6694-402D-B116-A86EDAF34237` available, or a 6.9-inch iPhone simulator selected with `DEVICE_NAME="..."`
+- Xcode with the `epac` scheme available
+
+**Output:** `docs/marketing/preview/app-preview-final.mp4`, ready for App Store Connect upload.
 
 ## Storyboard
 
@@ -28,11 +36,15 @@ The script boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only 
 
 The automated recording contains clean app UI only. Add text overlays in iMovie, Final Cut, or App Store Connect media tooling after the MP4 is generated.
 
-## Requirements
+## Manual production (fallback)
 
-- Xcode with the `epac` scheme available
-- A 6.9-inch iPhone simulator; override with `DEVICE_NAME="..."` if needed
-- `ffmpeg` and `ffprobe` on `PATH`
+Only use manual production if the automated script is broken and the video is needed urgently.
+
+1. Build and install the simulator app.
+2. Launch with `--app-preview-mode`.
+3. Start `simctl recordVideo`.
+4. Let the six-scene storyboard above run to completion.
+5. Stop recording and encode the final video as H.264, 886x1920, 30fps, no audio.
 
 ## Verification
 
