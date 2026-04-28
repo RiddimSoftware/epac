@@ -2,3 +2,6 @@
 "quick.action.today.title" = "Today in Parliament";
 "quick.action.mymp.title" = "Find My MP";
 "quick.action.search.title" = "Search Debates";
+"calendar.fullAccessUsage" = "epac adds House of Commons sitting days to your calendar.";
+"NSCalendarsFullAccessUsageDescription" = "epac adds House of Commons sitting days to your calendar.";
+"NSCalendarsUsageDescription" = "epac adds House of Commons sitting days to your calendar.";

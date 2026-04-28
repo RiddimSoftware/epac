@@ -21,6 +21,22 @@ class SittingCalendarViewModel {
 		dates.filter { $0.year == currentYear }.count + futureDates.filter { $0.year == currentYear }.count
 	}
 
+	func upcomingSittingDates(
+		from startDate: Date = .now,
+		throughDays dayCount: Int = 30,
+		calendar: Foundation.Calendar = .current
+	) -> [Date] {
+		let start = calendar.startOfDay(for: startDate)
+		guard let end = calendar.date(byAdding: .day, value: dayCount, to: start) else {
+			return []
+		}
+		return dates.union(futureDates)
+			.compactMap { calendar.date(from: $0) }
+			.map { calendar.startOfDay(for: $0) }
+			.filter { $0 >= start && $0 <= end }
+			.sorted()
+	}
+
 	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
 		loadFailed = false
 		do {

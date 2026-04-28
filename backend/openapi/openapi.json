@@ -405,6 +405,30 @@
         }
       }
     },
+    "/api/v1/calendar/house.ics": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "Return subscribable House sitting calendar",
+        "description": "Returns an RFC 5545 iCalendar feed containing House of Commons sitting days from the backend sitting calendar cache.",
+        "operationId": "getHouseSittingCalendarICS",
+        "responses": {
+          "200": {
+            "description": "House sitting iCalendar feed",
+            "content": {
+              "text/calendar": {
+                "schema": { "type": "string" },
+                "examples": {
+                  "calendar": {
+                    "value": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Riddim Software//epac Parliament Calendar//EN\r\nBEGIN:VEVENT\r\nUID:house-sitting-2026-04-29@epac.riddimsoftware.com\r\nDTSTART;VALUE=DATE:20260429\r\nDTEND;VALUE=DATE:20260430\r\nSUMMARY:House of Commons — Sitting Day\r\nURL:https://epac.riddimsoftware.com/sitting/2026-04-29\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/config": {
       "get": {
         "tags": ["Operations"],

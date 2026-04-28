@@ -37,6 +37,7 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 		"/api/v1/members/{id}/votes",
 		"/api/v1/bills",
 		"/api/v1/live",
+		"/api/v1/calendar/house.ics",
 		"/api/v1/config",
 		"/health",
 	}
@@ -57,6 +58,7 @@ func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
 		"/api/v1/members/{id}/votes",
 		"/api/v1/bills",
 		"/api/v1/live",
+		"/api/v1/calendar/house.ics",
 		"/api/v1/config",
 		"/health",
 	}

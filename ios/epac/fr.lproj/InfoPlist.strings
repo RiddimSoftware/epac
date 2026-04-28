@@ -2,3 +2,6 @@
 "quick.action.today.title" = "Aujourd'hui au Parlement";
 "quick.action.mymp.title" = "Trouver mon député";
 "quick.action.search.title" = "Rechercher des débats";
+"calendar.fullAccessUsage" = "epac ajoute les jours de séance de la Chambre des communes à votre calendrier.";
+"NSCalendarsFullAccessUsageDescription" = "epac ajoute les jours de séance de la Chambre des communes à votre calendrier.";
+"NSCalendarsUsageDescription" = "epac ajoute les jours de séance de la Chambre des communes à votre calendrier.";

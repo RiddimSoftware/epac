@@ -8,6 +8,7 @@
 import HorizonCalendar
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct SittingCalendarView: View {
 	@EnvironmentObject var fetch: Fetch
@@ -19,8 +20,12 @@ struct SittingCalendarView: View {
 	@StateObject private var calendarViewProxy = CalendarViewProxy()
 
 	@State private var viewModel = SittingCalendarViewModel()
+	@State private var calendarExportService = CalendarExportService()
 	@State private var isRefreshing = false
 	@State private var isRetryDisabled = false
+	@State private var isExportingCalendar = false
+	@State private var exportStatusMessage = ""
+	@State private var isShowingExportStatus = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -175,6 +180,11 @@ struct SittingCalendarView: View {
 				.background(.ultraThinMaterial)
 			}
 		}
+		.alert(NSLocalizedString("sitting.calendar.export.alertTitle", comment: ""), isPresented: $isShowingExportStatus) {
+			Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+		} message: {
+			Text(exportStatusMessage)
+		}
 		.toolbar {
 			ToolbarItem(placement: .principal) {
 				// Year picker: tap ‹ or › to jump by one year; the calendar scrolls to that year's January.
@@ -235,6 +245,34 @@ struct SittingCalendarView: View {
 				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
+				if isExportingCalendar {
+					ProgressView()
+						.accessibilityLabel(NSLocalizedString("sitting.calendar.export.inProgress", comment: ""))
+				} else {
+					Menu {
+						Button {
+							Task { await addNextSittingsToCalendar() }
+						} label: {
+							Label(
+								NSLocalizedString("sitting.calendar.export.addNext30", comment: ""),
+								systemImage: "calendar.badge.plus"
+							)
+						}
+						Button {
+							copyCalendarSubscriptionURL()
+						} label: {
+							Label(
+								NSLocalizedString("sitting.calendar.export.copySubscription", comment: ""),
+								systemImage: "link"
+							)
+						}
+					} label: {
+						Image(systemName: "calendar.badge.plus")
+					}
+					.accessibilityLabel(NSLocalizedString("sitting.calendar.export.menuLabel", comment: ""))
+				}
+			}
+			ToolbarItem(placement: .topBarTrailing) {
 				NavigationLink(destination: OrderPaperView()) {
 					Label("Order Paper", systemImage: "doc.text.below.ecg")
 				}
@@ -258,6 +296,39 @@ struct SittingCalendarView: View {
 				}
 			}
 		}
+	}
+
+	private func addNextSittingsToCalendar() async {
+		let sittingDates = viewModel.upcomingSittingDates()
+		if sittingDates.isEmpty {
+			exportStatusMessage = NSLocalizedString("sitting.calendar.export.noUpcoming", comment: "")
+			isShowingExportStatus = true
+			return
+		}
+
+		isExportingCalendar = true
+		defer { isExportingCalendar = false }
+		do {
+			let count = try await calendarExportService.addSittingDays(sittingDates)
+			if count == 0 {
+				exportStatusMessage = NSLocalizedString("sitting.calendar.export.alreadyAdded", comment: "")
+			} else {
+				exportStatusMessage = String(
+					format: NSLocalizedString("sitting.calendar.export.addedCount", comment: ""),
+					count
+				)
+			}
+		} catch {
+			exportStatusMessage = error.localizedDescription
+		}
+		isShowingExportStatus = true
+	}
+
+	private func copyCalendarSubscriptionURL() {
+		let url = CalendarExportService.subscriptionURL()
+		UIPasteboard.general.string = url.absoluteString
+		exportStatusMessage = NSLocalizedString("sitting.calendar.export.copiedSubscription", comment: "")
+		isShowingExportStatus = true
 	}
 }
 
