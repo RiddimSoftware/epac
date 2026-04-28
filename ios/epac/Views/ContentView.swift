@@ -327,22 +327,26 @@ struct ContentView: View {
 			// /bill/[bill-number] e.g. /bill/C-50 → Search tab pre-filled
 			if let billNumber = segments.dropFirst().first {
 				router.pendingSearchQuery = billNumber
-				router.selectedTab = .search
 			}
+			router.selectedTab = .search
 		case "sitting":
 			// /sitting/[date] → Parliament tab (date routing in ContentViewModel)
 			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
 			router.selectedTab = .parliament
-		case "topic":
-			// /topic/[topic-slug] → Search tab pre-filled
+		case "speech":
+			// Generic speech web share pages land on Parliament; specific speech
+			// deep-links remain handled by ContentViewModel's legacy /app format.
+			router.selectedTab = .parliament
+		case "topic", "topics":
+			// /topic/[topic-slug] and website /topics/[topic-slug].html → Search tab pre-filled
 			if let slug = segments.dropFirst().first {
-				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
 				router.selectedTab = .search
 			}
-		case "riding":
-			// /riding/[riding-slug] → Search tab pre-filled (riding detail view planned)
+		case "riding", "ridings":
+			// /riding/[riding-slug] and website /ridings/[riding-slug].html → Search tab pre-filled
 			if let slug = segments.dropFirst().first {
-				router.pendingSearchQuery = slug.replacingOccurrences(of: "-", with: " ")
+				router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
 				router.selectedTab = .search
 			}
 		case "setup":
@@ -350,12 +354,60 @@ struct ContentView: View {
 			router.pendingShowPostalCodeSetup = true
 			router.selectedTab = .home
 		case "app", nil:
+			if let (pathURL, originalPath) = encodedPathUniversalLink(from: url) {
+				recordWebToAppOpen(path: originalPath)
+				handleUniversalLink(pathURL)
+				return
+			}
 			// Legacy query-parameter format: /app?date=...&subjectID=...
 			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
 		default:
 			// Home fallback for unrecognised paths — never crashes
 			router.selectedTab = .home
 		}
+	}
+
+	private func encodedPathUniversalLink(from url: URL) -> (url: URL, path: String)? {
+		guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+		      let path = components.queryItems?.first(where: { $0.name == "path" })?.value,
+		      path.hasPrefix("/") else {
+			return nil
+		}
+
+		var rebuilt = URLComponents()
+		rebuilt.scheme = "https"
+		rebuilt.host = "epac.riddimsoftware.com"
+		let pathWithoutFragment = path.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? "/"
+		rebuilt.path = pathWithoutFragment.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? "/"
+
+		if let queryStart = pathWithoutFragment.firstIndex(of: "?") {
+			let query = pathWithoutFragment[pathWithoutFragment.index(after: queryStart)...]
+			rebuilt.query = String(query)
+		}
+
+		guard let url = rebuilt.url else { return nil }
+		return (url, path)
+	}
+
+	private func searchQuery(fromWebSlug slug: String) -> String {
+		slug
+			.replacingOccurrences(of: ".html", with: "")
+			.replacingOccurrences(of: "-", with: " ")
+	}
+
+	private func recordWebToAppOpen(path: String) {
+		var components = URLComponents()
+		components.scheme = "https"
+		components.host = "epac.riddimsoftware.com"
+		components.path = "/app/telemetry/"
+		components.queryItems = [
+			URLQueryItem(name: "event", value: "app-open"),
+			URLQueryItem(name: "path", value: path),
+			URLQueryItem(name: "ts", value: String(Int(Date().timeIntervalSince1970 * 1000)))
+		]
+
+		guard let url = components.url else { return }
+		URLSession.shared.dataTask(with: url).resume()
 	}
 
 	private func navigateToMember(memberID: Int) {
