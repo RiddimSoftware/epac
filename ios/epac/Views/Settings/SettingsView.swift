@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UIKit
 
 @MainActor
 struct SettingsView: View {
@@ -197,10 +196,9 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section(NSLocalizedString("settings.about.title", comment: "")) {
             LabeledContent(NSLocalizedString("settings.about.version", comment: ""), value: appVersion)
-            Link(
-                NSLocalizedString("settings.about.privacy", comment: ""),
-                destination: URL(string: "https://epac.riddimsoftware.com/privacy")!
-            )
+            NavigationLink(NSLocalizedString("settings.about.privacy", comment: "")) {
+                PrivacyPolicyView()
+            }
             Link(
                 NSLocalizedString("settings.about.dataSources", comment: ""),
                 destination: URL(string: "https://epac.riddimsoftware.com/sources")!
