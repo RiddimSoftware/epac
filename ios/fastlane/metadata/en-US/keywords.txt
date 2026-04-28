@@ -1,1 +1,1 @@
-parliament,canada,mp,vote,bills,hansard,siri,spotlight,ontario,senate,committee,election
+hansard,mp,vote,bills,senate,election,mpp,riding,federal,debate,expenditure,petition,accountability
