@@ -20,6 +20,10 @@ struct AccountabilityHubView: View {
 						Label("Promise Tracker", systemImage: "checklist.checked")
 					}
 					.accessibilityHint("Opens campaign promise tracker")
+					NavigationLink(destination: ReconciliationCallsView()) {
+						Label("TRC Calls to Action", systemImage: "figure.stand.line.dotted.figure.stand")
+					}
+					.accessibilityHint("Opens Truth and Reconciliation Commission Calls to Action tracker")
 					NavigationLink(destination: ExpendituresView()) {
 						Label(NSLocalizedString("Expenditures", comment: ""), systemImage: "dollarsign.circle.fill")
 					}
