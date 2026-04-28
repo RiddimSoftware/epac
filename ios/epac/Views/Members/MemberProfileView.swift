@@ -193,6 +193,11 @@ struct MemberProfileView: View {
 				.background(Color(.secondarySystemBackground))
 				.cornerRadius(12)
 
+				RidingBoundaryMapCard(ridingName: member.riding, party: member.party)
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+
 				if let position = cabinetPosition {
 					CabinetPositionSection(position: position)
 				}

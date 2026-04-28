@@ -229,6 +229,12 @@ struct MyMPView: View {
                     OntarioMPPCard(mpp: mpp)
                 }
             }
+            if let member {
+                Section("Riding boundary") {
+                    RidingBoundaryMapCard(ridingName: member.riding, party: member.party)
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                }
+            }
             if !vancouverCouncillors.isEmpty {
                 Section(NSLocalizedString("vancouver.myCouncil.title", comment: "")) {
                     ForEach(vancouverCouncillors) { councillor in
