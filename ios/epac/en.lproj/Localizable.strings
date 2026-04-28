@@ -739,3 +739,10 @@
 /* On This Day (EPAC-470) */
 "home.onThisDay.title" = "On this day in past Parliaments";
 "home.onThisDay.dismiss" = "Hide On This Day";
+
+/* Onboarding v2 (EPAC-435) */
+"onboarding.welcome.title" = "Canada's Parliament";
+"onboarding.welcome.tagline" = "In your pocket.";
+"onboarding.mp.follow" = "Follow my MP →";
+"onboarding.topics.subtitle.v2" = "Pick topics that matter to you. Get notified when Parliament debates them.";
+"onboarding.notifications.subtitle.v2" = "Choose what you hear about. You can change these any time in Settings.";

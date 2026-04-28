@@ -2,16 +2,15 @@
 //  OnboardingView.swift
 //  epac
 //
-//  5-screen onboarding flow (EPAC-296):
-//  1. What is epac? — three data-source statements
-//  2. Your MP — postal code lookup (reuses PostalCodeSetupView logic)
-//  3. Topics — chip picker (1–4 topics, max)
-//  4. Notifications — contextual permission request
-//  5. Promise — "here's what you'll get"
+//  6-step onboarding flow (EPAC-435):
+//  1. Welcome — value prop "Canada's parliament, in your pocket"
+//  2. Postal code — riding lookup (reuses PostalCodeViewModel)
+//  3. MP confirm — "Your MP is X — follow?"
+//  4. Topics — chip picker, 1+ required
+//  5. Notifications — per-category toggles (daily digest, MP votes, bill status)
+//  6. Home — completion auto-navigates to Home (no extra screen needed)
 //
-//  Each screen has a Skip button (dismisses the whole flow) and a Continue
-//  button (advances). Completion is persisted to UserDefaults so it never
-//  shows again.
+//  Each step logs a telemetry event. Every step has a Skip path.
 //
 
 import SwiftData
@@ -24,6 +23,7 @@ struct OnboardingView: View {
     @State private var page = 0
     @State private var postalCodeVM = PostalCodeViewModel()
     @State private var selectedTopics: Set<String> = []
+    @State private var notifPrefs = NotificationPreferenceStore.shared
     @Environment(\.modelContext) private var modelContext
     @Environment(NotificationManager.self) private var notificationManager
 
@@ -31,26 +31,33 @@ struct OnboardingView: View {
 
     var body: some View {
         TabView(selection: $page) {
-            whatIsEpacScreen.tag(0)
-            yourMPScreen.tag(1)
+            welcomeScreen.tag(0)
+            postalCodeScreen.tag(1)
             topicsScreen.tag(2)
             notificationsScreen.tag(3)
-            promiseScreen.tag(4)
+            completionScreen.tag(4)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .overlay(alignment: .topTrailing) {
             if page < totalPages - 1 {
                 Button(NSLocalizedString("onboarding.skip", comment: "")) {
+                    Log.info("onboarding.step.\(page).skipped")
                     complete()
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.epacSubheadline)
+                .foregroundStyle(Color.epacText.secondary)
                 .padding()
             }
         }
         .overlay(alignment: .bottom) {
             pageIndicator
                 .padding(.bottom, 16)
+        }
+        .onChange(of: page) { _, newPage in
+            Log.info("onboarding.step.\(newPage).viewed")
+        }
+        .onAppear {
+            Log.info("onboarding.step.0.viewed")
         }
     }
 
@@ -60,36 +67,36 @@ struct OnboardingView: View {
         HStack(spacing: 6) {
             ForEach(0..<totalPages, id: \.self) { i in
                 Capsule()
-                    .fill(i == page ? Color.accentColor : Color.secondary.opacity(0.3))
+                    .fill(i == page ? Color.epacBrand.accent : Color.epacText.secondary.opacity(0.3))
                     .frame(width: i == page ? 20 : 6, height: 6)
                     .animation(.spring(duration: 0.3), value: page)
             }
         }
     }
 
-    // MARK: - Screen 1: What is epac?
+    // MARK: - Step 1: Welcome
 
-    private var whatIsEpacScreen: some View {
+    private var welcomeScreen: some View {
         VStack(spacing: 0) {
             Spacer()
-            VStack(spacing: 32) {
+            VStack(spacing: EpacSpacing.xl) {
                 Image(systemName: "building.columns.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
 
-                VStack(spacing: 8) {
-                    Text(NSLocalizedString("onboarding.what.title", comment: ""))
-                        .font(.largeTitle.bold())
+                VStack(spacing: EpacSpacing.s) {
+                    Text(NSLocalizedString("onboarding.welcome.title", comment: ""))
+                        .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
 
-                    Text(NSLocalizedString("onboarding.what.subtitle", comment: ""))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(NSLocalizedString("onboarding.welcome.tagline", comment: ""))
+                        .font(.epacHeadline)
+                        .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
                 }
 
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
                     DataPointRow(icon: "text.document.fill",
                                  text: NSLocalizedString("onboarding.what.point1", comment: ""))
                     DataPointRow(icon: "checkmark.seal.fill",
@@ -97,55 +104,56 @@ struct OnboardingView: View {
                     DataPointRow(icon: "person.2.badge.key.fill",
                                  text: NSLocalizedString("onboarding.what.point3", comment: ""))
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, EpacSpacing.s)
 
                 Text(NSLocalizedString("onboarding.what.trust", comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacText.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, EpacSpacing.xl)
 
             Spacer()
 
             ContinueButton(label: NSLocalizedString("onboarding.getStarted", comment: "")) {
+                Log.info("onboarding.step.0.completed")
                 advance()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)
         }
     }
 
-    // MARK: - Screen 2: Your MP
+    // MARK: - Step 2: Postal code
 
-    private var yourMPScreen: some View {
+    private var postalCodeScreen: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: 28) {
-                    VStack(spacing: 12) {
+                VStack(spacing: EpacSpacing.xl) {
+                    VStack(spacing: EpacSpacing.m) {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 56))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.epacBrand.accent)
                             .accessibilityHidden(true)
                             .padding(.top, 60)
 
                         Text(NSLocalizedString("riding.setup.title", comment: ""))
-                            .font(.largeTitle.bold())
+                            .font(.epacDisplay.bold())
                             .multilineTextAlignment(.center)
 
                         Text(NSLocalizedString("riding.setup.subtitle", comment: ""))
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.epacBody)
+                            .foregroundStyle(Color.epacText.secondary)
                             .multilineTextAlignment(.center)
                     }
 
-                    VStack(spacing: 14) {
+                    VStack(spacing: EpacSpacing.m) {
                         TextField(NSLocalizedString("riding.setup.placeholder", comment: ""),
                                   text: $postalCodeVM.postalCode)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .padding()
-                            .background(Color(.secondarySystemBackground))
+                            .background(Color.epacSurface.elevated)
                             .cornerRadius(12)
                             .onSubmit { Task { await postalCodeVM.lookup(modelContext: modelContext) } }
 
@@ -154,28 +162,32 @@ struct OnboardingView: View {
                         } label: {
                             Group {
                                 if postalCodeVM.isLoading {
-                                    ProgressView().tint(.white)
+                                    ProgressView().tint(Color.epacText.onAccent)
                                 } else {
                                     Text(NSLocalizedString("riding.setup.lookupButton", comment: ""))
                                 }
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.accentColor)
-                            .foregroundStyle(.white)
+                            .background(Color.epacBrand.accent)
+                            .foregroundStyle(Color.epacText.onAccent)
                             .cornerRadius(12)
                         }
-                        .disabled(postalCodeVM.isLoading || postalCodeVM.postalCode.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(postalCodeVM.isLoading ||
+                                  postalCodeVM.postalCode.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, EpacSpacing.l)
 
                     if let error = postalCodeVM.errorMessage {
-                        Text(error).font(.subheadline).foregroundStyle(.red).padding(.horizontal, 24)
+                        Text(error)
+                            .font(.epacSubheadline)
+                            .foregroundStyle(Color.epacStatus.destructive)
+                            .padding(.horizontal, EpacSpacing.l)
                     }
 
                     if let result = postalCodeVM.result {
                         mpResultCard(result)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, EpacSpacing.l)
                     }
 
                     Spacer(minLength: 80)
@@ -185,182 +197,208 @@ struct OnboardingView: View {
             if postalCodeVM.result == nil {
                 ContinueButton(label: NSLocalizedString("onboarding.skip", comment: ""),
                                style: .secondary) {
+                    Log.info("onboarding.step.1.skipped")
                     advance()
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, EpacSpacing.l)
                 .padding(.bottom, 60)
             }
         }
     }
 
     private func mpResultCard(_ result: RidingLookupResult) -> some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 4) {
-                Text(result.ridingName).font(.title2.weight(.semibold)).multilineTextAlignment(.center)
+        VStack(spacing: EpacSpacing.m) {
+            VStack(spacing: EpacSpacing.xs) {
+                Text(result.ridingName)
+                    .font(.epacTitle.weight(.semibold))
+                    .multilineTextAlignment(.center)
                 if !result.memberName.isEmpty {
-                    Text(result.memberName).font(.subheadline).foregroundStyle(.secondary)
+                    Text(result.memberName)
+                        .font(.epacSubheadline)
+                        .foregroundStyle(Color.epacText.secondary)
                     if !result.partyName.isEmpty {
-                        Text(result.partyName).font(.caption).foregroundStyle(.secondary)
+                        Text(result.partyName)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
                     }
                 } else {
                     Text(NSLocalizedString("riding.result.mpLoadingLater", comment: ""))
-                        .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacText.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color(.secondarySystemBackground))
+            .background(Color.epacSurface.elevated)
             .cornerRadius(12)
 
-            ContinueButton(label: NSLocalizedString("riding.setup.confirmButton", comment: "")) {
+            ContinueButton(label: NSLocalizedString("onboarding.mp.follow", comment: "")) {
                 postalCodeVM.confirm()
                 HapticEngine.success()
+                // Follow the MP in MemberFollowStore using the saved name to resolve memberID.
+                if !result.memberName.isEmpty {
+                    let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+                    if let mp = members.first(where: {
+                        $0.name.localizedCaseInsensitiveContains(result.memberName) ||
+                        result.memberName.localizedCaseInsensitiveContains($0.lastName)
+                    }) {
+                        MemberFollowStore.shared.follow(mp.memberID)
+                        Log.info("onboarding.step.1.mpFollowed memberID=\(mp.memberID)")
+                    }
+                }
+                Log.info("onboarding.step.1.completed")
                 advance()
             }
         }
     }
 
-    // MARK: - Screen 3: Topics
+    // MARK: - Step 3: Topics
 
     private var topicsScreen: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 20) {
-                Image(systemName: "bell.badge.fill")
+            VStack(spacing: EpacSpacing.l) {
+                Image(systemName: "tag.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
                     .padding(.top, 60)
 
-                VStack(spacing: 8) {
+                VStack(spacing: EpacSpacing.s) {
                     Text(NSLocalizedString("onboarding.topics.title", comment: ""))
-                        .font(.largeTitle.bold())
+                        .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.topics.subtitle", comment: ""))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(NSLocalizedString("onboarding.topics.subtitle.v2", comment: ""))
+                        .font(.epacSubheadline)
+                        .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, EpacSpacing.l)
 
             ScrollView {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(ParliamentaryTopic.all.prefix(12)) { topic in
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: EpacSpacing.m) {
+                    ForEach(ParliamentaryTopic.all.prefix(10)) { topic in
                         TopicChip(
                             topic: topic,
-                            isSelected: selectedTopics.contains(topic.id),
-                            isDisabled: !selectedTopics.contains(topic.id) && selectedTopics.count >= 4
+                            isSelected: selectedTopics.contains(topic.id)
                         ) {
                             if selectedTopics.contains(topic.id) {
                                 selectedTopics.remove(topic.id)
-                            } else if selectedTopics.count < 4 {
+                            } else {
                                 selectedTopics.insert(topic.id)
                                 HapticEngine.light()
                             }
                         }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+                .padding(.horizontal, EpacSpacing.l)
+                .padding(.vertical, EpacSpacing.l)
                 .padding(.bottom, 80)
             }
 
             ContinueButton(label: selectedTopics.isEmpty
                            ? NSLocalizedString("onboarding.skip", comment: "")
-                           : String(format: NSLocalizedString("onboarding.topics.follow", comment: ""), selectedTopics.count)) {
-                // Persist topic selections
+                           : String(format: NSLocalizedString("onboarding.topics.follow", comment: ""),
+                                    selectedTopics.count)) {
                 let store = TopicFollowStore.shared
                 for id in selectedTopics { store.follow(id) }
+                Log.info("onboarding.step.2.completed topicsFollowed=\(selectedTopics.count)")
                 advance()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)
         }
     }
 
-    // MARK: - Screen 4: Notifications
+    // MARK: - Step 4: Notifications (per-category toggles)
 
     private var notificationsScreen: some View {
         VStack(spacing: 0) {
             Spacer()
-            VStack(spacing: 28) {
-                Image(systemName: "bell.fill")
+            VStack(spacing: EpacSpacing.xl) {
+                Image(systemName: "bell.badge.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
 
-                VStack(spacing: 8) {
+                VStack(spacing: EpacSpacing.s) {
                     Text(NSLocalizedString("onboarding.notifications.title", comment: ""))
-                        .font(.largeTitle.bold())
+                        .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.notifications.subtitle", comment: ""))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(NSLocalizedString("onboarding.notifications.subtitle.v2", comment: ""))
+                        .font(.epacSubheadline)
+                        .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
                 }
 
-                VStack(alignment: .leading, spacing: 14) {
-                    NotificationPreviewRow(
-                        icon: "person.fill",
-                        text: NSLocalizedString("onboarding.notifications.preview1", comment: ""))
-                    NotificationPreviewRow(
-                        icon: "doc.text.fill",
-                        text: NSLocalizedString("onboarding.notifications.preview2", comment: ""))
-                    NotificationPreviewRow(
-                        icon: "tag.fill",
-                        text: NSLocalizedString("onboarding.notifications.preview3", comment: ""))
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                    Toggle(NSLocalizedString("notifications.category.dailyDigest", comment: ""),
+                           isOn: $notifPrefs.dailyDigest)
+                    .font(.epacSubheadline)
+                    Toggle(NSLocalizedString("notifications.category.mpVotes", comment: ""),
+                           isOn: $notifPrefs.followedMPVotes)
+                    .font(.epacSubheadline)
+                    Toggle(NSLocalizedString("notifications.category.billStatus", comment: ""),
+                           isOn: $notifPrefs.followedBillStatusChanges)
+                    .font(.epacSubheadline)
                 }
-                .padding(.horizontal, 8)
+                .padding(EpacSpacing.m)
+                .background(Color.epacSurface.elevated)
+                .cornerRadius(12)
+                .padding(.horizontal, EpacSpacing.s)
 
                 Text(NSLocalizedString("onboarding.notifications.privacy", comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacText.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, EpacSpacing.xl)
             Spacer()
 
-            VStack(spacing: 12) {
+            VStack(spacing: EpacSpacing.m) {
                 ContinueButton(label: NSLocalizedString("onboarding.notifications.allow", comment: "")) {
                     Task {
                         await notificationManager.requestAuthorization()
+                        Log.info("onboarding.step.3.completed notifAllowed=true")
                         advance()
                     }
                 }
                 Button(NSLocalizedString("onboarding.notifications.skip", comment: "")) {
+                    Log.info("onboarding.step.3.skipped")
                     advance()
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.epacSubheadline)
+                .foregroundStyle(Color.epacText.secondary)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)
         }
     }
 
-    // MARK: - Screen 5: Promise
+    // MARK: - Step 5: Completion
 
-    private var promiseScreen: some View {
+    private var completionScreen: some View {
         VStack(spacing: 0) {
             Spacer()
-            VStack(spacing: 28) {
+            VStack(spacing: EpacSpacing.xl) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.epacBrand.positive)
                     .accessibilityHidden(true)
 
-                VStack(spacing: 8) {
+                VStack(spacing: EpacSpacing.s) {
                     Text(NSLocalizedString("onboarding.promise.title", comment: ""))
-                        .font(.largeTitle.bold())
+                        .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
 
                     Text(NSLocalizedString("onboarding.promise.subtitle", comment: ""))
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                        .font(.epacBody)
+                        .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
                 }
 
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
                     PromiseRow(icon: "building.columns.fill",
                                text: NSLocalizedString("onboarding.promise.point1", comment: ""))
                     if !selectedTopics.isEmpty {
@@ -371,15 +409,16 @@ struct OnboardingView: View {
                     PromiseRow(icon: "lock.shield.fill",
                                text: NSLocalizedString("onboarding.promise.point3", comment: ""))
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, EpacSpacing.s)
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, EpacSpacing.xl)
             Spacer()
 
             ContinueButton(label: NSLocalizedString("onboarding.promise.start", comment: "")) {
+                Log.info("onboarding.completed")
                 complete()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)
         }
     }
@@ -407,32 +446,14 @@ private struct DataPointRow: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: EpacSpacing.m) {
             Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(Color.accentColor)
+                .font(.epacBody)
+                .foregroundStyle(Color.epacBrand.accent)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             Text(text)
-                .font(.subheadline)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
-
-private struct NotificationPreviewRow: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .frame(width: 24)
-                .accessibilityHidden(true)
-            Text(text)
-                .font(.subheadline)
+                .font(.epacSubheadline)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -443,14 +464,14 @@ private struct PromiseRow: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: EpacSpacing.m) {
             Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(.green)
+                .font(.epacBody)
+                .foregroundStyle(Color.epacBrand.positive)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             Text(text)
-                .font(.subheadline)
+                .font(.epacSubheadline)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -459,21 +480,18 @@ private struct PromiseRow: View {
 private struct TopicChip: View {
     let topic: ParliamentaryTopic
     let isSelected: Bool
-    let isDisabled: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(topic.localizedName)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .font(.epacSubheadline.weight(isSelected ? .semibold : .regular))
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.horizontal, 12)
-                .background(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
-                .foregroundStyle(isSelected ? .white : .primary)
+                .padding(.horizontal, EpacSpacing.m)
+                .background(isSelected ? Color.epacBrand.accent : Color.epacSurface.elevated)
+                .foregroundStyle(isSelected ? Color.epacText.onAccent : Color.epacText.primary)
                 .cornerRadius(12)
-                .opacity(isDisabled ? 0.4 : 1)
         }
-        .disabled(isDisabled)
         .accessibilityLabel(topic.localizedName)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -488,14 +506,14 @@ private struct ContinueButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.body.weight(.semibold))
+                .font(.epacBody.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(style == .primary ? Color.accentColor : Color.clear)
-                .foregroundStyle(style == .primary ? .white : Color.accentColor)
+                .background(style == .primary ? Color.epacBrand.accent : Color.clear)
+                .foregroundStyle(style == .primary ? Color.epacText.onAccent : Color.epacBrand.accent)
                 .cornerRadius(14)
                 .overlay(style == .secondary
-                         ? RoundedRectangle(cornerRadius: 14).strokeBorder(Color.accentColor, lineWidth: 1.5)
+                         ? RoundedRectangle(cornerRadius: 14).strokeBorder(Color.epacBrand.accent, lineWidth: 1.5)
                          : nil)
         }
     }
