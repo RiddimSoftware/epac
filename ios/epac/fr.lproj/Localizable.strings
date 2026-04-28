@@ -367,6 +367,16 @@
 "home.clearAllBills" = "Tout effacer";
 "home.manageTopics" = "Gérer les sujets →";
 "home.seeAllDebates" = "Ouvrir l'onglet Parlement →";
+"home.today.nextSitting" = "Prochaine séance : %@";
+"home.today.noCalendar" = "Calendrier des séances pas encore en cache";
+"home.today.offline" = "Hors ligne — données parlementaires en cache";
+"home.today.offlineCache" = "Hors ligne — données en cache de %@";
+"home.today.latestVote" = "Dernier vote enregistré";
+"home.today.latestSpeech" = "Votre député aujourd'hui";
+"home.today.noSpeech" = "Aucune intervention en cache de votre député";
+"home.today.cachedOnly" = "Tirez pour actualiser lorsque vous êtes de nouveau en ligne";
+"home.today.more" = "Plus d'aujourd'hui";
+"home.today.myMPBallot" = "Votre député : %@";
 
 /* Temps d'attente en santé ICIS */
 "cihi.sectionTitle" = "Temps d'attente en santé (%d)";

@@ -364,6 +364,16 @@
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
 "home.seeAllDebates" = "Open Parliament tab →";
+"home.today.nextSitting" = "Next sitting: %@";
+"home.today.noCalendar" = "Sitting calendar not cached yet";
+"home.today.offline" = "Offline — showing cached Parliament data";
+"home.today.offlineCache" = "Offline — showing cached data from %@";
+"home.today.latestVote" = "Latest recorded vote";
+"home.today.latestSpeech" = "Your MP today";
+"home.today.noSpeech" = "No cached speech from your MP yet";
+"home.today.cachedOnly" = "Pull to refresh when you are back online";
+"home.today.more" = "More from today";
+"home.today.myMPBallot" = "Your MP: %@";
 
 /* CIHI health wait times */
 "cihi.sectionTitle" = "Health Wait Times (%d)";

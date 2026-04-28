@@ -73,6 +73,7 @@ struct ContentView: View {
 		}
 		.environmentObject(fetch)
 		.environment(router)
+		.environment(networkMonitor)
 		.onOpenURL { url in
 			handleOpenURL(url)
 		}
