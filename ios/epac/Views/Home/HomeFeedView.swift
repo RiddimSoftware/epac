@@ -69,6 +69,7 @@ struct HomeFeedView: View {
                     senatorsSection
                 }
                 reconciliationContextCard
+                correctionsContextCard
                 healthcareContextCard
                 consumerPriceIndexContextCard
                 studentFinanceContextCard
@@ -554,6 +555,49 @@ struct HomeFeedView: View {
                 ReconciliationContextCard()
             } header: {
                 Text("Reconciliation")
+            }
+        }
+    }
+
+    // MARK: - Corrections contextual card (shown when Indigenous or justice topic is followed)
+
+    @ViewBuilder
+    private var correctionsContextCard: some View {
+        if topicStore.isFollowing("justice") || topicStore.isFollowing("indigenous"),
+           let snapshot = CorrectionsStatisticsDatabase.snapshot(),
+           let latest = snapshot.latestAnnualStatistic {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Federal corrections")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Indigenous in custody")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(latest.indigenousInCustodyPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Canada population share")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("5-year recidivism rate")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(latest.recidivismRatePercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: snapshot.source.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Federal Corrections")
+            } footer: {
+                Text("Reference year: \(CorrectionsStatisticsDatabase.fiscalYearLabel(snapshot.referenceFiscalYear))")
             }
         }
     }
@@ -1116,6 +1160,10 @@ struct HomeFeedView: View {
             return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
         }
         return "\(value.formatted(.number.precision(.fractionLength(1))))%"
+    }
+
+    private func percentLabel(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(1))))%"
     }
 
     private func trackTodayCardTap(_ target: String) {

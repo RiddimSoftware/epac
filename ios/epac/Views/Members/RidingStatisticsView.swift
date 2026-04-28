@@ -57,6 +57,7 @@ struct RidingStatisticsView: View {
 			employmentInsuranceSection
 			consumerPriceIndexSection
 			studentFinanceSection
+			correctionsSection
 
 			Section("2021 Census Data") {
 				statCanSearchRow
@@ -370,6 +371,86 @@ struct RidingStatisticsView: View {
 			}
 		}
 		.accessibilityLabel("Five year undergraduate tuition trend")
+	}
+
+	@ViewBuilder
+	private var correctionsSection: some View {
+		if let snapshot = CorrectionsStatisticsDatabase.snapshot(),
+		   let latest = snapshot.latestAnnualStatistic {
+			Section {
+				LabeledContent("Federal custody") {
+					Text(latest.totalInCustody.formatted())
+						.monospacedDigit()
+				}
+				LabeledContent("Indigenous in custody") {
+					Text(percentLabel(latest.indigenousInCustodyPercent))
+						.monospacedDigit()
+				}
+				LabeledContent("Canada population share") {
+					Text(percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
+						.monospacedDigit()
+				}
+				LabeledContent("5-year recidivism rate") {
+					Text(percentLabel(latest.recidivismRatePercent))
+						.monospacedDigit()
+				}
+				LabeledContent("Care/custody cost per inmate") {
+					Text(latest.costPerInmate.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+						.monospacedDigit()
+				}
+				correctionsCostChart(snapshot)
+				ForEach(snapshot.ociHighlights.prefix(2)) { highlight in
+					VStack(alignment: .leading, spacing: 3) {
+						Text(highlight.title)
+							.font(.caption.bold())
+						Text(highlight.summary)
+							.font(.caption2)
+							.foregroundStyle(.secondary)
+					}
+				}
+				DataSourceBadge(source: .corrections())
+				ForEach(CorrectionsStatisticsDatabase.sources(), id: \.url) { source in
+					Link(source.title, destination: source.url)
+						.font(.caption2)
+				}
+			} header: {
+				Text("Federal Corrections")
+			} footer: {
+				Text("National federal corrections context for \(CorrectionsStatisticsDatabase.fiscalYearLabel(snapshot.referenceFiscalYear)). Cost per inmate is derived from CSC Care and Custody spending divided by the in-custody population. Indigenous population share uses the 2021 Census.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	private func correctionsCostChart(_ snapshot: CorrectionsSnapshot) -> some View {
+		Chart {
+			ForEach(snapshot.annualStatistics) { year in
+				LineMark(
+					x: .value("Fiscal year", CorrectionsStatisticsDatabase.fiscalYearLabel(year.fiscalYear)),
+					y: .value("Cost per inmate", year.costPerInmate)
+				)
+				.foregroundStyle(.red)
+				PointMark(
+					x: .value("Fiscal year", CorrectionsStatisticsDatabase.fiscalYearLabel(year.fiscalYear)),
+					y: .value("Cost per inmate", year.costPerInmate)
+				)
+				.foregroundStyle(.red)
+			}
+		}
+		.frame(height: 120)
+		.chartYAxis {
+			AxisMarks(position: .leading) { value in
+				AxisGridLine()
+				AxisTick()
+				AxisValueLabel {
+					if let amount = value.as(Int.self) {
+						Text(amount.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+					}
+				}
+			}
+		}
+		.accessibilityLabel("Three year federal care and custody cost per inmate trend")
 	}
 
 	private var cmhcRow: some View {
@@ -969,6 +1050,10 @@ struct RidingStatisticsView: View {
 			return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
 		}
 		return "\(value.formatted(.number.precision(.fractionLength(1))))%"
+	}
+
+	private func percentLabel(_ value: Double) -> String {
+		"\(value.formatted(.number.precision(.fractionLength(1))))%"
 	}
 
 	private func cpiSourceTitle(_ cpi: ConsumerPriceIndexStatistic) -> String {
