@@ -14,6 +14,7 @@ enum AppEnvironment {
     }
 
     static var isAppPreviewManualSequence: Bool {
+        ProcessInfo.processInfo.arguments.contains("--app-preview-manual-sequence") ||
         ProcessInfo.processInfo.environment["EPAC_APP_PREVIEW_MANUAL_SEQUENCE"] == "1"
     }
 

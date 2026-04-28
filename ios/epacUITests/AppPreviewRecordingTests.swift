@@ -10,10 +10,11 @@ import XCTest
 
 final class AppPreviewRecordingTests: XCTestCase {
     private var app: XCUIApplication!
-    private let recordingSceneHold: TimeInterval = 2.75
+    private let recordingSceneHold: TimeInterval = 2.8
     private var isRecordingRun: Bool {
         name.contains("testAppPreviewRecordingSequence") ||
-        ProcessInfo.processInfo.environment["APP_PREVIEW_RECORDING"] == "1"
+        ProcessInfo.processInfo.environment["APP_PREVIEW_RECORDING"] == "1" ||
+        ProcessInfo.processInfo.environment["TEST_RUNNER_APP_PREVIEW_RECORDING"] == "1"
     }
 
     override func setUpWithError() throws {
@@ -21,7 +22,12 @@ final class AppPreviewRecordingTests: XCTestCase {
         executionTimeAllowance = 60
         app = XCUIApplication()
         if isRecordingRun {
-            app.launchArguments = ["--app-preview-mode", "-UIAnimationsDisabled", "YES"]
+            app.launchArguments = [
+                "--app-preview-mode",
+                "--app-preview-manual-sequence",
+                "-UIAnimationsDisabled",
+                "YES"
+            ]
             app.launchEnvironment["EPAC_APP_PREVIEW_MODE"] = "1"
             app.launchEnvironment["EPAC_APP_PREVIEW_MANUAL_SEQUENCE"] = "1"
         } else {
@@ -74,45 +80,42 @@ final class AppPreviewRecordingTests: XCTestCase {
             return
         }
 
-        // Recording path: deterministic tap-to-advance with short sleep chunks.
+        // Recording path: deterministic headline-tap advancement with short wait chunks.
         // Manual sequencing avoids the flaky XCTest runner timing in EPAC-537.
-        try waitForScene(headline: "Your MP. Everything they do.", timeout: 10, hold: recordingSceneHold)
-        advanceToNextScene()
-        try waitForScene(headline: "Every word. Every vote.", timeout: 5, hold: recordingSceneHold)
-        advanceToNextScene()
-        try waitForScene(headline: "Hansard. Finally readable.", timeout: 5, hold: recordingSceneHold)
-        advanceToNextScene()
-        try waitForScene(headline: "Who's influencing them?", timeout: 5, hold: recordingSceneHold)
-        advanceToNextScene()
-        try waitForScene(headline: "They said it. Then voted against it.", timeout: 5, hold: recordingSceneHold)
-        advanceToNextScene()
+        try holdAndAdvance(headline: "Your MP. Everything they do.", timeout: 10)
+        try holdAndAdvance(headline: "Every word. Every vote.", timeout: 5)
+        try holdAndAdvance(headline: "Hansard. Finally readable.", timeout: 5)
+        try holdAndAdvance(headline: "Who's influencing them?", timeout: 5)
+        try holdAndAdvance(headline: "They said it. Then voted against it.", timeout: 5)
         try waitForScene(headline: "Democracy. One tap.", timeout: 5, hold: recordingSceneHold)
     }
 
-    private func advanceToNextScene() {
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    private func holdAndAdvance(headline: String, timeout: TimeInterval, file: StaticString = #filePath, line: UInt = #line) throws {
+        let title = try waitForScene(headline: headline, timeout: timeout, hold: recordingSceneHold, file: file, line: line)
+        title.tap()
     }
 
+    @discardableResult
     private func waitForScene(
         headline: String,
         timeout: TimeInterval,
         hold: TimeInterval? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws {
+    ) throws -> XCUIElement {
         let title = app.staticTexts[headline].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: timeout), "Expected scene headline \(headline)", file: file, line: line)
         if let hold {
             holdScene(for: hold)
         }
+        return title
     }
 
     private func holdScene(for duration: TimeInterval) {
-        var remaining = duration
-        while remaining > 0 {
-            let interval = min(remaining, 1.0)
-            Thread.sleep(forTimeInterval: interval)
-            remaining -= interval
+        let deadline = Date().addingTimeInterval(duration)
+        while Date() < deadline {
+            let nextTick = min(deadline, Date().addingTimeInterval(0.1))
+            RunLoop.current.run(until: nextTick)
         }
     }
 

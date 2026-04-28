@@ -37,7 +37,7 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$IOS_DIR"
-APP_PREVIEW_RECORDING=1 xcodebuild test -project epac.xcodeproj -scheme epac -destination "$DESTINATION" -only-testing:epacUITests/AppPreviewRecordingTests/testAppPreviewSequence
+TEST_RUNNER_APP_PREVIEW_RECORDING=1 xcodebuild test -project epac.xcodeproj -scheme epac -destination "$DESTINATION" -only-testing:epacUITests/AppPreviewRecordingTests/testAppPreviewRecordingSequence
 
 cleanup
 trap - EXIT
