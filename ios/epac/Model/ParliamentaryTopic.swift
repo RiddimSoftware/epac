@@ -23,7 +23,7 @@ struct ParliamentaryTopic: Identifiable, Codable, Hashable {
         ParliamentaryTopic(id: "economy", nameKey: "topic.economy", keywords: ["budget", "fiscal", "inflation", "economic", "gdp", "debt", "déficit", "économie"]),
         ParliamentaryTopic(id: "indigenous", nameKey: "topic.indigenous", keywords: ["indigenous", "first nations", "métis", "inuit", "reconciliation", "autochtone"]),
         ParliamentaryTopic(id: "immigration", nameKey: "topic.immigration", keywords: ["immigration", "refugee", "asylum", "citizenship", "border", "réfugié"]),
-        ParliamentaryTopic(id: "defence", nameKey: "topic.defence", keywords: ["defence", "military", "NATO", "armed forces", "défense", "armée"]),
+        ParliamentaryTopic(id: "defence", nameKey: "topic.defence", keywords: ["defence", "military", "NATO", "armed forces", "veteran", "Veterans Affairs", "ancien combattant", "défense", "armée"]),
         ParliamentaryTopic(id: "justice", nameKey: "topic.justice", keywords: ["justice", "crime", "police", "firearms", "gun", "corrections", "sécurité"]),
         ParliamentaryTopic(id: "seniors", nameKey: "topic.seniors", keywords: ["senior", "pension", "retirement", "old age", "aîné", "retraite"]),
         ParliamentaryTopic(id: "agriculture", nameKey: "topic.agriculture", keywords: ["agriculture", "farming", "food security", "grain", "livestock"]),

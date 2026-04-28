@@ -46,6 +46,7 @@ struct SpeechView: View {
 			consumerPriceIndexDebateContext
 			employmentInsuranceDebateContext
 			cppOasDebateContext
+			veteransAffairsDebateContext
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
@@ -350,6 +351,49 @@ struct SpeechView: View {
 
 	private var isCPPOASRelevant: Bool {
 		ParliamentaryTopic.matching(subject.title).contains { $0.id == "seniors" }
+	}
+
+	@ViewBuilder
+	private var veteransAffairsDebateContext: some View {
+		if isVeteransAffairsRelevant,
+		   let summary = VeteransAffairsStatisticsDatabase.nationalSummary(),
+		   let latestAnnual = VeteransAffairsStatisticsDatabase.latestAnnual(),
+		   let latestWait = latestAnnual.firstApplicationAverageWeeks {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("Veterans context", systemImage: "cross.case.fill")
+						.font(.caption.bold())
+					Spacer()
+					Text("Backlog as of \(VeteransAffairsStatisticsDatabase.dateLabel(summary.referenceDate))")
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill("Recipients", summary.disabilityBenefitRecipients.formatted())
+					statPill(
+						"Wait \(latestAnnual.fiscalYear)",
+						"\(latestWait.formatted(.number.precision(.fractionLength(1))))w"
+					)
+					statPill("Backlog", summary.backlogApplications.formatted())
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isVeteransAffairsRelevant: Bool {
+		if ParliamentaryTopic.matching(subject.title).contains(where: { $0.id == "defence" }) {
+			return true
+		}
+		let title = subject.title.localizedLowercase
+		return title.contains("veteran")
+			|| title.contains("veterans affairs")
+			|| title.contains("disability benefit")
+			|| title.contains("ancien combattant")
 	}
 
 	private func statPill(_ label: String, _ value: String) -> some View {
