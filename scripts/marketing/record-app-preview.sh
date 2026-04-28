@@ -147,8 +147,9 @@ if awk "BEGIN { exit !($RAW_DURATION < 25) }"; then
 fi
 
 TMP_FINAL="$OUTPUT_DIR/app-preview-final.$(date +%Y%m%d-%H%M%S)-$$.tmp.mp4"
+TMP_WITH_AUDIO="$OUTPUT_DIR/app-preview-final.$(date +%Y%m%d-%H%M%S)-$$.with-audio.tmp.mp4"
 cleanup_tmp() {
-  rm -f "$TMP_FINAL"
+  rm -f "$TMP_FINAL" "$TMP_WITH_AUDIO"
 }
 trap cleanup_tmp EXIT
 
@@ -183,7 +184,27 @@ if [[ "$FINAL_SIZE_BYTES" -ge 500000000 ]]; then
   exit 1
 fi
 
-mv "$TMP_FINAL" "$FINAL_FILE"
+# Apple's App Preview pipeline rejects videos with no audio track
+# ("unsupported or corrupted audio") even though the spec calls audio
+# "optional", so mux in a silent AAC stereo @ 44.1 kHz before publishing.
+echo "Muxing silent AAC audio track for App Store compatibility..."
+ffmpeg -y \
+  -i "$TMP_FINAL" \
+  -f lavfi -i anullsrc=cl=stereo:r=44100 \
+  -shortest \
+  -map 0:v -map 1:a \
+  -c:v copy \
+  -c:a aac -b:a 128k \
+  "$TMP_WITH_AUDIO"
+
+WITH_AUDIO_SIZE_BYTES=$(wc -c < "$TMP_WITH_AUDIO" | tr -d ' ')
+if [[ "$WITH_AUDIO_SIZE_BYTES" -ge 500000000 ]]; then
+  echo "ERROR: Final file with audio is $WITH_AUDIO_SIZE_BYTES bytes, above App Store's 500MB limit." >&2
+  exit 1
+fi
+
+mv "$TMP_WITH_AUDIO" "$FINAL_FILE"
+rm -f "$TMP_FINAL"
 trap - EXIT
 
 cp "$FINAL_FILE" "$FASTLANE_PREVIEW_VIDEO"
