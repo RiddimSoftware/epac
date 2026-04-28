@@ -74,7 +74,6 @@ struct PrivacyPolicyView: View {
             .padding()
         }
         .navigationTitle("Privacy Policy")
-        .navigationBarTitleDisplayMode(.large)
     }
 }
 
