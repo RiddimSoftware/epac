@@ -231,7 +231,12 @@ struct CommitteeMeetingsView: View {
 struct CommitteeEvidenceView: View {
     let meeting: CommitteeMeeting
     @State private var interventions: [CommitteeIntervention] = []
+    @State private var witnessDigests: [CommitteeWitnessDigest] = []
+    @State private var hearingOverview: String?
     @State private var isLoading = false
+    @State private var isGeneratingDigests = false
+    @State private var isGeneratingOverview = false
+    @State private var summaryError: String?
 
     var body: some View {
         Group {
@@ -242,8 +247,15 @@ struct CommitteeEvidenceView: View {
                 // Evidence endpoint returned nothing — show metadata + link to source
                 metadataFallback
             } else {
-                List(interventions) { intervention in
-                    InterventionRow(intervention: intervention)
+                List {
+                    if CommitteeSummaryService.isAvailable {
+                        summarySection
+                    }
+                    Section("Transcript") {
+                        ForEach(interventions) { intervention in
+                            InterventionRow(intervention: intervention)
+                        }
+                    }
                 }
                 .listStyle(.plain)
             }
@@ -270,6 +282,72 @@ struct CommitteeEvidenceView: View {
                     .accessibilityLabel(NSLocalizedString("committees.openParlVUArchive", comment: ""))
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var summarySection: some View {
+        Section {
+            if isGeneratingDigests {
+                HStack {
+                    ProgressView()
+                    Text("Generating witness digests...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else if !witnessDigests.isEmpty {
+                ForEach(witnessDigests) { digest in
+                    DisclosureGroup {
+                        Text(digest.summary)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .padding(.top, 4)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(digest.witnessName)
+                                .font(.subheadline.weight(.semibold))
+                            if !digest.affiliation.isEmpty {
+                                Text(digest.affiliation)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text("\(digest.interventionCount) intervention\(digest.interventionCount == 1 ? "" : "s")")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if let hearingOverview {
+                    DisclosureGroup("Hearing overview") {
+                        Text(hearingOverview)
+                            .font(.subheadline)
+                            .padding(.top, 4)
+                    }
+                }
+
+                Button {
+                    Task { await generateHearingOverview() }
+                } label: {
+                    if isGeneratingOverview {
+                        Label("Summarizing hearing...", systemImage: "sparkles")
+                    } else {
+                        Label("Summarize this hearing", systemImage: "sparkles")
+                    }
+                }
+                .disabled(isGeneratingOverview)
+            }
+
+            if let summaryError {
+                Text(summaryError)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Committee digest")
+        } footer: {
+            Text(CommitteeSummaryService.label)
+                .font(.caption2)
         }
     }
 
@@ -325,6 +403,48 @@ struct CommitteeEvidenceView: View {
             committeeId: meeting.committee,
             meetingNumber: meeting.meetingNumber
         )
+        await generateWitnessDigestsIfNeeded()
+    }
+
+    private func generateWitnessDigestsIfNeeded() async {
+        guard CommitteeSummaryService.isAvailable,
+              !interventions.isEmpty,
+              witnessDigests.isEmpty,
+              !isGeneratingDigests else {
+            return
+        }
+
+        isGeneratingDigests = true
+        summaryError = nil
+        defer { isGeneratingDigests = false }
+
+        do {
+            witnessDigests = try await CommitteeSummaryService.shared.witnessDigests(
+                for: meeting,
+                interventions: interventions
+            )
+        } catch CommitteeSummaryServiceError.noWitnessInterventions {
+            summaryError = "No witness testimony available to summarize."
+        } catch {
+            summaryError = "Committee digest unavailable."
+        }
+    }
+
+    private func generateHearingOverview() async {
+        guard CommitteeSummaryService.isAvailable, !interventions.isEmpty else { return }
+
+        isGeneratingOverview = true
+        summaryError = nil
+        defer { isGeneratingOverview = false }
+
+        do {
+            hearingOverview = try await CommitteeSummaryService.shared.hearingOverview(
+                for: meeting,
+                interventions: interventions
+            )
+        } catch {
+            summaryError = "Hearing overview unavailable."
+        }
     }
 }
 
