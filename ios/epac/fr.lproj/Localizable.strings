@@ -358,6 +358,7 @@
 /* Fil d'accueil personnalisé */
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
 "home.parliament.notSitting" = "La Chambre ne siège pas aujourd\'hui";
+"home.parliament.adjourned" = "La Chambre a ajourné ses travaux pour aujourd'hui";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";
@@ -367,6 +368,7 @@
 "home.clearAllBills" = "Tout effacer";
 "home.manageTopics" = "Gérer les sujets →";
 "home.seeAllDebates" = "Ouvrir l'onglet Parlement →";
+"home.today.adjournedDetail" = "Hansard en cache pour le %@";
 "home.today.nextSitting" = "Prochaine séance : %@";
 "home.today.noCalendar" = "Calendrier des séances pas encore en cache";
 "home.today.offline" = "Hors ligne — données parlementaires en cache";

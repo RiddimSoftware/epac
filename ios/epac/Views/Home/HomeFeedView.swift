@@ -20,6 +20,7 @@ struct HomeFeedView: View {
     @Environment(NavigationRouter.self) private var router
     @Environment(NetworkMonitor.self) private var networkMonitor
     @State private var isSittingToday = false
+    @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
     @State private var nextSittingDate: Date?
     @State private var latestRecordedVote: RecordedVote?
     @State private var latestMemberVote: MemberVote?
@@ -127,7 +128,7 @@ struct HomeFeedView: View {
                         )
                     }
                     .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("speech") })
-                } else if PostalCodeViewModel.savedMemberName != nil {
+                } else if hasFollowedMPContext {
                     todayMetricRow(
                         icon: "quote.bubble",
                         title: NSLocalizedString("home.today.latestSpeech", comment: ""),
@@ -147,9 +148,7 @@ struct HomeFeedView: View {
                 .buttonStyle(.plain)
             }
             .padding(.vertical, EpacSpacing.s)
-            .accessibilityLabel(isSittingToday
-                ? NSLocalizedString("home.parliament.sitting", comment: "")
-                : NSLocalizedString("home.parliament.notSitting", comment: ""))
+            .accessibilityLabel(parliamentStatusTitle)
         }
     }
 
@@ -159,16 +158,14 @@ struct HomeFeedView: View {
             router.selectedTab = .parliament
         } label: {
             HStack(alignment: .top, spacing: EpacSpacing.s) {
-                Image(systemName: isSittingToday ? "building.columns.fill" : "building.columns")
-                    .foregroundStyle(isSittingToday ? Color.epacBrand.accent : Color.epacText.secondary)
+                Image(systemName: parliamentStatusIcon)
+                    .foregroundStyle(parliamentStatusColor)
                     .font(.title3)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                    Text(isSittingToday
-                        ? NSLocalizedString("home.parliament.sitting", comment: "")
-                        : NSLocalizedString("home.parliament.notSitting", comment: ""))
+                    Text(parliamentStatusTitle)
                         .font(.epacHeadline)
-                        .foregroundStyle(isSittingToday ? Color.epacText.primary : Color.epacText.secondary)
+                        .foregroundStyle(parliamentStatusColor)
                     Text(todayStatusDetail)
                         .font(.epacCaption)
                         .foregroundStyle(Color.epacText.secondary)
@@ -469,6 +466,7 @@ struct HomeFeedView: View {
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         ))) ?? []
         latestHansard = hansards.first
+        parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
         recentSubjects = Array(
             (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
         )
@@ -493,8 +491,14 @@ struct HomeFeedView: View {
     }
 
     private var todayStatusDetail: String {
-        if isSittingToday {
+        if parliamentDayStatus == .sitting {
             return Date().formatted(date: .abbreviated, time: .omitted)
+        }
+        if parliamentDayStatus == .adjourned, let latestHansard {
+            return String(
+                format: NSLocalizedString("home.today.adjournedDetail", comment: ""),
+                latestHansard.date.formatted(date: .abbreviated, time: .omitted)
+            )
         }
         if let nextSittingDate {
             return String(
@@ -503,6 +507,41 @@ struct HomeFeedView: View {
             )
         }
         return NSLocalizedString("home.today.noCalendar", comment: "")
+    }
+
+    private var parliamentStatusTitle: String {
+        switch parliamentDayStatus {
+        case .sitting:
+            return NSLocalizedString("home.parliament.sitting", comment: "")
+        case .adjourned:
+            return NSLocalizedString("home.parliament.adjourned", comment: "")
+        case .notSitting:
+            return NSLocalizedString("home.parliament.notSitting", comment: "")
+        }
+    }
+
+    private var parliamentStatusIcon: String {
+        switch parliamentDayStatus {
+        case .sitting, .adjourned:
+            return "building.columns.fill"
+        case .notSitting:
+            return "building.columns"
+        }
+    }
+
+    private var parliamentStatusColor: Color {
+        switch parliamentDayStatus {
+        case .sitting:
+            return Color.epacBrand.accent
+        case .adjourned:
+            return Color.epacStatus.warning
+        case .notSitting:
+            return Color.epacText.secondary
+        }
+    }
+
+    private var hasFollowedMPContext: Bool {
+        PostalCodeViewModel.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
     }
 
     private var offlineCacheText: String {
@@ -543,6 +582,14 @@ struct HomeFeedView: View {
             return members.first { $0.memberID == followedID }
         }
         return nil
+    }
+
+    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?) -> HomeParliamentDayStatus {
+        guard isSittingToday else { return .notSitting }
+        if let latestHansard, Calendar.current.isDate(latestHansard.date, inSameDayAs: today) {
+            return .adjourned
+        }
+        return .sitting
     }
 
     private func makeLatestSpeechHighlight(for member: ParliamentMember?, in hansards: [Hansard]) -> HomeSpeechHighlight? {
@@ -587,4 +634,10 @@ private struct HomeSpeechHighlight {
     let subject: SubjectOfBusiness
     let memberName: String
     let excerpt: String
+}
+
+private enum HomeParliamentDayStatus {
+    case sitting
+    case adjourned
+    case notSitting
 }

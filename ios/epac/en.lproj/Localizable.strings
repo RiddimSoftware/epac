@@ -355,6 +355,7 @@
 /* Home feed */
 "home.parliament.sitting" = "Parliament is sitting today";
 "home.parliament.notSitting" = "Parliament is not sitting today";
+"home.parliament.adjourned" = "Parliament has adjourned for today";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";
@@ -364,6 +365,7 @@
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
 "home.seeAllDebates" = "Open Parliament tab →";
+"home.today.adjournedDetail" = "Hansard cached for %@";
 "home.today.nextSitting" = "Next sitting: %@";
 "home.today.noCalendar" = "Sitting calendar not cached yet";
 "home.today.offline" = "Offline — showing cached Parliament data";
