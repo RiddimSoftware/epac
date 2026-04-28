@@ -32,6 +32,8 @@ struct RidingStatisticsView: View {
 	private static let infrastructureProjectMapURL = URL(string: "https://housing-infrastructure.canada.ca/gmap-gcarte/index-eng.html")!
 	private static let infrastructureDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/beee0771-dab9-4be8-9b80-f8e8b3fdfd9d")!
 	private static let infrastructurePortfolioURL = URL(string: "https://housing-infrastructure.canada.ca/plan/about-invest-apropos-eng.html")!
+	private static let nhsStrategyOverviewURL = URL(string: "https://www.cmhc-schl.gc.ca/nhs/guidepage-strategy")!
+	private static let nhsLatestProgressReportURL = URL(string: "https://assets.cmhc-schl.gc.ca/sites/place-to-call-home/pdfs/progress/nhs-progress-quarterly-report-q1-2024-en.pdf")!
 
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
 		("Population & Age", "person.2.fill", .blue),
@@ -70,8 +72,32 @@ struct RidingStatisticsView: View {
 				}
 			}
 
-			Section("Housing Market") {
+			Section {
+				NavigationLink(destination: NHSTrackerView()) {
+					HStack(spacing: 12) {
+						Image(systemName: "house.lodge.fill")
+							.foregroundStyle(.orange)
+							.frame(width: 28)
+							.accessibilityHidden(true)
+						VStack(alignment: .leading, spacing: 2) {
+							Text("NHS Housing Tracker")
+								.font(.subheadline)
+								.foregroundStyle(.primary)
+							Text("Federal targets vs. units delivered under the National Housing Strategy")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+						}
+					}
+				}
 				cmhcRow
+				nhsStrategyOverviewRow
+				nhsProgressReportRow
+			} header: {
+				Text("Housing Market")
+			} footer: {
+				Text("Source: CMHC. Market data is published quarterly; the National Housing Strategy progress report is published quarterly with annual cumulative totals against the 10-year, ~$115B federal commitment.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
 			}
 
 			immigrationSection
@@ -154,6 +180,56 @@ struct RidingStatisticsView: View {
 						.font(.subheadline)
 						.foregroundStyle(.primary)
 					Text("Rental vacancy rates, average rents, and starts for \(member.province.rawValue)")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var nhsStrategyOverviewRow: some View {
+		Button {
+			openURL(Self.nhsStrategyOverviewURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "house.lodge.fill")
+					.foregroundStyle(.orange)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("National Housing Strategy")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Federal 10-year housing commitment, programs, and targets")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var nhsProgressReportRow: some View {
+		Button {
+			openURL(Self.nhsLatestProgressReportURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "chart.bar.doc.horizontal.fill")
+					.foregroundStyle(.orange)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("NHS Progress Report")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Federal targets vs. units delivered (PDF)")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
