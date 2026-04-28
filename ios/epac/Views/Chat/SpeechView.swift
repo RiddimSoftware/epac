@@ -45,6 +45,7 @@ struct SpeechView: View {
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
 			consumerPriceIndexDebateContext
 			studentFinanceDebateContext
+			correctionsDebateContext
 			employmentInsuranceDebateContext
 			cppOasDebateContext
 			veteransAffairsDebateContext
@@ -367,6 +368,47 @@ struct SpeechView: View {
 	}
 
 	@ViewBuilder
+	private var correctionsDebateContext: some View {
+		if isCorrectionsRelevant,
+		   let snapshot = CorrectionsStatisticsDatabase.snapshot(),
+		   let latest = snapshot.latestAnnualStatistic {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("Corrections context", systemImage: "building.columns.fill")
+						.font(.caption.bold())
+					Spacer()
+					Text(CorrectionsStatisticsDatabase.fiscalYearLabel(snapshot.referenceFiscalYear))
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill("Indigenous custody", percentLabel(latest.indigenousInCustodyPercent))
+					statPill("Canada share", percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
+					statPill("Recidivism", percentLabel(latest.recidivismRatePercent))
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isCorrectionsRelevant: Bool {
+		let topicIDs = ParliamentaryTopic.matching(subject.title).map(\.id)
+		if topicIDs.contains("justice") || topicIDs.contains("indigenous") {
+			return true
+		}
+		let title = subject.title.localizedLowercase
+		return title.contains("correctional service")
+			|| title.contains("incarceration")
+			|| title.contains("prison")
+			|| title.contains("parole")
+			|| title.contains("recidivism")
+	}
+
+	@ViewBuilder
 	private var cppOasDebateContext: some View {
 		if isCPPOASRelevant,
 		   let stat = CPPOASStatisticsDatabase.statistic(for: userProvinceCode) {
@@ -511,6 +553,10 @@ struct SpeechView: View {
 			return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
 		}
 		return "\(value.formatted(.number.precision(.fractionLength(1))))%"
+	}
+
+	private func percentLabel(_ value: Double) -> String {
+		"\(value.formatted(.number.precision(.fractionLength(1))))%"
 	}
 }
 

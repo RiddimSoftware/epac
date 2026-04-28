@@ -273,4 +273,15 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func corrections() -> DataSource {
+        DataSource(
+            name: "CSC / OCI / StatCan",
+            description: "Federal corrections statistics from Correctional Service Canada accountability reports, Office of the Correctional Investigator annual reports, and Statistics Canada Census population shares.",
+            url: URL(string: "https://www.canada.ca/en/correctional-service/corporate/transparency/reporting/departmental-results-reports/2023-2024.html")!,
+            lastSyncDate: nil,
+            vintage: "Annual",
+            stalenessThreshold: nil
+        )
+    }
 }
