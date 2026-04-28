@@ -98,6 +98,15 @@ struct MembersView: View {
 				.accessibilityIdentifier("members-cabinet-filter")
 				.disabled(cabinetPositions.isEmpty)
 
+				Menu {
+					ForEach(Party.allCases) { party in
+						PartyMenuLink(party: party)
+					}
+				} label: {
+					Image(systemName: "flag.checkered")
+				}
+				.accessibilityIdentifier("members-parties-menu")
+
 				if viewModel.isAnyFilterActive {
 					Button(action: viewModel.clearAllFilters) {
 						Image(systemName: "xmark.circle.fill")
@@ -206,6 +215,24 @@ enum CabinetMatch {
 	static func key(firstName: String, lastName: String) -> String {
 		let firstToken = firstName.split(separator: " ").first.map(String.init) ?? firstName
 		return "\(firstToken.lowercased()) \(lastName.lowercased())"
+	}
+}
+
+// Menu-row factory: keeps the conditional destination out of the menu
+// builder so the parent ViewBuilder type-checks in reasonable time.
+private struct PartyMenuLink: View {
+	let party: Party
+
+	var body: some View {
+		if party == .independent {
+			NavigationLink(destination: IndependentsListingView()) {
+				Label(party.shortName, systemImage: "flag.fill")
+			}
+		} else {
+			NavigationLink(destination: PartyProfileView(party: party)) {
+				Label(party.shortName, systemImage: "flag.fill")
+			}
+		}
 	}
 }
 

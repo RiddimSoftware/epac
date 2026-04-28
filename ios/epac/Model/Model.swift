@@ -1323,4 +1323,17 @@ enum Party: Codable, CaseIterable, Identifiable {
 		}
 		return .independent
 	}
+
+	// Official party website domains. Independents intentionally have no
+	// website — Independent is a listing, not a party.
+	var websiteURL: URL? {
+		switch self {
+		case .liberal:        return URL(string: "https://liberal.ca")
+		case .conservative:   return URL(string: "https://www.conservative.ca")
+		case .newdemocratic:  return URL(string: "https://www.ndp.ca")
+		case .bloc:           return URL(string: "https://www.blocquebecois.org")
+		case .green:          return URL(string: "https://www.greenparty.ca")
+		case .independent:    return nil
+		}
+	}
 }
