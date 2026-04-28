@@ -46,7 +46,6 @@
 "search.section.debates" = "Débats";
 
 /* Sitting view */
-"Search debates" = "Rechercher des débats";
 "Open debate" = "Ouvrir le débat";
 "sitting.oralQuestions.title" = "Questions orales";
 "sitting.oralQuestions.count" = "%d échange(s)";
@@ -120,6 +119,20 @@
 "Party" = "Parti";
 "Province" = "Province";
 "Status" = "Statut";
+
+/* Libellés des partis */
+"CPC" = "PCC";
+"Lib" = "Lib.";
+"NDP" = "NPD";
+"BQ" = "BQ";
+"GP" = "PV";
+"Ind" = "Ind.";
+"Conservative" = "Conservateur";
+"Liberal" = "Libéral";
+"New Democratic Party" = "Nouveau Parti démocratique";
+"Bloc Québécois" = "Bloc Québécois";
+"Green Party" = "Parti vert";
+"Independent" = "Indépendant";
 
 /* Vote detail */
 "voteDetail.debates.header" = "Débats dans le hansard";
@@ -225,7 +238,6 @@
 "petitions.empty.description" = "Aucune pétition trouvée.";
 "petitions.noOpen.title" = "Aucune pétition ouverte";
 "petitions.noOpen.description" = "Il n'y a pas de pétitions ouvertes en ce moment. Appuyez ci-dessous pour voir toutes les pétitions.";
-"petitions.empty.description" = "Aucune pétition trouvée.";
 "petitions.error.title" = "Impossible de charger les pétitions";
 "petitions.error.description" = "Vérifiez votre connexion et réessayez.";
 
@@ -467,12 +479,8 @@
 "dataSource.done" = "Terminé";
 
 /* Recherche étendue (EPAC-85) */
-"search.prompt" = "Rechercher députés, votes, débats";
 "search.emptyTitle" = "Rechercher dans le Parlement";
 "search.emptyDescription" = "Cherchez des députés par nom, des votes par numéro de projet de loi et des débats par sujet.";
-"search.section.members" = "Membres";
-"search.section.votes" = "Votes";
-"search.section.debates" = "Débats";
 
 /* États vides (EPAC-107) */
 "empty.home.title" = "Configurez votre fil civique";
@@ -642,3 +650,32 @@
 "toronto.votes.empty.title" = "Aucun vote trouvé";
 "toronto.votes.empty.description" = "Les votes du conseil municipal de Toronto apparaîtront ici.";
 "toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";
+
+/* Notification Settings (EPAC-436) */
+"settings.notifications.manage" = "Gérer les notifications";
+"notifications.section.permission" = "Autorisation";
+"notifications.permission.granted" = "Notifications activées";
+"notifications.permission.denied" = "Les notifications sont désactivées";
+"notifications.permission.deniedHint" = "Ouvrez les réglages iOS pour autoriser epac à envoyer des notifications.";
+"notifications.permission.openSettings" = "Ouvrir les réglages";
+"notifications.permission.enable" = "Activer les notifications";
+"notifications.section.activity" = "Activité";
+"notifications.section.activity.footer" = "Les réglages propres à chaque député sont disponibles depuis son profil.";
+"notifications.category.mpVotes" = "Votes des députés suivis";
+"notifications.category.mpSpeeches" = "Discours des députés suivis";
+"notifications.category.billStatus" = "Changements d'état des projets de loi suivis";
+"notifications.category.topicAlerts" = "Alertes sur les sujets suivis";
+"notifications.section.digests" = "Résumés";
+"notifications.section.digests.footer" = "Envoyés à 7 h HE le jour prévu.";
+"notifications.category.dailyDigest" = "Résumé quotidien";
+"notifications.category.fridayDigest" = "Résumé hebdomadaire du vendredi";
+"notifications.section.governmentUpdates" = "Mises à jour gouvernementales";
+"notifications.category.hansardSittings" = "Nouvelles séances du Hansard";
+"notifications.category.pboCosting" = "Notes de coûts du DPB";
+"notifications.category.lobbyingAlerts" = "Alertes de lobbying";
+"notifications.section.general" = "Général";
+"notifications.category.appAnnouncements" = "Annonces de l'application";
+"notifications.member.sectionTitle" = "Notifications pour ce député";
+"notifications.member.votes" = "Votes";
+"notifications.member.speeches" = "Discours";
+"notifications.member.expenses" = "Dépenses";

@@ -44,8 +44,8 @@ class XMLBro {
 			guard let catchline = oob["CatchLine"].element?.trimmedText() else {
 				continue
 			}
-			if catchline.lowercased() == NSLocalizedString("routine proceedings", comment: "") ||
-					catchline.lowercased() == NSLocalizedString("adjournment proceedings", comment: "") {
+			if catchline.lowercased() == "routine proceedings" ||
+					catchline.lowercased() == "adjournment proceedings" {
 				continue
 			}
 			guard let oobID = oob.element?.attribute(by: "id")?.trimmedText() else {
