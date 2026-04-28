@@ -24,12 +24,13 @@ struct TopicNotificationScheduler {
         let store = TopicFollowStore.shared
         guard !store.followedIDs.isEmpty else { return }
         for item in subjectTitles {
+            let dateSlug = DateUtils.getCSVStringFromDate(item.date)
             for topic in store.matchingFollowedTopics(for: item.title) {
                 schedule(
                     topicName: topic.localizedName,
                     contentTitle: item.title,
                     source: NSLocalizedString("topic.source.debate", comment: ""),
-                    identifier: "topic-\(topic.id)-\(stableID(item.title))"
+                    identifier: "topic-\(topic.id)-\(dateSlug)-\(stableID(item.title))"
                 )
             }
         }
