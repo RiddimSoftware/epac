@@ -19,8 +19,10 @@ struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(NavigationRouter.self) private var router
     @Environment(NetworkMonitor.self) private var networkMonitor
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isSittingToday = false
     @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
+    @State private var liveParliamentStatus: LiveParliamentStatus?
     @State private var nextSittingDate: Date?
     @State private var latestRecordedVote: RecordedVote?
     @State private var latestMemberVote: MemberVote?
@@ -35,10 +37,16 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
+    @State private var showLiveInfo = false
+
+    private let liveParliamentService = LiveParliamentService()
 
     var body: some View {
         NavigationStack {
             List {
+                if let liveParliamentStatus, liveParliamentStatus.isSitting {
+                    liveParliamentSection(liveParliamentStatus)
+                }
                 // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
                 electionCountdownSection
@@ -80,6 +88,7 @@ struct HomeFeedView: View {
             .accessibilityIdentifier("home-feed-scroll")
             .refreshable {
                 await loadFeed()
+                await refreshLiveParliamentStatus()
                 if !networkMonitor.isConnected {
                     showRefreshToast = true
                 }
@@ -108,7 +117,13 @@ struct HomeFeedView: View {
                     .accessibilityLabel(NSLocalizedString("settings.title", comment: ""))
                 }
             }
-            .task { await loadFeed() }
+            .task {
+                await loadFeed()
+                await refreshLiveParliamentStatus()
+            }
+            .task(id: scenePhase) {
+                await pollLiveParliamentStatus(while: scenePhase)
+            }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
             }
@@ -119,6 +134,69 @@ struct HomeFeedView: View {
     }
 
     // MARK: - Section 1: Today in Parliament
+
+    private func liveParliamentSection(_ status: LiveParliamentStatus) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.s) {
+                    Label(liveBadgeText(for: status), systemImage: liveBadgeIcon(for: status))
+                        .font(.epacCaption.weight(.bold))
+                        .foregroundStyle(liveBadgeColor(for: status))
+                        .labelStyle(.titleAndIcon)
+                    Spacer()
+                    Button {
+                        showLiveInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.epacSubheadline)
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(Color.epacText.secondary)
+                    .accessibilityLabel(NSLocalizedString("home.live.infoTitle", comment: ""))
+                    .popover(isPresented: $showLiveInfo) { liveInfoPopover }
+                }
+
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    Text(liveHeadline(for: status))
+                        .font(.epacHeadline)
+                        .foregroundStyle(Color.epacText.primary)
+                        .lineLimit(2)
+                    Text(liveDetail(for: status))
+                        .font(.epacSubheadline)
+                        .foregroundStyle(Color.epacText.secondary)
+                        .lineLimit(2)
+                }
+
+                HStack(spacing: EpacSpacing.s) {
+                    Text(String(
+                        format: NSLocalizedString("home.live.updated", comment: ""),
+                        status.checkedAt.formatted(date: .omitted, time: .shortened)
+                    ))
+                    if let billNumber = status.currentBillNumber {
+                        Text(billNumber)
+                    }
+                }
+                .font(.epacCaption)
+                .foregroundStyle(Color.epacText.tertiary)
+            }
+            .padding(.vertical, EpacSpacing.s)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private var liveInfoPopover: some View {
+        VStack(alignment: .leading, spacing: EpacSpacing.s) {
+            Text(NSLocalizedString("home.live.infoTitle", comment: ""))
+                .font(.epacHeadline)
+            Text(NSLocalizedString("home.live.infoBody", comment: ""))
+                .font(.epacCallout)
+                .foregroundStyle(Color.epacText.secondary)
+        }
+        .padding(EpacSpacing.m)
+        .frame(maxWidth: 320, alignment: .leading)
+        .presentationCompactAdaptation(.popover)
+    }
 
     private var todaySection: some View {
         Section {
@@ -559,6 +637,9 @@ struct HomeFeedView: View {
         ))) ?? []
         latestHansard = hansards.first
         parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
+        if liveParliamentStatus?.isSitting == true {
+            parliamentDayStatus = .sitting
+        }
         recentSubjects = Array(
             (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
         )
@@ -579,6 +660,32 @@ struct HomeFeedView: View {
             latestMemberVote = (try? modelContext.fetch(memberVoteDescriptor))?.first
         } else {
             latestMemberVote = nil
+        }
+    }
+
+    private func pollLiveParliamentStatus(while phase: ScenePhase) async {
+        guard phase == .active else { return }
+        await refreshLiveParliamentStatus()
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(for: .seconds(120))
+            } catch {
+                return
+            }
+            await refreshLiveParliamentStatus()
+        }
+    }
+
+    private func refreshLiveParliamentStatus() async {
+        guard networkMonitor.isConnected else { return }
+        do {
+            let status = try await liveParliamentService.fetchStatus()
+            liveParliamentStatus = status
+            if status.isSitting {
+                parliamentDayStatus = .sitting
+            }
+        } catch {
+            Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
         }
     }
 
@@ -630,6 +737,40 @@ struct HomeFeedView: View {
         case .notSitting:
             return Color.epacText.secondary
         }
+    }
+
+    private func liveBadgeText(for status: LiveParliamentStatus) -> String {
+        status.divisionInProgress
+            ? NSLocalizedString("home.live.voteBadge", comment: "")
+            : NSLocalizedString("home.live.badge", comment: "")
+    }
+
+    private func liveBadgeIcon(for status: LiveParliamentStatus) -> String {
+        status.divisionInProgress ? "checkmark.ballot.fill" : "circle.fill"
+    }
+
+    private func liveBadgeColor(for status: LiveParliamentStatus) -> Color {
+        status.divisionInProgress ? Color.epacStatus.warning : Color.epacStatus.destructive
+    }
+
+    private func liveHeadline(for status: LiveParliamentStatus) -> String {
+        if let title = status.currentItemTitle, !title.isEmpty {
+            return title
+        }
+        return status.businessType
+    }
+
+    private func liveDetail(for status: LiveParliamentStatus) -> String {
+        if status.divisionInProgress {
+            return NSLocalizedString("home.live.resultIncoming", comment: "")
+        }
+        if let speaker = status.currentSpeakerName, !speaker.isEmpty {
+            return String(format: NSLocalizedString("home.live.speaker", comment: ""), speaker)
+        }
+        return String(
+            format: NSLocalizedString("home.live.updated", comment: ""),
+            status.checkedAt.formatted(date: .omitted, time: .shortened)
+        )
     }
 
     private var hasFollowedMPContext: Bool {
