@@ -28,6 +28,16 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 		}
 	}
 
+	public var plainTitle: String {
+		switch self {
+		case .home:           return "Home"
+		case .parliament:     return "Parliament"
+		case .members:        return "Members"
+		case .accountability: return "Accountability"
+		case .search:         return "Search"
+		}
+	}
+
 	public var systemImageName: String {
 		switch self {
 		case .home:           return "house.fill"

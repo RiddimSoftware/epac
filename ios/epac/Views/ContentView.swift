@@ -10,6 +10,9 @@ import SwiftData
 import Foundation
 import Observation
 import CoreSpotlight
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct ContentView: View {
 	private static let isAppStoreScreenshotMode = ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
@@ -104,6 +107,7 @@ struct ContentView: View {
 		}
 		.task {
 			guard !AppRuntime.isRunningTests, !Self.isMarketingCaptureMode else { return }
+			registerMacCommands()
 			// Wire the router to the AppDelegate so Home Screen Quick Actions
 			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
 			appDelegate.router = router
@@ -137,6 +141,9 @@ struct ContentView: View {
 				MemberNameCache.shared.populate(entries: nameEntries)
 				await SpotlightIndexer.indexMembers(spotlightEntries)
 			}
+		}
+		.onAppear {
+			registerMacCommands()
 		}
 		.sheet(isPresented: $showOnboarding) {
 			OnboardingView {
@@ -222,13 +229,12 @@ struct ContentView: View {
 						router.selectedTab = tab
 					} label: {
 						Label(tab.title, systemImage: tab.systemImageName)
-							.foregroundStyle(router.selectedTab == tab ? Color.accentColor : .primary)
+							.frame(maxWidth: .infinity, alignment: .leading)
+							.contentShape(Rectangle())
 					}
-					.listRowBackground(
-						router.selectedTab == tab
-							? Color.accentColor.opacity(0.12)
-							: Color.clear
-					)
+					.buttonStyle(.plain)
+					.listRowBackground(router.selectedTab == tab ? Color.accentColor.opacity(0.16) : Color.clear)
+					.accessibilityAddTraits(router.selectedTab == tab ? [.isSelected] : [])
 				}
 			}
 			.navigationTitle("epac")
@@ -249,7 +255,49 @@ struct ContentView: View {
 					.opacity(router.selectedTab == .search ? 1 : 0)
 			}
 		}
+		#if targetEnvironment(macCatalyst)
+		.toolbar { macToolbarItems }
+		#endif
 		.safeAreaInset(edge: .bottom) { offlineBanner }
+	}
+
+	#if targetEnvironment(macCatalyst)
+	@ToolbarContentBuilder
+	private var macToolbarItems: some ToolbarContent {
+		ToolbarItemGroup(placement: .primaryAction) {
+			ForEach(AppTab.allCases) { tab in
+				Button {
+					router.selectedTab = tab
+				} label: {
+					Label(tab.title, systemImage: tab.systemImageName)
+				}
+				.help(tab.plainTitle)
+			}
+		}
+	}
+	#endif
+
+	private func registerMacCommands() {
+		#if targetEnvironment(macCatalyst)
+		MacCommandCenter.shared.selectTab = { tab in
+			router.selectedTab = tab
+		}
+		MacCommandCenter.shared.refresh = {
+			Task { @MainActor in
+				let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+				let constituencies = (try? modelContext.fetch(FetchDescriptor<Constituency>())) ?? []
+				await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
+				if router.selectedTab == .parliament, let selectedDate = viewModel.selectedDate {
+					viewModel.onSelectedDateChanged(to: selectedDate, modelContext: modelContext, fetch: fetch)
+				}
+			}
+		}
+		MacCommandCenter.shared.share = {
+			#if canImport(UIKit)
+			UIPasteboard.general.url = URL(string: "https://epac.riddimsoftware.com")
+			#endif
+		}
+		#endif
 	}
 
 	// MARK: - Members navigation stack

@@ -108,5 +108,54 @@ struct epacApp: App {
 				BackgroundRefreshManager.shared.scheduleRefresh()
 			}
 		}
+		#if targetEnvironment(macCatalyst)
+		.commands {
+			EpacMacCommands(commandCenter: .shared)
+		}
+		#endif
 	}
 }
+
+#if targetEnvironment(macCatalyst)
+private struct EpacMacCommands: Commands {
+	let commandCenter: MacCommandCenter
+
+	var body: some Commands {
+		CommandGroup(replacing: .newItem) {}
+
+		CommandGroup(after: .saveItem) {
+			Button("Share epac") {
+				commandCenter.shareCurrentContext()
+			}
+			.keyboardShortcut("s", modifiers: [.command, .shift])
+		}
+
+		CommandGroup(after: .textEditing) {
+			Button("Find") {
+				commandCenter.find()
+			}
+			.keyboardShortcut("f", modifiers: .command)
+		}
+
+		CommandMenu("Navigate") {
+			Button("Home") { commandCenter.select(.home) }
+				.keyboardShortcut("1", modifiers: .command)
+			Button("Parliament") { commandCenter.select(.parliament) }
+				.keyboardShortcut("2", modifiers: .command)
+			Button("Members") { commandCenter.select(.members) }
+				.keyboardShortcut("3", modifiers: .command)
+			Button("Accountability") { commandCenter.select(.accountability) }
+				.keyboardShortcut("4", modifiers: .command)
+			Button("Search") { commandCenter.select(.search) }
+				.keyboardShortcut("5", modifiers: .command)
+
+			Divider()
+
+			Button("Refresh") {
+				commandCenter.refreshContent()
+			}
+			.keyboardShortcut("r", modifiers: .command)
+		}
+	}
+}
+#endif

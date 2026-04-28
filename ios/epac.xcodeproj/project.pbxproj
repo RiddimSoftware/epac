@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A327A9202D18F75B00A2D292 /* epac-clip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = A327A91F2D18F75B00A2D292 /* epac-clip.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A327A9202D18F75B00A2D292 /* epac-clip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = A327A91F2D18F75B00A2D292 /* epac-clip.app */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */ = {isa = PBXBuildFile; productRef = A34F7CD12D13ADD70004C905 /* ActivityView */; };
 		A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A366154A2D0A24DD00A3FBF7 /* Kanna */; };
 		A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */ = {isa = PBXBuildFile; productRef = A36615832D0A261300A3FBF7 /* SWXMLHash */; };
@@ -586,6 +586,7 @@
 /* Begin PBXTargetDependency section */
 		A327A91D2D18F75B00A2D292 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (ios, );
 			target = A327A9082D18F75B00A2D292 /* epac-clip */;
 			targetProxy = A327A91C2D18F75B00A2D292 /* PBXContainerItemProxy */;
 		};
@@ -772,10 +773,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,6";
 				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
 			name = Debug;
@@ -817,10 +818,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,6";
 				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
 			name = Release;
