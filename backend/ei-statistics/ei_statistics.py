@@ -321,7 +321,15 @@ def main(argv: list[str] | None = None) -> int:
             benefit_rows=fetch_table(BENEFITS_TABLE_ID),
         )
     except Exception as exc:
-        logger.error("fetch failed from Statistics Canada", extra={"error": f"{type(exc).__name__}: {exc}"})
+        duration_ms = int((time.monotonic() - start) * 1000)
+        logger.error(
+            "fetch failed from Statistics Canada",
+            extra={
+                "error": f"{type(exc).__name__}: {exc}",
+                "url": STATCAN_TABLE_BASE_URL,
+                "duration_ms": duration_ms,
+            },
+        )
         raise
 
     body = json.dumps(payload, indent=2, sort_keys=True)

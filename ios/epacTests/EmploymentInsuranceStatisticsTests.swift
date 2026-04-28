@@ -48,4 +48,13 @@ struct EmploymentInsuranceStatisticsTests {
         #expect(EmploymentInsuranceStatisticsDatabase.monthLabel("2026-02") == "February 2026")
         #expect(EmploymentInsuranceStatisticsDatabase.monthLabel("bad-date") == "bad-date")
     }
+
+    @Test func loadsBundledSnapshot() throws {
+        let snapshot = try #require(EmploymentInsuranceStatisticsDatabase.snapshot())
+
+        #expect(snapshot.referenceMonth == "2026-02")
+        #expect(snapshot.provinces.count == 13)
+        #expect(snapshot.provinces.allSatisfy { $0.months.count == 12 })
+        #expect(EmploymentInsuranceStatisticsDatabase.statistic(for: "on")?.province == "Ontario")
+    }
 }
