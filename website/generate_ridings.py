@@ -10,10 +10,16 @@ import json, os, re, urllib.request
 
 MEMBERS_URL = "https://www.ourcommons.ca/Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all"
 RIDINGS_DIR = os.path.join(os.path.dirname(__file__), "ridings")
-APPSTORE_URL_BASE = "https://apps.apple.com/ca/app/epac/id6739397803"
+APPSTORE_URL_BASE = "https://apps.apple.com/ca/app/epac/id1224459142"
 
 def appstore_url(slug: str) -> str:
     return f"{APPSTORE_URL_BASE}?ct=epac-web-riding&mt=8&utm_source=epac-web&utm_medium=riding-page&utm_content={slug}&utm_campaign=organic"
+
+def open_in_app_head(path: str) -> str:
+    from urllib.parse import quote
+    encoded = quote(path, safe="")
+    return f"""  <meta name="apple-itunes-app" content="app-id=1224459142, app-argument=https://epac.riddimsoftware.com/app/?path={encoded}">
+  <script defer src="/open-in-app.js"></script>"""
 
 def slugify(s):
     s = s.lower().strip()
@@ -60,6 +66,7 @@ def html_for_riding(member):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{open_in_app_head(f"/ridings/{slug}.html")}
   <title>{riding} — {mp_name} — epac</title>
   <meta name="description" content="{desc}">
   <link rel="stylesheet" href="../default.css">
@@ -125,6 +132,7 @@ def generate():
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+{open_in_app_head("/ridings/")}
   <title>338 Federal Ridings — epac</title>
   <meta name="description" content="All 338 federal electoral districts in Canada. Find your MP and track their votes in epac.">
   <link rel="stylesheet" href="../default.css">

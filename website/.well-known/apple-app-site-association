@@ -11,6 +11,7 @@
           { "/": "/sitting/*", "comment": "Hansard sitting and speech deep-links" },
           { "/": "/topic/*", "comment": "Topic/keyword deep-links" },
           { "/": "/setup/*", "comment": "Onboarding deep-links (e.g. postal code setup)" },
+          { "/": "/app/*", "comment": "Web-to-app gateway and fallback links" },
           { "/": "/app", "comment": "Legacy query-parameter deep-links" },
           { "/": "/", "comment": "Home feed" }
         ]

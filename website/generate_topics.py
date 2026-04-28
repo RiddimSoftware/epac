@@ -12,10 +12,16 @@ import os, re, datetime
 TOPICS_DIR = os.path.join(os.path.dirname(__file__), "topics")
 SITEMAP_PATH = os.path.join(os.path.dirname(__file__), "sitemap.xml")
 SITE_ROOT = "https://epac.riddimsoftware.com"
-APPSTORE_BASE = "https://apps.apple.com/ca/app/epac/id6739397803"
+APPSTORE_BASE = "https://apps.apple.com/ca/app/epac/id1224459142"
 
 def appstore_url(topic_slug):
     return f"{APPSTORE_BASE}?ct=epac-web-topic&mt=8&utm_source=epac-web&utm_medium=topic-page&utm_content={topic_slug}&utm_campaign=organic"
+
+def open_in_app_head(path):
+    from urllib.parse import quote
+    encoded = quote(path, safe="")
+    return f"""  <meta name="apple-itunes-app" content="app-id=1224459142, app-argument=https://epac.riddimsoftware.com/app/?path={encoded}">
+  <script defer src="/open-in-app.js"></script>"""
 
 TOPICS = [
     {
@@ -198,6 +204,7 @@ def html_for_topic(t):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{open_in_app_head(f"/topics/{slug}.html")}
   <title>{headline} — epac</title>
   <meta name="description" content="{desc}">
   <meta name="keywords" content="{t['keywords']}">
@@ -257,6 +264,7 @@ def generate():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{open_in_app_head("/topics/")}
   <title>Parliamentary Topics — epac</title>
   <meta name="description" content="Track housing, healthcare, climate, immigration, and more parliamentary policy areas in Canada's House of Commons using epac.">
   <link rel="stylesheet" href="../default.css">
@@ -269,7 +277,7 @@ def generate():
     <ul style="font-size:1.1rem;line-height:2.2;list-style:disc;padding-left:1.5rem">
 {cards}
     </ul>
-    <p style="margin-top:2rem"><a href="https://apps.apple.com/ca/app/epac/id6739397803" style="display:inline-block;padding:.875rem 2rem;background:#0071e3;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">Download epac — free</a></p>
+    <p style="margin-top:2rem"><a href="https://apps.apple.com/ca/app/epac/id1224459142" style="display:inline-block;padding:.875rem 2rem;background:#0071e3;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">Download epac — free</a></p>
   </main>
   <footer style="text-align:center;padding:2rem;color:#888;font-size:.8rem;opacity:.6">
     <p><a href="/">epac</a> &middot; <a href="/ridings/">Ridings</a> &middot; <a href="/blog/">Blog</a></p>
