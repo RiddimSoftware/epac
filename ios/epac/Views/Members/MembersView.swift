@@ -11,12 +11,22 @@ import UIKit
 
 struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
+	@Query private var cabinetPositions: [CabinetPosition]
 	@State private var viewModel = MembersViewModel()
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@EnvironmentObject private var fetch: Fetch
 
+	// Match minister to MP on the (firstName, lastName) pair rather than lastName
+	// alone, otherwise common surnames (Thompson, Sidhu, MacDonald, Miller) would
+	// false-positive every sitting MP who happens to share a name with a minister.
+	// First-name compare uses the leading token only because the snapshot stores
+	// "David J." (full given+middle) while ParliamentMember uses "David".
+	private var ministerKeys: Set<String> {
+		Set(cabinetPositions.map { CabinetMatch.key(firstName: $0.firstName, lastName: $0.lastName) })
+	}
+
 	private var filteredMembers: [ParliamentMember] {
-		viewModel.filteredMembers(from: members)
+		viewModel.filteredMembers(from: members, ministerKeys: ministerKeys)
 	}
 
 	var body: some View {
@@ -75,6 +85,19 @@ struct MembersView: View {
 				} label: {
 					Image(systemName: viewModel.selectedStatus == .all ? "person.2" : "person.fill")
 				}
+
+				Menu {
+					Picker("Cabinet", selection: $viewModel.selectedCabinet) {
+						ForEach(MembersViewModel.CabinetFilter.allCases, id: \.self) { filter in
+							Text(LocalizedStringKey(filter.rawValue)).tag(filter)
+						}
+					}
+				} label: {
+					Image(systemName: viewModel.selectedCabinet == .cabinetOnly ? "building.columns.fill" : "building.columns")
+				}
+				.accessibilityIdentifier("members-cabinet-filter")
+				.disabled(cabinetPositions.isEmpty)
+
 				if viewModel.isAnyFilterActive {
 					Button(action: viewModel.clearAllFilters) {
 						Image(systemName: "xmark.circle.fill")
@@ -125,7 +148,7 @@ struct MembersView: View {
 			} else {
 				ForEach(filteredMembers, id: \.id) { member in
 					NavigationLink(destination: MemberProfileView(member: member)) {
-						MemberRow(member: member)
+						MemberRow(member: member, isCabinetMinister: ministerKeys.contains(CabinetMatch.key(firstName: member.firstName, lastName: member.lastName)))
 					}
 				}
 			}
@@ -139,6 +162,7 @@ struct MembersView: View {
 
 struct MemberRow: View {
 	let member: ParliamentMember
+	var isCabinetMinister: Bool = false
 
 	var body: some View {
 		HStack(alignment: .center, spacing: 12) {
@@ -151,8 +175,13 @@ struct MemberRow: View {
 				Text(member.riding)
 					.font(.subheadline)
 					.foregroundColor(.secondary)
-				PartyBadge(party: member.party)
-					.padding(.top, 2)
+				HStack(spacing: 6) {
+					PartyBadge(party: member.party)
+					if isCabinetMinister {
+						CabinetMinisterBadge()
+					}
+				}
+				.padding(.top, 2)
 			}
 			Spacer()
 			Text(member.province.rawValue)
@@ -161,7 +190,39 @@ struct MemberRow: View {
 				.multilineTextAlignment(.trailing)
 		}
 		.accessibilityElement(children: .combine)
-		.accessibilityLabel("\(member.name), \(member.party.fullName), \(member.riding), \(member.province.rawValue)")
+		.accessibilityLabel(accessibilityLabel)
+	}
+
+	private var accessibilityLabel: String {
+		let base = "\(member.name), \(member.party.fullName), \(member.riding), \(member.province.rawValue)"
+		return isCabinetMinister ? "\(base), Cabinet minister" : base
+	}
+}
+
+// Shared key builder so MembersView and MemberProfileView match the same way.
+// Lowercased "<first-token-of-firstName> <lastName>" — see ministerKeys for why
+// we strip the first-name to a leading token.
+enum CabinetMatch {
+	static func key(firstName: String, lastName: String) -> String {
+		let firstToken = firstName.split(separator: " ").first.map(String.init) ?? firstName
+		return "\(firstToken.lowercased()) \(lastName.lowercased())"
+	}
+}
+
+struct CabinetMinisterBadge: View {
+	var body: some View {
+		HStack(spacing: 3) {
+			Image(systemName: "building.columns.fill")
+				.font(.caption2)
+			Text("Cabinet")
+				.font(.caption2.weight(.semibold))
+		}
+		.padding(.horizontal, 6)
+		.padding(.vertical, 2)
+		.background(Color.accentColor.opacity(0.15))
+		.foregroundColor(.accentColor)
+		.cornerRadius(4)
+		.accessibilityIdentifier("cabinet-minister-badge")
 	}
 }
 
@@ -288,7 +349,8 @@ private struct PartyFilterView: View {
 			riding: "Papineau",
 			province: .Quebec,
 			party: .liberal
-		)
+		),
+		isCabinetMinister: true
 	)
 }
 

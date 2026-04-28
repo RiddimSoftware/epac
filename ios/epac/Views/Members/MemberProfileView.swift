@@ -17,6 +17,15 @@ struct MemberProfileView: View {
 	// Compare picker only needs current MPs — predicate avoids loading all historical members.
 	@Query(filter: #Predicate<ParliamentMember> { $0.toDateTime == nil },
 	       sort: [SortDescriptor(\ParliamentMember.lastName)]) private var allMembers: [ParliamentMember]
+	@Query private var cabinetPositions: [CabinetPosition]
+
+	private var cabinetPosition: CabinetPosition? {
+		// Match on (firstName, lastName) — matching on lastName alone would
+		// surface a Cabinet section on every MP sharing a surname with a
+		// minister (e.g. Thompson, Sidhu, MacDonald, Miller).
+		let memberKey = CabinetMatch.key(firstName: member.firstName, lastName: member.lastName)
+		return cabinetPositions.first { CabinetMatch.key(firstName: $0.firstName, lastName: $0.lastName) == memberKey }
+	}
 	@State private var showingComparePicker = false
 	@State private var comparisonTarget: ParliamentMember?
 	@State private var navigateToComparison = false
@@ -164,6 +173,10 @@ struct MemberProfileView: View {
 				.padding()
 				.background(Color(.secondarySystemBackground))
 				.cornerRadius(12)
+
+				if let position = cabinetPosition {
+					CabinetPositionSection(position: position)
+				}
 
 				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 					contactSection
@@ -549,5 +562,61 @@ struct PartyBadge: View {
 			.background(Color.party(party))
 			.clipShape(Capsule())
 			.accessibilityLabel(party.fullName)
+	}
+}
+
+struct CabinetPositionSection: View {
+	let position: CabinetPosition
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 10) {
+			HStack(spacing: 6) {
+				Image(systemName: "building.columns.fill")
+					.foregroundStyle(Color.accentColor)
+				Text(position.isPrimeMinister ? "Prime Minister" : "Cabinet Minister")
+					.font(.headline)
+				Spacer()
+			}
+
+			Text(position.portfolio)
+				.font(.subheadline)
+				.foregroundStyle(.primary)
+				.fixedSize(horizontal: false, vertical: true)
+
+			if let urlString = position.mandateLetterURL, let url = URL(string: urlString) {
+				Link(destination: url) {
+					HStack {
+						Label("Mandate letter", systemImage: "doc.text.fill")
+						Spacer()
+						Image(systemName: "arrow.up.right.square")
+							.font(.caption)
+							.foregroundStyle(.tertiary)
+					}
+				}
+				.foregroundStyle(.primary)
+			} else {
+				Text("No mandate letter has been published for this portfolio yet.")
+					.font(.caption)
+					.foregroundStyle(.secondary)
+			}
+
+			HStack(spacing: 4) {
+				Text("Source:")
+				if let sourceURL = URL(string: position.sourceURL) {
+					Link(position.sourceTitle, destination: sourceURL)
+				} else {
+					Text(position.sourceTitle)
+				}
+			}
+			.font(.caption2)
+			.foregroundStyle(.secondary)
+		}
+		.padding()
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.background(Color(.secondarySystemBackground))
+		.cornerRadius(12)
+		.accessibilityElement(children: .combine)
+		.accessibilityIdentifier("cabinet-position-section")
+		.accessibilityLabel("\(position.isPrimeMinister ? "Prime Minister" : "Cabinet Minister"). Portfolio: \(position.portfolio)")
 	}
 }
