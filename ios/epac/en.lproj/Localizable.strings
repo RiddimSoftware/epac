@@ -362,7 +362,7 @@
 "home.live.resultIncoming" = "Result incoming";
 "home.live.updated" = "Updated %@";
 "home.live.infoTitle" = "About live Parliament";
-"home.live.infoBody" = "This shows the current order of business in the House. Verbatim speech is published in Hansard 2-4 hours after the sitting ends.";
+"home.live.infoBody" = "This shows the current order of business in the House. Verbatim speech is published in Hansard 2–4 hours after the sitting ends.";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";
