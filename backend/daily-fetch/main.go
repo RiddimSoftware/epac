@@ -23,6 +23,7 @@ type Intervention struct {
 	SubjectTitle    string
 	InterventionSeq int
 	Content         string
+	Language        string
 	WordCount       int
 	SittingDate     time.Time
 	ParliamentNum   int
@@ -168,6 +169,7 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 	)
 
 	var current *Intervention
+	currentFloorLanguage := "und"
 
 	var (
 		inPersonSpeaking int
@@ -206,6 +208,7 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 				current = &Intervention{
 					SubjectTitle:    currentSubject,
 					InterventionSeq: subjectSeq,
+					Language:        currentFloorLanguage,
 					SittingDate:     sittingDate,
 					ParliamentNum:   parliamentNum,
 					SessionNum:      sessionNum,
@@ -216,6 +219,10 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 					if a.Name.Local == "id" {
 						current.Id = a.Value
 					}
+				}
+			case "FloorLanguage":
+				if language := floorLanguage(se); language != "" {
+					currentFloorLanguage = language
 				}
 			case "PersonSpeaking":
 				inPersonSpeaking++
@@ -235,6 +242,9 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 			case "ParaText":
 				if inContentEl > 0 {
 					inParaText++
+					if current != nil {
+						current.Language = mergeLanguage(current.Language, currentFloorLanguage)
+					}
 				}
 			}
 
@@ -271,6 +281,7 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 					current.Content = strings.TrimSpace(current.Content)
 					current.WordCount = wordCount(current.Content)
 					current.Speaker = strings.TrimSpace(current.Speaker)
+					current.Language = normalizeLanguage(current.Language)
 					interventions = append(interventions, *current)
 					current = nil
 				}
@@ -295,6 +306,40 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 		}
 	}
 	return interventions, nil
+}
+
+func floorLanguage(se xml.StartElement) string {
+	for _, attr := range se.Attr {
+		if attr.Name.Local == "language" {
+			return normalizeLanguage(attr.Value)
+		}
+	}
+	return ""
+}
+
+func normalizeLanguage(language string) string {
+	switch strings.ToLower(strings.TrimSpace(language)) {
+	case "en", "eng", "english":
+		return "en"
+	case "fr", "fra", "fre", "french":
+		return "fr"
+	case "mixed":
+		return "mixed"
+	default:
+		return "und"
+	}
+}
+
+func mergeLanguage(existing, next string) string {
+	existing = normalizeLanguage(existing)
+	next = normalizeLanguage(next)
+	if existing == "und" {
+		return next
+	}
+	if next == "und" || existing == next {
+		return existing
+	}
+	return "mixed"
 }
 
 func parseHansardDate(s string) time.Time {
@@ -343,8 +388,8 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			INSERT INTO speeches (
 				intervention_id, filename, speaker_name, content,
 				sitting_date, parliament_num, session_num, member_id,
-				subject_title, intervention_seq, word_count
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+				subject_title, intervention_seq, word_count, language
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				speaker_name     = EXCLUDED.speaker_name,
 				content          = EXCLUDED.content,
@@ -354,10 +399,11 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				member_id        = EXCLUDED.member_id,
 				subject_title    = EXCLUDED.subject_title,
 				intervention_seq = EXCLUDED.intervention_seq,
-				word_count       = EXCLUDED.word_count`,
+				word_count       = EXCLUDED.word_count,
+				language         = EXCLUDED.language`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
-			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount,
+			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
 		)
 		valid++
 	}

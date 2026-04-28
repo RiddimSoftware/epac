@@ -16,17 +16,18 @@ import (
 )
 
 type Intervention struct {
-	Id               string
-	MemberId         string
-	Speaker          string
-	SubjectTitle     string
-	InterventionSeq  int
-	Content          string
-	WordCount        int
-	SittingDate      time.Time
-	ParliamentNum    int
-	SessionNum       int
-	Filename         string
+	Id              string
+	MemberId        string
+	Speaker         string
+	SubjectTitle    string
+	InterventionSeq int
+	Content         string
+	Language        string
+	WordCount       int
+	SittingDate     time.Time
+	ParliamentNum   int
+	SessionNum      int
+	Filename        string
 }
 
 type Member struct {
@@ -135,22 +136,23 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 
 	// Document-level metadata from <ExtractedInformation>
 	var (
-		parliamentNum      int
-		sessionNum         int
-		sittingDate        time.Time
-		inExtractedItem    bool
-		currentItemName    string
+		parliamentNum   int
+		sessionNum      int
+		sittingDate     time.Time
+		inExtractedItem bool
+		currentItemName string
 	)
 
 	// Subject-level state
 	var (
-		inSubjectTitle   bool
-		currentSubject   string
-		subjectSeq       int
+		inSubjectTitle bool
+		currentSubject string
+		subjectSeq     int
 	)
 
 	// Intervention-level state
 	var current *Intervention
+	currentFloorLanguage := "und"
 
 	// Speaker context: Affiliation inside <PersonSpeaking>
 	var (
@@ -194,6 +196,7 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 				current = &Intervention{
 					SubjectTitle:    currentSubject,
 					InterventionSeq: subjectSeq,
+					Language:        currentFloorLanguage,
 					SittingDate:     sittingDate,
 					ParliamentNum:   parliamentNum,
 					SessionNum:      sessionNum,
@@ -204,6 +207,11 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 					if a.Name.Local == "id" {
 						current.Id = a.Value
 					}
+				}
+
+			case "FloorLanguage":
+				if language := floorLanguage(se); language != "" {
+					currentFloorLanguage = language
 				}
 
 			case "PersonSpeaking":
@@ -228,6 +236,9 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 			case "ParaText":
 				if inContentEl > 0 {
 					inParaText++
+					if current != nil {
+						current.Language = mergeLanguage(current.Language, currentFloorLanguage)
+					}
 				}
 			}
 
@@ -266,6 +277,7 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 					current.Content = strings.TrimSpace(current.Content)
 					current.WordCount = wordCount(current.Content)
 					current.Speaker = strings.TrimSpace(current.Speaker)
+					current.Language = normalizeLanguage(current.Language)
 					interventions = append(interventions, *current)
 					current = nil
 				}
@@ -294,6 +306,40 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 		}
 	}
 	return interventions, nil
+}
+
+func floorLanguage(se xml.StartElement) string {
+	for _, attr := range se.Attr {
+		if attr.Name.Local == "language" {
+			return normalizeLanguage(attr.Value)
+		}
+	}
+	return ""
+}
+
+func normalizeLanguage(language string) string {
+	switch strings.ToLower(strings.TrimSpace(language)) {
+	case "en", "eng", "english":
+		return "en"
+	case "fr", "fra", "fre", "french":
+		return "fr"
+	case "mixed":
+		return "mixed"
+	default:
+		return "und"
+	}
+}
+
+func mergeLanguage(existing, next string) string {
+	existing = normalizeLanguage(existing)
+	next = normalizeLanguage(next)
+	if existing == "und" {
+		return next
+	}
+	if next == "und" || existing == next {
+		return existing
+	}
+	return "mixed"
 }
 
 // parseHansardDate parses the date string from <ExtractedItem Name="Date">.
@@ -339,8 +385,8 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			INSERT INTO speeches (
 				intervention_id, filename, speaker_name, content,
 				sitting_date, parliament_num, session_num, member_id,
-				subject_title, intervention_seq, word_count
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+				subject_title, intervention_seq, word_count, language
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				speaker_name     = EXCLUDED.speaker_name,
 				content          = EXCLUDED.content,
@@ -350,10 +396,11 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				member_id        = EXCLUDED.member_id,
 				subject_title    = EXCLUDED.subject_title,
 				intervention_seq = EXCLUDED.intervention_seq,
-				word_count       = EXCLUDED.word_count`,
+				word_count       = EXCLUDED.word_count,
+				language         = EXCLUDED.language`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
-			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount,
+			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
 		)
 	}
 
@@ -437,14 +484,59 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 			member_id        TEXT,
 			subject_title    TEXT,
 			intervention_seq INT,
-			word_count       INT
+			word_count       INT,
+			language         TEXT NOT NULL DEFAULT 'en',
+			search_vector_en TSVECTOR GENERATED ALWAYS AS (
+				CASE
+					WHEN language IN ('en', 'mixed', 'und')
+						THEN to_tsvector('english', COALESCE(content, ''))
+					ELSE NULL
+				END
+			) STORED,
+			search_vector_fr TSVECTOR GENERATED ALWAYS AS (
+				CASE
+					WHEN language IN ('fr', 'mixed', 'und')
+						THEN to_tsvector('french', COALESCE(content, ''))
+					ELSE NULL
+				END
+			) STORED
 		);
+
+		ALTER TABLE speeches
+			ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en',
+			ADD COLUMN IF NOT EXISTS search_vector_en TSVECTOR GENERATED ALWAYS AS (
+				CASE
+					WHEN language IN ('en', 'mixed', 'und')
+						THEN to_tsvector('english', COALESCE(content, ''))
+					ELSE NULL
+				END
+			) STORED,
+			ADD COLUMN IF NOT EXISTS search_vector_fr TSVECTOR GENERATED ALWAYS AS (
+				CASE
+					WHEN language IN ('fr', 'mixed', 'und')
+						THEN to_tsvector('french', COALESCE(content, ''))
+					ELSE NULL
+				END
+			) STORED;
+
+		ALTER TABLE speeches
+			DROP CONSTRAINT IF EXISTS speeches_language_check,
+			ADD CONSTRAINT speeches_language_check
+				CHECK (language IN ('en', 'fr', 'mixed', 'und'));
 
 		CREATE INDEX IF NOT EXISTS speeches_member_date_idx
 			ON speeches(member_id, sitting_date DESC);
 
 		CREATE INDEX IF NOT EXISTS speeches_fts_idx
 			ON speeches USING gin(to_tsvector('english', COALESCE(content, '')));
+
+		CREATE INDEX IF NOT EXISTS speeches_fts_en_idx
+			ON speeches USING gin(search_vector_en)
+			WHERE search_vector_en IS NOT NULL;
+
+		CREATE INDEX IF NOT EXISTS speeches_fts_fr_idx
+			ON speeches USING gin(search_vector_fr)
+			WHERE search_vector_fr IS NOT NULL;
 
 		CREATE INDEX IF NOT EXISTS speeches_subject_idx
 			ON speeches(subject_title);
