@@ -56,6 +56,7 @@ struct RidingStatisticsView: View {
 
 			employmentInsuranceSection
 			consumerPriceIndexSection
+			studentFinanceSection
 
 			Section("2021 Census Data") {
 				statCanSearchRow
@@ -279,6 +280,92 @@ struct RidingStatisticsView: View {
 			}
 		}
 		.accessibilityLabel("Twelve month all-items inflation trend")
+	}
+
+	@ViewBuilder
+	private var studentFinanceSection: some View {
+		if let finance = StudentFinancialAssistanceStatisticsDatabase.statistic(for: member.province.shortCode),
+		   let tuition = finance.latestTuitionYear {
+			let latestCSFA = finance.latestCSFAYear
+			let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: member.province.shortCode)
+			Section {
+				LabeledContent("Average undergraduate tuition") {
+					Text(tuition.averageUndergraduateTuition.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+						.monospacedDigit()
+				}
+				if let tuitionChange = tuition.yearOverYearChangePercent {
+					LabeledContent("Tuition vs. last year") {
+						Text(yearOverYearLabel(tuitionChange))
+							.monospacedDigit()
+					}
+					if let inflation = cpi?.allItemsYearOverYearPercent {
+						LabeledContent("Tuition vs. CPI") {
+							Text(yearOverYearLabel(tuitionChange - inflation))
+								.monospacedDigit()
+						}
+					}
+				}
+				if let latestCSFA {
+					LabeledContent("CSL recipients") {
+						Text(latestCSFA.loanRecipients.formatted())
+							.monospacedDigit()
+					}
+					LabeledContent("Average federal loan") {
+						Text(latestCSFA.averageLoanAmount.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+							.monospacedDigit()
+					}
+					if let rapRecipients = latestCSFA.rapRecipients {
+						LabeledContent("RAP recipients") {
+							Text(rapRecipients.formatted())
+								.monospacedDigit()
+						}
+					}
+				} else if !finance.csfaParticipating {
+					Text("This jurisdiction receives alternative CSFA payments instead of participating directly in federal loan delivery.")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				studentTuitionChart(finance)
+				DataSourceBadge(source: .studentFinance())
+				ForEach(StudentFinancialAssistanceStatisticsDatabase.sources(), id: \.url) { source in
+					Link(source.title, destination: source.url)
+						.font(.caption2)
+				}
+			} header: {
+				Text("Student Financial Assistance")
+			} footer: {
+				let tuitionYear = StudentFinancialAssistanceStatisticsDatabase.academicYearLabel(tuition.academicYear)
+				let cpiMonth = cpi.map { ConsumerPriceIndexStatisticsDatabase.monthLabel($0.referenceMonth) } ?? "latest CPI"
+				Text("Tuition is Statistics Canada table 37-10-0120-01 for \(tuitionYear). CPI comparison uses \(cpiMonth). CSFA loan and RAP counts are federal program statistics for participating provinces and Yukon.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	private func studentTuitionChart(_ finance: StudentFinanceProvinceStatistic) -> some View {
+		Chart {
+			ForEach(finance.tuitionYears) { year in
+				BarMark(
+					x: .value("Academic year", StudentFinancialAssistanceStatisticsDatabase.academicYearLabel(year.academicYear)),
+					y: .value("Tuition", year.averageUndergraduateTuition)
+				)
+				.foregroundStyle(.purple)
+			}
+		}
+		.frame(height: 120)
+		.chartYAxis {
+			AxisMarks(position: .leading) { value in
+				AxisGridLine()
+				AxisTick()
+				AxisValueLabel {
+					if let amount = value.as(Int.self) {
+						Text(amount.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+					}
+				}
+			}
+		}
+		.accessibilityLabel("Five year undergraduate tuition trend")
 	}
 
 	private var cmhcRow: some View {

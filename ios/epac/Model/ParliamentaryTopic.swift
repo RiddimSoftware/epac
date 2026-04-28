@@ -30,7 +30,7 @@ struct ParliamentaryTopic: Identifiable, Codable, Hashable {
         ParliamentaryTopic(id: "transport", nameKey: "topic.transport", keywords: ["transport", "rail", "aviation", "highway", "infrastructure", "transit"]),
         ParliamentaryTopic(id: "taxation", nameKey: "topic.taxation", keywords: ["tax", "GST", "HST", "income tax", "corporate tax", "impôt", "taxe"]),
         ParliamentaryTopic(id: "foreign", nameKey: "topic.foreign", keywords: ["foreign affairs", "international", "Ukraine", "Gaza", "sanctions", "treaty", "affaires étrangères"]),
-        ParliamentaryTopic(id: "education", nameKey: "topic.education", keywords: ["education", "student", "university", "school", "tuition", "éducation", "étudiant"]),
+        ParliamentaryTopic(id: "education", nameKey: "topic.education", keywords: ["education", "student", "student debt", "youth", "university", "school", "tuition", "éducation", "étudiant"]),
         ParliamentaryTopic(id: "childcare", nameKey: "topic.childcare", keywords: ["child care", "daycare", "family", "children", "services de garde", "enfant"]),
         ParliamentaryTopic(id: "energy", nameKey: "topic.energy", keywords: ["energy", "oil", "gas", "pipeline", "electricity", "LNG", "pétrole"]),
         ParliamentaryTopic(id: "pharma", nameKey: "topic.pharma", keywords: ["drug", "pharmaceutical", "medication", "opioid", "naloxone", "médicament"]),

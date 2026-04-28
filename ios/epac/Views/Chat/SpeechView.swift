@@ -44,6 +44,7 @@ struct SpeechView: View {
 				.progressViewStyle(.linear)
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
 			consumerPriceIndexDebateContext
+			studentFinanceDebateContext
 			employmentInsuranceDebateContext
 			cppOasDebateContext
 			veteransAffairsDebateContext
@@ -323,6 +324,45 @@ struct SpeechView: View {
 			|| title.contains("inflation")
 			|| title.contains("grocery")
 			|| title.contains("food")
+	}
+
+	@ViewBuilder
+	private var studentFinanceDebateContext: some View {
+		if isStudentFinanceRelevant,
+		   let finance = StudentFinancialAssistanceStatisticsDatabase.statistic(for: userProvinceCode),
+		   let tuition = finance.latestTuitionYear {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("Student finance context", systemImage: "graduationcap.fill")
+						.font(.caption.bold())
+					Spacer()
+					Text(StudentFinancialAssistanceStatisticsDatabase.academicYearLabel(tuition.academicYear))
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill(
+						"Tuition",
+						tuition.averageUndergraduateTuition.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
+					)
+					if let tuitionChange = tuition.yearOverYearChangePercent {
+						statPill("Tuition YoY", yearOverYearLabel(tuitionChange))
+					}
+					if let latestCSFA = finance.latestCSFAYear {
+						statPill("CSL recipients", latestCSFA.loanRecipients.formatted())
+					}
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isStudentFinanceRelevant: Bool {
+		ParliamentaryTopic.matching(subject.title).contains { $0.id == "education" }
 	}
 
 	@ViewBuilder
