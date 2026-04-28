@@ -366,6 +366,9 @@
 "home.live.updated" = "Updated %@";
 "home.live.infoTitle" = "About live Parliament";
 "home.live.infoBody" = "This shows the current order of business in the House. Verbatim speech is published in Hansard 2–4 hours after the sitting ends.";
+"home.live.todayBadge" = "TODAY IN PARLIAMENT · House of Commons";
+"home.live.tapToRead" = "Tap to read the full Hansard →";
+"home.live.comingSoon" = "The verbatim Hansard record for today's sitting is being prepared. Check back in a few hours.";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";

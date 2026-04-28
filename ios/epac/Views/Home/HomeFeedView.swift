@@ -38,14 +38,22 @@ struct HomeFeedView: View {
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
     @State private var showLiveInfo = false
+    @State private var postSittingHansard: Hansard?
 
     private let liveParliamentService = LiveParliamentService()
 
     var body: some View {
         NavigationStack {
             List {
-                if let liveParliamentStatus, liveParliamentStatus.isSitting {
-                    liveParliamentSection(liveParliamentStatus)
+                switch liveCardState {
+                case .live(let status):
+                    liveParliamentSection(status)
+                case .todayPublished(let hansard, let subject):
+                    postSittingSection(hansard: hansard, subject: subject)
+                case .todayPending:
+                    postSittingPendingSection
+                case .hidden:
+                    EmptyView()
                 }
                 // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
@@ -182,6 +190,58 @@ struct HomeFeedView: View {
             }
             .padding(.vertical, EpacSpacing.s)
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private func postSittingSection(hansard: Hansard, subject: SubjectOfBusiness) -> some View {
+        Section {
+            NavigationLink(destination: SpeechView(hansard: hansard, subject: subject)) {
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                    Label(
+                        NSLocalizedString("home.live.todayBadge", comment: ""),
+                        systemImage: "building.columns.fill"
+                    )
+                    .font(.epacCaption.weight(.bold))
+                    .foregroundStyle(Color.epacBrand.accent)
+                    .labelStyle(.titleAndIcon)
+
+                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                        Text(hansard.date.formatted(date: .long, time: .omitted))
+                            .font(.epacHeadline)
+                            .foregroundStyle(Color.epacText.primary)
+                        Text(subject.title)
+                            .font(.epacSubheadline)
+                            .foregroundStyle(Color.epacText.secondary)
+                            .lineLimit(2)
+                    }
+
+                    Text(NSLocalizedString("home.live.tapToRead", comment: ""))
+                        .font(.epacCaption.weight(.semibold))
+                        .foregroundStyle(Color.epacBrand.accent)
+                }
+                .padding(.vertical, EpacSpacing.s)
+            }
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private var postSittingPendingSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                Label(
+                    NSLocalizedString("home.live.todayBadge", comment: ""),
+                    systemImage: "building.columns.fill"
+                )
+                .font(.epacCaption.weight(.bold))
+                .foregroundStyle(Color.epacText.secondary)
+                .labelStyle(.titleAndIcon)
+
+                Text(NSLocalizedString("home.live.comingSoon", comment: ""))
+                    .font(.epacSubheadline)
+                    .foregroundStyle(Color.epacText.secondary)
+            }
+            .padding(.vertical, EpacSpacing.s)
             .accessibilityIdentifier("home-live-parliament-card")
         }
     }
@@ -712,12 +772,23 @@ struct HomeFeedView: View {
         await refreshLiveParliamentStatus()
         while !Task.isCancelled {
             do {
-                try await Task.sleep(for: .seconds(120))
+                let interval: Double = livePollingInterval
+                try await Task.sleep(for: .seconds(interval))
             } catch {
                 return
             }
             await refreshLiveParliamentStatus()
         }
+    }
+
+    private var livePollingInterval: Double {
+        guard let status = liveParliamentStatus, !status.isSitting,
+              let changedAt = status.lastChangedAt else {
+            return 120
+        }
+        // After a sitting ends and > 6h have elapsed, slow to hourly to
+        // conserve resources while we wait for Hansard to publish.
+        return Date().timeIntervalSince(changedAt) > 6 * 3600 ? 3600 : 120
     }
 
     private func refreshLiveParliamentStatus() async {
@@ -728,9 +799,59 @@ struct HomeFeedView: View {
             if status.isSitting {
                 parliamentDayStatus = .sitting
             }
+            resolvePostSittingHansard(for: status)
         } catch {
             Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
         }
+    }
+
+    private func resolvePostSittingHansard(for status: LiveParliamentStatus) {
+        guard !status.isSitting, let sittingDate = status.sittingDate else {
+            postSittingHansard = nil
+            return
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/Toronto")
+        guard let date = formatter.date(from: sittingDate) else {
+            postSittingHansard = nil
+            return
+        }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
+        let descriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { $0.date >= start && $0.date < end }
+        )
+        postSittingHansard = (try? modelContext.fetch(descriptor))?.first
+    }
+
+    // Returns today's date string (YYYY-MM-DD) in Ottawa local time.
+    private var ottawaTodayString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/Toronto")
+        return formatter.string(from: Date())
+    }
+
+    private enum LiveCardState {
+        case live(LiveParliamentStatus)
+        case todayPublished(Hansard, SubjectOfBusiness)
+        case todayPending
+        case hidden
+    }
+
+    private var liveCardState: LiveCardState {
+        guard let status = liveParliamentStatus else { return .hidden }
+        if status.isSitting { return .live(status) }
+        guard let sittingDate = status.sittingDate, sittingDate == ottawaTodayString else {
+            return .hidden
+        }
+        if let hansard = postSittingHansard,
+           let subject = hansard.orders.first?.subjects.first {
+            return .todayPublished(hansard, subject)
+        }
+        return .todayPending
     }
 
     private var todayStatusDetail: String {

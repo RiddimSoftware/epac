@@ -23,6 +23,10 @@ struct LiveParliamentStatus: Decodable, Equatable {
     let divisionInProgress: Bool
     let checkedAt: Date
     let lastChangedAt: Date?
+    /// YYYY-MM-DD calendar date (Ottawa-local) of the current or most-recent sitting.
+    /// Preserved by the backend after `is_sitting` flips false so the Home card can
+    /// transition to "TODAY IN PARLIAMENT" once Hansard publishes for that date.
+    let sittingDate: String?
     let sourceURL: URL
 
     enum CodingKeys: String, CodingKey {
@@ -35,6 +39,7 @@ struct LiveParliamentStatus: Decodable, Equatable {
         case divisionInProgress = "division_in_progress"
         case checkedAt = "checked_at"
         case lastChangedAt = "last_changed_at"
+        case sittingDate = "sitting_date"
         case sourceURL = "source_url"
     }
 }

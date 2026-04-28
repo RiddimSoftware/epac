@@ -52,6 +52,7 @@ type liveStatus struct {
 	SourceSnapshot     sourceSnapshot  `json:"source_snapshot"`
 	LastPolledAt       *time.Time      `json:"last_polled_at,omitempty"`
 	LastChangedAt      *time.Time      `json:"last_changed_at,omitempty"`
+	SittingDate        *string         `json:"sitting_date,omitempty"`
 	RawStatusText      string          `json:"-"`
 	SittingDays        map[string]bool `json:"-"`
 	CheckedAt          time.Time       `json:"-"`
@@ -72,6 +73,7 @@ type liveResponse struct {
 	DivisionInProgress bool       `json:"division_in_progress"`
 	CheckedAt          time.Time  `json:"checked_at"`
 	LastChangedAt      *time.Time `json:"last_changed_at,omitempty"`
+	SittingDate        *string    `json:"sitting_date,omitempty"`
 	SourceURL          string     `json:"source_url"`
 }
 
@@ -362,6 +364,10 @@ func parseHomepage(markup string, now time.Time) liveStatus {
 		status.CurrentSpeakerName = stringPtr(speaker)
 	}
 	status.DivisionInProgress = liveDivisionTextRe.MatchString(status.BusinessType)
+	if status.IsSitting {
+		date := now.In(ottawaLocation()).Format("2006-01-02")
+		status.SittingDate = &date
+	}
 	return status
 }
 
@@ -451,9 +457,9 @@ func upsertLiveStatus(ctx context.Context, conn *pgx.Conn, status liveStatus) er
 		INSERT INTO live_session (
 			id, is_sitting, business_type, current_item_title, current_bill_number,
 			current_speaker_name, division_in_progress, source_url, source_snapshot,
-			last_polled_at, last_changed_at
+			last_polled_at, last_changed_at, sitting_date
 		)
-		VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $9)
+		VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $9, $10)
 		ON CONFLICT (id) DO UPDATE SET
 			is_sitting           = EXCLUDED.is_sitting,
 			business_type        = EXCLUDED.business_type,
@@ -464,6 +470,8 @@ func upsertLiveStatus(ctx context.Context, conn *pgx.Conn, status liveStatus) er
 			source_url           = EXCLUDED.source_url,
 			source_snapshot      = EXCLUDED.source_snapshot,
 			last_polled_at       = EXCLUDED.last_polled_at,
+			-- Preserve the most recent sitting_date when a non-sitting poll lands.
+			sitting_date         = COALESCE(EXCLUDED.sitting_date, live_session.sitting_date),
 			last_changed_at      = CASE
 				WHEN live_session.is_sitting IS DISTINCT FROM EXCLUDED.is_sitting
 				  OR live_session.business_type IS DISTINCT FROM EXCLUDED.business_type
@@ -475,22 +483,23 @@ func upsertLiveStatus(ctx context.Context, conn *pgx.Conn, status liveStatus) er
 				ELSE live_session.last_changed_at
 			END
 	`, status.IsSitting, status.BusinessType, status.CurrentItemTitle, status.CurrentBillNumber,
-		status.CurrentSpeakerName, status.DivisionInProgress, status.SourceURL, string(snapshot), now)
+		status.CurrentSpeakerName, status.DivisionInProgress, status.SourceURL, string(snapshot), now, status.SittingDate)
 	return err
 }
 
 func readLiveStatus(ctx context.Context, conn *pgx.Conn, fallback time.Time) (liveStatus, error) {
 	var status liveStatus
 	var snapshotBytes []byte
+	var sittingDate *time.Time
 	err := conn.QueryRow(ctx, `
 		SELECT is_sitting, business_type, current_item_title, current_bill_number,
 		       current_speaker_name, division_in_progress, source_url, source_snapshot,
-		       last_polled_at, last_changed_at
+		       last_polled_at, last_changed_at, sitting_date
 		FROM live_session
 		WHERE id = TRUE
 	`).Scan(&status.IsSitting, &status.BusinessType, &status.CurrentItemTitle, &status.CurrentBillNumber,
 		&status.CurrentSpeakerName, &status.DivisionInProgress, &status.SourceURL, &snapshotBytes,
-		&status.LastPolledAt, &status.LastChangedAt)
+		&status.LastPolledAt, &status.LastChangedAt, &sittingDate)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return defaultLiveStatus(fallback), nil
 	}
@@ -499,6 +508,10 @@ func readLiveStatus(ctx context.Context, conn *pgx.Conn, fallback time.Time) (li
 	}
 	if len(snapshotBytes) > 0 {
 		_ = json.Unmarshal(snapshotBytes, &status.SourceSnapshot)
+	}
+	if sittingDate != nil {
+		formatted := sittingDate.Format("2006-01-02")
+		status.SittingDate = &formatted
 	}
 	return status, nil
 }
@@ -524,6 +537,7 @@ func toResponse(status liveStatus) liveResponse {
 		DivisionInProgress: status.DivisionInProgress,
 		CheckedAt:          checkedAt,
 		LastChangedAt:      status.LastChangedAt,
+		SittingDate:        status.SittingDate,
 		SourceURL:          status.SourceURL,
 	}
 }
