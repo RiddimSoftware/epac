@@ -83,6 +83,57 @@ struct MemberProfileView: View {
 		.cornerRadius(12)
 	}
 
+	private var memberNotificationSection: some View {
+		let mid = member.memberID
+		return VStack(alignment: .leading, spacing: EpacSpacing.s) {
+			Label(
+				NSLocalizedString("notifications.member.sectionTitle", comment: ""),
+				systemImage: "bell.badge"
+			)
+			.font(.epacSubheadline.weight(.semibold))
+			.foregroundStyle(Color.epacText.primary)
+
+			Divider()
+
+			Toggle(
+				NSLocalizedString("notifications.member.votes", comment: ""),
+				isOn: Binding(
+					get: { followStore.preferences(for: mid).votes },
+					set: { val in
+						var p = followStore.preferences(for: mid); p.votes = val
+						followStore.setPreferences(p, for: mid)
+						Log.info("notification.member.pref.changed memberID=\(mid) key=votes enabled=\(val)")
+					}
+				)
+			)
+			Toggle(
+				NSLocalizedString("notifications.member.speeches", comment: ""),
+				isOn: Binding(
+					get: { followStore.preferences(for: mid).speeches },
+					set: { val in
+						var p = followStore.preferences(for: mid); p.speeches = val
+						followStore.setPreferences(p, for: mid)
+						Log.info("notification.member.pref.changed memberID=\(mid) key=speeches enabled=\(val)")
+					}
+				)
+			)
+			Toggle(
+				NSLocalizedString("notifications.member.expenses", comment: ""),
+				isOn: Binding(
+					get: { followStore.preferences(for: mid).expenses },
+					set: { val in
+						var p = followStore.preferences(for: mid); p.expenses = val
+						followStore.setPreferences(p, for: mid)
+						Log.info("notification.member.pref.changed memberID=\(mid) key=expenses enabled=\(val)")
+					}
+				)
+			)
+		}
+		.padding()
+		.background(Color.epacSurface.elevated)
+		.cornerRadius(12)
+	}
+
 	private var pickableMembers: [ParliamentMember] {
 		let trimmed = pickerSearch.trimmingCharacters(in: .whitespaces)
 		let others = allMembers.filter { $0.name != member.name }
@@ -169,6 +220,12 @@ struct MemberProfileView: View {
 					.cornerRadius(12)
 				}
 				.foregroundStyle(.primary)
+
+				// MARK: Notification preferences (shown when following)
+
+				if followStore.isFollowing(member.memberID) {
+					memberNotificationSection
+				}
 
 				// MARK: Lobbying section
 				DisclosureGroup(

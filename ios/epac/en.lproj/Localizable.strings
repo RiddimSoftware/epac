@@ -601,3 +601,32 @@
 "toronto.votes.empty.title" = "No Votes Found";
 "toronto.votes.empty.description" = "Toronto City Council vote records will appear here.";
 "toronto.votes.sourceLink" = "Source: Open Data Toronto";
+
+/* Notification Settings (EPAC-436) */
+"settings.notifications.manage" = "Manage Notifications";
+"notifications.section.permission" = "Permission";
+"notifications.permission.granted" = "Notifications enabled";
+"notifications.permission.denied" = "Notifications are turned off";
+"notifications.permission.deniedHint" = "Open iOS Settings to allow epac to send notifications.";
+"notifications.permission.openSettings" = "Open Settings";
+"notifications.permission.enable" = "Enable Notifications";
+"notifications.section.activity" = "Activity";
+"notifications.section.activity.footer" = "Per-MP overrides are available from each member's profile.";
+"notifications.category.mpVotes" = "Followed-MP votes";
+"notifications.category.mpSpeeches" = "Followed-MP speeches";
+"notifications.category.billStatus" = "Followed-bill status changes";
+"notifications.category.topicAlerts" = "Followed-topic alerts";
+"notifications.section.digests" = "Digests";
+"notifications.section.digests.footer" = "Delivered at 7 AM ET on the scheduled day.";
+"notifications.category.dailyDigest" = "Daily digest";
+"notifications.category.fridayDigest" = "Friday weekly digest";
+"notifications.section.governmentUpdates" = "Government updates";
+"notifications.category.hansardSittings" = "New Hansard sittings";
+"notifications.category.pboCosting" = "PBO costing notes";
+"notifications.category.lobbyingAlerts" = "Lobbying alerts";
+"notifications.section.general" = "General";
+"notifications.category.appAnnouncements" = "App announcements";
+"notifications.member.sectionTitle" = "Notifications for this MP";
+"notifications.member.votes" = "Votes";
+"notifications.member.speeches" = "Speeches";
+"notifications.member.expenses" = "Expenses";

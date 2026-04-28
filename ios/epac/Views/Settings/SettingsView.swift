@@ -67,41 +67,12 @@ struct SettingsView: View {
 
     private var notificationsSection: some View {
         Section(NSLocalizedString("settings.notifications.title", comment: "")) {
-            Toggle(
-                NSLocalizedString("settings.notifications.hansard", comment: ""),
-                isOn: Binding(
-                    get: { notifPrefs.newHansardSittings },
-                    set: { notifPrefs.newHansardSittings = $0 }
+            NavigationLink(destination: NotificationSettingsView()) {
+                Label(
+                    NSLocalizedString("settings.notifications.manage", comment: ""),
+                    systemImage: "bell.badge"
                 )
-            )
-            Toggle(
-                NSLocalizedString("settings.notifications.billVotes", comment: ""),
-                isOn: Binding(
-                    get: { notifPrefs.billVoteResults },
-                    set: { notifPrefs.billVoteResults = $0 }
-                )
-            )
-            Toggle(
-                NSLocalizedString("settings.notifications.memberActivity", comment: ""),
-                isOn: Binding(
-                    get: { notifPrefs.memberActivity },
-                    set: { notifPrefs.memberActivity = $0 }
-                )
-            )
-            Toggle(
-                NSLocalizedString("settings.notifications.topicConsultations", comment: ""),
-                isOn: Binding(
-                    get: { notifPrefs.topicConsultations },
-                    set: { notifPrefs.topicConsultations = $0 }
-                )
-            )
-            Toggle(
-                NSLocalizedString("settings.notifications.morningBriefing", comment: ""),
-                isOn: Binding(
-                    get: { notifPrefs.morningBriefing },
-                    set: { notifPrefs.morningBriefing = $0 }
-                )
-            )
+            }
         }
     }
 
