@@ -34,6 +34,7 @@ struct HomeFeedView: View {
     @State private var topicStore = TopicFollowStore.shared
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
+    @State private var showRefreshToast = false
 
     var body: some View {
         NavigationStack {
@@ -75,6 +76,21 @@ struct HomeFeedView: View {
             .listStyle(.insetGrouped)
             .refreshable {
                 await loadFeed()
+                if !networkMonitor.isConnected {
+                    showRefreshToast = true
+                }
+            }
+            .overlay(alignment: .top) {
+                if showRefreshToast {
+                    HomeRefreshErrorToast()
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: showRefreshToast)
+            .task(id: showRefreshToast) {
+                guard showRefreshToast else { return }
+                try? await Task.sleep(for: .seconds(3))
+                showRefreshToast = false
             }
             .navigationTitle(NSLocalizedString("Home", comment: ""))
             .navigationBarTitleDisplayMode(.large)

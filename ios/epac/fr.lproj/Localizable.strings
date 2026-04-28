@@ -373,6 +373,7 @@
 "home.today.noCalendar" = "Calendrier des séances pas encore en cache";
 "home.today.offline" = "Hors ligne — données parlementaires en cache";
 "home.today.offlineCache" = "Hors ligne — données en cache de %@";
+"home.refresh.offlineError" = "Impossible d'actualiser — vous êtes hors ligne";
 "home.today.latestVote" = "Dernier vote enregistré";
 "home.today.latestSpeech" = "Votre député aujourd'hui";
 "home.today.noSpeech" = "Aucune intervention en cache de votre député";
