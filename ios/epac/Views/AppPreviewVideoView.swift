@@ -160,9 +160,9 @@ private struct AppPreviewPhoneFrame: View {
                             .font(.title2)
                             .foregroundStyle(Color.accentColor)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Chrystia Freeland")
+                            Text("Gurbux Saini")
                                 .font(.headline)
-                            Text("University-Rosedale - Lib.")
+                            Text("Fleetwood-Port Kells - Lib.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -176,12 +176,12 @@ private struct AppPreviewPhoneFrame: View {
             VStack(spacing: 12) {
                 previewCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        sourceBadge("House of Commons Debates, June 18, 2026")
+                        sourceBadge("House of Commons Debates, January 27, 2026")
                         Text("National Framework for Food Price Transparency Act")
                             .font(.headline)
                             .lineLimit(3)
                         speakerRow(name: "Gurbux Saini", riding: "Fleetwood-Port Kells", party: "Lib.")
-                        speechBubble("Bill C-226 would create a national framework for grocery price transparency.")
+                        speechBubble("Bill C-226 would establish a national framework to improve food price transparency.")
                     }
                     .accessibilityIdentifier("speech-view-bubbles")
                 }
@@ -195,9 +195,9 @@ private struct AppPreviewPhoneFrame: View {
                     sourceBadge("Office of the Commissioner of Lobbying")
                     Text("Who's influencing them?")
                         .font(.headline)
-                    communicationRow(org: "Retail Council of Canada", topic: "Food prices and grocery competition")
-                    communicationRow(org: "Canadian Chamber of Commerce", topic: "Supply chains and affordability")
-                    communicationRow(org: "Agriculture Producers Association", topic: "Farm input costs")
+                    communicationRow(org: "Registered communication", topic: "Subject matters from public registry")
+                    communicationRow(org: "Designated office holder", topic: "Matched to member profile")
+                    communicationRow(org: "Source record", topic: "Open in Commissioner registry")
                 }
                 .accessibilityIdentifier("lobbying-communications-list")
             }

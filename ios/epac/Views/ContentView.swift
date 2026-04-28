@@ -39,9 +39,9 @@ struct ContentView: View {
 	private static func configureAppPreviewMode() {
 		let defaults = UserDefaults.standard
 		defaults.set(true, forKey: "epac.onboarding.completed")
-		defaults.set("University-Rosedale", forKey: "epac.myMP.ridingName")
-		defaults.set("Chrystia Freeland", forKey: "epac.myMP.memberName")
-		if let followedMembers = try? JSONEncoder().encode([889: FollowPreferences()]) {
+		defaults.set("Fleetwood-Port Kells", forKey: "epac.myMP.ridingName")
+		defaults.set("Gurbux Saini", forKey: "epac.myMP.memberName")
+		if let followedMembers = try? JSONEncoder().encode([1422: FollowPreferences()]) {
 			defaults.set(followedMembers, forKey: "epac.followedMembers")
 		}
 		let followedBill = BillFollowState(
