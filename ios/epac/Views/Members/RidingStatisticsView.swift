@@ -35,6 +35,10 @@ struct RidingStatisticsView: View {
 	private static let nhsStrategyOverviewURL = URL(string: "https://www.cmhc-schl.gc.ca/nhs/guidepage-strategy")!
 	private static let nhsLatestProgressReportURL = URL(string: "https://assets.cmhc-schl.gc.ca/sites/place-to-call-home/pdfs/progress/nhs-progress-quarterly-report-q1-2024-en.pdf")!
 
+	private static let ecccNIROverviewURL = URL(string: "https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html")!
+	private static let ecccNIRDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b")!
+	private static let ecccProvincialURL = URL(string: "https://www.canada.ca/en/environment-climate-change/services/environmental-indicators/greenhouse-gas-emissions.html")!
+
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
 		("Population & Age", "person.2.fill", .blue),
 		("Income & Employment", "banknote.fill", .green),
@@ -103,6 +107,8 @@ struct RidingStatisticsView: View {
 			immigrationSection
 
 			infrastructureSection
+
+			emissionsSection
 
 			healthSection
 
@@ -321,6 +327,102 @@ struct RidingStatisticsView: View {
 						.font(.subheadline)
 						.foregroundStyle(.primary)
 					Text("IRCC reports each year on admissions vs. Levels Plan targets")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Emissions section (Phase 1: deep-links only)
+	//
+	// Phase 2 will ingest the NIR CSV and render a per-province sector chart
+	// inline. Tracked under the EPAC-174 follow-up; for now the section
+	// surfaces the three authoritative ECCC entry points so users browsing
+	// climate-tagged debates can pull the underlying data themselves.
+
+	private var emissionsSection: some View {
+		Section {
+			emissionsInventoryRow
+			emissionsDatasetRow
+			emissionsProvincialRow
+		} header: {
+			Text("Climate & Emissions")
+		} footer: {
+			Text("Source: Environment and Climate Change Canada, National Inventory Report. Annual greenhouse-gas emissions in megatonnes of CO₂ equivalent, by province and sector. The NIR is published each spring with a ~15-month lag after the reference year.")
+				.font(.caption2)
+				.foregroundStyle(.secondary)
+		}
+	}
+
+	private var emissionsInventoryRow: some View {
+		Button {
+			openURL(Self.ecccNIROverviewURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "leaf.fill")
+					.foregroundStyle(.green)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("National Inventory Report")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("ECCC's annual greenhouse-gas inventory by province and sector")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var emissionsDatasetRow: some View {
+		Button {
+			openURL(Self.ecccNIRDatasetURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "tablecells")
+					.foregroundStyle(.green)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("NIR Dataset (Open Data)")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Open data: emissions back to 1990, by gas, sector, and province")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var emissionsProvincialRow: some View {
+		Button {
+			openURL(Self.ecccProvincialURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "chart.bar.xaxis")
+					.foregroundStyle(.green)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Provincial Emissions Indicator")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Government of Canada visual summary by province")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
