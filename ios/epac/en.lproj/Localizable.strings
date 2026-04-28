@@ -57,7 +57,6 @@
 "Check your connection and try again." = "Check your connection and try again.";
 
 /* Sitting view */
-"Search debates" = "Search debates";
 "Open debate" = "Open debate";
 "sitting.oralQuestions.title" = "Oral Questions";
 "sitting.oralQuestions.count" = "%d exchange(s)";
@@ -131,6 +130,20 @@
 "Party" = "Party";
 "Province" = "Province";
 "Status" = "Status";
+
+/* Party labels */
+"CPC" = "CPC";
+"Lib" = "Lib";
+"NDP" = "NDP";
+"BQ" = "BQ";
+"GP" = "GP";
+"Ind" = "Ind";
+"Conservative" = "Conservative";
+"Liberal" = "Liberal";
+"New Democratic Party" = "New Democratic Party";
+"Bloc Québécois" = "Bloc Québécois";
+"Green Party" = "Green Party";
+"Independent" = "Independent";
 
 /* Vote detail */
 "voteDetail.debates.header" = "Debates in Hansard";
@@ -480,12 +493,8 @@
 "dataSource.done" = "Done";
 
 /* Extended search (EPAC-85) */
-"search.prompt" = "Search MPs, votes, debates";
 "search.emptyTitle" = "Search Parliament";
 "search.emptyDescription" = "Search MPs by name, votes by bill number, and debates by topic.";
-"search.section.members" = "Members";
-"search.section.votes" = "Votes";
-"search.section.debates" = "Debates";
 
 /* Empty states (EPAC-107) */
 "empty.home.title" = "Set up your civic feed";
