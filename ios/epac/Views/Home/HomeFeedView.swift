@@ -18,7 +18,13 @@ import SwiftData
 struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(NavigationRouter.self) private var router
+    @Environment(NetworkMonitor.self) private var networkMonitor
     @State private var isSittingToday = false
+    @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
+    @State private var nextSittingDate: Date?
+    @State private var latestRecordedVote: RecordedVote?
+    @State private var latestMemberVote: MemberVote?
+    @State private var latestSpeechHighlight: HomeSpeechHighlight?
     @State private var myMPActivityCount = 0
     @State private var showPostalCodeSetup = false
     @State private var showSettings = false
@@ -96,35 +102,138 @@ struct HomeFeedView: View {
 
     private var todaySection: some View {
         Section {
-            Button {
-                router.selectedTab = .parliament
-            } label: {
-                HStack {
-                    Image(systemName: isSittingToday ? "building.columns.fill" : "building.columns")
-                        .foregroundStyle(isSittingToday ? Color.epacBrand.accent : Color.epacText.secondary)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                        Text(isSittingToday
-                            ? NSLocalizedString("home.parliament.sitting", comment: "")
-                            : NSLocalizedString("home.parliament.notSitting", comment: ""))
-                            .font(.epacSubheadline.weight(.semibold))
-                            .foregroundStyle(isSittingToday ? Color.epacText.primary : Color.epacText.secondary)
-                        Text(Date(), style: .date)
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacText.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                todayHeader
+
+                if !networkMonitor.isConnected {
+                    Label(offlineCacheText, systemImage: "wifi.slash")
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacStatus.warning)
+                        .accessibilityIdentifier("homeTodayOfflineState")
                 }
+
+                Divider()
+
+                if let vote = latestRecordedVote {
+                    todayVoteRow(vote)
+                }
+
+                if let highlight = latestSpeechHighlight {
+                    NavigationLink(destination: SpeechView(hansard: highlight.hansard, subject: highlight.subject)) {
+                        todayMetricRow(
+                            icon: "quote.bubble.fill",
+                            title: NSLocalizedString("home.today.latestSpeech", comment: ""),
+                            headline: highlight.excerpt,
+                            detail: "\(highlight.memberName) · \(highlight.hansard.date.formatted(date: .abbreviated, time: .omitted))"
+                        )
+                    }
+                    .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("speech") })
+                } else if hasFollowedMPContext {
+                    todayMetricRow(
+                        icon: "quote.bubble",
+                        title: NSLocalizedString("home.today.latestSpeech", comment: ""),
+                        headline: NSLocalizedString("home.today.noSpeech", comment: ""),
+                        detail: NSLocalizedString("home.today.cachedOnly", comment: "")
+                    )
+                }
+
+                Button {
+                    trackTodayCardTap("more")
+                    router.selectedTab = .parliament
+                } label: {
+                    Label(NSLocalizedString("home.today.more", comment: ""), systemImage: "calendar")
+                        .font(.epacCaption.weight(.semibold))
+                        .foregroundStyle(Color.epacBrand.accent)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.vertical, 2)
-            .accessibilityLabel(isSittingToday
-                ? NSLocalizedString("home.parliament.sitting", comment: "")
-                : NSLocalizedString("home.parliament.notSitting", comment: ""))
-            .accessibilityHint("Opens Parliament tab")
+            .padding(.vertical, EpacSpacing.s)
+            .accessibilityLabel(parliamentStatusTitle)
         }
+    }
+
+    private var todayHeader: some View {
+        Button {
+            trackTodayCardTap("status")
+            router.selectedTab = .parliament
+        } label: {
+            HStack(alignment: .top, spacing: EpacSpacing.s) {
+                Image(systemName: parliamentStatusIcon)
+                    .foregroundStyle(parliamentStatusColor)
+                    .font(.title3)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    Text(parliamentStatusTitle)
+                        .font(.epacHeadline)
+                        .foregroundStyle(parliamentStatusColor)
+                    Text(todayStatusDetail)
+                        .font(.epacCaption)
+                        .foregroundStyle(Color.epacText.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func todayVoteRow(_ vote: RecordedVote) -> some View {
+        if let memberVote = latestMemberVote {
+            NavigationLink(destination: VoteDetailView(mv: memberVote, rv: vote)) {
+                todayMetricRow(
+                    icon: "checkmark.ballot.fill",
+                    title: NSLocalizedString("home.today.latestVote", comment: ""),
+                    headline: vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn,
+                    detail: voteSummary(vote, memberVote: memberVote)
+                )
+            }
+            .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("vote") })
+        } else {
+            Button {
+                trackTodayCardTap("voteSearch")
+                if !vote.billNumberCode.isEmpty {
+                    router.pendingSearchQuery = vote.billNumberCode
+                    router.selectedTab = .search
+                } else {
+                    router.selectedTab = .accountability
+                }
+            } label: {
+                todayMetricRow(
+                    icon: "checkmark.ballot.fill",
+                    title: NSLocalizedString("home.today.latestVote", comment: ""),
+                    headline: vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn,
+                    detail: voteSummary(vote, memberVote: nil)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func todayMetricRow(icon: String, title: String, headline: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: EpacSpacing.s) {
+            Image(systemName: icon)
+                .foregroundStyle(Color.epacBrand.accent)
+                .frame(width: 24)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                Text(title)
+                    .font(.epacCaption.weight(.semibold))
+                    .foregroundStyle(Color.epacText.secondary)
+                Text(headline)
+                    .font(.epacSubheadline.weight(.semibold))
+                    .foregroundStyle(Color.epacText.primary)
+                    .lineLimit(2)
+                Text(detail)
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacText.secondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+        }
+        .contentShape(Rectangle())
     }
 
     // MARK: - Section 2: Your MP's activity
@@ -327,11 +436,13 @@ struct HomeFeedView: View {
         // Section 1: Check sitting calendar
         let today = Calendar.current.startOfDay(for: Date())
         let calendars = (try? modelContext.fetch(FetchDescriptor<SittingCalendar>())) ?? []
-        isSittingToday = calendars.contains {
-            $0.sittings.contains { Calendar.current.isDate($0, inSameDayAs: today) }
-        }
+        let allSittingDates = calendars.flatMap(\.sittings).map { Calendar.current.startOfDay(for: $0) }
+        isSittingToday = allSittingDates.contains { Calendar.current.isDate($0, inSameDayAs: today) }
+        nextSittingDate = allSittingDates.filter { $0 > today }.sorted().first
 
         // Section 2: Count MP activities (speech messages by last name)
+        let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+        let followedMember = resolveFollowedMember(from: allMembers)
         if let name = PostalCodeViewModel.savedMemberName {
             let lastName = name.components(separatedBy: " ").last ?? name
             let msgs = (try? modelContext.fetch(FetchDescriptor<SpeechMessage>())) ?? []
@@ -340,11 +451,7 @@ struct HomeFeedView: View {
             }.count
 
             // Resolve province for healthcare contextual card
-            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-            if let mp = allMembers.first(where: {
-                $0.name.localizedCaseInsensitiveContains(name) ||
-                name.localizedCaseInsensitiveContains($0.lastName)
-            }) {
+            if let mp = followedMember {
                 provinceAbbrev = mp.province.shortCode
                 // Load senators for the user's province if not already loaded.
                 if mySenators.isEmpty && !provinceAbbrev.isEmpty {
@@ -359,8 +466,178 @@ struct HomeFeedView: View {
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         ))) ?? []
         latestHansard = hansards.first
+        parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
         recentSubjects = Array(
             (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
         )
+        latestSpeechHighlight = makeLatestSpeechHighlight(for: followedMember, in: hansards)
+
+        var voteDescriptor = FetchDescriptor<RecordedVote>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        voteDescriptor.fetchLimit = 1
+        latestRecordedVote = (try? modelContext.fetch(voteDescriptor))?.first
+
+        if let memberID = followedMember?.memberID, let voteID = latestRecordedVote?.voteID {
+            var memberVoteDescriptor = FetchDescriptor<MemberVote>(
+                predicate: #Predicate<MemberVote> { $0.memberID == memberID && $0.voteID == voteID },
+                sortBy: [SortDescriptor(\.voteID, order: .reverse)]
+            )
+            memberVoteDescriptor.fetchLimit = 1
+            latestMemberVote = (try? modelContext.fetch(memberVoteDescriptor))?.first
+        } else {
+            latestMemberVote = nil
+        }
     }
+
+    private var todayStatusDetail: String {
+        if parliamentDayStatus == .sitting {
+            return Date().formatted(date: .abbreviated, time: .omitted)
+        }
+        if parliamentDayStatus == .adjourned, let latestHansard {
+            return String(
+                format: NSLocalizedString("home.today.adjournedDetail", comment: ""),
+                latestHansard.date.formatted(date: .abbreviated, time: .omitted)
+            )
+        }
+        if let nextSittingDate {
+            return String(
+                format: NSLocalizedString("home.today.nextSitting", comment: ""),
+                nextSittingDate.formatted(date: .abbreviated, time: .omitted)
+            )
+        }
+        return NSLocalizedString("home.today.noCalendar", comment: "")
+    }
+
+    private var parliamentStatusTitle: String {
+        switch parliamentDayStatus {
+        case .sitting:
+            return NSLocalizedString("home.parliament.sitting", comment: "")
+        case .adjourned:
+            return NSLocalizedString("home.parliament.adjourned", comment: "")
+        case .notSitting:
+            return NSLocalizedString("home.parliament.notSitting", comment: "")
+        }
+    }
+
+    private var parliamentStatusIcon: String {
+        switch parliamentDayStatus {
+        case .sitting, .adjourned:
+            return "building.columns.fill"
+        case .notSitting:
+            return "building.columns"
+        }
+    }
+
+    private var parliamentStatusColor: Color {
+        switch parliamentDayStatus {
+        case .sitting:
+            return Color.epacBrand.accent
+        case .adjourned:
+            return Color.epacStatus.warning
+        case .notSitting:
+            return Color.epacText.secondary
+        }
+    }
+
+    private var hasFollowedMPContext: Bool {
+        PostalCodeViewModel.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
+    }
+
+    private var offlineCacheText: String {
+        let syncDates = [
+            UserDefaults.standard.object(forKey: "epac.sync.hansard") as? Date,
+            UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
+            latestHansard?.date
+        ].compactMap { $0 }
+        guard let lastSync = syncDates.max() else {
+            return NSLocalizedString("home.today.offline", comment: "")
+        }
+        return String(
+            format: NSLocalizedString("home.today.offlineCache", comment: ""),
+            lastSync.formatted(date: .abbreviated, time: .shortened)
+        )
+    }
+
+    private func voteSummary(_ vote: RecordedVote, memberVote: MemberVote?) -> String {
+        var parts: [String] = []
+        if !vote.billNumberCode.isEmpty { parts.append(vote.billNumberCode) }
+        if !vote.resultEn.isEmpty { parts.append(vote.resultEn) }
+        parts.append("\(NSLocalizedString("votes.yea", comment: "")) \(vote.yea) · \(NSLocalizedString("votes.nay", comment: "")) \(vote.nay)")
+        if let memberVote {
+            parts.append(String(format: NSLocalizedString("home.today.myMPBallot", comment: ""), memberVote.recordedVote))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func resolveFollowedMember(from members: [ParliamentMember]) -> ParliamentMember? {
+        if let savedName = PostalCodeViewModel.savedMemberName,
+           let match = members.first(where: {
+               $0.name.localizedCaseInsensitiveContains(savedName) ||
+               savedName.localizedCaseInsensitiveContains($0.lastName)
+           }) {
+            return match
+        }
+        if let followedID = MemberFollowStore.shared.followedIDs.first {
+            return members.first { $0.memberID == followedID }
+        }
+        return nil
+    }
+
+    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?) -> HomeParliamentDayStatus {
+        guard isSittingToday else { return .notSitting }
+        if let latestHansard, Calendar.current.isDate(latestHansard.date, inSameDayAs: today) {
+            return .adjourned
+        }
+        return .sitting
+    }
+
+    private func makeLatestSpeechHighlight(for member: ParliamentMember?, in hansards: [Hansard]) -> HomeSpeechHighlight? {
+        guard let member else { return nil }
+        let memberLastName = member.lastName
+        for hansard in hansards.prefix(20) {
+            for subject in hansard.orders.flatMap(\.subjects) {
+                for speech in subject.speeches {
+                    if let message = speech.messages.first(where: {
+                        $0.lastName.localizedCaseInsensitiveCompare(memberLastName) == .orderedSame ||
+                        member.name.localizedCaseInsensitiveContains($0.lastName)
+                    }) {
+                        return HomeSpeechHighlight(
+                            hansard: hansard,
+                            subject: subject,
+                            memberName: member.name,
+                            excerpt: Self.trimmedExcerpt(message.content)
+                        )
+                    }
+                }
+            }
+        }
+        return nil
+    }
+
+    private static func trimmedExcerpt(_ text: String) -> String {
+        let cleaned = text
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count > 140 else { return cleaned }
+        let end = cleaned.index(cleaned.startIndex, offsetBy: 140)
+        return String(cleaned[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+    }
+
+    private func trackTodayCardTap(_ target: String) {
+        Log.info("home.today.tap target=\(target)")
+    }
+}
+
+private struct HomeSpeechHighlight {
+    let hansard: Hansard
+    let subject: SubjectOfBusiness
+    let memberName: String
+    let excerpt: String
+}
+
+private enum HomeParliamentDayStatus {
+    case sitting
+    case adjourned
+    case notSitting
 }
