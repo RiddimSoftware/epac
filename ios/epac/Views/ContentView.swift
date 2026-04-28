@@ -24,8 +24,8 @@ struct ContentView: View {
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
-	@State private var showMyMPSetup = !Self.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
-	@State private var showOnboarding = !Self.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
+	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !Self.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
+	@State private var showOnboarding = !AppRuntime.isRunningTests && !Self.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
@@ -103,7 +103,7 @@ struct ContentView: View {
 			}
 		}
 		.task {
-			guard !Self.isMarketingCaptureMode else { return }
+			guard !AppRuntime.isRunningTests, !Self.isMarketingCaptureMode else { return }
 			// Wire the router to the AppDelegate so Home Screen Quick Actions
 			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
 			appDelegate.router = router
