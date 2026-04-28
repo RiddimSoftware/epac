@@ -43,6 +43,7 @@ struct SpeechView: View {
 			ProgressView(value: Float(viewModel.messages.count), total: Float(length))
 				.progressViewStyle(.linear)
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
+			consumerPriceIndexDebateContext
 			employmentInsuranceDebateContext
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
@@ -247,6 +248,33 @@ struct SpeechView: View {
 	}
 
 	@ViewBuilder
+	private var consumerPriceIndexDebateContext: some View {
+		if isConsumerPriceIndexRelevant,
+		   let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: userProvinceCode) {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("Inflation context", systemImage: "chart.line.uptrend.xyaxis")
+						.font(.caption.bold())
+					Spacer()
+					Text(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill("All-items", yearOverYearLabel(cpi.allItemsYearOverYearPercent))
+					statPill("Food", yearOverYearLabel(cpi.foodYearOverYearPercent))
+					statPill("Canada", yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	@ViewBuilder
 	private var employmentInsuranceDebateContext: some View {
 		if isEmploymentInsuranceRelevant,
 		   let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
@@ -280,6 +308,19 @@ struct SpeechView: View {
 
 	private var isEmploymentInsuranceRelevant: Bool {
 		ParliamentaryTopic.matching(subject.title).contains { $0.id == "labour" }
+	}
+
+	private var isConsumerPriceIndexRelevant: Bool {
+		let topicIDs = ParliamentaryTopic.matching(subject.title).map(\.id)
+		if topicIDs.contains("economy") || topicIDs.contains("agriculture") {
+			return true
+		}
+		let title = subject.title.localizedLowercase
+		return title.contains("affordability")
+			|| title.contains("cost of living")
+			|| title.contains("inflation")
+			|| title.contains("grocery")
+			|| title.contains("food")
 	}
 
 	private func statPill(_ label: String, _ value: String) -> some View {

@@ -3,6 +3,7 @@
 //  epac
 //
 
+import Charts
 import SwiftData
 import SwiftUI
 
@@ -54,6 +55,7 @@ struct RidingStatisticsView: View {
 			}
 
 			employmentInsuranceSection
+			consumerPriceIndexSection
 
 			Section("2021 Census Data") {
 				statCanSearchRow
@@ -209,6 +211,71 @@ struct RidingStatisticsView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
+	}
+
+	@ViewBuilder
+	private var consumerPriceIndexSection: some View {
+		if let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: member.province.shortCode) {
+			Section {
+				LabeledContent("Inflation") {
+					Text(yearOverYearLabel(cpi.allItemsYearOverYearPercent))
+						.monospacedDigit()
+				}
+				LabeledContent("Food") {
+					Text(yearOverYearLabel(cpi.foodYearOverYearPercent))
+						.monospacedDigit()
+				}
+				LabeledContent("National") {
+					Text(yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
+						.monospacedDigit()
+				}
+				cpiTrendChart(cpi)
+				Link(cpiSourceTitle(cpi), destination: ConsumerPriceIndexStatisticsDatabase.snapshot()?.source.url
+					?? ConsumerPriceIndexStatisticsDatabase.fallbackSource.url)
+					.font(.caption2)
+			} header: {
+				Text("Consumer Price Index")
+			} footer: {
+				Text("Reference month: \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth)). CPI is published monthly and normally lags the reference month by about three weeks.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	private func cpiTrendChart(_ cpi: ConsumerPriceIndexStatistic) -> some View {
+		Chart {
+			ForEach(Array(cpi.months.suffix(12))) { month in
+				if let date = ConsumerPriceIndexStatisticsDatabase.date(for: month.refDate) {
+					LineMark(
+						x: .value("Month", date),
+						y: .value("Inflation", month.allItemsYearOverYearPercent)
+					)
+					.foregroundStyle(.blue)
+					PointMark(
+						x: .value("Month", date),
+						y: .value("Inflation", month.allItemsYearOverYearPercent)
+					)
+					.foregroundStyle(.blue)
+				}
+			}
+			RuleMark(y: .value("National", cpi.nationalAllItemsYearOverYearPercent))
+				.foregroundStyle(.secondary)
+				.lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+		}
+		.frame(height: 140)
+		.chartYAxis {
+			AxisMarks(position: .leading) { value in
+				AxisGridLine()
+				AxisTick()
+				AxisValueLabel {
+					if let percent = value.as(Double.self) {
+						Text("\(percent.formatted(.number.precision(.fractionLength(1))))%")
+					}
+				}
+			}
+		}
+		.accessibilityLabel("Twelve month all-items inflation trend")
 	}
 
 	private var cmhcRow: some View {
@@ -625,5 +692,11 @@ struct RidingStatisticsView: View {
 			return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
 		}
 		return "\(value.formatted(.number.precision(.fractionLength(1))))%"
+	}
+
+	private func cpiSourceTitle(_ cpi: ConsumerPriceIndexStatistic) -> String {
+		let title = ConsumerPriceIndexStatisticsDatabase.snapshot()?.source.title
+			?? ConsumerPriceIndexStatisticsDatabase.fallbackSource.title
+		return "\(title), \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))"
 	}
 }
