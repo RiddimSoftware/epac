@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var billStore = BillFollowStore.shared
     @State private var memberStore = MemberFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
+    @State private var selectedAppIcon = AppIconOption.current
+    @State private var appIconError: String?
     @State private var showPostalCodeChange = false
     @Query private var members: [ParliamentMember]
 
@@ -22,6 +24,7 @@ struct SettingsView: View {
             List {
                 locationSection
                 notificationsSection
+                appIconSection
                 followedSection
                 aboutSection
             }
@@ -35,6 +38,56 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showPostalCodeChange) {
                 PostalCodeSetupView { showPostalCodeChange = false }
+            }
+        }
+    }
+
+    // MARK: - Appearance
+
+    private var appIconSection: some View {
+        Section(NSLocalizedString("settings.appIcon.title", comment: "")) {
+            if UIApplication.shared.supportsAlternateIcons {
+                Picker(
+                    NSLocalizedString("settings.appIcon.picker", comment: ""),
+                    selection: $selectedAppIcon
+                ) {
+                    ForEach(AppIconOption.allCases) { option in
+                        Label(option.localizedTitle, systemImage: option.systemImageName)
+                            .tag(option)
+                    }
+                }
+                .onChange(of: selectedAppIcon) { _, option in
+                    applyAppIcon(option)
+                }
+
+                if let appIconError {
+                    Text(appIconError)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                LabeledContent(
+                    NSLocalizedString("settings.appIcon.picker", comment: ""),
+                    value: NSLocalizedString("settings.appIcon.unsupported", comment: "")
+                )
+            }
+        }
+    }
+
+    private func applyAppIcon(_ option: AppIconOption) {
+        guard UIApplication.shared.alternateIconName != option.iconName else { return }
+
+        UIApplication.shared.setAlternateIconName(option.iconName) { error in
+            Task { @MainActor in
+                if let error {
+                    appIconError = String(
+                        format: NSLocalizedString("settings.appIcon.error", comment: ""),
+                        error.localizedDescription
+                    )
+                    selectedAppIcon = AppIconOption.current
+                } else {
+                    appIconError = nil
+                }
             }
         }
     }
@@ -189,6 +242,59 @@ struct SettingsView: View {
                 }
             }
             .foregroundStyle(.tint)
+        }
+    }
+}
+
+private enum AppIconOption: String, CaseIterable, Identifiable {
+    case standard
+    case red
+    case gold
+
+    var id: String { rawValue }
+
+    var iconName: String? {
+        switch self {
+        case .standard:
+            nil
+        case .red:
+            "AppIconRed"
+        case .gold:
+            "AppIconGold"
+        }
+    }
+
+    var localizedTitle: String {
+        switch self {
+        case .standard:
+            NSLocalizedString("settings.appIcon.standard", comment: "")
+        case .red:
+            NSLocalizedString("settings.appIcon.red", comment: "")
+        case .gold:
+            NSLocalizedString("settings.appIcon.gold", comment: "")
+        }
+    }
+
+    var systemImageName: String {
+        switch self {
+        case .standard:
+            "app"
+        case .red:
+            "app.fill"
+        case .gold:
+            "sparkles"
+        }
+    }
+
+    @MainActor
+    static var current: AppIconOption {
+        switch UIApplication.shared.alternateIconName {
+        case "AppIconRed":
+            .red
+        case "AppIconGold":
+            .gold
+        default:
+            .standard
         }
     }
 }
