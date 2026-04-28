@@ -166,7 +166,7 @@ private struct OralQuestionRow: View {
 					Text(question.speakerName)
 						.font(.caption.weight(.medium))
 						.foregroundStyle(.secondary)
-					Text(question.riding)
+					Text(questionMetadata)
 						.font(.caption2)
 						.foregroundStyle(.tertiary)
 						.lineLimit(1)
@@ -200,6 +200,15 @@ private struct OralQuestionRow: View {
 		]
 		.filter { !$0.isEmpty }
 		.joined(separator: ", ")
+	}
+
+	private var questionMetadata: String {
+		[
+			question.party.shortName,
+			question.riding
+		]
+		.filter { !$0.isEmpty }
+		.joined(separator: " · ")
 	}
 }
 
