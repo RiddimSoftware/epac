@@ -44,6 +44,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("accountability.projectCosts", comment: ""), systemImage: "chart.bar.doc.horizontal.fill")
 					}
 					.accessibilityHint("Opens federal project cost lifecycle view")
+					NavigationLink(destination: NHSTrackerView()) {
+						Label("NHS Housing Tracker", systemImage: "house.lodge.fill")
+					}
+					.accessibilityHint("Opens National Housing Strategy targets vs. units delivered tracker")
 					NavigationLink(destination: FederalFinancesView()) {
 						Label("Federal Finances", systemImage: "chart.line.uptrend.xyaxis")
 					}
