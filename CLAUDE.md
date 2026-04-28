@@ -12,6 +12,24 @@ Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-e
 
 Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
 
+### Backend Python logging (EPAC-176)
+
+Python ingest scripts under `backend/` emit **structured JSON logs to stderr** — one JSON object per record — never `print()`. Use the `logging` module with the JSON formatter pattern in `backend/cabinet/cabinet_ingest.py` (stdlib only, no third-party dep).
+
+Reserved fields on every record: `timestamp` (UTC, ISO-8601 with `Z`), `level`, `pipeline`, `message`. Pipeline-specific context goes through `extra={...}` and is merged at the top level so log aggregators can index on it directly:
+
+```python
+logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
+logger.info("pipeline finished", extra={"records_processed": len(entries), "duration_ms": ms})
+logger.error("fetch failed from pm.gc.ca", extra={"error": f"{type(e).__name__}: {e}", "url": URL, "duration_ms": ms})
+```
+
+Every pipeline `main()` must log: a `pipeline started` event, a `pipeline finished` event with `records_processed` and `duration_ms`, and at least one `error`-level event for each handled failure mode (with `error`, `url`, `duration_ms`).
+
+Stdout is reserved for the script's actual JSON payload (e.g. `--dry-run`); logs go to stderr so the two streams stay separately redirectable. Log rotation is the runner's job (cron `logrotate`, GitHub Actions step output, AWS CloudWatch retention) — scripts don't open log files themselves.
+
+When a second Python pipeline needs the same setup, factor `_JSONFormatter` and `_configure_logging` into `backend/_logging.py` and import from both. Until then it stays inline to avoid speculating about a packaging refactor.
+
 ---
 
 ## Architecture
