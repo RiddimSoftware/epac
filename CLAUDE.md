@@ -30,6 +30,21 @@ When you genuinely need to break a rule, use a per-line `// swiftlint:disable:ne
 
 The baseline PR (EPAC-334) ran `swiftlint --fix` on the entire `ios/` tree, so most of those 100+ files got mechanical reformatting (comma spacing, colon spacing, sorted imports). Future feature PRs should land clean against this baseline; if a rebase introduces lint regressions, run `swiftlint --fix` first.
 
+### iOS coverage thresholds (EPAC-352)
+
+The iOS coverage workflow lives at `.github/workflows/ios-coverage.yml`. It runs the `epacTests` unit test target with `xcodebuild test -enableCodeCoverage YES`, excluding `SnapshotTests`, parses the `xccov` JSON report with `scripts/ci/ios_coverage_report.py`, writes a GitHub Actions step summary, and posts or updates one PR comment with changed-module coverage deltas. UI and snapshot tests stay outside this coverage gate because they are slower and less reliable as a module line-coverage signal.
+
+Initial module thresholds:
+
+| Module | Minimum coverage | Scope |
+|---|---:|---|
+| ViewModels | 60% | `*ViewModel.swift` and `ViewModels/` |
+| Services | 50% | `ios/epac/Util/*Service.swift` and `*Manager.swift` |
+| Models | 40% | `ios/epac/Model/` |
+| Views | 0% | `ios/epac/Views/` |
+
+Thresholds are enforced for app modules changed by the PR, so new and modified logic cannot move forward without tests while the historical baseline is raised incrementally. New ViewModel code should include unit tests in the same PR unless the PR explains why the behavior is only testable through UI or integration coverage.
+
 ### Backend Python logging (EPAC-176)
 
 Python ingest scripts under `backend/` emit **structured JSON logs to stderr** — one JSON object per record — never `print()`. Use the `logging` module with the JSON formatter pattern in `backend/cabinet/cabinet_ingest.py` (stdlib only, no third-party dep).
