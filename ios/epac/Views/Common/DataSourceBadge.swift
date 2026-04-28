@@ -228,4 +228,15 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func studentFinance() -> DataSource {
+        DataSource(
+            name: "ESDC / StatCan",
+            description: "Canada Student Financial Assistance Program loan and repayment-assistance statistics from ESDC, combined with Statistics Canada undergraduate tuition fees by province.",
+            url: URL(string: "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/student-financial-assistance-statistics-2023-2024.html")!,
+            lastSyncDate: nil,
+            vintage: "Annual",
+            stalenessThreshold: nil
+        )
+    }
 }

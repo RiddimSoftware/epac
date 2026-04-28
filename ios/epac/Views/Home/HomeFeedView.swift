@@ -71,6 +71,7 @@ struct HomeFeedView: View {
                 reconciliationContextCard
                 healthcareContextCard
                 consumerPriceIndexContextCard
+                studentFinanceContextCard
                 employmentInsuranceContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
@@ -623,6 +624,54 @@ struct HomeFeedView: View {
                 Text("Consumer Price Index")
             } footer: {
                 Text("Reference month: \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))")
+            }
+        }
+    }
+
+    // MARK: - Student finance contextual card (shown when "education" topic followed + province known)
+
+    @ViewBuilder
+    private var studentFinanceContextCard: some View {
+        if topicStore.isFollowing("education"),
+           let finance = StudentFinancialAssistanceStatisticsDatabase.statistic(for: provinceAbbrev),
+           let tuition = finance.latestTuitionYear {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Student costs in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Average undergraduate tuition")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(tuition.averageUndergraduateTuition.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    if let tuitionChange = tuition.yearOverYearChangePercent {
+                        HStack {
+                            Text("Tuition vs. last year")
+                                .font(.epacCallout)
+                            Spacer()
+                            Text(yearOverYearLabel(tuitionChange))
+                                .font(.epacCallout.monospacedDigit())
+                        }
+                    }
+                    if let latestCSFA = finance.latestCSFAYear {
+                        HStack {
+                            Text("CSL recipients")
+                                .font(.epacCallout)
+                            Spacer()
+                            Text(latestCSFA.loanRecipients.formatted())
+                                .font(.epacCallout.monospacedDigit())
+                        }
+                    }
+                    Link("View source", destination: StudentFinancialAssistanceStatisticsDatabase.snapshot()?.source.url
+                        ?? StudentFinancialAssistanceStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Student Financial Assistance")
+            } footer: {
+                Text("Tuition year: \(StudentFinancialAssistanceStatisticsDatabase.academicYearLabel(tuition.academicYear))")
             }
         }
     }
