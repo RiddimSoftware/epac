@@ -1,0 +1,164 @@
+{
+  "annual": [
+    {
+      "additional_pain_and_suffering_compensation_expenditures_millions": 154.1,
+      "additional_pain_and_suffering_compensation_recipients": 18326,
+      "benefits_services_support_spending_dollars": null,
+      "disability_pension_expenditures_millions": 1125.5,
+      "disability_pension_recipients": 87554,
+      "first_application_average_weeks": null,
+      "fiscal_year": "2020-21",
+      "is_forecast": false,
+      "pain_and_suffering_compensation_expenditures_millions": 1085.5,
+      "pain_and_suffering_compensation_recipients": 88744,
+      "service_standard_met_percent": 30
+    },
+    {
+      "additional_pain_and_suffering_compensation_expenditures_millions": 180.3,
+      "additional_pain_and_suffering_compensation_recipients": 21846,
+      "benefits_services_support_spending_dollars": 5240551120,
+      "disability_pension_expenditures_millions": 1065.1,
+      "disability_pension_recipients": 80318,
+      "first_application_average_weeks": 39.7,
+      "fiscal_year": "2021-22",
+      "is_forecast": false,
+      "pain_and_suffering_compensation_expenditures_millions": 1543.0,
+      "pain_and_suffering_compensation_recipients": 99460,
+      "service_standard_met_percent": 46
+    },
+    {
+      "additional_pain_and_suffering_compensation_expenditures_millions": 228.0,
+      "additional_pain_and_suffering_compensation_recipients": 26300,
+      "benefits_services_support_spending_dollars": 5237608937,
+      "disability_pension_expenditures_millions": 1046.6,
+      "disability_pension_recipients": 75500,
+      "first_application_average_weeks": 27.5,
+      "fiscal_year": "2022-23",
+      "is_forecast": true,
+      "pain_and_suffering_compensation_expenditures_millions": 1506.2,
+      "pain_and_suffering_compensation_recipients": 107400,
+      "service_standard_met_percent": 55
+    },
+    {
+      "additional_pain_and_suffering_compensation_expenditures_millions": null,
+      "additional_pain_and_suffering_compensation_recipients": null,
+      "benefits_services_support_spending_dollars": 5838792540,
+      "disability_pension_expenditures_millions": null,
+      "disability_pension_recipients": null,
+      "first_application_average_weeks": 18.8,
+      "fiscal_year": "2023-24",
+      "is_forecast": false,
+      "pain_and_suffering_compensation_expenditures_millions": null,
+      "pain_and_suffering_compensation_recipients": null,
+      "service_standard_met_percent": 69
+    },
+    {
+      "additional_pain_and_suffering_compensation_expenditures_millions": null,
+      "additional_pain_and_suffering_compensation_recipients": null,
+      "benefits_services_support_spending_dollars": 7425077871,
+      "disability_pension_expenditures_millions": null,
+      "disability_pension_recipients": null,
+      "first_application_average_weeks": 21.0,
+      "fiscal_year": "2024-25",
+      "is_forecast": false,
+      "pain_and_suffering_compensation_expenditures_millions": null,
+      "pain_and_suffering_compensation_recipients": null,
+      "service_standard_met_percent": 47
+    }
+  ],
+  "generated_at": "2026-04-28T22:59:35.164391Z",
+  "national_summary": {
+    "backlog_applications": 5637,
+    "disability_benefit_expenditures_dollars": 2400000000,
+    "disability_benefit_recipients": 144174,
+    "first_application_average_weeks": 18.8,
+    "first_application_median_weeks": 11.3,
+    "pending_applications": 35265,
+    "reference_date": "2024-03-31"
+  },
+  "provinces": [
+    {
+      "census_veterans": 8915,
+      "estimated_war_service_veterans": 300,
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL"
+    },
+    {
+      "census_veterans": 3645,
+      "estimated_war_service_veterans": 200,
+      "province": "Prince Edward Island",
+      "province_code": "PE"
+    },
+    {
+      "census_veterans": 33200,
+      "estimated_war_service_veterans": 1300,
+      "province": "Nova Scotia",
+      "province_code": "NS"
+    },
+    {
+      "census_veterans": 20305,
+      "estimated_war_service_veterans": 1000,
+      "province": "New Brunswick",
+      "province_code": "NB"
+    },
+    {
+      "census_veterans": 104695,
+      "estimated_war_service_veterans": 2000,
+      "province": "Quebec",
+      "province_code": "QC"
+    },
+    {
+      "census_veterans": 149020,
+      "estimated_war_service_veterans": 11000,
+      "province": "Ontario",
+      "province_code": "ON"
+    },
+    {
+      "census_veterans": 14725,
+      "estimated_war_service_veterans": 1100,
+      "province": "Manitoba",
+      "province_code": "MB"
+    },
+    {
+      "census_veterans": 11435,
+      "estimated_war_service_veterans": 800,
+      "province": "Saskatchewan",
+      "province_code": "SK"
+    },
+    {
+      "census_veterans": 49880,
+      "estimated_war_service_veterans": 2000,
+      "province": "Alberta",
+      "province_code": "AB"
+    },
+    {
+      "census_veterans": 63845,
+      "estimated_war_service_veterans": 5500,
+      "province": "British Columbia",
+      "province_code": "BC"
+    }
+  ],
+  "source": {
+    "note": "Provincial Veteran population comes from the 2021 Census. Disability benefit recipients, processing, and spending figures are national VAC figures; provincial benefit-processing results are not published in the source tables.",
+    "title": "Veterans Affairs Canada - Facts and Figures / Departmental Results Reports",
+    "url": "https://www.veterans.gc.ca/en/news-and-media/facts-and-figures"
+  },
+  "source_pages": [
+    {
+      "title": "VAC Facts and Figures",
+      "url": "https://www.veterans.gc.ca/en/news-and-media/facts-and-figures"
+    },
+    {
+      "title": "Disability Benefit Processing Summary Report",
+      "url": "https://www.veterans.gc.ca/en/about-vac/our-values/addressing-wait-times-veterans/disability-benefits-processing-summary-report"
+    },
+    {
+      "title": "Departmental Results Report 2023-2024",
+      "url": "https://www.veterans.gc.ca/en/about-vac/reports-policies-and-legislation/departmental-reports/departmental-results-reports/departmental-results-report-2023-2024"
+    },
+    {
+      "title": "Departmental Results Report 2024-2025",
+      "url": "https://www.veterans.gc.ca/en/about-vac/reports-policies-and-legislation/departmental-reports/departmental-results-reports/departmental-results-report-2024-2025"
+    }
+  ]
+}

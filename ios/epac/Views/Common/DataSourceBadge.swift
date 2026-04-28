@@ -217,4 +217,15 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func veteransAffairs() -> DataSource {
+        DataSource(
+            name: "VAC",
+            description: "Veterans Affairs Canada Facts and Figures, Departmental Results Reports, and disability-benefit processing reports. Provincial figures are Veteran population counts from the 2021 Census; benefit and wait-time figures are national.",
+            url: URL(string: "https://www.veterans.gc.ca/en/news-and-media/facts-and-figures")!,
+            lastSyncDate: nil,
+            vintage: "VAC reports",
+            stalenessThreshold: nil
+        )
+    }
 }

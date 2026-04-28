@@ -117,6 +117,7 @@ struct RidingStatisticsView: View {
 			healthSection
 
 			cppOasSection
+			veteransAffairsSection
 
 			Section {
 				VStack(alignment: .leading, spacing: 6) {
@@ -701,6 +702,44 @@ struct RidingStatisticsView: View {
 				let cppPeriod = cpp.cppReferencePeriod.map { CPPOASStatisticsDatabase.periodLabel($0) } ?? ""
 				let oasPeriod = cpp.oasReferencePeriod.map { CPPOASStatisticsDatabase.periodLabel($0) } ?? ""
 				Text("CPP data as of \(cppPeriod); OAS data as of \(oasPeriod). Recipient counts are from ESDC monthly Statistical Bulletins on open.canada.ca. Average benefit amounts are published nationally only.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var veteransAffairsSection: some View {
+		if let province = VeteransAffairsStatisticsDatabase.statistic(for: member.province.shortCode),
+		   let national = VeteransAffairsStatisticsDatabase.nationalSummary() {
+			Section {
+				LabeledContent("Veterans in province") {
+					Text(province.censusVeterans.formatted())
+						.monospacedDigit()
+				}
+				if let warService = province.estimatedWarServiceVeterans {
+					LabeledContent("Estimated war-service Veterans") {
+						Text(warService.formatted())
+							.monospacedDigit()
+					}
+				}
+				LabeledContent("National disability recipients") {
+					Text(national.disabilityBenefitRecipients.formatted())
+						.monospacedDigit()
+				}
+				LabeledContent("National applications backlog") {
+					Text(national.backlogApplications.formatted())
+						.monospacedDigit()
+				}
+				LabeledContent("Avg. first-application wait") {
+					Text("\(national.firstApplicationAverageWeeks.formatted(.number.precision(.fractionLength(1)))) weeks")
+						.monospacedDigit()
+				}
+				DataSourceBadge(source: .veteransAffairs())
+			} header: {
+				Text("Veterans Affairs")
+			} footer: {
+				Text("Provincial Veteran population is from the 2021 Census. Disability benefit recipients, backlog, and processing times are national VAC figures as of \(VeteransAffairsStatisticsDatabase.dateLabel(national.referenceDate)); VAC does not publish these processing results by province in the source tables.")
 					.font(.caption2)
 					.foregroundStyle(.secondary)
 			}
