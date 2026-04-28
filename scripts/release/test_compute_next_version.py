@@ -36,21 +36,8 @@ APP_ID = "1224459142"
 
 # ── unit tests ────────────────────────────────────────────────────────────────
 class TestBumpVersion(unittest.TestCase):
-    def _bump(self, version, kind):
-        # import inline so this file is self-contained
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("cnv", SCRIPT)
-        mod = importlib.util.load_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod.bump_version(version, kind)
-
     @classmethod
     def setUpClass(cls):
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("cnv", SCRIPT)
-        cls.mod = importlib.util.util_from_spec(spec) if False else \
-                  __import__("importlib.util", fromlist=["util"])
-        # simpler: just exec the module once
         import types
         cls.cnv = types.ModuleType("cnv")
         with open(SCRIPT) as f:
