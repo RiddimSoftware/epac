@@ -11,7 +11,7 @@
 
 import Foundation
 
-struct ParliamentaryCommittee: Identifiable, Codable {
+struct ParliamentaryCommittee: Identifiable, Codable, Sendable {
     let id: String
     let acronym: String           // e.g. "FINA"
     let name: String              // e.g. "Standing Committee on Finance"
@@ -19,7 +19,7 @@ struct ParliamentaryCommittee: Identifiable, Codable {
     let committeeURL: URL
 }
 
-struct CommitteeMeeting: Identifiable, Codable {
+struct CommitteeMeeting: Identifiable, Codable, Sendable {
     let id: String
     let committee: String         // committee acronym / id
     let committeeName: String
@@ -33,7 +33,7 @@ struct CommitteeMeeting: Identifiable, Codable {
     let evidenceURL: URL?         // direct link to the evidence publication
 }
 
-struct CommitteeIntervention: Identifiable, Codable {
+struct CommitteeIntervention: Identifiable, Codable, Sendable {
     let id: String
     let speakerName: String
     let speakerRole: String       // e.g. "Chair", "Member", "Witness"

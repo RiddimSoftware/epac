@@ -35,12 +35,12 @@ final class epacUITests: XCTestCase {
 
     func testColdLaunch_ParliamentTabVisible() throws {
         let parliamentTab = app.tabBars.buttons["Parliament"]
-        XCTAssertTrue(parliamentTab.waitForExistence(timeout: 5),
-                      "Parliament tab should be visible after cold launch")
-        parliamentTab.tap()
-        XCTAssertTrue(!app.navigationBars.isEmpty,
-                      "Navigation bar should appear in Parliament tab")
-    }
+		XCTAssertTrue(parliamentTab.waitForExistence(timeout: 5),
+		              "Parliament tab should be visible after cold launch")
+		parliamentTab.tap()
+		XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 3),
+		              "Navigation bar should appear in Parliament tab")
+	}
 
     // MARK: - Flow 2: Members tab → search → member detail
 
