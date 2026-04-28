@@ -19,9 +19,13 @@ struct RidingStatisticsView: View {
 
 	private static let statcanBaseURL = "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof"
 	private static let cmhcBaseURL    = "https://www.cmhc-schl.gc.ca"
-	private static let irccLevelsPlanURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/levels-plans.html")!
+	// IRCC canonical pages (verified 2026-04-28). The previous Levels-Plan and
+	// Annual-Report paths under /services/ and the singular /annual-report-…
+	// slug both 404 on canada.ca; the corporate-initiatives and plural-form
+	// pages are the live canonical destinations linked from canada.ca itself.
+	private static let irccLevelsPlanURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/mandate/corporate-initiatives/levels.html")!
 	private static let irccAdmissionsDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/f7e5498e-0ad8-4417-85c9-9b8aff9b9eda")!
-	private static let irccAnnualReportURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/annual-report-parliament-immigration.html")!
+	private static let irccAnnualReportURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/annual-reports-parliament-immigration.html")!
 
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
 		("Population & Age",      "person.2.fill",      .blue),
