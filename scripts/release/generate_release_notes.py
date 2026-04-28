@@ -3,10 +3,10 @@
 Generate App Store release notes from `Release-Note:` lines in PR descriptions
 merged since the last release tag.
 
-Writes the result to fastlane/metadata/en-US/release_notes.txt (or stdout).
+Writes the result to fastlane/metadata/en-CA/release_notes.txt (or stdout).
 
 Usage:
-  python3 generate_release_notes.py [--output ios/fastlane/metadata/en-US/release_notes.txt]
+  python3 generate_release_notes.py [--output ios/fastlane/metadata/en-CA/release_notes.txt]
 """
 import argparse
 import os
@@ -65,7 +65,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",
-        default="ios/fastlane/metadata/en-US/release_notes.txt",
+        default="ios/fastlane/metadata/en-CA/release_notes.txt",
         help="Path to write the generated release notes",
     )
     parser.add_argument(

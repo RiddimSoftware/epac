@@ -119,7 +119,7 @@ Release-Note: Added onboarding flow with topic picker and notification opt-in
 Release-Note: Fixed bill sharing link on older iOS versions
 ```
 
-The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-US/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
+The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-CA/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
 
 ### App Preview Video Regeneration
 

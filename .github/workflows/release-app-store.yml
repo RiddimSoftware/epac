@@ -149,7 +149,7 @@ jobs:
         run: |
           gh release view "${{ needs.find-build.outputs.tag }}" \
             --json body --jq '.body' \
-            > ios/fastlane/metadata/en-US/release_notes.txt
+            > ios/fastlane/metadata/en-CA/release_notes.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

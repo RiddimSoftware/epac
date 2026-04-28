@@ -119,7 +119,7 @@ FIVE_STAR_PCT=$(python3 -c "import json; d=json.load(open('$RATINGS_JSON')); v=d
 rm -f "$RATINGS_JSON"
 
 # Current listing state (read from fastlane metadata)
-KEYWORDS=$(cat "$REPO_ROOT/ios/fastlane/metadata/en-US/keywords.txt" 2>/dev/null || echo "_[not found]_")
+KEYWORDS=$(cat "$REPO_ROOT/ios/fastlane/metadata/en-CA/keywords.txt" 2>/dev/null || echo "_[not found]_")
 
 echo "Writing baseline document to $OUT..."
 mkdir -p "$(dirname "$OUT")"

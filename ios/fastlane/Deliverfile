@@ -4,7 +4,7 @@ team_id "ZG82TFXU3C"
 # Metadata paths (relative to ios/ working directory)
 metadata_path "./fastlane/metadata"
 
-# Screenshots live in ios/fastlane/screenshots/en-US/ and are uploaded by the release workflow.
+# Screenshots live in ios/fastlane/screenshots/en-CA/ and are uploaded by the release workflow.
 screenshots_path "./fastlane/screenshots"
 skip_screenshots true
 
