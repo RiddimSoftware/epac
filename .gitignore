@@ -15,6 +15,7 @@ backend/daily-fetch/daily-fetch
 *.xml
 *.csv
 hansard/
+docs/marketing/preview/raw-capture-*.mp4
 
 
 !**/*/fixtures/*.csv
