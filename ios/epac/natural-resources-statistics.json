@@ -1,0 +1,498 @@
+{
+  "generated_at": "2026-04-28T23:31:10Z",
+  "mineral_reference_year": 2025,
+  "forestry_reference_period": "2014-2019",
+  "source": {
+    "title": "Natural Resources Canada \u2014 Canadian Minerals Yearbook 2025",
+    "url": "https://mmsd.nrcan-rncan.gc.ca/prod-prod/ann-ann-eng.aspx",
+    "note": "Mineral shipment values are NRCan annual production table values in thousands of Canadian dollars. Confidential source cells are represented as null with is_confidential=true; 2025 mineral values are provisional. Forestry volume uses the National Forestry Database net merchantable roundwood harvest table; value uses provincial Crown timber revenue tables."
+  },
+  "forestry_volume_source": {
+    "title": "National Forestry Database \u2014 Net merchantable volume of roundwood harvested",
+    "url": "https://open.canada.ca/data/en/dataset/4148438c-1722-4c3b-a5fd-b64b5b8c768a",
+    "note": "Volume is summed by province and year across published roundwood categories in cubic metres."
+  },
+  "forestry_value_source": {
+    "title": "National Forestry Database \u2014 Revenues from the sale of timber from provincial Crown land",
+    "url": "https://open.canada.ca/data/en/dataset/e0da8068-6f08-453f-9684-7d00cd6f6f93",
+    "note": "Value is Crown timber sale revenue, not total forestry-sector output or GDP. Latest available years differ by province in the source table."
+  },
+  "provinces": [
+    {
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL",
+      "show_mining": true,
+      "show_forestry": false,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Nickel",
+          "shipment_value_thousands": 1208497,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Stone",
+          "shipment_value_thousands": 19771,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Platinum group metals",
+          "shipment_value_thousands": 15472,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": []
+    },
+    {
+      "province": "Quebec",
+      "province_code": "QC",
+      "show_mining": true,
+      "show_forestry": true,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": 13535645,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": 13365247,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": 12955831,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": 13349454,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": 13274944,
+          "is_confidential": false,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Gold",
+          "shipment_value_thousands": 5270944,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Iron ore concentrates",
+          "shipment_value_thousands": 3953265,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Nickel",
+          "shipment_value_thousands": 861242,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": [
+        {
+          "year": 2014,
+          "harvest_volume_cubic_metres": 28430256,
+          "crown_timber_revenue_dollars": 275262000
+        },
+        {
+          "year": 2015,
+          "harvest_volume_cubic_metres": 28559310,
+          "crown_timber_revenue_dollars": 275262000
+        },
+        {
+          "year": 2016,
+          "harvest_volume_cubic_metres": 30026645,
+          "crown_timber_revenue_dollars": 275262000
+        },
+        {
+          "year": 2017,
+          "harvest_volume_cubic_metres": 27078839,
+          "crown_timber_revenue_dollars": 275262000
+        },
+        {
+          "year": 2018,
+          "harvest_volume_cubic_metres": 27454570,
+          "crown_timber_revenue_dollars": 275262000
+        }
+      ]
+    },
+    {
+      "province": "Ontario",
+      "province_code": "ON",
+      "show_mining": true,
+      "show_forestry": true,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": 11158950,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": 12643970,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": 12387157,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": 12953432,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": 14197096,
+          "is_confidential": false,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Gold",
+          "shipment_value_thousands": 8788899,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Nickel",
+          "shipment_value_thousands": 1130508,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Copper",
+          "shipment_value_thousands": 1007939,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": [
+        {
+          "year": 2015,
+          "harvest_volume_cubic_metres": 15828853,
+          "crown_timber_revenue_dollars": 104866297
+        },
+        {
+          "year": 2016,
+          "harvest_volume_cubic_metres": 15123867,
+          "crown_timber_revenue_dollars": 115381166
+        },
+        {
+          "year": 2017,
+          "harvest_volume_cubic_metres": 15176833,
+          "crown_timber_revenue_dollars": 123967869
+        },
+        {
+          "year": 2018,
+          "harvest_volume_cubic_metres": 13803945,
+          "crown_timber_revenue_dollars": 133844980
+        },
+        {
+          "year": 2019,
+          "harvest_volume_cubic_metres": 14792051,
+          "crown_timber_revenue_dollars": 116013422
+        }
+      ]
+    },
+    {
+      "province": "Manitoba",
+      "province_code": "MB",
+      "show_mining": true,
+      "show_forestry": true,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": 1360717,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": 1451564,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": 1293086,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": 1550658,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": 1181387,
+          "is_confidential": false,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Gold",
+          "shipment_value_thousands": 520733,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Nickel",
+          "shipment_value_thousands": 196600,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Platinum group metals",
+          "shipment_value_thousands": 8378,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": [
+        {
+          "year": 2015,
+          "harvest_volume_cubic_metres": 1072083,
+          "crown_timber_revenue_dollars": 3749000
+        },
+        {
+          "year": 2016,
+          "harvest_volume_cubic_metres": 1198891,
+          "crown_timber_revenue_dollars": 4229000
+        },
+        {
+          "year": 2017,
+          "harvest_volume_cubic_metres": 1350037,
+          "crown_timber_revenue_dollars": 5385000
+        },
+        {
+          "year": 2018,
+          "harvest_volume_cubic_metres": 1321436,
+          "crown_timber_revenue_dollars": 4342000
+        },
+        {
+          "year": 2019,
+          "harvest_volume_cubic_metres": 1360947,
+          "crown_timber_revenue_dollars": 4035000
+        }
+      ]
+    },
+    {
+      "province": "Saskatchewan",
+      "province_code": "SK",
+      "show_mining": true,
+      "show_forestry": false,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": 8885389,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": 10854524,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Potash (muriate of potash)",
+          "shipment_value_thousands": 9493680,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Salt",
+          "shipment_value_thousands": 178422,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Sand and gravel",
+          "shipment_value_thousands": 64651,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": [],
+      "resource_note": "Potash is Saskatchewan's top visible 2025 mineral shipment value in the NRCan table."
+    },
+    {
+      "province": "British Columbia",
+      "province_code": "BC",
+      "show_mining": true,
+      "show_forestry": true,
+      "mining_years": [
+        {
+          "year": 2021,
+          "shipment_value_thousands": 5870014,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2022,
+          "shipment_value_thousands": 5564998,
+          "is_confidential": false,
+          "is_provisional": false
+        },
+        {
+          "year": 2023,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2024,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": false
+        },
+        {
+          "year": 2025,
+          "shipment_value_thousands": null,
+          "is_confidential": true,
+          "is_provisional": true
+        }
+      ],
+      "top_minerals": [
+        {
+          "commodity": "Copper",
+          "shipment_value_thousands": 3001229,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Gold",
+          "shipment_value_thousands": 2012113,
+          "is_confidential": false
+        },
+        {
+          "commodity": "Sand and gravel",
+          "shipment_value_thousands": 530125,
+          "is_confidential": false
+        }
+      ],
+      "forestry_years": [
+        {
+          "year": 2014,
+          "harvest_volume_cubic_metres": 66500243,
+          "crown_timber_revenue_dollars": 691526000
+        },
+        {
+          "year": 2015,
+          "harvest_volume_cubic_metres": 67969770,
+          "crown_timber_revenue_dollars": 807836000
+        },
+        {
+          "year": 2016,
+          "harvest_volume_cubic_metres": 66379661,
+          "crown_timber_revenue_dollars": 859818000
+        },
+        {
+          "year": 2017,
+          "harvest_volume_cubic_metres": 64357821,
+          "crown_timber_revenue_dollars": 982161000
+        },
+        {
+          "year": 2018,
+          "harvest_volume_cubic_metres": 68441448,
+          "crown_timber_revenue_dollars": 1263759000
+        }
+      ]
+    },
+    {
+      "province": "New Brunswick",
+      "province_code": "NB",
+      "show_mining": false,
+      "show_forestry": true,
+      "mining_years": [],
+      "top_minerals": [],
+      "forestry_years": [
+        {
+          "year": 2014,
+          "harvest_volume_cubic_metres": 10167917,
+          "crown_timber_revenue_dollars": 77551500
+        },
+        {
+          "year": 2015,
+          "harvest_volume_cubic_metres": 9362789,
+          "crown_timber_revenue_dollars": 77551500
+        },
+        {
+          "year": 2016,
+          "harvest_volume_cubic_metres": 9345246,
+          "crown_timber_revenue_dollars": 77551500
+        },
+        {
+          "year": 2017,
+          "harvest_volume_cubic_metres": 9347159,
+          "crown_timber_revenue_dollars": 77551500
+        },
+        {
+          "year": 2018,
+          "harvest_volume_cubic_metres": 9362714,
+          "crown_timber_revenue_dollars": 77551500
+        }
+      ]
+    }
+  ]
+}
