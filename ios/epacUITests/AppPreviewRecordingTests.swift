@@ -10,7 +10,7 @@ import XCTest
 
 final class AppPreviewRecordingTests: XCTestCase {
     private var app: XCUIApplication!
-    private let recordingSceneHold: TimeInterval = 2.8
+    private let recordingSceneHold: TimeInterval = 2.65
     private var isRecordingRun: Bool {
         name.contains("testAppPreviewRecordingSequence") ||
         ProcessInfo.processInfo.environment["APP_PREVIEW_RECORDING"] == "1" ||
@@ -127,7 +127,7 @@ final class AppPreviewRecordingTests: XCTestCase {
         for identifier in identifiers {
             let query = app.descendants(matching: .any).matching(identifier: identifier)
             let deadline = Date().addingTimeInterval(1)
-            while query.count == 0 && Date() < deadline {
+            while !query.firstMatch.exists && Date() < deadline {
                 RunLoop.current.run(until: Date().addingTimeInterval(0.05))
             }
             XCTAssertGreaterThan(query.count, 0, "Expected accessibility identifier \(identifier)", file: file, line: line)

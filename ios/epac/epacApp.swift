@@ -50,10 +50,11 @@ struct epacApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
 		do {
+			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try ModelContainer(
 				for: Schema(versionedSchema: SchemaV7.self),
 				migrationPlan: EpacMigrationPlan.self,
-				configurations: [ModelConfiguration(isStoredInMemoryOnly: AppRuntime.isRunningTests)]
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: usesInMemoryStore)]
 			)
 		} catch {
 			fatalError("Could not create ModelContainer: \(error)")

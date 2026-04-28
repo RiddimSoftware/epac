@@ -101,6 +101,10 @@ struct AppPreviewVideoView: View {
 
     private func advanceScene() {
         guard selectedSceneIndex < scenes.count - 1 else { return }
+        if AppEnvironment.isAppPreviewManualSequence {
+            selectedSceneIndex += 1
+            return
+        }
         withAnimation(.easeInOut(duration: 0.65)) {
             selectedSceneIndex += 1
         }
