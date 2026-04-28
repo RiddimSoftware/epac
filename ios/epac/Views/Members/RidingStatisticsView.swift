@@ -53,6 +53,8 @@ struct RidingStatisticsView: View {
 				ridingContextCard
 			}
 
+			employmentInsuranceSection
+
 			Section("2021 Census Data") {
 				statCanSearchRow
 				ForEach(statCategories, id: \.label) { cat in
@@ -168,6 +170,43 @@ struct RidingStatisticsView: View {
 				Image(systemName: "arrow.up.right.square")
 					.font(.caption)
 					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var employmentInsuranceSection: some View {
+		if let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: member.province.shortCode) {
+			Section {
+				LabeledContent("Regular beneficiaries") {
+					Text(ei.beneficiaries.formatted())
+						.monospacedDigit()
+				}
+				LabeledContent("Claims received") {
+					Text(ei.claimsReceived.formatted())
+						.monospacedDigit()
+				}
+				LabeledContent("Average weekly benefit") {
+					Text(ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+						.monospacedDigit()
+				}
+				if let change = ei.claimsYearOverYearChangePercent {
+					LabeledContent("Claims vs. last year") {
+						Text(yearOverYearLabel(change))
+							.monospacedDigit()
+					}
+				}
+				Link(EmploymentInsuranceStatisticsDatabase.snapshot()?.source.title
+					?? EmploymentInsuranceStatisticsDatabase.fallbackSource.title,
+				     destination: EmploymentInsuranceStatisticsDatabase.snapshot()?.source.url
+					?? EmploymentInsuranceStatisticsDatabase.fallbackSource.url)
+					.font(.caption2)
+			} header: {
+				Text("Employment Insurance")
+			} footer: {
+				Text("Reference month: \(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth)). EI monthly data normally lags by about two months. Average weekly benefit is calculated from benefit payments divided by benefit weeks.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
 			}
 		}
 	}
@@ -577,10 +616,14 @@ struct RidingStatisticsView: View {
 
 	private func cmhcURL() -> URL {
 		// CMHC housing market information centre, province-level
-		let province = member.province.rawValue
-			.lowercased()
-			.replacingOccurrences(of: " ", with: "-")
 		return URL(string: "\(Self.cmhcBaseURL)/en/housing-observer-online")
 		    ?? URL(string: Self.cmhcBaseURL)!
+	}
+
+	private func yearOverYearLabel(_ value: Double) -> String {
+		if value > 0 {
+			return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
+		}
+		return "\(value.formatted(.number.precision(.fractionLength(1))))%"
 	}
 }

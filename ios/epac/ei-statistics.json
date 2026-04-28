@@ -1,0 +1,1120 @@
+{
+  "generated_at": "2026-04-28T19:28:44.569267Z",
+  "provinces": [
+    {
+      "average_weekly_benefit": 582.76,
+      "beneficiaries": 65040,
+      "claims_received": 22970,
+      "claims_received_previous_year": 22120,
+      "claims_year_over_year_change_percent": 3.8,
+      "months": [
+        {
+          "average_weekly_benefit": 554.07,
+          "beneficiaries": 58110,
+          "claims_received": 27340,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 563.25,
+          "beneficiaries": 59500,
+          "claims_received": 25540,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 565.07,
+          "beneficiaries": 59600,
+          "claims_received": 23430,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 562.98,
+          "beneficiaries": 61520,
+          "claims_received": 32410,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 562.28,
+          "beneficiaries": 63200,
+          "claims_received": 46870,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 572.62,
+          "beneficiaries": 64930,
+          "claims_received": 21930,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 577.52,
+          "beneficiaries": 64860,
+          "claims_received": 27060,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 584.2,
+          "beneficiaries": 67250,
+          "claims_received": 32140,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 577.84,
+          "beneficiaries": 67810,
+          "claims_received": 37980,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 572.91,
+          "beneficiaries": 68170,
+          "claims_received": 37860,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 579.98,
+          "beneficiaries": 65670,
+          "claims_received": 33230,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 582.76,
+          "beneficiaries": 65040,
+          "claims_received": 22970,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Alberta",
+      "province_code": "AB",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 578.19,
+      "beneficiaries": 59200,
+      "claims_received": 23220,
+      "claims_received_previous_year": 23150,
+      "claims_year_over_year_change_percent": 0.3,
+      "months": [
+        {
+          "average_weekly_benefit": 556.38,
+          "beneficiaries": 51130,
+          "claims_received": 30760,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 558.21,
+          "beneficiaries": 53890,
+          "claims_received": 27880,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 565.02,
+          "beneficiaries": 54910,
+          "claims_received": 23880,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 571.3,
+          "beneficiaries": 55600,
+          "claims_received": 33810,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 567.54,
+          "beneficiaries": 57600,
+          "claims_received": 50040,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 563.07,
+          "beneficiaries": 57410,
+          "claims_received": 23170,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 573.8,
+          "beneficiaries": 59120,
+          "claims_received": 27180,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 583.18,
+          "beneficiaries": 59970,
+          "claims_received": 31040,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 577.21,
+          "beneficiaries": 59780,
+          "claims_received": 34740,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 568.29,
+          "beneficiaries": 60400,
+          "claims_received": 39720,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 575.77,
+          "beneficiaries": 58850,
+          "claims_received": 34320,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 578.19,
+          "beneficiaries": 59200,
+          "claims_received": 23220,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "British Columbia",
+      "province_code": "BC",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 534.14,
+      "beneficiaries": 17290,
+      "claims_received": 6630,
+      "claims_received_previous_year": 6720,
+      "claims_year_over_year_change_percent": -1.3,
+      "months": [
+        {
+          "average_weekly_benefit": 509.42,
+          "beneficiaries": 16730,
+          "claims_received": 8920,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 511.99,
+          "beneficiaries": 17080,
+          "claims_received": 8970,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 521.12,
+          "beneficiaries": 17430,
+          "claims_received": 5940,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 545.39,
+          "beneficiaries": 17850,
+          "claims_received": 12280,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 482.72,
+          "beneficiaries": 18460,
+          "claims_received": 17890,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 531.14,
+          "beneficiaries": 19070,
+          "claims_received": 6930,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 545.08,
+          "beneficiaries": 18500,
+          "claims_received": 7830,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 548.1,
+          "beneficiaries": 18550,
+          "claims_received": 7920,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 548.04,
+          "beneficiaries": 18480,
+          "claims_received": 12400,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 525.73,
+          "beneficiaries": 18100,
+          "claims_received": 14120,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 529.19,
+          "beneficiaries": 17140,
+          "claims_received": 10400,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 534.14,
+          "beneficiaries": 17290,
+          "claims_received": 6630,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Manitoba",
+      "province_code": "MB",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 538.95,
+      "beneficiaries": 25020,
+      "claims_received": 5650,
+      "claims_received_previous_year": 5570,
+      "claims_year_over_year_change_percent": 1.4,
+      "months": [
+        {
+          "average_weekly_benefit": 498.6,
+          "beneficiaries": 24890,
+          "claims_received": 9670,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 533.9,
+          "beneficiaries": 24960,
+          "claims_received": 6480,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 492.4,
+          "beneficiaries": 25220,
+          "claims_received": 5500,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 519.62,
+          "beneficiaries": 25490,
+          "claims_received": 11530,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 517.23,
+          "beneficiaries": 25610,
+          "claims_received": 10150,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 515.49,
+          "beneficiaries": 26190,
+          "claims_received": 6540,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 519.49,
+          "beneficiaries": 26000,
+          "claims_received": 8240,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 518.94,
+          "beneficiaries": 26660,
+          "claims_received": 11650,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 528.26,
+          "beneficiaries": 26240,
+          "claims_received": 11780,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 529.42,
+          "beneficiaries": 25990,
+          "claims_received": 20520,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 536.06,
+          "beneficiaries": 25540,
+          "claims_received": 12040,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 538.95,
+          "beneficiaries": 25020,
+          "claims_received": 5650,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "New Brunswick",
+      "province_code": "NB",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 531.89,
+      "beneficiaries": 27050,
+      "claims_received": 4760,
+      "claims_received_previous_year": 5150,
+      "claims_year_over_year_change_percent": -7.6,
+      "months": [
+        {
+          "average_weekly_benefit": 527.35,
+          "beneficiaries": 27770,
+          "claims_received": 4950,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 523.8,
+          "beneficiaries": 27430,
+          "claims_received": 5760,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 511.34,
+          "beneficiaries": 27850,
+          "claims_received": 6680,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 527.38,
+          "beneficiaries": 28650,
+          "claims_received": 7640,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 498.23,
+          "beneficiaries": 28210,
+          "claims_received": 7590,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 532.09,
+          "beneficiaries": 28960,
+          "claims_received": 5660,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 537.36,
+          "beneficiaries": 28540,
+          "claims_received": 7700,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 531.81,
+          "beneficiaries": 28820,
+          "claims_received": 11420,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 525.18,
+          "beneficiaries": 28690,
+          "claims_received": 10960,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 529.29,
+          "beneficiaries": 28650,
+          "claims_received": 16300,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 526.84,
+          "beneficiaries": 27830,
+          "claims_received": 9970,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 531.89,
+          "beneficiaries": 27050,
+          "claims_received": 4760,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 515.24,
+      "beneficiaries": 21720,
+      "claims_received": 6360,
+      "claims_received_previous_year": 6160,
+      "claims_year_over_year_change_percent": 3.2,
+      "months": [
+        {
+          "average_weekly_benefit": 506.89,
+          "beneficiaries": 22170,
+          "claims_received": 7840,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 499.86,
+          "beneficiaries": 22720,
+          "claims_received": 6190,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 504.35,
+          "beneficiaries": 22810,
+          "claims_received": 5690,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 504.52,
+          "beneficiaries": 22690,
+          "claims_received": 9380,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 525.36,
+          "beneficiaries": 22620,
+          "claims_received": 14010,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 512.14,
+          "beneficiaries": 22670,
+          "claims_received": 6770,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 507.63,
+          "beneficiaries": 22770,
+          "claims_received": 7790,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 505.57,
+          "beneficiaries": 22970,
+          "claims_received": 9410,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 516.03,
+          "beneficiaries": 23050,
+          "claims_received": 11700,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 506.61,
+          "beneficiaries": 22860,
+          "claims_received": 14600,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 517.99,
+          "beneficiaries": 22390,
+          "claims_received": 11430,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 515.24,
+          "beneficiaries": 21720,
+          "claims_received": 6360,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Nova Scotia",
+      "province_code": "NS",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 639.3,
+      "beneficiaries": 610,
+      "claims_received": 230,
+      "claims_received_previous_year": 200,
+      "claims_year_over_year_change_percent": 15.0,
+      "months": [
+        {
+          "average_weekly_benefit": 605.75,
+          "beneficiaries": 570,
+          "claims_received": 240,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 579.49,
+          "beneficiaries": 590,
+          "claims_received": 280,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 541.31,
+          "beneficiaries": 590,
+          "claims_received": 220,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 572.9,
+          "beneficiaries": 620,
+          "claims_received": 250,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 599.81,
+          "beneficiaries": 620,
+          "claims_received": 320,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 598.57,
+          "beneficiaries": 630,
+          "claims_received": 250,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 594.11,
+          "beneficiaries": 670,
+          "claims_received": 310,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 592.59,
+          "beneficiaries": 660,
+          "claims_received": 420,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 677.03,
+          "beneficiaries": 650,
+          "claims_received": 380,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 612.7,
+          "beneficiaries": 620,
+          "claims_received": 250,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 636.36,
+          "beneficiaries": 620,
+          "claims_received": 250,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 639.3,
+          "beneficiaries": 610,
+          "claims_received": 230,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Northwest Territories",
+      "province_code": "NT",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 593.3,
+      "beneficiaries": 360,
+      "claims_received": 170,
+      "claims_received_previous_year": 150,
+      "claims_year_over_year_change_percent": 13.3,
+      "months": [
+        {
+          "average_weekly_benefit": 548.94,
+          "beneficiaries": 360,
+          "claims_received": 130,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 610.71,
+          "beneficiaries": 370,
+          "claims_received": 190,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 639.88,
+          "beneficiaries": 370,
+          "claims_received": 200,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 617.37,
+          "beneficiaries": 410,
+          "claims_received": 340,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 575.87,
+          "beneficiaries": 410,
+          "claims_received": 360,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 611.63,
+          "beneficiaries": 410,
+          "claims_received": 170,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 606.56,
+          "beneficiaries": 420,
+          "claims_received": 190,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 599.75,
+          "beneficiaries": 420,
+          "claims_received": 220,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 597.03,
+          "beneficiaries": 410,
+          "claims_received": 200,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 622.35,
+          "beneficiaries": 400,
+          "claims_received": 200,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 589.51,
+          "beneficiaries": 390,
+          "claims_received": 230,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 593.3,
+          "beneficiaries": 360,
+          "claims_received": 170,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Nunavut",
+      "province_code": "NU",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 561.46,
+      "beneficiaries": 182370,
+      "claims_received": 69420,
+      "claims_received_previous_year": 65950,
+      "claims_year_over_year_change_percent": 5.3,
+      "months": [
+        {
+          "average_weekly_benefit": 523.34,
+          "beneficiaries": 167850,
+          "claims_received": 99350,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 540.53,
+          "beneficiaries": 177340,
+          "claims_received": 76810,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 564.6,
+          "beneficiaries": 175830,
+          "claims_received": 68350,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 567.59,
+          "beneficiaries": 182700,
+          "claims_received": 107230,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 564.66,
+          "beneficiaries": 182990,
+          "claims_received": 144670,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 539.17,
+          "beneficiaries": 181700,
+          "claims_received": 63060,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 575.92,
+          "beneficiaries": 182580,
+          "claims_received": 71440,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 599.14,
+          "beneficiaries": 184510,
+          "claims_received": 71250,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 600.72,
+          "beneficiaries": 189330,
+          "claims_received": 94840,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 575.46,
+          "beneficiaries": 190450,
+          "claims_received": 144110,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 567.91,
+          "beneficiaries": 188200,
+          "claims_received": 120710,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 561.46,
+          "beneficiaries": 182370,
+          "claims_received": 69420,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Ontario",
+      "province_code": "ON",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 528.9,
+      "beneficiaries": 7430,
+      "claims_received": 1270,
+      "claims_received_previous_year": 1270,
+      "claims_year_over_year_change_percent": 0.0,
+      "months": [
+        {
+          "average_weekly_benefit": 518.35,
+          "beneficiaries": 7130,
+          "claims_received": 1530,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 500.47,
+          "beneficiaries": 7120,
+          "claims_received": 1380,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 494.98,
+          "beneficiaries": 7220,
+          "claims_received": 1430,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 514.95,
+          "beneficiaries": 7340,
+          "claims_received": 1860,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 507.34,
+          "beneficiaries": 7400,
+          "claims_received": 3210,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 509.86,
+          "beneficiaries": 7700,
+          "claims_received": 1590,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 512.36,
+          "beneficiaries": 7900,
+          "claims_received": 3580,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 527.82,
+          "beneficiaries": 7940,
+          "claims_received": 3940,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 542.13,
+          "beneficiaries": 7780,
+          "claims_received": 3840,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 525.78,
+          "beneficiaries": 7620,
+          "claims_received": 4320,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 528.31,
+          "beneficiaries": 7520,
+          "claims_received": 3080,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 528.9,
+          "beneficiaries": 7430,
+          "claims_received": 1270,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Prince Edward Island",
+      "province_code": "PE",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 545.12,
+      "beneficiaries": 119300,
+      "claims_received": 45710,
+      "claims_received_previous_year": 45760,
+      "claims_year_over_year_change_percent": -0.1,
+      "months": [
+        {
+          "average_weekly_benefit": 519.66,
+          "beneficiaries": 112380,
+          "claims_received": 56140,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 501.67,
+          "beneficiaries": 120150,
+          "claims_received": 45690,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 538.45,
+          "beneficiaries": 120610,
+          "claims_received": 40480,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 568.15,
+          "beneficiaries": 128740,
+          "claims_received": 67350,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 526.83,
+          "beneficiaries": 131830,
+          "claims_received": 118390,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 531.27,
+          "beneficiaries": 129190,
+          "claims_received": 63850,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 575.6,
+          "beneficiaries": 126530,
+          "claims_received": 45920,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 569.43,
+          "beneficiaries": 127090,
+          "claims_received": 54710,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 588.24,
+          "beneficiaries": 129810,
+          "claims_received": 78080,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 546.86,
+          "beneficiaries": 127580,
+          "claims_received": 139070,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 541.11,
+          "beneficiaries": 120650,
+          "claims_received": 99070,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 545.12,
+          "beneficiaries": 119300,
+          "claims_received": 45710,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Quebec",
+      "province_code": "QC",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 552.38,
+      "beneficiaries": 15270,
+      "claims_received": 5770,
+      "claims_received_previous_year": 5980,
+      "claims_year_over_year_change_percent": -3.5,
+      "months": [
+        {
+          "average_weekly_benefit": 522.98,
+          "beneficiaries": 14320,
+          "claims_received": 5990,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 540.96,
+          "beneficiaries": 14390,
+          "claims_received": 6880,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 531.94,
+          "beneficiaries": 14780,
+          "claims_received": 4910,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 536.43,
+          "beneficiaries": 15140,
+          "claims_received": 8090,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 525.47,
+          "beneficiaries": 15190,
+          "claims_received": 12370,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 540.41,
+          "beneficiaries": 15400,
+          "claims_received": 4460,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 540.18,
+          "beneficiaries": 15280,
+          "claims_received": 6040,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 549.42,
+          "beneficiaries": 15420,
+          "claims_received": 6880,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 548.51,
+          "beneficiaries": 15330,
+          "claims_received": 9280,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 538.79,
+          "beneficiaries": 15340,
+          "claims_received": 10400,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 550.18,
+          "beneficiaries": 14660,
+          "claims_received": 7620,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 552.38,
+          "beneficiaries": 15270,
+          "claims_received": 5770,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Saskatchewan",
+      "province_code": "SK",
+      "reference_month": "2026-02"
+    },
+    {
+      "average_weekly_benefit": 640.47,
+      "beneficiaries": 560,
+      "claims_received": 230,
+      "claims_received_previous_year": 200,
+      "claims_year_over_year_change_percent": 15.0,
+      "months": [
+        {
+          "average_weekly_benefit": 609.41,
+          "beneficiaries": 540,
+          "claims_received": 230,
+          "ref_date": "2025-03"
+        },
+        {
+          "average_weekly_benefit": 603.14,
+          "beneficiaries": 550,
+          "claims_received": 250,
+          "ref_date": "2025-04"
+        },
+        {
+          "average_weekly_benefit": 593.46,
+          "beneficiaries": 570,
+          "claims_received": 200,
+          "ref_date": "2025-05"
+        },
+        {
+          "average_weekly_benefit": 587.65,
+          "beneficiaries": 700,
+          "claims_received": 260,
+          "ref_date": "2025-06"
+        },
+        {
+          "average_weekly_benefit": 618.49,
+          "beneficiaries": 590,
+          "claims_received": 210,
+          "ref_date": "2025-07"
+        },
+        {
+          "average_weekly_benefit": 616.53,
+          "beneficiaries": 590,
+          "claims_received": 180,
+          "ref_date": "2025-08"
+        },
+        {
+          "average_weekly_benefit": 620.8,
+          "beneficiaries": 600,
+          "claims_received": 310,
+          "ref_date": "2025-09"
+        },
+        {
+          "average_weekly_benefit": 612.25,
+          "beneficiaries": 630,
+          "claims_received": 530,
+          "ref_date": "2025-10"
+        },
+        {
+          "average_weekly_benefit": 632.47,
+          "beneficiaries": 630,
+          "claims_received": 510,
+          "ref_date": "2025-11"
+        },
+        {
+          "average_weekly_benefit": 632.64,
+          "beneficiaries": 640,
+          "claims_received": 360,
+          "ref_date": "2025-12"
+        },
+        {
+          "average_weekly_benefit": 640.55,
+          "beneficiaries": 570,
+          "claims_received": 340,
+          "ref_date": "2026-01"
+        },
+        {
+          "average_weekly_benefit": 640.47,
+          "beneficiaries": 560,
+          "claims_received": 230,
+          "ref_date": "2026-02"
+        }
+      ],
+      "province": "Yukon",
+      "province_code": "YT",
+      "reference_month": "2026-02"
+    }
+  ],
+  "reference_month": "2026-02",
+  "source": {
+    "note": "Monthly Statistics Canada EI tables are produced from Service Canada and ESDC administrative data.",
+    "title": "Employment and Social Development Canada \u2014 EI Statistics",
+    "url": "https://www.canada.ca/en/employment-social-development/programs/ei/statistics.html"
+  },
+  "statcan_tables": [
+    {
+      "id": "14-10-0011-01",
+      "title": "Employment insurance beneficiaries (regular benefits) by province and territory, monthly, seasonally adjusted",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410001101"
+    },
+    {
+      "id": "14-10-0005-01",
+      "title": "Employment insurance claims received by province and territory, monthly, seasonally adjusted",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410000501"
+    },
+    {
+      "id": "14-10-0008-01",
+      "title": "Employment insurance regular income benefit characteristics, monthly, seasonally adjusted",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410000801"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ struct SpeechView: View {
 	@State var viewModel: SpeechViewModel
 	@State private var item: ActivityItem?
 	@State private var followStore = MemberFollowStore.shared
+	@State private var userProvinceCode = ""
 
 	init(hansard: Hansard, subject: SubjectOfBusiness) {
 		self.hansard = hansard
@@ -42,6 +43,7 @@ struct SpeechView: View {
 			ProgressView(value: Float(viewModel.messages.count), total: Float(length))
 				.progressViewStyle(.linear)
 				.frame(maxWidth: .infinity, minHeight: 1, maxHeight: 1, alignment: .center)
+			employmentInsuranceDebateContext
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
@@ -196,6 +198,7 @@ struct SpeechView: View {
 		}
 		.onAppear {
 			viewModel.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+			resolveSavedMemberProvince()
 		}
 		.activitySheet($item)
 		.toolbar {
@@ -241,6 +244,74 @@ struct SpeechView: View {
 				.accessibilityLabel("Share recent messages")
 			}
 		}
+	}
+
+	@ViewBuilder
+	private var employmentInsuranceDebateContext: some View {
+		if isEmploymentInsuranceRelevant,
+		   let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("EI context", systemImage: "briefcase.fill")
+						.font(.caption.bold())
+					Spacer()
+					Text(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill("Beneficiaries", ei.beneficiaries.formatted())
+					statPill(
+						"Avg. benefit",
+						ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
+					)
+					if let change = ei.claimsYearOverYearChangePercent {
+						statPill("Claims YoY", yearOverYearLabel(change))
+					}
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isEmploymentInsuranceRelevant: Bool {
+		ParliamentaryTopic.matching(subject.title).contains { $0.id == "labour" }
+	}
+
+	private func statPill(_ label: String, _ value: String) -> some View {
+		VStack(alignment: .leading, spacing: 2) {
+			Text(label)
+				.font(.caption2)
+				.foregroundStyle(.secondary)
+			Text(value)
+				.font(.caption.monospacedDigit().weight(.semibold))
+		}
+		.frame(maxWidth: .infinity, alignment: .leading)
+	}
+
+	private func resolveSavedMemberProvince() {
+		guard userProvinceCode.isEmpty else { return }
+		let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+		if let savedName = PostalCodeViewModel.savedMemberName,
+		   let member = allMembers.first(where: { $0.name == savedName }) {
+			userProvinceCode = member.province.shortCode
+			return
+		}
+		if let savedRiding = PostalCodeViewModel.savedRidingName,
+		   let member = allMembers.first(where: { $0.riding == savedRiding }) {
+			userProvinceCode = member.province.shortCode
+		}
+	}
+
+	private func yearOverYearLabel(_ value: Double) -> String {
+		if value > 0 {
+			return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
+		}
+		return "\(value.formatted(.number.precision(.fractionLength(1))))%"
 	}
 }
 
