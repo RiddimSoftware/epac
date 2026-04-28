@@ -19,6 +19,9 @@ struct RidingStatisticsView: View {
 
 	private static let statcanBaseURL = "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof"
 	private static let cmhcBaseURL    = "https://www.cmhc-schl.gc.ca"
+	private static let irccLevelsPlanURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/levels-plans.html")!
+	private static let irccAdmissionsDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/f7e5498e-0ad8-4417-85c9-9b8aff9b9eda")!
+	private static let irccAnnualReportURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/annual-report-parliament-immigration.html")!
 
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
 		("Population & Age",      "person.2.fill",      .blue),
@@ -60,6 +63,8 @@ struct RidingStatisticsView: View {
 			Section("Housing Market") {
 				cmhcRow
 			}
+
+			immigrationSection
 
 			healthSection
 
@@ -137,6 +142,97 @@ struct RidingStatisticsView: View {
 						.font(.subheadline)
 						.foregroundStyle(.primary)
 					Text("Rental vacancy rates, average rents, and starts for \(member.province.rawValue)")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Immigration section
+
+	private var immigrationSection: some View {
+		Section {
+			immigrationLevelsPlanRow
+			immigrationAdmissionsRow
+			immigrationAnnualReportRow
+		} header: {
+			Text("Immigration")
+		} footer: {
+			Text("Source: Immigration, Refugees and Citizenship Canada (IRCC). Annual admissions data is published with a ~6-month lag after year-end; the Levels Plan is tabled in Parliament each fall for the following 3-year window.")
+				.font(.caption2)
+				.foregroundStyle(.secondary)
+		}
+	}
+
+	private var immigrationLevelsPlanRow: some View {
+		Button {
+			openURL(Self.irccLevelsPlanURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "target")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Immigration Levels Plan")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Federal admission targets by category, tabled annually in Parliament")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var immigrationAdmissionsRow: some View {
+		Button {
+			openURL(Self.irccAdmissionsDatasetURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "airplane.arrival")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Permanent Residents — Admissions")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Open data: monthly admissions by category and province")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var immigrationAnnualReportRow: some View {
+		Button {
+			openURL(Self.irccAnnualReportURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "doc.text.fill")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Annual Report to Parliament")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("IRCC reports each year on admissions vs. Levels Plan targets")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
