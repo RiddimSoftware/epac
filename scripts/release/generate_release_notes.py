@@ -11,6 +11,7 @@ Usage:
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -83,7 +84,20 @@ def main() -> None:
         notes.extend(extract_release_notes_from_pr(pr_num))
 
     if not notes:
-        print("No Release-Note: lines found in merged PRs — using existing release_notes.txt unchanged.")
+        print("No Release-Note: lines found in merged PRs — copying existing release_notes.txt as fallback.")
+        if args.dry_run:
+            return
+        committed_notes = "ios/fastlane/metadata/en-CA/release_notes.txt"
+        parent = os.path.dirname(args.output)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        if os.path.exists(committed_notes):
+            shutil.copy(committed_notes, args.output)
+            print(f"Copied {committed_notes} to {args.output}")
+        else:
+            with open(args.output, "w") as f:
+                f.write("No release notes available.\n")
+            print(f"Wrote placeholder to {args.output}")
         return
 
     bullets = "\n".join(f"• {n}" for n in notes)
