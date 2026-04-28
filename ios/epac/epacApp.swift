@@ -97,7 +97,7 @@ struct epacApp: App {
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { oldPhase, newPhase in
-			if newPhase == .active && !AppEnvironment.isMarketingCaptureMode {
+			if newPhase == .active && !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode {
 				// Snapshot the latest-seen bill introduction date so BillsView can mark
 				// bills introduced since the previous session as "New" this session.
 				if let latestSeen = UserDefaults.standard.object(forKey: "epac.bills.latestSeen") as? Date {

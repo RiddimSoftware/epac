@@ -80,19 +80,29 @@ struct AppPreviewVideoView: View {
                 .clipped()
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard AppEnvironment.isAppPreviewManualSequence else { return }
+            advanceScene()
+        }
         .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
         .task {
-            guard forcedSceneIndex == nil else { return }
+            guard forcedSceneIndex == nil, !AppEnvironment.isAppPreviewManualSequence else { return }
             for index in scenes.indices.dropFirst() {
                 try? await Task.sleep(nanoseconds: scenes[index - 1].durationNanoseconds)
-                withAnimation(.easeInOut(duration: 0.65)) {
-                    selectedSceneIndex = index
-                }
+                advanceScene()
             }
             if let finalScene = scenes.last {
                 try? await Task.sleep(nanoseconds: finalScene.durationNanoseconds)
             }
+        }
+    }
+
+    private func advanceScene() {
+        guard selectedSceneIndex < scenes.count - 1 else { return }
+        withAnimation(.easeInOut(duration: 0.65)) {
+            selectedSceneIndex += 1
         }
     }
 }

@@ -13,6 +13,10 @@ enum AppEnvironment {
         ProcessInfo.processInfo.environment["EPAC_APP_PREVIEW_MODE"] == "1"
     }
 
+    static var isAppPreviewManualSequence: Bool {
+        ProcessInfo.processInfo.environment["EPAC_APP_PREVIEW_MANUAL_SEQUENCE"] == "1"
+    }
+
     static var isMarketingCaptureMode: Bool {
         isAppStoreScreenshotMode || isAppPreviewMode
     }
