@@ -12,7 +12,6 @@
 		A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A366154A2D0A24DD00A3FBF7 /* Kanna */; };
 		A36615842D0A261300A3FBF7 /* SWXMLHash in Frameworks */ = {isa = PBXBuildFile; productRef = A36615832D0A261300A3FBF7 /* SWXMLHash */; };
 		A38138C52DD39D6F0062421F /* HorizonCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = A38138C42DD39D6F0062421F /* HorizonCalendar */; };
-		A38CF0E22F351DF500668136 /* icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A38CF0E12F351DF500668136 /* icon.icon */; };
 		A3E71D000000000000000003 /* Evidence in Frameworks */ = {isa = PBXBuildFile; productRef = A3E71D000000000000000002 /* Evidence */; };
 		A3BB28C82F2909BE00F9F1EB /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A33253CD2F2852E500531242 /* ExyteChat */; };
 		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
@@ -483,7 +482,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */,
-				A38CF0E22F351DF500668136 /* icon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
