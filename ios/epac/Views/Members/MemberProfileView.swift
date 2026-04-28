@@ -144,6 +144,15 @@ struct MemberProfileView: View {
 		.cornerRadius(12)
 	}
 
+	@ViewBuilder
+	private func partyDestination(for party: Party) -> some View {
+		if party == .independent {
+			IndependentsListingView()
+		} else {
+			PartyProfileView(party: party)
+		}
+	}
+
 	private var pickableMembers: [ParliamentMember] {
 		let trimmed = pickerSearch.trimmingCharacters(in: .whitespaces)
 		let others = allMembers.filter { $0.name != member.name }
@@ -166,7 +175,16 @@ struct MemberProfileView: View {
 				PartyLineScoreView(member: member)
 
 				VStack(alignment: .leading, spacing: 10) {
-					ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
+					NavigationLink(destination: partyDestination(for: member.party)) {
+						HStack(spacing: 0) {
+							ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
+							Image(systemName: "chevron.right")
+								.font(.caption)
+								.foregroundStyle(.tertiary)
+						}
+					}
+					.foregroundStyle(.primary)
+					.accessibilityIdentifier("mp-profile-party-link")
 					ProfileDetailRow(icon: "mappin.and.ellipse", label: "Riding", value: member.riding)
 					ProfileDetailRow(icon: "location.fill", label: "Province", value: member.province.rawValue)
 				}
