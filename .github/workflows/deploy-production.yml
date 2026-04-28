@@ -17,6 +17,7 @@ on:
           - health
           - device-register
           - openapi
+          - live-status
 
 concurrency:
   group: backend-production-deploy
@@ -33,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, search, member-speeches, health, device-register, openapi]
+        service: [daily-fetch, loader, search, member-speeches, health, device-register, openapi, live-status]
     steps:
       - uses: actions/checkout@v4
 

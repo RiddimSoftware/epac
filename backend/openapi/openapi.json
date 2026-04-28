@@ -357,6 +357,7 @@
       "get": {
         "tags": ["Parliament"],
         "summary": "Return current House sitting status",
+        "description": "Returns the cached live House status from the backend poller. The endpoint does not call parliament.ca during app requests.",
         "operationId": "getLiveStatus",
         "responses": {
           "200": {
@@ -368,9 +369,24 @@
                   "sitting": {
                     "value": {
                       "status": "sitting",
+                      "is_sitting": true,
+                      "business_type": "Oral Questions",
+                      "current_item_title": "Oral Questions",
+                      "current_speaker_name": "Steven MacKinnon",
+                      "division_in_progress": false,
                       "checked_at": "2026-04-28T14:00:00Z",
-                      "current_item": "Routine Proceedings",
-                      "source_url": "https://www.ourcommons.ca/en/sitting-calendar"
+                      "last_changed_at": "2026-04-28T13:59:00Z",
+                      "source_url": "https://www.ourcommons.ca/en"
+                    }
+                  },
+                  "adjourned": {
+                    "value": {
+                      "status": "adjourned",
+                      "is_sitting": false,
+                      "business_type": "Adjourned",
+                      "division_in_progress": false,
+                      "checked_at": "2026-04-28T23:00:00Z",
+                      "source_url": "https://www.ourcommons.ca/en"
                     }
                   }
                 }
@@ -764,11 +780,17 @@
       },
       "LiveStatus": {
         "type": "object",
-        "required": ["status", "checked_at"],
+        "required": ["status", "is_sitting", "business_type", "division_in_progress", "checked_at", "source_url"],
         "properties": {
           "status": { "type": "string", "enum": ["sitting", "adjourned", "unknown"] },
+          "is_sitting": { "type": "boolean" },
+          "business_type": { "type": "string", "example": "Oral Questions" },
+          "current_item_title": { "type": "string", "example": "Oral Questions" },
+          "current_bill_number": { "type": "string", "example": "C-12" },
+          "current_speaker_name": { "type": "string", "example": "Steven MacKinnon" },
+          "division_in_progress": { "type": "boolean" },
           "checked_at": { "type": "string", "format": "date-time" },
-          "current_item": { "type": "string" },
+          "last_changed_at": { "type": "string", "format": "date-time" },
           "source_url": { "type": "string", "format": "uri" }
         }
       },

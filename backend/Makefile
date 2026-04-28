@@ -1,6 +1,6 @@
 # Makefile for deploying Go Lambda functions
 
-.PHONY: create-lambda update-lambda build package clean create-api delete-api add-endpoint
+.PHONY: create-lambda update-lambda build package clean create-api delete-api add-endpoint schedule-lambda schedule-rate-lambda
 
 # AWS Role ARN for the Lambda function. Can be overridden on the command line or set as an environment variable.
 ROLE_ARN ?= arn:aws:iam::227530433709:role/epac-lambda-role
@@ -139,3 +139,29 @@ schedule-lambda:
 		--targets "ID=1,Arn=$$LAMBDA_ARN"; \
 	echo "Successfully scheduled $(SERVICE)."
 
+# Schedule a Lambda function at an EventBridge rate expression
+# Usage: make schedule-rate-lambda SERVICE=live-status RATE="rate(2 minutes)"
+schedule-rate-lambda:
+	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required."; exit 1; fi
+	@if [ -z "$(RATE)" ]; then echo "Error: RATE parameter is required (e.g., rate(2 minutes))."; exit 1; fi
+	@RULE_NAME="$(SERVICE)-rate-schedule"; \
+	echo "Scheduling $(SERVICE) with $(RATE)..."; \
+	aws events put-rule \
+		--name "$$RULE_NAME" \
+		--schedule-expression "$(RATE)" \
+		--state ENABLED \
+		--description "Rate schedule for $(SERVICE): $(RATE)"; \
+	ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text); \
+	REGION=$$(aws configure get region); \
+	REGION=$${REGION:-us-east-1}; \
+	LAMBDA_ARN="arn:aws:lambda:$$REGION:$$ACCOUNT_ID:function:$(SERVICE)"; \
+	aws lambda add-permission \
+		--function-name "$(SERVICE)" \
+		--statement-id "eventbridge-$$RULE_NAME" \
+		--action "lambda:InvokeFunction" \
+		--principal events.amazonaws.com \
+		--source-arn "arn:aws:events:$$REGION:$$ACCOUNT_ID:rule/$$RULE_NAME" > /dev/null 2>&1 || true; \
+	aws events put-targets \
+		--rule "$$RULE_NAME" \
+		--targets "ID=1,Arn=$$LAMBDA_ARN"; \
+	echo "Successfully scheduled $(SERVICE)."
