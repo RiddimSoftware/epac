@@ -66,6 +66,7 @@ struct VoteDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .accessibilityIdentifier("vote-detail-scroll")
         .navigationTitle(rv.flatMap { $0.billNumberCode.isEmpty ? nil : $0.billNumberCode } ?? "Vote #\(mv.voteID)")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $selectedDebate) { selection in

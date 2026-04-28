@@ -128,5 +128,6 @@ struct ContactMyMPButton: View {
 			Label(NSLocalizedString("contact.writeToMP", comment: ""), systemImage: "envelope.badge")
 		}
 		.accessibilityHint("Opens Mail with a pre-filled message to your Member of Parliament")
+		.accessibilityIdentifier("mp-profile-contact-button")
 	}
 }

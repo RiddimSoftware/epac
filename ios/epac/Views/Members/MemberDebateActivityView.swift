@@ -129,8 +129,9 @@ struct MemberDebateActivityView: View {
 
             // Speech entries
             Section {
-                ForEach(viewModel.speeches) { entry in
+                ForEach(Array(viewModel.speeches.enumerated()), id: \.offset) { index, entry in
                     SpeechEntryRow(entry: entry, member: member)
+                        .accessibilityIdentifier(index == 0 ? "mp-profile-speech-row-0" : "mp-profile-speech-row-\(index)")
                         .task {
                             await viewModel.loadMoreIfNeeded(currentItem: entry)
                         }
@@ -149,6 +150,7 @@ struct MemberDebateActivityView: View {
         .refreshable {
             await viewModel.loadInitial()
         }
+        .accessibilityIdentifier("mp-profile-speech-list")
     }
 
     // MARK: - Stats bar

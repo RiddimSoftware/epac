@@ -56,13 +56,14 @@ struct MemberVotingHistoryView: View {
                 )
             } else {
                 List {
-                    ForEach(votes, id: \.mv.voteID) { pair in
+                    ForEach(Array(votes.enumerated()), id: \.offset) { index, pair in
                         Button {
                             selectedVote = VoteSelection(mv: pair.mv, rv: pair.rv)
                         } label: {
                             VoteRow(mv: pair.mv, rv: pair.rv)
                         }
                         .foregroundStyle(.primary)
+                        .accessibilityIdentifier(index == 0 ? "vote-list-row-0" : "vote-list-row-\(index)")
                     }
                     Section {
                         HStack {
@@ -74,6 +75,7 @@ struct MemberVotingHistoryView: View {
                     }
                 }
                 .listStyle(.plain)
+                .accessibilityIdentifier("vote-detail-mp-list")
                 .refreshable {
                     await loadVotes(forceRefresh: true)
                 }

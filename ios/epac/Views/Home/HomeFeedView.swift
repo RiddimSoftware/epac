@@ -73,6 +73,7 @@ struct HomeFeedView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .accessibilityIdentifier("home-feed-scroll")
             .refreshable {
                 await loadFeed()
             }
@@ -149,6 +150,8 @@ struct HomeFeedView: View {
             }
             .padding(.vertical, EpacSpacing.s)
             .accessibilityLabel(parliamentStatusTitle)
+            .accessibilityHint("Opens Parliament tab")
+            .accessibilityIdentifier("home-feed-today-card")
         }
     }
 
@@ -258,6 +261,7 @@ struct HomeFeedView: View {
                     }
                 }
                 .foregroundStyle(.primary)
+                .accessibilityIdentifier("home-feed-my-mp-link")
             } else {
                 Button {
                     showPostalCodeSetup = true
@@ -275,6 +279,7 @@ struct HomeFeedView: View {
                     }
                 }
                 .foregroundStyle(.primary)
+                .accessibilityIdentifier("home-feed-my-mp-link")
             }
         }
     }
