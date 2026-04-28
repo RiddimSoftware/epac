@@ -61,11 +61,9 @@ struct SpeechView: View {
 					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
 						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 							.onTapGesture {
-								router.selectedMember = speaker
-								router.selectedTab = .members
+								openSpeakerProfile(speaker)
 							}
-							.accessibilityAddTraits(.isButton)
-							.accessibilityHint("View member profile")
+							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -125,23 +123,24 @@ struct SpeechView: View {
 						}
 					}
 					.accessibilityElement(children: .combine)
-					.accessibilityLabel({
-						if let speaker = viewModel.speakers[message.id] {
-							return "\(speaker.name), \(speaker.party.fullName): \(message.text)"
-						}
-						return message.text
-					}())
+					.accessibilityLabel(messageAccessibilityLabel(message))
+					.accessibilityValue(messageAccessibilityValue(message))
+					.accessibilityAddTraits(.isStaticText)
+					.accessibilityHint("Message actions are available from the rotor")
 					.accessibilityAction(named: NSLocalizedString("speech.copyQuote", comment: "")) {
 						UIPasteboard.general.string = message.text
+					}
+					.accessibilityAction(named: "View member profile") {
+						if let speaker = viewModel.speakers[message.id] {
+							openSpeakerProfile(speaker)
+						}
 					}
 					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
 						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 							.onTapGesture {
-								router.selectedMember = speaker
-								router.selectedTab = .members
+								openSpeakerProfile(speaker)
 							}
-							.accessibilityAddTraits(.isButton)
-							.accessibilityHint("View member profile")
+							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: 51)
 					}
@@ -162,6 +161,7 @@ struct SpeechView: View {
 					.foregroundStyle(.gray)
 					.font(.system(.callout, design: .rounded, weight: .regular))
 					.opacity(viewModel.tapAnywhereOpacity)
+					.accessibilityHidden(true)
 			})
 			.chatTheme(
 				colors: .init(
@@ -532,6 +532,19 @@ struct SpeechView: View {
 				.font(.caption.monospacedDigit().weight(.semibold))
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
+	}
+
+	private func messageAccessibilityLabel(_ message: Message) -> String {
+		SpeechMessageAccessibility.label(for: message, speaker: viewModel.speakers[message.id])
+	}
+
+	private func messageAccessibilityValue(_ message: Message) -> String {
+		SpeechMessageAccessibility.value(for: message, messages: viewModel.messages, totalCount: length)
+	}
+
+	private func openSpeakerProfile(_ speaker: ParliamentMember) {
+		router.selectedMember = speaker
+		router.selectedTab = .members
 	}
 
 	private func resolveSavedMemberProvince() {
