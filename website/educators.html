@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-itunes-app" content="app-id=1224459142, app-argument=https://epac.riddimsoftware.com/app/?path=%2Feducators.html">
+  <title>epac for Educators — Canadian Politics and Civics Classroom Kit</title>
+  <meta name="description" content="Free educator kit for Canadian politics, civics, public policy, and journalism courses. Use official Parliament of Canada records in classroom assignments.">
+  <link rel="canonical" href="https://epac.riddimsoftware.com/educators.html">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://epac.riddimsoftware.com/educators.html">
+  <meta property="og:title" content="epac for Educators">
+  <meta property="og:description" content="Classroom materials for teaching Canada's Parliament with official public records.">
+  <meta property="og:image" content="https://epac.riddimsoftware.com/og-image.png">
+  <meta property="og:locale" content="en_CA">
+  <meta property="og:site_name" content="epac">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "epac for Educators",
+    "description": "Educator kit for teaching Canadian Parliament with official public records.",
+    "url": "https://epac.riddimsoftware.com/educators.html",
+    "publisher": { "@type": "Organization", "name": "Riddim Software", "url": "https://riddimsoftware.com" }
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;family=Outfit:wght@400;700;900&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #007aff;
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --muted: #5f6368;
+      --card-bg: #f2f2f7;
+      --border: rgba(128,128,128,0.18);
+      --font-main: 'Inter', sans-serif;
+      --font-rounded: 'Outfit', sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0c;
+        --text: #ffffff;
+        --muted: #b6b6bd;
+        --card-bg: #1c1c1e;
+        --border: rgba(255,255,255,0.12);
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); line-height: 1.6; }
+    nav { padding: 24px 6%; max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+    .nav-brand { font-family: var(--font-rounded); font-size: 2rem; font-weight: 800; color: inherit; text-decoration: none; }
+    .nav-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .nav-link { color: inherit; text-decoration: none; font-size: 0.9rem; opacity: 0.65; }
+    .nav-link:hover, .nav-link.active { opacity: 1; }
+    main { max-width: 980px; margin: 0 auto; padding: 52px 6% 80px; }
+    h1, h2, h3 { font-family: var(--font-rounded); line-height: 1.12; }
+    h1 { font-size: clamp(2.2rem, 7vw, 4.6rem); margin: 0 0 20px; }
+    h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 64px 0 20px; }
+    h3 { font-size: 1.1rem; margin: 0 0 8px; }
+    p { font-size: 1rem; color: var(--muted); margin: 0 0 18px; }
+    .lede { font-size: clamp(1.05rem, 2vw, 1.35rem); max-width: 740px; color: var(--muted); }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 12px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; border: 1px solid var(--border); color: var(--text); }
+    .button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .card p { font-size: 0.94rem; margin-bottom: 0; }
+    .steps { counter-reset: step; display: grid; gap: 14px; margin-top: 24px; }
+    .step { display: grid; grid-template-columns: 38px 1fr; gap: 14px; align-items: start; padding: 18px 0; border-top: 1px solid var(--border); }
+    .step::before { counter-increment: step; content: counter(step); width: 32px; height: 32px; border-radius: 50%; background: var(--card-bg); display: grid; place-items: center; font-weight: 800; }
+    .source-list { columns: 2; padding-left: 20px; color: var(--muted); }
+    .source-list li { margin-bottom: 8px; break-inside: avoid; }
+    .contact-form { display: grid; gap: 12px; max-width: 620px; margin-top: 18px; }
+    .contact-form label { display: grid; gap: 6px; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+    .contact-form input, .contact-form textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; padding: 12px; }
+    .contact-form textarea { min-height: 130px; resize: vertical; }
+    .contact-form .button { justify-self: start; background: transparent; cursor: pointer; }
+    footer { padding: 40px 6%; opacity: 0.5; font-size: 0.9rem; text-align: center; }
+    footer a { color: inherit; text-decoration: none; }
+    @media (max-width: 760px) {
+      nav { padding: 20px 6%; }
+      .nav-brand { font-size: 1.6rem; }
+      .grid { grid-template-columns: 1fr; }
+      .source-list { columns: 1; }
+      .actions { flex-direction: column; }
+      .button { width: 100%; }
+      .contact-form .button { justify-self: stretch; }
+    }
+  </style>
+  <script defer src="/open-in-app.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="/" class="nav-brand">epac</a>
+    <div class="nav-right">
+      <a href="https://apps.apple.com/ca/app/epac/id1224459142?utm_source=epac-web&amp;utm_medium=educators&amp;utm_campaign=organic">
+        <img src="app-store.svg" alt="Download on the App Store" style="height: 44px;">
+      </a>
+      <a href="/features.html" class="nav-link">Features</a>
+      <a href="/faq.html" class="nav-link">FAQ</a>
+      <a href="/educators.html" class="nav-link active">Educators</a>
+      <a href="/blog/" class="nav-link">Blog</a>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Teach Parliament from the official record.</h1>
+    <p class="lede">epac helps students follow MPs, bills, votes, debates, expenses, and lobbying activity using government-published sources. The educator kit gives instructors a ready-made guide, assignment, and data-source explainer for Canadian politics and civics courses.</p>
+
+    <div class="actions">
+      <a class="button primary" href="/educator-kit/educator-guide.pdf">Educator guide PDF</a>
+      <a class="button" href="/educator-kit/sample-assignment.pdf">Sample assignment PDF</a>
+      <a class="button" href="/educator-kit/data-sources-explainer.pdf">Data sources PDF</a>
+    </div>
+
+    <h2>What the kit includes</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Instructor guide</h3>
+        <p>Learning outcomes, classroom workflows, source discipline notes, and an assessment rubric.</p>
+      </div>
+      <div class="card">
+        <h3>Student assignment</h3>
+        <p>A "Track Your MP for 30 Days" memo structure with evidence log and grading criteria.</p>
+      </div>
+      <div class="card">
+        <h3>Source explainer</h3>
+        <p>A plain-language map of what Hansard, votes, bills, expenses, election records, and lobbying records can prove.</p>
+      </div>
+    </div>
+
+    <h2>How to use it</h2>
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Start with a riding</h3>
+          <p>Students identify an MP and riding using Elections Canada or the epac app.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Collect official records</h3>
+          <p>Students find one speech, one vote, and one bill, expense, or accountability record.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Write from evidence</h3>
+          <p>The final memo describes what the record shows and names what the record cannot prove.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2>Official sources covered</h2>
+    <ul class="source-list">
+      <li>House of Commons Hansard</li>
+      <li>House of Commons recorded divisions</li>
+      <li>Parliament of Canada LEGISinfo</li>
+      <li>House of Commons proactive disclosure</li>
+      <li>Elections Canada</li>
+      <li>Statistics Canada</li>
+      <li>Commissioner of Lobbying registry</li>
+    </ul>
+
+    <h2>Contact</h2>
+    <p>For classroom feedback or partnership questions, contact <a href="mailto:sunny@riddimsoftware.com">sunny@riddimsoftware.com</a>.</p>
+    <form class="contact-form" action="mailto:sunny@riddimsoftware.com?subject=epac%20educator%20kit%20feedback" method="post" enctype="text/plain">
+      <label>
+        Name
+        <input name="name" autocomplete="name">
+      </label>
+      <label>
+        Email
+        <input name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        Message
+        <textarea name="message">I am interested in using the epac educator kit.</textarea>
+      </label>
+      <button class="button" type="submit">Send message</button>
+    </form>
+  </main>
+
+  <footer>
+    <p>&copy; <a href="https://riddimsoftware.com">Riddim Software</a>. Built for Canadians. &middot; <a href="/blog/">Blog</a> &middot; <a href="/faq.html">FAQ</a> &middot; <a href="/educators.html">Educators</a> &middot; <a href="/subscribe.html">Newsletter</a> &middot; <a href="/press.html">Press</a> &middot; <a href="/privacy.html">Privacy</a></p>
+  </footer>
+</body>
+</html>
