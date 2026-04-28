@@ -1,0 +1,24 @@
+# CODEOWNERS — auto-assigned reviewers per repo area (EPAC-332).
+#
+# Today the team is solo (@sunnypurewal). As we grow to four developers the
+# placeholders below will be filled in (uncomment + replace), each pulling
+# their own area: ViewModels, Services, backend pipelines, website. Until
+# then everything routes to @sunnypurewal so PRs always have an owner.
+#
+# Syntax: github.com/some-pattern github-handle [github-handle ...]
+# Last matching line wins, so order from least to most specific.
+
+* @sunnypurewal
+
+# Future area ownership (uncomment when each developer is on board)
+# ios/epac/Views/**/*ViewModel.swift   @developer-a
+# ios/epac/Views/ContentViewModel.swift @developer-a
+# ios/epac/Util/*Service.swift          @developer-b
+# ios/epac/Util/*Manager.swift          @developer-b
+# backend/                              @developer-c
+# website/                              @developer-d
+
+# Schema migrations require an extra reviewer (see CLAUDE.md "Shared model
+# change protocol"). Owners listed here in addition to area owner above.
+ios/epac/Model/Migration.swift  @sunnypurewal
+ios/epac/Model/Model.swift      @sunnypurewal
