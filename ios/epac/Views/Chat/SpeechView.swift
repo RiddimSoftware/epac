@@ -48,6 +48,7 @@ struct SpeechView: View {
 			employmentInsuranceDebateContext
 			cppOasDebateContext
 			veteransAffairsDebateContext
+			transportationSafetyDebateContext
 			ChatView(messages: viewModel.messages) { _ in
 				/// didSendMessage
 			}
@@ -434,6 +435,50 @@ struct SpeechView: View {
 			|| title.contains("veterans affairs")
 			|| title.contains("disability benefit")
 			|| title.contains("ancien combattant")
+	}
+
+	@ViewBuilder
+	private var transportationSafetyDebateContext: some View {
+		if isTransportationSafetyRelevant,
+		   let road = TransportSafetyStatisticsDatabase.roadStatistic(for: userProvinceCode),
+		   let rail = TransportSafetyStatisticsDatabase.latestModeYear("rail") {
+			VStack(alignment: .leading, spacing: 6) {
+				HStack {
+					Label("Transport safety context", systemImage: "car.2.fill")
+						.font(.caption.bold())
+					Spacer()
+					Text("\(road.referenceYear) road · \(rail.year) TSB")
+						.font(.caption2)
+						.foregroundStyle(.secondary)
+				}
+				HStack(spacing: 12) {
+					statPill("Road deaths", TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPer100k, unit: "/100k"))
+					statPill("Rail accidents", rail.accidents.formatted())
+					if let air = TransportSafetyStatisticsDatabase.latestModeYear("air") {
+						statPill("Air accidents", air.accidents.formatted())
+					}
+				}
+			}
+			.padding(.horizontal, 12)
+			.padding(.vertical, 10)
+			.background(Color(.secondarySystemGroupedBackground))
+			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.padding(.horizontal)
+		}
+	}
+
+	private var isTransportationSafetyRelevant: Bool {
+		let topicIDs = ParliamentaryTopic.matching(subject.title).map(\.id)
+		if topicIDs.contains("transport") {
+			return true
+		}
+		let title = subject.title.localizedLowercase
+		return title.contains("safety")
+			|| title.contains("rail")
+			|| title.contains("aviation")
+			|| title.contains("marine")
+			|| title.contains("road")
+			|| title.contains("infrastructure")
 	}
 
 	private func statPill(_ label: String, _ value: String) -> some View {
