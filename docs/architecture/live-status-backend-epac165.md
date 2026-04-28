@@ -26,7 +26,8 @@ The poller sends an identifying User-Agent. It is intended to be invoked by Even
 The repository Makefile includes the operational command:
 
 ```bash
-cd backend && make schedule-rate-lambda SERVICE=live-status RATE="rate(2 minutes)"
+cd backend && make schedule-rate-lambda SERVICE=live-status FUNCTION_NAME=epac-live-status-staging RATE="rate(2 minutes)"
+cd backend && make schedule-rate-lambda SERVICE=live-status FUNCTION_NAME=epac-live-status-production RATE="rate(2 minutes)"
 ```
 
 Before polling the live widget, the Lambda refreshes the annual sitting calendar (`https://www.ourcommons.ca/en/sitting-calendar/{year}`) at most once per day and caches `chamber-meeting` dates in `live_sitting_day`. If the current date is confirmed as a non-sitting day, it records `is_sitting=false` and skips the live widget request.

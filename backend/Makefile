@@ -140,11 +140,13 @@ schedule-lambda:
 	echo "Successfully scheduled $(SERVICE)."
 
 # Schedule a Lambda function at an EventBridge rate expression
-# Usage: make schedule-rate-lambda SERVICE=live-status RATE="rate(2 minutes)"
+# Usage: make schedule-rate-lambda SERVICE=live-status FUNCTION_NAME=epac-live-status-staging RATE="rate(2 minutes)"
 schedule-rate-lambda:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required."; exit 1; fi
 	@if [ -z "$(RATE)" ]; then echo "Error: RATE parameter is required (e.g., rate(2 minutes))."; exit 1; fi
-	@RULE_NAME="$(SERVICE)-rate-schedule"; \
+	@FUNCTION_NAME_VAL="$(FUNCTION_NAME)"; \
+	if [ -z "$$FUNCTION_NAME_VAL" ]; then FUNCTION_NAME_VAL="$(SERVICE)"; fi; \
+	RULE_NAME="$$FUNCTION_NAME_VAL-rate-schedule"; \
 	echo "Scheduling $(SERVICE) with $(RATE)..."; \
 	aws events put-rule \
 		--name "$$RULE_NAME" \
@@ -154,9 +156,9 @@ schedule-rate-lambda:
 	ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text); \
 	REGION=$$(aws configure get region); \
 	REGION=$${REGION:-us-east-1}; \
-	LAMBDA_ARN="arn:aws:lambda:$$REGION:$$ACCOUNT_ID:function:$(SERVICE)"; \
+	LAMBDA_ARN="arn:aws:lambda:$$REGION:$$ACCOUNT_ID:function:$$FUNCTION_NAME_VAL"; \
 	aws lambda add-permission \
-		--function-name "$(SERVICE)" \
+		--function-name "$$FUNCTION_NAME_VAL" \
 		--statement-id "eventbridge-$$RULE_NAME" \
 		--action "lambda:InvokeFunction" \
 		--principal events.amazonaws.com \
