@@ -170,6 +170,40 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - HomeFeed states (EPAC-434)
+
+    func testHomeFeed_emptyState() {
+        snapshot(
+            EmptyStateView(
+                icon: "person.wave.2",
+                title: "Set up your civic feed",
+                message: "Add your postal code to track your MP, or follow topics and bills that matter to you.",
+                action: EmptyStateAction(label: "Find my MP", handler: {})
+            )
+            .frame(width: 375, height: 400),
+            name: "HomeFeed_emptyState"
+        )
+    }
+
+    func testHomeFeed_offlineBanner() {
+        snapshot(
+            Label("Offline — showing cached data from Apr 28, 2026 at 9:30 AM", systemImage: "wifi.slash")
+                .font(.epacCaption)
+                .foregroundStyle(Color.epacStatus.warning)
+                .padding()
+                .frame(width: 375),
+            name: "HomeFeed_offlineBanner"
+        )
+    }
+
+    func testHomeFeed_refreshErrorToast() {
+        snapshot(
+            HomeRefreshErrorToast()
+                .frame(width: 375),
+            name: "HomeFeed_refreshErrorToast"
+        )
+    }
+
     // MARK: - Design system tokens (EPAC-440)
 
     func testDesignSystem_colorTokens() {
