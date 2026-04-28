@@ -13,6 +13,8 @@ This plan prepares the epac Product Hunt launch without asking for direct upvote
 - Product Hunt launch guide: launch at 12:01 AM Pacific when planning ahead.
 - Product Hunt posting docs: a personal account posts the product; company accounts cannot post.
 - Product Hunt preparation docs: tagline maximum is 60 characters.
+- Product Hunt preparation docs: choose up to 3 launch tags.
+- Product Hunt preparation docs: the primary product URL should not use tracking parameters or shortened links.
 - Product Hunt posting docs: gallery images should be 1270 x 760 and the post needs at least two images before the gallery appears.
 - Product Hunt posting docs: thumbnail should be square.
 - Product Hunt preparation docs: images and GIFs must be under 3 MB.
@@ -65,7 +67,13 @@ Track MPs, bills, votes, debates, expenses, and lobbying activity from official 
 Product URL:
 
 ```text
-https://apps.apple.com/ca/app/epac/id6739397803?ct=epac-product-hunt&mt=8&utm_source=product-hunt&utm_medium=launch&utm_campaign=epac-product-hunt
+https://apps.apple.com/ca/app/epac/id6739397803
+```
+
+Campaign URL for owned outreach:
+
+```text
+https://apps.apple.com/ca/app/epac/id6739397803?ct=epac-product-hunt&mt=8
 ```
 
 Topics:
@@ -74,8 +82,6 @@ Topics:
 iOS
 Civic Tech
 Open Data
-Education
-Productivity
 ```
 
 ## Asset Checklist
@@ -156,7 +162,7 @@ Try it and leave a comment with what would make the official record easier to fo
 
 - [ ] Confirm Product Hunt post is visible after 12:01 AM Pacific.
 - [ ] Confirm App Store URL opens the correct epac listing.
-- [ ] Confirm campaign URL includes `ct=epac-product-hunt`.
+- [ ] Confirm Product Hunt uses the clean App Store URL and owned outreach uses `ct=epac-product-hunt`.
 - [ ] Post launch-day outreach on Bluesky and X.
 - [ ] Send launch-day note to newsletter/beta/community list.
 - [ ] Reply to every substantive Product Hunt comment with a specific answer.
