@@ -30,7 +30,7 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 
 	public var systemImageName: String {
 		switch self {
-		case .home:           return "person.house.fill"
+		case .home:           return "house.fill"
 		case .parliament:     return "building.columns.fill"
 		case .members:        return "person.3.sequence.fill"
 		case .accountability: return "scalemass.fill"
