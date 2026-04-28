@@ -19,6 +19,19 @@ struct RidingStatisticsView: View {
 
 	private static let statcanBaseURL = "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof"
 	private static let cmhcBaseURL    = "https://www.cmhc-schl.gc.ca"
+	// IRCC canonical pages (verified 2026-04-28). The previous Levels-Plan and
+	// Annual-Report paths under /services/ and the singular /annual-report-…
+	// slug both 404 on canada.ca; the corporate-initiatives and plural-form
+	// pages are the live canonical destinations linked from canada.ca itself.
+	private static let irccLevelsPlanURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/mandate/corporate-initiatives/levels.html")!
+	private static let irccAdmissionsDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/f7e5498e-0ad8-4417-85c9-9b8aff9b9eda")!
+	private static let irccAnnualReportURL = URL(string: "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/annual-reports-parliament-immigration.html")!
+	// Housing, Infrastructure and Communities Canada canonical URLs (verified 2026-04-28).
+	// The department was renamed and old `infrastructure.gc.ca` paths redirect through to
+	// `housing-infrastructure.canada.ca`; use the destination directly to avoid the redirect.
+	private static let infrastructureProjectMapURL = URL(string: "https://housing-infrastructure.canada.ca/gmap-gcarte/index-eng.html")!
+	private static let infrastructureDatasetURL = URL(string: "https://open.canada.ca/data/en/dataset/beee0771-dab9-4be8-9b80-f8e8b3fdfd9d")!
+	private static let infrastructurePortfolioURL = URL(string: "https://housing-infrastructure.canada.ca/plan/about-invest-apropos-eng.html")!
 
 	private let statCategories: [(label: String, icon: String, color: Color)] = [
 		("Population & Age",      "person.2.fill",      .blue),
@@ -60,6 +73,10 @@ struct RidingStatisticsView: View {
 			Section("Housing Market") {
 				cmhcRow
 			}
+
+			immigrationSection
+
+			infrastructureSection
 
 			healthSection
 
@@ -137,6 +154,188 @@ struct RidingStatisticsView: View {
 						.font(.subheadline)
 						.foregroundStyle(.primary)
 					Text("Rental vacancy rates, average rents, and starts for \(member.province.rawValue)")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Immigration section
+
+	private var immigrationSection: some View {
+		Section {
+			immigrationLevelsPlanRow
+			immigrationAdmissionsRow
+			immigrationAnnualReportRow
+		} header: {
+			Text("Immigration")
+		} footer: {
+			Text("Source: Immigration, Refugees and Citizenship Canada (IRCC). Annual admissions data is published with a ~6-month lag after year-end; the Levels Plan is tabled in Parliament each fall for the following 3-year window.")
+				.font(.caption2)
+				.foregroundStyle(.secondary)
+		}
+	}
+
+	private var immigrationLevelsPlanRow: some View {
+		Button {
+			openURL(Self.irccLevelsPlanURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "target")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Immigration Levels Plan")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Federal admission targets by category, tabled annually in Parliament")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var immigrationAdmissionsRow: some View {
+		Button {
+			openURL(Self.irccAdmissionsDatasetURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "airplane.arrival")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Permanent Residents — Admissions")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Open data: monthly admissions by category and province")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var immigrationAnnualReportRow: some View {
+		Button {
+			openURL(Self.irccAnnualReportURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "doc.text.fill")
+					.foregroundStyle(.indigo)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Annual Report to Parliament")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("IRCC reports each year on admissions vs. Levels Plan targets")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	// MARK: - Infrastructure section
+
+	private var infrastructureSection: some View {
+		Section {
+			infrastructureProjectMapRow
+			infrastructureDatasetRow
+			infrastructurePortfolioRow
+		} header: {
+			Text("Infrastructure")
+		} footer: {
+			Text("Source: Infrastructure Canada. The Project Map shows federally funded infrastructure projects by location with funding amount, program, and status. Project data is updated quarterly.")
+				.font(.caption2)
+				.foregroundStyle(.secondary)
+		}
+	}
+
+	private var infrastructureProjectMapRow: some View {
+		Button {
+			openURL(Self.infrastructureProjectMapURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "map.fill")
+					.foregroundStyle(.brown)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Project Map")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Federally funded projects by location, with funding and status")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var infrastructureDatasetRow: some View {
+		Button {
+			openURL(Self.infrastructureDatasetURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "tablecells.fill")
+					.foregroundStyle(.brown)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Investing in Canada Plan — Open Data")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Project-level CSV: name, program, federal amount, total cost, dates")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				Spacer()
+				Image(systemName: "arrow.up.right.square")
+					.font(.caption)
+					.foregroundStyle(.tertiary)
+			}
+		}
+	}
+
+	private var infrastructurePortfolioRow: some View {
+		Button {
+			openURL(Self.infrastructurePortfolioURL)
+		} label: {
+			HStack(spacing: 12) {
+				Image(systemName: "building.columns.fill")
+					.foregroundStyle(.brown)
+					.frame(width: 28)
+					.accessibilityHidden(true)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Federal Programs")
+						.font(.subheadline)
+						.foregroundStyle(.primary)
+					Text("Housing Accelerator Fund, Canada Community-Building Fund, and other active programs")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}

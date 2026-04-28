@@ -195,7 +195,11 @@ struct BillDetailView: View {
                     HStack(spacing: 6) {
                         Text(bill.sponsorName)
                         if let party = sponsorMember?.party {
-                            PartyBadge(party: party)
+                            NavigationLink(destination: partyDestination(for: party)) {
+                                PartyBadge(party: party)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("bill-detail-party-link")
                         }
                     }
                 }
@@ -239,6 +243,15 @@ struct BillDetailView: View {
             return NSLocalizedString("bills.chamber.senate", comment: "")
         case .unknown:
             return nil
+        }
+    }
+
+    @ViewBuilder
+    private func partyDestination(for party: Party) -> some View {
+        if party == .independent {
+            IndependentsListingView()
+        } else {
+            PartyProfileView(party: party)
         }
     }
 

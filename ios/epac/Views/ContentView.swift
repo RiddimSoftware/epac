@@ -112,6 +112,10 @@ struct ContentView: View {
 			let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
 			let constituencies = (try? modelContext.fetch(FetchDescriptor<Constituency>())) ?? []
 			await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
+			// Seed Cabinet from the bundled snapshot. Bundled JSON ships with the
+			// app, so this is offline-safe; backgroundRefresh re-seeds on subsequent
+			// launches to absorb shipped Cabinet shuffles.
+			try? await fetch.loadCabinetPositions()
 			// Skip the permission request when onboarding is showing — the
 			// onboarding flow presents a contextual prompt on screen 4. For
 			// returning users (onboarding already completed) we request here as

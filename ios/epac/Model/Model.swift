@@ -27,6 +27,7 @@ typealias RecordedVote = SchemaV5.RecordedVote
 typealias MemberVote = SchemaV5.MemberVote
 typealias WrittenQuestion = SchemaV6.WrittenQuestion
 typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
+typealias CabinetPosition = SchemaV8.CabinetPosition
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
@@ -1159,6 +1160,54 @@ enum SchemaV7: VersionedSchema {
 	}
 }
 
+// MARK: - SchemaV8
+
+enum SchemaV8: VersionedSchema {
+	static var versionIdentifier: Schema.Version { .init(8, 0, 0) }
+	static var models: [any PersistentModel.Type] {
+		// All V7 models unchanged + CabinetPosition.
+		SchemaV7.models + [CabinetPosition.self]
+	}
+
+	@Model
+	final class CabinetPosition {
+		// Composite identity: the minister's full name uniquely keys the
+		// current Cabinet, and re-seeding clears the table first so a member
+		// rotating to a new portfolio doesn't leave a stale row behind.
+		@Attribute(.unique) var ministerName: String
+		var firstName: String
+		var lastName: String
+		var portfolio: String
+		var isPrimeMinister: Bool
+		var mandateLetterURL: String?
+		var sourceTitle: String
+		var sourceURL: String
+		var asOfDate: Date
+
+		init(
+			ministerName: String,
+			firstName: String,
+			lastName: String,
+			portfolio: String,
+			isPrimeMinister: Bool = false,
+			mandateLetterURL: String? = nil,
+			sourceTitle: String,
+			sourceURL: String,
+			asOfDate: Date
+		) {
+			self.ministerName = ministerName
+			self.firstName = firstName
+			self.lastName = lastName
+			self.portfolio = portfolio
+			self.isPrimeMinister = isPrimeMinister
+			self.mandateLetterURL = mandateLetterURL
+			self.sourceTitle = sourceTitle
+			self.sourceURL = sourceURL
+			self.asOfDate = asOfDate
+		}
+	}
+}
+
 	enum Province: String, Codable, CaseIterable, Identifiable {
 	var id: Self { self }
 
@@ -1273,5 +1322,18 @@ enum Party: Codable, CaseIterable, Identifiable {
 			return party
 		}
 		return .independent
+	}
+
+	// Official party website domains. Independents intentionally have no
+	// website — Independent is a listing, not a party.
+	var websiteURL: URL? {
+		switch self {
+		case .liberal:        return URL(string: "https://liberal.ca")
+		case .conservative:   return URL(string: "https://www.conservative.ca")
+		case .newdemocratic:  return URL(string: "https://www.ndp.ca")
+		case .bloc:           return URL(string: "https://www.blocquebecois.org")
+		case .green:          return URL(string: "https://www.greenparty.ca")
+		case .independent:    return nil
+		}
 	}
 }

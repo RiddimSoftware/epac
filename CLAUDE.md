@@ -10,6 +10,26 @@ Search backend decisions live in `docs/architecture/search-index-choice-epac452.
 
 Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
 
+Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
+
+### Backend Python logging (EPAC-176)
+
+Python ingest scripts under `backend/` emit **structured JSON logs to stderr** — one JSON object per record — never `print()`. Use the `logging` module with the JSON formatter pattern in `backend/cabinet/cabinet_ingest.py` (stdlib only, no third-party dep).
+
+Reserved fields on every record: `timestamp` (UTC, ISO-8601 with `Z`), `level`, `pipeline`, `message`. Pipeline-specific context goes through `extra={...}` and is merged at the top level so log aggregators can index on it directly:
+
+```python
+logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
+logger.info("pipeline finished", extra={"records_processed": len(entries), "duration_ms": ms})
+logger.error("fetch failed from pm.gc.ca", extra={"error": f"{type(e).__name__}: {e}", "url": URL, "duration_ms": ms})
+```
+
+Every pipeline `main()` must log: a `pipeline started` event, a `pipeline finished` event with `records_processed` and `duration_ms`, and at least one `error`-level event for each handled failure mode (with `error`, `url`, `duration_ms`).
+
+Stdout is reserved for the script's actual JSON payload (e.g. `--dry-run`); logs go to stderr so the two streams stay separately redirectable. Log rotation is the runner's job (cron `logrotate`, GitHub Actions step output, AWS CloudWatch retention) — scripts don't open log files themselves.
+
+When a second Python pipeline needs the same setup, factor `_JSONFormatter` and `_configure_logging` into `backend/_logging.py` and import from both. Until then it stays inline to avoid speculating about a packaging refactor.
+
 ---
 
 ## Architecture
@@ -72,7 +92,7 @@ Before requesting review, the author must:
 - [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
 - [ ] **Evidence posted.** Add a PR comment and a Jira comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
-- [ ] **Size.** Aim for < 400 changed lines. Larger changes need a written justification in the description.
+- [ ] **Size.** Aim for < 300 changed lines (tighter target for parallel work — see "Multi-developer workflow" below). Anything > 400 lines needs a written justification in the description and should be split if possible. Never mix feature and refactor in the same PR.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
@@ -131,6 +151,16 @@ Regenerate the 30-second App Store preview video with:
 
 The script launches the app with `--app-preview-mode`, records `AppPreviewRecordingTests/testAppPreviewSequence`, and writes `docs/marketing/preview/app-preview-final.mp4` as H.264 at 886x1920, 30fps, no audio.
 
+### Backend Base URL
+
+The iOS app talks to a single AWS API Gateway. The base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
+
+To point a development build at a different backend (staging once it exists, a local Lambda mock, etc.), set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
+
+> Edit Scheme → Run → Arguments → Environment Variables → add `BACKEND_BASE_URL=https://your-staging-host.example.com/staging`.
+
+`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the production default. The `xcconfig`-based per-configuration URL (Phase 2 of EPAC-156) will replace this env-var hook once a staging environment is provisioned.
+
 ### Post-PR-open review
 
 After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
@@ -138,7 +168,7 @@ After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code R
 Spawn prompt template (Claude Code, via the Agent tool):
 
 ```
-You are the Autonomous Code Reviewer for PR #N (https://github.com/sunnypurewal/epac/pull/N), branch <branch>.
+You are the Autonomous Code Reviewer for PR #N (https://github.com/RiddimSoftware/epac/pull/N), branch <branch>.
 Repo root: /Users/sunny/code/epac
 
 Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
@@ -174,6 +204,70 @@ The goal is for every review to feel like a conversation between two engineers w
 - distinguishes clearly between required changes, suggestions, and observations
 - references concrete evidence (a specific line, a linked article, a test result) for every required change
 - ends with an explicit approval or a clearly numbered list of what must change before approval
+
+---
+
+## Multi-developer workflow (EPAC-332)
+
+The team is sized for four developers shipping in parallel. The conventions below exist so concurrent work doesn't collide — most of them are silent enforcement (CODEOWNERS, branch protection, ruleset regex), and only the async standup needs a daily human action.
+
+### Code ownership — `.github/CODEOWNERS`
+
+`.github/CODEOWNERS` auto-assigns the right reviewer when a PR touches a given area. Today the team is solo so everything routes to `@sunnypurewal`; the future area assignments are commented in the file and uncommented as developers join:
+
+| Area | Pattern | Future owner |
+|---|---|---|
+| ViewModels | `ios/epac/Views/**/*ViewModel.swift` | developer-a |
+| Services / Managers | `ios/epac/Util/*Service.swift`, `*Manager.swift` | developer-b |
+| Backend pipelines | `backend/**` | developer-c |
+| Website | `website/**` | developer-d |
+| SwiftData migrations | `ios/epac/Model/Migration.swift`, `ios/epac/Model/Model.swift` | shared (always also `@sunnypurewal`) |
+
+When you add a developer to GitHub, replace the `@developer-x` placeholder, uncomment the line, commit. CODEOWNERS is plain text — no rebuild required.
+
+### Branch naming convention
+
+All branches must match `^(feature|fix|perf|refactor)/EPAC-\d+-.+$`. This is enforced by `.github/workflows/branch-name-check.yml`, a 5-second Ubuntu job that runs on every `pull_request` event and fails the PR if the head ref doesn't match. (We tried a GitHub repository ruleset `branch_name_pattern` first; the REST API rejected it with HTTP 422 — likely beta-gated for this repo. The workflow is Linux-only so it stays inside the project's CI cost decision.)
+
+| Prefix | Use when |
+|---|---|
+| `feature/` | New user-visible feature, schema addition, new screen |
+| `fix/` | Bug fix that the user (or a system) was experiencing |
+| `perf/` | Measured performance improvement (Instruments / MetricKit evidence required) |
+| `refactor/` | Internal restructuring with no behavioural change |
+
+`main` is always the default branch and is never pushed to directly.
+
+### PR size target
+
+The PR Author Checklist sets the soft target at < 300 lines and the justification threshold at 400. With four developers in flight, large PRs are the single biggest source of review-queue stalls and post-merge regressions — measure twice, cut once, split early. A PR that touches a feature *and* refactors surrounding code is two PRs; ship the refactor first, then the feature on top.
+
+### Shared model change protocol
+
+Any change to a SwiftData `@Model` (`ParliamentMember`, `Sitting`, `RecordedVote`, `Bill`, `Petition`, …) requires:
+
+1. A new `SchemaVN` and a migration stage in `EpacMigrationPlan` per **ADR-002** (see "SwiftData Schema Migration" below — this is non-negotiable, not just a recommendation).
+2. The PR description calls it out under **What changed** with the migration kind (lightweight vs custom) and the rationale.
+3. Comment the model PR in the daily async standup thread the same morning so the rest of the team can avoid touching the same models that day.
+4. Backend rebuilds the local Postgres + tsvector index (EPAC-452) the same day if the schema change has a backend mirror.
+
+The intent: nobody ever rebases on top of a SwiftData schema change without knowing it landed.
+
+### Daily async standup
+
+The team runs an **async** standup as a single GitHub Discussion thread per sprint (category `Standup`). Every developer posts one comment per working day by **10:00 ET**, in this format:
+
+```
+## YYYY-MM-DD — <handle>
+
+- **Today:** EPAC-NNN — <one-line summary> (touching <area / file globs>)
+- **Yesterday:** EPAC-NNN merged / EPAC-NNN paused on <reason>
+- **Blocked:** none / <ticket + what you need>
+```
+
+Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Jira ticket and the open PR list.
+
+The current sprint's Discussion thread is linked from the active sprint's planning ticket in Jira.
 
 ---
 
@@ -231,7 +325,7 @@ Every ticket must be kept current. Three moments require action:
 | Event | Jira action |
 |---|---|
 | Picking up a ticket | Transition → **In Progress**; comment with branch name |
-| PR opened | Comment with PR URL (`https://github.com/sunnypurewal/epac/pull/N`) |
+| PR opened | Comment with PR URL (`https://github.com/RiddimSoftware/epac/pull/N`) |
 | PR merged | Transition → **Done** |
 
 Never open a PR without the ticket already In Progress. Never merge without transitioning to Done.

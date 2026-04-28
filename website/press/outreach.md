@@ -65,7 +65,7 @@ I wanted to share epac — a free iOS app that makes Canada's parliamentary reco
 
 With a federal election [approaching / underway], epac gives Canadians a direct way to look up their MP's voting record, track bills through Parliament, and find out who's been lobbying their representative.
 
-The app and its data sources are both open source: github.com/sunnypurewal/epac. Press page and assets: epac.riddimsoftware.com/press.html
+The app and its data sources are both open source: github.com/RiddimSoftware/epac. Press page and assets: epac.riddimsoftware.com/press.html
 
 Happy to answer any questions or send screenshots.
 

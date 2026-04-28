@@ -1218,7 +1218,7 @@
 		};
 		A3E71D000000000000000001 /* XCRemoteSwiftPackageReference "evidence" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sunnypurewal/evidence";
+			repositoryURL = "https://github.com/RiddimSoftware/evidence";
 			requirement = {
 				branch = main;
 				kind = branch;

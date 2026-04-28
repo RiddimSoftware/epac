@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "asOfDate": "2026-04-28",
+  "source": {
+    "title": "Prime Minister's Office",
+    "url": "https://www.pm.gc.ca/en/cabinet"
+  },
+  "mandateLettersIndex": {
+    "url": "https://www.pm.gc.ca/en/mandate-letters",
+    "available": false,
+    "note": "The Prime Minister's Office has not yet published mandate letters for this cabinet. Check back at the URL above."
+  },
+  "positions": [
+    {
+      "ministerName": "Mark Carney",
+      "firstName": "Mark",
+      "lastName": "Carney",
+      "portfolio": "Prime Minister of Canada",
+      "isPrimeMinister": true,
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Dominic LeBlanc",
+      "firstName": "Dominic",
+      "lastName": "LeBlanc",
+      "portfolio": "President of the King's Privy Council for Canada and Minister responsible for Canada-U.S. Trade, Intergovernmental Affairs, Internal Trade and One Canadian Economy",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Mélanie Joly",
+      "firstName": "Mélanie",
+      "lastName": "Joly",
+      "portfolio": "Minister of Industry and Minister responsible for Canada Economic Development for Quebec Regions",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "François-Philippe Champagne",
+      "firstName": "François-Philippe",
+      "lastName": "Champagne",
+      "portfolio": "Minister of Finance and National Revenue",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Anita Anand",
+      "firstName": "Anita",
+      "lastName": "Anand",
+      "portfolio": "Minister of Foreign Affairs",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Patty Hajdu",
+      "firstName": "Patty",
+      "lastName": "Hajdu",
+      "portfolio": "Minister of Jobs and Families and Minister responsible for the Federal Economic Development Agency for Northern Ontario",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Marc Miller",
+      "firstName": "Marc",
+      "lastName": "Miller",
+      "portfolio": "Minister of Canadian Identity and Culture and Minister responsible for Official Languages",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Sean Fraser",
+      "firstName": "Sean",
+      "lastName": "Fraser",
+      "portfolio": "Minister of Justice and Attorney General of Canada and Minister responsible for the Atlantic Canada Opportunities Agency",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Gary Anandasangaree",
+      "firstName": "Gary",
+      "lastName": "Anandasangaree",
+      "portfolio": "Minister of Public Safety",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Rechie Valdez",
+      "firstName": "Rechie",
+      "lastName": "Valdez",
+      "portfolio": "Minister of Women and Gender Equality and Secretary of State (Small Business and Tourism)",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Steven MacKinnon",
+      "firstName": "Steven",
+      "lastName": "MacKinnon",
+      "portfolio": "Minister of Transport and Leader of the Government in the House of Commons",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "David J. McGuinty",
+      "firstName": "David",
+      "lastName": "McGuinty",
+      "portfolio": "Minister of National Defence",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Joanne Thompson",
+      "firstName": "Joanne",
+      "lastName": "Thompson",
+      "portfolio": "Minister of Fisheries",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Shafqat Ali",
+      "firstName": "Shafqat",
+      "lastName": "Ali",
+      "portfolio": "President of the Treasury Board",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Rebecca Alty",
+      "firstName": "Rebecca",
+      "lastName": "Alty",
+      "portfolio": "Minister of Crown-Indigenous Relations",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Rebecca Chartrand",
+      "firstName": "Rebecca",
+      "lastName": "Chartrand",
+      "portfolio": "Minister of Northern and Arctic Affairs and Minister responsible for the Canadian Northern Economic Development Agency",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Julie Aviva Dabrusin",
+      "firstName": "Julie",
+      "lastName": "Dabrusin",
+      "portfolio": "Minister of the Environment, Climate Change and Nature",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Lena Metlege Diab",
+      "firstName": "Lena",
+      "lastName": "Diab",
+      "portfolio": "Minister of Immigration, Refugees and Citizenship",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Mandy Gull-Masty",
+      "firstName": "Mandy",
+      "lastName": "Gull-Masty",
+      "portfolio": "Minister of Indigenous Services",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Tim Hodgson",
+      "firstName": "Tim",
+      "lastName": "Hodgson",
+      "portfolio": "Minister of Energy and Natural Resources",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Joël Lightbound",
+      "firstName": "Joël",
+      "lastName": "Lightbound",
+      "portfolio": "Minister of Government Transformation, Public Works and Procurement and Québec Lieutenant",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Heath MacDonald",
+      "firstName": "Heath",
+      "lastName": "MacDonald",
+      "portfolio": "Minister of Agriculture and Agri-Food",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Jill McKnight",
+      "firstName": "Jill",
+      "lastName": "McKnight",
+      "portfolio": "Minister of Veterans Affairs and Associate Minister of National Defence",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Marjorie Michel",
+      "firstName": "Marjorie",
+      "lastName": "Michel",
+      "portfolio": "Minister of Health",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Eleanor Olszewski",
+      "firstName": "Eleanor",
+      "lastName": "Olszewski",
+      "portfolio": "Minister of Emergency Management and Community Resilience and Minister responsible for Prairies Economic Development Canada",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Gregor Robertson",
+      "firstName": "Gregor",
+      "lastName": "Robertson",
+      "portfolio": "Minister of Housing and Infrastructure and Minister responsible for Pacific Economic Development Canada",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Maninder Sidhu",
+      "firstName": "Maninder",
+      "lastName": "Sidhu",
+      "portfolio": "Minister of International Trade",
+      "mandateLetterURL": null
+    },
+    {
+      "ministerName": "Evan Solomon",
+      "firstName": "Evan",
+      "lastName": "Solomon",
+      "portfolio": "Minister of Artificial Intelligence and Digital Innovation and Minister responsible for the Federal Economic Development Agency for Southern Ontario",
+      "mandateLetterURL": null
+    }
+  ]
+}

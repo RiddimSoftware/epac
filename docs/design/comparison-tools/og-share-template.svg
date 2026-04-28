@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Leah Taylor Roy compared with Andrew Lawton</title>
+  <desc id="desc">epac comparison share image showing a similarity score based on common recorded votes.</desc>
+  <rect width="1200" height="630" fill="#f5f5f7"/>
+  <rect x="0" y="0" width="10" height="630" fill="#0071e3"/>
+  <text x="72" y="84" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="34" font-weight="800" fill="#0071e3">epac</text>
+  <text x="72" y="128" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" fill="#6e6e73">Canada's Parliament, in your pocket.</text>
+
+  <rect x="72" y="178" width="1056" height="310" rx="34" fill="#ffffff"/>
+  <circle cx="150" cy="288" r="56" fill="#0071e3" opacity="0.13"/>
+  <text x="150" y="307" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="40" font-weight="800" fill="#0071e3">LTR</text>
+  <circle cx="1050" cy="288" r="56" fill="#0071e3" opacity="0.13"/>
+  <text x="1050" y="307" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="40" font-weight="800" fill="#0071e3">AL</text>
+
+  <text x="342" y="270" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="32" font-weight="750" fill="#1d1d1f">Leah Taylor Roy</text>
+  <text x="858" y="270" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="32" font-weight="750" fill="#1d1d1f">Andrew Lawton</text>
+  <text x="342" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="#6e6e73">Member of Parliament</text>
+  <text x="858" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="#6e6e73">Member of Parliament</text>
+
+  <rect x="474" y="230" width="252" height="160" rx="38" fill="#0071e3" opacity="0.12"/>
+  <text x="600" y="298" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="70" font-weight="800" fill="#0071e3">68%</text>
+  <text x="600" y="342" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" font-weight="650" fill="#0071e3">41 common votes</text>
+
+  <text x="600" y="438" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" fill="#6e6e73">Similarity from common recorded votes</text>
+  <text x="72" y="554" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="#6e6e73">Source: House of Commons Votes API</text>
+  <text x="1128" y="554" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" font-weight="650" fill="#0071e3">epac.ca/compare/leah-taylor-roy/andrew-lawton</text>
+</svg>
