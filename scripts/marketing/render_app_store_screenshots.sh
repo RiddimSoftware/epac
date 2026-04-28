@@ -3,13 +3,12 @@ set -euo pipefail
 
 source_dir="${1:-/tmp/epac-appstore-screenshots}"
 output_dir="${2:-docs/marketing/screenshots}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+EVIDENCE="$ROOT_DIR/scripts/evidence/run-evidence.sh"
 
 mkdir -p "$output_dir"
-
-if ! command -v magick >/dev/null 2>&1; then
-  echo "ImageMagick 'magick' is required to render screenshots." >&2
-  exit 1
-fi
+source_dir="$(cd "$source_dir" && pwd)"
+output_dir="$(cd "$output_dir" && pwd)"
 
 expected=(
   "01-parliament-in-your-pocket.png"
@@ -28,12 +27,7 @@ for file in "${expected[@]}"; do
     exit 1
   fi
 
-  magick "$input" \
-    -resize '1290x2796^' \
-    -gravity center \
-    -extent 1290x2796 \
-    -strip \
-    "$output"
+  "$EVIDENCE" resize --input "$input" --target 6.9 --output "$output"
 done
 
-magick identify "$output_dir"/*.png
+ls -lh "$output_dir"/*.png

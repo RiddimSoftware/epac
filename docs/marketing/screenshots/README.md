@@ -20,4 +20,6 @@ Render App Store-ready 6.9-inch assets:
 scripts/marketing/render_app_store_screenshots.sh /tmp/epac-appstore-screenshots docs/marketing/screenshots
 ```
 
-The capture route uses the app's `-AppStoreScreenshots` launch argument and official-record sample data from the House of Commons Hansard fixture already committed in the test suite.
+The capture route uses `Evidence.ScreenshotPlan`, the app's `-AppStoreScreenshots` launch argument, and official-record sample data from the House of Commons Hansard fixture already committed in the test suite. Resizing is delegated to `evidence resize` through `scripts/marketing/render_app_store_screenshots.sh`.
+
+See `docs/marketing/evidence-workflows.md` for the full local workflow.

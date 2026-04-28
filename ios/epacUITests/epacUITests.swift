@@ -8,6 +8,7 @@
 //
 
 import XCTest
+import Evidence
 
 final class epacUITests: XCTestCase {
 
@@ -18,7 +19,7 @@ final class epacUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments += ["-UIAnimationsDisabled", "YES"]
         if name.contains("testCaptureAppStoreScreenshotSources") {
-            app.launchArguments += ["-AppStoreScreenshots"]
+            return
         }
         app.launch()
         // Dismiss the postal code setup sheet if it appears on first launch.
@@ -145,32 +146,54 @@ final class epacUITests: XCTestCase {
         let outputDir = ProcessInfo.processInfo.environment["APPSTORE_SCREENSHOT_DIR"] ?? "/tmp/epac-appstore-screenshots"
 
         XCUIDevice.shared.orientation = .portrait
-        try FileManager.default.createDirectory(
-            at: URL(fileURLWithPath: outputDir),
-            withIntermediateDirectories: true
+        let plan = ScreenshotPlan(
+            name: "EPAC App Store screenshot sources",
+            launchHook: LaunchHook(
+                launchArguments: ["-UIAnimationsDisabled", "YES", "-AppStoreScreenshots"],
+                launchEnvironment: ["APPSTORE_SCREENSHOT_DIR": outputDir]
+            ),
+            scenes: [
+                ScreenshotPlan.Scene(
+                    name: "Parliament in your pocket",
+                    anchors: [.staticText("Parliament in your pocket")],
+                    navigation: [.swipeLeft],
+                    captureName: "01-parliament-in-your-pocket"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "See how your MP votes",
+                    anchors: [.staticText("See how your MP votes")],
+                    navigation: [.swipeLeft],
+                    captureName: "02-see-how-your-mp-votes"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Your MP. Everything they do.",
+                    anchors: [.staticText("Your MP. Everything they do.")],
+                    navigation: [.swipeLeft],
+                    captureName: "03-your-mp-everything-they-do"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Track a bill start to finish",
+                    anchors: [.staticText("Track a bill start to finish")],
+                    navigation: [.swipeLeft],
+                    captureName: "04-track-a-bill-start-to-finish"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Know who's influencing your MP",
+                    anchors: [.staticText("Know who's influencing your MP")],
+                    navigation: [.swipeLeft],
+                    captureName: "05-know-whos-influencing-your-mp"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Contact them in one tap",
+                    anchors: [.staticText("Contact them in one tap")],
+                    captureName: "06-contact-them-in-one-tap"
+                )
+            ],
+            outputDirectory: OutputDirectory(explicitURL: URL(fileURLWithPath: outputDir)),
+            anchorTimeout: 5
         )
 
-        func save(_ name: String) throws {
-            let url = URL(fileURLWithPath: outputDir).appendingPathComponent(name)
-            try app.screenshot().pngRepresentation.write(to: url)
-        }
-
-        let captures = [
-            ("Parliament in your pocket", "01-parliament-in-your-pocket.png"),
-            ("See how your MP votes", "02-see-how-your-mp-votes.png"),
-            ("Your MP. Everything they do.", "03-your-mp-everything-they-do.png"),
-            ("Track a bill start to finish", "04-track-a-bill-start-to-finish.png"),
-            ("Know who's influencing your MP", "05-know-whos-influencing-your-mp.png"),
-            ("Contact them in one tap", "06-contact-them-in-one-tap.png")
-        ]
-
-        for (index, capture) in captures.enumerated() {
-            XCTAssertTrue(app.staticTexts[capture.0].waitForExistence(timeout: 5), "Expected screenshot page: \(capture.0)")
-            try save(capture.1)
-            if index < captures.count - 1 {
-                app.swipeLeft()
-            }
-        }
+        try plan.run(on: app)
     }
 
 }
