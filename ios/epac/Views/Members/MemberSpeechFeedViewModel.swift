@@ -14,7 +14,7 @@ final class MemberSpeechFeedViewModel {
     var errorMessage: String? { error }
 
     // Filter state
-    var selectedTopic: String? = nil  // nil = "All"
+    var selectedTopic: String?  // nil = "All"
     private(set) var topicChips: [SpeechTopicChip] = []
     var topicCounts: [(topic: String, count: Int)] {
         Self.buildTopicCounts(from: speeches)

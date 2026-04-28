@@ -5,8 +5,8 @@
 //  Created by Codex on 2026-01-29.
 //
 
-import SwiftUI
 import Observation
+import SwiftUI
 
 public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 	case home

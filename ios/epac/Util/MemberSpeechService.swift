@@ -82,7 +82,7 @@ struct MemberSpeechService {
         var components = URLComponents(string: "\(base)/members/\(memberId)/speeches")!
         var queryItems = [
             URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)"),
+            URLQueryItem(name: "per_page", value: "\(perPage)")
         ]
         if let topic {
             queryItems.append(URLQueryItem(name: "topic", value: topic))

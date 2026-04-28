@@ -1,0 +1,31 @@
+name: swiftlint
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**/*.swift'
+      - '.swiftlint.yml'
+      - '.github/workflows/swiftlint.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**/*.swift'
+      - '.swiftlint.yml'
+
+# Why this workflow: per the project CI cost decision (memory:
+# feedback_ci_cost), GitHub Actions stays Linux-only. SwiftLint runs
+# fine on Linux (`realm/SwiftLint`), so this is a sub-minute job per
+# PR. Runs `--strict` so warnings also fail the build — see CLAUDE.md
+# "SwiftLint baseline" for the rationale on which rules are disabled.
+#
+# Path filters keep the workflow off the queue for backend / docs PRs.
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run SwiftLint
+        run: swiftlint --strict --reporter github-actions-logging

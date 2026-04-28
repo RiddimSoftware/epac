@@ -59,7 +59,7 @@ struct DataSourceBadge: View {
             return Color(UIColor.systemGray)
         }
         if age > threshold * 3 { return Color(UIColor.systemRed) }
-        if age > threshold     { return Color(UIColor.systemOrange) }
+        if age > threshold { return Color(UIColor.systemOrange) }
         return Color(UIColor.systemGray)
     }
 }

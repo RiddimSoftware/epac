@@ -156,17 +156,17 @@ struct VancouverCouncilService {
     private static func staticCouncillorSeed() -> [VancouverCouncillor] {
         let members: [(String, String, String, String)] = [
             // (firstName, lastName, party, role)
-            ("Ken",      "Sim",          "ABC",         "Mayor"),
-            ("Sarah",    "Kirby-Yung",   "ABC",         "Councillor"),
-            ("Lenny",    "Zhou",         "ABC",         "Councillor"),
-            ("Brian",    "Montague",     "ABC",         "Councillor"),
-            ("Rebecca",  "Bligh",        "ABC",         "Councillor"),
-            ("Mike",     "Klassen",      "ABC",         "Councillor"),
-            ("Lisa",     "Dominato",     "ABC",         "Councillor"),
-            ("Peter",    "Meiszner",     "ABC",         "Councillor"),
-            ("Melissa",  "De Genova",    "ABC",         "Councillor"),
-            ("Diego",    "Cardona",      "Green",       "Councillor"),
-            ("Pete",     "Fry",          "Green",       "Councillor"),
+            ("Ken", "Sim", "ABC", "Mayor"),
+            ("Sarah", "Kirby-Yung", "ABC", "Councillor"),
+            ("Lenny", "Zhou", "ABC", "Councillor"),
+            ("Brian", "Montague", "ABC", "Councillor"),
+            ("Rebecca", "Bligh", "ABC", "Councillor"),
+            ("Mike", "Klassen", "ABC", "Councillor"),
+            ("Lisa", "Dominato", "ABC", "Councillor"),
+            ("Peter", "Meiszner", "ABC", "Councillor"),
+            ("Melissa", "De Genova", "ABC", "Councillor"),
+            ("Diego", "Cardona", "Green", "Councillor"),
+            ("Pete", "Fry", "Green", "Councillor")
         ]
         return members.map { (fn, ln, party, role) in
             VancouverCouncillor(
@@ -203,7 +203,7 @@ struct VancouverCouncilService {
 
     private static func saveCouncillorsToCache(_ list: [VancouverCouncillor]) {
         guard let data = try? JSONEncoder().encode(list) else { return }
-        UserDefaults.standard.set(data,   forKey: councillorsCacheKey)
+        UserDefaults.standard.set(data, forKey: councillorsCacheKey)
         UserDefaults.standard.set(Date(), forKey: councillorsTSKey)
     }
 
@@ -218,7 +218,7 @@ struct VancouverCouncilService {
 
     private static func saveVotesToCache(_ list: [VancouverCouncilVote]) {
         guard let data = try? JSONEncoder().encode(list) else { return }
-        UserDefaults.standard.set(data,   forKey: votesCacheKey)
+        UserDefaults.standard.set(data, forKey: votesCacheKey)
         UserDefaults.standard.set(Date(), forKey: votesTSKey)
     }
 }

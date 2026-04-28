@@ -5,8 +5,8 @@
 //  Created by Codex on 2026-04-27.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 private struct VoteSelection: Identifiable, Hashable {
     let id = UUID()

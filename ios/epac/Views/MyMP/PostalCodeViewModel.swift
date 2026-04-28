@@ -1,7 +1,7 @@
 import Observation
-import SwiftUI
-import SwiftData
 import Sentry
+import SwiftData
+import SwiftUI
 
 private let ridingNameKey = "epac.myMP.ridingName"
 private let memberNameKey = "epac.myMP.memberName"

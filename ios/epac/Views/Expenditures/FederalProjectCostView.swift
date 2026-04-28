@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // Shows the federal government's project cost lifecycle: from initial
 // estimate through appropriated budget, actual spending, and audit findings.
@@ -122,11 +122,11 @@ struct FederalProjectCostView: View {
 
 	private struct LifecycleStep { let title: String; let icon: String; let color: Color }
 	private static let lifecycleSteps: [LifecycleStep] = [
-		LifecycleStep(title: "Estimate",  icon: "pencil",         color: .blue),
-		LifecycleStep(title: "Budget",    icon: "dollarsign",     color: .orange),
-		LifecycleStep(title: "Contracts", icon: "doc.text",       color: .purple),
-		LifecycleStep(title: "Actual",    icon: "chart.bar",      color: .green),
-		LifecycleStep(title: "Audit",     icon: "checkmark.seal", color: .red),
+		LifecycleStep(title: "Estimate", icon: "pencil", color: .blue),
+		LifecycleStep(title: "Budget", icon: "dollarsign", color: .orange),
+		LifecycleStep(title: "Contracts", icon: "doc.text", color: .purple),
+		LifecycleStep(title: "Actual", icon: "chart.bar", color: .green),
+		LifecycleStep(title: "Audit", icon: "checkmark.seal", color: .red)
 	]
 
 	// MARK: - Contract rows

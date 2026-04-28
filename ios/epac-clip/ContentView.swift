@@ -26,7 +26,7 @@ struct ContentView: View {
 		guard let name = d.string(forKey: savedNameKey), !name.isEmpty else { return nil }
 		return ClipMPResult(
 			memberName: name,
-			partyName:  d.string(forKey: savedPartyKey) ?? "",
+			partyName: d.string(forKey: savedPartyKey) ?? "",
 			ridingName: d.string(forKey: savedRidingKey) ?? ""
 		)
 	}
@@ -34,9 +34,9 @@ struct ContentView: View {
 	private func saveResult(_ r: ClipMPResult, postalCode: String) {
 		let d = UserDefaults.standard
 		d.set(r.memberName, forKey: ContentView.savedNameKey)
-		d.set(r.partyName,  forKey: ContentView.savedPartyKey)
+		d.set(r.partyName, forKey: ContentView.savedPartyKey)
 		d.set(r.ridingName, forKey: ContentView.savedRidingKey)
-		d.set(postalCode,   forKey: ContentView.savedPostalKey)
+		d.set(postalCode, forKey: ContentView.savedPostalKey)
 	}
 
 	var body: some View {
@@ -162,7 +162,7 @@ enum ClipRidingLookup {
 		else { throw URLError(.cannotParseResponse) }
 		return ClipMPResult(
 			memberName: ridingName,
-			partyName:  "",
+			partyName: "",
 			ridingName: ridingName
 		)
 	}

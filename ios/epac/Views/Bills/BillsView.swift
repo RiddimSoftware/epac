@@ -5,15 +5,15 @@
 //  Created on 2026-04-27.
 //
 
-import SwiftUI
 import ActivityView
+import SwiftUI
 
 struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
-    @State private var typeFilter: BillTypeGroup? = nil
+    @State private var typeFilter: BillTypeGroup?
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
@@ -224,7 +224,7 @@ enum BillTypeGroup: Equatable {
 
 struct BillRow: View {
     let bill: Bill
-    var newSince: Date? = nil
+    var newSince: Date?
 
     private var isNew: Bool {
         guard let newSince, let introduced = bill.introducedDate else { return false }

@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // Party profile: aggregate view for a single Party.
 //

@@ -3,8 +3,8 @@
 //  epac
 //
 
-import Foundation
 import ActivityView
+import Foundation
 
 // Builds a share payload for a recorded vote with a verified source URL.
 // The share sheet text is formatted for readability on social media and

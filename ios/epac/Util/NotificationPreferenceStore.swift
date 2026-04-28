@@ -144,10 +144,8 @@ final class NotificationPreferenceStore {
             ? d.bool(forKey: Keys.memberActivity) : nil
 
         if d.object(forKey: Keys.hansard)            != nil { newHansardSittings      = d.bool(forKey: Keys.hansard) }
-        if d.object(forKey: Keys.followedMPVotes)    != nil { followedMPVotes         = d.bool(forKey: Keys.followedMPVotes) }
-        else if let legacy = legacyMemberActivity    { followedMPVotes                = legacy }
-        if d.object(forKey: Keys.followedMPSpeeches) != nil { followedMPSpeeches      = d.bool(forKey: Keys.followedMPSpeeches) }
-        else if let legacy = legacyMemberActivity    { followedMPSpeeches             = legacy }
+        if d.object(forKey: Keys.followedMPVotes)    != nil { followedMPVotes         = d.bool(forKey: Keys.followedMPVotes) } else if let legacy = legacyMemberActivity { followedMPVotes                = legacy }
+        if d.object(forKey: Keys.followedMPSpeeches) != nil { followedMPSpeeches      = d.bool(forKey: Keys.followedMPSpeeches) } else if let legacy = legacyMemberActivity { followedMPSpeeches             = legacy }
 
         if d.object(forKey: Keys.followedBillStatusChanges) != nil {
             followedBillStatusChanges = d.bool(forKey: Keys.followedBillStatusChanges)
@@ -161,8 +159,7 @@ final class NotificationPreferenceStore {
             followedTopicAlerts = d.bool(forKey: Keys.topicConsultations)
         }
 
-        if d.object(forKey: Keys.dailyDigest)          != nil { dailyDigest          = d.bool(forKey: Keys.dailyDigest) }
-        else if d.object(forKey: Keys.morningBriefing) != nil { dailyDigest          = d.bool(forKey: Keys.morningBriefing) }
+        if d.object(forKey: Keys.dailyDigest)          != nil { dailyDigest          = d.bool(forKey: Keys.dailyDigest) } else if d.object(forKey: Keys.morningBriefing) != nil { dailyDigest          = d.bool(forKey: Keys.morningBriefing) }
         if d.object(forKey: Keys.fridayWeeklyDigest)   != nil { fridayWeeklyDigest   = d.bool(forKey: Keys.fridayWeeklyDigest) }
         if d.object(forKey: Keys.pboCosting)           != nil { pboCosting           = d.bool(forKey: Keys.pboCosting) }
         if d.object(forKey: Keys.lobbyingAlerts)       != nil { lobbyingAlerts       = d.bool(forKey: Keys.lobbyingAlerts) }

@@ -21,7 +21,7 @@ struct PrivacyPolicyView: View {
                         "Your name, email address, or any personal information",
                         "Your location or postal code (the postal code you enter to find your MP stays on your device only)",
                         "Your browsing or reading history within the app",
-                        "Any analytics, crash reports, or usage telemetry sent to Riddim Software",
+                        "Any analytics, crash reports, or usage telemetry sent to Riddim Software"
                     ])
                 }
 
@@ -30,7 +30,7 @@ struct PrivacyPolicyView: View {
                     BulletList(items: [
                         "Parliamentary data downloaded from official sources (Hansard debates, voting records, MP profiles, expenditures)",
                         "Your preferences: followed MPs, followed bills, followed topics, your saved postal code",
-                        "Notification preferences you configure",
+                        "Notification preferences you configure"
                     ])
                     Text("This data never leaves your device to Riddim Software's servers. It is not backed up to iCloud unless you have iCloud backup enabled for all apps.")
                 }
@@ -42,7 +42,7 @@ struct PrivacyPolicyView: View {
                         "Elections Canada (elections.ca) — Electoral data",
                         "Commissioner of Lobbying (lobbycanada.gc.ca) — Lobbying registry",
                         "Statistics Canada (statcan.gc.ca) — Census data references",
-                        "represent.opennorth.ca — Postal code to riding lookup (used only in the App Clip)",
+                        "represent.opennorth.ca — Postal code to riding lookup (used only in the App Clip)"
                     ])
                     Text("These requests are made directly from your device to the government's servers. Riddim Software does not operate a proxy or intermediary server.")
                 }

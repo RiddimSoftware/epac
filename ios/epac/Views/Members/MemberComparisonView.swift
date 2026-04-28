@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct MemberComparisonView: View {
 	let memberA: ParliamentMember
@@ -79,13 +79,13 @@ struct MemberComparisonView: View {
 				.font(.headline)
 				.padding(.bottom, 12)
 
-			ComparisonRow(label: "Travel",      valueA: a.travel,      valueB: b.travel)
+			ComparisonRow(label: "Travel", valueA: a.travel, valueB: b.travel)
 			Divider()
 			ComparisonRow(label: "Hospitality", valueA: a.hospitality, valueB: b.hospitality)
 			Divider()
-			ComparisonRow(label: "Contracts",   valueA: a.contracts,   valueB: b.contracts)
+			ComparisonRow(label: "Contracts", valueA: a.contracts, valueB: b.contracts)
 			Divider()
-			ComparisonRow(label: "Total",       valueA: totalA,        valueB: totalB, bold: true)
+			ComparisonRow(label: "Total", valueA: totalA, valueB: totalB, bold: true)
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))

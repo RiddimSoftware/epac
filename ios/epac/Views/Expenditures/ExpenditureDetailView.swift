@@ -5,9 +5,9 @@
 //  Created by Sunny on 2026-01-29.
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
+import SwiftData
+import SwiftUI
 
 struct ExpenditureDetailView: View {
     let expenditure: SummaryExpenditure

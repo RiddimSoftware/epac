@@ -1,7 +1,7 @@
-import XCTest
+@testable import epac
 import SnapshotTesting
 import SwiftUI
-@testable import epac
+import XCTest
 
 // Snapshot tests for the app's primary display components.
 //
@@ -35,9 +35,9 @@ final class SnapshotTests: XCTestCase {
 
         assertSnapshot(of: light, as: .image(on: .iPhone13Pro), named: "\(name)_light",
                        record: isRecording, file: file, testName: testName, line: line)
-        assertSnapshot(of: dark,  as: .image(on: .iPhone13Pro), named: "\(name)_dark",
+        assertSnapshot(of: dark, as: .image(on: .iPhone13Pro), named: "\(name)_dark",
                        record: isRecording, file: file, testName: testName, line: line)
-        assertSnapshot(of: a11y,  as: .image(on: .iPhone13Pro), named: "\(name)_a11y",
+        assertSnapshot(of: a11y, as: .image(on: .iPhone13Pro), named: "\(name)_a11y",
                        record: isRecording, file: file, testName: testName, line: line)
     }
 
@@ -88,7 +88,7 @@ final class SnapshotTests: XCTestCase {
         let darkVC  = UIHostingController(rootView: badges.environment(\.colorScheme, .dark))
 
         assertSnapshot(of: lightVC, as: .image(on: .iPhone13Pro), named: "PartyBadge_all_light", record: isRecording)
-        assertSnapshot(of: darkVC,  as: .image(on: .iPhone13Pro), named: "PartyBadge_all_dark",  record: isRecording)
+        assertSnapshot(of: darkVC, as: .image(on: .iPhone13Pro), named: "PartyBadge_all_dark", record: isRecording)
     }
 
     // MARK: - BillRow

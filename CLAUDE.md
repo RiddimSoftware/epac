@@ -12,6 +12,24 @@ Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-e
 
 Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
 
+### SwiftLint baseline (EPAC-334)
+
+The iOS sources (`ios/**/*.swift`) are linted by SwiftLint under `--strict` (warnings fail the build). The workflow lives at `.github/workflows/swiftlint.yml` and runs on Linux via the `ghcr.io/realm/swiftlint:latest` container — keeps CI cost flat.
+
+Configuration is `.swiftlint.yml` at the repo root. The intent: catch the issues that are real bug-bait (`force_cast`, `force_try`, `empty_count`, `redundant_nil_coalescing`, `explicit_init`) and the auto-fixable formatting issues (`closure_end_indentation`, `sorted_imports`). Rules that mostly produce false positives in a SwiftUI codebase — `convenience_type`, `large_tuple`, `cyclomatic_complexity`, `function_body_length`, `multiple_closures_with_trailing_closure`, `vertical_parameter_alignment`, `identifier_name`, `line_length`, `type_name`, `file_length`, `type_body_length`, `for_where`, `static_over_final_class`, `void_function_in_ternary`, `trailing_newline` — are disabled with a one-line comment in `.swiftlint.yml` explaining why.
+
+Local install + run:
+
+```bash
+brew install swiftlint
+swiftlint --fix     # auto-fixes formatting (commas, sorted imports, etc.)
+swiftlint --strict  # same as CI; expect zero output
+```
+
+When you genuinely need to break a rule, use a per-line `// swiftlint:disable:next <rule>` *with a one-line reason* (or a `disable / enable` block for consecutive lines). Examples in `Fetch.swift` and `CommitteeDownloader.swift`. Don't relax the project default to dodge a single site.
+
+The baseline PR (EPAC-334) ran `swiftlint --fix` on the entire `ios/` tree, so most of those 100+ files got mechanical reformatting (comma spacing, colon spacing, sorted imports). Future feature PRs should land clean against this baseline; if a rebase introduces lint regressions, run `swiftlint --fix` first.
+
 ### Backend Python logging (EPAC-176)
 
 Python ingest scripts under `backend/` emit **structured JSON logs to stderr** — one JSON object per record — never `print()`. Use the `logging` module with the JSON formatter pattern in `backend/cabinet/cabinet_ingest.py` (stdlib only, no third-party dep).
@@ -29,6 +47,8 @@ Every pipeline `main()` must log: a `pipeline started` event, a `pipeline finish
 Stdout is reserved for the script's actual JSON payload (e.g. `--dry-run`); logs go to stderr so the two streams stay separately redirectable. Log rotation is the runner's job (cron `logrotate`, GitHub Actions step output, AWS CloudWatch retention) — scripts don't open log files themselves.
 
 When a second Python pipeline needs the same setup, factor `_JSONFormatter` and `_configure_logging` into `backend/_logging.py` and import from both. Until then it stays inline to avoid speculating about a packaging refactor.
+
+Backend environments are split for staging and production. Staging base URL: `https://staging-api.epac.riddimsoftware.com`; production base URL: `https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production`. iOS reads `BackendBaseURL` from `Info.plist` via `BACKEND_BASE_URL` in `ios/Config/*.xcconfig`; Debug uses staging and Release uses production unless CI overrides `BACKEND_BASE_URL`. Backend merges to `main` deploy to staging through `.github/workflows/deploy-staging.yml`; production backend deploys are manual through `.github/workflows/deploy-production.yml`.
 
 ---
 
@@ -153,13 +173,15 @@ The script launches the app with `--app-preview-mode`, records `AppPreviewRecord
 
 ### Backend Base URL
 
-The iOS app talks to a single AWS API Gateway. The base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
+The iOS app's backend base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
 
-To point a development build at a different backend (staging once it exists, a local Lambda mock, etc.), set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
+Debug reads staging from `ios/Config/Debug.xcconfig`; Release reads production from `ios/Config/Release.xcconfig`. TestFlight builds use the `Create Release` workflow's `BACKEND_BASE_URL` override to point at staging before App Store release.
+
+To point a local run at another backend, set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
 
 > Edit Scheme → Run → Arguments → Environment Variables → add `BACKEND_BASE_URL=https://your-staging-host.example.com/staging`.
 
-`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the production default. The `xcconfig`-based per-configuration URL (Phase 2 of EPAC-156) will replace this env-var hook once a staging environment is provisioned.
+`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the `Info.plist` build setting, then the production default.
 
 ### Post-PR-open review
 

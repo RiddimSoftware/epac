@@ -3,8 +3,8 @@
 //  epac
 //
 
-import Foundation
 import ActivityView
+import Foundation
 
 // Generates an ActivityItem share payload for a bill with verified source links.
 // The Universal Link opens epac if installed; falls back to App Store.

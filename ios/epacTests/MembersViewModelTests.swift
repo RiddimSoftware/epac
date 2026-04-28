@@ -1,7 +1,7 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import Foundation
+import SwiftData
+import Testing
 
 // MembersViewModel holds no SwiftData state itself — its filteredMembers(from:)
 // and clearAllFilters() operate on plain values. We still create ParliamentMember

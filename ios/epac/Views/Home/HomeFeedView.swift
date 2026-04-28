@@ -11,8 +11,8 @@
 //  5. Today's most recent debates (from latest Hansard in SwiftData)
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @MainActor
 struct HomeFeedView: View {

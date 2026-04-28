@@ -5,8 +5,8 @@
 //  Created by Sunny on 2024-12-13.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SittingView: View {
 
@@ -75,8 +75,6 @@ struct SittingView: View {
 	}
 }
 
-
-
 struct SittingSpeakerView: View {
 
 	let name: String
@@ -130,5 +128,3 @@ struct SittingSpeakerView: View {
 	}
 
 }
-
-

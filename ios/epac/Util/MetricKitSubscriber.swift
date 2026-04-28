@@ -3,8 +3,8 @@
 //  epac
 //
 
-import MetricKit
 import Foundation
+import MetricKit
 
 // Subscribes to MetricKit payloads delivered once per day (on device)
 // and logs the full JSON representation. In production this is the

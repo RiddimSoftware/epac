@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // Shows upcoming scheduled sitting days from the local SittingCalendar cache
 // and links to the official ourcommons.ca Order Paper for the full agenda.

@@ -124,9 +124,13 @@ final class AppPreviewRecordingTests: XCTestCase {
         let firstProbe = app.staticTexts[firstIdentifier].firstMatch
         XCTAssertTrue(firstProbe.waitForExistence(timeout: 2), "Expected accessibility identifier \(firstIdentifier)", file: file, line: line)
 
-        let labels = Set(app.staticTexts.allElementsBoundByIndex.map(\.label))
         for identifier in identifiers {
-            XCTAssertTrue(labels.contains(identifier), "Expected accessibility identifier \(identifier)", file: file, line: line)
+            let query = app.descendants(matching: .any).matching(identifier: identifier)
+            let deadline = Date().addingTimeInterval(1)
+            while query.isEmpty && Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            }
+            XCTAssertGreaterThan(query.count, 0, "Expected accessibility identifier \(identifier)", file: file, line: line)
         }
     }
 

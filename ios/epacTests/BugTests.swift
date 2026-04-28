@@ -1,7 +1,7 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
 import SWXMLHash
+import Testing
 
 struct BugTests {
     @Test func testRubySahotaPublicSafetyNameParsing() async throws {
@@ -53,9 +53,9 @@ struct BugTests {
         var speakername: String = ""
         var partyname: String = ""
         var ridingname: String = ""
-        var startspeaker: Bool? = nil
-        var startparty: Bool? = nil
-        var startriding: Bool? = nil
+        var startspeaker: Bool?
+        var startparty: Bool?
+        var startriding: Bool?
         
         let ps = personspeaking.replacingOccurrences(of: "Mme ", with: "Mme. ")
         let startindex = ps.startIndex
@@ -66,12 +66,10 @@ struct BugTests {
             if let start = startspeaker, start {
                 if ps[index] == "(" {
                     startspeaker = false
-                }
-                else {
+                } else {
                     speakername.append(ps[index])
                 }
-            }
-            else {
+            } else {
                 if ps[index] == "." && startspeaker == nil {
                     startspeaker = true
                 }
@@ -79,12 +77,10 @@ struct BugTests {
             if let start = startparty, start {
                 if ps[backindex] == "," {
                     startparty = false
-                }
-                else {
+                } else {
                     partyname.append(ps[backindex])
                 }
-            }
-            else {
+            } else {
                 if ps[backindex] == ")" && startparty == nil {
                     startparty = true
                 }
@@ -92,12 +88,10 @@ struct BugTests {
             if let start = startriding, start {
                 if ps[backindex] == "(" {
                     startriding = false
-                }
-                else {
+                } else {
                     ridingname.append(ps[backindex])
                 }
-            }
-            else {
+            } else {
                 if ps[backindex] == "," && startriding == nil {
                     startriding = true
                 }

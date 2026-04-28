@@ -5,8 +5,8 @@
 //  Created by Sunny on 2024-12-17.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SpeakerView: View {
 	@Environment(\.modelContext) var modelContext

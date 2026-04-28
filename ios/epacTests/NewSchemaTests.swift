@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 struct NewSchemaTests {
     @Test func parseNewHospitalitySchema() async throws {
@@ -39,5 +39,3 @@ Travel start date,Travel end date,Departure,Places Visited,Purpose of Travel,Tra
         #expect(results[1].details[0].destination == "Toronto, Edmonton")
     }
 }
-
-

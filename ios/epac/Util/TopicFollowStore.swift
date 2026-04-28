@@ -98,7 +98,7 @@ final class TopicFollowStore {
         var body: [String: Any] = [
             "token": token,
             "topic_ids": Array(followedIDs),
-            "granularity": granularityMap,
+            "granularity": granularityMap
         ]
         if let mpID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID") {
             body["my_mp_member_id"] = mpID

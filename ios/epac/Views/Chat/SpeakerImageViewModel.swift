@@ -4,9 +4,9 @@
 //
 
 import Observation
+import Sentry
 import SwiftData
 import UIKit
-import Sentry
 
 @MainActor
 @Observable

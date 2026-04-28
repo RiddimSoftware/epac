@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct PartyLineScoreView: View {
     let member: ParliamentMember

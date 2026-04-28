@@ -6,7 +6,7 @@ struct EmptyStateView: View {
     let icon: String
     let title: String
     let message: String
-    var action: EmptyStateAction? = nil
+    var action: EmptyStateAction?
 
     var body: some View {
         VStack(spacing: 16) {
