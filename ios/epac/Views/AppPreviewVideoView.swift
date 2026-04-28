@@ -2,15 +2,14 @@
 //  AppPreviewVideoView.swift
 //  epac
 //
-//  Hidden App Store preview route for EPAC-110. It is shown only when the app
-//  launches with -AppPreviewVideo so production users never see fixture content.
+//  Hidden App Store preview route. It is shown only for marketing capture launch
+//  arguments so production users never see fixture content.
 //
 
 import SwiftUI
 
 struct AppPreviewVideoView: View {
     private let scenes = AppPreviewScene.scenes
-    private let sceneDuration: UInt64 = 4_700_000_000
     @State private var selectedSceneIndex = 0
 
     var body: some View {
@@ -41,6 +40,7 @@ struct AppPreviewVideoView: View {
 
                 AppPreviewPhoneFrame(scene: scenes[selectedSceneIndex])
                     .id(selectedSceneIndex)
+                    .accessibilityIdentifier(scenes[selectedSceneIndex].identifier)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
@@ -59,13 +59,17 @@ struct AppPreviewVideoView: View {
             .padding(.top, 22)
             .padding(.bottom, 14)
         }
+        .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
         .task {
             for index in scenes.indices.dropFirst() {
-                try? await Task.sleep(nanoseconds: sceneDuration)
+                try? await Task.sleep(nanoseconds: scenes[index - 1].durationNanoseconds)
                 withAnimation(.easeInOut(duration: 0.65)) {
                     selectedSceneIndex = index
                 }
+            }
+            if let finalScene = scenes.last {
+                try? await Task.sleep(nanoseconds: finalScene.durationNanoseconds)
             }
         }
     }
@@ -135,102 +139,79 @@ private struct AppPreviewPhoneFrame: View {
     @ViewBuilder
     private var sceneBody: some View {
         switch scene.kind {
-        case .postalCode:
+        case .homeFeed:
             previewCard {
                 VStack(alignment: .leading, spacing: 16) {
-                    sourceBadge("Elections Canada riding lookup")
-                    Text("M5V 0C7")
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                    sourceBadge("Today in Parliament")
+                    Text("Your MP. Everything they do.")
+                        .font(.headline)
+                    activityRow(icon: "mic.fill", title: "Spoke in debate", detail: "Food price transparency")
+                    activityRow(icon: "checkmark.seal.fill", title: "Voted Yea", detail: "Division No. 926")
+                    activityRow(icon: "doc.text.fill", title: "Bill C-226", detail: "Second reading")
+                }
+                .accessibilityIdentifier("home-feed-today-cards")
+            }
+        case .mpProfile:
+            previewCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    sourceBadge("House of Commons member profile")
                     HStack(spacing: 10) {
-                        Image(systemName: "mappin.and.ellipse")
+                        Image(systemName: "person.crop.circle.fill")
                             .font(.title2)
                             .foregroundStyle(Color.accentColor)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Spadina-Harbourfront")
+                            Text("Gurbux Saini")
                                 .font(.headline)
-                            Text("Find the representative for your riding.")
+                            Text("Fleetwood-Port Kells - Lib.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    progressRow(label: "Riding matched", value: "Ready")
+                    speechBubble("Every word. Every vote.")
+                    voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
                 }
+                .accessibilityIdentifier("mp-profile-activity")
             }
         case .debate:
             VStack(spacing: 12) {
                 previewCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        sourceBadge("House of Commons Debates, June 18, 2026")
+                        sourceBadge("House of Commons Debates, January 27, 2026")
                         Text("National Framework for Food Price Transparency Act")
                             .font(.headline)
                             .lineLimit(3)
                         speakerRow(name: "Gurbux Saini", riding: "Fleetwood-Port Kells", party: "Lib.")
-                        speechBubble("Bill C-226 would create a national framework for grocery price transparency.")
+                        speechBubble("Bill C-226 would establish a national framework to improve food price transparency.")
                     }
+                    .accessibilityIdentifier("speech-view-bubbles")
                 }
                 previewCard {
                     speakerRow(name: "Andrew Lawton", riding: "Elgin-St. Thomas-London South", party: "CPC")
                 }
             }
-        case .memberVotes:
+        case .lobbying:
             previewCard {
                 VStack(alignment: .leading, spacing: 14) {
-                    sourceBadge("House of Commons recorded divisions")
-                    Text("Your MP's voting record")
+                    sourceBadge("Office of the Commissioner of Lobbying")
+                    Text("Who's influencing them?")
                         .font(.headline)
-                    voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
-                    voteRow(title: "Division No. 927", detail: "Motion agreed to", vote: "Yea", color: .appPositive)
-                    voteRow(title: "Division No. 928", detail: "Motion agreed to", vote: "Nay", color: .appDestructive)
-                    progressRow(label: "Votes with party", value: "2 of 3")
+                    communicationRow(org: "Registered communication", topic: "Subject matters from public registry")
+                    communicationRow(org: "Designated office holder", topic: "Matched to member profile")
+                    communicationRow(org: "Source record", topic: "Open in Commissioner registry")
                 }
+                .accessibilityIdentifier("lobbying-communications-list")
             }
-        case .bill:
+        case .voteDetail:
             previewCard {
                 VStack(alignment: .leading, spacing: 13) {
-                    sourceBadge("Parliament of Canada LEGISinfo")
-                    Text("Bill C-226")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                    Text("National framework to improve food price transparency")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    timelineStage("Introduced", done: true)
-                    timelineStage("Second reading", done: true)
-                    timelineStage("Committee", done: false)
-                    Label("Follow bill", systemImage: "doc.badge.clock")
+                    sourceBadge("House of Commons recorded divisions")
+                    Text("They said it. Then voted against it.")
                         .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(Color.accentColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
+                    voteRow(title: "Government", detail: "Most Liberal MPs", vote: "Nay", color: .appDestructive)
+                    speechBubble("Related debate: grocery price transparency and affordability.")
                 }
-            }
-        case .notification:
-            VStack(spacing: 12) {
-                previewCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "bell.badge.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color.appWarning)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Vote result")
-                                    .font(.headline)
-                                Text("Your MP voted Yea on Division No. 926.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        sourceBadge("House of Commons Journals")
-                    }
-                }
-                previewCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Opened from notification")
-                            .font(.headline)
-                        voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
-                    }
-                }
+                .accessibilityIdentifier("vote-detail-breakdown")
             }
         case .contact:
             previewCard {
@@ -248,6 +229,7 @@ private struct AppPreviewPhoneFrame: View {
                         .background(Color.accentColor)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .accessibilityIdentifier("contact-compose-sheet")
             }
         }
     }
@@ -325,6 +307,34 @@ private struct AppPreviewPhoneFrame: View {
         }
     }
 
+    private func activityRow(icon: String, title: String, detail: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 26)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    private func communicationRow(org: String, topic: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(org)
+                .font(.subheadline.weight(.semibold))
+            Text(topic)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 5)
+    }
+
     private func timelineStage(_ title: String, done: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: done ? "checkmark.circle.fill" : "circle")
@@ -353,11 +363,11 @@ private struct AppPreviewPhoneFrame: View {
 
 private struct AppPreviewScene {
     enum Kind {
-        case postalCode
+        case homeFeed
+        case mpProfile
         case debate
-        case memberVotes
-        case bill
-        case notification
+        case lobbying
+        case voteDetail
         case contact
     }
 
@@ -365,43 +375,61 @@ private struct AppPreviewScene {
     let tabTitle: String
     let systemImage: String
     let kind: Kind
+    let durationNanoseconds: UInt64
+
+    var identifier: String {
+        switch kind {
+        case .homeFeed: return "home-feed-preview-scene"
+        case .mpProfile: return "mp-profile-preview-scene"
+        case .debate: return "speech-view-preview-scene"
+        case .lobbying: return "lobbying-preview-scene"
+        case .voteDetail: return "vote-detail-preview-scene"
+        case .contact: return "contact-preview-scene"
+        }
+    }
 
     static let scenes: [AppPreviewScene] = [
         AppPreviewScene(
-            headline: "Start with your postal code.",
+            headline: "Your MP. Everything they do.",
             tabTitle: "Home",
             systemImage: "house.fill",
-            kind: .postalCode
+            kind: .homeFeed,
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
-            headline: "Read Parliament as it happens.",
-            tabTitle: "Parliament",
-            systemImage: "building.columns.fill",
-            kind: .debate
-        ),
-        AppPreviewScene(
-            headline: "See how your MP votes.",
+            headline: "Every word. Every vote.",
             tabTitle: "Members",
             systemImage: "person.2.fill",
-            kind: .memberVotes
+            kind: .mpProfile,
+            durationNanoseconds: 6_000_000_000
         ),
         AppPreviewScene(
-            headline: "Follow bills from debate to vote.",
+            headline: "Hansard. Finally readable.",
+            tabTitle: "Parliament",
+            systemImage: "building.columns.fill",
+            kind: .debate,
+            durationNanoseconds: 6_000_000_000
+        ),
+        AppPreviewScene(
+            headline: "Who's influencing them?",
+            tabTitle: "Members",
+            systemImage: "person.text.rectangle.fill",
+            kind: .lobbying,
+            durationNanoseconds: 5_000_000_000
+        ),
+        AppPreviewScene(
+            headline: "They said it. Then voted against it.",
             tabTitle: "Accountability",
-            systemImage: "doc.text.fill",
-            kind: .bill
+            systemImage: "checklist.checked",
+            kind: .voteDetail,
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
-            headline: "Get the vote result.",
-            tabTitle: "Home",
-            systemImage: "bell.badge.fill",
-            kind: .notification
-        ),
-        AppPreviewScene(
-            headline: "Then contact your MP.",
+            headline: "Democracy. One tap.",
             tabTitle: "Members",
             systemImage: "envelope.fill",
-            kind: .contact
+            kind: .contact,
+            durationNanoseconds: 3_000_000_000
         )
     ]
 }

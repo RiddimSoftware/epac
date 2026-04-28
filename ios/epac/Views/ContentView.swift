@@ -13,7 +13,7 @@ import CoreSpotlight
 
 struct ContentView: View {
 	private static let isAppStoreScreenshotMode = ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
-	private static let isAppPreviewVideoMode = ProcessInfo.processInfo.arguments.contains("-AppPreviewVideo")
+	private static let isAppPreviewVideoMode = ProcessInfo.processInfo.arguments.contains("--app-preview-mode") || ProcessInfo.processInfo.arguments.contains("-AppPreviewVideo")
 	private static let isMarketingCaptureMode = isAppStoreScreenshotMode || isAppPreviewVideoMode
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -31,6 +31,32 @@ struct ContentView: View {
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
 		self.appDelegate = appDelegate
+		if Self.isAppPreviewVideoMode {
+			Self.configureAppPreviewMode()
+		}
+	}
+
+	private static func configureAppPreviewMode() {
+		let defaults = UserDefaults.standard
+		defaults.set(true, forKey: "epac.onboarding.completed")
+		defaults.set("Fleetwood-Port Kells", forKey: "epac.myMP.ridingName")
+		defaults.set("Gurbux Saini", forKey: "epac.myMP.memberName")
+		if let followedMembers = try? JSONEncoder().encode([1422: FollowPreferences()]) {
+			defaults.set(followedMembers, forKey: "epac.followedMembers")
+		}
+		let followedBill = BillFollowState(
+			lastKnownStatus: BillStatus.inProgress.rawValue,
+			lastKnownStage: "Second reading",
+			followedAt: Date()
+		)
+		if let followedBills = try? JSONEncoder().encode(["C-226": followedBill]) {
+			defaults.set(followedBills, forKey: "epac.followedBills")
+		}
+		defaults.set(false, forKey: "epac.notifications.hansard")
+		defaults.set(false, forKey: "epac.notifications.billVotes")
+		defaults.set(false, forKey: "epac.notifications.memberActivity")
+		defaults.set(false, forKey: "epac.notifications.topicConsultations")
+		defaults.set(false, forKey: "epac.notifications.morningBriefing")
 	}
 
 	var body: some View {
