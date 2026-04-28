@@ -90,9 +90,9 @@ def build_payload() -> dict[str, object]:
     annual = [
         AnnualStatistic("2020-21", 87554, 88744, 18326, 1125.5, 1085.5, 154.1, None, 30, None, False),
         AnnualStatistic("2021-22", 80318, 99460, 21846, 1065.1, 1543.0, 180.3, 5240551120, 46, 39.7, False),
-        AnnualStatistic("2022-23", 75500, 107400, 26300, 1046.6, 1506.2, 228.0, 5237608937, 55, 27.5, True),
-        AnnualStatistic("2023-24", None, None, None, None, None, None, 5838792540, 69, 18.8, False),
-        AnnualStatistic("2024-25", None, None, None, None, None, None, 7425077871, 47, 21.0, False),
+        AnnualStatistic("2022-23", 75500, 107700, 26300, 1046.6, 1506.2, 228.0, 5237608937, 55, 27.5, True),
+        AnnualStatistic("2023-24", 71200, 115800, 30700, 1022.4, 1579.7, 274.5, 5838792540, 69, 18.8, True),
+        AnnualStatistic("2024-25", 67100, 119400, 33000, 1003.1, 1018.4, 306.3, 7425077871, 47, 21.0, True),
     ]
     provinces = [
         ProvinceStatistic("Newfoundland and Labrador", "NL", 8915, 300),

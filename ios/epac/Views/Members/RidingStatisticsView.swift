@@ -711,7 +711,9 @@ struct RidingStatisticsView: View {
 	@ViewBuilder
 	private var veteransAffairsSection: some View {
 		if let province = VeteransAffairsStatisticsDatabase.statistic(for: member.province.shortCode),
-		   let national = VeteransAffairsStatisticsDatabase.nationalSummary() {
+		   let national = VeteransAffairsStatisticsDatabase.nationalSummary(),
+		   let latestAnnual = VeteransAffairsStatisticsDatabase.latestAnnual(),
+		   let latestWait = latestAnnual.firstApplicationAverageWeeks {
 			Section {
 				LabeledContent("Veterans in province") {
 					Text(province.censusVeterans.formatted())
@@ -731,15 +733,15 @@ struct RidingStatisticsView: View {
 					Text(national.backlogApplications.formatted())
 						.monospacedDigit()
 				}
-				LabeledContent("Avg. first-application wait") {
-					Text("\(national.firstApplicationAverageWeeks.formatted(.number.precision(.fractionLength(1)))) weeks")
+				LabeledContent("Avg. first-app wait (\(latestAnnual.fiscalYear))") {
+					Text("\(latestWait.formatted(.number.precision(.fractionLength(1)))) weeks")
 						.monospacedDigit()
 				}
 				DataSourceBadge(source: .veteransAffairs())
 			} header: {
 				Text("Veterans Affairs")
 			} footer: {
-				Text("Provincial Veteran population is from the 2021 Census. Disability benefit recipients, backlog, and processing times are national VAC figures as of \(VeteransAffairsStatisticsDatabase.dateLabel(national.referenceDate)); VAC does not publish these processing results by province in the source tables.")
+				Text("Provincial Veteran population is from the 2021 Census. Disability benefit recipients and backlog are national VAC figures as of \(VeteransAffairsStatisticsDatabase.dateLabel(national.referenceDate)); the first-application wait is the national \(latestAnnual.fiscalYear) result. VAC does not publish these processing results by province in the source tables.")
 					.font(.caption2)
 					.foregroundStyle(.secondary)
 			}

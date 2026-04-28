@@ -23,16 +23,16 @@ struct VeteransAffairsStatisticsTests {
 		  "annual": [
 		    {
 		      "fiscal_year": "2023-24",
-		      "disability_pension_recipients": null,
-		      "pain_and_suffering_compensation_recipients": null,
-		      "additional_pain_and_suffering_compensation_recipients": null,
-		      "disability_pension_expenditures_millions": null,
-		      "pain_and_suffering_compensation_expenditures_millions": null,
-		      "additional_pain_and_suffering_compensation_expenditures_millions": null,
+		      "disability_pension_recipients": 71200,
+		      "pain_and_suffering_compensation_recipients": 115800,
+		      "additional_pain_and_suffering_compensation_recipients": 30700,
+		      "disability_pension_expenditures_millions": 1022.4,
+		      "pain_and_suffering_compensation_expenditures_millions": 1579.7,
+		      "additional_pain_and_suffering_compensation_expenditures_millions": 274.5,
 		      "benefits_services_support_spending_dollars": 5838792540,
 		      "service_standard_met_percent": 69,
 		      "first_application_average_weeks": 18.8,
-		      "is_forecast": false
+		      "is_forecast": true
 		    }
 		  ],
 		  "provinces": [
@@ -50,6 +50,7 @@ struct VeteransAffairsStatisticsTests {
 
 		#expect(snapshot.nationalSummary.disabilityBenefitRecipients == 144_174)
 		#expect(snapshot.annual.first?.benefitsServicesSupportSpendingDollars == 5_838_792_540)
+		#expect(snapshot.annual.first?.disabilityPensionRecipients == 71_200)
 		#expect(snapshot.provinces.first?.provinceCode == "ON")
 		#expect(snapshot.provinces.first?.censusVeterans == 149_020)
 	}
@@ -63,6 +64,8 @@ struct VeteransAffairsStatisticsTests {
 		#expect(VeteransAffairsStatisticsDatabase.statistic(for: "on")?.province == "Ontario")
 		#expect(VeteransAffairsStatisticsDatabase.nationalSummary()?.firstApplicationAverageWeeks == 18.8)
 		#expect(VeteransAffairsStatisticsDatabase.latestAnnual()?.fiscalYear == "2024-25")
+		#expect(VeteransAffairsStatisticsDatabase.latestAnnual()?.painAndSufferingCompensationRecipients == 119_400)
+		#expect(VeteransAffairsStatisticsDatabase.latestAnnual()?.firstApplicationAverageWeeks == 21.0)
 		#expect(VeteransAffairsStatisticsDatabase.dateLabel(snapshot.nationalSummary.referenceDate) == "March 31, 2024")
 	}
 }

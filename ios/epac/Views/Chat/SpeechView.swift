@@ -356,21 +356,23 @@ struct SpeechView: View {
 	@ViewBuilder
 	private var veteransAffairsDebateContext: some View {
 		if isVeteransAffairsRelevant,
-		   let summary = VeteransAffairsStatisticsDatabase.nationalSummary() {
+		   let summary = VeteransAffairsStatisticsDatabase.nationalSummary(),
+		   let latestAnnual = VeteransAffairsStatisticsDatabase.latestAnnual(),
+		   let latestWait = latestAnnual.firstApplicationAverageWeeks {
 			VStack(alignment: .leading, spacing: 6) {
 				HStack {
 					Label("Veterans context", systemImage: "cross.case.fill")
 						.font(.caption.bold())
 					Spacer()
-					Text("As of \(VeteransAffairsStatisticsDatabase.dateLabel(summary.referenceDate))")
+					Text("Backlog as of \(VeteransAffairsStatisticsDatabase.dateLabel(summary.referenceDate))")
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
 				HStack(spacing: 12) {
 					statPill("Recipients", summary.disabilityBenefitRecipients.formatted())
 					statPill(
-						"Avg. wait",
-						"\(summary.firstApplicationAverageWeeks.formatted(.number.precision(.fractionLength(1))))w"
+						"Wait \(latestAnnual.fiscalYear)",
+						"\(latestWait.formatted(.number.precision(.fractionLength(1))))w"
 					)
 					statPill("Backlog", summary.backlogApplications.formatted())
 				}
