@@ -66,6 +66,34 @@ struct MemberResolverTests {
 		#expect(allMembers.count == 1)
 	}
 
+	@Test func cachedResolverReusesInsertedTempMember() throws {
+		let context = try makeContext()
+		var cache = MemberResolutionCache()
+
+		let first = cache.resolve(
+			firstName: "Jagmeet",
+			lastName: "Singh",
+			partyAbbreviation: "NDP",
+			ridingName: "Burnaby Central",
+			parliamentNumber: 45,
+			modelContext: context,
+			fetch: makeFetch(context)
+		)
+		let second = cache.resolve(
+			firstName: "Jagmeet",
+			lastName: "Singh",
+			partyAbbreviation: "NDP",
+			ridingName: "Burnaby Central",
+			parliamentNumber: 45,
+			modelContext: context,
+			fetch: makeFetch(context)
+		)
+
+		#expect(first.persistentModelID == second.persistentModelID)
+		let allMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(allMembers.count == 1)
+	}
+
 	@Test func usesConstituencyProvinceWhenRidingMatches() throws {
 		let context = try makeContext()
 		let constituency = Constituency(

@@ -152,6 +152,28 @@ struct SpeechViewModelTests {
 		#expect(subject.currentSpeechID == nil)
 	}
 
+	@Test func resetClearsMemberResolutionCache() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 1)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		let cachedMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(cachedMembers.count == 1)
+		let cachedID = cachedMembers[0].persistentModelID
+
+		context.delete(cachedMembers[0])
+		try context.save()
+		vm.reset(navigator: navigator, subject: subject)
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		let refreshedMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(refreshedMembers.count == 1)
+		#expect(refreshedMembers[0].persistentModelID != cachedID)
+		#expect(vm.speakers.values.first?.persistentModelID == refreshedMembers[0].persistentModelID)
+	}
+
 	// MARK: - tapAnywhereOpacity
 
 	@Test func tapAnywhereOpacityIsOneWithFewerThanTwoMessages() throws {

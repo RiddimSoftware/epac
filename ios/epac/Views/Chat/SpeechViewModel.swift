@@ -18,6 +18,7 @@ class SpeechViewModel {
 	var speakers: [String: ParliamentMember] = [:]
 	var didFinish = false
 	var isResuming = false
+	private var memberResolutionCache = MemberResolutionCache()
 
 	var tapAnywhereOpacity: Double {
 		messages.count < 2 || isResuming ? 1 : 0
@@ -36,6 +37,7 @@ class SpeechViewModel {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
+		memberResolutionCache.reset()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
@@ -76,7 +78,7 @@ class SpeechViewModel {
 			currentSpeech.currentMessageID = message.hansardID
 		}
 
-		let speaker = MemberResolver().resolve(
+		let speaker = memberResolutionCache.resolve(
 			firstName: message.firstName,
 			lastName: message.lastName,
 			partyAbbreviation: message.partyAbbreviation,
@@ -195,4 +197,3 @@ class SpeechViewModel {
 		.frame(width: 400)
 	}
 }
-
