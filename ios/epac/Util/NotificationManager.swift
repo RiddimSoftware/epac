@@ -83,20 +83,14 @@ final class NotificationManager: NSObject {
 }
 
 extension NotificationManager: UNUserNotificationCenterDelegate {
-    // Foreground: display banner AND route date+topic for navigation.
+    // Foreground: respect iOS default behavior (no banner/sound) and avoid
+    // triggering in-app navigation while the user is actively using EPAC.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        let userInfo = notification.request.content.userInfo
-        let topicId = userInfo["topic_id"] as? String
-        let dateString = (userInfo["hansard_date"] as? String) ?? (userInfo["date"] as? String)
-        Task { @MainActor [weak self] in
-            self?.pendingDate = dateString.flatMap { ISO8601DateFormatter().date(from: $0) }
-            self?.pendingTopicId = topicId
-        }
-        completionHandler([.banner, .sound, .badge])
+        completionHandler([])
     }
 
     // Background/terminated: process the tap.

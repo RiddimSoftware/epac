@@ -28,8 +28,7 @@ class ContentViewModel {
 					try await fetch.downloadHansard(date)
 					selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
 					if let h = selectedHansard {
-						let subjects = h.orders.flatMap { $0.subjects }.map { (title: $0.title, date: h.date) }
-						await TopicNotificationScheduler.checkAndNotify(subjectTitles: subjects)
+						let subjectSubjects = h.orders.flatMap { $0.subjects }
 						let titles = h.orders.flatMap { $0.subjects }.map { $0.title }
 						WidgetDataWriter.writeRecentSubjects(titles)
 						WidgetDataWriter.reloadWidgets()
@@ -39,7 +38,7 @@ class ContentViewModel {
 							let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
 							let followed = allMembers.filter { followedIDs.contains($0.memberID) }
 							let messages = h.orders.flatMap { $0.subjects }.flatMap { $0.speeches }.flatMap { $0.messages }
-							let firstSubject = subjects.first?.title ?? ""
+							let firstSubject = subjectSubjects.first?.title ?? ""
 							for mp in followed {
 								let spoke = messages.contains { $0.lastName.localizedCaseInsensitiveCompare(mp.lastName) == .orderedSame }
 								if spoke {
