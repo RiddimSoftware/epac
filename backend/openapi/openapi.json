@@ -311,6 +311,54 @@
         }
       }
     },
+    "/api/v1/ridings/{slug}/boundary": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "Return a federal riding boundary polygon",
+        "description": "Returns simplified GeoJSON for a 2023 Representation Order federal electoral district, resolved from a riding name slug or Elections Canada FED id.",
+        "operationId": "getRidingBoundary",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "URL slug for the riding name, or the Elections Canada FED id.",
+            "schema": { "type": "string", "example": "spadina-harbourfront" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Simplified riding boundary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RidingBoundary" },
+                "examples": {
+                  "boundary": {
+                    "value": {
+                      "slug": "spadina-harbourfront",
+                      "name": "Spadina-Harbourfront",
+                      "external_id": "35100",
+                      "representation_order": "2023",
+                      "source": "Elections Canada - Federal Electoral District Boundary Files",
+                      "source_url": "https://www.elections.ca/content.aspx?dir=cir%2FmapsCorner%2Fvector&document=index&lang=e&section=res",
+                      "source_note": "Boundary geometry is resolved through Open North Represent's 2023 federal electoral district set, which mirrors the official Elections Canada 45th general election vector boundary files.",
+                      "extent": [-79.41, 43.62, -79.36, 43.66],
+                      "centroid": [-79.39, 43.64],
+                      "geometry": {
+                        "type": "MultiPolygon",
+                        "coordinates": [[[[-79.41, 43.62], [-79.40, 43.63], [-79.36, 43.66], [-79.41, 43.62]]]]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/bills": {
       "get": {
         "tags": ["Bills"],
@@ -830,6 +878,43 @@
           "preview": { "type": "string" },
           "word_count": { "type": "integer" },
           "filename": { "type": "string" }
+        }
+      },
+      "RidingBoundary": {
+        "type": "object",
+        "required": ["slug", "name", "external_id", "representation_order", "source", "source_url", "geometry"],
+        "properties": {
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "external_id": { "type": "string" },
+          "representation_order": { "type": "string" },
+          "source": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" },
+          "source_note": { "type": "string" },
+          "extent": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "centroid": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "geometry": { "$ref": "#/components/schemas/GeoJSONGeometry" }
+        }
+      },
+      "GeoJSONGeometry": {
+        "type": "object",
+        "required": ["type", "coordinates"],
+        "properties": {
+          "type": { "type": "string", "enum": ["Polygon", "MultiPolygon"] },
+          "coordinates": {
+            "type": "array",
+            "description": "GeoJSON longitude/latitude coordinate arrays."
+          }
         }
       },
       "BillsResponse": {
