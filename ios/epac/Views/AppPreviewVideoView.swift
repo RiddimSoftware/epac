@@ -65,20 +65,6 @@ struct AppPreviewVideoView: View {
             }
             .padding(.top, 22)
             .padding(.bottom, 14)
-
-            if AppPreviewScene.testProbesEnabled {
-                VStack(spacing: 1) {
-                    ForEach(AppPreviewScene.requiredAccessibilityIdentifiers, id: \.self) { identifier in
-                        Text(identifier)
-                            .font(.system(size: 1))
-                            .frame(width: 1, height: 1)
-                            .accessibilityLabel(identifier)
-                            .accessibilityIdentifier(identifier)
-                    }
-                }
-                .frame(width: 1, height: 1)
-                .clipped()
-            }
         }
         .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
@@ -275,13 +261,17 @@ private struct AppPreviewPhoneFrame: View {
                     field("Subject", value: "Bill C-226")
                     field("Message", value: "I am writing about the grocery price transparency debate.")
                         .accessibilityIdentifier("contact-message-field")
-                    Label("Open Mail", systemImage: "envelope.fill")
+                    HStack(spacing: 8) {
+                        Image(systemName: "envelope.fill")
+                        Text("Open Mail")
+                    }
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
                         .background(Color.accentColor)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .accessibilityElement(children: .combine)
                         .accessibilityIdentifier("mp-profile-contact-button")
                 }
                 .accessibilityElement(children: .contain)
@@ -337,7 +327,6 @@ private struct AppPreviewPhoneFrame: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .optionalAccessibilityIdentifier(accessibilityIdentifier)
                 Text(detail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -351,6 +340,8 @@ private struct AppPreviewPhoneFrame: View {
                 .background(color)
                 .clipShape(Capsule())
         }
+        .accessibilityElement(children: .combine)
+        .optionalAccessibilityIdentifier(accessibilityIdentifier)
     }
 
     private func progressRow(label: String, value: String) -> some View {
@@ -372,13 +363,14 @@ private struct AppPreviewPhoneFrame: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .optionalAccessibilityIdentifier(accessibilityIdentifier)
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
         }
+        .accessibilityElement(children: .combine)
+        .optionalAccessibilityIdentifier(accessibilityIdentifier)
     }
 
     private func communicationRow(org: String, topic: String) -> some View {
@@ -503,28 +495,6 @@ private struct AppPreviewScene {
         return sceneIndex
     }
 
-    static var testProbesEnabled: Bool {
-        ProcessInfo.processInfo.arguments.contains("--app-preview-test-probes")
-    }
-
-    static let requiredAccessibilityIdentifiers = [
-        "home-feed-scroll",
-        "home-feed-today-card",
-        "home-feed-my-mp-link",
-        "mp-profile-scroll",
-        "mp-profile-speech-list",
-        "mp-profile-speech-row-0",
-        "speech-view-scroll",
-        "parliament-sitting-row-0",
-        "lobbying-list-scroll",
-        "accountability-lobbying-link",
-        "vote-detail-scroll",
-        "vote-list-row-0",
-        "vote-detail-mp-list",
-        "mp-profile-contact-button",
-        "contact-sheet-scroll",
-        "contact-message-field"
-    ]
 }
 
 private enum AppPreviewTab: CaseIterable, Identifiable {
