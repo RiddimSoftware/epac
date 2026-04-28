@@ -19,9 +19,15 @@ struct CommitteesView: View {
     @State private var committees: [ParliamentaryCommittee] = []
     @State private var isLoading = false
     @State private var loadFailed = false
+    @Environment(\.openURL) private var openURL
 
     /// Major standing committees surfaced first, in priority order.
     private let priorityAcronyms = ["FINA", "JUST", "HESA", "ENVI", "SECU", "PROC", "ETHI", "OGGO"]
+
+    /// Senate of Canada committees landing page on sencanada.ca. The Senate
+    /// publishes its own evidence and reports outside the OurCommons open API;
+    /// Phase 2 ingests this data, Phase 1 deep-links to the source.
+    private static let senateCommitteesURL = URL(string: "https://sencanada.ca/en/committees/")!
 
     var featured: [ParliamentaryCommittee] {
         let priority = committees
@@ -53,19 +59,58 @@ struct CommitteesView: View {
                     systemImage: "person.3"
                 )
             } else {
-                List(featured) { committee in
-                    NavigationLink(destination: CommitteeMeetingsView(committee: committee)) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(committee.acronym)
-                                .font(.caption.monospacedDigit().weight(.bold))
-                                .foregroundStyle(.tint)
-                            Text(committee.name)
-                                .font(.subheadline)
-                                .lineLimit(2)
+                List {
+                    Section {
+                        Button {
+                            openURL(Self.senateCommitteesURL)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "building.columns.circle.fill")
+                                    .foregroundStyle(.red)
+                                    .frame(width: 28)
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Senate Committees")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+                                    Text("Evidence, reports, and witness lists from sencanada.ca")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
+                        .accessibilityLabel("Senate Committees, opens sencanada.ca in Safari")
+                    } header: {
+                        Text("Senate of Canada")
+                    } footer: {
+                        Text("Source: Senate of Canada. Senate committees publish their own verbatim evidence and reports; the link opens the Senate's official committees portal.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
-                    .accessibilityLabel("\(committee.acronym), \(committee.name)")
+
+                    Section {
+                        ForEach(featured) { committee in
+                            NavigationLink(destination: CommitteeMeetingsView(committee: committee)) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(committee.acronym)
+                                        .font(.caption.monospacedDigit().weight(.bold))
+                                        .foregroundStyle(.tint)
+                                    Text(committee.name)
+                                        .font(.subheadline)
+                                        .lineLimit(2)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                            .accessibilityLabel("\(committee.acronym), \(committee.name)")
+                        }
+                    } header: {
+                        Text("House of Commons")
+                    }
                 }
                 .listStyle(.plain)
             }
