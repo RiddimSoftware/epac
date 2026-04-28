@@ -38,6 +38,41 @@ func TestParseHomepageSitting(t *testing.T) {
 	if status.DivisionInProgress {
 		t.Fatal("did not expect division in progress")
 	}
+	if status.SittingDate == nil || *status.SittingDate != "2026-04-28" {
+		t.Fatalf("sitting_date = %#v, want 2026-04-28", status.SittingDate)
+	}
+}
+
+func TestParseHomepageAdjournedHasNoSittingDate(t *testing.T) {
+	status := parseHomepage(`
+		<input type="hidden" id="isMeetingInProgress" value="False" />
+		<span class="sync-view">The House stands adjourned until tomorrow.</span>
+	`, time.Date(2026, 4, 28, 22, 0, 0, 0, time.UTC))
+
+	if status.SittingDate != nil {
+		t.Fatalf("sitting_date = %#v, want nil for non-sitting poll", status.SittingDate)
+	}
+}
+
+func TestToResponseRoundTripsSittingDate(t *testing.T) {
+	date := "2026-04-28"
+	polled := time.Date(2026, 4, 28, 23, 30, 0, 0, time.UTC)
+	resp := toResponse(liveStatus{
+		IsSitting:    false,
+		BusinessType: defaultBusiness,
+		SittingDate:  &date,
+		LastPolledAt: &polled,
+		SourceURL:    sourceURL,
+	})
+	if resp.SittingDate == nil || *resp.SittingDate != date {
+		t.Fatalf("sitting_date = %#v, want %q", resp.SittingDate, date)
+	}
+	// API contract: the field is present even after the sitting ends so iOS
+	// can transition the Home card to "TODAY IN PARLIAMENT" once Hansard
+	// publishes — clients perform the 24h cutoff against today's date.
+	if resp.IsSitting {
+		t.Fatal("expected is_sitting=false in this fixture")
+	}
 }
 
 func TestParseHomepageAdjourned(t *testing.T) {

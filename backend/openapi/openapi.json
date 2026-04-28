@@ -382,6 +382,7 @@
                       "division_in_progress": false,
                       "checked_at": "2026-04-28T14:00:00Z",
                       "last_changed_at": "2026-04-28T13:59:00Z",
+                      "sitting_date": "2026-04-28",
                       "source_url": "https://www.ourcommons.ca/en"
                     }
                   },
@@ -392,6 +393,7 @@
                       "business_type": "Adjourned",
                       "division_in_progress": false,
                       "checked_at": "2026-04-28T23:00:00Z",
+                      "sitting_date": "2026-04-28",
                       "source_url": "https://www.ourcommons.ca/en"
                     }
                   }
@@ -838,6 +840,12 @@
           "division_in_progress": { "type": "boolean" },
           "checked_at": { "type": "string", "format": "date-time" },
           "last_changed_at": { "type": "string", "format": "date-time" },
+          "sitting_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-04-28",
+            "description": "Calendar date (Ottawa local) of the current or most-recent sitting. Preserved across the post-sitting window so iOS can transition the Home card from LIVE to TODAY IN PARLIAMENT once Hansard publishes for the same date."
+          },
           "source_url": { "type": "string", "format": "uri" }
         }
       },

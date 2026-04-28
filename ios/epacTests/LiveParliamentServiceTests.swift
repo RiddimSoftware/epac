@@ -39,6 +39,52 @@ struct LiveParliamentServiceTests {
         #expect(status.lastChangedAt != nil)
     }
 
+    @Test func fetchStatusDecodesSittingDateWhenPresent() async throws {
+        let service = LiveParliamentService(baseURL: URL(string: "https://api.example.test")!) { request in
+            let body = Data("""
+            {
+              "status": "adjourned",
+              "is_sitting": false,
+              "business_type": "Adjourned",
+              "division_in_progress": false,
+              "checked_at": "2026-04-28T23:00:00Z",
+              "sitting_date": "2026-04-28",
+              "source_url": "https://www.ourcommons.ca/en"
+            }
+            """.utf8)
+            return (
+                body,
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            )
+        }
+
+        let status = try await service.fetchStatus()
+        #expect(status.isSitting == false)
+        #expect(status.sittingDate == "2026-04-28")
+    }
+
+    @Test func fetchStatusSittingDateIsNilWhenAbsent() async throws {
+        let service = LiveParliamentService(baseURL: URL(string: "https://api.example.test")!) { request in
+            let body = Data("""
+            {
+              "status": "adjourned",
+              "is_sitting": false,
+              "business_type": "Adjourned",
+              "division_in_progress": false,
+              "checked_at": "2026-04-28T23:00:00Z",
+              "source_url": "https://www.ourcommons.ca/en"
+            }
+            """.utf8)
+            return (
+                body,
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            )
+        }
+
+        let status = try await service.fetchStatus()
+        #expect(status.sittingDate == nil)
+    }
+
     @Test func fetchStatusThrowsForServerError() async {
         let service = LiveParliamentService(baseURL: URL(string: "https://api.example.test")!) { request in
             (

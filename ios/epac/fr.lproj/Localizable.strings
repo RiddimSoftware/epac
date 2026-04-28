@@ -369,6 +369,9 @@
 "home.live.updated" = "Mis à jour %@";
 "home.live.infoTitle" = "À propos du direct parlementaire";
 "home.live.infoBody" = "Cette carte montre les travaux en cours à la Chambre. Le texte intégral est publié dans Hansard 2 à 4 heures après la fin de la séance.";
+"home.live.todayBadge" = "AUJOURD'HUI AU PARLEMENT · Chambre des communes";
+"home.live.tapToRead" = "Lire le Hansard complet →";
+"home.live.comingSoon" = "Le compte rendu Hansard de la séance d'aujourd'hui est en cours de préparation. Revenez dans quelques heures.";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";
