@@ -14,6 +14,7 @@ on:
           - loader
           - search
           - member-speeches
+          - riding-boundary
           - health
           - device-register
           - openapi
@@ -34,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, search, member-speeches, health, device-register, openapi, live-status]
+        service: [daily-fetch, loader, search, member-speeches, riding-boundary, health, device-register, openapi, live-status]
     steps:
       - uses: actions/checkout@v4
 
