@@ -261,4 +261,16 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func naturalResources() -> DataSource {
+        DataSource(
+            name: "NRCan",
+            description: "Natural Resources Canada Canadian Minerals Yearbook tables and National Forestry Database harvest and Crown timber revenue tables. Confidential mineral cells are suppressed by NRCan and shown as confidential in the app.",
+            url: NaturalResourcesStatisticsDatabase.snapshot()?.source.url
+                ?? NaturalResourcesStatisticsDatabase.fallbackSource.url,
+            lastSyncDate: nil,
+            vintage: "2025 minerals",
+            stalenessThreshold: nil
+        )
+    }
 }

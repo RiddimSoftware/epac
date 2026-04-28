@@ -117,6 +117,8 @@ struct RidingStatisticsView: View {
 
 			emissionsSection
 
+			naturalResourcesSection
+
 			healthSection
 
 			cppOasSection
@@ -632,6 +634,72 @@ struct RidingStatisticsView: View {
 		}
 	}
 
+	// MARK: - Natural resources section
+
+	@ViewBuilder
+	private var naturalResourcesSection: some View {
+		if let resources = NaturalResourcesStatisticsDatabase.statistic(for: member.province.shortCode) {
+			Section {
+				if resources.showMining {
+					if let latestMining = resources.latestMiningYear {
+						LabeledContent("Mineral shipments (\(resourceYearLabel(latestMining.year, provisional: latestMining.isProvisional)))") {
+							Text(mineralShipmentLabel(latestMining))
+								.monospacedDigit()
+						}
+					}
+					if !resources.topMinerals.isEmpty {
+						VStack(alignment: .leading, spacing: 6) {
+							Text("Top visible minerals")
+								.font(.caption.bold())
+							ForEach(Array(resources.topMinerals.prefix(3))) { mineral in
+								HStack(alignment: .firstTextBaseline, spacing: 8) {
+									Text(mineral.commodity)
+										.font(.caption)
+									Spacer()
+									Text(mineralValueLabel(mineral))
+										.font(.caption.monospacedDigit())
+										.foregroundStyle(.secondary)
+										.lineLimit(1)
+								}
+							}
+						}
+					}
+					if let note = resources.resourceNote {
+						Text(note)
+							.font(.caption)
+							.foregroundStyle(.secondary)
+					}
+				}
+
+				if resources.showForestry, let latestForestry = resources.latestForestryYear {
+					LabeledContent("Harvest volume (\(latestForestry.year))") {
+						Text(volumeLabel(latestForestry.harvestVolumeCubicMetres))
+							.monospacedDigit()
+					}
+					if let revenue = latestForestry.crownTimberRevenueDollars {
+						LabeledContent("Crown timber revenue (\(latestForestry.year))") {
+							Text(compactDollars(Double(revenue)))
+								.monospacedDigit()
+						}
+					}
+				}
+
+				Link(NaturalResourcesStatisticsDatabase.snapshot()?.source.title
+					?? NaturalResourcesStatisticsDatabase.fallbackSource.title,
+				     destination: NaturalResourcesStatisticsDatabase.snapshot()?.source.url
+					?? NaturalResourcesStatisticsDatabase.fallbackSource.url)
+					.font(.caption2)
+				DataSourceBadge(source: .naturalResources())
+			} header: {
+				Text("Natural Resources")
+			} footer: {
+				Text("Shown only for provinces where the source tables are materially relevant: forestry for BC, MB, ON, QC, and NB; mining for ON, QC, BC, SK, MB, and NL. Mineral shipment values are in current dollars and may be suppressed by NRCan as confidential; forestry value is Crown timber revenue, not total forest-sector output.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
 	// MARK: - Infrastructure section
 
 	private var infrastructureSection: some View {
@@ -907,5 +975,46 @@ struct RidingStatisticsView: View {
 		let title = ConsumerPriceIndexStatisticsDatabase.snapshot()?.source.title
 			?? ConsumerPriceIndexStatisticsDatabase.fallbackSource.title
 		return "\(title), \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))"
+	}
+
+	private func resourceYearLabel(_ year: Int, provisional: Bool) -> String {
+		provisional ? "\(year)p" : "\(year)"
+	}
+
+	private func mineralShipmentLabel(_ statistic: MineralYearStatistic) -> String {
+		guard let value = statistic.shipmentValueThousands else {
+			return statistic.isConfidential ? "Confidential" : "Not reported"
+		}
+		return compactDollars(Double(value) * 1_000)
+	}
+
+	private func mineralValueLabel(_ mineral: MineralCommodityValue) -> String {
+		guard let value = mineral.shipmentValueThousands else {
+			return mineral.isConfidential ? "confidential" : "not reported"
+		}
+		return compactDollars(Double(value) * 1_000)
+	}
+
+	private func volumeLabel(_ cubicMetres: Int) -> String {
+		let value = Double(cubicMetres)
+		if value >= 1_000_000 {
+			return "\(formattedDecimal(value / 1_000_000))M m³"
+		}
+		return "\(cubicMetres.formatted()) m³"
+	}
+
+	private func compactDollars(_ dollars: Double) -> String {
+		let absValue = abs(dollars)
+		if absValue >= 1_000_000_000 {
+			return "$\(formattedDecimal(dollars / 1_000_000_000))B"
+		}
+		if absValue >= 1_000_000 {
+			return "$\(formattedDecimal(dollars / 1_000_000))M"
+		}
+		return dollars.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
+	}
+
+	private func formattedDecimal(_ value: Double) -> String {
+		value.formatted(.number.precision(.fractionLength(1)))
 	}
 }
