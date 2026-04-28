@@ -45,7 +45,6 @@ def get_live_version(app_id: str, token: str) -> str | None:
         "filter[platform]": "IOS",
         "filter[appStoreState]": "READY_FOR_SALE",
         "fields[appStoreVersions]": "versionString",
-        "sort": "-createdDate",
         "limit": 1,
     }
     resp = requests.get(url, headers=headers, params=params, timeout=30)
