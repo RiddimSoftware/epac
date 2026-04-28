@@ -13,7 +13,7 @@ Run from the repository root:
 ./scripts/marketing/record-app-preview.sh
 ```
 
-The script boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, and uses `ffmpeg` to export the App Store-ready MP4.
+The script boots the 6.9-inch simulator, starts `simctl recordVideo`, runs only `AppPreviewRecordingTests/testAppPreviewSequence`, stops the recorder, and delegates final H.264/no-audio encoding to `evidence record-preview`.
 
 ## Storyboard
 

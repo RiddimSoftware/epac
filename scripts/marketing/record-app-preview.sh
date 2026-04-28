@@ -11,13 +11,9 @@ FASTLANE_PREVIEW_DIR="$ROOT_DIR/ios/fastlane/app-previews/en-US"
 FASTLANE_PREVIEW_VIDEO="$FASTLANE_PREVIEW_DIR/IPHONE_67_app-preview.mp4"
 DEVICE_NAME="${DEVICE_NAME:-iPhone 17 Pro Max}"
 DESTINATION="${DESTINATION:-platform=iOS Simulator,name=$DEVICE_NAME}"
+EVIDENCE="$ROOT_DIR/scripts/evidence/run-evidence.sh"
 
 mkdir -p "$OUTPUT_DIR"
-
-if ! command -v ffmpeg >/dev/null 2>&1; then
-  echo "error: ffmpeg is required" >&2
-  exit 1
-fi
 
 if ! command -v ffprobe >/dev/null 2>&1; then
   echo "error: ffprobe is required" >&2
@@ -46,7 +42,7 @@ xcodebuild test -project epac.xcodeproj -scheme epac -destination "$DESTINATION"
 cleanup
 trap - EXIT
 
-ffmpeg -y -i "$RAW_VIDEO" -t 30 -vf "scale=886:1920:force_original_aspect_ratio=increase,crop=886:1920,fps=30" -an -c:v libx264 -pix_fmt yuv420p -profile:v high -level 4.0 -movflags +faststart "$FINAL_VIDEO"
+"$EVIDENCE" record-preview --input "$RAW_VIDEO" --output "$FINAL_VIDEO" --duration 30 --width 886 --height 1920 --fps 30
 
 ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -show_entries format=duration -of default=noprint_wrappers=1 "$FINAL_VIDEO"
 echo "Wrote $FINAL_VIDEO"

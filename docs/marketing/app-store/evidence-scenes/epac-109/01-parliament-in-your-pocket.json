@@ -1,0 +1,27 @@
+{
+  "scenes": [
+    {
+      "id": "epac-109-parliament-in-your-pocket",
+      "width": 1290,
+      "height": 2796,
+      "background": "#f5f7fb",
+      "headline": "Parliament in your pocket",
+      "subhead": "Read official House debates in a format built for scanning.",
+      "source_text": "House of Commons Hansard",
+      "device_frame": {
+        "x": 780,
+        "y": 420,
+        "width": 340,
+        "height": 760,
+        "corner_radius": 56,
+        "fill": "#111827"
+      },
+      "rows": [
+        { "kind": "badge", "text": "Hansard, made readable" },
+        { "kind": "left", "title": "The Speaker", "text": "Government Orders. Bill C-5." },
+        { "kind": "right", "title": "Minister", "text": "Internal trade and labour mobility." },
+        { "kind": "left", "title": "Opposition MP", "text": "Scrutiny, timelines, and accountability." }
+      ]
+    }
+  ]
+}

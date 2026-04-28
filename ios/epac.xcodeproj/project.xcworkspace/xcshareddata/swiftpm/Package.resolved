@@ -1,5 +1,5 @@
 {
-  "originHash" : "7afabbaf3beda7ef86c5f3069d7f61f039cd55914dfea7ac3e74c045d5bec55f",
+  "originHash" : "0c0f1b509a927f349ab2b2c7ae1f9b68e26baa34019b36caf4f86b85afde4c2e",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "ecf7edb1ba6d4406543af3796c512005dc013802",
         "version" : "2.7.6"
+      }
+    },
+    {
+      "identity" : "evidence",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sunnypurewal/evidence",
+      "state" : {
+        "branch" : "main",
+        "revision" : "47b1102b209dc0de16db8b3ffd3b3b400808c5b7"
       }
     },
     {

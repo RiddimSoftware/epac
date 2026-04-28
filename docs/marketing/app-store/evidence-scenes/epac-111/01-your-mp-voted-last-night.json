@@ -1,0 +1,27 @@
+{
+  "scenes": [
+    {
+      "id": "epac-111-your-mp-voted-last-night",
+      "width": 1290,
+      "height": 2796,
+      "background": "#f8fafc",
+      "headline": "Your MP voted last night. Did you know?",
+      "subhead": "See the vote record, the party split, and the official source in one place.",
+      "source_text": "Parliament of Canada vote record",
+      "device_frame": {
+        "x": 760,
+        "y": 440,
+        "width": 360,
+        "height": 780,
+        "corner_radius": 58,
+        "fill": "#111827"
+      },
+      "rows": [
+        { "kind": "badge", "text": "Vote record" },
+        { "kind": "metric", "label": "Official result", "value": "Recorded" },
+        { "kind": "row", "title": "Members", "detail": "Yea, Nay, and paired votes" },
+        { "kind": "row", "title": "Source", "detail": "House of Commons record included" }
+      ]
+    }
+  ]
+}
