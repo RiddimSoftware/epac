@@ -50,6 +50,23 @@ When a second Python pipeline needs the same setup, factor `_JSONFormatter` and 
 
 Backend environments are split for staging and production. Staging base URL: `https://staging-api.epac.riddimsoftware.com`; production base URL: `https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production`. iOS reads `BackendBaseURL` from `Info.plist` via `BACKEND_BASE_URL` in `ios/Config/*.xcconfig`; Debug uses staging and Release uses production unless CI overrides `BACKEND_BASE_URL`. Backend merges to `main` deploy to staging through `.github/workflows/deploy-staging.yml`; production backend deploys are manual through `.github/workflows/deploy-production.yml`.
 
+### Backend API rate limits (EPAC-225)
+
+All Go Lambda handlers that use `observability.WrapAPIGateway` or `observability.WrapAPIGatewayV2` apply shared `/api/v1/` rate limiting before endpoint logic runs. `live-status` also calls the same limiter directly because it accepts both scheduled poll events and API Gateway events in one handler.
+
+Rate limit keys prefer `X-Device-ID` when present, then fall back to source IP / `X-Forwarded-For`. This avoids punishing iOS users behind carrier NAT when the client can provide an anonymous device-scoped token.
+
+Current limits:
+
+| Endpoint scope | Limit |
+|---|---:|
+| General `/api/v1/` endpoints | 100 requests / minute |
+| `/api/v1/live` | 2 requests / minute |
+| `/api/v1/members` and `/api/v1/members/*` | 10 requests / minute |
+| `/api/v1/calendar/house.ics` | 1 request / 5 minutes |
+
+Limit hits return `HTTP 429 Too Many Requests` with a JSON error body and `Retry-After` header in seconds. The iOS `NetworkService` honors `Retry-After` and retries within its existing four-attempt retry budget.
+
 ---
 
 ## Architecture

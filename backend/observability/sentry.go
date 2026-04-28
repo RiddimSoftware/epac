@@ -116,6 +116,11 @@ func WrapAPIGateway(service string, handler func(context.Context, events.APIGate
 		hub := invocationHub(ctx, service, req.RequestContext.RequestID, req.HTTPMethod, req.Path)
 		defer recoverPanic(ctx, hub, &err)
 
+		if limitedResp, limited := CheckAPIGatewayRateLimit(req); limited {
+			captureResult(hub, nil, limitedResp.StatusCode, limitedResp.Body)
+			return limitedResp, nil
+		}
+
 		resp, err = handler(ctx, req)
 		captureResult(hub, err, resp.StatusCode, resp.Body)
 		return resp, err
@@ -126,6 +131,11 @@ func WrapAPIGatewayV2(service string, handler func(context.Context, events.APIGa
 	return func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (resp events.APIGatewayV2HTTPResponse, err error) {
 		hub := invocationHub(ctx, service, req.RequestContext.RequestID, req.RequestContext.HTTP.Method, req.RawPath)
 		defer recoverPanic(ctx, hub, &err)
+
+		if limitedResp, limited := CheckAPIGatewayV2RateLimit(req); limited {
+			captureResult(hub, nil, limitedResp.StatusCode, limitedResp.Body)
+			return limitedResp, nil
+		}
 
 		resp, err = handler(ctx, req)
 		captureResult(hub, err, resp.StatusCode, resp.Body)
