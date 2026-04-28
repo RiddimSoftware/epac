@@ -1,7 +1,7 @@
 // search Lambda — GET /search?query=<terms>
 //
-// Uses PostgreSQL GIN full-text index (to_tsvector) for fast speech search.
-// Falls back to ILIKE if the FTS index is not yet present.
+// Uses PostgreSQL GIN full-text indexes for English and French speech search.
+// Falls back to the legacy English expression index if bilingual vectors are not yet present.
 package main
 
 import (
@@ -29,8 +29,9 @@ type SearchResult struct {
 }
 
 type SearchResponse struct {
-	Query   string         `json:"query"`
-	Results []SearchResult `json:"results"`
+	Query        string         `json:"query"`
+	LanguageHint string         `json:"language_hint"`
+	Results      []SearchResult `json:"results"`
 }
 
 var dbConn *pgx.Conn
@@ -62,34 +63,112 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 }
 
 func search(ctx context.Context, conn *pgx.Conn, query string) ([]SearchResult, error) {
-	// PostgreSQL full-text search using the GIN index.
+	languageHint := detectQueryLanguage(query)
+
+	// PostgreSQL full-text search using language-specific GIN indexes.
 	// ts_headline generates a snippet with matched terms highlighted (stripped of tags here).
 	rows, err := conn.Query(ctx, `
+		WITH query AS (
+			SELECT
+				plainto_tsquery('english', $1) AS english_query,
+				plainto_tsquery('french', $1) AS french_query
+		)
 		SELECT
-			intervention_id,
-			COALESCE(speaker_name, ''),
-			ts_headline(
-				'english', content,
-				plainto_tsquery('english', $1),
-				'MaxWords=50, MinWords=10, StartSel=, StopSel='
-			),
-			sitting_date,
-			subject_title,
-			member_id
-		FROM speeches
-		WHERE to_tsvector('english', COALESCE(content, '')) @@ plainto_tsquery('english', $1)
-		ORDER BY ts_rank(
-			to_tsvector('english', COALESCE(content, '')),
-			plainto_tsquery('english', $1)
-		) DESC
+			s.intervention_id,
+			COALESCE(s.speaker_name, ''),
+			CASE
+				WHEN s.search_vector_fr @@ query.french_query
+					AND ($2 = 'fr' OR COALESCE(NOT (s.search_vector_en @@ query.english_query), TRUE))
+					THEN ts_headline(
+						'french', s.content,
+						query.french_query,
+						'MaxWords=50, MinWords=10, StartSel=, StopSel='
+					)
+				ELSE ts_headline(
+					'english', s.content,
+					query.english_query,
+					'MaxWords=50, MinWords=10, StartSel=, StopSel='
+				)
+			END,
+			s.sitting_date,
+			s.subject_title,
+			s.member_id
+		FROM speeches s, query
+		WHERE
+			(s.search_vector_en @@ query.english_query)
+			OR (s.search_vector_fr @@ query.french_query)
+		ORDER BY GREATEST(
+			CASE
+				WHEN s.search_vector_en @@ query.english_query
+					THEN ts_rank(s.search_vector_en, query.english_query) *
+						CASE WHEN $2 = 'en' THEN 1.15 ELSE 1.0 END
+				ELSE 0
+			END,
+			CASE
+				WHEN s.search_vector_fr @@ query.french_query
+					THEN ts_rank(s.search_vector_fr, query.french_query) *
+						CASE WHEN $2 = 'fr' THEN 1.15 ELSE 1.0 END
+				ELSE 0
+			END
+		) DESC,
+		s.sitting_date DESC NULLS LAST
 		LIMIT 50`,
-		query,
+		query, languageHint,
 	)
+	if err != nil {
+		rows, err = conn.Query(ctx, `
+			SELECT
+				intervention_id,
+				COALESCE(speaker_name, ''),
+				ts_headline(
+					'english', content,
+					plainto_tsquery('english', $1),
+					'MaxWords=50, MinWords=10, StartSel=, StopSel='
+				),
+				sitting_date,
+				subject_title,
+				member_id
+			FROM speeches
+			WHERE to_tsvector('english', COALESCE(content, '')) @@ plainto_tsquery('english', $1)
+			ORDER BY ts_rank(
+				to_tsvector('english', COALESCE(content, '')),
+				plainto_tsquery('english', $1)
+			) DESC
+			LIMIT 50`,
+			query,
+		)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("fts query error: %w", err)
 	}
 	defer rows.Close()
 
+	return scanResults(rows)
+}
+
+func detectQueryLanguage(query string) string {
+	lower := strings.ToLower(query)
+	if strings.ContainsAny(lower, "àâçéèêëîïôùûüÿœ") {
+		return "fr"
+	}
+
+	words := strings.FieldsFunc(lower, func(r rune) bool {
+		return r < 'a' || r > 'z'
+	})
+	frenchMarkers := map[string]bool{
+		"des": true, "les": true, "une": true, "avec": true, "pour": true,
+		"aux": true, "sur": true, "dans": true, "budgetaire": true,
+		"gouvernement": true, "logement": true, "sante": true,
+	}
+	for _, word := range words {
+		if frenchMarkers[word] {
+			return "fr"
+		}
+	}
+	return "en"
+}
+
+func scanResults(rows pgx.Rows) ([]SearchResult, error) {
 	var results []SearchResult
 	for rows.Next() {
 		var (
@@ -152,7 +231,11 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		results = []SearchResult{}
 	}
 
-	resp := SearchResponse{Query: query, Results: results}
+	resp := SearchResponse{
+		Query:        query,
+		LanguageHint: detectQueryLanguage(query),
+		Results:      results,
+	}
 	body, err := json.Marshal(resp)
 	if err != nil {
 		return events.APIGatewayProxyResponse{

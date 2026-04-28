@@ -51,3 +51,20 @@ func TestHandleRequest_WhitespaceQuery(t *testing.T) {
 		t.Errorf("whitespace-only query: got status %d, want %d", resp.StatusCode, http.StatusBadRequest)
 	}
 }
+
+func TestDetectQueryLanguage(t *testing.T) {
+	cases := []struct {
+		query string
+		want  string
+	}{
+		{"housing affordability", "en"},
+		{"politique budgétaire", "fr"},
+		{"sante logement", "fr"},
+		{"budget", "en"},
+	}
+	for _, c := range cases {
+		if got := detectQueryLanguage(c.query); got != c.want {
+			t.Errorf("detectQueryLanguage(%q) = %q, want %q", c.query, got, c.want)
+		}
+	}
+}

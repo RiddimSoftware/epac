@@ -74,10 +74,56 @@ func TestParseHansard(t *testing.T) {
 	if first.WordCount <= 0 {
 		t.Errorf("first.WordCount = %d, want > 0", first.WordCount)
 	}
+	if first.Language != "und" {
+		t.Errorf("first.Language = %q, want und when FloorLanguage is absent", first.Language)
+	}
 
 	second := interventions[1]
 	if second.InterventionSeq != 1 {
 		t.Errorf("second.InterventionSeq = %d, want 1", second.InterventionSeq)
+	}
+}
+
+func TestParseHansard_LanguageFromFloorLanguage(t *testing.T) {
+	const xmlSample = `<House>
+  <SubjectOfBusiness>
+    <FloorLanguage language="EN">[English]</FloorLanguage>
+    <SubjectOfBusinessTitle>Budget</SubjectOfBusinessTitle>
+    <Intervention id="1">
+      <PersonSpeaking><Affiliation DbId="10">Speaker A</Affiliation></PersonSpeaking>
+      <Content><ParaText>Budget implementation is before the House.</ParaText></Content>
+    </Intervention>
+    <FloorLanguage language="FR">[Translation]</FloorLanguage>
+    <Intervention id="2">
+      <PersonSpeaking><Affiliation DbId="20">Speaker B</Affiliation></PersonSpeaking>
+      <Content><ParaText>La politique budgétaire est devant la Chambre.</ParaText></Content>
+    </Intervention>
+    <Intervention id="3">
+      <PersonSpeaking><Affiliation DbId="30">Speaker C</Affiliation></PersonSpeaking>
+      <Content>
+        <ParaText>La première partie est en français.</ParaText>
+        <FloorLanguage language="EN">[English]</FloorLanguage>
+        <ParaText>The second part is in English.</ParaText>
+      </Content>
+    </Intervention>
+  </SubjectOfBusiness>
+</House>`
+
+	interventions, err := parseHansard(strings.NewReader(xmlSample), "44-1-HAN200-E.XML")
+	if err != nil {
+		t.Fatalf("parseHansard returned error: %v", err)
+	}
+	if len(interventions) != 3 {
+		t.Fatalf("got %d interventions, want 3", len(interventions))
+	}
+	if interventions[0].Language != "en" {
+		t.Errorf("first language = %q, want en", interventions[0].Language)
+	}
+	if interventions[1].Language != "fr" {
+		t.Errorf("second language = %q, want fr", interventions[1].Language)
+	}
+	if interventions[2].Language != "mixed" {
+		t.Errorf("third language = %q, want mixed", interventions[2].Language)
 	}
 }
 
