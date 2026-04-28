@@ -53,6 +53,15 @@ jobs:
             --issuer-id "$ASC_ISSUER_ID" \
             --private-key /tmp/AuthKey.p8
 
+      - name: Fetch release history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/dashboard/fetch_releases.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key /tmp/AuthKey.p8
+
       - name: Commit updated data files
         run: |
           git config user.name "epac-dashboard-bot"
