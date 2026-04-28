@@ -37,6 +37,7 @@ class SpeechViewModel {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
+		memberResolutionCache.reset()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
