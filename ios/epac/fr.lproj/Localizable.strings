@@ -32,7 +32,7 @@
 "sitting.calendar.export.alreadyAdded" = "Ces jours de séance sont déjà dans votre calendrier.";
 "sitting.calendar.export.addedCount" = "%d jour(s) de séance ajouté(s) au calendrier.";
 "sitting.calendar.export.copiedSubscription" = "Lien d'abonnement au calendrier copié.";
-"sitting.calendar.export.eventTitle" = "House of Commons - Sitting Day";
+"sitting.calendar.export.eventTitle" = "House of Commons — Sitting Day";
 "sitting.calendar.export.error.accessDenied" = "L'accès au calendrier n'a pas été accordé.";
 "sitting.calendar.export.error.noDefaultCalendar" = "Aucun calendrier modifiable n'est disponible.";
 

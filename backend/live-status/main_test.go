@@ -102,7 +102,7 @@ func TestBuildHouseCalendarICS(t *testing.T) {
 		"UID:house-sitting-2026-04-29@epac.riddimsoftware.com\r\n",
 		"DTSTART;VALUE=DATE:20260429\r\n",
 		"DTEND;VALUE=DATE:20260430\r\n",
-		"SUMMARY:House of Commons - Sitting Day\r\n",
+		"SUMMARY:House of Commons — Sitting Day\r\n",
 		"URL:https://epac.riddimsoftware.com/sitting/2026-04-29\r\n",
 		"END:VCALENDAR\r\n",
 	}
@@ -114,10 +114,23 @@ func TestBuildHouseCalendarICS(t *testing.T) {
 }
 
 func TestICSEscape(t *testing.T) {
-	got := icsEscape(`one,two;three\four` + "\n" + "five")
-	want := `one\,two\;three\\four\nfive`
+	got := icsEscape(`one,two;three\four` + "\r\n" + "five" + "\r" + "six")
+	want := `one\,two\;three\\four\nfive\nsix`
 	if got != want {
 		t.Fatalf("icsEscape() = %q, want %q", got, want)
+	}
+}
+
+func TestFoldICSLinePreservesRunesAndLineLimit(t *testing.T) {
+	got := foldICSLine("DESCRIPTION:" + strings.Repeat("calendar ", 10) + "séance")
+	for _, line := range strings.Split(got, "\r\n") {
+		trimmed := strings.TrimPrefix(line, " ")
+		if len(line) > 75 {
+			t.Fatalf("folded line has %d bytes, want <= 75: %q", len(line), line)
+		}
+		if !strings.Contains(got, "séance") || strings.Contains(trimmed, "�") {
+			t.Fatalf("folded line corrupted UTF-8: %q", got)
+		}
 	}
 }
 

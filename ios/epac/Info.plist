@@ -119,8 +119,8 @@
 	<key>BackendBaseURL</key>
 	<string>$(BACKEND_BASE_URL)</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>calendar.fullAccessUsage</string>
+	<string>epac adds House of Commons sitting days to your calendar.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>calendar.fullAccessUsage</string>
+	<string>epac adds House of Commons sitting days to your calendar.</string>
 </dict>
 </plist>

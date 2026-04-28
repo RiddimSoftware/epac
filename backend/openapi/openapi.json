@@ -410,7 +410,7 @@
                 "schema": { "type": "string" },
                 "examples": {
                   "calendar": {
-                    "value": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Riddim Software//epac Parliament Calendar//EN\r\nBEGIN:VEVENT\r\nUID:house-sitting-2026-04-29@epac.riddimsoftware.com\r\nDTSTART;VALUE=DATE:20260429\r\nDTEND;VALUE=DATE:20260430\r\nSUMMARY:House of Commons - Sitting Day\r\nURL:https://epac.riddimsoftware.com/sitting/2026-04-29\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+                    "value": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Riddim Software//epac Parliament Calendar//EN\r\nBEGIN:VEVENT\r\nUID:house-sitting-2026-04-29@epac.riddimsoftware.com\r\nDTSTART;VALUE=DATE:20260429\r\nDTEND;VALUE=DATE:20260430\r\nSUMMARY:House of Commons — Sitting Day\r\nURL:https://epac.riddimsoftware.com/sitting/2026-04-29\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
                   }
                 }
               }

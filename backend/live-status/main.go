@@ -26,6 +26,7 @@ const (
 	defaultBusiness   = "Adjourned"
 	defaultCacheValue = "max-age=90"
 	calendarCacheTTL  = 24 * time.Hour
+	calendarEventName = "House of Commons — Sitting Day"
 )
 
 var (
@@ -396,34 +397,60 @@ func ensureAnnualSittingCalendar(ctx context.Context, conn *pgx.Conn, client *ht
 func buildHouseCalendarICS(events []calendarEvent, generatedAt time.Time) string {
 	var b strings.Builder
 	dtstamp := generatedAt.UTC().Format("20060102T150405Z")
-	b.WriteString("BEGIN:VCALENDAR\r\n")
-	b.WriteString("VERSION:2.0\r\n")
-	b.WriteString("PRODID:-//Riddim Software//epac Parliament Calendar//EN\r\n")
-	b.WriteString("CALSCALE:GREGORIAN\r\n")
-	b.WriteString("METHOD:PUBLISH\r\n")
-	b.WriteString("X-WR-CALNAME:House of Commons Sitting Days\r\n")
-	b.WriteString("X-WR-TIMEZONE:America/Toronto\r\n")
+	writeICSLine(&b, "BEGIN", "VCALENDAR")
+	writeICSLine(&b, "VERSION", "2.0")
+	writeICSLine(&b, "PRODID", "-//Riddim Software//epac Parliament Calendar//EN")
+	writeICSLine(&b, "CALSCALE", "GREGORIAN")
+	writeICSLine(&b, "METHOD", "PUBLISH")
+	writeICSLine(&b, "X-WR-CALNAME", "House of Commons Sitting Days")
+	writeICSLine(&b, "X-WR-TIMEZONE", "America/Toronto")
 	for _, event := range events {
 		start := event.Date.UTC()
 		end := start.AddDate(0, 0, 1)
 		dateString := start.Format("2006-01-02")
-		b.WriteString("BEGIN:VEVENT\r\n")
-		b.WriteString("UID:house-sitting-" + dateString + "@epac.riddimsoftware.com\r\n")
-		b.WriteString("DTSTAMP:" + dtstamp + "\r\n")
-		b.WriteString("DTSTART;VALUE=DATE:" + start.Format("20060102") + "\r\n")
-		b.WriteString("DTEND;VALUE=DATE:" + end.Format("20060102") + "\r\n")
-		b.WriteString("SUMMARY:House of Commons - Sitting Day\r\n")
-		b.WriteString("DESCRIPTION:" + icsEscape("House of Commons sitting day. Source: "+event.SourceURL) + "\r\n")
-		b.WriteString("URL:https://epac.riddimsoftware.com/sitting/" + dateString + "\r\n")
-		b.WriteString("END:VEVENT\r\n")
+		writeICSLine(&b, "BEGIN", "VEVENT")
+		writeICSLine(&b, "UID", "house-sitting-"+dateString+"@epac.riddimsoftware.com")
+		writeICSLine(&b, "DTSTAMP", dtstamp)
+		writeICSLine(&b, "DTSTART;VALUE=DATE", start.Format("20060102"))
+		writeICSLine(&b, "DTEND;VALUE=DATE", end.Format("20060102"))
+		writeICSLine(&b, "SUMMARY", calendarEventName)
+		writeICSLine(&b, "DESCRIPTION", icsEscape("House of Commons sitting day. Source: "+event.SourceURL))
+		writeICSLine(&b, "URL", "https://epac.riddimsoftware.com/sitting/"+dateString)
+		writeICSLine(&b, "END", "VEVENT")
 	}
-	b.WriteString("END:VCALENDAR\r\n")
+	writeICSLine(&b, "END", "VCALENDAR")
+	return b.String()
+}
+
+func writeICSLine(b *strings.Builder, name string, value string) {
+	b.WriteString(foldICSLine(name + ":" + value))
+	b.WriteString("\r\n")
+}
+
+func foldICSLine(line string) string {
+	const maxLineBytes = 75
+	if len(line) <= maxLineBytes {
+		return line
+	}
+	var b strings.Builder
+	lineBytes := 0
+	for _, r := range line {
+		chunk := string(r)
+		if lineBytes > 0 && lineBytes+len(chunk) > maxLineBytes {
+			b.WriteString("\r\n ")
+			lineBytes = 1
+		}
+		b.WriteString(chunk)
+		lineBytes += len(chunk)
+	}
 	return b.String()
 }
 
 func icsEscape(value string) string {
 	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, "\r\n", `\n`)
 	value = strings.ReplaceAll(value, "\n", `\n`)
+	value = strings.ReplaceAll(value, "\r", `\n`)
 	value = strings.ReplaceAll(value, ";", `\;`)
 	value = strings.ReplaceAll(value, ",", `\,`)
 	return value

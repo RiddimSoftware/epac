@@ -39,7 +39,7 @@
 "sitting.calendar.export.alreadyAdded" = "Those sitting days are already in your calendar.";
 "sitting.calendar.export.addedCount" = "Added %d sitting day(s) to Calendar.";
 "sitting.calendar.export.copiedSubscription" = "Calendar subscription link copied.";
-"sitting.calendar.export.eventTitle" = "House of Commons - Sitting Day";
+"sitting.calendar.export.eventTitle" = "House of Commons — Sitting Day";
 "sitting.calendar.export.error.accessDenied" = "Calendar access was not granted.";
 "sitting.calendar.export.error.noDefaultCalendar" = "No writable calendar is available.";
 
