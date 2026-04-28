@@ -138,71 +138,59 @@ struct CommitteesView: View {
 
 struct CommitteeMeetingsView: View {
     let committee: ParliamentaryCommittee
-    @State private var meetings: [CommitteeMeeting] = []
+    @State private var upcomingMeetings: [CommitteeMeeting] = []
+    @State private var recentMeetings: [CommitteeMeeting] = []
     @State private var isLoading = false
     @State private var loadFailed = false
 
+    private var hasMeetings: Bool {
+        !upcomingMeetings.isEmpty || !recentMeetings.isEmpty
+    }
+
     var body: some View {
         Group {
-            if isLoading && meetings.isEmpty {
+            if isLoading && !hasMeetings {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
-            } else if loadFailed && meetings.isEmpty {
+            } else if loadFailed && !hasMeetings {
                 ContentUnavailableView(
                     NSLocalizedString("committees.error.title", comment: ""),
                     systemImage: "exclamationmark.triangle",
                     description: Text(NSLocalizedString("committees.error.description", comment: ""))
                 )
-            } else if meetings.isEmpty && !isLoading {
+            } else if !hasMeetings && !isLoading {
                 ContentUnavailableView(
                     NSLocalizedString("committees.noMeetings", comment: ""),
                     systemImage: "calendar.badge.exclamationmark"
                 )
             } else {
-                List(meetings) { meeting in
-                    NavigationLink(destination: CommitteeEvidenceView(meeting: meeting)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(
-                                    String(
-                                        format: NSLocalizedString("committees.meeting.number", comment: ""),
-                                        meeting.meetingNumber
-                                    )
-                                )
-                                .font(.caption.monospacedDigit().weight(.semibold))
-                                Spacer()
-                                if let date = meeting.date {
-                                    Text(date, style: .date)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                List {
+                    if !upcomingMeetings.isEmpty {
+                        Section(NSLocalizedString("committees.upcoming", comment: "")) {
+                            ForEach(upcomingMeetings) { meeting in
+                                NavigationLink(destination: CommitteeEvidenceView(meeting: meeting)) {
+                                    CommitteeMeetingRow(meeting: meeting, showsWitnesses: true)
                                 }
-                            }
-                            if let first = meeting.agendaItems.first {
-                                Text(first)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
+                                .accessibilityLabel(accessibilityLabel(for: meeting))
                             }
                         }
-                        .padding(.vertical, 3)
                     }
-                    .accessibilityLabel({
-                        var label = String(
-                            format: NSLocalizedString("committees.meeting.number", comment: ""),
-                            meeting.meetingNumber
-                        )
-                        if let date = meeting.date {
-                            label += ", \(date.formatted(date: .abbreviated, time: .omitted))"
+
+                    if !recentMeetings.isEmpty {
+                        Section(NSLocalizedString("committees.recentEvidence", comment: "")) {
+                            ForEach(recentMeetings) { meeting in
+                                NavigationLink(destination: CommitteeEvidenceView(meeting: meeting)) {
+                                    CommitteeMeetingRow(meeting: meeting, showsWitnesses: false)
+                                }
+                                .accessibilityLabel(accessibilityLabel(for: meeting))
+                            }
                         }
-                        if let first = meeting.agendaItems.first {
-                            label += ", \(first)"
-                        }
-                        return label
-                    }())
+                    }
                 }
                 .listStyle(.plain)
                 .refreshable {
-                    meetings = []
+                    upcomingMeetings = []
+                    recentMeetings = []
                     loadFailed = false
                     await load()
                 }
@@ -217,12 +205,88 @@ struct CommitteeMeetingsView: View {
         isLoading = true
         loadFailed = false
         defer { isLoading = false }
-        let result = await CommitteesService.fetchRecentMeetings(committeeId: committee.id)
-        if result.isEmpty {
+        let result = await CommitteesService.fetchMeetings(committeeId: committee.id)
+        if result.upcoming.isEmpty && result.recent.isEmpty {
             loadFailed = true
         } else {
-            meetings = result
+            upcomingMeetings = result.upcoming
+            recentMeetings = result.recent
         }
+    }
+
+    private func accessibilityLabel(for meeting: CommitteeMeeting) -> String {
+        var label = String(
+            format: NSLocalizedString("committees.meeting.number", comment: ""),
+            meeting.meetingNumber
+        )
+        if let date = meeting.date {
+            label += ", \(date.formatted(date: .abbreviated, time: .shortened))"
+        }
+        if let first = meeting.agendaItems.first {
+            label += ", \(first)"
+        }
+        if !meeting.witnesses.isEmpty {
+            label += ", "
+            label += String(
+                format: NSLocalizedString("committees.witnesses.accessibility.count", comment: ""),
+                meeting.witnesses.count
+            )
+        }
+        return label
+    }
+}
+
+private struct CommitteeMeetingRow: View {
+    let meeting: CommitteeMeeting
+    let showsWitnesses: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(
+                    String(
+                        format: NSLocalizedString("committees.meeting.number", comment: ""),
+                        meeting.meetingNumber
+                    )
+                )
+                .font(.caption.monospacedDigit().weight(.semibold))
+                Spacer()
+                if let date = meeting.date {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(date, style: .date)
+                            .font(.caption2)
+                        Text(date, style: .time)
+                            .font(.caption2)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+            if let first = meeting.agendaItems.first {
+                Text(first)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            if showsWitnesses, !meeting.witnesses.isEmpty {
+                Text(witnessSummary)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    private var witnessSummary: String {
+        let names = meeting.witnesses.prefix(3).map(\.name).joined(separator: ", ")
+        if meeting.witnesses.count > 3 {
+            return String(
+                format: NSLocalizedString("committees.witnesses.count", comment: ""),
+                names,
+                meeting.witnesses.count - 3
+            )
+        }
+        return String(format: NSLocalizedString("committees.witnesses", comment: ""), names)
     }
 }
 
@@ -358,6 +422,21 @@ struct CommitteeEvidenceView: View {
                 Section(NSLocalizedString("committees.agenda", comment: "")) {
                     ForEach(meeting.agendaItems, id: \.self) { item in
                         Text(item).font(.subheadline)
+                    }
+                }
+            }
+            if !meeting.witnesses.isEmpty {
+                Section(NSLocalizedString("committees.confirmedWitnesses", comment: "")) {
+                    ForEach(meeting.witnesses) { witness in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(witness.name)
+                                .font(.subheadline.weight(.semibold))
+                            if !witness.organization.isEmpty {
+                                Text(witness.organization)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
             }

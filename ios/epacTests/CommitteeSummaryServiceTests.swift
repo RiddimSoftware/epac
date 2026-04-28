@@ -109,6 +109,7 @@ struct CommitteeSummaryServiceTests {
 			parliament: 45,
 			date: nil,
 			agendaItems: ["Federal budget"],
+			witnesses: [],
 			webcastURL: nil,
 			publicationURL: nil,
 			evidenceURL: nil
