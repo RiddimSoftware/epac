@@ -20,6 +20,11 @@ import Foundation
 struct CommitteesService {
     private static let baseURL = URL(string: "https://api.open.ourcommons.ca")!
 
+    struct CommitteeMeetingsResult: Sendable {
+        let upcoming: [CommitteeMeeting]
+        let recent: [CommitteeMeeting]
+    }
+
     // MARK: - Committees list
 
     /// Returns all House of Commons committees for the given parliament.
@@ -65,13 +70,24 @@ struct CommitteesService {
     /// Returns the most recent meetings for a given committee.
     /// Returns [] on any network or parse failure.
     static func fetchRecentMeetings(committeeId: String, parliament: Int = 45) async -> [CommitteeMeeting] {
+        let meetings = await fetchMeetings(committeeId: committeeId, parliament: parliament)
+        return meetings.recent
+    }
+
+    /// Returns upcoming and recent meetings for a given committee.
+    /// Returns empty sections on any network or parse failure.
+    static func fetchMeetings(
+        committeeId: String,
+        parliament: Int = 45,
+        now: Date = Date()
+    ) async -> CommitteeMeetingsResult {
         guard var components = URLComponents(
             url: baseURL.appendingPathComponent("ocd/committees/\(committeeId)/meetings/"),
             resolvingAgainstBaseURL: false
-        ) else { return [] }
+        ) else { return CommitteeMeetingsResult(upcoming: [], recent: []) }
         components.queryItems = [
             URLQueryItem(name: "parliament", value: String(parliament)),
-            URLQueryItem(name: "pageSize", value: "10"),
+            URLQueryItem(name: "pageSize", value: "25"),
             URLQueryItem(name: "format", value: "json")
         ]
         guard let url = components.url,
@@ -80,12 +96,21 @@ struct CommitteesService {
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [[String: Any]]
-        else { return [] }
+        else { return CommitteeMeetingsResult(upcoming: [], recent: []) }
 
+        return parseMeetings(items, committeeId: committeeId, parliament: parliament, now: now)
+    }
+
+    static func parseMeetings(
+        _ items: [[String: Any]],
+        committeeId: String,
+        parliament: Int,
+        now: Date
+    ) -> CommitteeMeetingsResult {
         let isoParser = ISO8601DateFormatter()
         isoParser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        return items.compactMap { item -> CommitteeMeeting? in
+        let meetings = items.compactMap { item -> CommitteeMeeting? in
             let meetingNum = item["number"] as? Int ?? item["meetingNumber"] as? Int ?? 0
             let sessionNum = item["session"] as? Int ?? item["sessionNumber"] as? Int ?? 1
             let parl = item["parliament"] as? Int ?? parliament
@@ -97,12 +122,12 @@ struct CommitteesService {
                 return fallback.date(from: dateStr)
             }()
             let committeeName = item["committeeNameEn"] as? String ?? ""
-            let agenda = (item["agendaItems"] as? [[String: Any]] ?? [])
-                .compactMap { $0["titleEn"] as? String ?? $0["title"] as? String }
+            let agenda = parseAgendaItems(from: item)
             let pubURLStr = item["publicationUrl"] as? String ?? item["url"] as? String
             let pubURL = pubURLStr.flatMap { URL(string: $0) }
             let evidenceURLStr = item["evidenceUrl"] as? String
             let evidenceURL = evidenceURLStr.flatMap { URL(string: $0) }
+            let witnesses = parseWitnesses(from: item)
             let webcastURL = firstURL(
                 in: item,
                 keys: [
@@ -120,12 +145,19 @@ struct CommitteesService {
                 parliament: parl,
                 date: date,
                 agendaItems: agenda,
+                witnesses: witnesses,
                 webcastURL: webcastURL,
                 publicationURL: pubURL,
                 evidenceURL: evidenceURL
             )
         }
-        .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        let upcoming = meetings
+            .filter { ($0.date ?? .distantPast) >= now }
+            .sorted { ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture) }
+        let recent = meetings
+            .filter { ($0.date ?? .distantPast) < now }
+            .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        return CommitteeMeetingsResult(upcoming: upcoming, recent: recent)
     }
 
     // MARK: - Interventions (evidence) for a meeting
@@ -182,6 +214,58 @@ struct CommitteesService {
             if let value = item[key] as? String,
                let url = ParlVULinkBuilder.normalizedURL(from: value) {
                 return url
+            }
+        }
+        return nil
+    }
+
+    private static func parseWitnesses(from item: [String: Any]) -> [CommitteeWitness] {
+        let possibleCollections = [
+            "witnesses", "witnessList", "scheduledWitnesses", "participants"
+        ]
+        for key in possibleCollections {
+            if let values = item[key] as? [[String: Any]] {
+                return values.compactMap(parseWitness)
+            }
+        }
+        return []
+    }
+
+    private static func parseAgendaItems(from item: [String: Any]) -> [String] {
+        if let values = item["agendaItems"] as? [[String: Any]] {
+            return values.compactMap {
+                firstString(in: $0, keys: ["titleEn", "title", "nameEn", "name"])
+            }
+        }
+        if let values = item["agendaItems"] as? [String] {
+            return values
+        }
+        return []
+    }
+
+    private static func parseWitness(_ item: [String: Any]) -> CommitteeWitness? {
+        let name = firstString(
+            in: item,
+            keys: ["nameEn", "fullNameEn", "personNameEn", "witnessNameEn", "name", "fullName", "personName"]
+        )
+        guard let name, !name.isEmpty else { return nil }
+        let organization = firstString(
+            in: item,
+            keys: [
+                "organizationEn", "organizationNameEn", "affiliationEn",
+                "organization", "organizationName", "affiliation"
+            ]
+        ) ?? ""
+        return CommitteeWitness(name: name, organization: organization)
+    }
+
+    private static func firstString(in item: [String: Any], keys: [String]) -> String? {
+        for key in keys {
+            if let value = item[key] as? String {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    return trimmed
+                }
             }
         }
         return nil

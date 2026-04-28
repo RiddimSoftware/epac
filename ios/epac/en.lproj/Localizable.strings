@@ -473,7 +473,13 @@
 "committees.empty.title" = "No Committees";
 "committees.noMeetings" = "No Recent Meetings";
 "committees.meeting.number" = "Meeting %d";
+"committees.upcoming" = "Upcoming";
+"committees.recentEvidence" = "Recent Evidence";
 "committees.agenda" = "Agenda";
+"committees.confirmedWitnesses" = "Confirmed Witnesses";
+"committees.witnesses" = "Witnesses: %@";
+"committees.witnesses.count" = "Witnesses: %@, +%d more";
+"committees.witnesses.accessibility.count" = "%d confirmed witnesses";
 "committees.watchParlVU" = "Watch committee hearing";
 "committees.openParlVUArchive" = "Open ParlVU archive";
 "committees.viewTranscript" = "View full transcript on parl.ca →";
