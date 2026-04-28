@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from html.parser import HTMLParser
@@ -23,6 +25,12 @@ from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+# Importable both as a script (`python3 backend/cabinet/cabinet_ingest.py`)
+# and as a module — the path shim covers the script case.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from observability.logger import get_logger
+
+logger = get_logger("cabinet_ingest")
 
 PM_CABINET_URL = "https://www.pm.gc.ca/en/cabinet"
 PM_MANDATE_LETTERS_URL = "https://www.pm.gc.ca/en/mandate-letters"
@@ -205,19 +213,21 @@ def main(argv: list[str]) -> int:
     )
     args = parser.parse_args(argv)
 
+    started = time.monotonic()
+    logger.info("pipeline.start", extra={"sources": [PM_CABINET_URL, PM_MANDATE_LETTERS_URL]})
+
     try:
         cabinet_html = _fetch(PM_CABINET_URL)
         letters_html = _fetch(PM_MANDATE_LETTERS_URL)
-    except (HTTPError, URLError) as error:
-        print(f"ERROR: failed to fetch from pm.gc.ca: {error}", file=sys.stderr)
+    except (HTTPError, URLError):
+        logger.exception("pipeline.failed", extra={"reason": "fetch_failed", "url": PM_CABINET_URL})
         return 2
 
     entries = parse_cabinet_html(cabinet_html)
     if not entries:
-        print(
-            "ERROR: parsed zero cabinet entries — pm.gc.ca markup may have changed; "
-            "update _CabinetParser before re-running.",
-            file=sys.stderr,
+        logger.error(
+            "pipeline.failed",
+            extra={"reason": "zero_entries_parsed", "hint": "pm.gc.ca markup may have changed; update _CabinetParser"},
         )
         return 3
 
@@ -229,7 +239,17 @@ def main(argv: list[str]) -> int:
     else:
         with open(args.output, "w", encoding="utf-8") as handle:
             handle.write(payload)
-        print(f"Wrote {len(entries)} cabinet positions to {args.output}")
+
+    duration_ms = int((time.monotonic() - started) * 1000)
+    logger.info(
+        "pipeline.done",
+        extra={
+            "records_processed": len(entries),
+            "duration_ms": duration_ms,
+            "output": None if args.dry_run else args.output,
+            "dry_run": args.dry_run,
+        },
+    )
 
     return 0
 

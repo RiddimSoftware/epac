@@ -11,12 +11,18 @@ from dataclasses import asdict, dataclass
 from datetime import date
 from html.parser import HTMLParser
 import json
+import os
 import re
 import ssl
 import sys
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from observability.logger import get_logger
+
+logger = get_logger("fiscal_monitor")
 
 BASE_URL = "https://www.canada.ca"
 
@@ -115,9 +121,12 @@ def fetch_current_fiscal_year() -> list[FiscalMonitorEntry]:
                 html = response.read().decode("utf-8")
         except HTTPError as exc:
             if exc.code == 404:
+                # 404 is the expected signal that the issue isn't published yet.
                 continue
+            logger.exception("fetch.http_error", extra={"url": url, "status_code": exc.code})
             raise
         except (TimeoutError, URLError):
+            logger.warning("fetch.network_error", extra={"url": url})
             continue
         entries.append(parse_issue_html(html, url))
     return sorted(entries, key=lambda entry: entry.month)
@@ -186,9 +195,13 @@ def _month_number(month_name: str) -> int:
 
 
 def main() -> int:
+    started = time.monotonic()
+    logger.info("pipeline.start", extra={"source": "canada.ca/fiscal-monitor"})
     entries = fetch_current_fiscal_year()
     json.dump([asdict(entry) for entry in entries], sys.stdout, indent=2)
     sys.stdout.write("\n")
+    duration_ms = int((time.monotonic() - started) * 1000)
+    logger.info("pipeline.done", extra={"records_processed": len(entries), "duration_ms": duration_ms})
     return 0
 
 

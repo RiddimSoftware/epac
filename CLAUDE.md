@@ -12,6 +12,8 @@ Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-e
 
 Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
 
+Backend Python logging uses `backend/observability/logger.get_logger("<pipeline>")` — never `print()`. Each pipeline logs `pipeline.start` / `pipeline.done` (with `records_processed` and `duration_ms` in `extra`) and `logger.exception("pipeline.failed", extra={...})` on the error path. Convention is documented in `backend/observability/LOGGING.md`.
+
 ---
 
 ## Architecture

@@ -1,9 +1,15 @@
 import os
+import sys
 import time
 import requests
 import csv
 import argparse
 import re
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from observability.logger import get_logger
+
+logger = get_logger("download_hansard")
 
 def get_latest_sitting(folder):
     max_val = (0, 0, 0)
@@ -40,13 +46,21 @@ def download_file(url, session_str, sitting_num, folder):
                 return False, 404
         else:
             return False, response.status_code
-    except Exception as e:
+    except Exception:
+        # Surface exception details — silent return masked transient
+        # failures and made retries opaque in production.
+        logger.exception("download.failed", extra={"url": url, "filename": filename})
         return False, 500
 
 def main():
     parser = argparse.ArgumentParser(description='Download Hansard XML files.')
     parser.add_argument('--output', '-o', default='hansard', help='Directory to save downloaded files and logs')
     args = parser.parse_args()
+
+    started = time.monotonic()
+    downloaded = 0
+    failed = 0
+    logger.info("pipeline.start", extra={"output_dir": args.output})
 
     hansard_dir = args.output
     if not os.path.exists(hansard_dir):
@@ -97,6 +111,7 @@ def main():
                 if success:
                     consecutive_404s = 0
                     downloaded_any = True
+                    downloaded += 1
                 else:
                     if status_code == 404 or status_code == 302:
                         consecutive_404s += 1
@@ -104,15 +119,29 @@ def main():
                         if not downloaded_any and sitting == 1:
                              log_file.write(f"{session_str},{sitting},{url}\n")
                              log_file.flush()
-                        
+
                         if consecutive_404s >= max_consecutive_404s:
                             break
                     else:
                         log_file.write(f"{session_str},{sitting},{url}\n")
                         log_file.flush()
-                        consecutive_404s = 0 
-                
+                        consecutive_404s = 0
+                        failed += 1
+                        logger.error("download.http_error", extra={
+                            "url": url,
+                            "status_code": status_code,
+                            "session": session_str,
+                            "sitting": sitting,
+                        })
+
                 time.sleep(0.05)
+
+    duration_ms = int((time.monotonic() - started) * 1000)
+    logger.info("pipeline.done", extra={
+        "records_processed": downloaded,
+        "failed": failed,
+        "duration_ms": duration_ms,
+    })
 
 if __name__ == "__main__":
     main()
