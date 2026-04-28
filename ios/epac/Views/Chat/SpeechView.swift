@@ -199,12 +199,21 @@ struct SpeechView: View {
 		.activitySheet($item)
 		.toolbar {
 			ToolbarItem(placement: .topBarLeading) {
-				if let url = URL(string: "https://openparliament.ca/debates/\(hansard.parliamentNumber)/\(hansard.sessionNumber)/\(DateUtils.getCSVStringFromDate(hansard.date))/") {
-					Link(destination: url) {
-						Image(systemName: "safari")
+				Menu {
+					if let url = URL(string: "https://openparliament.ca/debates/\(hansard.parliamentNumber)/\(hansard.sessionNumber)/\(DateUtils.getCSVStringFromDate(hansard.date))/") {
+						Link(destination: url) {
+							Label(NSLocalizedString("speech.openOpenParliament", comment: ""), systemImage: "safari")
+						}
 					}
-					.accessibilityLabel("Open in openparliament.ca")
+					if let url = ParlVULinkBuilder.houseDebateURL(for: hansard.date) {
+						Link(destination: url) {
+							Label(NSLocalizedString("speech.watchParlVU", comment: ""), systemImage: "play.rectangle")
+						}
+					}
+				} label: {
+					Image(systemName: "link")
 				}
+				.accessibilityLabel(NSLocalizedString("speech.sourceLinks", comment: ""))
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {

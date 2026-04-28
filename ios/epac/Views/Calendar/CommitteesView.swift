@@ -211,6 +211,21 @@ struct CommitteeEvidenceView: View {
         )
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if let url = ParlVULinkBuilder.committeeWatchURL(for: meeting) {
+                    Link(destination: url) {
+                        Image(systemName: "play.rectangle")
+                    }
+                    .accessibilityLabel(NSLocalizedString("committees.watchParlVU", comment: ""))
+                } else {
+                    Link(destination: ParlVULinkBuilder.committeeArchiveHomeURL) {
+                        Image(systemName: "play.rectangle")
+                    }
+                    .accessibilityLabel(NSLocalizedString("committees.openParlVUArchive", comment: ""))
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -221,6 +236,25 @@ struct CommitteeEvidenceView: View {
                     ForEach(meeting.agendaItems, id: \.self) { item in
                         Text(item).font(.subheadline)
                     }
+                }
+            }
+            Section {
+                if let url = ParlVULinkBuilder.committeeWatchURL(for: meeting) {
+                    Link(destination: url) {
+                        Label(
+                            NSLocalizedString("committees.watchParlVU", comment: ""),
+                            systemImage: "play.rectangle"
+                        )
+                    }
+                    .foregroundStyle(.tint)
+                } else {
+                    Link(destination: ParlVULinkBuilder.committeeArchiveHomeURL) {
+                        Label(
+                            NSLocalizedString("committees.openParlVUArchive", comment: ""),
+                            systemImage: "play.rectangle"
+                        )
+                    }
+                    .foregroundStyle(.tint)
                 }
             }
             if let url = meeting.publicationURL ?? meeting.evidenceURL {
