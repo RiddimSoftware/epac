@@ -100,9 +100,8 @@
       telemetry.searchParams.set("event", "app-store-redirect");
       telemetry.searchParams.set("path", safePath);
       telemetry.searchParams.set("ts", String(Date.now()));
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(telemetry.toString());
-      }
+      var pixel = new Image();
+      pixel.src = telemetry.toString();
 
       window.setTimeout(function () {
         window.location.replace(storeUrl.toString());
