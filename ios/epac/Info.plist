@@ -116,5 +116,7 @@
 	</array>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
+	<key>BackendBaseURL</key>
+	<string>$(BACKEND_BASE_URL)</string>
 </dict>
 </plist>

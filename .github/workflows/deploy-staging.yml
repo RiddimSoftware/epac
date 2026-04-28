@@ -1,0 +1,54 @@
+name: Deploy Backend Staging
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-staging.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-staging-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.service }} to staging
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [daily-fetch, loader, search, member-speeches, health, device-register, openapi]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/${{ matrix.service }}/go.mod
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Test and package Lambda
+        working-directory: backend/${{ matrix.service }}
+        run: |
+          go test ./...
+          GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go
+          zip -q function.zip bootstrap
+
+      - name: Update staging Lambda
+        working-directory: backend/${{ matrix.service }}
+        env:
+          FUNCTION_NAME: epac-${{ matrix.service }}-staging
+        run: |
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --zip-file fileb://function.zip

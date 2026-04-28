@@ -60,6 +60,8 @@
 		A327A9092D18F75B00A2D292 /* epac-clip.app (old) */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "epac-clip.app"; path = "/Users/sunny/Documents/code/epac/ios/build/Debug-iphoneos/epac-clip.app"; sourceTree = "<absolute>"; };
 		A327A91F2D18F75B00A2D292 /* epac-clip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "epac-clip.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A31410012FABC14100000000 /* promise-tracker.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "promise-tracker.json"; sourceTree = "<group>"; };
+		A31560012FABC15600000001 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		A31560022FABC15600000002 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		A38427C32D062C8D00271C34 /* epac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427D62D062C8E00271C34 /* epacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -216,6 +218,15 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		A31560032FABC15600000003 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A31560012FABC15600000001 /* Debug.xcconfig */,
+				A31560022FABC15600000002 /* Release.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		E123328FBCF89F303A809478 /* epacComplication */ = {
 			isa = PBXGroup;
 			children = (
@@ -240,6 +251,7 @@
 			isa = PBXGroup;
 			children = (
 				A31410002FABC14100000000 /* data */,
+				A31560032FABC15600000003 /* Config */,
 				A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */,
 				A38427C52D062C8D00271C34 /* epac */,
 				A38427D92D062C8E00271C34 /* epacTests */,
@@ -737,6 +749,7 @@
 		};
 		A38427EB2D062C8E00271C34 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A31560012FABC15600000001 /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -782,6 +795,7 @@
 		};
 		A38427EC2D062C8E00271C34 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A31560022FABC15600000002 /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

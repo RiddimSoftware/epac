@@ -2,14 +2,8 @@
 //  BackendConfig.swift
 //  epac
 //
-//  Single source of truth for the backend base URL. Services in `Util/` should
-//  read `BackendConfig.shared.baseURL` rather than hardcoding their own host,
-//  so swapping production for staging is a one-touch change.
-//
-//  Override at runtime by setting the `BACKEND_BASE_URL` env var in the active
-//  Xcode scheme: Edit Scheme → Run → Arguments → Environment Variables. This is
-//  how a TestFlight scheme can be pointed at the staging environment once it
-//  exists (tracked under EPAC-156 Phase 2).
+//  Single source of truth for the backend base URL. Services in `Util/` read
+//  `BackendConfig.shared.baseURL` rather than hardcoding their own host.
 //
 
 import Foundation
@@ -17,23 +11,38 @@ import Foundation
 struct BackendConfig {
     static let shared = BackendConfig()
 
-    /// Production AWS API Gateway base. The default for both Debug and Release
-    /// schemes today; will become the Release-only default once Phase 2 lands
-    /// and a separate staging URL is wired into Debug via xcconfig.
+    /// Production AWS API Gateway base. Release uses this by default.
     static let productionBaseURL = URL(string: "https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production")!
 
-    /// Effective backend base URL for this run. Honours a `BACKEND_BASE_URL`
-    /// environment-variable override if one is set on the scheme, otherwise
-    /// falls back to `productionBaseURL`.
+    /// Staging custom domain base. Debug and TestFlight use this by default.
+    static let stagingBaseURL = URL(string: "https://staging-api.epac.riddimsoftware.com")!
+
+    /// Effective backend base URL for this run. Runtime environment overrides
+    /// win first for local testing; otherwise the Info.plist build setting
+    /// selects Debug staging or Release production.
     let baseURL: URL
 
     init() {
-        if let override = ProcessInfo.processInfo.environment["BACKEND_BASE_URL"],
-           let overrideURL = URL(string: override),
-           overrideURL.scheme == "https" {
-            self.baseURL = overrideURL
-        } else {
-            self.baseURL = Self.productionBaseURL
+        self.baseURL = Self.resolvedBaseURL()
+    }
+
+    private static func resolvedBaseURL() -> URL {
+        if let override = validURL(ProcessInfo.processInfo.environment["BACKEND_BASE_URL"]) {
+            return override
         }
+        if let configured = validURL(Bundle.main.object(forInfoDictionaryKey: "BackendBaseURL") as? String) {
+            return configured
+        }
+        return productionBaseURL
+    }
+
+    private static func validURL(_ rawValue: String?) -> URL? {
+        guard let rawValue else { return nil }
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              !trimmed.contains("$("),
+              let url = URL(string: trimmed),
+              url.scheme == "https" else { return nil }
+        return url
     }
 }
