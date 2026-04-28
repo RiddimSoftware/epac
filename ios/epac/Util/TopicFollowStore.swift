@@ -26,8 +26,10 @@ final class TopicFollowStore {
     private(set) var followedIDs: Set<String> = []
     private(set) var granularity: [String: TopicNotificationGranularity] = [:]
 
-    // TODO(EPAC-297): Set to the deployed device-register Lambda URL.
-    private static let registerURL = URL(string: "https://placeholder.execute-api.us-east-1.amazonaws.com/production/device/register")!
+    // Resolved against BackendConfig at call time so a scheme override flows through.
+    private static var registerURL: URL {
+        BackendConfig.shared.baseURL.appendingPathComponent("device/register")
+    }
 
     private init() {
         let d = UserDefaults.standard

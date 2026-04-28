@@ -133,6 +133,16 @@ Regenerate the 30-second App Store preview video with:
 
 The script launches the app with `--app-preview-mode`, records `AppPreviewRecordingTests/testAppPreviewSequence`, and writes `docs/marketing/preview/app-preview-final.mp4` as H.264 at 886x1920, 30fps, no audio.
 
+### Backend Base URL
+
+The iOS app talks to a single AWS API Gateway. The base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
+
+To point a development build at a different backend (staging once it exists, a local Lambda mock, etc.), set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
+
+> Edit Scheme → Run → Arguments → Environment Variables → add `BACKEND_BASE_URL=https://your-staging-host.example.com/staging`.
+
+`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the production default. The `xcconfig`-based per-configuration URL (Phase 2 of EPAC-156) will replace this env-var hook once a staging environment is provisioned.
+
 ### Post-PR-open review
 
 After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
