@@ -375,6 +375,13 @@
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
 "home.parliament.notSitting" = "La Chambre ne siège pas aujourd\'hui";
 "home.parliament.adjourned" = "La Chambre a ajourné ses travaux pour aujourd'hui";
+"home.live.badge" = "EN DIRECT · Chambre des communes";
+"home.live.voteBadge" = "VOTE EN COURS · Chambre des communes";
+"home.live.speaker" = "%@ a la parole";
+"home.live.resultIncoming" = "Résultat à venir";
+"home.live.updated" = "Mis à jour %@";
+"home.live.infoTitle" = "À propos du direct parlementaire";
+"home.live.infoBody" = "Cette carte montre les travaux en cours à la Chambre. Le texte intégral est publié dans Hansard 2 à 4 heures après la fin de la séance.";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";

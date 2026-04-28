@@ -113,7 +113,8 @@
                 }
               }
             }
-          }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
     },
@@ -162,6 +163,7 @@
               }
             }
           },
+          "429": { "$ref": "#/components/responses/RateLimit" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -209,7 +211,8 @@
                 }
               }
             }
-          }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
     },
@@ -252,6 +255,7 @@
               }
             }
           },
+          "429": { "$ref": "#/components/responses/RateLimit" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -302,6 +306,7 @@
               }
             }
           },
+          "429": { "$ref": "#/components/responses/RateLimit" },
           "400": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -349,7 +354,8 @@
                 }
               }
             }
-          }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
     },
@@ -392,7 +398,8 @@
                 }
               }
             }
-          }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
     },
@@ -444,7 +451,8 @@
                 }
               }
             }
-          }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
     },
@@ -481,6 +489,7 @@
               }
             }
           },
+          "429": { "$ref": "#/components/responses/RateLimit" },
           "400": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -648,6 +657,34 @@
             "examples": { "error": { "value": { "error": "missing member id" } } }
           }
         }
+      },
+      "RateLimit": {
+        "description": "Rate limit exceeded. Retry after the number of seconds in the `Retry-After` header.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying.",
+            "schema": { "type": "integer", "minimum": 1 }
+          },
+          "X-RateLimit-Limit": {
+            "description": "Maximum requests allowed in the current endpoint window.",
+            "schema": { "type": "integer" }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/RateLimitResponse" },
+            "examples": {
+              "limited": {
+                "value": {
+                  "error": "rate limit exceeded",
+                  "limit": 2,
+                  "window_seconds": 60,
+                  "scope": "live-status"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -655,6 +692,16 @@
         "type": "object",
         "required": ["error"],
         "properties": { "error": { "type": "string" } }
+      },
+      "RateLimitResponse": {
+        "type": "object",
+        "required": ["error", "limit", "window_seconds", "scope"],
+        "properties": {
+          "error": { "type": "string", "example": "rate limit exceeded" },
+          "limit": { "type": "integer", "example": 2 },
+          "window_seconds": { "type": "integer", "example": 60 },
+          "scope": { "type": "string", "example": "live-status" }
+        }
       },
       "StatusResponse": {
         "type": "object",

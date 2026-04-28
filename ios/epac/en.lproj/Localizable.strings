@@ -372,6 +372,13 @@
 "home.parliament.sitting" = "Parliament is sitting today";
 "home.parliament.notSitting" = "Parliament is not sitting today";
 "home.parliament.adjourned" = "Parliament has adjourned for today";
+"home.live.badge" = "LIVE · House of Commons";
+"home.live.voteBadge" = "VOTE IN PROGRESS · House of Commons";
+"home.live.speaker" = "%@ has the floor";
+"home.live.resultIncoming" = "Result incoming";
+"home.live.updated" = "Updated %@";
+"home.live.infoTitle" = "About live Parliament";
+"home.live.infoBody" = "This shows the current order of business in the House. Verbatim speech is published in Hansard 2–4 hours after the sitting ends.";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";

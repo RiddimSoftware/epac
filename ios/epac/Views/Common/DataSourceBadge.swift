@@ -191,4 +191,15 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func reconciliationCalls() -> DataSource {
+        DataSource(
+            name: "Yellowhead/CBC",
+            description: "Truth and Reconciliation Commission Calls to Action status baseline from Yellowhead Institute, with per-call implementation phases and detail links from CBC Beyond 94.",
+            url: URL(string: "https://yellowheadinstitute.org/report/trc/")!,
+            lastSyncDate: nil,
+            vintage: "Reviewed 2026",
+            stalenessThreshold: nil
+        )
+    }
 }
