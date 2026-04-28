@@ -10,6 +10,8 @@ Search backend decisions live in `docs/architecture/search-index-choice-epac452.
 
 Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
 
+Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
+
 ---
 
 ## Architecture
