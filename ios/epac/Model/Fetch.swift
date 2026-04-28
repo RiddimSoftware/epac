@@ -71,6 +71,7 @@ actor Fetch: ObservableObject {
 		try? await downloadSittingCalendar(year)
 		try? await downloadSittingCalendar(year - 1)
 		try? await downloadFiscalMonitorEntries()
+		try? loadCabinetPositions()
 		await refreshNearbyHansardsForNotifications()
 	}
 
@@ -882,5 +883,45 @@ actor Fetch: ObservableObject {
 			}
 			try modelContext.save()
 		}
+	}
+
+	// MARK: - Cabinet positions
+
+	// Loads the bundled cabinet snapshot into SwiftData. Re-seeds on every call:
+	// the source file is a small (~28-row) snapshot regenerated whenever Cabinet
+	// changes, and replacement is simpler than diffing portfolios across shuffles.
+	func loadCabinetPositions() throws {
+		Log.debug("Fetch.loadCabinetPositions()")
+		let snapshot = try CabinetService().loadSnapshot()
+		let asOfDate = (try? CabinetService.parseAsOfDate(snapshot.asOfDate)) ?? Date()
+
+		let existing = try modelContext.fetch(FetchDescriptor<CabinetPosition>())
+		for entry in existing {
+			modelContext.delete(entry)
+		}
+
+		for position in snapshot.positions {
+			modelContext.insert(CabinetPosition(
+				ministerName: position.ministerName,
+				firstName: position.firstName,
+				lastName: position.lastName,
+				portfolio: position.portfolio,
+				isPrimeMinister: position.isPrimeMinister ?? false,
+				mandateLetterURL: position.mandateLetterURL,
+				sourceTitle: snapshot.source.title,
+				sourceURL: snapshot.source.url,
+				asOfDate: asOfDate
+			))
+		}
+		try modelContext.save()
+	}
+
+	// Best-effort seeding: only loads on first launch (or after a wipe). The JSON
+	// is bundled with the app, so this is a synchronous decode + write — fast
+	// enough to run during startup without blocking the UI.
+	func ensureCabinetPositionsSeeded() throws {
+		let existing = try modelContext.fetch(FetchDescriptor<CabinetPosition>())
+		guard existing.isEmpty else { return }
+		try loadCabinetPositions()
 	}
 }
