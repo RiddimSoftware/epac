@@ -44,6 +44,12 @@ trap - EXIT
 
 "$EVIDENCE" record-preview --input "$RAW_VIDEO" --output "$FINAL_VIDEO" --duration 30 --width 886 --height 1920 --fps 30
 
+# Apple's App Preview pipeline rejects videos with no audio track ("unsupported
+# or corrupted audio"), so mux in a silent AAC stereo track at 44.1 kHz.
+TMP_WITH_AUDIO="${FINAL_VIDEO%.mp4}.with-audio.mp4"
+ffmpeg -y -i "$FINAL_VIDEO" -f lavfi -i anullsrc=cl=stereo:r=44100 -shortest -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k "$TMP_WITH_AUDIO"
+mv "$TMP_WITH_AUDIO" "$FINAL_VIDEO"
+
 ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -show_entries format=duration -of default=noprint_wrappers=1 "$FINAL_VIDEO"
 echo "Wrote $FINAL_VIDEO"
 
