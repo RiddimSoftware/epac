@@ -16,12 +16,17 @@ struct MembersView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@EnvironmentObject private var fetch: Fetch
 
-	private var ministerLastNames: Set<String> {
-		Set(cabinetPositions.map { $0.lastName.lowercased() })
+	// Match minister to MP on the (firstName, lastName) pair rather than lastName
+	// alone, otherwise common surnames (Thompson, Sidhu, MacDonald, Miller) would
+	// false-positive every sitting MP who happens to share a name with a minister.
+	// First-name compare uses the leading token only because the snapshot stores
+	// "David J." (full given+middle) while ParliamentMember uses "David".
+	private var ministerKeys: Set<String> {
+		Set(cabinetPositions.map { CabinetMatch.key(firstName: $0.firstName, lastName: $0.lastName) })
 	}
 
 	private var filteredMembers: [ParliamentMember] {
-		viewModel.filteredMembers(from: members, ministerLastNames: ministerLastNames)
+		viewModel.filteredMembers(from: members, ministerKeys: ministerKeys)
 	}
 
 	var body: some View {
@@ -143,7 +148,7 @@ struct MembersView: View {
 			} else {
 				ForEach(filteredMembers, id: \.id) { member in
 					NavigationLink(destination: MemberProfileView(member: member)) {
-						MemberRow(member: member, isCabinetMinister: ministerLastNames.contains(member.lastName.lowercased()))
+						MemberRow(member: member, isCabinetMinister: ministerKeys.contains(CabinetMatch.key(firstName: member.firstName, lastName: member.lastName)))
 					}
 				}
 			}
@@ -191,6 +196,16 @@ struct MemberRow: View {
 	private var accessibilityLabel: String {
 		let base = "\(member.name), \(member.party.fullName), \(member.riding), \(member.province.rawValue)"
 		return isCabinetMinister ? "\(base), Cabinet minister" : base
+	}
+}
+
+// Shared key builder so MembersView and MemberProfileView match the same way.
+// Lowercased "<first-token-of-firstName> <lastName>" — see ministerKeys for why
+// we strip the first-name to a leading token.
+enum CabinetMatch {
+	static func key(firstName: String, lastName: String) -> String {
+		let firstToken = firstName.split(separator: " ").first.map(String.init) ?? firstName
+		return "\(firstToken.lowercased()) \(lastName.lowercased())"
 	}
 }
 

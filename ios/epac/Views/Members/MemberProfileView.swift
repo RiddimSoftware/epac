@@ -20,8 +20,11 @@ struct MemberProfileView: View {
 	@Query private var cabinetPositions: [CabinetPosition]
 
 	private var cabinetPosition: CabinetPosition? {
-		let memberLast = member.lastName.lowercased()
-		return cabinetPositions.first { $0.lastName.lowercased() == memberLast }
+		// Match on (firstName, lastName) — matching on lastName alone would
+		// surface a Cabinet section on every MP sharing a surname with a
+		// minister (e.g. Thompson, Sidhu, MacDonald, Miller).
+		let memberKey = CabinetMatch.key(firstName: member.firstName, lastName: member.lastName)
+		return cabinetPositions.first { CabinetMatch.key(firstName: $0.firstName, lastName: $0.lastName) == memberKey }
 	}
 	@State private var showingComparePicker = false
 	@State private var comparisonTarget: ParliamentMember?

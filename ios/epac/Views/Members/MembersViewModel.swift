@@ -34,14 +34,14 @@ class MembersViewModel {
     private var cachedMinisterCount: Int = -1
     private var dirty = true
 
-    func filteredMembers(from members: [ParliamentMember], ministerLastNames: Set<String> = []) -> [ParliamentMember] {
+    func filteredMembers(from members: [ParliamentMember], ministerKeys: Set<String> = []) -> [ParliamentMember] {
         // If inputs haven't changed since last call, return the cached result.
-        if !dirty && cachedSource.count == members.count && cachedMinisterCount == ministerLastNames.count {
+        if !dirty && cachedSource.count == members.count && cachedMinisterCount == ministerKeys.count {
             return cachedResult
         }
         dirty = false
         cachedSource = members
-        cachedMinisterCount = ministerLastNames.count
+        cachedMinisterCount = ministerKeys.count
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         cachedResult = members.filter { member in
             let matchesSearch = trimmed.isEmpty
@@ -51,7 +51,7 @@ class MembersViewModel {
             let matchesProvince = selectedProvince == nil || member.province == selectedProvince
             let matchesStatus = selectedStatus == .all || member.toDateTime == nil
             let matchesCabinet = selectedCabinet == .all
-                || ministerLastNames.contains(member.lastName.lowercased())
+                || ministerKeys.contains(CabinetMatch.key(firstName: member.firstName, lastName: member.lastName))
             return matchesSearch && matchesParty && matchesProvince && matchesStatus && matchesCabinet
         }
         return cachedResult
