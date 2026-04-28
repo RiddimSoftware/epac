@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">{{ENTITY_A}} compared with {{ENTITY_B}}</title>
+  <desc id="desc">epac comparison share image showing a similarity score based on common recorded votes.</desc>
+  <rect width="1200" height="630" fill="{{BG}}"/>
+  <rect x="0" y="0" width="10" height="630" fill="{{ACCENT}}"/>
+  <text x="72" y="84" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="34" font-weight="800" fill="{{ACCENT}}">epac</text>
+  <text x="72" y="128" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" fill="{{TEXT_SECONDARY}}">Canada's Parliament, in your pocket.</text>
+
+  <rect x="72" y="178" width="1056" height="310" rx="34" fill="{{CARD}}"/>
+  <circle cx="150" cy="288" r="56" fill="{{ACCENT}}" opacity="{{ACCENT_OPACITY}}"/>
+  <text x="150" y="307" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="40" font-weight="800" fill="{{ACCENT}}">{{A_INITIALS}}</text>
+  <circle cx="1050" cy="288" r="56" fill="{{ACCENT}}" opacity="{{ACCENT_OPACITY}}"/>
+  <text x="1050" y="307" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="40" font-weight="800" fill="{{ACCENT}}">{{B_INITIALS}}</text>
+
+  <text x="342" y="270" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="32" font-weight="750" fill="{{TEXT_PRIMARY}}">{{ENTITY_A}}</text>
+  <text x="858" y="270" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="32" font-weight="750" fill="{{TEXT_PRIMARY}}">{{ENTITY_B}}</text>
+  <text x="342" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="{{TEXT_SECONDARY}}">{{A_LABEL}}</text>
+  <text x="858" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="{{TEXT_SECONDARY}}">{{B_LABEL}}</text>
+
+  <rect x="474" y="230" width="252" height="160" rx="38" fill="{{ACCENT}}" opacity="{{SCORE_OPACITY}}"/>
+  <text x="600" y="298" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="70" font-weight="800" fill="{{ACCENT}}">{{SCORE}}</text>
+  <text x="600" y="342" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" font-weight="650" fill="{{ACCENT}}">{{BASIS}}</text>
+
+  <text x="600" y="438" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" fill="{{TEXT_SECONDARY}}">Similarity from common recorded votes</text>
+  <text x="72" y="554" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="22" fill="{{TEXT_SECONDARY}}">Source: House of Commons Votes API</text>
+  <text x="1128" y="554" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="24" font-weight="650" fill="{{ACCENT}}">{{URL}}</text>
+</svg>

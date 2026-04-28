@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="932" viewBox="0 0 430 932" role="img" aria-labelledby="title desc">
+  <title id="title">Comparison detail view, light mode</title>
+  <desc id="desc">A mobile comparison detail screen with header score, filters, breakdown cards, radar chart, and methodology footer.</desc>
+  <rect width="430" height="932" fill="#f2f2f7"/>
+  <text x="215" y="52" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="650" fill="#1d1d1f">Compare</text>
+  <text x="390" y="52" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" fill="#0071e3">Share</text>
+
+  <rect x="20" y="82" width="390" height="194" rx="18" fill="#ffffff"/>
+  <circle cx="82" cy="138" r="30" fill="#0071e3" opacity="0.14"/>
+  <text x="82" y="148" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#0071e3">LTR</text>
+  <circle cx="348" cy="138" r="30" fill="#0071e3" opacity="0.14"/>
+  <text x="348" y="148" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#0071e3">AL</text>
+  <text x="82" y="188" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" font-weight="650" fill="#1d1d1f">Taylor Roy</text>
+  <text x="348" y="188" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" font-weight="650" fill="#1d1d1f">Lawton</text>
+  <text x="215" y="146" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="54" font-weight="760" fill="#1d1d1f">68%</text>
+  <text x="215" y="176" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" font-weight="600" fill="#6e6e73">41 common votes</text>
+  <rect x="82" y="220" width="266" height="30" rx="15" fill="#0071e3" opacity="0.12"/>
+  <text x="215" y="241" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" font-weight="650" fill="#0071e3">Medium confidence: recent House votes only</text>
+
+  <rect x="20" y="296" width="58" height="34" rx="17" fill="#0071e3"/>
+  <text x="49" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" font-weight="650" fill="#ffffff">All</text>
+  <rect x="88" y="296" width="94" height="34" rx="17" fill="#ffffff"/>
+  <text x="135" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#0071e3">Contested</text>
+  <rect x="192" y="296" width="82" height="34" rx="17" fill="#ffffff"/>
+  <text x="233" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#0071e3">Housing</text>
+  <rect x="284" y="296" width="84" height="34" rx="17" fill="#ffffff"/>
+  <text x="326" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#0071e3">Climate</text>
+
+  <rect x="20" y="350" width="390" height="116" rx="16" fill="#ffffff"/>
+  <text x="44" y="382" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="650" fill="#1d1d1f">Agreed on</text>
+  <text x="366" y="382" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#34c759">28</text>
+  <rect x="44" y="402" width="342" height="1" fill="#d1d1d6"/>
+  <text x="44" y="432" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" fill="#1d1d1f">C-12 second reading</text>
+  <text x="386" y="432" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">Yea / Yea</text>
+
+  <rect x="20" y="482" width="390" height="116" rx="16" fill="#ffffff"/>
+  <text x="44" y="514" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="650" fill="#1d1d1f">Disagreed on</text>
+  <text x="366" y="514" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#ff3b30">13</text>
+  <rect x="44" y="534" width="342" height="1" fill="#d1d1d6"/>
+  <text x="44" y="564" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" fill="#1d1d1f">Supply motion amendment</text>
+  <text x="386" y="564" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">Yea / Nay</text>
+
+  <rect x="20" y="614" width="390" height="182" rx="16" fill="#ffffff"/>
+  <text x="44" y="646" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="17" font-weight="650" fill="#1d1d1f">Topic distribution</text>
+  <polygon points="215,684 267,714 252,770 178,770 163,714" fill="#0071e3" opacity="0.12" stroke="#0071e3" stroke-width="2"/>
+  <polygon points="215,664 288,706 267,792 163,792 142,706" fill="none" stroke="#d1d1d6" stroke-width="1"/>
+  <text x="215" y="824" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">Largest overlap: housing and affordability</text>
+
+  <text x="215" y="862" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#0071e3">Methodology and sources</text>
+  <text x="215" y="888" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="12" fill="#6e6e73">Source: House of Commons Votes API</text>
+</svg>
