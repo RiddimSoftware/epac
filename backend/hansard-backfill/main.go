@@ -51,6 +51,8 @@ type Intervention struct {
 	Id                 string
 	MemberId           string
 	Speaker            string
+	SpeakerParty       string
+	SpeechTime         string
 	OrderTitle         string
 	SubjectTitle       string
 	SubjectQualifier   string
@@ -86,14 +88,15 @@ type Config struct {
 }
 
 type Summary struct {
-	SittingsSeen      int `json:"sittings_seen"`
-	SittingsArchived  int `json:"sittings_archived"`
-	SittingsParsed    int `json:"sittings_parsed"`
-	SittingsSkipped   int `json:"sittings_skipped"`
-	SittingsMissing   int `json:"sittings_missing"`
-	InterventionsRead int `json:"interventions_read"`
-	InterventionsKept int `json:"interventions_kept"`
-	SpeechesUpserted  int `json:"speeches_upserted"`
+	SittingsSeen          int `json:"sittings_seen"`
+	SittingsArchived      int `json:"sittings_archived"`
+	SittingsParsed        int `json:"sittings_parsed"`
+	SittingsSkipped       int `json:"sittings_skipped"`
+	SittingsMissing       int `json:"sittings_missing"`
+	InterventionsExpected int `json:"interventions_expected"`
+	InterventionsRead     int `json:"interventions_read"`
+	InterventionsKept     int `json:"interventions_kept"`
+	SpeechesUpserted      int `json:"speeches_upserted"`
 }
 
 func main() {
@@ -222,9 +225,18 @@ func RunBackfill(ctx context.Context, conn *pgx.Conn, client *http.Client, cfg C
 				summary.SittingsArchived++
 			}
 
+			expected, err := countStartElements(bytes.NewReader(body), "Intervention")
+			if err != nil {
+				return summary, fmt.Errorf("count interventions %s: %w", ref.Filename(), err)
+			}
+			summary.InterventionsExpected += expected
+
 			interventions, err := parseHansard(bytes.NewReader(body), ref.Filename(), meta)
 			if err != nil {
 				return summary, fmt.Errorf("parse %s: %w", ref.Filename(), err)
+			}
+			if len(interventions) != expected {
+				return summary, fmt.Errorf("parse %s: intervention row count mismatch: parsed %d, expected %d", ref.Filename(), len(interventions), expected)
 			}
 			if len(interventions) == 0 {
 				summary.SittingsSkipped++
@@ -417,6 +429,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 		inOrderTitle      bool
 		currentSubject    string
 		currentQualifier  string
+		currentTimestamp  string
 		subjectSeq        int
 		inSubjectTitle    bool
 		inQualifier       bool
@@ -469,6 +482,13 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 						current.Language = currentLanguage
 					}
 				}
+			case "Timestamp":
+				if timestamp := timestampFromAttrs(se); timestamp != "" {
+					currentTimestamp = timestamp
+					if current != nil && current.SpeechTime == "" {
+						current.SpeechTime = timestamp
+					}
+				}
 			case "Intervention":
 				lang := currentLanguage
 				if lang == "" {
@@ -476,6 +496,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 				}
 				current = &Intervention{
 					Id:                 attrValue(se, "id"),
+					SpeechTime:         currentTimestamp,
 					OrderTitle:         currentOrderTitle,
 					SubjectTitle:       currentSubject,
 					SubjectQualifier:   currentQualifier,
@@ -568,6 +589,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 					current.Content = normalizeWhitespace(current.Content)
 					current.WordCount = wordCount(current.Content)
 					current.Speaker = normalizeWhitespace(current.Speaker)
+					current.SpeakerParty = extractPartyFromAffiliation(current.Speaker)
 					current.Language = normalizeLanguage(current.Language)
 					interventions = append(interventions, *current)
 					current = nil
@@ -602,6 +624,38 @@ func attrValue(se xml.StartElement, name string) string {
 		}
 	}
 	return ""
+}
+
+func timestampFromAttrs(se xml.StartElement) string {
+	hour, err := strconv.Atoi(attrValue(se, "Hr"))
+	if err != nil {
+		return ""
+	}
+	minute, err := strconv.Atoi(attrValue(se, "Mn"))
+	if err != nil {
+		return ""
+	}
+	if hour < 0 || hour > 23 || minute < 0 || minute > 59 {
+		return ""
+	}
+	return fmt.Sprintf("%02d:%02d", hour, minute)
+}
+
+func extractPartyFromAffiliation(s string) string {
+	s = strings.TrimSpace(s)
+	close := strings.LastIndex(s, ")")
+	if close == -1 {
+		return ""
+	}
+	open := strings.LastIndex(s[:close], "(")
+	if open == -1 || close == -1 || open >= close {
+		return ""
+	}
+	parts := strings.Split(s[open+1:close], ",")
+	if len(parts) < 2 {
+		return ""
+	}
+	return normalizeWhitespace(parts[len(parts)-1])
 }
 
 func normalizeLanguage(s string) string {
@@ -672,6 +726,23 @@ func wordCount(s string) int {
 	return len(strings.Fields(s))
 }
 
+func countStartElements(r io.Reader, localName string) (int, error) {
+	decoder := xml.NewDecoder(r)
+	count := 0
+	for {
+		tok, err := decoder.Token()
+		if err == io.EOF {
+			return count, nil
+		}
+		if err != nil {
+			return count, err
+		}
+		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == localName {
+			count++
+		}
+	}
+}
+
 func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Intervention) (int, error) {
 	if conn == nil {
 		return 0, errors.New("database connection is nil")
@@ -704,10 +775,12 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				subject_title, intervention_seq, word_count,
 				order_title, subject_qualifier, source_url, raw_xml_path,
 				source_etag, source_last_modified, language,
-				related_bill_ids, related_vote_ids, paragraph_ids
+				related_bill_ids, related_vote_ids, paragraph_ids,
+				speaker_party, speech_time
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-				$12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+				$12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
+				$22, $23
 			)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				filename             = EXCLUDED.filename,
@@ -729,13 +802,16 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				language             = EXCLUDED.language,
 				related_bill_ids     = EXCLUDED.related_bill_ids,
 				related_vote_ids     = EXCLUDED.related_vote_ids,
-				paragraph_ids        = EXCLUDED.paragraph_ids`,
+				paragraph_ids        = EXCLUDED.paragraph_ids,
+				speaker_party        = EXCLUDED.speaker_party,
+				speech_time          = EXCLUDED.speech_time`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
 			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount,
 			inv.OrderTitle, inv.SubjectQualifier, inv.SourceURL, inv.RawXMLPath,
 			inv.SourceETag, inv.SourceLastModified, inv.Language,
 			inv.RelatedBillIDs, inv.RelatedVoteIDs, inv.ParagraphIDs,
+			inv.SpeakerParty, inv.SpeechTime,
 		)
 		valid++
 	}
@@ -789,6 +865,8 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 		  ADD COLUMN IF NOT EXISTS related_bill_ids     TEXT[] DEFAULT '{}',
 		  ADD COLUMN IF NOT EXISTS related_vote_ids     TEXT[] DEFAULT '{}',
 		  ADD COLUMN IF NOT EXISTS paragraph_ids        TEXT[] DEFAULT '{}',
+		  ADD COLUMN IF NOT EXISTS speaker_party        TEXT,
+		  ADD COLUMN IF NOT EXISTS speech_time          TEXT,
 		  ADD COLUMN IF NOT EXISTS search_vector        TSVECTOR;
 
 		CREATE INDEX IF NOT EXISTS speeches_member_date_idx

@@ -23,6 +23,7 @@ const sampleHansardXML = `<?xml version="1.0" encoding="UTF-8"?>
     <OrderOfBusiness id="13316072" Rubric="RoutineProceedings">
       <OrderOfBusinessTitle>Routine Proceedings</OrderOfBusinessTitle>
       <SubjectOfBusiness id="13316144">
+        <Timestamp Hr="10" Mn="05">(1005)</Timestamp>
         <FloorLanguage language="FR">[Translation]</FloorLanguage>
         <SubjectOfBusinessTitle>Fair Representation Act</SubjectOfBusinessTitle>
         <SubjectOfBusinessQualifier>Introduction and first reading</SubjectOfBusinessQualifier>
@@ -66,6 +67,12 @@ func TestParseHansardCapturesProvenanceAndLinks(t *testing.T) {
 	if got.Speaker != "Heather McPherson (Edmonton Strathcona, NDP)" {
 		t.Errorf("Speaker = %q", got.Speaker)
 	}
+	if got.SpeakerParty != "NDP" {
+		t.Errorf("SpeakerParty = %q, want NDP", got.SpeakerParty)
+	}
+	if got.SpeechTime != "10:05" {
+		t.Errorf("SpeechTime = %q, want 10:05", got.SpeechTime)
+	}
 	if got.OrderTitle != "Routine Proceedings" {
 		t.Errorf("OrderTitle = %q", got.OrderTitle)
 	}
@@ -93,6 +100,14 @@ func TestParseHansardCapturesProvenanceAndLinks(t *testing.T) {
 	}
 	if got.SourceURL != meta.URL || got.RawXMLPath != meta.RawXMLPath || got.SourceETag != meta.ETag {
 		t.Errorf("source metadata not copied: %+v", got)
+	}
+
+	count, err := countStartElements(strings.NewReader(sampleHansardXML), "Intervention")
+	if err != nil {
+		t.Fatalf("countStartElements error: %v", err)
+	}
+	if count != len(interventions) {
+		t.Errorf("countStartElements = %d, parsed = %d", count, len(interventions))
 	}
 }
 
@@ -182,5 +197,18 @@ func TestFilterByDate(t *testing.T) {
 	got := filterByDate(rows, parse("2024-01-01"), parse("2026-01-01"))
 	if len(got) != 1 || got[0].Id != "keep" {
 		t.Fatalf("filtered rows = %+v", got)
+	}
+}
+
+func TestExtractPartyFromAffiliation(t *testing.T) {
+	cases := map[string]string{
+		"Julie Dzerowicz (Davenport, Lib.)": "Lib.",
+		"Hon. Kevin Lamoureux (Parliamentary Secretary to the Leader of the Government in the House of Commons, Lib.)": "Lib.",
+		"The Speaker": "",
+	}
+	for input, want := range cases {
+		if got := extractPartyFromAffiliation(input); got != want {
+			t.Errorf("extractPartyFromAffiliation(%q) = %q, want %q", input, got, want)
+		}
 	}
 }

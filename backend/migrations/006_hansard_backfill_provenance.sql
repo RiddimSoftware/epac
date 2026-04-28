@@ -12,6 +12,8 @@ ALTER TABLE speeches
   ADD COLUMN IF NOT EXISTS related_bill_ids     TEXT[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS related_vote_ids     TEXT[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS paragraph_ids        TEXT[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS speaker_party        TEXT,
+  ADD COLUMN IF NOT EXISTS speech_time          TEXT,
   ADD COLUMN IF NOT EXISTS search_vector        TSVECTOR;
 
 CREATE INDEX IF NOT EXISTS speeches_source_url_idx
