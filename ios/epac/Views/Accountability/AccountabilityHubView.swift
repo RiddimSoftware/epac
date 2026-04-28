@@ -16,6 +16,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("bills.navTitle", comment: ""), systemImage: "doc.text.fill")
 					}
 					.accessibilityHint("Opens federal bill tracker")
+					NavigationLink(destination: PromiseTrackerView()) {
+						Label("Promise Tracker", systemImage: "checklist.checked")
+					}
+					.accessibilityHint("Opens campaign promise tracker")
 					NavigationLink(destination: ExpendituresView()) {
 						Label(NSLocalizedString("Expenditures", comment: ""), systemImage: "dollarsign.circle.fill")
 					}

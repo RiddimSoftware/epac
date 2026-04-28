@@ -11,6 +11,10 @@ import BackgroundTasks
 import Sentry
 import UIKit
 
+enum AppRuntime {
+	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+}
+
 // AppDelegate receives UIKit callbacks that SwiftUI lifecycle doesn't expose.
 // didRegisterForRemoteNotificationsWithDeviceToken persists the APNs token and
 // triggers backend device registration whenever the system issues a new token.
@@ -46,11 +50,10 @@ struct epacApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 	var sharedModelContainer: ModelContainer = {
 		do {
-			let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 			return try ModelContainer(
 				for: Schema(versionedSchema: SchemaV7.self),
 				migrationPlan: EpacMigrationPlan.self,
-				configurations: [ModelConfiguration(isStoredInMemoryOnly: isRunningTests)]
+				configurations: [ModelConfiguration(isStoredInMemoryOnly: AppRuntime.isRunningTests)]
 			)
 		} catch {
 			fatalError("Could not create ModelContainer: \(error)")
@@ -61,6 +64,8 @@ struct epacApp: App {
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
+		guard !AppRuntime.isRunningTests else { return }
+
 		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
 			SentrySDK.start { options in
 				options.dsn = dsn
