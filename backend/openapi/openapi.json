@@ -1,0 +1,845 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "epac Backend API",
+    "version": "0.1.0",
+    "description": "Public and app-facing endpoints for the epac civic data backend. All civic data originates from authoritative government sources and backend records preserve source identifiers where available."
+  },
+  "servers": [
+    {
+      "url": "https://api.epac.riddimsoftware.com",
+      "description": "Production API"
+    }
+  ],
+  "tags": [
+    { "name": "Parliament", "description": "Sittings, speeches, live status, and Hansard-derived records." },
+    { "name": "Members", "description": "MP metadata, votes, and speech feeds." },
+    { "name": "Bills", "description": "Bill list and status metadata." },
+    { "name": "Search", "description": "Postgres full-text search across Hansard speech records." },
+    { "name": "Devices", "description": "Device registration for followed-topic notifications." },
+    { "name": "Operations", "description": "Health and API documentation endpoints." }
+  ],
+  "paths": {
+    "/openapi.json": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Return the OpenAPI specification",
+        "operationId": "getOpenAPISpec",
+        "responses": {
+          "200": {
+            "description": "OpenAPI document",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Render Swagger UI for the API spec",
+        "description": "This endpoint is intended for authenticated internal use. Deployments should set OPENAPI_DOCS_TOKEN and require the X-Docs-Token header or token query parameter.",
+        "operationId": "getDocs",
+        "parameters": [
+          { "$ref": "#/components/parameters/DocsTokenHeader" },
+          { "$ref": "#/components/parameters/DocsTokenQuery" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Swagger UI HTML",
+            "content": {
+              "text/html": {
+                "schema": { "type": "string" },
+                "examples": {
+                  "html": {
+                    "value": "<!doctype html><html lang=\"en\"><head><title>epac API Docs</title></head><body><div id=\"swagger-ui\"></div></body></html>"
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/sittings": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "List House of Commons sittings",
+        "operationId": "listSittings",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          {
+            "name": "from_date",
+            "in": "query",
+            "description": "Optional inclusive start date.",
+            "schema": { "type": "string", "format": "date", "example": "2026-04-01" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "description": "Optional inclusive end date.",
+            "schema": { "type": "string", "format": "date", "example": "2026-04-30" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated sittings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SittingsResponse" },
+                "examples": {
+                  "page": {
+                    "value": {
+                      "page": 1,
+                      "per_page": 20,
+                      "total": 1,
+                      "sittings": [
+                        {
+                          "date": "2026-04-27",
+                          "parliament_num": 45,
+                          "session_num": 1,
+                          "sitting_num": 1,
+                          "source_url": "https://www.ourcommons.ca/documentviewer/en/45-1/house/sitting-1/hansard"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sittings/{date}/speeches": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "List speeches for a sitting date",
+        "description": "Returns Hansard interventions for one sitting date. Speech ids are source-derived intervention ids.",
+        "operationId": "listSittingSpeeches",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-04-27" }
+          },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Speeches for the sitting",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SpeechesResponse" },
+                "examples": {
+                  "page": {
+                    "value": {
+                      "date": "2026-04-27",
+                      "page": 1,
+                      "per_page": 20,
+                      "total": 1,
+                      "speeches": [
+                        {
+                          "id": "12345678",
+                          "speaker_name": "Example MP",
+                          "member_id": "278707",
+                          "subject_title": "The Economy",
+                          "content": "Madam Speaker, ...",
+                          "source_url": "https://www.ourcommons.ca/documentviewer/en/45-1/house/sitting-1/hansard"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/members": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List members of Parliament",
+        "operationId": "listMembers",
+        "parameters": [
+          {
+            "name": "province",
+            "in": "query",
+            "description": "Optional province or territory filter.",
+            "schema": { "type": "string", "example": "ON" }
+          },
+          {
+            "name": "party",
+            "in": "query",
+            "description": "Optional party filter.",
+            "schema": { "type": "string", "example": "Liberal" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MP list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MembersResponse" },
+                "examples": {
+                  "members": {
+                    "value": {
+                      "members": [
+                        {
+                          "id": "278707",
+                          "name": "Example MP",
+                          "riding": "Ottawa Centre",
+                          "province": "ON",
+                          "party": "Liberal",
+                          "source_url": "https://www.ourcommons.ca/members/en"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/{id}/votes": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List recorded votes for an MP",
+        "operationId": "listMemberVotes",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" }
+        ],
+        "responses": {
+          "200": {
+            "description": "MP voting record",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MemberVotesResponse" },
+                "examples": {
+                  "votes": {
+                    "value": {
+                      "member_id": "278707",
+                      "page": 1,
+                      "per_page": 20,
+                      "total": 1,
+                      "votes": [
+                        {
+                          "vote_id": "1234",
+                          "date": "2026-04-27",
+                          "bill_number": "C-1",
+                          "summary": "An Act respecting example data",
+                          "vote": "Yea",
+                          "source_url": "https://www.ourcommons.ca/members/en/votes"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/members/{id}/speeches": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List speeches for an MP",
+        "operationId": "listMemberSpeeches",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Optional case-insensitive subject title filter.",
+            "schema": { "type": "string", "example": "housing" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated speech feed and aggregate stats",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MemberSpeechesResponse" },
+                "examples": {
+                  "speeches": {
+                    "value": {
+                      "member_id": "278707",
+                      "page": 1,
+                      "per_page": 20,
+                      "total": 1,
+                      "pages": 1,
+                      "stats": { "total_speeches": 42, "avg_word_count": 118, "top_topic": "Housing" },
+                      "speeches": [
+                        {
+                          "id": "12345678",
+                          "sitting_date": "2026-04-27",
+                          "subject_title": "Housing",
+                          "preview": "Madam Speaker, ...",
+                          "filename": "HAN001-E.XML"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/bills": {
+      "get": {
+        "tags": ["Bills"],
+        "summary": "List bills",
+        "operationId": "listBills",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Optional status filter.",
+            "schema": { "type": "string", "example": "in_progress" }
+          },
+          {
+            "name": "parliament",
+            "in": "query",
+            "description": "Optional Parliament number.",
+            "schema": { "type": "integer", "example": 45 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bill list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillsResponse" },
+                "examples": {
+                  "bills": {
+                    "value": {
+                      "bills": [
+                        {
+                          "id": "C-1-45-1",
+                          "number": "C-1",
+                          "title": "An Act respecting example data",
+                          "current_stage": "Second Reading",
+                          "introduced_on": "2026-04-27",
+                          "source_url": "https://www.parl.ca/legisinfo"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/live": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "Return current House sitting status",
+        "operationId": "getLiveStatus",
+        "responses": {
+          "200": {
+            "description": "Live sitting status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveStatus" },
+                "examples": {
+                  "sitting": {
+                    "value": {
+                      "status": "sitting",
+                      "checked_at": "2026-04-28T14:00:00Z",
+                      "current_item": "Routine Proceedings",
+                      "source_url": "https://www.ourcommons.ca/en/sitting-calendar"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Return app configuration and feature flags",
+        "operationId": "getConfig",
+        "responses": {
+          "200": {
+            "description": "App config",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AppConfig" },
+                "examples": {
+                  "config": {
+                    "value": {
+                      "minimum_supported_version": "1.0.0",
+                      "features": {
+                        "search": true,
+                        "topic_notifications": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/device/register": {
+      "post": {
+        "tags": ["Devices"],
+        "summary": "Register a device for followed-topic notifications",
+        "operationId": "registerDevice",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterDeviceRequest" },
+              "examples": {
+                "register": {
+                  "value": {
+                    "token": "abcdef012345",
+                    "topic_ids": ["housing", "climate"],
+                    "granularity": { "housing": "everyDebate", "climate": "onlyMyMP" },
+                    "my_mp_member_id": "278707"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registration accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusResponse" },
+                "examples": { "ok": { "value": { "status": "ok" } } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search Hansard speeches",
+        "description": "Uses PostgreSQL full-text search over English and French tsvector columns and falls back to the legacy English expression index when needed.",
+        "operationId": "searchSpeeches",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1, "example": "housing affordability" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResponse" },
+                "examples": {
+                  "results": {
+                    "value": {
+                      "query": "housing",
+                      "language_hint": "en",
+                      "results": [
+                        {
+                          "id": "12345678",
+                          "title": "Example MP",
+                          "snippet": "housing affordability...",
+                          "sitting_date": "2026-04-27",
+                          "subject": "Housing",
+                          "member_id": "278707"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Return pipeline health",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "All pipelines healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" },
+                "examples": {
+                  "ok": {
+                    "value": {
+                      "status": "ok",
+                      "checked_at": "2026-04-28T14:00:00Z",
+                      "pipelines": [
+                        {
+                          "name": "daily-fetch",
+                          "last_run_at": "2026-04-28T12:00:00Z",
+                          "last_success_at": "2026-04-28T12:00:00Z",
+                          "record_count": 42,
+                          "expected_interval_hours": 24,
+                          "healthy": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more pipelines are stale or health storage is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/HealthResponse" },
+                    { "$ref": "#/components/schemas/ErrorResponse" }
+                  ]
+                },
+                "examples": {
+                  "degraded": {
+                    "value": {
+                      "status": "degraded",
+                      "checked_at": "2026-04-28T14:00:00Z",
+                      "pipelines": [
+                        {
+                          "name": "daily-fetch",
+                          "last_run_at": "2026-04-25T12:00:00Z",
+                          "last_success_at": "2026-04-25T12:00:00Z",
+                          "last_error": "source returned 503",
+                          "record_count": 0,
+                          "expected_interval_hours": 24,
+                          "healthy": false,
+                          "stale_for": "72h0m0s"
+                        }
+                      ]
+                    }
+                  },
+                  "storageUnavailable": {
+                    "value": {
+                      "error": "db connect: DATABASE_URL not set"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "description": "One-based page number.",
+        "schema": { "type": "integer", "minimum": 1, "default": 1 }
+      },
+      "PerPage": {
+        "name": "per_page",
+        "in": "query",
+        "description": "Items per page.",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+      },
+      "MemberId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Hansard Affiliation DbId for an MP.",
+        "schema": { "type": "string", "example": "278707" }
+      },
+      "DocsTokenHeader": {
+        "name": "X-Docs-Token",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string" }
+      },
+      "DocsTokenQuery": {
+        "name": "token",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "examples": { "error": { "value": { "error": "missing member id" } } }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": { "error": { "type": "string" } }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": { "status": { "type": "string", "example": "ok" } }
+      },
+      "SittingsResponse": {
+        "type": "object",
+        "required": ["page", "per_page", "total", "sittings"],
+        "properties": {
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "sittings": { "type": "array", "items": { "$ref": "#/components/schemas/Sitting" } }
+        }
+      },
+      "Sitting": {
+        "type": "object",
+        "required": ["date", "source_url"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "parliament_num": { "type": "integer" },
+          "session_num": { "type": "integer" },
+          "sitting_num": { "type": "integer" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "SpeechesResponse": {
+        "type": "object",
+        "required": ["date", "page", "per_page", "total", "speeches"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "speeches": { "type": "array", "items": { "$ref": "#/components/schemas/Speech" } }
+        }
+      },
+      "Speech": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "description": "Source-derived Hansard intervention id." },
+          "speaker_name": { "type": "string" },
+          "member_id": { "type": "string" },
+          "subject_title": { "type": "string" },
+          "content": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MembersResponse": {
+        "type": "object",
+        "required": ["members"],
+        "properties": {
+          "members": { "type": "array", "items": { "$ref": "#/components/schemas/Member" } }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "riding": { "type": "string" },
+          "province": { "type": "string" },
+          "party": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MemberVotesResponse": {
+        "type": "object",
+        "required": ["member_id", "votes"],
+        "properties": {
+          "member_id": { "type": "string" },
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "votes": { "type": "array", "items": { "$ref": "#/components/schemas/Vote" } }
+        }
+      },
+      "Vote": {
+        "type": "object",
+        "required": ["vote_id", "date", "vote"],
+        "properties": {
+          "vote_id": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "bill_number": { "type": "string" },
+          "summary": { "type": "string" },
+          "vote": { "type": "string", "enum": ["Yea", "Nay", "Paired", "Absent"] },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MemberSpeechesResponse": {
+        "type": "object",
+        "required": ["member_id", "page", "per_page", "total", "pages", "stats", "speeches"],
+        "properties": {
+          "member_id": { "type": "string" },
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "pages": { "type": "integer" },
+          "stats": { "$ref": "#/components/schemas/MemberStats" },
+          "speeches": { "type": "array", "items": { "$ref": "#/components/schemas/MemberSpeech" } }
+        }
+      },
+      "MemberStats": {
+        "type": "object",
+        "required": ["total_speeches", "avg_word_count", "top_topic"],
+        "properties": {
+          "total_speeches": { "type": "integer" },
+          "avg_word_count": { "type": "integer" },
+          "top_topic": { "type": "string" }
+        }
+      },
+      "MemberSpeech": {
+        "type": "object",
+        "required": ["id", "preview", "filename"],
+        "properties": {
+          "id": { "type": "string" },
+          "sitting_date": { "type": "string", "format": "date" },
+          "parliament_num": { "type": "integer" },
+          "session_num": { "type": "integer" },
+          "subject_title": { "type": "string" },
+          "preview": { "type": "string" },
+          "word_count": { "type": "integer" },
+          "filename": { "type": "string" }
+        }
+      },
+      "BillsResponse": {
+        "type": "object",
+        "required": ["bills"],
+        "properties": {
+          "bills": { "type": "array", "items": { "$ref": "#/components/schemas/Bill" } }
+        }
+      },
+      "Bill": {
+        "type": "object",
+        "required": ["id", "number", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "number": { "type": "string" },
+          "title": { "type": "string" },
+          "current_stage": { "type": "string" },
+          "introduced_on": { "type": "string", "format": "date" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "LiveStatus": {
+        "type": "object",
+        "required": ["status", "checked_at"],
+        "properties": {
+          "status": { "type": "string", "enum": ["sitting", "adjourned", "unknown"] },
+          "checked_at": { "type": "string", "format": "date-time" },
+          "current_item": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "AppConfig": {
+        "type": "object",
+        "required": ["minimum_supported_version", "features"],
+        "properties": {
+          "minimum_supported_version": { "type": "string" },
+          "features": {
+            "type": "object",
+            "additionalProperties": { "type": "boolean" }
+          }
+        }
+      },
+      "RegisterDeviceRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": { "type": "string" },
+          "topic_ids": { "type": "array", "items": { "type": "string" } },
+          "granularity": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "enum": ["everyDebate", "onlyMyMP"] }
+          },
+          "my_mp_member_id": { "type": "string" }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "required": ["query", "language_hint", "results"],
+        "properties": {
+          "query": { "type": "string" },
+          "language_hint": { "type": "string", "enum": ["en", "fr"] },
+          "results": { "type": "array", "items": { "$ref": "#/components/schemas/SearchResult" } }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "required": ["id", "title", "snippet"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "snippet": { "type": "string" },
+          "sitting_date": { "type": "string", "format": "date" },
+          "subject": { "type": "string" },
+          "member_id": { "type": "string" }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "checked_at", "pipelines"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok", "degraded"] },
+          "checked_at": { "type": "string", "format": "date-time" },
+          "pipelines": { "type": "array", "items": { "$ref": "#/components/schemas/PipelineStatus" } }
+        }
+      },
+      "PipelineStatus": {
+        "type": "object",
+        "required": ["name", "expected_interval_hours", "healthy"],
+        "properties": {
+          "name": { "type": "string" },
+          "last_run_at": { "type": "string", "format": "date-time" },
+          "last_success_at": { "type": "string", "format": "date-time" },
+          "last_error": { "type": "string" },
+          "record_count": { "type": "integer" },
+          "expected_interval_hours": { "type": "integer" },
+          "healthy": { "type": "boolean" },
+          "stale_for": { "type": "string" }
+        }
+      }
+    }
+  }
+}
