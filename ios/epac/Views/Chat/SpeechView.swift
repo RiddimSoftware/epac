@@ -162,6 +162,7 @@ struct SpeechView: View {
 					messageFriendBG: Color(UIColor.systemGray6)
 				)
 			)
+			.accessibilityIdentifier("speech-view-scroll")
 			if viewModel.didFinish {
 				Text("End")
 					.font(.system(.callout, design: .rounded, weight: .regular))

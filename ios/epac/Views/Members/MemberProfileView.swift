@@ -41,6 +41,7 @@ struct MemberProfileView: View {
 						ProfileDetailRow(icon: "envelope.fill", label: NSLocalizedString("contact.email", comment: ""), value: email)
 					}
 					.foregroundStyle(.primary)
+					.accessibilityIdentifier("mp-profile-contact-button")
 					Button {
 						UIPasteboard.general.string = email
 						showCopiedConfirmation = true
@@ -262,6 +263,7 @@ struct MemberProfileView: View {
 										.font(.caption)
 										.foregroundStyle(.tint)
 								}
+								.accessibilityIdentifier("accountability-lobbying-link")
 							}
 						}
 					},
@@ -307,6 +309,7 @@ struct MemberProfileView: View {
 				.frame(maxWidth: .infinity)
 			#endif
 		}
+		.accessibilityIdentifier("mp-profile-scroll")
 		.padding()
 		.animation(.none, value: showLobbying)
 		.task(id: member.memberID) {

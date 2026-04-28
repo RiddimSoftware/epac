@@ -89,9 +89,10 @@ struct MemberVotingRecordView: View {
 							.padding(.vertical, 4)
 					}
 					Section(header: Text(NSLocalizedString("voting.recentVotes", comment: "")).accessibilityAddTraits(.isHeader)) {
-						ForEach(sortedVotes) { mv in
+						ForEach(Array(sortedVotes.enumerated()), id: \.offset) { index, mv in
 							let rv = mv.vote  // pre-resolve relationship before SwiftUI render pass
 							VoteRow(memberVote: mv, rv: rv)
+								.accessibilityIdentifier(index == 0 ? "vote-list-row-0" : "vote-list-row-\(index)")
 								.swipeActions(edge: .leading) {
 									if let vote = rv {
 										Button {
@@ -150,6 +151,7 @@ struct MemberVotingRecordView: View {
 					}
 				}
 				.listStyle(.insetGrouped)
+				.accessibilityIdentifier("vote-detail-mp-list")
 				.refreshable {
 					guard member.memberID > 0 else { return }
 					try? await fetch.refreshMemberVotes(memberID: member.memberID)

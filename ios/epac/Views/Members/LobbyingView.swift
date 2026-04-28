@@ -39,6 +39,7 @@ struct LobbyingView: View {
                     LobbyistRow(comm: comm)
                 }
                 .listStyle(.plain)
+                .accessibilityIdentifier("lobbying-list-scroll")
             }
         }
         .navigationTitle(NSLocalizedString("lobbying.navTitle", comment: ""))

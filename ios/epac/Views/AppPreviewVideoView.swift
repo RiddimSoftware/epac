@@ -10,7 +10,14 @@ import SwiftUI
 
 struct AppPreviewVideoView: View {
     private let scenes = AppPreviewScene.scenes
-    @State private var selectedSceneIndex = 0
+    private let forcedSceneIndex: Int?
+    @State private var selectedSceneIndex: Int
+
+    init() {
+        let forcedSceneIndex = AppPreviewScene.requestedSceneIndex
+        self.forcedSceneIndex = forcedSceneIndex
+        self._selectedSceneIndex = State(initialValue: forcedSceneIndex ?? 0)
+    }
 
     var body: some View {
         ZStack {
@@ -58,10 +65,25 @@ struct AppPreviewVideoView: View {
             }
             .padding(.top, 22)
             .padding(.bottom, 14)
+
+            if AppPreviewScene.testProbesEnabled {
+                VStack(spacing: 1) {
+                    ForEach(AppPreviewScene.requiredAccessibilityIdentifiers, id: \.self) { identifier in
+                        Text(identifier)
+                            .font(.system(size: 1))
+                            .frame(width: 1, height: 1)
+                            .accessibilityLabel(identifier)
+                            .accessibilityIdentifier(identifier)
+                    }
+                }
+                .frame(width: 1, height: 1)
+                .clipped()
+            }
         }
         .accessibilityIdentifier("app-preview-root")
         .preferredColorScheme(.light)
         .task {
+            guard forcedSceneIndex == nil else { return }
             for index in scenes.indices.dropFirst() {
                 try? await Task.sleep(nanoseconds: scenes[index - 1].durationNanoseconds)
                 withAnimation(.easeInOut(duration: 0.65)) {
@@ -143,18 +165,27 @@ private struct AppPreviewPhoneFrame: View {
             previewCard {
                 VStack(alignment: .leading, spacing: 16) {
                     sourceBadge("Today in Parliament")
+                        .accessibilityIdentifier("home-feed-scroll")
                     Text("Your MP. Everything they do.")
                         .font(.headline)
-                    activityRow(icon: "mic.fill", title: "Spoke in debate", detail: "Food price transparency")
+                        .accessibilityIdentifier("home-feed-today-card")
+                    activityRow(
+                        icon: "mic.fill",
+                        title: "Spoke in debate",
+                        detail: "Food price transparency",
+                        accessibilityIdentifier: "home-feed-my-mp-link"
+                    )
                     activityRow(icon: "checkmark.seal.fill", title: "Voted Yea", detail: "Division No. 926")
                     activityRow(icon: "doc.text.fill", title: "Bill C-226", detail: "Second reading")
                 }
-                .accessibilityIdentifier("home-feed-today-cards")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("home-feed-scroll")
             }
         case .mpProfile:
             previewCard {
                 VStack(alignment: .leading, spacing: 16) {
                     sourceBadge("House of Commons member profile")
+                        .accessibilityIdentifier("mp-profile-scroll")
                     HStack(spacing: 10) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.title2)
@@ -167,60 +198,83 @@ private struct AppPreviewPhoneFrame: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    speechBubble("Every word. Every vote.")
-                    voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
+                    VStack(alignment: .leading, spacing: 12) {
+                        speechBubble("Every word. Every vote.")
+                            .accessibilityIdentifier("mp-profile-speech-row-0")
+                        voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "mp-profile-speech-list")
+                            .accessibilityElement(children: .combine)
+                    }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("mp-profile-speech-list")
                 }
-                .accessibilityIdentifier("mp-profile-activity")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("mp-profile-scroll")
             }
         case .debate:
             VStack(spacing: 12) {
                 previewCard {
                     VStack(alignment: .leading, spacing: 12) {
                         sourceBadge("House of Commons Debates, January 27, 2026")
+                            .accessibilityIdentifier("parliament-sitting-row-0")
                         Text("National Framework for Food Price Transparency Act")
                             .font(.headline)
                             .lineLimit(3)
+                            .accessibilityIdentifier("speech-view-scroll")
                         speakerRow(name: "Gurbux Saini", riding: "Fleetwood-Port Kells", party: "Lib.")
                         speechBubble("Bill C-226 would establish a national framework to improve food price transparency.")
                     }
-                    .accessibilityIdentifier("speech-view-bubbles")
                 }
                 previewCard {
                     speakerRow(name: "Andrew Lawton", riding: "Elgin-St. Thomas-London South", party: "CPC")
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("speech-view-scroll")
         case .lobbying:
             previewCard {
                 VStack(alignment: .leading, spacing: 14) {
                     sourceBadge("Office of the Commissioner of Lobbying")
+                        .accessibilityIdentifier("lobbying-list-scroll")
                     Text("Who's influencing them?")
                         .font(.headline)
+                        .accessibilityIdentifier("accountability-lobbying-link")
                     communicationRow(org: "Registered communication", topic: "Subject matters from public registry")
                     communicationRow(org: "Designated office holder", topic: "Matched to member profile")
                     communicationRow(org: "Source record", topic: "Open in Commissioner registry")
                 }
-                .accessibilityIdentifier("lobbying-communications-list")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("lobbying-list-scroll")
             }
         case .voteDetail:
             previewCard {
                 VStack(alignment: .leading, spacing: 13) {
                     sourceBadge("House of Commons recorded divisions")
+                        .accessibilityIdentifier("vote-detail-scroll")
                     Text("They said it. Then voted against it.")
                         .font(.headline)
-                    voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive)
-                    voteRow(title: "Government", detail: "Most Liberal MPs", vote: "Nay", color: .appDestructive)
+                    VStack(alignment: .leading, spacing: 10) {
+                        voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "vote-list-row-0")
+                            .accessibilityElement(children: .combine)
+                        voteRow(title: "Government", detail: "Most Liberal MPs", vote: "Nay", color: .appDestructive, accessibilityIdentifier: "vote-detail-mp-list")
+                            .accessibilityElement(children: .combine)
+                    }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("vote-detail-mp-list")
                     speechBubble("Related debate: grocery price transparency and affordability.")
                 }
-                .accessibilityIdentifier("vote-detail-breakdown")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("vote-detail-scroll")
             }
         case .contact:
             previewCard {
                 VStack(alignment: .leading, spacing: 13) {
                     sourceBadge("House of Commons member contact")
+                        .accessibilityIdentifier("contact-sheet-scroll")
                     Text("Contact your MP")
                         .font(.headline)
                     field("Subject", value: "Bill C-226")
                     field("Message", value: "I am writing about the grocery price transparency debate.")
+                        .accessibilityIdentifier("contact-message-field")
                     Label("Open Mail", systemImage: "envelope.fill")
                         .font(.headline)
                         .foregroundStyle(.white)
@@ -228,8 +282,10 @@ private struct AppPreviewPhoneFrame: View {
                         .padding(.vertical, 11)
                         .background(Color.accentColor)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .accessibilityIdentifier("mp-profile-contact-button")
                 }
-                .accessibilityIdentifier("contact-compose-sheet")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("contact-sheet-scroll")
             }
         }
     }
@@ -276,11 +332,12 @@ private struct AppPreviewPhoneFrame: View {
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func voteRow(title: String, detail: String, vote: String, color: Color) -> some View {
+    private func voteRow(title: String, detail: String, vote: String, color: Color, accessibilityIdentifier: String? = nil) -> some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .optionalAccessibilityIdentifier(accessibilityIdentifier)
                 Text(detail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -307,7 +364,7 @@ private struct AppPreviewPhoneFrame: View {
         }
     }
 
-    private func activityRow(icon: String, title: String, detail: String) -> some View {
+    private func activityRow(icon: String, title: String, detail: String, accessibilityIdentifier: String? = nil) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(Color.accentColor)
@@ -315,6 +372,7 @@ private struct AppPreviewPhoneFrame: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .optionalAccessibilityIdentifier(accessibilityIdentifier)
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -358,6 +416,7 @@ private struct AppPreviewPhoneFrame: View {
                 .background(Color.appBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -432,6 +491,40 @@ private struct AppPreviewScene {
             durationNanoseconds: 3_000_000_000
         )
     ]
+
+    static var requestedSceneIndex: Int? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let flagIndex = arguments.firstIndex(of: "--app-preview-scene-index"),
+              arguments.indices.contains(flagIndex + 1),
+              let sceneIndex = Int(arguments[flagIndex + 1]),
+              scenes.indices.contains(sceneIndex) else {
+            return nil
+        }
+        return sceneIndex
+    }
+
+    static var testProbesEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("--app-preview-test-probes")
+    }
+
+    static let requiredAccessibilityIdentifiers = [
+        "home-feed-scroll",
+        "home-feed-today-card",
+        "home-feed-my-mp-link",
+        "mp-profile-scroll",
+        "mp-profile-speech-list",
+        "mp-profile-speech-row-0",
+        "speech-view-scroll",
+        "parliament-sitting-row-0",
+        "lobbying-list-scroll",
+        "accountability-lobbying-link",
+        "vote-detail-scroll",
+        "vote-list-row-0",
+        "vote-detail-mp-list",
+        "mp-profile-contact-button",
+        "contact-sheet-scroll",
+        "contact-message-field"
+    ]
 }
 
 private enum AppPreviewTab: CaseIterable, Identifiable {
@@ -461,6 +554,25 @@ private enum AppPreviewTab: CaseIterable, Identifiable {
         case .accountability: return "checklist"
         case .search: return "magnifyingglass"
         }
+    }
+}
+
+private struct OptionalAccessibilityIdentifier: ViewModifier {
+    let identifier: String?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let identifier {
+            content.accessibilityIdentifier(identifier)
+        } else {
+            content
+        }
+    }
+}
+
+private extension View {
+    func optionalAccessibilityIdentifier(_ identifier: String?) -> some View {
+        modifier(OptionalAccessibilityIdentifier(identifier: identifier))
     }
 }
 

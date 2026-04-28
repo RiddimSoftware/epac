@@ -29,8 +29,17 @@ struct SittingCalendarView: View {
 		f.usesGroupingSeparator = false
 		return f
 	}()
+	private var firstSittingDayComponents: DateComponents? {
+		let calendar = Calendar.current
+		return viewModel.dates.union(viewModel.futureDates)
+			.compactMap { calendar.date(from: $0) }
+			.sorted()
+			.first
+			.map { calendar.dateComponents([.year, .month, .day], from: $0) }
+	}
 
 	var body: some View {
+		let firstSittingDay = firstSittingDayComponents
 		VStack {
 			CalendarViewRepresentable(visibleDateRange: visibleDates, monthsLayout: .vertical, dataDependency: viewModel.dates, proxy: calendarViewProxy)
 				.days({ day in
@@ -66,6 +75,9 @@ struct SittingCalendarView: View {
 							}
 							return "\(day.day)"
 						}())
+						.accessibilityIdentifier(firstSittingDay?.sameYMD(as: day.components) == true
+							? "parliament-sitting-row-0"
+							: "parliament-calendar-day-\(day.components.year ?? 0)-\(day.components.month ?? 0)-\(day.day)")
 				})
 				.onDragEnd({ visibleDayRange, willDecelerate in
 					guard !willDecelerate else { return }

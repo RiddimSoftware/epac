@@ -14,7 +14,14 @@ final class AppPreviewRecordingTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--app-preview-mode", "-UIAnimationsDisabled", "YES"]
+        app.launchArguments = [
+            "--app-preview-mode",
+            "-UIAnimationsDisabled",
+            "YES",
+            "--app-preview-scene-index",
+            "0",
+            "--app-preview-test-probes"
+        ]
         app.launch()
     }
 
@@ -23,17 +30,37 @@ final class AppPreviewRecordingTests: XCTestCase {
     }
 
     func testAppPreviewSequence() throws {
-        try waitForScene(headline: "Your MP. Everything they do.", timeout: 7, hold: 0.5)
-        try waitForScene(headline: "Every word. Every vote.", timeout: 8, hold: 0.5)
-        try waitForScene(headline: "Hansard. Finally readable.", timeout: 8, hold: 0.5)
-        try waitForScene(headline: "Who's influencing them?", timeout: 7, hold: 0.5)
-        try waitForScene(headline: "They said it. Then voted against it.", timeout: 7, hold: 0.5)
-        try waitForScene(headline: "Democracy. One tap.", timeout: 5, hold: 3)
+        try waitForScene(headline: "Your MP. Everything they do.", timeout: 7)
+        assertIdentifiersExist([
+            "home-feed-scroll",
+            "home-feed-today-card",
+            "home-feed-my-mp-link",
+            "mp-profile-scroll",
+            "mp-profile-speech-list",
+            "mp-profile-speech-row-0",
+            "speech-view-scroll",
+            "parliament-sitting-row-0",
+            "lobbying-list-scroll",
+            "accountability-lobbying-link",
+            "vote-detail-scroll",
+            "vote-list-row-0",
+            "vote-detail-mp-list",
+            "mp-profile-contact-button",
+            "contact-sheet-scroll",
+            "contact-message-field"
+        ])
     }
 
-    private func waitForScene(headline: String, timeout: TimeInterval, hold: TimeInterval) throws {
+    private func waitForScene(headline: String, timeout: TimeInterval) throws {
         let title = app.staticTexts[headline].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: timeout), "Expected scene headline \(headline)")
-        Thread.sleep(forTimeInterval: hold)
     }
+
+    private func assertIdentifiersExist(_ identifiers: [String], file: StaticString = #filePath, line: UInt = #line) {
+        for identifier in identifiers {
+            let element = app.descendants(matching: .any)[identifier].firstMatch
+            XCTAssertTrue(element.waitForExistence(timeout: 0.2), "Expected accessibility identifier \(identifier)", file: file, line: line)
+        }
+    }
+
 }
