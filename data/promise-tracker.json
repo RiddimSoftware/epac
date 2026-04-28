@@ -1,0 +1,535 @@
+{
+  "metadata": {
+    "title": "Campaign Promise Tracker",
+    "governingParty": "Liberal Party of Canada",
+    "governmentLeader": "Prime Minister Mark Carney",
+    "platformTitle": "Canada Strong - Unite. Secure. Protect. Build.",
+    "platformUrl": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+    "governmentVerificationUrl": "https://www.pm.gc.ca/en/news/news-releases/2026/04/27/prime-minister-carney-announces-canada-strong-fund-canadas-first",
+    "lastReviewed": "2026-04-28",
+    "reviewPolicy": "Status changes require a pull request with cited official evidence from the platform, LEGISinfo, Budget documents, or Public Accounts.",
+    "curationNote": "Human-reviewable data file. Promise text is a short commitment label backed by the cited platform location; status evidence is limited to official government or parliamentary records."
+  },
+  "commitments": [
+    {
+      "id": "lib-2025-major-projects-office",
+      "category": "Economy",
+      "promise": "Create a single-window Major Projects Office for nation-building projects.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 5"
+      },
+      "status": "Kept",
+      "statusRationale": "Budget 2025 says the Major Projects Office launched on August 29, 2025 and proposes operating funding.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Launching the Major Projects Office",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 states that the Major Projects Office launched on August 29, 2025 and proposes $213.8 million over five years."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-one-project-one-review",
+      "category": "Economy",
+      "promise": "Move federal project reviews toward One Project, One Review agreements.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 5-6"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 describes the Throne Speech commitment, first ministers' agreement, and cooperation-agreement pathway.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - One Project, One Review",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 describes work toward cooperation agreements under the Impact Assessment Act."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-indigenous-loan-guarantee",
+      "category": "Indigenous Partnership",
+      "promise": "Expand the Indigenous Loan Guarantee Program for major projects.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 4"
+      },
+      "status": "Kept",
+      "statusRationale": "Budget 2025 states the program was doubled from $5 billion to $10 billion.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - One Project, One Review",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 says the Indigenous Loan Guarantee Program was doubled from $5 billion to $10 billion."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-cib-capital-envelope",
+      "category": "Infrastructure",
+      "promise": "Use federal financing tools to unlock nation-building projects.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 3-4"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 announces intent to raise the Canada Infrastructure Bank envelope from $35 billion to $45 billion.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Boosting Major Project Financing",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 announces intent to amend the Canada Infrastructure Bank Act to increase the statutory capital envelope."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-high-speed-rail",
+      "category": "Infrastructure",
+      "promise": "Build high-speed rail between Windsor and Quebec City.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 4"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 identifies Alto High-Speed Rail as a transformative strategy and says the MPO will accelerate engineering, regulatory, and permitting work.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Nation-Building Projects and Strategies",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 lists Alto High-Speed Rail and says the MPO will work to accelerate pre-construction work."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-build-canada-homes",
+      "category": "Housing",
+      "promise": "Launch Build Canada Homes to build and finance affordable housing at scale.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 38-39"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says Build Canada Homes launched, with a $13 billion initial investment and first initiatives.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Launching Build Canada Homes",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 states Build Canada Homes launched on September 14, 2025 with an initial $13 billion investment."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-first-time-homebuyer-gst",
+      "category": "Housing",
+      "promise": "Remove or reduce GST for first-time buyers of new homes up to $1.5 million.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 39"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says the measure is before Parliament as part of Bill C-4.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Eliminating the GST for First-Time Home Buyers",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 says the first-time home buyer GST measure is before Parliament as part of Bill C-4."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-middle-class-tax-cut",
+      "category": "Affordability",
+      "promise": "Reduce the first federal personal income tax bracket from 15 percent to 14 percent.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 41"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says Canadians have paid less tax since July 1, 2025 and the rate reduction is before Parliament as part of Bill C-4.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Middle-Class Tax Cut",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 states the first bracket was lowered to 14 percent and the measure is before Parliament in Bill C-4."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-consumer-carbon-price",
+      "category": "Affordability",
+      "promise": "Cancel the consumer fuel charge and remove consumer-facing carbon price requirements.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 40"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says the consumer fuel charge was cancelled as of April 1, 2025 and permanent legislative removal is before Parliament in Bill C-4.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Cancelling the Divisive Consumer Carbon Price",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 says the consumer fuel charge was cancelled and legislative removal is before Parliament as part of Bill C-4."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-automatic-federal-benefits",
+      "category": "Affordability",
+      "promise": "Start Automatic Federal Benefits for lower-income Canadians.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 42"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says Automatic Federal Benefits will start for the 2026 tax year and proposes CRA implementation funding.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Delivering Automatic Federal Benefits",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 proposes Income Tax Act amendments and $71 million over five years for CRA implementation."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-national-school-food",
+      "category": "Families",
+      "promise": "Make the National School Food Program permanent.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 27"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes legislation and ongoing annual funding starting in 2029-30.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Making the National School Food Program Permanent",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 proposes legislation and $216.6 million per year starting in 2029-30 to make the program permanent."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-canada-disability-benefit-access",
+      "category": "Benefits",
+      "promise": "Lower barriers to access the Canada Disability Benefit.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 42"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes funding to offset Disability Tax Credit certification costs for Canada Disability Benefit recipients.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Lowering Barriers to Access the Canada Disability Benefit",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 proposes $115.7 million over four years and ongoing funding for a supplemental payment tied to DTC certification."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-canada-strong-pass",
+      "category": "Culture",
+      "promise": "Introduce a Canada Strong Pass for museums, parks, galleries, and VIA Rail discounts.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 7-8"
+      },
+      "status": "Kept",
+      "statusRationale": "Budget 2025 says the summer pass was introduced and proposes renewal for the holiday season and summer 2026.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Renewing the Canada Strong Pass",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 says the pass was introduced in summer 2025 and proposes renewal funding."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-cbc-radio-canada",
+      "category": "Culture",
+      "promise": "Strengthen CBC/Radio-Canada mandate and funding.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 6-7"
+      },
+      "status": "Partially Kept",
+      "statusRationale": "Budget 2025 proposes one-year funding and mandate modernization work; statutory long-term funding is not shown as complete.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 3 - Protecting Our National Broadcaster",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap3-en.html",
+          "citation": "Budget 2025 proposes $150 million in 2025-26 and says the government will explore modernising CBC/Radio-Canada's mandate."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-sred-enhancements",
+      "category": "Innovation",
+      "promise": "Increase the SR&ED enhanced expenditure limit to $6 million and reform administration.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 49"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes the $6 million limit and confirms SR&ED administration reforms.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Enhancing SR&ED Tax Incentives",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes increasing the enhanced SR&ED expenditure limit from $4.5 million to $6 million."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-venture-growth-capital",
+      "category": "Innovation",
+      "promise": "Recapitalize venture capital support with a $1 billion initiative.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 49"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes $1 billion for BDC to launch the Venture and Growth Capital Catalyst Initiative.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Investing to Build High-Growth Companies",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes $1 billion over three years for BDC to launch the Venture and Growth Capital Catalyst Initiative."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-ai-infrastructure",
+      "category": "Innovation",
+      "promise": "Catalyze AI infrastructure and sovereign compute capacity.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 4-5"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 provides $925.6 million over five years for large-scale sovereign AI compute capacity.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - AI and Quantum",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 provides $925.6 million over five years for large-scale sovereign compute capacity."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-critical-minerals-sovereign-fund",
+      "category": "Natural Resources",
+      "promise": "Create a Critical Minerals Sovereign Fund for strategic projects and companies.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 45"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes $2 billion over five years to create the fund.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Supporting Critical Mineral Projects",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes $2 billion over five years to create the Critical Minerals Sovereign Fund."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-first-last-mile-fund",
+      "category": "Natural Resources",
+      "promise": "Create a First and Last Mile Fund for critical minerals supply chains.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 45"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes $371.8 million over four years and up to $1.5 billion in support through 2029-30.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Supporting Critical Mineral Projects",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes funding to create the First and Last Mile Fund for upstream and midstream critical minerals projects."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-critical-mineral-tax-credit",
+      "category": "Natural Resources",
+      "promise": "Expand critical mineral exploration tax-credit eligibility.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 45"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes adding 12 critical minerals to the Critical Mineral Exploration Tax Credit.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Supporting Critical Mineral Projects",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes expanding CMETC eligibility to 12 additional critical minerals."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-clean-electricity-itc",
+      "category": "Climate",
+      "promise": "Proceed with the Clean Electricity investment tax credit.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 46-47"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 confirms intent to proceed and proposes removing conditions on Crown-corporation eligibility.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Clean Economy Investment Tax Credits",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 confirms intent to proceed with the Clean Electricity investment tax credit."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-ccus-itc-extension",
+      "category": "Climate",
+      "promise": "Extend full CCUS investment tax credit rates to 2035.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "pp. 47-48"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes extending full CCUS credit rates from 2031 to 2035.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Clean Economy Investment Tax Credits",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 proposes a five-year extension of full CCUS investment tax credit rates."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-climate-risk-disclosure",
+      "category": "Climate",
+      "promise": "Improve climate disclosure across the economy.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 48"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 says the government will work with provinces and territories to improve climate disclosure and align with international standards.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 1 - Mobilising Capital for Transition to Net-Zero",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap1-en.html",
+          "citation": "Budget 2025 announces work with provinces and territories to improve climate disclosure across the economy."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-caf-pay-and-health",
+      "category": "Defence",
+      "promise": "Raise CAF member pay and support CAF health care.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 10"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes $20.4 billion over five years for recruitment, retention, generational pay raises, and CAF health care.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 4 - Rebuilding, Rearming, and Reinvesting in the CAF",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap4-en.html",
+          "citation": "Budget 2025 proposes $20.4 billion over five years for CAF recruitment, retention, pay raises, and health care."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-borealis",
+      "category": "Defence",
+      "promise": "Establish BOREALIS for defence and security innovation.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 11"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 allocates funding to establish BOREALIS under the Defence Industrial Strategy.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 4 - Initial Investments Under the Defence Industrial Strategy",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap4-en.html",
+          "citation": "Budget 2025 proposes $68.2 million over three years to establish BOREALIS."
+        }
+      ]
+    },
+    {
+      "id": "lib-2025-defence-investment-agency",
+      "category": "Defence",
+      "promise": "Establish a Defence Investment Agency to streamline defence procurement.",
+      "source": {
+        "title": "Canada Strong platform",
+        "url": "https://liberal.ca/wp-content/uploads/sites/292/2025/04/Canada-Strong.pdf",
+        "location": "p. 11"
+      },
+      "status": "In Progress",
+      "statusRationale": "Budget 2025 proposes funding to establish the Defence Investment Agency.",
+      "evidence": [
+        {
+          "type": "Budget",
+          "title": "Budget 2025, Chapter 4 - A New Defence Investment Agency",
+          "url": "https://budget.canada.ca/2025/report-rapport/chap4-en.html",
+          "citation": "Budget 2025 proposes $30.8 million over four years and ongoing funding to establish the DIA."
+        }
+      ]
+    }
+  ]
+}
