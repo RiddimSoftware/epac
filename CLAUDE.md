@@ -48,6 +48,8 @@ Stdout is reserved for the script's actual JSON payload (e.g. `--dry-run`); logs
 
 When a second Python pipeline needs the same setup, factor `_JSONFormatter` and `_configure_logging` into `backend/_logging.py` and import from both. Until then it stays inline to avoid speculating about a packaging refactor.
 
+Backend environments are split for staging and production. Staging base URL: `https://staging-api.epac.riddimsoftware.com`; production base URL: `https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production`. iOS reads `BackendBaseURL` from `Info.plist` via `BACKEND_BASE_URL` in `ios/Config/*.xcconfig`; Debug uses staging and Release uses production unless CI overrides `BACKEND_BASE_URL`. Backend merges to `main` deploy to staging through `.github/workflows/deploy-staging.yml`; production backend deploys are manual through `.github/workflows/deploy-production.yml`.
+
 ---
 
 ## Architecture
@@ -171,13 +173,15 @@ The script launches the app with `--app-preview-mode`, records `AppPreviewRecord
 
 ### Backend Base URL
 
-The iOS app talks to a single AWS API Gateway. The base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
+The iOS app's backend base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
 
-To point a development build at a different backend (staging once it exists, a local Lambda mock, etc.), set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
+Debug reads staging from `ios/Config/Debug.xcconfig`; Release reads production from `ios/Config/Release.xcconfig`. TestFlight builds use the `Create Release` workflow's `BACKEND_BASE_URL` override to point at staging before App Store release.
+
+To point a local run at another backend, set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
 
 > Edit Scheme → Run → Arguments → Environment Variables → add `BACKEND_BASE_URL=https://your-staging-host.example.com/staging`.
 
-`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the production default. The `xcconfig`-based per-configuration URL (Phase 2 of EPAC-156) will replace this env-var hook once a staging environment is provisioned.
+`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the `Info.plist` build setting, then the production default.
 
 ### Post-PR-open review
 

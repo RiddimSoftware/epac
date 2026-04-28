@@ -1,0 +1,67 @@
+name: Deploy Backend Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Backend service to deploy, or all'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - daily-fetch
+          - loader
+          - search
+          - member-speeches
+          - health
+          - device-register
+          - openapi
+
+concurrency:
+  group: backend-production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.service }} to production
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [daily-fetch, loader, search, member-speeches, health, device-register, openapi]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/${{ matrix.service }}/go.mod
+
+      - name: Configure AWS credentials
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Test and package Lambda
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        working-directory: backend/${{ matrix.service }}
+        run: |
+          go test ./...
+          GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go
+          zip -q function.zip bootstrap
+
+      - name: Update production Lambda
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        working-directory: backend/${{ matrix.service }}
+        env:
+          FUNCTION_NAME: epac-${{ matrix.service }}-production
+        run: |
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --zip-file fileb://function.zip

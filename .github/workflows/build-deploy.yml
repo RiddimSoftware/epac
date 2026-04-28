@@ -162,6 +162,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          BACKEND_BASE_URL: https://staging-api.epac.riddimsoftware.com
           NEW_VERSION: ${{ needs.compute-version.outputs.next_version }}
         run: bundle exec fastlane deploy
 
