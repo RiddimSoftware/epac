@@ -110,7 +110,7 @@ final class AppPreviewRecordingTests: XCTestCase {
         for identifier in identifiers {
             let query = app.descendants(matching: .any).matching(identifier: identifier)
             let deadline = Date().addingTimeInterval(1)
-            while query.isEmpty && Date() < deadline {
+            while query.count == 0 && Date() < deadline {
                 RunLoop.current.run(until: Date().addingTimeInterval(0.05))
             }
             XCTAssertGreaterThan(query.count, 0, "Expected accessibility identifier \(identifier)", file: file, line: line)

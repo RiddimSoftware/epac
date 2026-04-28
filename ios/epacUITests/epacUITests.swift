@@ -38,7 +38,7 @@ final class epacUITests: XCTestCase {
         XCTAssertTrue(parliamentTab.waitForExistence(timeout: 5),
                       "Parliament tab should be visible after cold launch")
         parliamentTab.tap()
-        XCTAssertTrue(!app.navigationBars.isEmpty,
+        XCTAssertGreaterThan(app.navigationBars.count, 0,
                       "Navigation bar should appear in Parliament tab")
     }
 
