@@ -13,7 +13,7 @@ RIDINGS_DIR = os.path.join(os.path.dirname(__file__), "ridings")
 APPSTORE_URL_BASE = "https://apps.apple.com/ca/app/epac/id6739397803"
 
 def appstore_url(slug: str) -> str:
-    return f"{APPSTORE_URL_BASE}?utm_source=epac-web&utm_medium=riding-page&utm_content={slug}&utm_campaign=organic"
+    return f"{APPSTORE_URL_BASE}?ct=epac-web-riding&mt=8&utm_source=epac-web&utm_medium=riding-page&utm_content={slug}&utm_campaign=organic"
 
 def slugify(s):
     s = s.lower().strip()
