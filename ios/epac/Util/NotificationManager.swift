@@ -37,11 +37,11 @@ final class NotificationManager: NSObject {
     /// Safe to call multiple times — the system returns the existing status.
     func requestAuthorization() async {
         do {
-            let granted = try await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .badge, .sound])
-            if granted {
-                await UIApplication.shared.registerForRemoteNotifications()
-            }
+			let granted = try await UNUserNotificationCenter.current()
+				.requestAuthorization(options: [.alert, .badge, .sound])
+			if granted {
+				UIApplication.shared.registerForRemoteNotifications()
+			}
             Log.debug("Notification authorization: \(granted)")
         } catch {
             Log.debug("Notification auth error: \(error.localizedDescription)")

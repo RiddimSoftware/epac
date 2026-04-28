@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -82,6 +83,41 @@ func TestParseAnnualSittingCalendar(t *testing.T) {
 	}
 	if days["2026-05-02"] {
 		t.Fatal("did not expect non-chamber-meeting day to be marked sitting")
+	}
+}
+
+func TestBuildHouseCalendarICS(t *testing.T) {
+	now := time.Date(2026, 4, 28, 18, 0, 0, 0, time.UTC)
+	ics := buildHouseCalendarICS([]calendarEvent{
+		{
+			Date:      time.Date(2026, 4, 29, 0, 0, 0, 0, time.UTC),
+			SourceURL: "https://www.ourcommons.ca/en/sitting-calendar/2026",
+		},
+	}, now)
+
+	required := []string{
+		"BEGIN:VCALENDAR\r\n",
+		"VERSION:2.0\r\n",
+		"X-WR-CALNAME:House of Commons Sitting Days\r\n",
+		"UID:house-sitting-2026-04-29@epac.riddimsoftware.com\r\n",
+		"DTSTART;VALUE=DATE:20260429\r\n",
+		"DTEND;VALUE=DATE:20260430\r\n",
+		"SUMMARY:House of Commons - Sitting Day\r\n",
+		"URL:https://epac.riddimsoftware.com/sitting/2026-04-29\r\n",
+		"END:VCALENDAR\r\n",
+	}
+	for _, want := range required {
+		if !strings.Contains(ics, want) {
+			t.Fatalf("ICS missing %q in:\n%s", want, ics)
+		}
+	}
+}
+
+func TestICSEscape(t *testing.T) {
+	got := icsEscape(`one,two;three\four` + "\n" + "five")
+	want := `one\,two\;three\\four\nfive`
+	if got != want {
+		t.Fatalf("icsEscape() = %q, want %q", got, want)
 	}
 }
 

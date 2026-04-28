@@ -277,4 +277,39 @@ struct SittingViewModelTests {
 		#expect(question.speech.currentMessageID == question.firstMessage.hansardID)
 		#expect(question.speech.currentMessage?.hansardID == question.firstMessage.hansardID)
 	}
+
+	@Test func upcomingSittingDatesReturnsLoadedDatesInsideNextThirtyDays() {
+		var calendar = Calendar(identifier: .gregorian)
+		calendar.timeZone = TimeZone(identifier: "America/Toronto")!
+		let start = date(year: 2026, month: 4, day: 28, calendar: calendar)
+		let vm = SittingCalendarViewModel()
+		vm.dates = [
+			components(year: 2026, month: 4, day: 27),
+			components(year: 2026, month: 4, day: 29)
+		]
+		vm.futureDates = [
+			components(year: 2026, month: 5, day: 12),
+			components(year: 2026, month: 6, day: 1)
+		]
+
+		let result = vm.upcomingSittingDates(from: start, throughDays: 30, calendar: calendar)
+		let days = result.map { calendar.component(.day, from: $0) }
+
+		#expect(days == [29, 12])
+	}
+
+	@Test func calendarExportSubscriptionURLUsesBackendBase() {
+		let baseURL = URL(string: "https://staging-api.epac.riddimsoftware.com")!
+		let url = CalendarExportService.subscriptionURL(baseURL: baseURL)
+
+		#expect(url.absoluteString == "https://staging-api.epac.riddimsoftware.com/calendar/house.ics")
+	}
+
+	private func components(year: Int, month: Int, day: Int) -> DateComponents {
+		DateComponents(year: year, month: month, day: day)
+	}
+
+	private func date(year: Int, month: Int, day: Int, calendar: Calendar) -> Date {
+		calendar.date(from: components(year: year, month: month, day: day))!
+	}
 }

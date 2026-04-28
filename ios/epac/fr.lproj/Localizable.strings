@@ -10,6 +10,7 @@
 "accountability.navTitle" = "Responsabilité";
 "accountability.donations" = "Dons politiques";
 "accountability.projectCosts" = "Coût des projets";
+"common.ok" = "OK";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";
@@ -22,6 +23,18 @@
 "Today" = "Aujourd'hui";
 "Upcoming" = "À venir";
 "epac" = "epac";
+"sitting.calendar.export.menuLabel" = "Exportation du calendrier";
+"sitting.calendar.export.addNext30" = "Ajouter les 30 prochains jours";
+"sitting.calendar.export.copySubscription" = "Copier le lien d'abonnement";
+"sitting.calendar.export.inProgress" = "Ajout des jours de séance";
+"sitting.calendar.export.alertTitle" = "Calendrier";
+"sitting.calendar.export.noUpcoming" = "Aucun jour de séance n'est chargé pour les 30 prochains jours.";
+"sitting.calendar.export.alreadyAdded" = "Ces jours de séance sont déjà dans votre calendrier.";
+"sitting.calendar.export.addedCount" = "%d jour(s) de séance ajouté(s) au calendrier.";
+"sitting.calendar.export.copiedSubscription" = "Lien d'abonnement au calendrier copié.";
+"sitting.calendar.export.eventTitle" = "House of Commons - Sitting Day";
+"sitting.calendar.export.error.accessDenied" = "L'accès au calendrier n'a pas été accordé.";
+"sitting.calendar.export.error.noDefaultCalendar" = "Aucun calendrier modifiable n'est disponible.";
 
 /* Non-sitting day view */
 "Recess" = "Ajournement";

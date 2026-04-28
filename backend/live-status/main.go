@@ -85,6 +85,11 @@ type pollResponse struct {
 	SourceURL    string    `json:"source_url"`
 }
 
+type calendarEvent struct {
+	Date      time.Time
+	SourceURL string
+}
+
 type apiProbe struct {
 	Version        string `json:"version"`
 	RequestContext struct {
@@ -109,12 +114,17 @@ func handleLambda(ctx context.Context, raw json.RawMessage) (any, error) {
 	return handlePoll(ctx, time.Now)
 }
 
-func handleAPI(ctx context.Context, _ events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	conn, err := connectDB(ctx)
 	if err != nil {
 		return apiError(http.StatusServiceUnavailable, err.Error()), nil
 	}
 	defer conn.Close(ctx)
+
+	switch normalizedPath(req) {
+	case "/calendar/house.ics", "/api/v1/calendar/house.ics":
+		return handleHouseCalendar(ctx, conn, time.Now().UTC())
+	}
 
 	status, err := readLiveStatus(ctx, conn, time.Now().UTC())
 	if err != nil {
@@ -129,6 +139,34 @@ func handleAPI(ctx context.Context, _ events.APIGatewayV2HTTPRequest) (events.AP
 			"Cache-Control": defaultCacheValue,
 		},
 		Body: string(body),
+	}, nil
+}
+
+func normalizedPath(req events.APIGatewayV2HTTPRequest) string {
+	path := req.RawPath
+	if path == "" {
+		path = req.RequestContext.HTTP.Path
+	}
+	path = "/" + strings.Trim(path, "/")
+	path = strings.TrimSuffix(path, "/")
+	if path == "" {
+		return "/"
+	}
+	return path
+}
+
+func handleHouseCalendar(ctx context.Context, conn *pgx.Conn, now time.Time) (events.APIGatewayV2HTTPResponse, error) {
+	calendarEvents, err := readHouseCalendar(ctx, conn, now)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, fmt.Sprintf("query sitting calendar: %v", err)), nil
+	}
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]string{
+			"Content-Type":  "text/calendar; charset=utf-8",
+			"Cache-Control": "public, max-age=300",
+		},
+		Body: buildHouseCalendarICS(calendarEvents, now),
 	}, nil
 }
 
@@ -299,6 +337,96 @@ func upsertAnnualSittingCalendar(ctx context.Context, conn *pgx.Conn, year int, 
 		}
 	}
 	return nil
+}
+
+func readHouseCalendar(ctx context.Context, conn *pgx.Conn, now time.Time) ([]calendarEvent, error) {
+	local := now.In(ottawaLocation())
+	if err := ensureAnnualSittingCalendar(ctx, conn, http.DefaultClient, local.Year(), now); err != nil {
+		return nil, err
+	}
+
+	start := time.Date(local.Year(), time.January, 1, 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(1, 0, 0)
+	rows, err := conn.Query(ctx, `
+		SELECT sitting_date, source_url
+		FROM live_sitting_day
+		WHERE is_sitting = TRUE
+		  AND sitting_date >= $1
+		  AND sitting_date < $2
+		ORDER BY sitting_date
+	`, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []calendarEvent
+	for rows.Next() {
+		var event calendarEvent
+		if err := rows.Scan(&event.Date, &event.SourceURL); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func ensureAnnualSittingCalendar(ctx context.Context, conn *pgx.Conn, client *http.Client, year int, now time.Time) error {
+	var fetchedAt time.Time
+	err := conn.QueryRow(ctx, `
+		SELECT fetched_at
+		FROM live_sitting_day
+		WHERE sitting_date >= $1 AND sitting_date < $2
+		ORDER BY fetched_at DESC
+		LIMIT 1
+	`, time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC), time.Date(year+1, time.January, 1, 0, 0, 0, 0, time.UTC)).Scan(&fetchedAt)
+	if err == nil && now.Sub(fetchedAt) < calendarCacheTTL {
+		return nil
+	}
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
+	}
+	days, calendarURL, err := fetchAnnualSittingCalendar(ctx, client, year)
+	if err != nil {
+		return err
+	}
+	return upsertAnnualSittingCalendar(ctx, conn, year, days, calendarURL, now)
+}
+
+func buildHouseCalendarICS(events []calendarEvent, generatedAt time.Time) string {
+	var b strings.Builder
+	dtstamp := generatedAt.UTC().Format("20060102T150405Z")
+	b.WriteString("BEGIN:VCALENDAR\r\n")
+	b.WriteString("VERSION:2.0\r\n")
+	b.WriteString("PRODID:-//Riddim Software//epac Parliament Calendar//EN\r\n")
+	b.WriteString("CALSCALE:GREGORIAN\r\n")
+	b.WriteString("METHOD:PUBLISH\r\n")
+	b.WriteString("X-WR-CALNAME:House of Commons Sitting Days\r\n")
+	b.WriteString("X-WR-TIMEZONE:America/Toronto\r\n")
+	for _, event := range events {
+		start := event.Date.UTC()
+		end := start.AddDate(0, 0, 1)
+		dateString := start.Format("2006-01-02")
+		b.WriteString("BEGIN:VEVENT\r\n")
+		b.WriteString("UID:house-sitting-" + dateString + "@epac.riddimsoftware.com\r\n")
+		b.WriteString("DTSTAMP:" + dtstamp + "\r\n")
+		b.WriteString("DTSTART;VALUE=DATE:" + start.Format("20060102") + "\r\n")
+		b.WriteString("DTEND;VALUE=DATE:" + end.Format("20060102") + "\r\n")
+		b.WriteString("SUMMARY:House of Commons - Sitting Day\r\n")
+		b.WriteString("DESCRIPTION:" + icsEscape("House of Commons sitting day. Source: "+event.SourceURL) + "\r\n")
+		b.WriteString("URL:https://epac.riddimsoftware.com/sitting/" + dateString + "\r\n")
+		b.WriteString("END:VEVENT\r\n")
+	}
+	b.WriteString("END:VCALENDAR\r\n")
+	return b.String()
+}
+
+func icsEscape(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, "\n", `\n`)
+	value = strings.ReplaceAll(value, ";", `\;`)
+	value = strings.ReplaceAll(value, ",", `\,`)
+	return value
 }
 
 func fetchLiveStatus(ctx context.Context, client *http.Client, now time.Time) (liveStatus, error) {

@@ -118,5 +118,9 @@
 	<string>$(SENTRY_DSN)</string>
 	<key>BackendBaseURL</key>
 	<string>$(BACKEND_BASE_URL)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>calendar.fullAccessUsage</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>calendar.fullAccessUsage</string>
 </dict>
 </plist>
