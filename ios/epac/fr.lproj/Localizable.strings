@@ -48,6 +48,9 @@
 /* Sitting view */
 "Search debates" = "Rechercher des débats";
 "Open debate" = "Ouvrir le débat";
+"sitting.oralQuestions.title" = "Questions orales";
+"sitting.oralQuestions.count" = "%d échange(s)";
+"sitting.oralQuestions.openHint" = "Ouvrir cette question dans le compte rendu intégral du Hansard";
 
 /* Speech view */
 "Tap anywhere to continue" = "Touchez n'importe où pour continuer";

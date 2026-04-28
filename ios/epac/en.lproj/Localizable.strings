@@ -46,6 +46,9 @@
 /* Sitting view */
 "Search debates" = "Search debates";
 "Open debate" = "Open debate";
+"sitting.oralQuestions.title" = "Oral Questions";
+"sitting.oralQuestions.count" = "%d exchange(s)";
+"sitting.oralQuestions.openHint" = "Open this question in the full Hansard transcript";
 
 /* Speech view */
 "Tap anywhere to continue" = "Tap anywhere to continue";
