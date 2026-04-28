@@ -53,6 +53,7 @@ struct HomeFeedView: View {
                     senatorsSection
                 }
                 healthcareContextCard
+                employmentInsuranceContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
                 }
@@ -426,6 +427,42 @@ struct HomeFeedView: View {
                 } header: {
                     Text(NSLocalizedString("cihi.sectionTitle.short", comment: ""))
                 }
+            }
+        }
+    }
+
+    // MARK: - Employment Insurance contextual card (shown when "labour" topic followed + province known)
+
+    @ViewBuilder
+    private var employmentInsuranceContextCard: some View {
+        if topicStore.isFollowing("labour"),
+           let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: provinceAbbrev) {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("EI in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Regular beneficiaries")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(ei.beneficiaries.formatted())
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Average weekly benefit")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: EmploymentInsuranceStatisticsDatabase.snapshot()?.source.url
+                        ?? EmploymentInsuranceStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Employment Insurance")
+            } footer: {
+                Text("Reference month: \(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))")
             }
         }
     }
