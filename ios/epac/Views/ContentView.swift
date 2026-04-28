@@ -12,9 +12,6 @@ import Observation
 import CoreSpotlight
 
 struct ContentView: View {
-	private static let isAppStoreScreenshotMode = ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
-	private static let isAppPreviewVideoMode = ProcessInfo.processInfo.arguments.contains("--app-preview-mode") || ProcessInfo.processInfo.arguments.contains("-AppPreviewVideo")
-	private static let isMarketingCaptureMode = isAppStoreScreenshotMode || isAppPreviewVideoMode
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
@@ -24,14 +21,14 @@ struct ContentView: View {
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
-	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !Self.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
-	@State private var showOnboarding = !AppRuntime.isRunningTests && !Self.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
+	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
+	@State private var showOnboarding = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
 		self.appDelegate = appDelegate
-		if Self.isAppPreviewVideoMode {
+		if AppEnvironment.isAppPreviewMode {
 			Self.configureAppPreviewMode()
 		}
 	}
@@ -39,6 +36,7 @@ struct ContentView: View {
 	private static func configureAppPreviewMode() {
 		let defaults = UserDefaults.standard
 		defaults.set(true, forKey: "epac.onboarding.completed")
+		defaults.set(AppEnvironment.appPreviewPostalCode, forKey: "epac.myMP.postalCode")
 		defaults.set("Fleetwood-Port Kells", forKey: "epac.myMP.ridingName")
 		defaults.set("Gurbux Saini", forKey: "epac.myMP.memberName")
 		if let followedMembers = try? JSONEncoder().encode([1422: FollowPreferences()]) {
@@ -61,9 +59,9 @@ struct ContentView: View {
 
 	var body: some View {
 		Group {
-			if Self.isAppStoreScreenshotMode {
+			if AppEnvironment.isAppStoreScreenshotMode {
 				AppStoreScreenshotShowcaseView()
-			} else if Self.isAppPreviewVideoMode {
+			} else if AppEnvironment.isAppPreviewMode {
 				AppPreviewVideoView()
 			} else if horizontalSizeClass == .compact {
 				phoneLayout
@@ -103,7 +101,7 @@ struct ContentView: View {
 			}
 		}
 		.task {
-			guard !AppRuntime.isRunningTests, !Self.isMarketingCaptureMode else { return }
+			guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
 			// Wire the router to the AppDelegate so Home Screen Quick Actions
 			// (UIApplicationShortcutItem) are forwarded to the navigation layer.
 			appDelegate.router = router

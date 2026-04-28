@@ -19,6 +19,8 @@ final class AppPreviewRecordingTests: XCTestCase {
         app = XCUIApplication()
         if isRecordingRun {
             app.launchArguments = ["--app-preview-mode", "-UIAnimationsDisabled", "YES"]
+            app.launchEnvironment["EPAC_APP_PREVIEW_MODE"] = "1"
+            app.launchEnvironment["EPAC_APP_PREVIEW_MANUAL_SEQUENCE"] = "1"
         } else {
             app.launchArguments = [
                 "--app-preview-mode",
@@ -28,6 +30,7 @@ final class AppPreviewRecordingTests: XCTestCase {
                 "0",
                 "--app-preview-test-probes"
             ]
+            app.launchEnvironment["EPAC_APP_PREVIEW_MODE"] = "1"
         }
         app.launch()
     }
@@ -60,36 +63,23 @@ final class AppPreviewRecordingTests: XCTestCase {
             return
         }
 
-        try waitForScene(
-            headline: "Your MP. Everything they do.",
-            timeout: 10,
-            hold: 0.5
-        )
-        try waitForScene(
-            headline: "Every word. Every vote.",
-            timeout: 12,
-            hold: 0.5
-        )
-        try waitForScene(
-            headline: "Hansard. Finally readable.",
-            timeout: 12,
-            hold: 0.5
-        )
-        try waitForScene(
-            headline: "Who's influencing them?",
-            timeout: 12,
-            hold: 0.5
-        )
-        try waitForScene(
-            headline: "They said it. Then voted against it.",
-            timeout: 12,
-            hold: 0.5
-        )
-        try waitForScene(
-            headline: "Democracy. One tap.",
-            timeout: 10,
-            hold: 3
-        )
+        // Recording path: deterministic tap-to-advance with 3s holds per scene.
+        // Manual sequencing avoids the flaky XCTest runner timing in EPAC-537.
+        try waitForScene(headline: "Your MP. Everything they do.", timeout: 10, hold: 3)
+        advanceToNextScene()
+        try waitForScene(headline: "Every word. Every vote.", timeout: 5, hold: 3)
+        advanceToNextScene()
+        try waitForScene(headline: "Hansard. Finally readable.", timeout: 5, hold: 3)
+        advanceToNextScene()
+        try waitForScene(headline: "Who's influencing them?", timeout: 5, hold: 3)
+        advanceToNextScene()
+        try waitForScene(headline: "They said it. Then voted against it.", timeout: 5, hold: 3)
+        advanceToNextScene()
+        try waitForScene(headline: "Democracy. One tap.", timeout: 5, hold: 3)
+    }
+
+    private func advanceToNextScene() {
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
     private func waitForScene(

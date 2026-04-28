@@ -459,28 +459,28 @@ private struct AppPreviewScene {
             tabTitle: "Home",
             systemImage: "house.fill",
             kind: .homeFeed,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: 3_000_000_000
         ),
         AppPreviewScene(
             headline: "Every word. Every vote.",
             tabTitle: "Members",
             systemImage: "person.2.fill",
             kind: .mpProfile,
-            durationNanoseconds: 6_000_000_000
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
             headline: "Hansard. Finally readable.",
             tabTitle: "Parliament",
             systemImage: "building.columns.fill",
             kind: .debate,
-            durationNanoseconds: 6_000_000_000
+            durationNanoseconds: 5_000_000_000
         ),
         AppPreviewScene(
             headline: "Who's influencing them?",
             tabTitle: "Members",
             systemImage: "person.text.rectangle.fill",
             kind: .lobbying,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: 4_000_000_000
         ),
         AppPreviewScene(
             headline: "They said it. Then voted against it.",
