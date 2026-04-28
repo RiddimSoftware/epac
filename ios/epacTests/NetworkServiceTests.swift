@@ -138,6 +138,111 @@ struct NetworkServiceTests {
         #expect(seenValidators.allSatisfy { $0.etag == nil && $0.lastModified == nil })
     }
 
+    @Test func getDoesNotSendValidatorWhenCachedBodyIsMissing() async throws {
+        let url = URL(string: "https://example.test/parliament/votes")!
+        let initialBody = Data("votes-v1".utf8)
+        let refreshedBody = Data("votes-v2".utf8)
+        let harness = try makeHarness()
+        var seenValidators: [String?] = []
+        var requestCount = 0
+
+        MockURLProtocol.requestHandler = { request in
+            requestCount += 1
+            seenValidators.append(request.value(forHTTPHeaderField: "If-None-Match"))
+
+            if requestCount == 1 {
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["ETag": #""votes-v1""#]
+                    )!,
+                    initialBody
+                )
+            }
+
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["ETag": #""votes-v2""#]
+                )!,
+                refreshedBody
+            )
+        }
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        let (storedData, _) = try await harness.service.data(from: url)
+        try FileManager.default.removeItem(at: harness.cacheDirectory)
+        let (refreshedData, refreshedResponse) = try await harness.service.data(from: url)
+
+        #expect(storedData == initialBody)
+        #expect(refreshedData == refreshedBody)
+        #expect((refreshedResponse as? HTTPURLResponse)?.statusCode == 200)
+        #expect(seenValidators == [nil, nil])
+    }
+
+    @Test func getClearsStaleCacheWhenResponseCannotBeRevalidated() async throws {
+        let url = URL(string: "https://example.test/parliament/bills")!
+        let harness = try makeHarness()
+        var seenValidators: [String?] = []
+        var requestCount = 0
+
+        MockURLProtocol.requestHandler = { request in
+            requestCount += 1
+            seenValidators.append(request.value(forHTTPHeaderField: "If-None-Match"))
+
+            switch requestCount {
+            case 1:
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["ETag": #""bills-v1""#]
+                    )!,
+                    Data("bills-v1".utf8)
+                )
+            case 2:
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["Cache-Control": "no-store"]
+                    )!,
+                    Data("bills-private".utf8)
+                )
+            default:
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["ETag": #""bills-v2""#]
+                    )!,
+                    Data("bills-v2".utf8)
+                )
+            }
+        }
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        let (firstData, _) = try await harness.service.data(from: url)
+        let (noStoreData, _) = try await harness.service.data(from: url)
+        let (freshData, _) = try await harness.service.data(from: url)
+
+        #expect(firstData == Data("bills-v1".utf8))
+        #expect(noStoreData == Data("bills-private".utf8))
+        #expect(freshData == Data("bills-v2".utf8))
+        #expect(seenValidators == [nil, #""bills-v1""#, nil])
+    }
+
     private func makeHarness() throws -> NetworkServiceHarness {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]

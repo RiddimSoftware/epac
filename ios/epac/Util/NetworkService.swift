@@ -99,16 +99,18 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
         var conditionalRequest = request
         var didApplyValidator = false
 
-        if conditionalRequest.value(forHTTPHeaderField: "If-None-Match") == nil,
-           let etag,
-           !etag.isEmpty {
-            conditionalRequest.setValue(etag, forHTTPHeaderField: "If-None-Match")
-            didApplyValidator = true
-        } else if conditionalRequest.value(forHTTPHeaderField: "If-Modified-Since") == nil,
-                  let lastModified,
-                  !lastModified.isEmpty {
-            conditionalRequest.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
-            didApplyValidator = true
+        if hasCachedBody(cacheKey: key) {
+            if conditionalRequest.value(forHTTPHeaderField: "If-None-Match") == nil,
+               let etag,
+               !etag.isEmpty {
+                conditionalRequest.setValue(etag, forHTTPHeaderField: "If-None-Match")
+                didApplyValidator = true
+            } else if conditionalRequest.value(forHTTPHeaderField: "If-Modified-Since") == nil,
+                      let lastModified,
+                      !lastModified.isEmpty {
+                conditionalRequest.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+                didApplyValidator = true
+            }
         }
 
         return CachedHTTPRequest(
@@ -133,9 +135,13 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
             return (cachedData, revalidatedResponse(from: httpResponse, url: url))
         }
 
-        guard (200..<300).contains(httpResponse.statusCode),
-              !isNoStore(response: httpResponse),
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            return (data, response)
+        }
+
+        guard !isNoStore(response: httpResponse),
               hasValidator(response: httpResponse) else {
+            removeCachedResponse(for: url)
             return (data, response)
         }
 
@@ -161,14 +167,32 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
         do {
             try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
             try data.write(to: bodyURL(cacheKey: key), options: [.atomic])
-            refreshValidators(from: response, for: url)
+            replaceValidators(from: response, for: url)
         } catch {
             return
         }
     }
 
+    private func hasCachedBody(cacheKey: String) -> Bool {
+        fileManager.fileExists(atPath: bodyURL(cacheKey: cacheKey).path)
+    }
+
     private func cachedData(for url: URL) -> Data? {
         try? Data(contentsOf: bodyURL(cacheKey: cacheKey(for: url)))
+    }
+
+    private func replaceValidators(from response: HTTPURLResponse, for url: URL) {
+        let key = cacheKey(for: url)
+        if let etag = headerValue("ETag", in: response) {
+            userDefaults.set(etag, forKey: defaultsKey("etag", cacheKey: key))
+        } else {
+            userDefaults.removeObject(forKey: defaultsKey("etag", cacheKey: key))
+        }
+        if let lastModified = headerValue("Last-Modified", in: response) {
+            userDefaults.set(lastModified, forKey: defaultsKey("lastModified", cacheKey: key))
+        } else {
+            userDefaults.removeObject(forKey: defaultsKey("lastModified", cacheKey: key))
+        }
     }
 
     private func refreshValidators(from response: HTTPURLResponse, for url: URL) {
