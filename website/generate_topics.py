@@ -15,7 +15,7 @@ SITE_ROOT = "https://epac.riddimsoftware.com"
 APPSTORE_BASE = "https://apps.apple.com/ca/app/epac/id6739397803"
 
 def appstore_url(topic_slug):
-    return f"{APPSTORE_BASE}?utm_source=epac-web&utm_medium=topic-page&utm_content={topic_slug}&utm_campaign=organic"
+    return f"{APPSTORE_BASE}?ct=epac-web-topic&mt=8&utm_source=epac-web&utm_medium=topic-page&utm_content={topic_slug}&utm_campaign=organic"
 
 TOPICS = [
     {
