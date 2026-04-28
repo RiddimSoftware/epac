@@ -72,6 +72,11 @@
     .step::before { counter-increment: step; content: counter(step); width: 32px; height: 32px; border-radius: 50%; background: var(--card-bg); display: grid; place-items: center; font-weight: 800; }
     .source-list { columns: 2; padding-left: 20px; color: var(--muted); }
     .source-list li { margin-bottom: 8px; break-inside: avoid; }
+    .contact-form { display: grid; gap: 12px; max-width: 620px; margin-top: 18px; }
+    .contact-form label { display: grid; gap: 6px; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+    .contact-form input, .contact-form textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; padding: 12px; }
+    .contact-form textarea { min-height: 130px; resize: vertical; }
+    .contact-form .button { justify-self: start; background: transparent; cursor: pointer; }
     footer { padding: 40px 6%; opacity: 0.5; font-size: 0.9rem; text-align: center; }
     footer a { color: inherit; text-decoration: none; }
     @media (max-width: 760px) {
@@ -81,6 +86,7 @@
       .source-list { columns: 1; }
       .actions { flex-direction: column; }
       .button { width: 100%; }
+      .contact-form .button { justify-self: stretch; }
     }
   </style>
   <script defer src="/open-in-app.js"></script>
@@ -105,7 +111,7 @@
 
     <div class="actions">
       <a class="button primary" href="/educator-kit/educator-guide.pdf">Educator guide PDF</a>
-      <a class="button" href="/educator-kit/sample-assignment.md">Sample assignment</a>
+      <a class="button" href="/educator-kit/sample-assignment.pdf">Sample assignment PDF</a>
       <a class="button" href="/educator-kit/data-sources-explainer.pdf">Data sources PDF</a>
     </div>
 
@@ -160,6 +166,21 @@
 
     <h2>Contact</h2>
     <p>For classroom feedback or partnership questions, contact <a href="mailto:sunny@riddimsoftware.com">sunny@riddimsoftware.com</a>.</p>
+    <form class="contact-form" action="mailto:sunny@riddimsoftware.com?subject=epac%20educator%20kit%20feedback" method="post" enctype="text/plain">
+      <label>
+        Name
+        <input name="name" autocomplete="name">
+      </label>
+      <label>
+        Email
+        <input name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        Message
+        <textarea name="message">I am interested in using the epac educator kit.</textarea>
+      </label>
+      <button class="button" type="submit">Send message</button>
+    </form>
   </main>
 
   <footer>
