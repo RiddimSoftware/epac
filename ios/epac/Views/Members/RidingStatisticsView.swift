@@ -116,6 +116,8 @@ struct RidingStatisticsView: View {
 
 			healthSection
 
+			cppOasSection
+
 			Section {
 				VStack(alignment: .leading, spacing: 6) {
 					Text("About this data")
@@ -657,6 +659,50 @@ struct RidingStatisticsView: View {
 				Text(String(format: NSLocalizedString("cihi.sectionTitle", comment: ""), CIHIWaitTimeDatabase.dataYear))
 			} footer: {
 				Text(CIHIWaitTimeDatabase.citation).font(.caption2).foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var cppOasSection: some View {
+		if let cpp = CPPOASStatisticsDatabase.statistic(for: member.province.shortCode),
+		   let national = CPPOASStatisticsDatabase.national() {
+			let cppShare = national.cppRetirementRecipients > 0
+				? Double(cpp.cppRetirementRecipients ?? 0) / Double(national.cppRetirementRecipients)
+				: 0.0
+			let oasShare = national.oasPensionRecipients > 0
+				? Double(cpp.oasPensionRecipients ?? 0) / Double(national.oasPensionRecipients)
+				: 0.0
+			Section {
+				if let cppCount = cpp.cppRetirementRecipients {
+					LabeledContent("CPP retirement recipients") {
+						Text(cppCount.formatted())
+							.monospacedDigit()
+					}
+					LabeledContent("Share of national CPP recipients") {
+						Text(cppShare.formatted(.percent.precision(.fractionLength(1))))
+							.monospacedDigit()
+					}
+				}
+				if let oasCount = cpp.oasPensionRecipients {
+					LabeledContent("OAS pension recipients") {
+						Text(oasCount.formatted())
+							.monospacedDigit()
+					}
+					LabeledContent("Share of national OAS recipients") {
+						Text(oasShare.formatted(.percent.precision(.fractionLength(1))))
+							.monospacedDigit()
+					}
+				}
+				DataSourceBadge(source: .cppOas())
+			} header: {
+				Text("CPP & OAS Pensions")
+			} footer: {
+				let cppPeriod = cpp.cppReferencePeriod.map { CPPOASStatisticsDatabase.periodLabel($0) } ?? ""
+				let oasPeriod = cpp.oasReferencePeriod.map { CPPOASStatisticsDatabase.periodLabel($0) } ?? ""
+				Text("CPP data as of \(cppPeriod); OAS data as of \(oasPeriod). Recipient counts are from ESDC monthly Statistical Bulletins on open.canada.ca. Average benefit amounts are published nationally only.")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
 			}
 		}
 	}
