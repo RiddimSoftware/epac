@@ -6,7 +6,7 @@ metadata_path "./fastlane/metadata"
 
 # Screenshots live in ios/fastlane/screenshots/en-US/ and are uploaded by the release workflow.
 screenshots_path "./fastlane/screenshots"
-skip_screenshots false
+skip_screenshots true
 
 # Don't automatically release after approval — release manager controls rollout
 automatic_release false

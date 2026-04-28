@@ -20,6 +20,7 @@ hansard/
 !**/*/fixtures/*.csv
 !**/*/fixtures/*.xml
 !website/*.xml
+!ios/fastlane/metadata/**/*.txt
 
 # Xcode
 #
