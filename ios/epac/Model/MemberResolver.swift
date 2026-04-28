@@ -7,17 +7,27 @@ import SwiftData
 
 // Resolves a SpeechMessage's speaker to a ParliamentMember.
 //
-// Looks up by first+last name in SwiftData. If not found, creates a
-// temporary member from the message's embedded metadata and triggers
-// a background download so the real record appears on the next access.
-// Keeping this logic here instead of inline in SpeechViewModel lets
-// the resolution strategy be tested and evolved without touching the
-// presentation layer.
+// The `MemberResolving` protocol lets callers (SpeechViewModel) and tests
+// inject alternate implementations without touching SwiftData.
 //
 // Uses full-table fetch + in-memory filter rather than #Predicate so this
 // file stays free of SwiftData macros (member counts are small, < 400).
+
 @MainActor
-struct MemberResolver {
+protocol MemberResolving {
+    func resolve(
+        firstName: String,
+        lastName: String,
+        partyAbbreviation: String,
+        ridingName: String,
+        parliamentNumber: Int,
+        modelContext: ModelContext,
+        fetch: Fetch
+    ) -> ParliamentMember
+}
+
+@MainActor
+struct MemberResolver: MemberResolving {
 	func resolve(
 		firstName: String,
 		lastName: String,
@@ -38,6 +48,37 @@ struct MemberResolver {
 			fetch: fetch
 		)
 	}
+}
+
+// Class wrapper so `SpeechViewModel` can hold a session-scoped cache as an
+// `any MemberResolving` and pass it as the default resolver — `struct`
+// conformance would lose cross-call caching because value-type copies break
+// the shared mutable state.
+@MainActor
+final class CachingMemberResolver: MemberResolving {
+	private var cache = MemberResolutionCache()
+
+	func resolve(
+		firstName: String,
+		lastName: String,
+		partyAbbreviation: String,
+		ridingName: String,
+		parliamentNumber: Int,
+		modelContext: ModelContext,
+		fetch: Fetch
+	) -> ParliamentMember {
+		cache.resolve(
+			firstName: firstName,
+			lastName: lastName,
+			partyAbbreviation: partyAbbreviation,
+			ridingName: ridingName,
+			parliamentNumber: parliamentNumber,
+			modelContext: modelContext,
+			fetch: fetch
+		)
+	}
+
+	func reset() { cache.reset() }
 }
 
 @MainActor
