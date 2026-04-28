@@ -4,10 +4,10 @@
 //
 
 import Foundation
-import Observation
-import SwiftData
 import HorizonCalendar
+import Observation
 import Sentry
+import SwiftData
 
 @MainActor
 @Observable

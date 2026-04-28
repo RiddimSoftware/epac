@@ -3,10 +3,10 @@
 //  epac
 //
 
-import Observation
-import SwiftUI
 import ActivityView
+import Observation
 import Sentry
+import SwiftUI
 
 @MainActor
 @Observable

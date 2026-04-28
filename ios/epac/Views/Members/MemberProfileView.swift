@@ -5,10 +5,10 @@
 //  Created by Codex on 2026-01-28.
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
 import AppIntents
+import SwiftData
+import SwiftUI
 
 struct MemberProfileView: View {
 	let member: ParliamentMember

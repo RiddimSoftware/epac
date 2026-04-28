@@ -40,8 +40,7 @@ final class DateUtils: Sendable {
 	func getDate(forCommitteeMeetingDateString string: String) -> Date {
 		if Locale.current.identifier == "fr_CA" {
 			return committeeDateFormatter_fr.formatter.date(from: string)!
-		}
-		else {
+		} else {
 			return committeeDateFormatter_en.formatter.date(from: string)!
 		}
 	}
@@ -49,8 +48,7 @@ final class DateUtils: Sendable {
 	static func getDate(forCSVDateString string: String) -> Date {
 		if Locale.current.identifier == "fr_CA" {
 			return csvDateFormatter_fr.formatter.date(from: string)!
-		}
-		else {
+		} else {
 			return csvDateFormatter_en.formatter.date(from: string)!
 		}
 	}
@@ -58,8 +56,7 @@ final class DateUtils: Sendable {
 	static func getCSVStringFromDate(_ date: Date) -> String {
 		if Locale.current.identifier == "fr_CA" {
 			return csvDateFormatter_fr.formatter.string(from: date)
-		}
-		else {
+		} else {
 			return csvDateFormatter_en.formatter.string(from: date)
 		}
 	}
@@ -79,8 +76,7 @@ final class DateUtils: Sendable {
 	func getDate(forHTMLDateString string: String) -> Date {
 		if Locale.current.identifier == "fr_CA" {
 			return htmlDateFormatter_fr.formatter.date(from: string)!
-		}
-		else {
+		} else {
 			return htmlDateFormatter_en.formatter.date(from: string)!
 		}
 	}

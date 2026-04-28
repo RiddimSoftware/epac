@@ -3,9 +3,9 @@
 //  epac-widget
 //
 
-import WidgetKit
-import SwiftUI
 import Foundation
+import SwiftUI
+import WidgetKit
 
 // MARK: - Shared entry
 

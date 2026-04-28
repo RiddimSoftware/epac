@@ -5,9 +5,9 @@
 //  Created on 2026-04-27.
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
+import SwiftData
+import SwiftUI
 
 struct BillDetailView: View {
     let bill: Bill
@@ -261,7 +261,7 @@ struct BillDetailView: View {
             bill.title,
             bill.status.displayName,
             bill.billType.displayName,
-            bill.currentStage,
+            bill.currentStage
         ]
         .filter { !$0.isEmpty }
         .joined(separator: ", ")

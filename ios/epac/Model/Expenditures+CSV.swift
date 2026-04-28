@@ -1,5 +1,5 @@
-import SwiftData
 import Foundation
+import SwiftData
 
 extension SummaryExpenditure {
 	static func fromCSV(_ parser: CSVParser, year: Int, quarter: Int) -> AsyncStream<SummaryExpenditure> {

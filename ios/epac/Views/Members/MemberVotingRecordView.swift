@@ -3,9 +3,9 @@
 //  epac
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
+import SwiftData
+import SwiftUI
 
 struct MemberVotingRecordView: View {
 	let member: ParliamentMember
@@ -46,8 +46,8 @@ struct MemberVotingRecordView: View {
 		return memberVotes  // already sorted voteID desc from @Query
 	}
 
-	private var yeaCount: Int    { cachedStats.yea }
-	private var nayCount: Int    { cachedStats.nay }
+	private var yeaCount: Int { cachedStats.yea }
+	private var nayCount: Int { cachedStats.nay }
 	private var absentCount: Int { cachedStats.absent }
 
 	private var winnerAlignmentScore: Double {
@@ -224,14 +224,14 @@ private struct SummaryPill: View {
 		VStack(spacing: 2) {
 			Text("\(count)")
 				.font(.title3.bold())
-				.foregroundStyle(count > 0 ? color : .secondary)
+				.foregroundStyle(!isEmpty ? color : .secondary)
 			Text(label)
 				.font(.caption2)
 				.foregroundStyle(.secondary)
 		}
 		.frame(maxWidth: .infinity)
 		.padding(.vertical, 8)
-		.background(count > 0 ? color.opacity(0.08) : Color.clear)
+		.background(!isEmpty ? color.opacity(0.08) : Color.clear)
 	}
 }
 

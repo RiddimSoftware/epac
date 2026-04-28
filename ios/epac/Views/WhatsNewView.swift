@@ -65,7 +65,7 @@ struct WhatsNewView: View {
     // Guard against dismiss() being called more than once (button + auto-timer race).
     @State private var hasDismissed = false
     // Loaded once on appear; avoids re-reading the bundle JSON on every render.
-    @State private var entry: WhatsNewEntry? = nil
+    @State private var entry: WhatsNewEntry?
 
     var body: some View {
         VStack(spacing: 0) {

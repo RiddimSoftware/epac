@@ -8,8 +8,8 @@
 
 import Foundation
 import Kanna
-import SWXMLHash
 import SwiftData
+import SWXMLHash
 
 actor Downloader: ObservableObject {
 }

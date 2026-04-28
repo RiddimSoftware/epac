@@ -7,8 +7,8 @@
 //  loads; no fixed sleep() calls.
 //
 
-import XCTest
 import Evidence
+import XCTest
 
 final class epacUITests: XCTestCase {
 
@@ -38,7 +38,7 @@ final class epacUITests: XCTestCase {
         XCTAssertTrue(parliamentTab.waitForExistence(timeout: 5),
                       "Parliament tab should be visible after cold launch")
         parliamentTab.tap()
-        XCTAssertTrue(app.navigationBars.count > 0,
+        XCTAssertTrue(!app.navigationBars.isEmpty,
                       "Navigation bar should appear in Parliament tab")
     }
 

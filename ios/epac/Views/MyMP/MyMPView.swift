@@ -5,8 +5,8 @@
 //  Created on 2026-04-27.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // MARK: - Activity model
 

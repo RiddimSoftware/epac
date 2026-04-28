@@ -5,11 +5,11 @@
 //  Created by Sunny on 2024-12-11.
 //
 
-import SwiftUI
-import SwiftData
+import CoreSpotlight
 import Foundation
 import Observation
-import CoreSpotlight
+import SwiftData
+import SwiftUI
 
 struct ContentView: View {
 	private static let isAppStoreScreenshotMode = ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
@@ -429,7 +429,6 @@ struct ContentView: View {
 		UserDefaults.standard.removeObject(forKey: key)
 		navigateToMember(memberID: memberID)
 	}
-
 
 	// MARK: - Home Screen Quick Actions (EPAC-351)
 

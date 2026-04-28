@@ -5,9 +5,9 @@
 //  Created by Sunny on 2024-12-08.
 //
 
-import SwiftUI
-import SwiftData
 import HorizonCalendar
+import SwiftData
+import SwiftUI
 
 struct SittingCalendarView: View {
 	@EnvironmentObject var fetch: Fetch
