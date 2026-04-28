@@ -17,6 +17,11 @@
 		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
 		A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D5168F2DE4FD4C00148AA8 /* Logging */; };
 		A3DEAD0BEEF00000CAFE0003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = A3DEAD0BEEF00000CAFE0002 /* Sentry */; };
+		E1233ED9EB500DEA6C66DDBA /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E123ACDEC874BB715CDE821E /* WatchContentView.swift */; };
+		E12343CD5D891C3BB3457474 /* epacComplicationBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */; };
+		E123B0B810D83A975B7856FB /* epacComplication.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = E123EEFB3FA3F54E7C9682AD /* epacComplication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E123CC429C1C6A9342456D24 /* epacWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1238DA98C2DE56AC0F91580 /* epacWatchApp.swift */; };
+		E123F36184A52E24D6825C9E /* ParliamentComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = E12325D90C1AC7ABC45C8F8D /* ParliamentComplication.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,6 +46,13 @@
 			remoteGlobalIDString = A38427C22D062C8D00271C34;
 			remoteInfo = epac;
 		};
+		E12373000CE44B9CC0111910 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A38427BB2D062C8D00271C34 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E123C284AB0DAC0324CD17B6;
+			remoteInfo = epacComplication;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +63,14 @@
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38CF0E12F351DF500668136 /* icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = icon.icon; sourceTree = "<group>"; };
 		A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = epacComplicationBundle.swift; sourceTree = "<group>"; };
+		E12325D90C1AC7ABC45C8F8D /* ParliamentComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParliamentComplication.swift; sourceTree = "<group>"; };
+		E12339D75D63B226E71FC425 /* epacWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epacWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1238AF65F56B09D052A91E8 /* epacWatchApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = epacWatchApp.entitlements; sourceTree = "<group>"; };
+		E1238DA98C2DE56AC0F91580 /* epacWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = epacWatchApp.swift; sourceTree = "<group>"; };
+		E123ACDEC874BB715CDE821E /* WatchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchContentView.swift; sourceTree = "<group>"; };
+		E123DF978113C7C63EB5499F /* epacComplication.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = epacComplication.entitlements; sourceTree = "<group>"; };
+		E123EEFB3FA3F54E7C9682AD /* epacComplication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = epacComplication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -112,6 +132,17 @@
 			name = "Embed App Clips";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1231789A338EFD2168028C4 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E123B0B810D83A975B7856FB /* epacComplication.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +181,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E123A62ACA7C09570BB6D131 /* Frameworks (epacWatchApp) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E123BC24744AEAC3639B2955 /* Frameworks (epacComplication) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -160,6 +205,26 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		E123328FBCF89F303A809478 /* epacComplication */ = {
+			isa = PBXGroup;
+			children = (
+				E12325D90C1AC7ABC45C8F8D /* ParliamentComplication.swift */,
+				E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */,
+				E123DF978113C7C63EB5499F /* epacComplication.entitlements */,
+			);
+			path = epacComplication;
+			sourceTree = "<group>";
+		};
+		E123E3090C81560A67B10AE0 /* epacWatchApp */ = {
+			isa = PBXGroup;
+			children = (
+				E123ACDEC874BB715CDE821E /* WatchContentView.swift */,
+				E1238DA98C2DE56AC0F91580 /* epacWatchApp.swift */,
+				E1238AF65F56B09D052A91E8 /* epacWatchApp.entitlements */,
+			);
+			path = epacWatchApp;
+			sourceTree = "<group>";
+		};
 		A38427BA2D062C8D00271C34 = {
 			isa = PBXGroup;
 			children = (
@@ -168,6 +233,8 @@
 				A38427D92D062C8E00271C34 /* epacTests */,
 				A38427E32D062C8E00271C34 /* epacUITests */,
 				A327A90A2D18F75B00A2D292 /* epac-clip */,
+				E123E3090C81560A67B10AE0 /* epacWatchApp */,
+				E123328FBCF89F303A809478 /* epacComplication */,
 				A327A9352D18FA7C00A2D292 /* Frameworks */,
 				A38427C42D062C8D00271C34 /* Products */,
 				A38CEF922F35175000668136 /* Recovered References */,
@@ -182,6 +249,8 @@
 				A38427D62D062C8E00271C34 /* epacTests.xctest */,
 				A38427E02D062C8E00271C34 /* epacUITests.xctest */,
 				A327A91F2D18F75B00A2D292 /* epac-clip.app */,
+				E12339D75D63B226E71FC425 /* epacWatchApp.app */,
+				E123EEFB3FA3F54E7C9682AD /* epacComplication.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -297,6 +366,46 @@
 			productReference = A327A91F2D18F75B00A2D292 /* epac-clip.app */;
 			productType = "com.apple.product-type.application.on-demand-install-capable";
 		};
+		E1236C2BF3B3B439AA3C257C /* epacWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1237CA4DE8D078A51B0D6BC /* Build configuration list for PBXNativeTarget "epacWatchApp" */;
+			buildPhases = (
+				E1237822045793F2A586BA1B /* Sources (epacWatchApp) */,
+				E123A62ACA7C09570BB6D131 /* Frameworks (epacWatchApp) */,
+				E1230BB017963A19034888BB /* Resources (epacWatchApp) */,
+				E1231789A338EFD2168028C4 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E123896CD5AD4B1C1EF6846C /* PBXTargetDependency */,
+			);
+			name = epacWatchApp;
+			packageProductDependencies = (
+			);
+			productName = epacWatchApp;
+			productReference = E12339D75D63B226E71FC425 /* epacWatchApp.app */;
+			productType = "com.apple.product-type.application.watchapp2";
+		};
+		E123C284AB0DAC0324CD17B6 /* epacComplication */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E123E0160FCD5F822E57A823 /* Build configuration list for PBXNativeTarget "epacComplication" */;
+			buildPhases = (
+				E1238989D7998F17178D5A3B /* Sources (epacComplication) */,
+				E123BC24744AEAC3639B2955 /* Frameworks (epacComplication) */,
+				E123BC976158519ECA5FDDD0 /* Resources (epacComplication) */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = epacComplication;
+			packageProductDependencies = (
+			);
+			productName = epacComplication;
+			productReference = E123EEFB3FA3F54E7C9682AD /* epacComplication.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -308,6 +417,12 @@
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					A327A9082D18F75B00A2D292 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					E1236C2BF3B3B439AA3C257C = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					E123C284AB0DAC0324CD17B6 = {
 						CreatedOnToolsVersion = 16.1;
 					};
 					A38427C22D062C8D00271C34 = {
@@ -352,6 +467,8 @@
 				A38427D52D062C8E00271C34 /* epacTests */,
 				A38427DF2D062C8E00271C34 /* epacUITests */,
 				A327A9082D18F75B00A2D292 /* epac-clip */,
+				E1236C2BF3B3B439AA3C257C /* epacWatchApp */,
+				E123C284AB0DAC0324CD17B6 /* epacComplication */,
 			);
 		};
 /* End PBXProject section */
@@ -381,6 +498,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A327A90D2D18F75B00A2D292 /* Resources (epac-clip) */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E1230BB017963A19034888BB /* Resources (epacWatchApp) */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E123BC976158519ECA5FDDD0 /* Resources (epacComplication) */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -418,6 +549,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1237822045793F2A586BA1B /* Sources (epacWatchApp) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E123CC429C1C6A9342456D24 /* epacWatchApp.swift in Sources */,
+				E1233ED9EB500DEA6C66DDBA /* WatchContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E1238989D7998F17178D5A3B /* Sources (epacComplication) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E12343CD5D891C3BB3457474 /* epacComplicationBundle.swift in Sources */,
+				E123F36184A52E24D6825C9E /* ParliamentComplication.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -435,6 +584,11 @@
 			isa = PBXTargetDependency;
 			target = A38427C22D062C8D00271C34 /* epac */;
 			targetProxy = A38427E12D062C8E00271C34 /* PBXContainerItemProxy */;
+		};
+		E123896CD5AD4B1C1EF6846C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E123C284AB0DAC0324CD17B6 /* epacComplication */;
+			targetProxy = E12373000CE44B9CC0111910 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -805,6 +959,116 @@
 			};
 			name = Release;
 		};
+		E1232E57AF1A693AF49E9D27 /* Release (epacWatchApp) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = epacWatchApp/epacWatchApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = epac;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = net.dinglebox.cabinetdoor;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		E1235F7596E0FFE912A36E4D /* Debug (epacComplication) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = epacComplication/epacComplication.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Parliament Today";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.watchkitapp.epacComplication;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		E1238A721A4CA682668CCB26 /* Release (epacComplication) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = epacComplication/epacComplication.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Parliament Today";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.watchkitapp.epacComplication;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		E123F1B6E0E440006B138DFC /* Debug (epacWatchApp) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = epacWatchApp/epacWatchApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = ZG82TFXU3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = epac;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = net.dinglebox.cabinetdoor;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.dinglebox.cabinetdoor.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -849,6 +1113,24 @@
 			buildConfigurations = (
 				A327A9162D18F75B00A2D292 /* Debug */,
 				A327A9172D18F75B00A2D292 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1237CA4DE8D078A51B0D6BC /* Build configuration list for PBXNativeTarget "epacWatchApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E123F1B6E0E440006B138DFC /* Debug (epacWatchApp) */,
+				E1232E57AF1A693AF49E9D27 /* Release (epacWatchApp) */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E123E0160FCD5F822E57A823 /* Build configuration list for PBXNativeTarget "epacComplication" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1235F7596E0FFE912A36E4D /* Debug (epacComplication) */,
+				E1238A721A4CA682668CCB26 /* Release (epacComplication) */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

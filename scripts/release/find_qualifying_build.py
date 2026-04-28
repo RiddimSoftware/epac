@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
-Find the TestFlight build uploaded closest to the cutoff time without exceeding it.
-Outputs build_number, build_version, and upload_time to stdout or GITHUB_OUTPUT.
+Find a TestFlight build to submit to the App Store.
+
+Two modes:
+  --latest         Return the most recent valid build (no cutoff). Used when a
+                   git tag is the release signal and the developer controls timing.
+  --cutoff-hour N  Return the most recent valid build uploaded before N:00 ET
+                   (legacy daily-release mode).
 
 Usage:
   python3 find_qualifying_build.py \
@@ -9,7 +14,7 @@ Usage:
     --issuer-id 69a6de88-... \
     --private-key-path ~/.appstoreconnect/private_keys/AuthKey_S6U297PQHR.p8 \
     --app-id 1224459142 \
-    --cutoff-hour 14 \
+    --latest \
     [--override 1234] \
     [--output-format github-output]
 """
@@ -36,7 +41,7 @@ def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     return jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
 
 
-def find_qualifying_build(app_id: str, cutoff_dt: datetime, token: str, override: str | None) -> dict:
+def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, override: str | None, version: str | None = None) -> dict:
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.appstoreconnect.apple.com/v1/builds"
     params = {
@@ -68,7 +73,7 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime, token: str, override
         uploaded_raw = attrs["uploadedDate"]
         uploaded = datetime.fromisoformat(uploaded_raw.replace("Z", "+00:00"))
 
-        if uploaded > cutoff_dt:
+        if cutoff_dt is not None and uploaded > cutoff_dt:
             continue
 
         # Resolve app version string from the preReleaseVersion relationship
@@ -76,14 +81,18 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime, token: str, override
         prv_id = (prv_rel.get("data") or {}).get("id", "")
         build_version = version_map.get(prv_id, "unknown")
 
+        if version and build_version != version:
+            continue
+
         return {
             "build_number": build_number,
             "build_version": build_version,
             "upload_time": uploaded_raw,
         }
 
+    cutoff_msg = f" before cutoff {cutoff_dt.isoformat()}" if cutoff_dt else ""
     raise SystemExit(
-        f"No qualifying build found before cutoff {cutoff_dt.isoformat()}"
+        f"No qualifying build found{cutoff_msg}"
         + (f" (override={override})" if override else "")
     )
 
@@ -94,8 +103,10 @@ def main() -> None:
     parser.add_argument("--issuer-id", required=True)
     parser.add_argument("--private-key-path", required=True)
     parser.add_argument("--app-id", required=True)
-    parser.add_argument("--cutoff-hour", type=int, default=14, help="Hour (24h) in Eastern Time")
+    parser.add_argument("--latest", action="store_true", help="Return the most recent valid build (no cutoff)")
+    parser.add_argument("--cutoff-hour", type=int, default=14, help="Hour (24h) in Eastern Time; ignored when --latest is set")
     parser.add_argument("--override", default="", help="Force a specific build number")
+    parser.add_argument("--version", default="", help="Filter by marketing version string (CFBundleShortVersionString)")
     parser.add_argument(
         "--output-format",
         choices=["github-output", "text"],
@@ -103,12 +114,15 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    et = ZoneInfo("America/New_York")
-    today = datetime.now(et).date()
-    cutoff_dt = datetime(today.year, today.month, today.day, args.cutoff_hour, 0, 0, tzinfo=et).astimezone(timezone.utc)
+    if args.latest:
+        cutoff_dt = None
+    else:
+        et = ZoneInfo("America/New_York")
+        today = datetime.now(et).date()
+        cutoff_dt = datetime(today.year, today.month, today.day, args.cutoff_hour, 0, 0, tzinfo=et).astimezone(timezone.utc)
 
     token = get_asc_token(args.key_id, args.issuer_id, args.private_key_path)
-    result = find_qualifying_build(args.app_id, cutoff_dt, token, args.override or None)
+    result = find_qualifying_build(args.app_id, cutoff_dt, token, args.override or None, args.version or None)
 
     if args.output_format == "github-output":
         output_file = os.environ.get("GITHUB_OUTPUT", "/dev/stdout")

@@ -1,17 +1,20 @@
-name: Daily App Store Release
+name: Release to App Store
+
+# Triggered when a draft GitHub Release is published.
+# To start a release: run the "Create Release" workflow, smoke-test on
+# TestFlight, then publish the draft from the GitHub Releases page.
 
 on:
-  schedule:
-    # 19:00 UTC = 3pm EDT / 2pm EST — always after the 2pm ET submission cutoff
-    - cron: '0 19 * * 1-5'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
-      override_build_number:
-        description: 'Override: specific build number to submit (leave blank for automatic)'
-        required: false
+      tag:
+        description: 'Release tag to submit (e.g. v1.2.3)'
+        required: true
         type: string
       dry_run:
-        description: 'Dry run — find build and run quality gates, but skip actual submission'
+        description: 'Dry run — find build and approve, but skip actual App Store submission'
         required: false
         type: boolean
         default: false
@@ -22,24 +25,33 @@ concurrency:
 
 permissions:
   id-token: write   # OIDC AWS auth
-  contents: write   # create GitHub Release tags
-  checks: read      # read CI check results for quality gate
+  contents: write   # update GitHub Release after submit
 
 env:
   APP_BUNDLE_ID: net.dinglebox.cabinetdoor
   APPLE_APP_ID: '1224459142'
 
 jobs:
-  # ─── Job 1: Find the qualifying TestFlight build ──────────────────────────
+  # ─── Job 1: Find the TestFlight build matching this release ───────────────
   find-build:
-    name: Find qualifying TestFlight build
+    name: Find TestFlight build
     runs-on: ubuntu-latest
     outputs:
       build_number: ${{ steps.find.outputs.build_number }}
       build_version: ${{ steps.find.outputs.build_version }}
       upload_time: ${{ steps.find.outputs.upload_time }}
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: tag
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -65,94 +77,41 @@ jobs:
       - name: Install Python dependencies
         run: pip3 install PyJWT requests cryptography --quiet
 
-      - name: Find qualifying build
+      - name: Find build matching release version
         id: find
-        env:
-          OVERRIDE_BUILD: ${{ inputs.override_build_number }}
         run: |
           python3 scripts/release/find_qualifying_build.py \
             --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
             --issuer-id "${{ steps.fetch-creds.outputs.issuer_id }}" \
             --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
             --app-id "${{ env.APPLE_APP_ID }}" \
-            --cutoff-hour 14 \
-            --override "$OVERRIDE_BUILD" \
+            --latest \
+            --version "${{ steps.tag.outputs.version }}" \
             --output-format github-output
 
-  # ─── Job 2: Quality gates ─────────────────────────────────────────────────
-  quality-gates:
-    name: Verify quality gates
-    needs: find-build
-    runs-on: ubuntu-latest
-    outputs:
-      gates_passed: ${{ steps.gates.outputs.passed }}
-      gate_failures: ${{ steps.gates.outputs.failures }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check latest CI status on main
-        id: ci-check
-        run: |
-          SHA=$(git rev-parse HEAD)
-          STATUS=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
-            --jq '[.check_runs[] | select(.name | test("Build|Test"; "i")) | .conclusion] | if length == 0 then "no-checks" elif all(. == "success") then "pass" else "fail" end')
-          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-          echo "CI check status: $STATUS"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify build evidence
-        id: evidence-check
-        run: |
-          python3 scripts/release/verify_evidence.py \
-            --evidence-dir docs/build-evidence
-
-      - name: Summarize gate results
-        id: gates
-        run: |
-          FAILURES=""
-          CI_STATUS="${{ steps.ci-check.outputs.status }}"
-          if [ "$CI_STATUS" = "fail" ]; then
-            FAILURES="CI checks failed on main. "
-          fi
-          MISSING="${{ steps.evidence-check.outputs.missing_count }}"
-          if [ -n "$MISSING" ] && [ "$MISSING" -gt 0 ]; then
-            MISSING_TICKETS="${{ steps.evidence-check.outputs.missing_tickets }}"
-            FAILURES="${FAILURES}Missing evidence for: ${MISSING_TICKETS}. "
-          fi
-          if [ -z "$FAILURES" ]; then
-            echo "passed=true" >> "$GITHUB_OUTPUT"
-            echo "failures=" >> "$GITHUB_OUTPUT"
-            echo "All quality gates passed."
-          else
-            echo "passed=false" >> "$GITHUB_OUTPUT"
-            echo "failures=$FAILURES" >> "$GITHUB_OUTPUT"
-            echo "Quality gate failures: $FAILURES"
-          fi
-
-  # ─── Job 3: Human approval gate ───────────────────────────────────────────
+  # ─── Job 2: Human approval gate ───────────────────────────────────────────
   approve-release:
     name: Approve release
-    needs: [find-build, quality-gates]
+    needs: find-build
     runs-on: ubuntu-latest
     environment:
       name: app-store-release
-    if: needs.quality-gates.outputs.gates_passed == 'true'
     steps:
       - name: Release candidate summary
         run: |
           echo "## Release candidate ready for approval"
           echo ""
-          echo "- **Build**: ${{ needs.find-build.outputs.build_version }} (#${{ needs.find-build.outputs.build_number }})"
+          echo "- **Version**: ${{ needs.find-build.outputs.build_version }}"
+          echo "- **Build**: #${{ needs.find-build.outputs.build_number }}"
+          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
           echo "- **Uploaded**: ${{ needs.find-build.outputs.upload_time }}"
-          echo "- **Quality gates**: PASSED"
           echo ""
           echo "Approve this deployment to submit to App Store review."
 
-  # ─── Job 4: Submit to App Store ───────────────────────────────────────────
+  # ─── Job 3: Submit to App Store ───────────────────────────────────────────
   submit:
     name: Submit for App Store review
-    needs: [find-build, quality-gates, approve-release]
+    needs: [find-build, approve-release]
     runs-on: ubuntu-latest
     if: ${{ !inputs.dry_run }}
     steps:
@@ -186,20 +145,21 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      - name: Generate release notes from merged PRs
+      - name: Write release notes from GitHub Release
         run: |
-          python3 scripts/release/generate_release_notes.py \
-            --output ios/fastlane/metadata/en-US/release_notes.txt
+          gh release view "${{ needs.find-build.outputs.tag }}" \
+            --json body --jq '.body' \
+            > ios/fastlane/metadata/en-US/release_notes.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload metadata to App Store
+      - name: Upload metadata and screenshots to App Store
         working-directory: ios
         run: |
           bundle exec fastlane run deliver \
             app_identifier:"${{ env.APP_BUNDLE_ID }}" \
             skip_binary_upload:true \
-            skip_screenshots:true \
+            skip_screenshots:false \
             skip_metadata:false \
             submit_for_review:false
 
@@ -217,23 +177,13 @@ jobs:
             phased_release:true \
             reject_if_possible:true
 
-      - name: Create GitHub Release
-        run: |
-          VERSION="${{ needs.find-build.outputs.build_version }}"
-          BUILD="${{ needs.find-build.outputs.build_number }}"
-          gh release create "v${VERSION}-${BUILD}" \
-            --title "v${VERSION} (Build ${BUILD})" \
-            --notes-file ios/fastlane/metadata/en-US/release_notes.txt \
-            --latest
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Summary
         run: |
           echo "## App Store submission complete"
           echo ""
           echo "- **Version**: ${{ needs.find-build.outputs.build_version }} (Build ${{ needs.find-build.outputs.build_number }})"
+          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
           echo "- **Status**: Submitted for review"
-          echo "- **Phased release**: enabled"
+          echo "- **Phased release**: enabled (7-day rollout)"
           echo ""
           echo "The build typically enters review within a few hours."

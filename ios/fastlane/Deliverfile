@@ -4,8 +4,9 @@ team_id "ZG82TFXU3C"
 # Metadata paths (relative to ios/ working directory)
 metadata_path "./fastlane/metadata"
 
-# Don't upload screenshots automatically — managed separately (EPAC-301)
-skip_screenshots true
+# Screenshots live in ios/fastlane/screenshots/en-US/ and are uploaded by the release workflow.
+screenshots_path "./fastlane/screenshots"
+skip_screenshots false
 
 # Don't automatically release after approval — release manager controls rollout
 automatic_release false
