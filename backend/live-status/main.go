@@ -109,7 +109,11 @@ func handleLambda(ctx context.Context, raw json.RawMessage) (any, error) {
 	return handlePoll(ctx, time.Now)
 }
 
-func handleAPI(ctx context.Context, _ events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	if limitedResp, limited := observability.CheckAPIGatewayV2RateLimit(req); limited {
+		return limitedResp, nil
+	}
+
 	conn, err := connectDB(ctx)
 	if err != nil {
 		return apiError(http.StatusServiceUnavailable, err.Error()), nil
