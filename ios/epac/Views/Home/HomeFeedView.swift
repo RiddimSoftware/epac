@@ -388,7 +388,13 @@ struct HomeFeedView: View {
         }
     }
 
-    private func todayMetricRow(icon: String, title: String, headline: String, detail: String) -> some View {
+    private func todayMetricRow(
+        icon: String,
+        title: String,
+        headline: String,
+        detail: String,
+        detailLineLimit: Int? = nil
+    ) -> some View {
         HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: icon)
                 .foregroundStyle(Color.epacBrand.accent)
@@ -405,6 +411,7 @@ struct HomeFeedView: View {
                 Text(detail)
                     .font(.epacCaption)
                     .foregroundStyle(Color.epacText.secondary)
+                    .lineLimit(detailLineLimit)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
@@ -428,7 +435,8 @@ struct HomeFeedView: View {
                         icon: item.kind == .vote ? "checkmark.ballot.fill" : "quote.bubble.fill",
                         title: item.detailText,
                         headline: item.title,
-                        detail: item.excerpt
+                        detail: item.excerpt,
+                        detailLineLimit: 1
                     )
                     .padding(.vertical, EpacSpacing.xs)
                 }
@@ -1254,6 +1262,7 @@ struct HomeFeedView: View {
                 router.selectedTab = .search
                 return
             }
+            prepareOnThisDaySpeechResume(item, subject: subject)
             selectedOnThisDaySpeech = OnThisDaySpeechSelection(hansard: hansard, subject: subject)
         } catch {
             Log.error("HomeFeedView on-this-day speech open failed: \(error.localizedDescription)")
@@ -1284,6 +1293,17 @@ struct HomeFeedView: View {
             return titleMatch
         }
         return subjects.first
+    }
+
+    private func prepareOnThisDaySpeechResume(_ item: OnThisDayItem, subject: SubjectOfBusiness) {
+        guard let interventionID = item.interventionID,
+              let speech = subject.speeches.first(where: { $0.hansardID == interventionID }) else {
+            return
+        }
+        subject.currentSpeech = speech
+        subject.currentSpeechID = speech.hansardID
+        speech.currentMessage = nil
+        speech.currentMessageID = nil
     }
 
     private static func trimmedExcerpt(_ text: String) -> String {
