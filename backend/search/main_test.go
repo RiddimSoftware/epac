@@ -125,7 +125,7 @@ func TestParamsFromRequestRejectsInvalidDateRange(t *testing.T) {
 }
 
 func TestRankingConfigFromEnv(t *testing.T) {
-	t.Setenv("SEARCH_TEXT_WEIGHT", "0.6")
+	t.Setenv("SEARCH_TEXT_WEIGHT", "0")
 	t.Setenv("SEARCH_RECENCY_WEIGHT", "0.3")
 	t.Setenv("SEARCH_FOLLOW_WEIGHT", "0.1")
 	t.Setenv("SEARCH_RECENCY_HALFLIFE_DAYS", "45")
@@ -135,7 +135,7 @@ func TestRankingConfigFromEnv(t *testing.T) {
 	t.Setenv("SEARCH_TOPIC_BOOST", "0.7")
 
 	cfg := rankingConfigFromEnv()
-	if cfg.TextWeight != 0.6 || cfg.RecencyWeight != 0.3 || cfg.FollowWeight != 0.1 {
+	if cfg.TextWeight != 0 || cfg.RecencyWeight != 0.3 || cfg.FollowWeight != 0.1 {
 		t.Fatalf("unexpected component weights: %#v", cfg)
 	}
 	if cfg.RecencyHalfLife != 45 || cfg.LanguageHintBoost != 1.2 {
@@ -143,6 +143,19 @@ func TestRankingConfigFromEnv(t *testing.T) {
 	}
 	if cfg.MyMPBoost != 1.1 || cfg.BillBoost != 0.9 || cfg.TopicBoost != 0.7 {
 		t.Fatalf("unexpected follow boosts: %#v", cfg)
+	}
+}
+
+func TestRankingConfigRejectsInvalidEnv(t *testing.T) {
+	t.Setenv("SEARCH_TEXT_WEIGHT", "-0.1")
+	t.Setenv("SEARCH_RECENCY_HALFLIFE_DAYS", "0")
+
+	cfg := rankingConfigFromEnv()
+	if cfg.TextWeight != 0.72 {
+		t.Fatalf("text weight = %v, want fallback 0.72", cfg.TextWeight)
+	}
+	if cfg.RecencyHalfLife != 90 {
+		t.Fatalf("half life = %v, want fallback 90", cfg.RecencyHalfLife)
 	}
 }
 

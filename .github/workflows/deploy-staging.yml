@@ -52,3 +52,64 @@ jobs:
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
+
+      - name: Ensure search speeches route
+        if: ${{ matrix.service == 'search' }}
+        env:
+          API_NAME: epac-api-api
+          FUNCTION_NAME: epac-search-staging
+          ROUTE_KEY: GET /search/speeches
+          STATEMENT_ID: apigateway-search-speeches-staging
+        run: |
+          set -euo pipefail
+          API_ID=$(aws apigatewayv2 get-apis \
+            --query "Items[?Name=='${API_NAME}'].ApiId | [0]" \
+            --output text)
+          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+            echo "API ${API_NAME} not found"
+            exit 1
+          fi
+
+          LAMBDA_ARN=$(aws lambda get-function \
+            --function-name "$FUNCTION_NAME" \
+            --query 'Configuration.FunctionArn' \
+            --output text)
+          INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
+            --api-id "$API_ID" \
+            --query "Items[?IntegrationUri=='${LAMBDA_ARN}'].IntegrationId | [0]" \
+            --output text)
+          if [ -z "$INTEGRATION_ID" ] || [ "$INTEGRATION_ID" = "None" ]; then
+            INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+              --api-id "$API_ID" \
+              --integration-type AWS_PROXY \
+              --integration-uri "$LAMBDA_ARN" \
+              --payload-format-version 2.0 \
+              --query 'IntegrationId' \
+              --output text)
+          fi
+
+          ROUTE_ID=$(aws apigatewayv2 get-routes \
+            --api-id "$API_ID" \
+            --query "Items[?RouteKey=='${ROUTE_KEY}'].RouteId | [0]" \
+            --output text)
+          if [ -z "$ROUTE_ID" ] || [ "$ROUTE_ID" = "None" ]; then
+            aws apigatewayv2 create-route \
+              --api-id "$API_ID" \
+              --route-key "$ROUTE_KEY" \
+              --target "integrations/${INTEGRATION_ID}" >/dev/null
+          else
+            aws apigatewayv2 update-route \
+              --api-id "$API_ID" \
+              --route-id "$ROUTE_ID" \
+              --target "integrations/${INTEGRATION_ID}" >/dev/null
+          fi
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION="${AWS_REGION:-us-east-1}"
+          aws lambda add-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id "$STATEMENT_ID" \
+            --action lambda:InvokeFunction \
+            --principal apigateway.amazonaws.com \
+            --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/*/search/speeches" \
+            >/dev/null 2>&1 || true

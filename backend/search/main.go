@@ -378,24 +378,36 @@ func parseDateParam(value string) (*time.Time, error) {
 
 func rankingConfigFromEnv() RankingConfig {
 	return RankingConfig{
-		TextWeight:        envFloat("SEARCH_TEXT_WEIGHT", 0.72),
-		RecencyWeight:     envFloat("SEARCH_RECENCY_WEIGHT", 0.20),
-		FollowWeight:      envFloat("SEARCH_FOLLOW_WEIGHT", 0.08),
-		RecencyHalfLife:   envFloat("SEARCH_RECENCY_HALFLIFE_DAYS", 90),
-		LanguageHintBoost: envFloat("SEARCH_LANGUAGE_HINT_BOOST", 1.15),
-		MyMPBoost:         envFloat("SEARCH_MY_MP_BOOST", 1.0),
-		BillBoost:         envFloat("SEARCH_BILL_BOOST", 0.85),
-		TopicBoost:        envFloat("SEARCH_TOPIC_BOOST", 0.65),
+		TextWeight:        envFloatAtLeast("SEARCH_TEXT_WEIGHT", 0.72, 0),
+		RecencyWeight:     envFloatAtLeast("SEARCH_RECENCY_WEIGHT", 0.20, 0),
+		FollowWeight:      envFloatAtLeast("SEARCH_FOLLOW_WEIGHT", 0.08, 0),
+		RecencyHalfLife:   envFloatAbove("SEARCH_RECENCY_HALFLIFE_DAYS", 90, 0),
+		LanguageHintBoost: envFloatAtLeast("SEARCH_LANGUAGE_HINT_BOOST", 1.15, 0),
+		MyMPBoost:         envFloatAtLeast("SEARCH_MY_MP_BOOST", 1.0, 0),
+		BillBoost:         envFloatAtLeast("SEARCH_BILL_BOOST", 0.85, 0),
+		TopicBoost:        envFloatAtLeast("SEARCH_TOPIC_BOOST", 0.65, 0),
 	}
 }
 
-func envFloat(name string, fallback float64) float64 {
+func envFloatAtLeast(name string, fallback float64, min float64) float64 {
 	value := strings.TrimSpace(os.Getenv(name))
 	if value == "" {
 		return fallback
 	}
 	parsed, err := strconv.ParseFloat(value, 64)
-	if err != nil || parsed <= 0 {
+	if err != nil || parsed < min {
+		return fallback
+	}
+	return parsed
+}
+
+func envFloatAbove(name string, fallback float64, min float64) float64 {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil || parsed <= min {
 		return fallback
 	}
 	return parsed
