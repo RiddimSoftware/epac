@@ -265,19 +265,6 @@ The team is sized for four developers shipping in parallel. The conventions belo
 
 When you add a developer to GitHub, replace the `@developer-x` placeholder, uncomment the line, commit. CODEOWNERS is plain text — no rebuild required.
 
-### Branch naming convention
-
-All branches must match `^(feature|fix|perf|refactor)/EPAC-\d+-.+$`. This is enforced by `.github/workflows/branch-name-check.yml`, a 5-second Ubuntu job that runs on every `pull_request` event and fails the PR if the head ref doesn't match. (We tried a GitHub repository ruleset `branch_name_pattern` first; the REST API rejected it with HTTP 422 — likely beta-gated for this repo. The workflow is Linux-only so it stays inside the project's CI cost decision.)
-
-| Prefix | Use when |
-|---|---|
-| `feature/` | New user-visible feature, schema addition, new screen |
-| `fix/` | Bug fix that the user (or a system) was experiencing |
-| `perf/` | Measured performance improvement (Instruments / MetricKit evidence required) |
-| `refactor/` | Internal restructuring with no behavioural change |
-
-`main` is always the default branch and is never pushed to directly.
-
 ### PR size target
 
 The PR Author Checklist sets the soft target at < 300 lines and the justification threshold at 400. With four developers in flight, large PRs are the single biggest source of review-queue stalls and post-merge regressions — measure twice, cut once, split early. A PR that touches a feature *and* refactors surrounding code is two PRs; ship the refactor first, then the feature on top.
