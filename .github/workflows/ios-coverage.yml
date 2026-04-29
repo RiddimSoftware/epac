@@ -1,0 +1,136 @@
+name: iOS coverage
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**/*.swift'
+      - 'ios/**/*.json'
+      - 'ios/*.xctestplan'
+      - 'ios/epac.xcodeproj/**'
+      - '.github/workflows/ios-coverage.yml'
+      - 'scripts/ci/ios_coverage_report.py'
+      - 'scripts/ci/test_ios_coverage_report.py'
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**/*.swift'
+      - 'ios/**/*.json'
+      - 'ios/*.xctestplan'
+      - 'ios/epac.xcodeproj/**'
+      - '.github/workflows/ios-coverage.yml'
+      - 'scripts/ci/ios_coverage_report.py'
+      - 'scripts/ci/test_ios_coverage_report.py'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ios-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ["self-hosted","macOS"]
+    env:
+      IOS_COVERAGE_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro Max
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test coverage reporter
+        run: python3 scripts/ci/test_ios_coverage_report.py
+
+      - name: Show available simulators
+        run: xcrun simctl list devices available
+
+      - name: Fetch base branch
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Determine changed files
+        if: github.event_name == 'pull_request'
+        run: git diff --name-only origin/${{ github.base_ref }}...HEAD > changed-files.txt
+
+      - name: Run base coverage
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/epac-coverage-base"
+          git worktree add "$RUNNER_TEMP/epac-coverage-base" origin/${{ github.base_ref }}
+          trap 'git worktree remove --force "$RUNNER_TEMP/epac-coverage-base"' EXIT
+          cd "$RUNNER_TEMP/epac-coverage-base/ios"
+          rm -rf .build-coverage/TestResults.xcresult
+          if ! xcodebuild test -project epac.xcodeproj -scheme epac -destination "$IOS_COVERAGE_DESTINATION" -derivedDataPath .build-coverage -enableCodeCoverage YES -resultBundlePath .build-coverage/TestResults.xcresult -only-testing:epacTests -skip-testing:epacTests/SnapshotTests; then
+            echo "::warning::Base coverage is unavailable because the base branch test run failed. Continuing with PR coverage only."
+            exit 0
+          fi
+          xcrun xccov view --report --json .build-coverage/TestResults.xcresult > "$GITHUB_WORKSPACE/base-coverage.json"
+
+      - name: Run PR coverage
+        run: |
+          set -euo pipefail
+          cd ios
+          rm -rf .build-coverage/TestResults.xcresult
+          xcodebuild test -project epac.xcodeproj -scheme epac -destination "$IOS_COVERAGE_DESTINATION" -derivedDataPath .build-coverage -enableCodeCoverage YES -resultBundlePath .build-coverage/TestResults.xcresult -only-testing:epacTests -skip-testing:epacTests/SnapshotTests
+          xcrun xccov view --report --json .build-coverage/TestResults.xcresult > "$GITHUB_WORKSPACE/coverage.json"
+
+      - name: Summarize coverage
+        id: coverage-report
+        continue-on-error: true
+        run: |
+          args=(
+            --coverage-json coverage.json
+            --summary-md coverage-summary.md
+            --comment-md coverage-comment.md
+            --json-output coverage-report.json
+          )
+          if [[ -f base-coverage.json ]]; then
+            args+=(--base-coverage-json base-coverage.json)
+          fi
+          if [[ -f changed-files.txt ]]; then
+            args+=(--changed-files changed-files.txt)
+          fi
+          python3 scripts/ci/ios_coverage_report.py "${args[@]}"
+          cat coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Append failed coverage summary
+        if: steps.coverage-report.outcome == 'failure' && hashFiles('coverage-summary.md') != ''
+        run: cat coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment coverage delta
+        if: github.event_name == 'pull_request' && always() && hashFiles('coverage-comment.md') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const marker = '<!-- epac-ios-coverage -->'
+            const body = `${marker}\n${fs.readFileSync('coverage-comment.md', 'utf8')}`
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
+            const existing = comments.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes(marker)
+            )
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }
+
+      - name: Enforce coverage thresholds
+        if: steps.coverage-report.outcome == 'failure'
+        run: exit 1
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-coverage
+          path: |
+            coverage.json
+            base-coverage.json
+            coverage-report.json
+            coverage-summary.md
+            coverage-comment.md
