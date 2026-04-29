@@ -64,6 +64,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("contracts.navTitle", comment: ""), systemImage: "building.columns.fill")
 					}
 					.accessibilityHint("Opens federal government contracts from proactive disclosure")
+					NavigationLink(destination: GICAppointmentsView()) {
+						Label("GIC Appointments", systemImage: "person.crop.circle.badge.checkmark")
+					}
+					.accessibilityHint("Opens Governor in Council appointment tracker")
 				}
 			}
 			.listStyle(.insetGrouped)
