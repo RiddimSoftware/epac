@@ -518,12 +518,13 @@
               "schema": { "$ref": "#/components/schemas/RegisterDeviceRequest" },
               "examples": {
                 "register": {
-                  "value": {
-                    "token": "abcdef012345",
-                    "topic_ids": ["housing", "climate"],
-                    "granularity": { "housing": "everyDebate", "climate": "onlyMyMP" },
-                    "my_mp_member_id": "278707"
-                  }
+                    "value": {
+                      "token": "abcdef012345",
+                      "topic_ids": ["housing", "climate"],
+                      "bill_ids": ["C-5", "S-2"],
+                      "granularity": { "housing": "everyDebate", "climate": "onlyMyMP" },
+                      "my_mp_member_id": "278707"
+                    }
                 }
               }
             }
@@ -547,15 +548,80 @@
     "/search": {
       "get": {
         "tags": ["Search"],
-        "summary": "Search Hansard speeches",
-        "description": "Uses PostgreSQL full-text search over English and French tsvector columns and falls back to the legacy English expression index when needed.",
-        "operationId": "searchSpeeches",
+        "summary": "Search Hansard speeches (legacy route)",
+        "description": "Compatibility route for clients still calling /search?query=. New clients should use /search/speeches?q= with the same ranked PostgreSQL full-text search behavior.",
+        "operationId": "searchSpeechesLegacy",
         "parameters": [
           {
             "name": "query",
             "in": "query",
             "required": true,
             "schema": { "type": "string", "minLength": 1, "example": "housing affordability" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResponse" },
+                "examples": {
+                  "results": {
+                    "value": {
+                      "query": "housing",
+                      "language_hint": "en",
+                      "results": [
+                        {
+                          "id": "12345678",
+                          "title": "Example MP",
+                          "snippet": "housing affordability...",
+                          "sitting_date": "2026-04-27",
+                          "subject": "Housing",
+                          "member_id": "278707"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/search/speeches": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search Hansard speeches",
+        "description": "Uses PostgreSQL full-text search over English and French tsvector columns, then blends text rank, recency decay, and explicit follow relevance. Personalization only applies when user_id matches a stored device subscription with user-controlled follows.",
+        "operationId": "searchSpeeches",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1, "example": "housing affordability" }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "description": "Anonymous device subscription token used only to load explicit follows for ranking boosts.",
+            "schema": { "type": "string", "example": "device-123" }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date", "example": "2026-01-01" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date", "example": "2026-04-29" }
           }
         ],
         "responses": {
@@ -975,6 +1041,7 @@
         "properties": {
           "token": { "type": "string" },
           "topic_ids": { "type": "array", "items": { "type": "string" } },
+          "bill_ids": { "type": "array", "items": { "type": "string" } },
           "granularity": {
             "type": "object",
             "additionalProperties": { "type": "string", "enum": ["everyDebate", "onlyMyMP"] }
