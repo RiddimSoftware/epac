@@ -94,6 +94,7 @@ MVVM does **not** earn its keep when:
 | Root view with meaningful state + actions | Add `@Observable` ViewModel |
 | Pure/leaf view that only displays data passed to it | No ViewModel; state stays in parent or is passed down |
 | Data access (fetching, network, persistence) | Pass `ModelContext` and `Fetch` **as method parameters**; do not store them on ViewModel |
+| Other service dependencies (e.g. `MemberResolver`) | Define a protocol (`MemberResolving`), make the real type conform, and accept the protocol as a method parameter with a default of the real implementation — enables test doubles without touching SwiftData |
 | `@Query` properties | Stay in Views — SwiftData requirement, not a design choice |
 | Side-effect services (image loading with fallback chains, download deduplication) | Separate class is acceptable even if small; name it to reflect the concern (e.g. `MemberDownloadCoordinator`, `PhotoLoader`) |
 

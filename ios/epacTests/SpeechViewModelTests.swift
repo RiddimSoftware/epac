@@ -4,6 +4,18 @@ import Foundation
 import SwiftData
 import Testing
 
+/// Stub resolver that returns a pre-built member without touching SwiftData.
+/// Demonstrates MemberResolving injection — no network or disk I/O required.
+@MainActor
+private struct StubMemberResolver: MemberResolving {
+    let member: ParliamentMember
+    func resolve(
+        firstName: String, lastName: String,
+        partyAbbreviation: String, ridingName: String,
+        parliamentNumber: Int, modelContext: ModelContext, fetch: Fetch
+    ) -> ParliamentMember { member }
+}
+
 @MainActor
 struct SpeechViewModelTests {
 
@@ -266,6 +278,31 @@ struct SpeechViewModelTests {
 		let secondSide = vm.messages[1].user.isCurrentUser
 
 		#expect(secondSide == !firstSide)
+	}
+
+	// MARK: - MemberResolving injection
+
+	/// Injected StubMemberResolver is used: no SwiftData member lookup occurs.
+	@Test func nextMessageUsesInjectedResolver() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 1)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+		let stubMember = ParliamentMember(
+			name: "Injected Member",
+			lastName: "Member",
+			firstName: "Injected",
+			photoURL: URL(string: "https://example.com/photo.jpg")!,
+			riding: "Stub Riding",
+			province: .Ontario,
+			party: .liberal
+		)
+		let resolver = StubMemberResolver(member: stubMember)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard,
+		               modelContext: context, fetch: fetch, resolver: resolver)
+
+		#expect(vm.messages.first?.user.name == "Injected Member")
 	}
 
 	// MARK: - prepareResume

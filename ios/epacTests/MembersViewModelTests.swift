@@ -200,4 +200,15 @@ struct MembersViewModelTests {
 		#expect(vm.selectedStatus == .current)
 		#expect(!vm.isAnyFilterActive)
 	}
+
+	@Test func isAnyFilterActiveIsFalseOnDefaultInit() {
+		let vm = MembersViewModel()
+		#expect(!vm.isAnyFilterActive)
+	}
+
+	@Test func isAnyFilterActiveIsTrueWhenCabinetFilterApplied() {
+		let vm = MembersViewModel()
+		vm.selectedCabinet = .cabinetOnly
+		#expect(vm.isAnyFilterActive)
+	}
 }
