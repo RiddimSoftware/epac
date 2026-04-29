@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   coverage:
-    runs-on: macos-latest
+    runs-on: ["self-hosted","macOS"]
     env:
       IOS_COVERAGE_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro Max
     steps:
@@ -44,12 +44,6 @@ jobs:
 
       - name: Show available simulators
         run: xcrun simctl list devices available
-
-      - name: Configure Swift package Git auth
-        run: |
-          git config --global http.https://github.com/RiddimSoftware/evidence.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
@@ -68,7 +62,10 @@ jobs:
           trap 'git worktree remove --force "$RUNNER_TEMP/epac-coverage-base"' EXIT
           cd "$RUNNER_TEMP/epac-coverage-base/ios"
           rm -rf .build-coverage/TestResults.xcresult
-          xcodebuild test -project epac.xcodeproj -scheme epac -destination "$IOS_COVERAGE_DESTINATION" -derivedDataPath .build-coverage -enableCodeCoverage YES -resultBundlePath .build-coverage/TestResults.xcresult -only-testing:epacTests -skip-testing:epacTests/SnapshotTests
+          if ! xcodebuild test -project epac.xcodeproj -scheme epac -destination "$IOS_COVERAGE_DESTINATION" -derivedDataPath .build-coverage -enableCodeCoverage YES -resultBundlePath .build-coverage/TestResults.xcresult -only-testing:epacTests -skip-testing:epacTests/SnapshotTests; then
+            echo "::warning::Base coverage is unavailable because the base branch test run failed. Continuing with PR coverage only."
+            exit 0
+          fi
           xcrun xccov view --report --json .build-coverage/TestResults.xcresult > "$GITHUB_WORKSPACE/base-coverage.json"
 
       - name: Run PR coverage
