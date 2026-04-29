@@ -37,6 +37,7 @@ Date: YYYY-MM-DD
 | Campaign Links — newsletter (`epac-newsletter`) | | | |
 | Campaign Links — social (`epac-bluesky`, `epac-twitter`) | | | |
 | Campaign Links — Product Hunt (`epac-product-hunt`) | | | |
+| Campaign Links — welcome sequence (`epac-newsletter-welcome`) | | | |
 
 ### Top 5 App Store search terms (Analytics → Acquisition → App Store Search)
 
@@ -118,6 +119,9 @@ Fill this section only in a Product Hunt launch month.
 
 - [ ] [Action item from this month's data]
 - [ ] [Action item from this month's data]
+- [ ] Review `docs/marketing/newsletter/welcome-sequence.md`; refresh stale
+      parliamentary/lobbying facts and send a Mailchimp test if any email copy
+      changes.
 
 ## Carried forward from last month
 
