@@ -284,4 +284,16 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func gicAppointments() -> DataSource {
+        DataSource(
+            name: "appointments.gc.ca",
+            description: "Governor in Council appointee records from the Federal Organizations registry, with matched Privy Council Office Orders in Council and 2025-26 compensation ranges where published.",
+            url: GICAppointmentsDatabase.snapshot()?.source.url
+                ?? GICAppointmentsDatabase.fallbackSource.url,
+            lastSyncDate: nil,
+            vintage: GICAppointmentsDatabase.snapshot()?.retrievedAt ?? "Current snapshot",
+            stalenessThreshold: nil
+        )
+    }
 }
