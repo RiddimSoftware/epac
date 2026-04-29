@@ -88,8 +88,10 @@ final class TopicFollowStore {
     /// Call on app launch after the token is received, and whenever preferences change.
     func registerDevice(myMPMemberID: String? = nil) async {
         guard let token = UserDefaults.standard.string(forKey: "epac.apnsToken"),
-              !token.isEmpty,
-              !followedIDs.isEmpty else { return }
+              !token.isEmpty else { return }
+
+        let followedBillNumbers = BillFollowStore.shared.followedNumbers
+        let resolvedMPMemberID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID")
 
         let granularityMap = Dictionary(uniqueKeysWithValues:
             granularity.map { ($0.key, $0.value.rawValue) }
@@ -98,9 +100,10 @@ final class TopicFollowStore {
         var body: [String: Any] = [
             "token": token,
             "topic_ids": Array(followedIDs),
+            "bill_ids": Array(followedBillNumbers),
             "granularity": granularityMap
         ]
-        if let mpID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID") {
+        if let mpID = resolvedMPMemberID {
             body["my_mp_member_id"] = mpID
         }
 
