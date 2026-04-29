@@ -17,6 +17,7 @@ struct TypingIndicator: View {
 			dot(delay: 0.2)
 			dot(delay: 0.4)
 		}
+		.accessibilityHidden(true)
 		.onAppear {
 			if !reduceMotion { loading = true }
 		}

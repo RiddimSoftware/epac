@@ -1,4 +1,5 @@
 @testable import epac
+import ExyteChat
 import Foundation
 import SwiftData
 import Testing
@@ -305,5 +306,34 @@ struct SpeechViewModelTests {
 
 		existingVM.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
 		#expect(existingVM.messages.count == countBefore)
+	}
+
+	// MARK: - VoiceOver labels
+
+	@Test func speechMessageAccessibilityIncludesPartyRidingProvinceAndMessagePosition() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 3)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		let message = try #require(vm.messages.last)
+		let speaker = try #require(vm.speakers[message.id])
+
+		#expect(SpeechMessageAccessibility.label(for: message, speaker: speaker) == "Speaker1 Last1, Liberal, Riding1, Ontario: Content 1")
+		#expect(SpeechMessageAccessibility.value(for: message, messages: vm.messages, totalCount: 3) == "Message 2 of 3")
+	}
+
+	@Test func speechMessageAccessibilityHandlesUnknownSpeaker() throws {
+		let message = Message(
+			id: "missing",
+			user: User(id: "u", name: "Unknown", avatarURL: nil, isCurrentUser: false),
+			text: "No resolved member"
+		)
+
+		#expect(SpeechMessageAccessibility.label(for: message, speaker: nil) == "Unknown speaker: No resolved member")
+		#expect(SpeechMessageAccessibility.value(for: message, messages: [], totalCount: 3) == "Message")
 	}
 }
