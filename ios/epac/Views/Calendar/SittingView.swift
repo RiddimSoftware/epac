@@ -99,7 +99,6 @@ private struct OralQuestionsCard: View {
 				}
 				.padding(.vertical, 2)
 			}
-			.frame(maxHeight: 320)
 		}
 		.padding(16)
 		.background(
@@ -162,18 +161,18 @@ private struct OralQuestionRow: View {
 					Text(question.topic)
 						.font(.subheadline.weight(.semibold))
 						.foregroundStyle(.primary)
-						.lineLimit(2)
+						.fixedSize(horizontal: false, vertical: true)
 					Text(question.speakerName)
 						.font(.caption.weight(.medium))
 						.foregroundStyle(.secondary)
 					Text(questionMetadata)
 						.font(.caption2)
 						.foregroundStyle(.tertiary)
-						.lineLimit(1)
+						.fixedSize(horizontal: false, vertical: true)
 					Text(question.firstLine)
 						.font(.caption)
 						.foregroundStyle(.secondary)
-						.lineLimit(3)
+						.fixedSize(horizontal: false, vertical: true)
 						.padding(.top, 2)
 				}
 				Spacer(minLength: 8)

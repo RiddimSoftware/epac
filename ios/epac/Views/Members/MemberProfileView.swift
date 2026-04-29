@@ -279,12 +279,12 @@ struct MemberProfileView: View {
 								VStack(alignment: .leading, spacing: 3) {
 									Text(comm.organizationName)
 										.font(.subheadline)
-										.lineLimit(2)
+										.fixedSize(horizontal: false, vertical: true)
 									if !comm.subjectMatter.isEmpty {
 										Text(comm.subjectMatter)
 											.font(.caption2)
 											.foregroundStyle(.secondary)
-											.lineLimit(2)
+											.fixedSize(horizontal: false, vertical: true)
 									}
 									if let d = comm.communicationDate {
 										Text(d, style: .date)
@@ -518,10 +518,17 @@ struct MemberHighlightsCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
-            Divider().frame(height: 40)
-            statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 0) {
+                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+                Divider().frame(height: 40)
+                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+            }
+            VStack(spacing: 8) {
+                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+                Divider()
+                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+            }
         }
         .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
@@ -557,6 +564,7 @@ struct ProfileDetailRow: View {
 					.foregroundColor(.secondary)
 				Text(value)
 					.font(.headline)
+					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
 	}

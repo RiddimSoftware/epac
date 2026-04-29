@@ -70,7 +70,7 @@ struct BillDetailView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(vote.descriptionEn)
                                 .font(.subheadline)
-                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                             HStack {
                                 Text(vote.date.formatted(date: .abbreviated, time: .omitted))
                                     .font(.caption2)
@@ -92,7 +92,7 @@ struct BillDetailView: View {
                     ForEach(matchingDebates, id: \.hansardID) { subject in
                         Text(subject.title)
                             .font(.subheadline)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -153,38 +153,71 @@ struct BillDetailView: View {
     private var billHeaderSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(bill.number)
-                        .font(.title3.weight(.semibold).monospacedDigit())
-                    Spacer(minLength: 8)
-                    if !bill.billType.shortName.isEmpty {
-                        BillHeaderBadge(
-                            text: bill.billType.shortName,
-                            foreground: .white,
-                            background: Color.accentColor.opacity(0.85)
-                        )
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        billNumberHeader
+                        Spacer(minLength: 8)
+                        headerBadges
                     }
-                    BillHeaderBadge(
-                        text: bill.status.displayName,
-                        foreground: .white,
-                        background: bill.status.color
-                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        billNumberHeader
+                        headerBadges
+                    }
                 }
 
                 Text(bill.title)
                     .font(.headline)
-                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !bill.currentStage.isEmpty {
                     Text(bill.currentStage)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                         .explainerTip(for: bill.currentStage)
                 }
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(headerAccessibilityLabel)
+        }
+    }
+
+    private var billNumberHeader: some View {
+        Text(bill.number)
+            .font(.title3.weight(.semibold).monospacedDigit())
+    }
+
+    @ViewBuilder
+    private var headerBadges: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                if !bill.billType.shortName.isEmpty {
+                    BillHeaderBadge(
+                        text: bill.billType.shortName,
+                        foreground: .white,
+                        background: Color.accentColor.opacity(0.85)
+                    )
+                }
+                BillHeaderBadge(
+                    text: bill.status.displayName,
+                    foreground: .white,
+                    background: bill.status.color
+                )
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                if !bill.billType.shortName.isEmpty {
+                    BillHeaderBadge(
+                        text: bill.billType.shortName,
+                        foreground: .white,
+                        background: Color.accentColor.opacity(0.85)
+                    )
+                }
+                BillHeaderBadge(
+                    text: bill.status.displayName,
+                    foreground: .white,
+                    background: bill.status.color
+                )
+            }
         }
     }
 
@@ -367,8 +400,7 @@ private struct BillHeaderBadge: View {
     var body: some View {
         Text(text)
             .font(.caption2.weight(.semibold))
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            .fixedSize(horizontal: false, vertical: true)
             .foregroundStyle(foreground)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)

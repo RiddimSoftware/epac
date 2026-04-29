@@ -24,105 +24,105 @@ struct ExpendituresView: View {
     }
 
     var body: some View {
-        ZStack {
-                if filteredExpenditures.isEmpty && viewModel.isLoading {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                        Text("Fetching expenditure data...")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text("This may take a moment.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+        Group {
+            if filteredExpenditures.isEmpty && viewModel.isLoading {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Fetching expenditure data...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text("This may take a moment.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if viewModel.loadFailed && filteredExpenditures.isEmpty {
+                ContentUnavailableView {
+                    Label("Couldn't Load Expenditures", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text("Check your connection and try again.")
+                } actions: {
+                    Button("Retry") {
+                        guard !isRetryDisabled else { return }
+                        isRetryDisabled = true
+                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch) }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.loadFailed && filteredExpenditures.isEmpty {
-                    ContentUnavailableView {
-                        Label("Couldn't Load Expenditures", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text("Check your connection and try again.")
-                    } actions: {
-                        Button("Retry") {
-                            guard !isRetryDisabled else { return }
-                            isRetryDisabled = true
-                            Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
-                            Task { await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch) }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isRetryDisabled)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        if filteredExpenditures.isEmpty && !viewModel.isLoading {
-                            ContentUnavailableView.search(text: viewModel.searchText)
-                        } else {
-                            ForEach(filteredExpenditures) { expenditure in
-                                let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
-                                NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
-                                    ExpenditureRow(expenditure: expenditure, member: member)
-                                }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isRetryDisabled)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    if filteredExpenditures.isEmpty && !viewModel.isLoading {
+                        ContentUnavailableView.search(text: viewModel.searchText)
+                    } else {
+                        ForEach(filteredExpenditures) { expenditure in
+                            let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
+                            NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
+                                ExpenditureRow(expenditure: expenditure, member: member)
                             }
                         }
                     }
-                    .listStyle(.plain)
-                    .refreshable {
-                        await viewModel.refresh(fetch: fetch)
-                    }
                 }
-
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        DataSourceBadge(source: .expenditures())
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 4)
-                    searchBar
+                .listStyle(.plain)
+                .refreshable {
+                    await viewModel.refresh(fetch: fetch)
                 }
-                .padding(.bottom, 10)
+            }
         }
-            .navigationTitle("Expenditures")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    periodSelector
+        .safeAreaInset(edge: .bottom) {
+            VStack {
+                HStack {
+                    Spacer()
+                    DataSourceBadge(source: .expenditures())
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack {
-                        NavigationLink(destination: PoliticalDonationsView()) {
-                            Image(systemName: "dollarsign.circle")
-                        }
-                        .accessibilityLabel("Political Donations")
-                        NavigationLink(destination: FederalProjectCostView()) {
-                            Image(systemName: "building.2.crop.circle")
-                        }
-                        .accessibilityLabel("Federal Project Costs")
-                        NavigationLink(destination: FederalFinancesView()) {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                        }
-                        .accessibilityLabel("Federal Finances")
-                        sortSelector
-                        Button {
-                            item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
+                .padding(.horizontal)
+                .padding(.bottom, 4)
+                searchBar
+            }
+            .padding(.bottom, 10)
+        }
+        .navigationTitle("Expenditures")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                periodSelector
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack {
+                    NavigationLink(destination: PoliticalDonationsView()) {
+                        Image(systemName: "dollarsign.circle")
+                    }
+                    .accessibilityLabel("Political Donations")
+                    NavigationLink(destination: FederalProjectCostView()) {
+                        Image(systemName: "building.2.crop.circle")
+                    }
+                    .accessibilityLabel("Federal Project Costs")
+                    NavigationLink(destination: FederalFinancesView()) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                    }
+                    .accessibilityLabel("Federal Finances")
+                    sortSelector
+                    Button {
+                        item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
                     }
                 }
             }
-            .activitySheet($item)
-            .task(id: viewModel.selectedYear * 10 + viewModel.selectedQuarter) {
-                await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
-            }
-            .onAppear {
-                Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
-            }
-            .onChange(of: expenditures) { _, newValue in
-                Log.debug("Expenditures query updated. New count: \(newValue.count)")
-            }
+        }
+        .activitySheet($item)
+        .task(id: viewModel.selectedYear * 10 + viewModel.selectedQuarter) {
+            await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
+        }
+        .onAppear {
+            Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
+        }
+        .onChange(of: expenditures) { _, newValue in
+            Log.debug("Expenditures query updated. New count: \(newValue.count)")
+        }
     }
 
     private var periodSelector: some View {
@@ -227,33 +227,35 @@ struct ExpenditureRow: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("\(expenditure.lastName), \(expenditure.firstName)")
-                        .font(.headline)
-                    Spacer()
-                    Text(expenditure.total.formatted(.currency(code: "CAD")))
-                        .font(.headline)
-                        .foregroundColor(.accentColor)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline) {
+                        memberName
+                        Spacer()
+                        expenditureTotal
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        memberName
+                        expenditureTotal
+                    }
                 }
                 
                 Text(expenditure.constituency)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Travel").font(.caption2).foregroundColor(.secondary)
-                        Text(expenditure.travel.formatted(.currency(code: "CAD"))).font(.caption)
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        expenditureMetric(label: "Travel", amount: expenditure.travel)
+                        Spacer()
+                        expenditureMetric(label: "Hospitality", amount: expenditure.hospitality)
+                        Spacer()
+                        expenditureMetric(label: "Contracts", amount: expenditure.contracts)
                     }
-                    Spacer()
-                    VStack(alignment: .leading) {
-                        Text("Hospitality").font(.caption2).foregroundColor(.secondary)
-                        Text(expenditure.hospitality.formatted(.currency(code: "CAD"))).font(.caption)
-                    }
-                    Spacer()
-                    VStack(alignment: .leading) {
-                        Text("Contracts").font(.caption2).foregroundColor(.secondary)
-                        Text(expenditure.contracts.formatted(.currency(code: "CAD"))).font(.caption)
+                    VStack(alignment: .leading, spacing: 4) {
+                        expenditureMetric(label: "Travel", amount: expenditure.travel)
+                        expenditureMetric(label: "Hospitality", amount: expenditure.hospitality)
+                        expenditureMetric(label: "Contracts", amount: expenditure.contracts)
                     }
                 }
                 .padding(.top, 4)
@@ -262,6 +264,28 @@ struct ExpenditureRow: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(expenditure.lastName), \(expenditure.firstName), \(expenditure.party.fullName), \(expenditure.constituency), total \(expenditure.total.formatted(.currency(code: "CAD")))")
+    }
+
+    private var memberName: some View {
+        Text("\(expenditure.lastName), \(expenditure.firstName)")
+            .font(.headline)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var expenditureTotal: some View {
+        Text(expenditure.total.formatted(.currency(code: "CAD")))
+            .font(.headline)
+            .foregroundColor(.accentColor)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func expenditureMetric(label: String, amount: Double) -> some View {
+        VStack(alignment: .leading) {
+            Text(label).font(.caption2).foregroundColor(.secondary)
+            Text(amount.formatted(.currency(code: "CAD")))
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

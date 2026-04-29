@@ -172,11 +172,11 @@ struct HomeFeedView: View {
                     Text(liveHeadline(for: status))
                         .font(.epacHeadline)
                         .foregroundStyle(Color.epacText.primary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(liveDetail(for: status))
                         .font(.epacSubheadline)
                         .foregroundStyle(Color.epacText.secondary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: EpacSpacing.s) {
@@ -216,7 +216,7 @@ struct HomeFeedView: View {
                         Text(subject.title)
                             .font(.epacSubheadline)
                             .foregroundStyle(Color.epacText.secondary)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Text(NSLocalizedString("home.live.tapToRead", comment: ""))
@@ -389,11 +389,11 @@ struct HomeFeedView: View {
                 Text(headline)
                     .font(.epacSubheadline.weight(.semibold))
                     .foregroundStyle(Color.epacText.primary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(detail)
                     .font(.epacCaption)
                     .foregroundStyle(Color.epacText.secondary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
         }
@@ -413,7 +413,7 @@ struct HomeFeedView: View {
                         VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                             Text(name)
                                 .font(.epacSubheadline.weight(.semibold))
-                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                             Text(String(format: NSLocalizedString("home.myMP.activityCount", comment: ""), myMPActivityCount))
                                 .font(.epacCaption)
                                 .foregroundStyle(Color.epacText.secondary)
@@ -461,7 +461,7 @@ struct HomeFeedView: View {
                         Text(state.lastKnownStage)
                             .font(.epacCaption)
                             .foregroundStyle(Color.epacText.secondary)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
                 }
@@ -534,6 +534,7 @@ struct HomeFeedView: View {
                             Text(senator.caucusFullName)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer()
                         Image(systemName: "arrow.up.right.square")
@@ -822,7 +823,7 @@ struct HomeFeedView: View {
             ForEach(recentSubjects) { subject in
                 Text(subject.title)
                     .font(.epacSubheadline)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, EpacSpacing.xs)
             }
             if latestHansard != nil {
