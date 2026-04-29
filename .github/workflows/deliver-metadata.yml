@@ -25,7 +25,7 @@ permissions:
 jobs:
   deliver:
     name: Push metadata to App Store Connect
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
 
     steps:
       - uses: actions/checkout@v4

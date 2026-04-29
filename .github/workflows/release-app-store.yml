@@ -35,7 +35,7 @@ jobs:
   # ─── Job 1: Find the TestFlight build matching this release ───────────────
   find-build:
     name: Find TestFlight build
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     outputs:
       build_number: ${{ steps.find.outputs.build_number }}
       build_version: ${{ steps.find.outputs.build_version }}
@@ -93,7 +93,7 @@ jobs:
   approve-release:
     name: Approve release
     needs: find-build
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     environment:
       name: app-store-release
     steps:
@@ -112,7 +112,7 @@ jobs:
   submit:
     name: Submit for App Store review
     needs: [find-build, approve-release]
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4

@@ -26,7 +26,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     container:
       image: ghcr.io/realm/swiftlint:latest
     steps:
@@ -35,7 +35,7 @@ jobs:
         run: swiftlint --strict --reporter github-actions-logging
 
   localization:
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
       - name: Audit localization coverage

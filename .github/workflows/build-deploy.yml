@@ -33,7 +33,7 @@ jobs:
   # ─── Job 1: Determine the next version ────────────────────────────────────
   compute-version:
     name: Compute next version
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     outputs:
       next_version: ${{ steps.version.outputs.next_version }}
     steps:
@@ -79,7 +79,7 @@ jobs:
   # ─── Job 2: Build and upload to TestFlight ────────────────────────────────
   build-upload:
     name: Archive, sign, and upload to TestFlight
-    runs-on: macos-15
+    runs-on: ["self-hosted","macOS"]
     needs: compute-version
     outputs:
       build_number: ${{ steps.build-number.outputs.build_number }}
@@ -192,7 +192,7 @@ jobs:
   # ─── Job 3: Create draft GitHub Release ───────────────────────────────────
   create-draft-release:
     name: Create draft GitHub Release
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     needs: [compute-version, build-upload]
     steps:
       - uses: actions/checkout@v4
