@@ -36,6 +36,7 @@ final class NotificationManager: NSObject {
     /// Requests authorization and registers for remote notifications.
     /// Safe to call multiple times — the system returns the existing status.
     func requestAuthorization() async {
+        guard !AppEnvironment.isMarketingCaptureMode else { return }
         do {
 			let granted = try await UNUserNotificationCenter.current()
 				.requestAuthorization(options: [.alert, .badge, .sound])
