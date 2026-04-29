@@ -703,3 +703,7 @@
 "notifications.member.votes" = "Votes";
 "notifications.member.speeches" = "Discours";
 "notifications.member.expenses" = "Dépenses";
+
+/* On This Day (EPAC-470) */
+"home.onThisDay.title" = "À cette date dans les législatures passées";
+"home.onThisDay.dismiss" = "Masquer À cette date";

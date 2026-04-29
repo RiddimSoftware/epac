@@ -701,3 +701,7 @@
 "notifications.member.votes" = "Votes";
 "notifications.member.speeches" = "Speeches";
 "notifications.member.expenses" = "Expenses";
+
+/* On This Day (EPAC-470) */
+"home.onThisDay.title" = "On this day in past Parliaments";
+"home.onThisDay.dismiss" = "Hide On This Day";

@@ -17,6 +17,7 @@ import SwiftUI
 @MainActor
 struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var fetch: Fetch
     @Environment(NavigationRouter.self) private var router
     @Environment(NetworkMonitor.self) private var networkMonitor
     @Environment(\.scenePhase) private var scenePhase
@@ -39,8 +40,13 @@ struct HomeFeedView: View {
     @State private var showRefreshToast = false
     @State private var showLiveInfo = false
     @State private var postSittingHansard: Hansard?
+    @State private var onThisDayItems: [OnThisDayItem] = []
+    @State private var onThisDayDismissedDate = UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate") ?? ""
+    @State private var didRecordOnThisDayImpression = false
+    @State private var selectedOnThisDaySpeech: OnThisDaySpeechSelection?
 
     private let liveParliamentService = LiveParliamentService()
+    private let onThisDayService = OnThisDayService()
 
     var body: some View {
         NavigationStack {
@@ -57,6 +63,9 @@ struct HomeFeedView: View {
                 }
                 // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
+                if shouldShowOnThisDaySection {
+                    onThisDaySection
+                }
                 electionCountdownSection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
@@ -141,6 +150,9 @@ struct HomeFeedView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
+            }
+            .navigationDestination(item: $selectedOnThisDaySpeech) { selection in
+                SpeechView(hansard: selection.hansard, subject: selection.subject)
             }
         }
     }
@@ -376,7 +388,13 @@ struct HomeFeedView: View {
         }
     }
 
-    private func todayMetricRow(icon: String, title: String, headline: String, detail: String) -> some View {
+    private func todayMetricRow(
+        icon: String,
+        title: String,
+        headline: String,
+        detail: String,
+        detailLineLimit: Int? = nil
+    ) -> some View {
         HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: icon)
                 .foregroundStyle(Color.epacBrand.accent)
@@ -393,11 +411,55 @@ struct HomeFeedView: View {
                 Text(detail)
                     .font(.epacCaption)
                     .foregroundStyle(Color.epacText.secondary)
+                    .lineLimit(detailLineLimit)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
         }
         .contentShape(Rectangle())
+    }
+
+    // MARK: - On this day
+
+    private var shouldShowOnThisDaySection: Bool {
+        !onThisDayItems.isEmpty && onThisDayDismissedDate != ottawaTodayString
+    }
+
+    private var onThisDaySection: some View {
+        Section {
+            ForEach(onThisDayItems.prefix(5)) { item in
+                Button {
+                    Task { await openOnThisDayItem(item) }
+                } label: {
+                    todayMetricRow(
+                        icon: item.kind == .vote ? "checkmark.ballot.fill" : "quote.bubble.fill",
+                        title: item.detailText,
+                        headline: item.title,
+                        detail: item.excerpt,
+                        detailLineLimit: 1
+                    )
+                    .padding(.vertical, EpacSpacing.xs)
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            HStack {
+                Text(NSLocalizedString("home.onThisDay.title", comment: ""))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button {
+                    dismissOnThisDay()
+                } label: {
+                    Image(systemName: "xmark.circle")
+                }
+                .accessibilityLabel(NSLocalizedString("home.onThisDay.dismiss", comment: ""))
+            }
+        }
+        .onAppear {
+            guard !didRecordOnThisDayImpression else { return }
+            didRecordOnThisDayImpression = true
+            OnThisDayTelemetry.record(.impression)
+        }
     }
 
     // MARK: - Section 2: Your MP's activity
@@ -899,6 +961,21 @@ struct HomeFeedView: View {
         } else {
             latestMemberVote = nil
         }
+
+        await refreshOnThisDay()
+    }
+
+    private func refreshOnThisDay() async {
+        guard networkMonitor.isConnected || AppEnvironment.isEvidenceCaptureMode else { return }
+        do {
+            let items = try await onThisDayService.fetch(date: Date(), limit: 5)
+            if items != onThisDayItems {
+                didRecordOnThisDayImpression = false
+            }
+            onThisDayItems = items
+        } catch {
+            Log.error("HomeFeedView on-this-day refresh failed: \(error.localizedDescription)")
+        }
     }
 
     private func pollLiveParliamentStatus(while phase: ScenePhase) async {
@@ -966,6 +1043,12 @@ struct HomeFeedView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "America/Toronto")
         return formatter.string(from: Date())
+    }
+
+    private func dismissOnThisDay() {
+        onThisDayDismissedDate = ottawaTodayString
+        UserDefaults.standard.set(onThisDayDismissedDate, forKey: "epac.onThisDay.dismissedDate")
+        OnThisDayTelemetry.record(.dismiss)
     }
 
     private enum LiveCardState {
@@ -1147,6 +1230,82 @@ struct HomeFeedView: View {
         return nil
     }
 
+    private func openOnThisDayItem(_ item: OnThisDayItem) async {
+        OnThisDayTelemetry.record(.tap, itemID: item.id)
+        switch item.kind {
+        case .speech:
+            await openOnThisDaySpeech(item)
+        case .vote:
+            if let billNumber = item.billNumber, !billNumber.isEmpty {
+                router.pendingSearchQuery = billNumber
+            } else {
+                router.pendingSearchQuery = item.title
+            }
+            router.selectedTab = .search
+        }
+    }
+
+    private func openOnThisDaySpeech(_ item: OnThisDayItem) async {
+        guard let date = item.parsedDate else {
+            router.pendingSearchQuery = item.subjectTitle ?? item.title
+            router.selectedTab = .search
+            return
+        }
+
+        do {
+            if resolveHansard(on: date) == nil {
+                try await fetch.downloadHansard(date)
+            }
+            guard let hansard = resolveHansard(on: date),
+                  let subject = resolveSubject(for: item, in: hansard) else {
+                router.pendingSearchQuery = item.subjectTitle ?? item.title
+                router.selectedTab = .search
+                return
+            }
+            prepareOnThisDaySpeechResume(item, subject: subject)
+            selectedOnThisDaySpeech = OnThisDaySpeechSelection(hansard: hansard, subject: subject)
+        } catch {
+            Log.error("HomeFeedView on-this-day speech open failed: \(error.localizedDescription)")
+            router.pendingSearchQuery = item.subjectTitle ?? item.title
+            router.selectedTab = .search
+        }
+    }
+
+    private func resolveHansard(on date: Date) -> Hansard? {
+        let start = Calendar.current.startOfDay(for: date)
+        guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return nil }
+        let descriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { $0.date >= start && $0.date < end }
+        )
+        return (try? modelContext.fetch(descriptor))?.first
+    }
+
+    private func resolveSubject(for item: OnThisDayItem, in hansard: Hansard) -> SubjectOfBusiness? {
+        let subjects = hansard.orders.flatMap(\.subjects)
+        if let interventionID = item.interventionID,
+           let exact = subjects.first(where: { subject in
+               subject.speeches.contains { $0.hansardID == interventionID }
+           }) {
+            return exact
+        }
+        if let subjectTitle = item.subjectTitle,
+           let titleMatch = subjects.first(where: { $0.title.localizedCaseInsensitiveCompare(subjectTitle) == .orderedSame }) {
+            return titleMatch
+        }
+        return subjects.first
+    }
+
+    private func prepareOnThisDaySpeechResume(_ item: OnThisDayItem, subject: SubjectOfBusiness) {
+        guard let interventionID = item.interventionID,
+              let speech = subject.speeches.first(where: { $0.hansardID == interventionID }) else {
+            return
+        }
+        subject.currentSpeech = speech
+        subject.currentSpeechID = speech.hansardID
+        speech.currentMessage = nil
+        speech.currentMessageID = nil
+    }
+
     private static func trimmedExcerpt(_ text: String) -> String {
         let cleaned = text
             .replacingOccurrences(of: "\n", with: " ")
@@ -1177,6 +1336,20 @@ private struct HomeSpeechHighlight {
     let subject: SubjectOfBusiness
     let memberName: String
     let excerpt: String
+}
+
+private struct OnThisDaySpeechSelection: Hashable, Identifiable {
+    let id = UUID()
+    let hansard: Hansard
+    let subject: SubjectOfBusiness
+
+    static func == (lhs: OnThisDaySpeechSelection, rhs: OnThisDaySpeechSelection) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
 private enum HomeParliamentDayStatus {

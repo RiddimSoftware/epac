@@ -506,6 +506,64 @@
         }
       }
     },
+    "/api/v1/on-this-day": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "List prior-year Parliament moments from the same calendar day",
+        "description": "Returns ranked Hansard speech records from earlier years on the same month and day. Ranking prefers speeches by current sitting MPs, then speeches linked to bill or vote identifiers.",
+        "operationId": "listOnThisDay",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "description": "Reference date in Ottawa-local calendar form.",
+            "schema": { "type": "string", "format": "date", "example": "2026-04-29" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum items to return. Defaults to 5 and caps at 20.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 20, "default": 5 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prior-year Parliament moments",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OnThisDayResponse" },
+                "examples": {
+                  "moments": {
+                    "value": {
+                      "date": "2026-04-29",
+                      "items": [
+                        {
+                          "id": "speech:12345678",
+                          "kind": "speech",
+                          "year": 2021,
+                          "date": "2021-04-29",
+                          "title": "Housing",
+                          "excerpt": "Madam Speaker, housing affordability matters...",
+                          "speaker_name": "Jane Example",
+                          "member_id": "278707",
+                          "subject_title": "Housing",
+                          "intervention_id": "12345678",
+                          "source_url": "https://www.ourcommons.ca/documentviewer/en/44-1/house/sitting-1/hansard"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/device/register": {
       "post": {
         "tags": ["Devices"],
@@ -944,6 +1002,34 @@
           "preview": { "type": "string" },
           "word_count": { "type": "integer" },
           "filename": { "type": "string" }
+        }
+      },
+      "OnThisDayResponse": {
+        "type": "object",
+        "required": ["date", "items"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OnThisDayItem" }
+          }
+        }
+      },
+      "OnThisDayItem": {
+        "type": "object",
+        "required": ["id", "kind", "year", "date", "title", "excerpt"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["speech", "vote"] },
+          "year": { "type": "integer" },
+          "date": { "type": "string", "format": "date" },
+          "title": { "type": "string" },
+          "excerpt": { "type": "string" },
+          "speaker_name": { "type": "string" },
+          "member_id": { "type": "string" },
+          "subject_title": { "type": "string" },
+          "intervention_id": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
         }
       },
       "RidingBoundary": {
