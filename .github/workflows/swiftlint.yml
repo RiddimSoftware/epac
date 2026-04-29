@@ -1,13 +1,6 @@
 name: swiftlint
 
 on:
-  pull_request:
-    paths:
-      - 'ios/**/*.swift'
-      - 'ios/epac/*.lproj/Localizable.strings'
-      - 'scripts/localization/check_localizations.py'
-      - '.swiftlint.yml'
-      - '.github/workflows/swiftlint.yml'
   push:
     branches: [main]
     paths:
@@ -15,6 +8,7 @@ on:
       - 'ios/epac/*.lproj/Localizable.strings'
       - 'scripts/localization/check_localizations.py'
       - '.swiftlint.yml'
+  workflow_dispatch:
 
 # Why this workflow: per the project CI cost decision (memory:
 # feedback_ci_cost), GitHub Actions stays Linux-only. SwiftLint runs

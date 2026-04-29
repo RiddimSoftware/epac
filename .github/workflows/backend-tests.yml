@@ -1,11 +1,10 @@
 name: Backend Go tests
 
 on:
-  pull_request:
-    paths: ['backend/**']
   push:
     branches: [main]
     paths: ['backend/**']
+  workflow_dispatch:
 
 jobs:
   test:
