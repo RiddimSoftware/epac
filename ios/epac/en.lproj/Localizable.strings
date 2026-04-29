@@ -514,6 +514,7 @@
 "speech.unfollow" = "Unfollow %@";
 "speech.goToProfile" = "%@'s Profile";
 "speech.copyQuote" = "Copy Quote";
+"speech.messageActionsHint" = "Message actions are available from the rotor";
 
 /* Contextual menus — vote rows (EPAC-170) */
 "vote.contextMenu.share" = "Share Vote";

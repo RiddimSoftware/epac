@@ -458,10 +458,10 @@ struct HomeFeedView: View {
                     VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                         Text(number)
                             .font(.epacSubheadline.weight(.semibold))
-                            Text(state.lastKnownStage)
-                                .font(.epacCaption)
-                                .foregroundStyle(Color.epacText.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                        Text(state.lastKnownStage)
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
                 }
