@@ -563,6 +563,12 @@
 "settings.title" = "Paramètres";
 "settings.done" = "Terminé";
 
+"settings.account.title" = "Compte";
+"settings.account.riding" = "Circonscription";
+"settings.account.mp" = "Député";
+"settings.account.postalCode" = "Code postal et circonscription";
+"settings.account.notifications" = "Notifications";
+
 "settings.location.title" = "Ma localisation";
 "settings.location.riding" = "Circonscription";
 "settings.location.mp" = "Député";
@@ -575,6 +581,10 @@
 "settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
 "settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
 
+"settings.appearance.title" = "Apparence";
+"settings.appearance.theme" = "Thème";
+"settings.appearance.theme.system" = "Système";
+
 "settings.appIcon.title" = "Apparence";
 "settings.appIcon.picker" = "Icône de l’app";
 "settings.appIcon.standard" = "Standard";
@@ -583,17 +593,41 @@
 "settings.appIcon.unsupported" = "Non disponible sur cet appareil";
 "settings.appIcon.error" = "Impossible de modifier l’icône de l’app : %@";
 
+"settings.language.title" = "Langue";
+"settings.language.preference" = "Langue de l’app";
+"settings.language.system" = "Système";
+
+"settings.follows.title" = "Suivis";
+"settings.follows.manage" = "Gérer les suivis";
+"settings.follows.empty.title" = "Aucun suivi";
+"settings.follows.empty.message" = "Suivez des projets de loi, députés ou sujets depuis leurs pages de détail.";
+
 "settings.followed.bills" = "Projets de loi suivis";
 "settings.followed.members" = "Députés suivis";
 "settings.followed.topics" = "Sujets suivis";
+
+"settings.privacy.title" = "Données et confidentialité";
+"settings.privacy.policy" = "Politique de confidentialité";
+"settings.privacy.dataHandling" = "Traitement des données";
+"settings.privacy.dataSources" = "Sources de données";
+"settings.privacy.export" = "Exporter mes données";
+"settings.privacy.delete" = "Supprimer mes données";
 
 "settings.about.title" = "À propos";
 "settings.about.version" = "Version";
 "settings.about.privacy" = "Politique de confidentialité";
 "settings.about.dataSources" = "Sources de données";
+"settings.about.sourceCredits" = "Crédits des sources de données";
 "settings.about.github" = "GitHub (code source ouvert)";
 "settings.about.brandBrief" = "Brief de marque";
 "settings.about.feedback" = "Envoyer des commentaires";
+"settings.about.rate" = "Évaluer epac";
+
+"settings.developer.title" = "Développeur";
+"settings.developer.diagnostics" = "Diagnostics";
+"settings.developer.flags" = "Substitutions de drapeaux";
+"settings.developer.evidence" = "Preuves de build";
+"settings.developer.debugOnly" = "Débogage";
 
 /* Canada Gazette (EPAC-116) */
 "gazette.navTitle" = "Gazette du Canada";

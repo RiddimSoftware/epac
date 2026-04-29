@@ -561,6 +561,12 @@
 "settings.title" = "Settings";
 "settings.done" = "Done";
 
+"settings.account.title" = "Account";
+"settings.account.riding" = "Riding";
+"settings.account.mp" = "MP";
+"settings.account.postalCode" = "Postal code and riding";
+"settings.account.notifications" = "Notifications";
+
 "settings.location.title" = "My Location";
 "settings.location.riding" = "Riding";
 "settings.location.mp" = "MP";
@@ -573,6 +579,10 @@
 "settings.notifications.topicConsultations" = "New consultations on followed topics";
 "settings.notifications.morningBriefing" = "Morning sitting-day briefing";
 
+"settings.appearance.title" = "Appearance";
+"settings.appearance.theme" = "Theme";
+"settings.appearance.theme.system" = "System";
+
 "settings.appIcon.title" = "Appearance";
 "settings.appIcon.picker" = "App Icon";
 "settings.appIcon.standard" = "Standard";
@@ -581,17 +591,41 @@
 "settings.appIcon.unsupported" = "Not available on this device";
 "settings.appIcon.error" = "Could not change app icon: %@";
 
+"settings.language.title" = "Language";
+"settings.language.preference" = "App language";
+"settings.language.system" = "System";
+
+"settings.follows.title" = "Follows";
+"settings.follows.manage" = "Manage follows";
+"settings.follows.empty.title" = "No follows yet";
+"settings.follows.empty.message" = "Follow bills, MPs, or topics from their detail screens.";
+
 "settings.followed.bills" = "Followed Bills";
 "settings.followed.members" = "Followed MPs";
 "settings.followed.topics" = "Followed Topics";
+
+"settings.privacy.title" = "Data & Privacy";
+"settings.privacy.policy" = "Privacy Policy";
+"settings.privacy.dataHandling" = "Data handling";
+"settings.privacy.dataSources" = "Data Sources";
+"settings.privacy.export" = "Export my data";
+"settings.privacy.delete" = "Delete my data";
 
 "settings.about.title" = "About";
 "settings.about.version" = "Version";
 "settings.about.privacy" = "Privacy Policy";
 "settings.about.dataSources" = "Data Sources";
+"settings.about.sourceCredits" = "Source data credits";
 "settings.about.github" = "GitHub (open source)";
 "settings.about.brandBrief" = "Brand brief";
 "settings.about.feedback" = "Send feedback";
+"settings.about.rate" = "Rate epac";
+
+"settings.developer.title" = "Developer";
+"settings.developer.diagnostics" = "Diagnostics";
+"settings.developer.flags" = "Flag overrides";
+"settings.developer.evidence" = "Build evidence";
+"settings.developer.debugOnly" = "Debug";
 
 /* Canada Gazette (EPAC-116) */
 "gazette.navTitle" = "Canada Gazette";
