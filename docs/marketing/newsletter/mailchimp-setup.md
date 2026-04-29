@@ -35,6 +35,26 @@ After the Mailchimp audience exists:
 4. Verify the unsubscribe link is present in the footer.
 5. Send the campaign to the audience.
 
+## Welcome Journey
+
+Use `docs/marketing/newsletter/welcome-sequence.md` as the source of truth for
+the three-email onboarding sequence.
+
+1. Open Mailchimp: Automations -> Customer Journeys.
+2. Create a journey named `Parliament Monthly welcome sequence`.
+3. Set the starting point to `Subscribed to Parliament Monthly`.
+4. Add Email 1 with a 0-day delay.
+5. Add a 3-day delay, then Email 2.
+6. Add a 4-day delay, then Email 3.
+7. Confirm the three App Store links use `utm_medium` values:
+   - `newsletter-welcome-1`
+   - `newsletter-welcome-2`
+   - `newsletter-welcome-3`
+8. Send a test subscription through the website form.
+9. Confirm Email 1 arrives immediately, Email 2 after 3 days, and Email 3 after
+   7 days.
+10. Review and refresh stale facts during the monthly growth report process.
+
 ## Privacy Checks
 
 - Do not add name, postal code, riding, demographic, or tracking fields.
