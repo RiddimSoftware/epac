@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Fixed EPAC-467 search ranking regression set. Expected IDs are stable placeholders until staging has a representative speech corpus; refresh them with canonical Hansard intervention IDs when approving the first data-backed ranking change.",
+  "queries": [
+    { "query": "housing affordability", "expected_top_5": ["housing-001", "housing-002", "housing-003", "housing-004", "housing-005"] },
+    { "query": "rental construction", "expected_top_5": ["rental-001", "rental-002", "rental-003", "rental-004", "rental-005"] },
+    { "query": "carbon tax", "expected_top_5": ["carbon-001", "carbon-002", "carbon-003", "carbon-004", "carbon-005"] },
+    { "query": "climate adaptation", "expected_top_5": ["climate-001", "climate-002", "climate-003", "climate-004", "climate-005"] },
+    { "query": "health care transfers", "expected_top_5": ["health-001", "health-002", "health-003", "health-004", "health-005"] },
+    { "query": "mental health youth", "expected_top_5": ["mental-health-001", "mental-health-002", "mental-health-003", "mental-health-004", "mental-health-005"] },
+    { "query": "student loans", "expected_top_5": ["student-loans-001", "student-loans-002", "student-loans-003", "student-loans-004", "student-loans-005"] },
+    { "query": "employment insurance", "expected_top_5": ["ei-001", "ei-002", "ei-003", "ei-004", "ei-005"] },
+    { "query": "old age security", "expected_top_5": ["oas-001", "oas-002", "oas-003", "oas-004", "oas-005"] },
+    { "query": "veterans benefits", "expected_top_5": ["veterans-001", "veterans-002", "veterans-003", "veterans-004", "veterans-005"] },
+    { "query": "public safety corrections", "expected_top_5": ["corrections-001", "corrections-002", "corrections-003", "corrections-004", "corrections-005"] },
+    { "query": "rail safety", "expected_top_5": ["rail-001", "rail-002", "rail-003", "rail-004", "rail-005"] },
+    { "query": "indigenous reconciliation", "expected_top_5": ["reconciliation-001", "reconciliation-002", "reconciliation-003", "reconciliation-004", "reconciliation-005"] },
+    { "query": "immigration backlog", "expected_top_5": ["immigration-001", "immigration-002", "immigration-003", "immigration-004", "immigration-005"] },
+    { "query": "defence procurement", "expected_top_5": ["defence-001", "defence-002", "defence-003", "defence-004", "defence-005"] },
+    { "query": "small business tax", "expected_top_5": ["small-business-001", "small-business-002", "small-business-003", "small-business-004", "small-business-005"] },
+    { "query": "logement abordable", "expected_top_5": ["logement-001", "logement-002", "logement-003", "logement-004", "logement-005"] },
+    { "query": "sante mentale", "expected_top_5": ["sante-001", "sante-002", "sante-003", "sante-004", "sante-005"] },
+    { "query": "budget fédéral", "expected_top_5": ["budget-fr-001", "budget-fr-002", "budget-fr-003", "budget-fr-004", "budget-fr-005"] },
+    { "query": "changements climatiques", "expected_top_5": ["climat-001", "climat-002", "climat-003", "climat-004", "climat-005"] }
+  ]
+}
