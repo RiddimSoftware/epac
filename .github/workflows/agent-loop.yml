@@ -13,7 +13,6 @@
 # of type 'jira-ticket-ready' to this repo.
 #
 # Required org secrets with selected-repository access to epac:
-# - CLAUDE_CODE_OAUTH_TOKEN
 # - DEV_BOT_APP_ID
 # - DEV_BOT_PRIVATE_KEY
 # - REVIEWER_BOT_APP_ID
@@ -87,9 +86,9 @@ jobs:
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
     secrets:
-      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       DEV_BOT_APP_ID: ${{ secrets.DEV_BOT_APP_ID }}
       DEV_BOT_PRIVATE_KEY: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
+      CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
 
   # ── Reviewer: runs when developer-bot opens or updates a PR ──────────────
   reviewer:
@@ -105,9 +104,9 @@ jobs:
     with:
       pr_number: ${{ github.event.pull_request.number }}
     secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       REVIEWER_BOT_APP_ID: ${{ secrets.REVIEWER_BOT_APP_ID }}
       REVIEWER_BOT_PRIVATE_KEY: ${{ secrets.REVIEWER_BOT_PRIVATE_KEY }}
+      CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
 
   # ── Rebase watcher: detects stale PRs on push / schedule ─────────────────
   rebase-watcher:
