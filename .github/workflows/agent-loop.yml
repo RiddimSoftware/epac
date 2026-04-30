@@ -1,27 +1,34 @@
-# Autonomous agent trigger wrapper for RIDDIM-117.
+# Autonomous PR Loop — epac consumer trigger wrapper for RIDDIM-96.
 #
-# Bot logins:
-# - developer-bot opens implementation PRs.
-# - reviewer-bot reviews developer-bot PRs and requests fix-ups.
+# Shared implementation lives in RiddimSoftware/riddim-release reusable workflows.
+# Keep this file thin: epac owns only event filtering, repo-local build/test inputs,
+# and secret inheritance. Bot prompts, guards, and merge behavior stay centralized.
 #
-# Label vocabulary:
+# Required org secrets with selected-repository access to epac:
+# - CLAUDE_CODE_OAUTH_TOKEN
+# - DEV_BOT_PAT
+# - REVIEWER_BOT_PAT
+#
+# Required labels:
 # - agent:build starts a developer run from a GitHub issue.
 # - agent:pause suppresses reviewer/developer automation.
 # - agent:needs-human marks work that should stay with a person.
 # - agent:attempt-1, agent:attempt-2, agent:attempt-3 track retry budget.
 #
-# This consumer wrapper is intentionally thin. The shared implementation lives
-# in RiddimSoftware/riddim-release reusable workflows.
+# Required branch protection on main:
+# - require build/test/swiftlint checks
+# - require reviewer-agent-passed
+# - require stale-review dismissal and CODEOWNERS review
 
-name: Agent loop
+name: Autonomous PR Loop
 
 on:
   issues:
     types: [labeled]
-  pull_request_review:
-    types: [submitted]
   pull_request:
     types: [opened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted]
   workflow_dispatch:
 
 permissions:
@@ -29,23 +36,25 @@ permissions:
   issues: write
   pull-requests: write
   statuses: write
+  checks: write
 
 jobs:
-  dev-on-issue-build:
+  developer:
     name: Developer agent from issue label
     if: >-
       github.event_name == 'issues' &&
+      github.event.action == 'labeled' &&
       github.event.label.name == 'agent:build' &&
       !contains(github.event.issue.labels.*.name, 'agent:pause') &&
       !contains(github.event.issue.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
-      trigger_type: issue-build
+      trigger_type: issue_labeled
       issue_number: ${{ github.event.issue.number }}
       issue_body: ${{ github.event.issue.body || '' }}
     secrets: inherit
 
-  dev-on-fixup:
+  developer-fixup:
     name: Developer agent from reviewer changes requested
     if: >-
       github.event_name == 'pull_request_review' &&
@@ -55,15 +64,17 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
-      trigger_type: pr-fixup
+      trigger_type: changes_requested
+      issue_number: ${{ github.event.pull_request.number }}
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
     secrets: inherit
 
-  review-on-pr:
+  reviewer:
     name: Reviewer agent for developer PR
     if: >-
       github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
       github.event.pull_request.user.login == 'developer-bot' &&
       github.event.sender.login != 'reviewer-bot' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
