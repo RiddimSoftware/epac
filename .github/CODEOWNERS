@@ -10,6 +10,26 @@
 
 * @sunnypurewal
 
+# Release automation, signing, and credential-shaped files require a human
+# owner even when an autonomous review loop approves the rest of a PR.
+/.github/                         @sunnypurewal
+/fastlane/                        @sunnypurewal
+/ios/fastlane/                    @sunnypurewal
+/ios/Gemfile                      @sunnypurewal
+/ios/Gemfile.lock                 @sunnypurewal
+/ios/Makefile                     @sunnypurewal
+/ios/appstro.json                 @sunnypurewal
+/ios/Config/                      @sunnypurewal
+/ios/epac.xcodeproj/              @sunnypurewal
+/ios/**/*.entitlements            @sunnypurewal
+/ios/**/*.xcconfig                @sunnypurewal
+/ios/**/Info.plist                @sunnypurewal
+/ios/**/*.xcprivacy               @sunnypurewal
+**/*.pem                          @sunnypurewal
+**/*.key                          @sunnypurewal
+**/*Secrets*                      @sunnypurewal
+**/*secrets*                      @sunnypurewal
+
 # Future area ownership (uncomment when each developer is on board)
 # ios/epac/Views/**/*ViewModel.swift   @developer-a
 # ios/epac/Views/ContentViewModel.swift @developer-a
