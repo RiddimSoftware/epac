@@ -1,31 +1,29 @@
-# CODEOWNERS - epac
-# High-risk paths require review from @SunnyPurewal before merging.
-# GitHub applies the last matching pattern, so keep broad areas before any
-# future narrower overrides.
-# See docs/agent-loop-enrollment.md for branch protection setup.
+# Workflows and CI scripts — team ownership + individual owner
+/.github/           @RiddimSoftware/owners @SunnyPurewal
+CODEOWNERS          @RiddimSoftware/owners @SunnyPurewal
 
-# Credentials and signing artifacts
-**/*.pem                    @SunnyPurewal
-**/*.key                    @SunnyPurewal
-**/*.p8                     @SunnyPurewal
-**/*.p12                    @SunnyPurewal
-**/*.cer                    @SunnyPurewal
-**/*.mobileprovision        @SunnyPurewal
-**/*.provisionprofile       @SunnyPurewal
-**/*Secrets*                @SunnyPurewal
-**/*secrets*                @SunnyPurewal
+# iOS release pipeline
+/fastlane/          @RiddimSoftware/owners @SunnyPurewal
+Gemfile             @RiddimSoftware/owners @SunnyPurewal
+/ios/               @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.entitlements      @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.xcconfig          @RiddimSoftware/owners @SunnyPurewal
+/ios/**/Info.plist          @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.xcprivacy         @RiddimSoftware/owners @SunnyPurewal
+/ios/epac.xcodeproj/        @RiddimSoftware/owners @SunnyPurewal
 
-# iOS signing and configuration
-/ios/**/*.entitlements      @SunnyPurewal
-/ios/**/*.xcconfig          @SunnyPurewal
-/ios/**/Info.plist          @SunnyPurewal
-/ios/**/*.xcprivacy         @SunnyPurewal
-/ios/epac.xcodeproj/        @SunnyPurewal
+# Scripts
+/scripts/           @SunnyPurewal
+Gemfile             @RiddimSoftware/owners @SunnyPurewal
 
-# Release pipeline
-/fastlane/                  @SunnyPurewal
-/ios/fastlane/              @SunnyPurewal
-
-# Workflow changes and ownership policy
-/.github/                   @SunnyPurewal
-/CODEOWNERS                 @SunnyPurewal
+# Credentials and secrets
+*.pem               @SunnyPurewal
+*.key               @SunnyPurewal
+*.p8                @SunnyPurewal
+*.p12               @SunnyPurewal
+*.cer               @SunnyPurewal
+*.mobileprovision   @SunnyPurewal
+*.provisionprofile  @SunnyPurewal
+*Secrets*           @SunnyPurewal
+*secrets*           @SunnyPurewal
+**/Info.plist       @SunnyPurewal

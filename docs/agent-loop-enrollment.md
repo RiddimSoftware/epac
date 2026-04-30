@@ -1,68 +1,105 @@
 # Agent Loop Enrollment — epac
 
-This document describes the branch protection settings that must be applied manually in the GitHub UI to complete enrollment of `epac` in the autonomous PR loop.
+This document records the repo-local enrollment work for `epac` as the first consumer of the autonomous PR loop hosted in `RiddimSoftware/riddim-release`.
 
-## Why manual?
+## What lives in epac
 
-GitHub's branch protection API requires admin-level tokens. Automating this fully would require storing elevated credentials in CI, which is undesirable for a production-critical repo. Apply these settings once; they are stable.
+- `.github/workflows/agent-loop.yml` is the thin trigger wrapper.
+- `.github/CODEOWNERS` is the active CODEOWNERS file for this repo.
+- Branch protection and org-secret repository access are configured in GitHub settings, not committed to the repo.
+
+The wrapper intentionally keeps behavior small: it filters GitHub events, passes the trigger context into reusable workflows, and inherits org-scoped secrets. Developer/reviewer prompts, guard logic, retry handling, and merge behavior stay centralized in `riddim-release`.
+
+## Trigger contract
+
+The wrapper calls `RiddimSoftware/riddim-release/.github/workflows/developer.yml@main` for:
+
+- `issues.labeled` when the applied label is `agent:build`, using `trigger_type: issue_labeled`.
+- `pull_request_review.submitted` when `reviewer-bot` requests changes, using `trigger_type: changes_requested`.
+
+The wrapper calls `RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main` for:
+
+- `pull_request.opened`, `pull_request.synchronize`, and `pull_request.ready_for_review` when the PR author is `developer-bot` and the sender is not `reviewer-bot`.
+
+All paths short-circuit when `agent:pause` or `agent:needs-human` is present on the target issue/PR.
+
+## Required labels
+
+Create these labels on `epac` before enabling the loop:
+
+- `agent:build`
+- `agent:pause`
+- `agent:needs-human`
+- `agent:attempt-1`
+- `agent:attempt-2`
+- `agent:attempt-3`
+- `agent:rebase-attempt-1`
+- `agent:rebase-attempt-2`
+- `agent:rebase-attempt-3`
+- `agent:codeowners-veto`
+- `autonomous`
+- `automate`
+
+Use the riddim-release enrollment script once it is merged:
+
+```bash
+scripts/enroll-repo.sh RiddimSoftware/epac
+```
+
+## Required org secrets
+
+The wrapper uses `secrets: inherit`. Confirm the following org secrets are configured with selected-repository access to `epac`:
+
+- `CLAUDE_CODE_OAUTH_TOKEN`
+- `DEV_BOT_PAT`
+- `REVIEWER_BOT_PAT`
+
+If the reusable workflows migrate from PATs to GitHub App installation tokens, also grant `epac` access to the corresponding App ID/private-key secrets and update this document in the same PR.
 
 ## Branch protection settings for `main`
 
-Navigate to: **Settings → Branches → Branch protection rules → Edit (main)**
+Navigate to: **Settings -> Branches -> Branch protection rules -> Edit (main)**
 
-### Required status checks
-
-Enable "Require status checks to pass before merging" and add:
+Enable **Require status checks to pass before merging** and add:
 
 | Check name | Source |
 |---|---|
 | `build` | Existing iOS CI |
 | `test` | Existing iOS CI |
 | `swiftlint` | Existing iOS CI |
-| `reviewer-agent-passed` | Added by agent-loop reviewer workflow |
+| `reviewer-agent-passed` | Agent-loop reviewer workflow |
 
-Also enable **"Require branches to be up to date before merging"**.
+Also enable **Require branches to be up to date before merging**.
 
-### Pull request reviews
+Enable these pull request review settings:
 
-- **Require a pull request before merging**: enabled
-- **Required approving reviews**: 1
-- **Dismiss stale pull request approvals when new commits are pushed**: enabled (non-negotiable — prevents stale APPROVE from shipping unreviewed code to TestFlight)
-- **Require review from Code Owners**: enabled
+- Require a pull request before merging.
+- Require 1 approving review.
+- Dismiss stale pull request approvals when new commits are pushed.
+- Require review from Code Owners.
+- Require conversation resolution before merging.
 
-### Additional settings
+Enable these repository settings outside branch protection:
 
-- **Require conversation resolution before merging**: enabled
-- **Restrict who can push to matching branches**: enabled (restrict direct pushes to `main`; admins included where possible)
+- Allow auto-merge.
+- Automatically delete head branches.
+- Restrict direct pushes to `main` to repository admins/owners only.
 
-### Repository settings (outside branch protection)
+## CODEOWNERS coverage
 
-- **Allow auto-merge**: enabled (Settings → General → Pull Requests → Allow auto-merge)
-- **Automatically delete head branches**: enabled
+GitHub uses `.github/CODEOWNERS` before a root-level `CODEOWNERS`, so `.github/CODEOWNERS` is the canonical owner file for epac.
+
+The active file routes every PR to `@sunnypurewal` while the team is solo and explicitly protects release/configuration surfaces such as `.github/`, `fastlane/`, `ios/fastlane/`, signing/config files, Xcode project files, entitlements, privacy manifests, and secret-shaped files.
+
+For the agent loop, this matters because E10's CODEOWNERS veto treats human-owned conflict paths as non-autonomous during rebase/conflict recovery.
 
 ## Verification checklist
 
-After applying the above settings, run the following smoke tests:
+After branch protection and secrets are configured, run these smoke tests:
 
-1. **Positive path**: Create a throwaway issue, label it `agent:build`. Confirm the developer workflow fires and opens a PR. Confirm the reviewer workflow fires on the PR and posts approval. Confirm auto-merge fires once CI is green.
+1. Positive path: create a throwaway issue, label it `agent:build`, confirm the developer workflow opens a PR, confirm the reviewer workflow posts a verdict, and confirm auto-merge proceeds only after CI is green.
+2. Negative path: open a PR without `reviewer-agent-passed`; confirm the merge button is blocked.
+3. Pause path: apply `agent:pause` to an eligible PR; confirm the reviewer/developer jobs skip.
+4. Human path: apply `agent:needs-human`; confirm automation does not run again until the label is removed.
 
-2. **Negative path**: Open a PR without `reviewer-agent-passed` status check passing. Confirm the merge button is blocked. This is critical — without it, a misconfigured rule allows agent-only merges to ship to TestFlight unreviewed.
-
-## Secrets access
-
-The `agent-loop.yml` workflow uses `secrets: inherit`. Confirm that the org secrets `CLAUDE_CODE_OAUTH_TOKEN`, `DEV_BOT_PAT`, and `REVIEWER_BOT_PAT` are configured with access to the `epac` repository:
-
-**Settings → Secrets and variables → Actions → (each secret) → Repository access**
-
-## CODEOWNERS
-
-`CODEOWNERS` at the repo root protects the following paths (requiring review from `@RiddimSoftware/owners`):
-
-- `.github/workflows/` — CI/CD pipeline changes
-- `.github/scripts/` — automation scripts
-- `CODEOWNERS` — this file itself
-- `fastlane/` — release automation
-- `Gemfile` — Ruby dependencies for Fastlane
-- `ios/` — iOS source and release configuration
-
-Add or remove paths here as the codebase evolves. The `ios/` coverage is intentionally broad; tighten to specific subdirectories (e.g. `ios/fastlane/`, `ios/*.xcconfig`) if the owners team prefers narrower scope.
+Do not run E6 pilot evidence until the shared riddim-release workflows, secrets, labels, branch protection, and this wrapper are all merged/configured.

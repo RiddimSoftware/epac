@@ -509,3 +509,18 @@ Adopt a 5-tab structure that groups features thematically and positions the pers
 ### Why not destructive migration
 
 The previous fallback — delete the SQLite files on schema incompatibility — silently destroyed all locally cached Hansard data, votes, and expenditures on every schema update. For a civic app users rely on during active political moments, losing the local cache is a bad experience. Proper migrations preserve data across updates.
+
+---
+
+## Autonomous PR Loop
+
+epac is enrolled in the RIDDIM-91 autonomous PR loop. The loop handles the full developer → review → merge cycle for routine changes without human intervention.
+
+- **Enrollment docs** (onboarding steps, label set, kill switches):
+  [`RiddimSoftware/riddim-release` — `docs/agent-loop/onboarding.md`](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/onboarding.md)
+- **Failure runbook** (stuck reviewer, attempt cap, `reviewer-agent-passed` override):
+  [`RiddimSoftware/riddim-release` — `docs/agent-loop/failure-runbook.md`](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/failure-runbook.md)
+- **Trigger wrapper**: `.github/workflows/agent-loop.yml` in this repo
+- **Kill switch**: add `agent:pause` label to any PR or issue to halt automation immediately
+
+See also: [RIDDIM-91](https://riddim.atlassian.net/browse/RIDDIM-91) parent initiative.
