@@ -512,15 +512,19 @@ The previous fallback — delete the SQLite files on schema incompatibility — 
 
 ---
 
+---
+
 ## Autonomous PR Loop
 
-epac is enrolled in the RIDDIM-91 autonomous PR loop. The loop handles the full developer → review → merge cycle for routine changes without human intervention.
+epac uses the RiddimSoftware autonomous PR loop for routine changes. The loop handles the full developer → review → merge cycle without human intervention.
 
-- **Enrollment docs** (onboarding steps, label set, kill switches):
-  [`RiddimSoftware/riddim-release` — `docs/agent-loop/onboarding.md`](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/onboarding.md)
-- **Failure runbook** (stuck reviewer, attempt cap, `reviewer-agent-passed` override):
-  [`RiddimSoftware/riddim-release` — `docs/agent-loop/failure-runbook.md`](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/failure-runbook.md)
-- **Trigger wrapper**: `.github/workflows/agent-loop.yml` in this repo
-- **Kill switch**: add `agent:pause` label to any PR or issue to halt automation immediately
+**Runbooks (in `RiddimSoftware/riddim-release`):**
+- [Onboarding guide](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/onboarding.md) — how to enroll a new repo, branch protection settings, smoke test procedure
+- [Failure runbook](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/failure-runbook.md) — how to read labels, pause a runaway loop, find Action logs, and perform manual overrides
 
-See also: [RIDDIM-91](https://riddim.atlassian.net/browse/RIDDIM-91) parent initiative.
+**Quick reference:**
+- Add `agent:build` to an issue to trigger the developer bot.
+- Add `agent:pause` to a PR to halt the loop immediately.
+- `agent:needs-human` means the attempt cap was hit — review the PR manually.
+- `startup_failure` on the reviewer job for a human-opened PR is **expected** — the reviewer only runs on developer-bot PRs.
+- If `agent:build` never fires: confirm Issues are enabled in Settings → Features.
