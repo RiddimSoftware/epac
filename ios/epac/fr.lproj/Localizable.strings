@@ -741,3 +741,10 @@
 /* On This Day (EPAC-470) */
 "home.onThisDay.title" = "À cette date dans les législatures passées";
 "home.onThisDay.dismiss" = "Masquer À cette date";
+
+/* Onboarding v2 (EPAC-435) */
+"onboarding.welcome.title" = "Le Parlement canadien";
+"onboarding.welcome.tagline" = "Dans votre poche.";
+"onboarding.mp.follow" = "Suivre mon député →";
+"onboarding.topics.subtitle.v2" = "Choisissez les sujets qui vous importent. Soyez informé quand le Parlement en débat.";
+"onboarding.notifications.subtitle.v2" = "Choisissez ce que vous recevez. Vous pouvez modifier ces paramètres en tout temps dans Réglages.";
