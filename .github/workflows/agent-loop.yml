@@ -7,6 +7,11 @@
 # - developer-bot opens implementation PRs.
 # - riddim-reviewer-bot reviews developer-bot PRs and requests fix-ups.
 #
+# Ticket tracking is in Jira (project EPAC), not GitHub Issues.
+# The entry point for a new PR is a Jira Automation rule that fires when the
+# label 'agent:pr' is added to a ticket and POSTs a repository_dispatch event
+# of type 'jira-ticket-ready' to this repo.
+#
 # Required org secrets with selected-repository access to epac:
 # - CLAUDE_CODE_OAUTH_TOKEN
 # - DEV_BOT_APP_ID
@@ -14,13 +19,13 @@
 # - REVIEWER_BOT_APP_ID
 # - REVIEWER_BOT_PRIVATE_KEY
 #
-# Required labels:
-# - agent:build starts a developer run from a GitHub issue.
-# - agent:pause suppresses reviewer/developer automation.
-# - agent:needs-human marks work that should stay with a person.
-# - agent:attempt-1, agent:attempt-2, agent:attempt-3 track retry budget.
-# - agent:rebase-attempt-1, agent:rebase-attempt-2, agent:rebase-attempt-3 track rebase retry budget.
-# - agent:rebase-failed marks a PR where all rebase attempts were exhausted.
+# Required labels on this repo:
+# - autonomous    enrolled in automated review loop
+# - agent:pause   suppresses reviewer/developer automation
+# - agent:needs-human marks work that should stay with a person
+# - agent:attempt-1, agent:attempt-2, agent:attempt-3 track retry budget
+# - agent:rebase-attempt-1/-2/-3 track rebase retry budget
+# - agent:rebase-failed marks a PR where all rebase attempts were exhausted
 #
 # Required branch protection on main:
 # - require build/test/swiftlint checks
@@ -30,8 +35,8 @@
 name: Autonomous PR Loop
 
 on:
-  issues:
-    types: [labeled]
+  repository_dispatch:
+    types: [jira-ticket-ready]
   pull_request:
     types: [opened, synchronize, ready_for_review]
   pull_request_review:
@@ -44,36 +49,35 @@ on:
 
 permissions:
   contents: read
-  issues: write
   pull-requests: write
   statuses: write
   checks: write
 
 jobs:
-  developer:
-    name: Developer agent from issue label
-    if: >-
-      github.event_name == 'issues' &&
-      github.event.action == 'labeled' &&
-      github.event.label.name == 'agent:build' &&
-      !contains(github.event.issue.labels.*.name, 'agent:pause') &&
-      !contains(github.event.issue.labels.*.name, 'agent:needs-human')
-    uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
+  # ── Entry point: Jira ticket tagged agent:pr ─────────────────────────────
+  # Triggered by Jira Automation via repository_dispatch when a ticket has a
+  # branch ready and the 'agent:pr' label is applied in Jira.
+  # Payload fields: jira_ticket, jira_summary, branch (optional), jira_url (optional)
+  create-pr-from-jira:
+    name: Create PR from Jira ticket
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'jira-ticket-ready'
+    uses: RiddimSoftware/riddim-release/.github/workflows/create-pr.yml@main
     with:
-      trigger_type: issue_labeled
-      issue_number: ${{ github.event.issue.number }}
-      issue_body: ${{ github.event.issue.body || '' }}
+      jira_ticket: ${{ github.event.client_payload.jira_ticket }}
+      jira_summary: ${{ github.event.client_payload.jira_summary }}
+      branch: ${{ github.event.client_payload.branch || '' }}
+      jira_url: ${{ github.event.client_payload.jira_url || '' }}
     secrets:
-      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       dev_bot_app_id: ${{ secrets.DEV_BOT_APP_ID }}
       dev_bot_private_key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
 
+  # ── Fix-up: reviewer requested changes ───────────────────────────────────
   developer-fixup:
     name: Developer agent from reviewer changes requested
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      github.event.review.user.login == 'riddim-riddim-reviewer-bot[bot]' &&
+      contains(github.event.review.user.login, 'riddim-reviewer-bot') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
@@ -84,16 +88,17 @@ jobs:
       review_comments: ${{ github.event.review.body || '' }}
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      dev_bot_app_id: ${{ secrets.DEV_BOT_APP_ID }}
-      dev_bot_private_key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
+      DEV_BOT_APP_ID: ${{ secrets.DEV_BOT_APP_ID }}
+      DEV_BOT_PRIVATE_KEY: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
 
+  # ── Reviewer: runs when developer-bot opens or updates a PR ──────────────
   reviewer:
     name: Reviewer agent for developer PR
     if: >-
       github.event_name == 'pull_request' &&
       (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
-      github.event.pull_request.user.login == 'riddim-riddim-developer-bot[bot]' &&
-      github.event.sender.login != 'riddim-riddim-reviewer-bot[bot]' &&
+      contains(github.event.pull_request.user.login, 'riddim-developer-bot') &&
+      !contains(github.event.sender.login, 'riddim-reviewer-bot') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
@@ -104,6 +109,7 @@ jobs:
       REVIEWER_BOT_APP_ID: ${{ secrets.REVIEWER_BOT_APP_ID }}
       REVIEWER_BOT_PRIVATE_KEY: ${{ secrets.REVIEWER_BOT_PRIVATE_KEY }}
 
+  # ── Rebase watcher: detects stale PRs on push / schedule ─────────────────
   rebase-watcher:
     name: Detect and route stale PRs for rebase
     if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
