@@ -156,6 +156,7 @@ jobs:
           rm /tmp/dist_cert.p12
 
       - name: Build and upload to TestFlight
+        id: build-number
         working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -165,11 +166,6 @@ jobs:
           BACKEND_BASE_URL: https://staging-api.epac.riddimsoftware.com
           NEW_VERSION: ${{ needs.compute-version.outputs.next_version }}
         run: bundle exec fastlane deploy
-
-      - name: Read build number
-        id: build-number
-        working-directory: ios
-        run: echo "build_number=$(cat build_number.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Upload dSYMs to Sentry
         if: success()

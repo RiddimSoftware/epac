@@ -22,7 +22,7 @@ platform :ios do
       screenshots_path:     "./fastlane/screenshots",
       skip_screenshots:     true
     )
-  end
+    end
 
   desc "Build release archive and upload to TestFlight"
   lane :deploy do
@@ -52,7 +52,14 @@ platform :ios do
       build_number: next_build_number,
       xcodeproj:    "epac.xcodeproj"
     )
-    File.write("build_number.txt", next_build_number.to_s)
+    if (gh_output = ENV["GITHUB_OUTPUT"])
+
+      File.write(gh_output, "build_number=#{next_build_number}\n")
+    else
+
+      File.write("build_number.txt", next_build_number.to_s)
+    end
+
 
     # ------------------------------------------------------------------
     # 1. Download / create provisioning profiles via sigh.
@@ -125,5 +132,5 @@ platform :ios do
       distribute_external:               false,
       notify_external_testers:           false
     )
-  end
+    end
 end
