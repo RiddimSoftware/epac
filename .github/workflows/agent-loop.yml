@@ -2,7 +2,7 @@
 #
 # Bot logins:
 # - developer-bot opens implementation PRs.
-# - reviewer-bot reviews developer-bot PRs and requests fix-ups.
+# - riddim-reviewer-bot reviews developer-bot PRs and requests fix-ups.
 #
 # Label vocabulary:
 # - agent:build starts a developer run from a GitHub issue.
@@ -50,7 +50,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      github.event.review.user.login == 'reviewer-bot' &&
+      github.event.review.user.login == 'riddim-reviewer-bot' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
@@ -65,7 +65,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.user.login == 'developer-bot' &&
-      github.event.sender.login != 'reviewer-bot' &&
+      github.event.sender.login != 'riddim-reviewer-bot' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
