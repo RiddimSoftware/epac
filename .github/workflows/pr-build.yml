@@ -1,0 +1,18 @@
+# PR build sanity check — epac consumer trigger wrapper.
+#
+# Calls the reusable pr-build workflow in riddim-release on every PR to main.
+# Catches compile errors before auto-merge can land a broken reviewer-bot fix.
+#
+# Required status check on main: pr-build
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  pr-build:
+    uses: RiddimSoftware/riddim-release/.github/workflows/pr-build.yml@main
+    with:
+      scheme: "epac"
+      project: "epac.xcodeproj"
+      working_directory: "ios"
