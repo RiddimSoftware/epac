@@ -84,7 +84,6 @@ jobs:
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
       trigger_type: changes_requested
-      issue_number: ${{ github.event.pull_request.number }}
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
     secrets:
