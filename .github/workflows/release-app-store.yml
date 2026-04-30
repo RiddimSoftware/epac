@@ -1,189 +1,36 @@
 name: Release to App Store
 
-# Triggered when a draft GitHub Release is published.
-# To start a release: run the "Create Release" workflow, smoke-test on
-# TestFlight, then publish the draft from the GitHub Releases page.
-
+# Keep this in sync with the shared release workflow in riddim-release.
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to submit (e.g. v1.2.3)'
+        description: Release tag to submit
         required: true
         type: string
       dry_run:
-        description: 'Dry run — find build and approve, but skip actual App Store submission'
-        required: false
+        description: Exercise the release workflow without submitting to App Review
+        required: true
         type: boolean
         default: false
 
-concurrency:
-  group: app-store-release
-  cancel-in-progress: false   # never cancel a release mid-flight
-
 permissions:
-  id-token: write   # OIDC AWS auth
-  contents: write   # update GitHub Release after submit
-
-env:
-  APP_BUNDLE_ID: net.dinglebox.cabinetdoor
-  APPLE_APP_ID: '1224459142'
+  contents: write
+  id-token: write
 
 jobs:
-  # ─── Job 1: Find the TestFlight build matching this release ───────────────
-  find-build:
-    name: Find TestFlight build
-    runs-on: ["self-hosted","macOS"]
-    outputs:
-      build_number: ${{ steps.find.outputs.build_number }}
-      build_version: ${{ steps.find.outputs.build_version }}
-      upload_time: ${{ steps.find.outputs.upload_time }}
-      tag: ${{ steps.tag.outputs.tag }}
-      version: ${{ steps.tag.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Resolve tag and version
-        id: tag
-        run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
-          VERSION="${TAG#v}"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Fetch App Store Connect credentials
-        id: fetch-creds
-        run: |
-          SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id appstore/connect-api \
-            --region us-east-1 \
-            --query SecretString \
-            --output text)
-          echo "key_id=$(echo "$SECRET" | jq -r '.key_id')" >> "$GITHUB_OUTPUT"
-          echo "issuer_id=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_OUTPUT"
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$SECRET" | jq -r '.private_key' \
-            > ~/.appstoreconnect/private_keys/AuthKey_$(echo "$SECRET" | jq -r '.key_id').p8
-          chmod 600 ~/.appstoreconnect/private_keys/*.p8
-
-      - name: Install Python dependencies
-        run: pip3 install PyJWT requests cryptography --quiet
-
-      - name: Find build matching release version
-        id: find
-        run: |
-          python3 scripts/release/find_qualifying_build.py \
-            --key-id "${{ steps.fetch-creds.outputs.key_id }}" \
-            --issuer-id "${{ steps.fetch-creds.outputs.issuer_id }}" \
-            --private-key-path "~/.appstoreconnect/private_keys/AuthKey_${{ steps.fetch-creds.outputs.key_id }}.p8" \
-            --app-id "${{ env.APPLE_APP_ID }}" \
-            --latest \
-            --version "${{ steps.tag.outputs.version }}" \
-            --output-format github-output
-
-  # ─── Job 2: Human approval gate ───────────────────────────────────────────
-  approve-release:
-    name: Approve release
-    needs: find-build
-    runs-on: ["self-hosted","macOS"]
-    environment:
-      name: app-store-release
-    steps:
-      - name: Release candidate summary
-        run: |
-          echo "## Release candidate ready for approval"
-          echo ""
-          echo "- **Version**: ${{ needs.find-build.outputs.build_version }}"
-          echo "- **Build**: #${{ needs.find-build.outputs.build_number }}"
-          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
-          echo "- **Uploaded**: ${{ needs.find-build.outputs.upload_time }}"
-          echo ""
-          echo "Approve this deployment to submit to App Store review."
-
-  # ─── Job 3: Submit to App Store ───────────────────────────────────────────
-  submit:
-    name: Submit for App Store review
-    needs: [find-build, approve-release]
-    runs-on: ["self-hosted","macOS"]
-    if: ${{ !inputs.dry_run }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Fetch App Store Connect credentials
-        run: |
-          SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id appstore/connect-api \
-            --region us-east-1 \
-            --query SecretString \
-            --output text)
-          KEY_ID=$(echo "$SECRET" | jq -r '.key_id')
-          echo "ASC_KEY_ID=$KEY_ID" >> "$GITHUB_ENV"
-          echo "ASC_ISSUER_ID=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_ENV"
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$SECRET" | jq -r '.private_key' \
-            > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/*.p8
-
-      - name: Set up Ruby and Fastlane
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-          working-directory: ios
-
-      - name: Write release notes from GitHub Release
-        run: |
-          gh release view "${{ needs.find-build.outputs.tag }}" \
-            --json body --jq '.body' \
-            > ios/fastlane/metadata/en-CA/release_notes.txt
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload metadata and screenshots to App Store
-        working-directory: ios
-        run: |
-          bundle exec fastlane run deliver \
-            app_identifier:"${{ env.APP_BUNDLE_ID }}" \
-            skip_binary_upload:true \
-            skip_screenshots:false \
-            skip_metadata:false \
-            submit_for_review:false
-
-      - name: Submit build for App Store review
-        working-directory: ios
-        run: |
-          bundle exec fastlane run deliver \
-            app_identifier:"${{ env.APP_BUNDLE_ID }}" \
-            build_number:"${{ needs.find-build.outputs.build_number }}" \
-            skip_binary_upload:true \
-            skip_screenshots:true \
-            skip_metadata:true \
-            submit_for_review:true \
-            automatic_release:false \
-            phased_release:true \
-            reject_if_possible:true
-
-      - name: Summary
-        run: |
-          echo "## App Store submission complete"
-          echo ""
-          echo "- **Version**: ${{ needs.find-build.outputs.build_version }} (Build ${{ needs.find-build.outputs.build_number }})"
-          echo "- **Tag**: ${{ needs.find-build.outputs.tag }}"
-          echo "- **Status**: Submitted for review"
-          echo "- **Phased release**: enabled (7-day rollout)"
-          echo ""
-          echo "The build typically enters review within a few hours."
+  call:
+    uses: RiddimSoftware/riddim-release/.github/workflows/release-app-store.yml@main
+    with:
+      apple_app_id:        ${{ vars.APPLE_APP_ID }}
+      bundle_id:           ${{ vars.BUNDLE_ID }}
+      ios_workdir:         ${{ vars.IOS_WORKDIR || 'ios' }}
+      primary_locale:      ${{ vars.PRIMARY_LOCALE || 'en-CA' }}
+      tag:                 ${{ github.event.release.tag_name || inputs.tag }}
+      dry_run:             ${{ inputs.dry_run || false }}
+      approval_environment: ${{ vars.APPROVAL_ENVIRONMENT || 'app-store-release' }}
+      runner_labels_mac:    ${{ vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]' }}
+      runner_labels_linux:  ${{ vars.RUNNER_LABELS_LINUX || '["self-hosted","macOS"]' }}
+    secrets: inherit
