@@ -97,7 +97,7 @@ struct PetitionsService {
         }
 
         // Deadline: "until July 23, 2026, at 11:55 a.m. (EDT)"
-        var deadline: Date? = nil
+        var deadline: Date?
         if let deadlineMatch = content.firstMatch(
             pattern: #"until ([A-Z][a-z]+ \d{1,2}, \d{4})"#
         ) {

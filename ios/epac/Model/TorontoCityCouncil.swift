@@ -107,7 +107,7 @@ struct TorontoCouncilService {
     static func councillors(for ridingName: String, in councillors: [TorontoCouncillor]) -> [TorontoCouncillor] {
         let normalized = normalize(ridingName)
         let matchedWards = wardCouncillors
-            .filter { ward, wardName, _, _ in
+            .filter { _, wardName, _, _ in
                 normalized.contains(normalize(wardName)) || normalize(wardName).contains(normalized)
             }
             .map { $0.0 }

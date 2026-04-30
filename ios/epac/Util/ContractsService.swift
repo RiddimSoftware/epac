@@ -20,8 +20,8 @@ struct ContractsService {
         var components = URLComponents(url: apiBase, resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = [
             URLQueryItem(name: "resource_id", value: resourceID),
-            URLQueryItem(name: "limit",       value: String(limit)),
-            URLQueryItem(name: "sort",        value: "contract_value desc"),
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "sort", value: "contract_value desc")
         ]
         if let q = query, !q.isEmpty {
             items.append(URLQueryItem(name: "q", value: q))

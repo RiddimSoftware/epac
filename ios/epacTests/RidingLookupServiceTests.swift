@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 // RidingLookupService throws .invalidPostalCode before making any network
 // request, so postal-code validation cases are fully testable without a

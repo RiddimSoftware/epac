@@ -14,18 +14,70 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
+import time
 from dataclasses import asdict, dataclass, field
-from datetime import date
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
-from typing import Optional
+from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
 PM_CABINET_URL = "https://www.pm.gc.ca/en/cabinet"
 PM_MANDATE_LETTERS_URL = "https://www.pm.gc.ca/en/mandate-letters"
+PIPELINE_NAME = "cabinet_ingest"
+
+
+class _JSONFormatter(logging.Formatter):
+    """Stdlib-only JSON log formatter — emits one JSON object per record.
+
+    Reserved fields (timestamp, level, pipeline, message) are always present.
+    Anything passed via `extra={...}` on a log call is merged at the top level
+    so log aggregators can index on `records_processed`, `error`, `url`, etc.
+    """
+
+    _RESERVED = {
+        "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+        "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+        "created", "msecs", "relativeCreated", "thread", "threadName",
+        "processName", "process", "message", "taskName",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, Any] = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
+            "level": record.levelname,
+            "pipeline": getattr(record, "pipeline", PIPELINE_NAME),
+            "message": record.getMessage(),
+        }
+        for key, value in record.__dict__.items():
+            if key in self._RESERVED or key in payload:
+                continue
+            payload[key] = value
+        if record.exc_info:
+            payload["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def _configure_logging() -> logging.Logger:
+    """Configure the cabinet_ingest logger once. Idempotent across imports."""
+    logger = logging.getLogger(PIPELINE_NAME)
+    if logger.handlers:
+        return logger
+    handler = logging.StreamHandler(stream=sys.stderr)
+    handler.setFormatter(_JSONFormatter())
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    return logger
+
+
+logger = _configure_logging()
 
 
 @dataclass
@@ -204,20 +256,35 @@ def main(argv: list[str]) -> int:
         help="Print the snapshot to stdout instead of writing it",
     )
     args = parser.parse_args(argv)
+    started_at = time.monotonic()
+    logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
 
     try:
         cabinet_html = _fetch(PM_CABINET_URL)
         letters_html = _fetch(PM_MANDATE_LETTERS_URL)
     except (HTTPError, URLError) as error:
-        print(f"ERROR: failed to fetch from pm.gc.ca: {error}", file=sys.stderr)
+        duration_ms = int((time.monotonic() - started_at) * 1000)
+        logger.error(
+            "fetch failed from pm.gc.ca",
+            extra={
+                "error": f"{type(error).__name__}: {error}",
+                "url": PM_CABINET_URL,
+                "duration_ms": duration_ms,
+            },
+        )
         return 2
 
     entries = parse_cabinet_html(cabinet_html)
     if not entries:
-        print(
-            "ERROR: parsed zero cabinet entries — pm.gc.ca markup may have changed; "
-            "update _CabinetParser before re-running.",
-            file=sys.stderr,
+        duration_ms = int((time.monotonic() - started_at) * 1000)
+        logger.error(
+            "parsed zero cabinet entries — pm.gc.ca markup may have changed; "
+            "update _CabinetParser before re-running",
+            extra={
+                "error": "ParseError: zero entries",
+                "url": PM_CABINET_URL,
+                "duration_ms": duration_ms,
+            },
         )
         return 3
 
@@ -229,8 +296,16 @@ def main(argv: list[str]) -> int:
     else:
         with open(args.output, "w", encoding="utf-8") as handle:
             handle.write(payload)
-        print(f"Wrote {len(entries)} cabinet positions to {args.output}")
 
+    duration_ms = int((time.monotonic() - started_at) * 1000)
+    logger.info(
+        "pipeline finished",
+        extra={
+            "records_processed": len(entries),
+            "duration_ms": duration_ms,
+            "output": "stdout" if args.dry_run else args.output,
+        },
+    )
     return 0
 
 

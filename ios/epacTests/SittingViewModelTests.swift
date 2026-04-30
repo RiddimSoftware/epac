@@ -1,7 +1,7 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import Foundation
+import SwiftData
+import Testing
 
 @MainActor
 struct SittingViewModelTests {
@@ -11,12 +11,22 @@ struct SittingViewModelTests {
 		return try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
 	}
 
-	private func subject(title: String, hansardID: String, withSpeeches: Bool = true, context: ModelContext) -> SubjectOfBusiness {
+	private func subject(
+		title: String,
+		hansardID: String,
+		withSpeeches: Bool = true,
+		firstName: String = "Test",
+		lastName: String = "MP",
+		partyAbbreviation: String = "Lib",
+		ridingName: String = "Test",
+		content: String = ".",
+		context: ModelContext
+	) -> SubjectOfBusiness {
 		let s = SubjectOfBusiness(title: title, hansardID: hansardID)
 		if withSpeeches {
 			let msg = SpeechMessage(
-				firstName: "Test", lastName: "MP", partyAbbreviation: "Lib",
-				ridingName: "Test", hansardID: "\(hansardID)-msg", content: ".",
+				firstName: firstName, lastName: lastName, partyAbbreviation: partyAbbreviation,
+				ridingName: ridingName, hansardID: "\(hansardID)-msg", content: content,
 				timestamp: Date()
 			)
 			let speech = Speech(messages: [msg], hansardID: "\(hansardID)-speech", date: Date(), title: title)
@@ -183,5 +193,123 @@ struct SittingViewModelTests {
 		let pairs = vm.visibleOrderSubjects(from: hansard)
 		#expect(pairs.count == 1)
 		#expect(pairs[0].subjects.count == 2)
+	}
+
+	// MARK: - oralQuestionsSummary
+
+	@Test func oralQuestionsSummaryFindsEnglishCatchline() throws {
+		let ctx = ModelContext(try makeContainer())
+		let economy = subject(
+			title: "The Economy",
+			hansardID: "s1",
+			firstName: "Alex",
+			lastName: "MP",
+			partyAbbreviation: "CPC",
+			ridingName: "Calgary Centre",
+			content: "Mr. Speaker, will the minister answer the question?\nSecond line.",
+			context: ctx
+		)
+		let order = order(catchline: "ORAL QUESTIONS", subjects: [economy], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h3", parliamentNumber: 45, sessionNumber: 1, orders: [order])
+		ctx.insert(hansard)
+
+		let summary = SittingViewModel().oralQuestionsSummary(from: hansard)
+
+		#expect(summary?.totalQuestions == 1)
+		#expect(summary?.groups.first?.party == .conservative)
+		#expect(summary?.groups.first?.questions.first?.topic == "The Economy")
+		#expect(summary?.groups.first?.questions.first?.speakerName == "Alex MP")
+		#expect(summary?.groups.first?.questions.first?.riding == "Calgary Centre")
+		#expect(summary?.groups.first?.questions.first?.firstLine == "Mr. Speaker, will the minister answer the question? Second line.")
+	}
+
+	@Test func oralQuestionsSummaryFindsFrenchCatchline() throws {
+		let ctx = ModelContext(try makeContainer())
+		let justice = subject(title: "Justice", hansardID: "s1", partyAbbreviation: "BQ", context: ctx)
+		let order = order(catchline: "QUESTIONS ORALES", subjects: [justice], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h4", parliamentNumber: 45, sessionNumber: 1, orders: [order])
+		ctx.insert(hansard)
+
+		let summary = SittingViewModel().oralQuestionsSummary(from: hansard)
+
+		#expect(summary?.totalQuestions == 1)
+		#expect(summary?.groups.first?.party == .bloc)
+	}
+
+	@Test func oralQuestionsSummaryIgnoresOtherOrders() throws {
+		let ctx = ModelContext(try makeContainer())
+		let subject = subject(title: "Government Orders", hansardID: "s1", context: ctx)
+		let order = order(catchline: "Government Orders", subjects: [subject], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h5", parliamentNumber: 45, sessionNumber: 1, orders: [order])
+		ctx.insert(hansard)
+
+		#expect(SittingViewModel().oralQuestionsSummary(from: hansard) == nil)
+	}
+
+	@Test func oralQuestionsSummaryGroupsQuestionsByFirstSpeakerParty() throws {
+		let ctx = ModelContext(try makeContainer())
+		let liberal = subject(title: "Housing", hansardID: "s2", partyAbbreviation: "Lib", context: ctx)
+		let conservative = subject(title: "Taxation", hansardID: "s1", partyAbbreviation: "CPC", context: ctx)
+		let order = order(catchline: "Oral Questions", subjects: [liberal, conservative], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h6", parliamentNumber: 45, sessionNumber: 1, orders: [order])
+		ctx.insert(hansard)
+
+		let summary = SittingViewModel().oralQuestionsSummary(from: hansard)
+
+		#expect(summary?.groups.map { $0.partyAbbreviation } == ["CPC", "Lib"])
+		#expect(summary?.groups.first?.questions.map { $0.topic } == ["Taxation"])
+		#expect(summary?.groups.last?.questions.map { $0.topic } == ["Housing"])
+	}
+
+	@Test func prepareNavigationStoresSpeechAndFirstMessageForResume() throws {
+		let ctx = ModelContext(try makeContainer())
+		let topic = subject(title: "The Economy", hansardID: "s1", context: ctx)
+		let order = order(catchline: "Oral Questions", subjects: [topic], context: ctx)
+		let hansard = Hansard(date: Date(), hansardID: "h7", parliamentNumber: 45, sessionNumber: 1, orders: [order])
+		ctx.insert(hansard)
+
+		let vm = SittingViewModel()
+		let question = try #require(vm.oralQuestionsSummary(from: hansard)?.groups.first?.questions.first)
+		vm.prepareNavigation(to: question)
+
+		#expect(topic.currentSpeechID == question.speech.hansardID)
+		#expect(topic.currentSpeech?.hansardID == question.speech.hansardID)
+		#expect(question.speech.currentMessageID == question.firstMessage.hansardID)
+		#expect(question.speech.currentMessage?.hansardID == question.firstMessage.hansardID)
+	}
+
+	@Test func upcomingSittingDatesReturnsLoadedDatesInsideNextThirtyDays() {
+		var calendar = Calendar(identifier: .gregorian)
+		calendar.timeZone = TimeZone(identifier: "America/Toronto")!
+		let start = date(year: 2026, month: 4, day: 28, calendar: calendar)
+		let vm = SittingCalendarViewModel()
+		vm.dates = [
+			components(year: 2026, month: 4, day: 27),
+			components(year: 2026, month: 4, day: 29)
+		]
+		vm.futureDates = [
+			components(year: 2026, month: 5, day: 12),
+			components(year: 2026, month: 6, day: 1)
+		]
+
+		let result = vm.upcomingSittingDates(from: start, throughDays: 30, calendar: calendar)
+		let days = result.map { calendar.component(.day, from: $0) }
+
+		#expect(days == [29, 12])
+	}
+
+	@Test func calendarExportSubscriptionURLUsesBackendBase() {
+		let baseURL = URL(string: "https://staging-api.epac.riddimsoftware.com")!
+		let url = CalendarExportService.subscriptionURL(baseURL: baseURL)
+
+		#expect(url.absoluteString == "https://staging-api.epac.riddimsoftware.com/calendar/house.ics")
+	}
+
+	private func components(year: Int, month: Int, day: Int) -> DateComponents {
+		DateComponents(year: year, month: month, day: day)
+	}
+
+	private func date(year: Int, month: Int, day: Int, calendar: Calendar) -> Date {
+		calendar.date(from: components(year: year, month: month, day: day))!
 	}
 }

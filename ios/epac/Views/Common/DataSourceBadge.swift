@@ -56,11 +56,11 @@ struct DataSourceBadge: View {
 
     private var badgeColor: Color {
         guard let age = ageSeconds, let threshold = source.stalenessThreshold else {
-            return Color(UIColor.systemGray)
+            return Color.secondary
         }
-        if age > threshold * 3 { return Color(UIColor.systemRed) }
-        if age > threshold     { return Color(UIColor.systemOrange) }
-        return Color(UIColor.systemGray)
+        if age > threshold * 3 { return Color.red }
+        if age > threshold { return Color.orange }
+        return Color.secondary
     }
 }
 
@@ -91,9 +91,13 @@ struct DataSourceDetailSheet: View {
                         .foregroundStyle(.tint)
                 }
             }
+            #if os(iOS)
             .listStyle(.insetGrouped)
-            .navigationTitle(source.name)
             .navigationBarTitleDisplayMode(.inline)
+            #else
+            .listStyle(.inset)
+            #endif
+            .navigationTitle(source.name)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(NSLocalizedString("dataSource.done", comment: "")) { dismiss() }
@@ -188,6 +192,107 @@ struct DataSource {
             url: URL(string: "https://lobbycanada.gc.ca")!,
             lastSyncDate: nil,
             vintage: "Current Parliament",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func reconciliationCalls() -> DataSource {
+        DataSource(
+            name: "Yellowhead/CBC",
+            description: "Truth and Reconciliation Commission Calls to Action status baseline from Yellowhead Institute, with per-call implementation phases and detail links from CBC Beyond 94.",
+            url: URL(string: "https://yellowheadinstitute.org/report/trc/")!,
+            lastSyncDate: nil,
+            vintage: "Reviewed 2026",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func cppOas() -> DataSource {
+        DataSource(
+            name: "ESDC",
+            description: "Canada Pension Plan and Old Age Security recipient counts by province, published monthly by Employment and Social Development Canada on open.canada.ca.",
+            url: URL(string: "https://www.canada.ca/en/employment-social-development/programs/pensions/reports/statistical-bulletin.html")!,
+            lastSyncDate: nil,
+            vintage: "Monthly — ESDC",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func veteransAffairs() -> DataSource {
+        DataSource(
+            name: "VAC",
+            description: "Veterans Affairs Canada Facts and Figures, Departmental Results Reports, and disability-benefit processing reports. Provincial figures are Veteran population counts from the 2021 Census; benefit and wait-time figures are national.",
+            url: URL(string: "https://www.veterans.gc.ca/en/news-and-media/facts-and-figures")!,
+            lastSyncDate: nil,
+            vintage: "VAC reports",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func studentFinance() -> DataSource {
+        DataSource(
+            name: "ESDC / StatCan",
+            description: "Canada Student Financial Assistance Program loan and repayment-assistance statistics from ESDC, combined with Statistics Canada undergraduate tuition fees by province.",
+            url: URL(string: "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/student-financial-assistance-statistics-2023-2024.html")!,
+            lastSyncDate: nil,
+            vintage: "Annual",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func transportSafety() -> DataSource {
+        DataSource(
+            name: "TSB / Transport Canada",
+            description: "Air, marine, and rail occurrence counts from Transportation Safety Board annual statistics, with road casualty rates from Transport Canada's National Collision Database.",
+            url: URL(string: "https://tsb.gc.ca/eng/stats/aviation/stats.html")!,
+            lastSyncDate: nil,
+            vintage: "2023-2024",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func electionsCanadaBoundaries() -> DataSource {
+        DataSource(
+            name: "Elections Canada",
+            description: "Federal electoral district boundary files for the 45th general election. App geometry is resolved through the Open North Represent API mirror of the 2023 federal electoral district set.",
+            url: URL(string: "https://www.elections.ca/content.aspx?dir=cir%2FmapsCorner%2Fvector&document=index&lang=e&section=res")!,
+            lastSyncDate: nil,
+            vintage: "2023 Representation Order",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func naturalResources() -> DataSource {
+        DataSource(
+            name: "NRCan",
+            description: "Natural Resources Canada Canadian Minerals Yearbook tables and National Forestry Database harvest and Crown timber revenue tables. Confidential mineral cells are suppressed by NRCan and shown as confidential in the app.",
+            url: NaturalResourcesStatisticsDatabase.snapshot()?.source.url
+                ?? NaturalResourcesStatisticsDatabase.fallbackSource.url,
+            lastSyncDate: nil,
+            vintage: "2025 minerals",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func corrections() -> DataSource {
+        DataSource(
+            name: "CSC / OCI / StatCan",
+            description: "Federal corrections statistics from Correctional Service Canada accountability reports, Office of the Correctional Investigator annual reports, and Statistics Canada Census population shares.",
+            url: URL(string: "https://www.canada.ca/en/correctional-service/corporate/transparency/reporting/departmental-results-reports/2023-2024.html")!,
+            lastSyncDate: nil,
+            vintage: "Annual",
+            stalenessThreshold: nil
+        )
+    }
+
+    static func gicAppointments() -> DataSource {
+        DataSource(
+            name: "appointments.gc.ca",
+            description: "Governor in Council appointee records from the Federal Organizations registry, with matched Privy Council Office Orders in Council and 2025-26 compensation ranges where published.",
+            url: GICAppointmentsDatabase.snapshot()?.source.url
+                ?? GICAppointmentsDatabase.fallbackSource.url,
+            lastSyncDate: nil,
+            vintage: GICAppointmentsDatabase.snapshot()?.retrievedAt ?? "Current snapshot",
             stalenessThreshold: nil
         )
     }

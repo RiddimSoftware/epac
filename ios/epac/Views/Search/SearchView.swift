@@ -3,8 +3,8 @@
 //  epac
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SearchView: View {
     @EnvironmentObject var fetch: Fetch
@@ -162,7 +162,6 @@ struct SearchView: View {
                     }
                 }
             }
-
 
             if !results.bills.isEmpty {
                 Section(NSLocalizedString("search.section.bills", comment: "")) {

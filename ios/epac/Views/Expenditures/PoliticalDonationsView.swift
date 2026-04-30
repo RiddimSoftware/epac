@@ -19,11 +19,11 @@ struct PoliticalDonationsView: View {
 	private static let combinedAssociationLimit = 1_750
 
 	private let parties: [(Party, String)] = [
-		(.liberal,       "Liberal Party of Canada"),
-		(.conservative,  "Conservative Party of Canada"),
+		(.liberal, "Liberal Party of Canada"),
+		(.conservative, "Conservative Party of Canada"),
 		(.newdemocratic, "New Democratic Party"),
-		(.bloc,          "Bloc Québécois"),
-		(.green,         "Green Party of Canada"),
+		(.bloc, "Bloc Québécois"),
+		(.green, "Green Party of Canada")
 	]
 
 	var body: some View {

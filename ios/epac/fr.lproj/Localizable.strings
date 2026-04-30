@@ -10,6 +10,7 @@
 "accountability.navTitle" = "Responsabilité";
 "accountability.donations" = "Dons politiques";
 "accountability.projectCosts" = "Coût des projets";
+"common.ok" = "OK";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";
@@ -22,6 +23,18 @@
 "Today" = "Aujourd'hui";
 "Upcoming" = "À venir";
 "epac" = "epac";
+"sitting.calendar.export.menuLabel" = "Exportation du calendrier";
+"sitting.calendar.export.addNext30" = "Ajouter les 30 prochains jours";
+"sitting.calendar.export.copySubscription" = "Copier le lien d'abonnement";
+"sitting.calendar.export.inProgress" = "Ajout des jours de séance";
+"sitting.calendar.export.alertTitle" = "Calendrier";
+"sitting.calendar.export.noUpcoming" = "Aucun jour de séance n'est chargé pour les 30 prochains jours.";
+"sitting.calendar.export.alreadyAdded" = "Ces jours de séance sont déjà dans votre calendrier.";
+"sitting.calendar.export.addedCount" = "%d jour(s) de séance ajouté(s) au calendrier.";
+"sitting.calendar.export.copiedSubscription" = "Lien d'abonnement au calendrier copié.";
+"sitting.calendar.export.eventTitle" = "House of Commons — Sitting Day";
+"sitting.calendar.export.error.accessDenied" = "L'accès au calendrier n'a pas été accordé.";
+"sitting.calendar.export.error.noDefaultCalendar" = "Aucun calendrier modifiable n'est disponible.";
 
 /* Non-sitting day view */
 "Recess" = "Ajournement";
@@ -46,8 +59,10 @@
 "search.section.debates" = "Débats";
 
 /* Sitting view */
-"Search debates" = "Rechercher des débats";
 "Open debate" = "Ouvrir le débat";
+"sitting.oralQuestions.title" = "Questions orales";
+"sitting.oralQuestions.count" = "%d échange(s)";
+"sitting.oralQuestions.openHint" = "Ouvrir cette question dans le compte rendu intégral du Hansard";
 
 /* Speech view */
 "Tap anywhere to continue" = "Touchez n'importe où pour continuer";
@@ -117,6 +132,20 @@
 "Party" = "Parti";
 "Province" = "Province";
 "Status" = "Statut";
+
+/* Libellés des partis */
+"CPC" = "PCC";
+"Lib" = "Lib.";
+"NDP" = "NPD";
+"BQ" = "BQ";
+"GP" = "PV";
+"Ind" = "Ind.";
+"Conservative" = "Conservateur";
+"Liberal" = "Libéral";
+"New Democratic Party" = "Nouveau Parti démocratique";
+"Bloc Québécois" = "Bloc Québécois";
+"Green Party" = "Parti vert";
+"Independent" = "Indépendant";
 
 /* Vote detail */
 "voteDetail.debates.header" = "Débats dans le hansard";
@@ -222,7 +251,6 @@
 "petitions.empty.description" = "Aucune pétition trouvée.";
 "petitions.noOpen.title" = "Aucune pétition ouverte";
 "petitions.noOpen.description" = "Il n'y a pas de pétitions ouvertes en ce moment. Appuyez ci-dessous pour voir toutes les pétitions.";
-"petitions.empty.description" = "Aucune pétition trouvée.";
 "petitions.error.title" = "Impossible de charger les pétitions";
 "petitions.error.description" = "Vérifiez votre connexion et réessayez.";
 
@@ -308,6 +336,7 @@
 "topic.education" = "Éducation";
 "topic.childcare" = "Services de garde";
 "topic.energy" = "Énergie";
+"topic.naturalResources" = "Ressources naturelles";
 "topic.pharma" = "Produits pharmaceutiques";
 "topic.digital" = "Numérique et IA";
 "topic.labour" = "Travail";
@@ -359,6 +388,16 @@
 "home.parliament.sitting" = "Le Parlement siège aujourd'hui";
 "home.parliament.notSitting" = "La Chambre ne siège pas aujourd\'hui";
 "home.parliament.adjourned" = "La Chambre a ajourné ses travaux pour aujourd'hui";
+"home.live.badge" = "EN DIRECT · Chambre des communes";
+"home.live.voteBadge" = "VOTE EN COURS · Chambre des communes";
+"home.live.speaker" = "%@ a la parole";
+"home.live.resultIncoming" = "Résultat à venir";
+"home.live.updated" = "Mis à jour %@";
+"home.live.infoTitle" = "À propos du direct parlementaire";
+"home.live.infoBody" = "Cette carte montre les travaux en cours à la Chambre. Le texte intégral est publié dans Hansard 2 à 4 heures après la fin de la séance.";
+"home.live.todayBadge" = "AUJOURD'HUI AU PARLEMENT · Chambre des communes";
+"home.live.tapToRead" = "Lire le Hansard complet →";
+"home.live.comingSoon" = "Le compte rendu Hansard de la séance d'aujourd'hui est en cours de préparation. Revenez dans quelques heures.";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
 "home.followedBills" = "Projets de loi suivis";
@@ -436,7 +475,13 @@
 "committees.empty.title" = "Aucun comité";
 "committees.noMeetings" = "Aucune réunion récente";
 "committees.meeting.number" = "Réunion %d";
+"committees.upcoming" = "À venir";
+"committees.recentEvidence" = "Témoignages récents";
 "committees.agenda" = "Ordre du jour";
+"committees.confirmedWitnesses" = "Témoins confirmés";
+"committees.witnesses" = "Témoins : %@";
+"committees.witnesses.count" = "Témoins : %@, +%d";
+"committees.witnesses.accessibility.count" = "%d témoins confirmés";
 "committees.watchParlVU" = "Regarder la réunion du comité";
 "committees.openParlVUArchive" = "Ouvrir les archives ParlVU";
 "committees.viewTranscript" = "Voir la transcription complète sur parl.ca →";
@@ -457,12 +502,8 @@
 "dataSource.done" = "Terminé";
 
 /* Recherche étendue (EPAC-85) */
-"search.prompt" = "Rechercher députés, votes, débats";
 "search.emptyTitle" = "Rechercher dans le Parlement";
 "search.emptyDescription" = "Cherchez des députés par nom, des votes par numéro de projet de loi et des débats par sujet.";
-"search.section.members" = "Membres";
-"search.section.votes" = "Votes";
-"search.section.debates" = "Débats";
 
 /* États vides (EPAC-107) */
 "empty.home.title" = "Configurez votre fil civique";
@@ -475,6 +516,7 @@
 "speech.unfollow" = "Ne plus suivre %@";
 "speech.goToProfile" = "Profil de %@";
 "speech.copyQuote" = "Copier la citation";
+"speech.messageActionsHint" = "Les actions du message sont disponibles dans le rotor";
 
 /* Menus contextuels — rangées de vote (EPAC-170) */
 "vote.contextMenu.share" = "Partager ce vote";
@@ -521,6 +563,12 @@
 "settings.title" = "Paramètres";
 "settings.done" = "Terminé";
 
+"settings.account.title" = "Compte";
+"settings.account.riding" = "Circonscription";
+"settings.account.mp" = "Député";
+"settings.account.postalCode" = "Code postal et circonscription";
+"settings.account.notifications" = "Notifications";
+
 "settings.location.title" = "Ma localisation";
 "settings.location.riding" = "Circonscription";
 "settings.location.mp" = "Député";
@@ -533,6 +581,10 @@
 "settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
 "settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
 
+"settings.appearance.title" = "Apparence";
+"settings.appearance.theme" = "Thème";
+"settings.appearance.theme.system" = "Système";
+
 "settings.appIcon.title" = "Apparence";
 "settings.appIcon.picker" = "Icône de l’app";
 "settings.appIcon.standard" = "Standard";
@@ -541,17 +593,41 @@
 "settings.appIcon.unsupported" = "Non disponible sur cet appareil";
 "settings.appIcon.error" = "Impossible de modifier l’icône de l’app : %@";
 
+"settings.language.title" = "Langue";
+"settings.language.preference" = "Langue de l’app";
+"settings.language.system" = "Système";
+
+"settings.follows.title" = "Suivis";
+"settings.follows.manage" = "Gérer les suivis";
+"settings.follows.empty.title" = "Aucun suivi";
+"settings.follows.empty.message" = "Suivez des projets de loi, députés ou sujets depuis leurs pages de détail.";
+
 "settings.followed.bills" = "Projets de loi suivis";
 "settings.followed.members" = "Députés suivis";
 "settings.followed.topics" = "Sujets suivis";
+
+"settings.privacy.title" = "Données et confidentialité";
+"settings.privacy.policy" = "Politique de confidentialité";
+"settings.privacy.dataHandling" = "Traitement des données";
+"settings.privacy.dataSources" = "Sources de données";
+"settings.privacy.export" = "Exporter mes données";
+"settings.privacy.delete" = "Supprimer mes données";
 
 "settings.about.title" = "À propos";
 "settings.about.version" = "Version";
 "settings.about.privacy" = "Politique de confidentialité";
 "settings.about.dataSources" = "Sources de données";
+"settings.about.sourceCredits" = "Crédits des sources de données";
 "settings.about.github" = "GitHub (code source ouvert)";
 "settings.about.brandBrief" = "Brief de marque";
 "settings.about.feedback" = "Envoyer des commentaires";
+"settings.about.rate" = "Évaluer epac";
+
+"settings.developer.title" = "Développeur";
+"settings.developer.diagnostics" = "Diagnostics";
+"settings.developer.flags" = "Substitutions de drapeaux";
+"settings.developer.evidence" = "Preuves de build";
+"settings.developer.debugOnly" = "Débogage";
 
 /* Canada Gazette (EPAC-116) */
 "gazette.navTitle" = "Gazette du Canada";
@@ -632,3 +708,36 @@
 "toronto.votes.empty.title" = "Aucun vote trouvé";
 "toronto.votes.empty.description" = "Les votes du conseil municipal de Toronto apparaîtront ici.";
 "toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";
+
+/* Notification Settings (EPAC-436) */
+"settings.notifications.manage" = "Gérer les notifications";
+"notifications.section.permission" = "Autorisation";
+"notifications.permission.granted" = "Notifications activées";
+"notifications.permission.denied" = "Les notifications sont désactivées";
+"notifications.permission.deniedHint" = "Ouvrez les réglages iOS pour autoriser epac à envoyer des notifications.";
+"notifications.permission.openSettings" = "Ouvrir les réglages";
+"notifications.permission.enable" = "Activer les notifications";
+"notifications.section.activity" = "Activité";
+"notifications.section.activity.footer" = "Les réglages propres à chaque député sont disponibles depuis son profil.";
+"notifications.category.mpVotes" = "Votes des députés suivis";
+"notifications.category.mpSpeeches" = "Discours des députés suivis";
+"notifications.category.billStatus" = "Changements d'état des projets de loi suivis";
+"notifications.category.topicAlerts" = "Alertes sur les sujets suivis";
+"notifications.section.digests" = "Résumés";
+"notifications.section.digests.footer" = "Envoyés à 7 h HE le jour prévu.";
+"notifications.category.dailyDigest" = "Résumé quotidien";
+"notifications.category.fridayDigest" = "Résumé hebdomadaire du vendredi";
+"notifications.section.governmentUpdates" = "Mises à jour gouvernementales";
+"notifications.category.hansardSittings" = "Nouvelles séances du Hansard";
+"notifications.category.pboCosting" = "Notes de coûts du DPB";
+"notifications.category.lobbyingAlerts" = "Alertes de lobbying";
+"notifications.section.general" = "Général";
+"notifications.category.appAnnouncements" = "Annonces de l'application";
+"notifications.member.sectionTitle" = "Notifications pour ce député";
+"notifications.member.votes" = "Votes";
+"notifications.member.speeches" = "Discours";
+"notifications.member.expenses" = "Dépenses";
+
+/* On This Day (EPAC-470) */
+"home.onThisDay.title" = "À cette date dans les législatures passées";
+"home.onThisDay.dismiss" = "Masquer À cette date";

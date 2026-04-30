@@ -1,17 +1,12 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @MainActor
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var notifPrefs = NotificationPreferenceStore.shared
-    @State private var billStore = BillFollowStore.shared
-    @State private var memberStore = MemberFollowStore.shared
-    @State private var topicStore = TopicFollowStore.shared
     @State private var selectedAppIcon = AppIconOption.current
     @State private var appIconError: String?
     @State private var showPostalCodeChange = false
-    @Query private var members: [ParliamentMember]
 
     private var appVersion: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -22,11 +17,15 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                locationSection
-                notificationsSection
-                appIconSection
-                followedSection
+                accountSection
+                appearanceSection
+                languageSection
+                followsSection
+                dataPrivacySection
                 aboutSection
+                #if DEBUG
+                developerSection
+                #endif
             }
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("settings.title", comment: ""))
@@ -42,35 +41,80 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Appearance
+    // MARK: - Account
 
-    private var appIconSection: some View {
-        Section(NSLocalizedString("settings.appIcon.title", comment: "")) {
-            if UIApplication.shared.supportsAlternateIcons {
-                Picker(
-                    NSLocalizedString("settings.appIcon.picker", comment: ""),
-                    selection: $selectedAppIcon
-                ) {
-                    ForEach(AppIconOption.allCases) { option in
-                        Label(option.localizedTitle, systemImage: option.systemImageName)
-                            .tag(option)
-                    }
-                }
-                .onChange(of: selectedAppIcon) { _, option in
-                    applyAppIcon(option)
-                }
-
-                if let appIconError {
-                    Text(appIconError)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
+    private var accountSection: some View {
+        Section(NSLocalizedString("settings.account.title", comment: "")) {
+            if let ridingName = PostalCodeViewModel.savedRidingName {
                 LabeledContent(
-                    NSLocalizedString("settings.appIcon.picker", comment: ""),
-                    value: NSLocalizedString("settings.appIcon.unsupported", comment: "")
+                    NSLocalizedString("settings.account.riding", comment: ""),
+                    value: ridingName
                 )
             }
+            if let memberName = PostalCodeViewModel.savedMemberName,
+               memberName != PostalCodeViewModel.savedRidingName {
+                LabeledContent(
+                    NSLocalizedString("settings.account.mp", comment: ""),
+                    value: memberName
+                )
+            }
+            Button {
+                showPostalCodeChange = true
+            } label: {
+                Label(
+                    NSLocalizedString("settings.account.postalCode", comment: ""),
+                    systemImage: "mappin.and.ellipse"
+                )
+            }
+            .foregroundStyle(.tint)
+
+            NavigationLink(destination: NotificationSettingsView()) {
+                Label(
+                    NSLocalizedString("settings.account.notifications", comment: ""),
+                    systemImage: "bell.badge"
+                )
+            }
+        }
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        Section(NSLocalizedString("settings.appearance.title", comment: "")) {
+            LabeledContent(
+                NSLocalizedString("settings.appearance.theme", comment: ""),
+                value: NSLocalizedString("settings.appearance.theme.system", comment: "")
+            )
+            appIconRow
+        }
+    }
+
+    @ViewBuilder
+    private var appIconRow: some View {
+        if UIApplication.shared.supportsAlternateIcons {
+            Picker(
+                NSLocalizedString("settings.appIcon.picker", comment: ""),
+                selection: $selectedAppIcon
+            ) {
+                ForEach(AppIconOption.allCases) { option in
+                    Label(option.localizedTitle, systemImage: option.systemImageName)
+                        .tag(option)
+                }
+            }
+            .onChange(of: selectedAppIcon) { _, option in
+                applyAppIcon(option)
+            }
+
+            if let appIconError {
+                Text(appIconError)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            LabeledContent(
+                NSLocalizedString("settings.appIcon.picker", comment: ""),
+                value: NSLocalizedString("settings.appIcon.unsupported", comment: "")
+            )
         }
     }
 
@@ -92,47 +136,133 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - My Location
+    // MARK: - Language
 
-    private var locationSection: some View {
-        Section(NSLocalizedString("settings.location.title", comment: "")) {
-            if let ridingName = PostalCodeViewModel.savedRidingName {
-                LabeledContent(
-                    NSLocalizedString("settings.location.riding", comment: ""),
-                    value: ridingName
+    private var languageSection: some View {
+        Section(NSLocalizedString("settings.language.title", comment: "")) {
+            LabeledContent(
+                NSLocalizedString("settings.language.preference", comment: ""),
+                value: NSLocalizedString("settings.language.system", comment: "")
+            )
+        }
+    }
+
+    // MARK: - Follows
+
+    private var followsSection: some View {
+        Section(NSLocalizedString("settings.follows.title", comment: "")) {
+            NavigationLink(destination: FollowsSettingsView()) {
+                Label(
+                    NSLocalizedString("settings.follows.manage", comment: ""),
+                    systemImage: "star.circle"
                 )
             }
-            if let memberName = PostalCodeViewModel.savedMemberName,
-               memberName != PostalCodeViewModel.savedRidingName {
-                LabeledContent(
-                    NSLocalizedString("settings.location.mp", comment: ""),
-                    value: memberName
-                )
+        }
+    }
+
+    // MARK: - Data & Privacy
+
+    private var dataPrivacySection: some View {
+        Section(NSLocalizedString("settings.privacy.title", comment: "")) {
+            NavigationLink(NSLocalizedString("settings.privacy.policy", comment: "")) {
+                PrivacyPolicyView()
             }
-            Button(NSLocalizedString("settings.location.change", comment: "")) {
-                showPostalCodeChange = true
+            Link(
+                NSLocalizedString("settings.privacy.dataHandling", comment: ""),
+                destination: URL(string: "https://epac.riddimsoftware.com/privacy.html")!
+            )
+            Link(
+                NSLocalizedString("settings.privacy.dataSources", comment: ""),
+                destination: URL(string: "https://epac.riddimsoftware.com/sources")!
+            )
+            Button(NSLocalizedString("settings.privacy.export", comment: "")) {}
+                .disabled(true)
+            Button(NSLocalizedString("settings.privacy.delete", comment: ""), role: .destructive) {}
+                .disabled(true)
+        }
+    }
+
+    // MARK: - About
+
+    private var aboutSection: some View {
+        Section(NSLocalizedString("settings.about.title", comment: "")) {
+            LabeledContent(NSLocalizedString("settings.about.version", comment: ""), value: appVersion)
+            Link(
+                NSLocalizedString("settings.about.sourceCredits", comment: ""),
+                destination: URL(string: "https://epac.riddimsoftware.com/sources")!
+            )
+            Link(
+                NSLocalizedString("settings.about.github", comment: ""),
+                destination: URL(string: "https://github.com/RiddimSoftware/epac")!
+            )
+            Link(
+                NSLocalizedString("settings.about.brandBrief", comment: ""),
+                destination: URL(string: "https://github.com/RiddimSoftware/epac/blob/main/docs/brand/brand-brief-v1.md")!
+            )
+            Button(NSLocalizedString("settings.about.feedback", comment: "")) {
+                let subject = "epac%20feedback"
+                if let url = URL(string: "mailto:sunny@riddimsoftware.com?subject=\(subject)") {
+                    UIApplication.shared.open(url)
+                }
             }
             .foregroundStyle(.tint)
+            Link(
+                NSLocalizedString("settings.about.rate", comment: ""),
+                destination: URL(string: "itms-apps://itunes.apple.com/app/id1224459142?action=write-review")!
+            )
         }
     }
 
-    // MARK: - Notifications
+    // MARK: - Developer
 
-    private var notificationsSection: some View {
-        Section(NSLocalizedString("settings.notifications.title", comment: "")) {
-            NavigationLink(destination: NotificationSettingsView()) {
-                Label(
-                    NSLocalizedString("settings.notifications.manage", comment: ""),
-                    systemImage: "bell.badge"
+    #if DEBUG
+    private var developerSection: some View {
+        Section(NSLocalizedString("settings.developer.title", comment: "")) {
+            LabeledContent(
+                NSLocalizedString("settings.developer.diagnostics", comment: ""),
+                value: NSLocalizedString("settings.developer.debugOnly", comment: "")
+            )
+            LabeledContent(
+                NSLocalizedString("settings.developer.flags", comment: ""),
+                value: NSLocalizedString("settings.developer.debugOnly", comment: "")
+            )
+            Link(
+                NSLocalizedString("settings.developer.evidence", comment: ""),
+                destination: URL(string: "https://github.com/RiddimSoftware/epac/tree/main/docs/build-evidence")!
+            )
+        }
+    }
+    #endif
+}
+
+@MainActor
+private struct FollowsSettingsView: View {
+    @State private var billStore = BillFollowStore.shared
+    @State private var memberStore = MemberFollowStore.shared
+    @State private var topicStore = TopicFollowStore.shared
+    @Query private var members: [ParliamentMember]
+
+    var body: some View {
+        List {
+            followedBillsSection
+            followedMembersSection
+            followedTopicsSection
+            if billStore.followed.isEmpty,
+               memberStore.followedIDs.isEmpty,
+               topicStore.followedIDs.isEmpty {
+                ContentUnavailableView(
+                    NSLocalizedString("settings.follows.empty.title", comment: ""),
+                    systemImage: "star",
+                    description: Text(NSLocalizedString("settings.follows.empty.message", comment: ""))
                 )
             }
         }
+        .listStyle(.insetGrouped)
+        .navigationTitle(NSLocalizedString("settings.follows.title", comment: ""))
     }
 
-    // MARK: - Followed
-
     @ViewBuilder
-    private var followedSection: some View {
+    private var followedBillsSection: some View {
         if !billStore.followed.isEmpty {
             Section(NSLocalizedString("settings.followed.bills", comment: "")) {
                 ForEach(
@@ -156,7 +286,10 @@ struct SettingsView: View {
                 }
             }
         }
+    }
 
+    @ViewBuilder
+    private var followedMembersSection: some View {
         if !memberStore.followedIDs.isEmpty {
             let followedMembers = members
                 .filter { memberStore.isFollowing($0.memberID) }
@@ -182,7 +315,10 @@ struct SettingsView: View {
                 }
             }
         }
+    }
 
+    @ViewBuilder
+    private var followedTopicsSection: some View {
         if !topicStore.followedIDs.isEmpty {
             let followedTopics = ParliamentaryTopic.all
                 .filter { topicStore.isFollowing($0.id) }
@@ -212,36 +348,6 @@ struct SettingsView: View {
                     for i in indexSet { topicStore.unfollow(sorted[i].id) }
                 }
             }
-        }
-    }
-
-    // MARK: - About
-
-    private var aboutSection: some View {
-        Section(NSLocalizedString("settings.about.title", comment: "")) {
-            LabeledContent(NSLocalizedString("settings.about.version", comment: ""), value: appVersion)
-            NavigationLink(NSLocalizedString("settings.about.privacy", comment: "")) {
-                PrivacyPolicyView()
-            }
-            Link(
-                NSLocalizedString("settings.about.dataSources", comment: ""),
-                destination: URL(string: "https://epac.riddimsoftware.com/sources")!
-            )
-            Link(
-                NSLocalizedString("settings.about.github", comment: ""),
-                destination: URL(string: "https://github.com/sunnypurewal/epac")!
-            )
-            Link(
-                NSLocalizedString("settings.about.brandBrief", comment: ""),
-                destination: URL(string: "https://github.com/sunnypurewal/epac/blob/main/docs/brand/brand-brief-v1.md")!
-            )
-            Button(NSLocalizedString("settings.about.feedback", comment: "")) {
-                let subject = "epac%20feedback"
-                if let url = URL(string: "mailto:sunny@riddimsoftware.com?subject=\(subject)") {
-                    UIApplication.shared.open(url)
-                }
-            }
-            .foregroundStyle(.tint)
         }
     }
 }

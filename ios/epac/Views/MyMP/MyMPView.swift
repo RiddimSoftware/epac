@@ -5,8 +5,8 @@
 //  Created on 2026-04-27.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 // MARK: - Activity model
 
@@ -227,6 +227,12 @@ struct MyMPView: View {
             if let mpp = ontarioMPP {
                 Section(NSLocalizedString("ontario.myMPP.title", comment: "")) {
                     OntarioMPPCard(mpp: mpp)
+                }
+            }
+            if let member {
+                Section("Riding boundary") {
+                    RidingBoundaryMapCard(ridingName: member.riding, party: member.party)
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                 }
             }
             if !vancouverCouncillors.isEmpty {

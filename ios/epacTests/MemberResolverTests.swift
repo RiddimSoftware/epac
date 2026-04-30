@@ -1,7 +1,7 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import Foundation
+import SwiftData
+import Testing
 
 @MainActor
 struct MemberResolverTests {
@@ -62,6 +62,34 @@ struct MemberResolverTests {
 		#expect(resolved.lastName == "Singh")
 		#expect(resolved.party == Party.newdemocratic)
 		#expect(resolved.riding == "Burnaby Central")
+		let allMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(allMembers.count == 1)
+	}
+
+	@Test func cachedResolverReusesInsertedTempMember() throws {
+		let context = try makeContext()
+		var cache = MemberResolutionCache()
+
+		let first = cache.resolve(
+			firstName: "Jagmeet",
+			lastName: "Singh",
+			partyAbbreviation: "NDP",
+			ridingName: "Burnaby Central",
+			parliamentNumber: 45,
+			modelContext: context,
+			fetch: makeFetch(context)
+		)
+		let second = cache.resolve(
+			firstName: "Jagmeet",
+			lastName: "Singh",
+			partyAbbreviation: "NDP",
+			ridingName: "Burnaby Central",
+			parliamentNumber: 45,
+			modelContext: context,
+			fetch: makeFetch(context)
+		)
+
+		#expect(first.persistentModelID == second.persistentModelID)
 		let allMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
 		#expect(allMembers.count == 1)
 	}

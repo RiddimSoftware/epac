@@ -2,8 +2,8 @@
 // epac
 //
 // Wraps URLSession with exponential backoff: 3 retries at 1s, 2s, 4s delays.
-// Only retries on transient network errors (connection lost, timeout, etc).
-// HTTP error status codes are not retried — they indicate a server-side problem.
+// Retries transient network errors and HTTP 429 responses that include a
+// Retry-After backoff contract.
 
 import Foundation
 
@@ -12,28 +12,48 @@ struct NetworkService: @unchecked Sendable {
 
     private let session: URLSession
     private let cacheStore: HTTPResponseCacheStore
+    private let sleep: @Sendable (Double) async throws -> Void
+    private let rateLimitDeviceIDProvider: @Sendable () -> String
     // 1 initial attempt + 3 retries = 4 total attempts.
     private let maxAttempts = 4
+    private static let rateLimitDeviceIDDefaultsKey = "NetworkService.RateLimitDeviceID"
 
-    init(session: URLSession = .shared, cacheStore: HTTPResponseCacheStore = .shared) {
+    init(
+        session: URLSession = .shared,
+        cacheStore: HTTPResponseCacheStore = .shared,
+        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
+        rateLimitDeviceIDProvider: @escaping @Sendable () -> String = NetworkService.defaultRateLimitDeviceID
+    ) {
         self.session = session
         self.cacheStore = cacheStore
+        self.sleep = sleep
+        self.rateLimitDeviceIDProvider = rateLimitDeviceIDProvider
     }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let cachedRequest = cacheStore.prepare(request: request)
+        var outboundRequest = request
+        attachRateLimitDeviceIDIfNeeded(to: &outboundRequest)
+        let cachedRequest = cacheStore.prepare(request: outboundRequest)
         var lastError: Error?
+        var pendingDelay: Double?
         for attempt in 0..<maxAttempts {
-            if attempt > 0 {
-                let delay = pow(2.0, Double(attempt - 1)) // 1s, 2s, 4s
-                try await Task.sleep(for: .seconds(delay))
+            if let delay = pendingDelay {
+                try await sleep(delay)
+                pendingDelay = nil
             }
             do {
                 let (data, response) = try await session.data(for: cachedRequest.request)
+                if let httpResponse = response as? HTTPURLResponse,
+                   httpResponse.statusCode == 429,
+                   attempt < maxAttempts - 1 {
+                    pendingDelay = retryDelay(from: httpResponse) ?? backoffDelay(for: attempt)
+                    continue
+                }
                 return cacheStore.handle(data: data, response: response, for: cachedRequest)
             } catch let error as URLError {
                 guard isTransient(error) else { throw error }
                 lastError = error
+                pendingDelay = backoffDelay(for: attempt)
             }
         }
         throw lastError ?? URLError(.unknown)
@@ -56,6 +76,70 @@ struct NetworkService: @unchecked Sendable {
         default:
             return false
         }
+    }
+
+    private func backoffDelay(for attempt: Int) -> Double {
+        pow(2.0, Double(attempt)) // 1s, 2s, 4s
+    }
+
+    private func attachRateLimitDeviceIDIfNeeded(to request: inout URLRequest) {
+        guard request.value(forHTTPHeaderField: "X-Device-ID") == nil,
+              shouldAttachRateLimitDeviceID(to: request.url) else {
+            return
+        }
+        request.setValue(rateLimitDeviceIDProvider(), forHTTPHeaderField: "X-Device-ID")
+    }
+
+    private func shouldAttachRateLimitDeviceID(to url: URL?) -> Bool {
+        guard let url,
+              let requestHost = url.host?.lowercased(),
+              let backendHost = BackendConfig.shared.baseURL.host?.lowercased() else {
+            return false
+        }
+        return url.scheme == BackendConfig.shared.baseURL.scheme && requestHost == backendHost
+    }
+
+    private static func defaultRateLimitDeviceID() -> String {
+        if let existing = UserDefaults.standard.string(forKey: rateLimitDeviceIDDefaultsKey),
+           !existing.isEmpty {
+            return existing
+        }
+
+        let generated = UUID().uuidString
+        UserDefaults.standard.set(generated, forKey: rateLimitDeviceIDDefaultsKey)
+        return generated
+    }
+
+    private func retryDelay(from response: HTTPURLResponse) -> Double? {
+        guard let retryAfter = headerValue("Retry-After", in: response)?.trimmingCharacters(in: .whitespaces),
+              !retryAfter.isEmpty else {
+            return nil
+        }
+
+        if let seconds = Double(retryAfter), seconds >= 0 {
+            return seconds
+        }
+
+        if let date = httpDate(from: retryAfter) {
+            return max(0, date.timeIntervalSinceNow)
+        }
+
+        return nil
+    }
+
+    private func headerValue(_ name: String, in response: HTTPURLResponse) -> String? {
+        for (key, value) in response.allHeaderFields where String(describing: key).caseInsensitiveCompare(name) == .orderedSame {
+            return String(describing: value)
+        }
+        return nil
+    }
+
+    private func httpDate(from value: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: value)
     }
 }
 

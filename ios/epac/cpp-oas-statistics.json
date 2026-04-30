@@ -1,0 +1,360 @@
+{
+  "datasets": [
+    {
+      "csv": "https://open.canada.ca/data/dataset/1fab2afd-4f3c-4922-a07e-58d7bed9dcfc/resource/5ddf2bac-666e-4342-81c8-59274da78425/download/20260430-cpres-cppben.csv",
+      "id": "1fab2afd-4f3c-4922-a07e-58d7bed9dcfc",
+      "title": "Canada Pension Plan \u2013 Beneficiaries by Place of Residence",
+      "url": "https://open.canada.ca/data/en/dataset/1fab2afd-4f3c-4922-a07e-58d7bed9dcfc"
+    },
+    {
+      "csv": "https://open.canada.ca/data/dataset/77381606-95c0-411a-a7cd-eba5d038c1c4/resource/ae931981-b9ac-4b5c-9b6b-2c70c1fe448f/download/20250331-svpres-oasben.csv",
+      "id": "77381606-95c0-411a-a7cd-eba5d038c1c4",
+      "title": "Old Age Security \u2013 Beneficiaries by Province",
+      "url": "https://open.canada.ca/data/en/dataset/77381606-95c0-411a-a7cd-eba5d038c1c4"
+    }
+  ],
+  "generated_at": "2026-04-28T22:03:52.415869Z",
+  "history_years": [
+    2023,
+    2024,
+    2025
+  ],
+  "national": {
+    "cpp_reference_period": "2026-04",
+    "cpp_retirement_recipients": 6119362,
+    "oas_pension_recipients": 7418908,
+    "oas_reference_period": "2025-03"
+  },
+  "provinces": [
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 158415,
+      "history": [
+        {
+          "cpp_retirement_recipients": 151506,
+          "oas_pension_recipients": 127635,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 154702,
+          "oas_pension_recipients": 131130,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 157428,
+          "oas_pension_recipients": 131843,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 131843,
+      "oas_reference_period": "2025-03",
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 41709,
+      "history": [
+        {
+          "cpp_retirement_recipients": 39580,
+          "oas_pension_recipients": 34220,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 40639,
+          "oas_pension_recipients": 35264,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 41459,
+          "oas_pension_recipients": 35459,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 35459,
+      "oas_reference_period": "2025-03",
+      "province": "Prince Edward Island",
+      "province_code": "PE"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 262143,
+      "history": [
+        {
+          "cpp_retirement_recipients": 251545,
+          "oas_pension_recipients": 222947,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 256224,
+          "oas_pension_recipients": 228671,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 260567,
+          "oas_pension_recipients": 230078,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 230078,
+      "oas_reference_period": "2025-03",
+      "province": "Nova Scotia",
+      "province_code": "NS"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 222409,
+      "history": [
+        {
+          "cpp_retirement_recipients": 212104,
+          "oas_pension_recipients": 184126,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 216799,
+          "oas_pension_recipients": 189028,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 221033,
+          "oas_pension_recipients": 190149,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 190149,
+      "oas_reference_period": "2025-03",
+      "province": "New Brunswick",
+      "province_code": "NB"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 22567,
+      "history": [
+        {
+          "cpp_retirement_recipients": 21755,
+          "oas_pension_recipients": 1811458,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 22372,
+          "oas_pension_recipients": 1861529,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 22598,
+          "oas_pension_recipients": 1869128,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 1869128,
+      "oas_reference_period": "2025-03",
+      "province": "Quebec",
+      "province_code": "QC"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 2985163,
+      "history": [
+        {
+          "cpp_retirement_recipients": 2805015,
+          "oas_pension_recipients": 2661484,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 2878197,
+          "oas_pension_recipients": 2754575,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 2957421,
+          "oas_pension_recipients": 2774278,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 2774278,
+      "oas_reference_period": "2025-03",
+      "province": "Ontario",
+      "province_code": "ON"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 272418,
+      "history": [
+        {
+          "cpp_retirement_recipients": 260442,
+          "oas_pension_recipients": 233527,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 265765,
+          "oas_pension_recipients": 240994,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 270951,
+          "oas_pension_recipients": 242321,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 242321,
+      "oas_reference_period": "2025-03",
+      "province": "Manitoba",
+      "province_code": "MB"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 232040,
+      "history": [
+        {
+          "cpp_retirement_recipients": 221577,
+          "oas_pension_recipients": 198799,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 226640,
+          "oas_pension_recipients": 205164,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 230806,
+          "oas_pension_recipients": 206025,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 206025,
+      "oas_reference_period": "2025-03",
+      "province": "Saskatchewan",
+      "province_code": "SK"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 783935,
+      "history": [
+        {
+          "cpp_retirement_recipients": 721809,
+          "oas_pension_recipients": 644672,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 749581,
+          "oas_pension_recipients": 675260,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 775745,
+          "oas_pension_recipients": 681524,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 681524,
+      "oas_reference_period": "2025-03",
+      "province": "Alberta",
+      "province_code": "AB"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 1122384,
+      "history": [
+        {
+          "cpp_retirement_recipients": 1059746,
+          "oas_pension_recipients": 1002342,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 1086428,
+          "oas_pension_recipients": 1038115,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 1113475,
+          "oas_pension_recipients": 1045035,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 1045035,
+      "oas_reference_period": "2025-03",
+      "province": "British Columbia",
+      "province_code": "BC"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 7582,
+      "history": [
+        {
+          "cpp_retirement_recipients": 7123,
+          "oas_pension_recipients": 6221,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 7324,
+          "oas_pension_recipients": 6532,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 7535,
+          "oas_pension_recipients": 6612,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 6612,
+      "oas_reference_period": "2025-03",
+      "province": "Yukon",
+      "province_code": "YT"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 5957,
+      "history": [
+        {
+          "cpp_retirement_recipients": 5522,
+          "oas_pension_recipients": 5991,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 5731,
+          "oas_pension_recipients": 6368,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 5918,
+          "oas_pension_recipients": 6456,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": 6456,
+      "oas_reference_period": "2025-03",
+      "province": "Northwest Territories",
+      "province_code": "NT"
+    },
+    {
+      "cpp_reference_period": "2026-04",
+      "cpp_retirement_recipients": 2640,
+      "history": [
+        {
+          "cpp_retirement_recipients": 2290,
+          "oas_pension_recipients": null,
+          "year": 2023
+        },
+        {
+          "cpp_retirement_recipients": 2428,
+          "oas_pension_recipients": null,
+          "year": 2024
+        },
+        {
+          "cpp_retirement_recipients": 2605,
+          "oas_pension_recipients": null,
+          "year": 2025
+        }
+      ],
+      "oas_pension_recipients": null,
+      "oas_reference_period": null,
+      "province": "Nunavut",
+      "province_code": "NU"
+    }
+  ],
+  "source": {
+    "note": "Provincial recipient counts come from the ESDC monthly Statistical Bulletin datasets published on open.canada.ca. Average monthly benefit amounts are only published nationally; provincial-level averages are not available.",
+    "title": "Employment and Social Development Canada \u2014 CPP/OAS Statistical Bulletin",
+    "url": "https://www.canada.ca/en/employment-social-development/programs/pensions/reports/statistical-bulletin.html"
+  }
+}

@@ -10,6 +10,7 @@
 "accountability.navTitle" = "Accountability";
 "accountability.donations" = "Political Donations";
 "accountability.projectCosts" = "Project Cost Lifecycle";
+"common.ok" = "OK";
 
 /* Search view */
 "Search debates" = "Search debates";
@@ -29,6 +30,18 @@
 "Today" = "Today";
 "Upcoming" = "Upcoming";
 "epac" = "epac";
+"sitting.calendar.export.menuLabel" = "Calendar export";
+"sitting.calendar.export.addNext30" = "Add next 30 days";
+"sitting.calendar.export.copySubscription" = "Copy subscription link";
+"sitting.calendar.export.inProgress" = "Adding sitting days";
+"sitting.calendar.export.alertTitle" = "Calendar";
+"sitting.calendar.export.noUpcoming" = "No sitting days are loaded for the next 30 days.";
+"sitting.calendar.export.alreadyAdded" = "Those sitting days are already in your calendar.";
+"sitting.calendar.export.addedCount" = "Added %d sitting day(s) to Calendar.";
+"sitting.calendar.export.copiedSubscription" = "Calendar subscription link copied.";
+"sitting.calendar.export.eventTitle" = "House of Commons — Sitting Day";
+"sitting.calendar.export.error.accessDenied" = "Calendar access was not granted.";
+"sitting.calendar.export.error.noDefaultCalendar" = "No writable calendar is available.";
 
 /* Non-sitting day view */
 "Recess" = "Recess";
@@ -44,8 +57,10 @@
 "Check your connection and try again." = "Check your connection and try again.";
 
 /* Sitting view */
-"Search debates" = "Search debates";
 "Open debate" = "Open debate";
+"sitting.oralQuestions.title" = "Oral Questions";
+"sitting.oralQuestions.count" = "%d exchange(s)";
+"sitting.oralQuestions.openHint" = "Open this question in the full Hansard transcript";
 
 /* Speech view */
 "Tap anywhere to continue" = "Tap anywhere to continue";
@@ -115,6 +130,20 @@
 "Party" = "Party";
 "Province" = "Province";
 "Status" = "Status";
+
+/* Party labels */
+"CPC" = "CPC";
+"Lib" = "Lib";
+"NDP" = "NDP";
+"BQ" = "BQ";
+"GP" = "GP";
+"Ind" = "Ind";
+"Conservative" = "Conservative";
+"Liberal" = "Liberal";
+"New Democratic Party" = "New Democratic Party";
+"Bloc Québécois" = "Bloc Québécois";
+"Green Party" = "Green Party";
+"Independent" = "Independent";
 
 /* Vote detail */
 "voteDetail.debates.header" = "Debates in Hansard";
@@ -305,6 +334,7 @@
 "topic.education" = "Education";
 "topic.childcare" = "Child Care";
 "topic.energy" = "Energy";
+"topic.naturalResources" = "Natural Resources";
 "topic.pharma" = "Pharmaceuticals";
 "topic.digital" = "Digital & AI";
 "topic.labour" = "Labour";
@@ -356,6 +386,16 @@
 "home.parliament.sitting" = "Parliament is sitting today";
 "home.parliament.notSitting" = "Parliament is not sitting today";
 "home.parliament.adjourned" = "Parliament has adjourned for today";
+"home.live.badge" = "LIVE · House of Commons";
+"home.live.voteBadge" = "VOTE IN PROGRESS · House of Commons";
+"home.live.speaker" = "%@ has the floor";
+"home.live.resultIncoming" = "Result incoming";
+"home.live.updated" = "Updated %@";
+"home.live.infoTitle" = "About live Parliament";
+"home.live.infoBody" = "This shows the current order of business in the House. Verbatim speech is published in Hansard 2–4 hours after the sitting ends.";
+"home.live.todayBadge" = "TODAY IN PARLIAMENT · House of Commons";
+"home.live.tapToRead" = "Tap to read the full Hansard →";
+"home.live.comingSoon" = "The verbatim Hansard record for today's sitting is being prepared. Check back in a few hours.";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";
@@ -433,7 +473,13 @@
 "committees.empty.title" = "No Committees";
 "committees.noMeetings" = "No Recent Meetings";
 "committees.meeting.number" = "Meeting %d";
+"committees.upcoming" = "Upcoming";
+"committees.recentEvidence" = "Recent Evidence";
 "committees.agenda" = "Agenda";
+"committees.confirmedWitnesses" = "Confirmed Witnesses";
+"committees.witnesses" = "Witnesses: %@";
+"committees.witnesses.count" = "Witnesses: %@, +%d more";
+"committees.witnesses.accessibility.count" = "%d confirmed witnesses";
 "committees.watchParlVU" = "Watch committee hearing";
 "committees.openParlVUArchive" = "Open ParlVU archive";
 "committees.viewTranscript" = "View full transcript on parl.ca →";
@@ -454,12 +500,8 @@
 "dataSource.done" = "Done";
 
 /* Extended search (EPAC-85) */
-"search.prompt" = "Search MPs, votes, debates";
 "search.emptyTitle" = "Search Parliament";
 "search.emptyDescription" = "Search MPs by name, votes by bill number, and debates by topic.";
-"search.section.members" = "Members";
-"search.section.votes" = "Votes";
-"search.section.debates" = "Debates";
 
 /* Empty states (EPAC-107) */
 "empty.home.title" = "Set up your civic feed";
@@ -472,6 +514,7 @@
 "speech.unfollow" = "Unfollow %@";
 "speech.goToProfile" = "%@'s Profile";
 "speech.copyQuote" = "Copy Quote";
+"speech.messageActionsHint" = "Message actions are available from the rotor";
 
 /* Contextual menus — vote rows (EPAC-170) */
 "vote.contextMenu.share" = "Share Vote";
@@ -518,6 +561,12 @@
 "settings.title" = "Settings";
 "settings.done" = "Done";
 
+"settings.account.title" = "Account";
+"settings.account.riding" = "Riding";
+"settings.account.mp" = "MP";
+"settings.account.postalCode" = "Postal code and riding";
+"settings.account.notifications" = "Notifications";
+
 "settings.location.title" = "My Location";
 "settings.location.riding" = "Riding";
 "settings.location.mp" = "MP";
@@ -530,6 +579,10 @@
 "settings.notifications.topicConsultations" = "New consultations on followed topics";
 "settings.notifications.morningBriefing" = "Morning sitting-day briefing";
 
+"settings.appearance.title" = "Appearance";
+"settings.appearance.theme" = "Theme";
+"settings.appearance.theme.system" = "System";
+
 "settings.appIcon.title" = "Appearance";
 "settings.appIcon.picker" = "App Icon";
 "settings.appIcon.standard" = "Standard";
@@ -538,17 +591,41 @@
 "settings.appIcon.unsupported" = "Not available on this device";
 "settings.appIcon.error" = "Could not change app icon: %@";
 
+"settings.language.title" = "Language";
+"settings.language.preference" = "App language";
+"settings.language.system" = "System";
+
+"settings.follows.title" = "Follows";
+"settings.follows.manage" = "Manage follows";
+"settings.follows.empty.title" = "No follows yet";
+"settings.follows.empty.message" = "Follow bills, MPs, or topics from their detail screens.";
+
 "settings.followed.bills" = "Followed Bills";
 "settings.followed.members" = "Followed MPs";
 "settings.followed.topics" = "Followed Topics";
+
+"settings.privacy.title" = "Data & Privacy";
+"settings.privacy.policy" = "Privacy Policy";
+"settings.privacy.dataHandling" = "Data handling";
+"settings.privacy.dataSources" = "Data Sources";
+"settings.privacy.export" = "Export my data";
+"settings.privacy.delete" = "Delete my data";
 
 "settings.about.title" = "About";
 "settings.about.version" = "Version";
 "settings.about.privacy" = "Privacy Policy";
 "settings.about.dataSources" = "Data Sources";
+"settings.about.sourceCredits" = "Source data credits";
 "settings.about.github" = "GitHub (open source)";
 "settings.about.brandBrief" = "Brand brief";
 "settings.about.feedback" = "Send feedback";
+"settings.about.rate" = "Rate epac";
+
+"settings.developer.title" = "Developer";
+"settings.developer.diagnostics" = "Diagnostics";
+"settings.developer.flags" = "Flag overrides";
+"settings.developer.evidence" = "Build evidence";
+"settings.developer.debugOnly" = "Debug";
 
 /* Canada Gazette (EPAC-116) */
 "gazette.navTitle" = "Canada Gazette";
@@ -658,3 +735,7 @@
 "notifications.member.votes" = "Votes";
 "notifications.member.speeches" = "Speeches";
 "notifications.member.expenses" = "Expenses";
+
+/* On This Day (EPAC-470) */
+"home.onThisDay.title" = "On this day in past Parliaments";
+"home.onThisDay.dismiss" = "Hide On This Day";

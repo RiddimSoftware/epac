@@ -5,8 +5,8 @@
 //  Created by Sunny on 2024-12-17.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SpeakerView: View {
 	@Environment(\.modelContext) var modelContext
@@ -126,12 +126,36 @@ struct SpeakerImageView: View {
 		.padding(0)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel("\(speaker.name), \(speaker.party.fullName)")
-		.task {
-			await viewModel.loadImage(speaker: speaker, parliamentNumber: parliamentNumber, modelContext: modelContext)
-			if let data = viewModel.imageData ?? speaker.imageData {
-				photo = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
-			}
+		.task(id: speaker.photoURL) {
+			await loadPhoto()
 		}
+	}
+
+	private func loadPhoto() async {
+		guard photo == nil else { return }
+		if let cached = MemberImageCache.shared.image(for: speaker.photoURL) {
+			photo = cached
+			return
+		}
+		if let image = await decodeStoredPhotoData() {
+			photo = image
+			return
+		}
+		await viewModel.loadImage(speaker: speaker, parliamentNumber: parliamentNumber, modelContext: modelContext)
+		if let cached = MemberImageCache.shared.image(for: speaker.photoURL) {
+			photo = cached
+		} else if let image = await decodeStoredPhotoData() {
+			photo = image
+		}
+	}
+
+	private func decodeStoredPhotoData() async -> UIImage? {
+		guard let data = viewModel.imageData ?? speaker.imageData else { return nil }
+		let image = await Task.detached(priority: .userInitiated) { UIImage(data: data) }.value
+		if let image {
+			MemberImageCache.shared.store(image, for: speaker.photoURL)
+		}
+		return image
 	}
 }
 

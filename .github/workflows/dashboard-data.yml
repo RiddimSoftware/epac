@@ -1,13 +1,11 @@
 name: Dashboard Data Refresh
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'   # Every 2 hours
   workflow_dispatch:          # Manual trigger for testing
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     permissions:
       contents: write         # To commit JSON files back to repo
       id-token: write         # To authenticate to AWS via OIDC
@@ -49,6 +47,15 @@ jobs:
       - name: Fetch App Store Connect metrics
         run: |
           python scripts/dashboard/fetch_asc.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key /tmp/AuthKey.p8
+
+      - name: Fetch release history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/dashboard/fetch_releases.py \
             --key-id "$ASC_KEY_ID" \
             --issuer-id "$ASC_ISSUER_ID" \
             --private-key /tmp/AuthKey.p8

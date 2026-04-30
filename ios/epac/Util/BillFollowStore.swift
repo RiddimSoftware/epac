@@ -39,11 +39,13 @@ final class BillFollowStore {
             followedAt: Date()
         )
         save()
+        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
     func unfollow(_ number: String) {
         followed.removeValue(forKey: number)
         save()
+        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
     func toggle(_ bill: Bill) {
@@ -55,6 +57,7 @@ final class BillFollowStore {
     func unfollowAll() {
         followed.removeAll()
         save()
+        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
     /// Call after BillsService.fetchBills() to detect stage or status changes for followed bills.

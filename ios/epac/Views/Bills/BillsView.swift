@@ -5,15 +5,15 @@
 //  Created on 2026-04-27.
 //
 
-import SwiftUI
 import ActivityView
+import SwiftUI
 
 struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
-    @State private var typeFilter: BillTypeGroup? = nil
+    @State private var typeFilter: BillTypeGroup?
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
@@ -195,7 +195,7 @@ struct BillsView: View {
             for change in changes {
                 BillNotificationScheduler.schedule(change)
             }
-            await TopicNotificationScheduler.checkAndNotify(bills: bills)
+            TopicNotificationScheduler.checkAndNotify(bills: bills)
         } catch {
             loadFailed = true
         }
@@ -224,7 +224,7 @@ enum BillTypeGroup: Equatable {
 
 struct BillRow: View {
     let bill: Bill
-    var newSince: Date? = nil
+    var newSince: Date?
 
     private var isNew: Bool {
         guard let newSince, let introduced = bill.introducedDate else { return false }
@@ -233,26 +233,24 @@ struct BillRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Text(bill.number)
-                    .font(.caption.monospacedDigit())
-                    .fontWeight(.bold)
-                if isNew {
-                    Image(systemName: "circle.fill")
-                        .font(.system(size: 6))
-                        .foregroundStyle(.tint)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    billNumberLabel
+                    BillStatusBadge(status: bill.status)
+                    Spacer()
+                    billTypeLabel
                 }
-                BillStatusBadge(status: bill.status)
-                Spacer()
-                if !bill.billType.shortName.isEmpty {
-                    Text(bill.billType.shortName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        billNumberLabel
+                        BillStatusBadge(status: bill.status)
+                    }
+                    billTypeLabel
                 }
             }
             Text(bill.title)
                 .font(.subheadline)
-                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
             if !bill.sponsorName.isEmpty {
                 Text(bill.sponsorName)
                     .font(.caption2)
@@ -262,7 +260,7 @@ struct BillRow: View {
                 Text(bill.currentStage)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.vertical, 4)
@@ -280,6 +278,30 @@ struct BillRow: View {
             parts.append(bill.currentStage)
         }
         return parts.joined(separator: ", ")
+    }
+
+    private var billNumberLabel: some View {
+        HStack(spacing: 4) {
+            Text(bill.number)
+                .font(.caption.monospacedDigit())
+                .fontWeight(.bold)
+            if isNew {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 6))
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var billTypeLabel: some View {
+        if !bill.billType.shortName.isEmpty {
+            Text(bill.billType.shortName)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

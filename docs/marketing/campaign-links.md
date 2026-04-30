@@ -24,6 +24,8 @@ Each generates a unique URL that attributes installs to that specific channel in
 | Blog posts | `epac-web-blog` | _[create in ASC]_ | — | CTA boxes at bottom of each blog post |
 | Press kit | `epac-press` | _[create in ASC]_ | — | App Store link in press.html and PDF media kit |
 | Newsletter | `epac-newsletter` | _[create in ASC]_ | — | Mailchimp/Parliament Monthly CTA |
+| Newsletter welcome sequence | `epac-newsletter-welcome` | _[create in ASC]_ | — | Three-email Mailchimp welcome journey |
+| Product Hunt | `epac-product-hunt` | _[create in ASC]_ | — | Product Hunt launch page and launch-day outreach |
 | Bluesky bio | `epac-bluesky` | _[create in ASC]_ | — | @epac.bsky.social profile bio link |
 | Twitter/X bio | `epac-twitter` | _[create in ASC]_ | — | @epacapp profile bio link |
 | Educator kit | `epac-educator` | _[create in ASC]_ | — | /educators.html and any PDF educator guide |

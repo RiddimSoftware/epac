@@ -1,7 +1,20 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import ExyteChat
+import Foundation
+import SwiftData
+import Testing
+
+/// Stub resolver that returns a pre-built member without touching SwiftData.
+/// Demonstrates MemberResolving injection — no network or disk I/O required.
+@MainActor
+private struct StubMemberResolver: MemberResolving {
+    let member: ParliamentMember
+    func resolve(
+        firstName: String, lastName: String,
+        partyAbbreviation: String, ridingName: String,
+        parliamentNumber: Int, modelContext: ModelContext, fetch: Fetch
+    ) -> ParliamentMember { member }
+}
 
 @MainActor
 struct SpeechViewModelTests {
@@ -152,6 +165,28 @@ struct SpeechViewModelTests {
 		#expect(subject.currentSpeechID == nil)
 	}
 
+	@Test func resetClearsMemberResolutionCache() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 1)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		let cachedMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(cachedMembers.count == 1)
+		let cachedID = cachedMembers[0].persistentModelID
+
+		context.delete(cachedMembers[0])
+		try context.save()
+		vm.reset(navigator: navigator, subject: subject)
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		let refreshedMembers = try context.fetch(FetchDescriptor<ParliamentMember>())
+		#expect(refreshedMembers.count == 1)
+		#expect(refreshedMembers[0].persistentModelID != cachedID)
+		#expect(vm.speakers.values.first?.persistentModelID == refreshedMembers[0].persistentModelID)
+	}
+
 	// MARK: - tapAnywhereOpacity
 
 	@Test func tapAnywhereOpacityIsOneWithFewerThanTwoMessages() throws {
@@ -245,6 +280,31 @@ struct SpeechViewModelTests {
 		#expect(secondSide == !firstSide)
 	}
 
+	// MARK: - MemberResolving injection
+
+	/// Injected StubMemberResolver is used: no SwiftData member lookup occurs.
+	@Test func nextMessageUsesInjectedResolver() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 1)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+		let stubMember = ParliamentMember(
+			name: "Injected Member",
+			lastName: "Member",
+			firstName: "Injected",
+			photoURL: URL(string: "https://example.com/photo.jpg")!,
+			riding: "Stub Riding",
+			province: .Ontario,
+			party: .liberal
+		)
+		let resolver = StubMemberResolver(member: stubMember)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard,
+		               modelContext: context, fetch: fetch, resolver: resolver)
+
+		#expect(vm.messages.first?.user.name == "Injected Member")
+	}
+
 	// MARK: - prepareResume
 
 	@Test func prepareResumeRestoresPositionFromSavedIDs() throws {
@@ -283,5 +343,34 @@ struct SpeechViewModelTests {
 
 		existingVM.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
 		#expect(existingVM.messages.count == countBefore)
+	}
+
+	// MARK: - VoiceOver labels
+
+	@Test func speechMessageAccessibilityIncludesPartyRidingProvinceAndMessagePosition() throws {
+		let (container, context, hansard, subject) = try setup(messageCount: 3)
+		let navigator = SubjectNavigator(subject)
+		let vm = SpeechViewModel()
+		let fetch = Fetch(modelContainer: container)
+
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+		vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: context, fetch: fetch)
+
+		let message = try #require(vm.messages.last)
+		let speaker = try #require(vm.speakers[message.id])
+
+		#expect(SpeechMessageAccessibility.label(for: message, speaker: speaker) == "Speaker1 Last1, Liberal, Riding1, Ontario: Content 1")
+		#expect(SpeechMessageAccessibility.value(for: message, messages: vm.messages, totalCount: 3) == "Message 2 of 3")
+	}
+
+	@Test func speechMessageAccessibilityHandlesUnknownSpeaker() throws {
+		let message = Message(
+			id: "missing",
+			user: User(id: "u", name: "Unknown", avatarURL: nil, isCurrentUser: false),
+			text: "No resolved member"
+		)
+
+		#expect(SpeechMessageAccessibility.label(for: message, speaker: nil) == "Unknown speaker: No resolved member")
+		#expect(SpeechMessageAccessibility.value(for: message, messages: [], totalCount: 3) == "Message")
 	}
 }

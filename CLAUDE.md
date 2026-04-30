@@ -10,6 +10,78 @@ Search backend decisions live in `docs/architecture/search-index-choice-epac452.
 
 Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
 
+Backend API documentation lives in `backend/openapi/openapi.json` and is served by the `backend/openapi` Lambda. Adding or changing a backend endpoint requires updating the OpenAPI spec in the same PR.
+
+### SwiftLint baseline (EPAC-334)
+
+The iOS sources (`ios/**/*.swift`) are linted by SwiftLint under `--strict` (warnings fail the build). The workflow lives at `.github/workflows/swiftlint.yml` and runs on Linux via the `ghcr.io/realm/swiftlint:latest` container — keeps CI cost flat.
+
+Configuration is `.swiftlint.yml` at the repo root. The intent: catch the issues that are real bug-bait (`force_cast`, `force_try`, `empty_count`, `redundant_nil_coalescing`, `explicit_init`) and the auto-fixable formatting issues (`closure_end_indentation`, `sorted_imports`). Rules that mostly produce false positives in a SwiftUI codebase — `convenience_type`, `large_tuple`, `cyclomatic_complexity`, `function_body_length`, `multiple_closures_with_trailing_closure`, `vertical_parameter_alignment`, `identifier_name`, `line_length`, `type_name`, `file_length`, `type_body_length`, `for_where`, `static_over_final_class`, `void_function_in_ternary`, `trailing_newline` — are disabled with a one-line comment in `.swiftlint.yml` explaining why.
+
+Local install + run:
+
+```bash
+brew install swiftlint
+swiftlint --fix     # auto-fixes formatting (commas, sorted imports, etc.)
+swiftlint --strict  # same as CI; expect zero output
+```
+
+When you genuinely need to break a rule, use a per-line `// swiftlint:disable:next <rule>` *with a one-line reason* (or a `disable / enable` block for consecutive lines). Examples in `Fetch.swift` and `CommitteeDownloader.swift`. Don't relax the project default to dodge a single site.
+
+The baseline PR (EPAC-334) ran `swiftlint --fix` on the entire `ios/` tree, so most of those 100+ files got mechanical reformatting (comma spacing, colon spacing, sorted imports). Future feature PRs should land clean against this baseline; if a rebase introduces lint regressions, run `swiftlint --fix` first.
+
+### iOS coverage thresholds (EPAC-352)
+
+The iOS coverage workflow lives at `.github/workflows/ios-coverage.yml`. It runs the `epacTests` unit test target with `xcodebuild test -enableCodeCoverage YES`, excluding `SnapshotTests`, parses the `xccov` JSON report with `scripts/ci/ios_coverage_report.py`, writes a GitHub Actions step summary, and posts or updates one PR comment with changed-module coverage deltas. UI and snapshot tests stay outside this coverage gate because they are slower and less reliable as a module line-coverage signal.
+
+Initial module thresholds:
+
+| Module | Minimum coverage | Scope |
+|---|---:|---|
+| ViewModels | 60% | `*ViewModel.swift` and `ViewModels/` |
+| Services | 50% | `ios/epac/Util/*Service.swift` and `*Manager.swift` |
+| Models | 40% | `ios/epac/Model/` |
+| Views | 0% | `ios/epac/Views/` |
+
+Thresholds are enforced for app modules changed by the PR, so new and modified logic cannot move forward without tests while the historical baseline is raised incrementally. New ViewModel code should include unit tests in the same PR unless the PR explains why the behavior is only testable through UI or integration coverage.
+
+### Backend Python logging (EPAC-176)
+
+Python ingest scripts under `backend/` emit **structured JSON logs to stderr** — one JSON object per record — never `print()`. Use the `logging` module with the JSON formatter pattern in `backend/cabinet/cabinet_ingest.py` (stdlib only, no third-party dep).
+
+Reserved fields on every record: `timestamp` (UTC, ISO-8601 with `Z`), `level`, `pipeline`, `message`. Pipeline-specific context goes through `extra={...}` and is merged at the top level so log aggregators can index on it directly:
+
+```python
+logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
+logger.info("pipeline finished", extra={"records_processed": len(entries), "duration_ms": ms})
+logger.error("fetch failed from pm.gc.ca", extra={"error": f"{type(e).__name__}: {e}", "url": URL, "duration_ms": ms})
+```
+
+Every pipeline `main()` must log: a `pipeline started` event, a `pipeline finished` event with `records_processed` and `duration_ms`, and at least one `error`-level event for each handled failure mode (with `error`, `url`, `duration_ms`).
+
+Stdout is reserved for the script's actual JSON payload (e.g. `--dry-run`); logs go to stderr so the two streams stay separately redirectable. Log rotation is the runner's job (cron `logrotate`, GitHub Actions step output, AWS CloudWatch retention) — scripts don't open log files themselves.
+
+When a second Python pipeline needs the same setup, factor `_JSONFormatter` and `_configure_logging` into `backend/_logging.py` and import from both. Until then it stays inline to avoid speculating about a packaging refactor.
+
+Backend environments are split for staging and production. Staging base URL: `https://staging-api.epac.riddimsoftware.com`; production base URL: `https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production`. iOS reads `BackendBaseURL` from `Info.plist` via `BACKEND_BASE_URL` in `ios/Config/*.xcconfig`; Debug uses staging and Release uses production unless CI overrides `BACKEND_BASE_URL`. Backend merges to `main` deploy to staging through `.github/workflows/deploy-staging.yml`; production backend deploys are manual through `.github/workflows/deploy-production.yml`.
+
+### Backend API rate limits (EPAC-225)
+
+All Go Lambda handlers that use `observability.WrapAPIGateway` or `observability.WrapAPIGatewayV2` apply shared `/api/v1/` rate limiting before endpoint logic runs. `live-status` also calls the same limiter directly because it accepts both scheduled poll events and API Gateway events in one handler.
+
+Rate limit keys prefer `X-Device-ID` when present, then fall back to source IP / `X-Forwarded-For`. This avoids punishing iOS users behind carrier NAT when the client can provide an anonymous device-scoped token.
+
+Current limits:
+
+| Endpoint scope | Limit |
+|---|---:|
+| General `/api/v1/` endpoints | 100 requests / minute |
+| `/api/v1/live` | 2 requests / minute |
+| `/api/v1/members` and `/api/v1/members/*` | 10 requests / minute |
+| `/api/v1/calendar/house.ics` | 1 request / 5 minutes |
+
+Limit hits return `HTTP 429 Too Many Requests` with a JSON error body and `Retry-After` header in seconds. The iOS `NetworkService` honors `Retry-After` and retries within its existing four-attempt retry budget.
+
 ---
 
 ## Architecture
@@ -37,6 +109,7 @@ MVVM does **not** earn its keep when:
 | Root view with meaningful state + actions | Add `@Observable` ViewModel |
 | Pure/leaf view that only displays data passed to it | No ViewModel; state stays in parent or is passed down |
 | Data access (fetching, network, persistence) | Pass `ModelContext` and `Fetch` **as method parameters**; do not store them on ViewModel |
+| Other service dependencies (e.g. `MemberResolver`) | Define a protocol (`MemberResolving`), make the real type conform, and accept the protocol as a method parameter with a default of the real implementation — enables test doubles without touching SwiftData |
 | `@Query` properties | Stay in Views — SwiftData requirement, not a design choice |
 | Side-effect services (image loading with fallback chains, download deduplication) | Separate class is acceptable even if small; name it to reflect the concern (e.g. `MemberDownloadCoordinator`, `PhotoLoader`) |
 
@@ -72,7 +145,7 @@ Before requesting review, the author must:
 - [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
 - [ ] **Evidence posted.** Add a PR comment and a Jira comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
-- [ ] **Size.** Aim for < 400 changed lines. Larger changes need a written justification in the description.
+- [ ] **Size.** Aim for < 300 changed lines (tighter target for parallel work — see "Multi-developer workflow" below). Anything > 400 lines needs a written justification in the description and should be split if possible. Never mix feature and refactor in the same PR.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
@@ -131,6 +204,18 @@ Regenerate the 30-second App Store preview video with:
 
 The script launches the app with `--app-preview-mode`, records `AppPreviewRecordingTests/testAppPreviewSequence`, and writes `docs/marketing/preview/app-preview-final.mp4` as H.264 at 886x1920, 30fps, no audio.
 
+### Backend Base URL
+
+The iOS app's backend base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
+
+Debug reads staging from `ios/Config/Debug.xcconfig`; Release reads production from `ios/Config/Release.xcconfig`. TestFlight builds use the `Create Release` workflow's `BACKEND_BASE_URL` override to point at staging before App Store release.
+
+To point a local run at another backend, set the `BACKEND_BASE_URL` environment variable on the active Xcode scheme:
+
+> Edit Scheme → Run → Arguments → Environment Variables → add `BACKEND_BASE_URL=https://your-staging-host.example.com/staging`.
+
+`BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the `Info.plist` build setting, then the production default.
+
 ### Post-PR-open review
 
 After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
@@ -138,7 +223,7 @@ After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code R
 Spawn prompt template (Claude Code, via the Agent tool):
 
 ```
-You are the Autonomous Code Reviewer for PR #N (https://github.com/sunnypurewal/epac/pull/N), branch <branch>.
+You are the Autonomous Code Reviewer for PR #N (https://github.com/RiddimSoftware/epac/pull/N), branch <branch>.
 Repo root: /Users/sunny/code/epac
 
 Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
@@ -174,6 +259,57 @@ The goal is for every review to feel like a conversation between two engineers w
 - distinguishes clearly between required changes, suggestions, and observations
 - references concrete evidence (a specific line, a linked article, a test result) for every required change
 - ends with an explicit approval or a clearly numbered list of what must change before approval
+
+---
+
+## Multi-developer workflow (EPAC-332)
+
+The team is sized for four developers shipping in parallel. The conventions below exist so concurrent work doesn't collide — most of them are silent enforcement (CODEOWNERS, branch protection, ruleset regex), and only the async standup needs a daily human action.
+
+### Code ownership — `.github/CODEOWNERS`
+
+`.github/CODEOWNERS` auto-assigns the right reviewer when a PR touches a given area. Today the team is solo so everything routes to `@sunnypurewal`; the future area assignments are commented in the file and uncommented as developers join:
+
+| Area | Pattern | Future owner |
+|---|---|---|
+| ViewModels | `ios/epac/Views/**/*ViewModel.swift` | developer-a |
+| Services / Managers | `ios/epac/Util/*Service.swift`, `*Manager.swift` | developer-b |
+| Backend pipelines | `backend/**` | developer-c |
+| Website | `website/**` | developer-d |
+| SwiftData migrations | `ios/epac/Model/Migration.swift`, `ios/epac/Model/Model.swift` | shared (always also `@sunnypurewal`) |
+
+When you add a developer to GitHub, replace the `@developer-x` placeholder, uncomment the line, commit. CODEOWNERS is plain text — no rebuild required.
+
+### PR size target
+
+The PR Author Checklist sets the soft target at < 300 lines and the justification threshold at 400. With four developers in flight, large PRs are the single biggest source of review-queue stalls and post-merge regressions — measure twice, cut once, split early. A PR that touches a feature *and* refactors surrounding code is two PRs; ship the refactor first, then the feature on top.
+
+### Shared model change protocol
+
+Any change to a SwiftData `@Model` (`ParliamentMember`, `Sitting`, `RecordedVote`, `Bill`, `Petition`, …) requires:
+
+1. A new `SchemaVN` and a migration stage in `EpacMigrationPlan` per **ADR-002** (see "SwiftData Schema Migration" below — this is non-negotiable, not just a recommendation).
+2. The PR description calls it out under **What changed** with the migration kind (lightweight vs custom) and the rationale.
+3. Comment the model PR in the daily async standup thread the same morning so the rest of the team can avoid touching the same models that day.
+4. Backend rebuilds the local Postgres + tsvector index (EPAC-452) the same day if the schema change has a backend mirror.
+
+The intent: nobody ever rebases on top of a SwiftData schema change without knowing it landed.
+
+### Daily async standup
+
+The team runs an **async** standup as a single GitHub Discussion thread per sprint (category `Standup`). Every developer posts one comment per working day by **10:00 ET**, in this format:
+
+```
+## YYYY-MM-DD — <handle>
+
+- **Today:** EPAC-NNN — <one-line summary> (touching <area / file globs>)
+- **Yesterday:** EPAC-NNN merged / EPAC-NNN paused on <reason>
+- **Blocked:** none / <ticket + what you need>
+```
+
+Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Jira ticket and the open PR list.
+
+The current sprint's Discussion thread is linked from the active sprint's planning ticket in Jira.
 
 ---
 
@@ -231,7 +367,7 @@ Every ticket must be kept current. Three moments require action:
 | Event | Jira action |
 |---|---|
 | Picking up a ticket | Transition → **In Progress**; comment with branch name |
-| PR opened | Comment with PR URL (`https://github.com/sunnypurewal/epac/pull/N`) |
+| PR opened | Comment with PR URL (`https://github.com/RiddimSoftware/epac/pull/N`) |
 | PR merged | Transition → **Done** |
 
 Never open a PR without the ticket already In Progress. Never merge without transitioning to Done.

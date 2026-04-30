@@ -24,7 +24,13 @@ From the repository root:
 scripts/marketing/render_app_store_screenshots.sh /tmp/epac-appstore-screenshots docs/marketing/screenshots
 ```
 
-The script preserves the existing input/output contract and delegates each resize to `evidence resize --target 6.9`.
+The script preserves the existing input/output contract and delegates the 6.9-inch iPhone output to `evidence resize --target 6.9`. It also creates App Store-ready iPad Pro 13-inch and iPad Pro 12.9-inch variants from the same source scenes, using contain-on-canvas resizing so the iPhone artwork is not cropped into the wider iPad aspect ratios.
+
+To refresh the fastlane upload set:
+
+```sh
+scripts/marketing/render_app_store_screenshots.sh docs/marketing/screenshots ios/fastlane/screenshots/en-CA
+```
 
 ## Synthetic Marketing Renders
 

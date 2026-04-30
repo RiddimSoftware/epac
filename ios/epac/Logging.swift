@@ -16,7 +16,7 @@ actor Log {
 		logger.logLevel = .warning
 		#endif
 		return logger
-	}()
+  }()
 
 	static let shared = Log()
 

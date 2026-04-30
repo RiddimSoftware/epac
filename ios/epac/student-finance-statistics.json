@@ -1,0 +1,626 @@
+{
+  "generated_at": "2026-04-28T23:02:33.821113Z",
+  "national_rap_recipients": [
+    {
+      "academic_year": "2021 to 2022",
+      "rap_recipients": 285031
+    },
+    {
+      "academic_year": "2022 to 2023",
+      "rap_recipients": 282716
+    },
+    {
+      "academic_year": "2023 to 2024",
+      "rap_recipients": 288368
+    }
+  ],
+  "provinces": [
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 6033,
+          "loan_disbursements_millions": 686.4,
+          "loan_recipients": 113776,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 6739,
+          "loan_disbursements_millions": 842.6,
+          "loan_recipients": 125030,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 8747,
+          "loan_disbursements_millions": 1083.1,
+          "loan_recipients": 123832,
+          "rap_recipients": 52933
+        }
+      ],
+      "province": "Alberta",
+      "province_code": "AB",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 6582,
+          "year_over_year_change_percent": 7.7
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 7203,
+          "year_over_year_change_percent": 9.4
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 7561,
+          "year_over_year_change_percent": 5.0
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 7909,
+          "year_over_year_change_percent": 4.6
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 8067,
+          "year_over_year_change_percent": 2.0
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 5827,
+          "loan_disbursements_millions": 339.2,
+          "loan_recipients": 58207,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 5832,
+          "loan_disbursements_millions": 336.9,
+          "loan_recipients": 57763,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 7911,
+          "loan_disbursements_millions": 527.8,
+          "loan_recipients": 66720,
+          "rap_recipients": 31916
+        }
+      ],
+      "province": "British Columbia",
+      "province_code": "BC",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 6134,
+          "year_over_year_change_percent": 2.4
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 6258,
+          "year_over_year_change_percent": 2.0
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 6477,
+          "year_over_year_change_percent": 3.5
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 6724,
+          "year_over_year_change_percent": 3.8
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 6862,
+          "year_over_year_change_percent": 2.1
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 4694,
+          "loan_disbursements_millions": 66.1,
+          "loan_recipients": 14081,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 4751,
+          "loan_disbursements_millions": 75.6,
+          "loan_recipients": 15913,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 6784,
+          "loan_disbursements_millions": 134.9,
+          "loan_recipients": 19884,
+          "rap_recipients": 4955
+        }
+      ],
+      "province": "Manitoba",
+      "province_code": "MB",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 5064,
+          "year_over_year_change_percent": 3.3
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 5245,
+          "year_over_year_change_percent": 3.6
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 5390,
+          "year_over_year_change_percent": 2.8
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 5767,
+          "year_over_year_change_percent": 7.0
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 5993,
+          "year_over_year_change_percent": 3.9
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 5183,
+          "loan_disbursements_millions": 60.6,
+          "loan_recipients": 11693,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 5503,
+          "loan_disbursements_millions": 63.0,
+          "loan_recipients": 11449,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 6986,
+          "loan_disbursements_millions": 87.1,
+          "loan_recipients": 12468,
+          "rap_recipients": 10669
+        }
+      ],
+      "province": "New Brunswick",
+      "province_code": "NB",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 7995,
+          "year_over_year_change_percent": 3.3
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 8308,
+          "year_over_year_change_percent": 3.9
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 8701,
+          "year_over_year_change_percent": 4.7
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 9533,
+          "year_over_year_change_percent": 9.6
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 9938,
+          "year_over_year_change_percent": 4.2
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 6038,
+          "loan_disbursements_millions": 40.6,
+          "loan_recipients": 6724,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 6161,
+          "loan_disbursements_millions": 44.0,
+          "loan_recipients": 7142,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 8940,
+          "loan_disbursements_millions": 70.4,
+          "loan_recipients": 7875,
+          "rap_recipients": 3985
+        }
+      ],
+      "province": "Newfoundland and Labrador",
+      "province_code": "NL",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 3025,
+          "year_over_year_change_percent": -1.7
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 3361,
+          "year_over_year_change_percent": 11.1
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 3593,
+          "year_over_year_change_percent": 6.9
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 3623,
+          "year_over_year_change_percent": 0.8
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 3746,
+          "year_over_year_change_percent": 3.4
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 6900,
+          "loan_disbursements_millions": 122.0,
+          "loan_recipients": 17681,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 6991,
+          "loan_disbursements_millions": 123.7,
+          "loan_recipients": 17694,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 9877,
+          "loan_disbursements_millions": 185.5,
+          "loan_recipients": 18781,
+          "rap_recipients": 13285
+        }
+      ],
+      "province": "Nova Scotia",
+      "province_code": "NS",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 9035,
+          "year_over_year_change_percent": 3.3
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 9270,
+          "year_over_year_change_percent": 2.6
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 9551,
+          "year_over_year_change_percent": 3.0
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 9934,
+          "year_over_year_change_percent": 4.0
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 9988,
+          "year_over_year_change_percent": 0.5
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 4761,
+          "loan_disbursements_millions": 1503.9,
+          "loan_recipients": 315877,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 4922,
+          "loan_disbursements_millions": 1530.5,
+          "loan_recipients": 310924,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 6796,
+          "loan_disbursements_millions": 2567.8,
+          "loan_recipients": 377860,
+          "rap_recipients": 160576
+        }
+      ],
+      "province": "Ontario",
+      "province_code": "ON",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 7850,
+          "year_over_year_change_percent": -1.1
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 7995,
+          "year_over_year_change_percent": 1.8
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 8271,
+          "year_over_year_change_percent": 3.5
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 8704,
+          "year_over_year_change_percent": 5.2
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 8958,
+          "year_over_year_change_percent": 2.9
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 5359,
+          "loan_disbursements_millions": 11.5,
+          "loan_recipients": 2146,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 5508,
+          "loan_disbursements_millions": 11.6,
+          "loan_recipients": 2106,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 7493,
+          "loan_disbursements_millions": 18.5,
+          "loan_recipients": 2469,
+          "rap_recipients": 1374
+        }
+      ],
+      "province": "Prince Edward Island",
+      "province_code": "PE",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 6951,
+          "year_over_year_change_percent": 1.0
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 7085,
+          "year_over_year_change_percent": 1.9
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 7359,
+          "year_over_year_change_percent": 3.9
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 7701,
+          "year_over_year_change_percent": 4.6
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 8191,
+          "year_over_year_change_percent": 6.4
+        }
+      ]
+    },
+    {
+      "csfa_participating": false,
+      "csfa_years": [],
+      "province": "Quebec",
+      "province_code": "QC",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 3272,
+          "year_over_year_change_percent": 3.8
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 3360,
+          "year_over_year_change_percent": 2.7
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 3489,
+          "year_over_year_change_percent": 3.8
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 3587,
+          "year_over_year_change_percent": 2.8
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 3963,
+          "year_over_year_change_percent": 10.5
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 6039,
+          "loan_disbursements_millions": 108.5,
+          "loan_recipients": 17967,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 6142,
+          "loan_disbursements_millions": 108.2,
+          "loan_recipients": 17615,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 8365,
+          "loan_disbursements_millions": 161.0,
+          "loan_recipients": 19248,
+          "rap_recipients": 8621
+        }
+      ],
+      "province": "Saskatchewan",
+      "province_code": "SK",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 8455,
+          "year_over_year_change_percent": 2.7
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 8843,
+          "year_over_year_change_percent": 4.6
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 9240,
+          "year_over_year_change_percent": 4.5
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 9558,
+          "year_over_year_change_percent": 3.4
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 9863,
+          "year_over_year_change_percent": 3.2
+        }
+      ]
+    },
+    {
+      "csfa_participating": true,
+      "csfa_years": [
+        {
+          "academic_year": "2021 to 2022",
+          "average_loan_amount": 6373,
+          "loan_disbursements_millions": 1.3,
+          "loan_recipients": 204,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2022 to 2023",
+          "average_loan_amount": 6604,
+          "loan_disbursements_millions": 1.4,
+          "loan_recipients": 212,
+          "rap_recipients": null
+        },
+        {
+          "academic_year": "2023 to 2024",
+          "average_loan_amount": 9766,
+          "loan_disbursements_millions": 2.5,
+          "loan_recipients": 256,
+          "rap_recipients": 54
+        }
+      ],
+      "province": "Yukon",
+      "province_code": "YT",
+      "tuition_years": [
+        {
+          "academic_year": "2021/2022",
+          "average_undergraduate_tuition": 4005,
+          "year_over_year_change_percent": 1.9
+        },
+        {
+          "academic_year": "2022/2023",
+          "average_undergraduate_tuition": 4200,
+          "year_over_year_change_percent": 4.9
+        },
+        {
+          "academic_year": "2023/2024",
+          "average_undergraduate_tuition": 4275,
+          "year_over_year_change_percent": 1.8
+        },
+        {
+          "academic_year": "2024/2025",
+          "average_undergraduate_tuition": 4350,
+          "year_over_year_change_percent": 1.8
+        },
+        {
+          "academic_year": "2025/2026",
+          "average_undergraduate_tuition": 4470,
+          "year_over_year_change_percent": 2.8
+        }
+      ]
+    }
+  ],
+  "reference_academic_year": "2023 to 2024",
+  "source": {
+    "note": "CSFAP reports federal loans and RAP for participating provinces and Yukon. Quebec, Nunavut and Northwest Territories receive alternative payments instead of participating directly.",
+    "title": "ESDC CSFA Program and Statistics Canada tuition data",
+    "url": "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/student-financial-assistance-statistics-2023-2024.html"
+  },
+  "sources": [
+    {
+      "note": "Historical CSFA and national RAP tables for academic years through 2023 to 2024.",
+      "title": "ESDC \u2014 Canada Student Financial Assistance Program Statistical Review 2023-2024",
+      "url": "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/student-financial-assistance-statistics-2023-2024.html"
+    },
+    {
+      "note": "Province-level loan recipients, loan disbursements, and latest RAP recipients.",
+      "title": "ESDC \u2014 Canada Student Financial Assistance Program Annual Report 2023-2024",
+      "url": "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/csfa-annual-2023-2024.html"
+    },
+    {
+      "note": "Table 37-10-0120-01, current dollars, total field of study.",
+      "title": "Statistics Canada \u2014 Undergraduate tuition fees, Canadian students",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3710012001"
+    }
+  ],
+  "tuition_reference_year": "2025/2026"
+}

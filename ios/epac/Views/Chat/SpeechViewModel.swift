@@ -5,10 +5,10 @@
 //  Created by Sunny on 2025-05-24.
 //
 
-import Observation
-import ExyteChat
-import SwiftData
 import ActivityView
+import ExyteChat
+import Observation
+import SwiftData
 import SwiftUI
 
 @MainActor
@@ -18,6 +18,7 @@ class SpeechViewModel {
 	var speakers: [String: ParliamentMember] = [:]
 	var didFinish = false
 	var isResuming = false
+	private let cachingResolver: CachingMemberResolver = CachingMemberResolver()
 
 	var tapAnywhereOpacity: Double {
 		messages.count < 2 || isResuming ? 1 : 0
@@ -36,6 +37,7 @@ class SpeechViewModel {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
+		cachingResolver.reset()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
@@ -43,25 +45,25 @@ class SpeechViewModel {
 		navigator.reset()
 	}
 
-	func prepareResume(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch) {
+	func prepareResume(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
 		guard messages.isEmpty else { return }
 		let savedSpeechID = subject.currentSpeechID ?? subject.currentSpeech?.hansardID
 		let savedMessageID = subject.currentSpeech?.currentMessageID ?? subject.currentSpeech?.currentMessage?.hansardID
 
 		if let savedSpeechID {
 			while !didFinish && (navigator.navigator == nil || navigator.navigator?.speech.hansardID != savedSpeechID) {
-				nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+				nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
 			}
 			if let savedMessageID {
 				while !didFinish && messages.last?.id != savedMessageID {
-					nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+					nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
 				}
 			}
 			isResuming = !didFinish
 		}
 	}
 
-	func nextMessage(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch) {
+	func nextMessage(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
 		isResuming = false
 		guard !didFinish else { return }
 		guard let message = navigator.next() else {
@@ -76,7 +78,7 @@ class SpeechViewModel {
 			currentSpeech.currentMessageID = message.hansardID
 		}
 
-		let speaker = MemberResolver().resolve(
+		let speaker = (resolver ?? cachingResolver).resolve(
 			firstName: message.firstName,
 			lastName: message.lastName,
 			partyAbbreviation: message.partyAbbreviation,
@@ -195,6 +197,3 @@ class SpeechViewModel {
 		.frame(width: 400)
 	}
 }
-
-
-	

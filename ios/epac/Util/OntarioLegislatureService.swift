@@ -181,7 +181,7 @@ struct OntarioLegislatureService {
 
     private static func saveToCache(_ mpps: [OntarioMPP]) {
         guard let data = try? JSONEncoder().encode(mpps) else { return }
-        UserDefaults.standard.set(data,  forKey: cacheKey)
+        UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimestampKey)
     }
 }

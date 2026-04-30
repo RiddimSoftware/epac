@@ -26,8 +26,10 @@ final class TopicFollowStore {
     private(set) var followedIDs: Set<String> = []
     private(set) var granularity: [String: TopicNotificationGranularity] = [:]
 
-    // TODO(EPAC-297): Set to the deployed device-register Lambda URL.
-    private static let registerURL = URL(string: "https://placeholder.execute-api.us-east-1.amazonaws.com/production/device/register")!
+    // Resolved against BackendConfig at call time so a scheme override flows through.
+    private static var registerURL: URL {
+        BackendConfig.shared.baseURL.appendingPathComponent("device/register")
+    }
 
     private init() {
         let d = UserDefaults.standard
@@ -86,8 +88,10 @@ final class TopicFollowStore {
     /// Call on app launch after the token is received, and whenever preferences change.
     func registerDevice(myMPMemberID: String? = nil) async {
         guard let token = UserDefaults.standard.string(forKey: "epac.apnsToken"),
-              !token.isEmpty,
-              !followedIDs.isEmpty else { return }
+              !token.isEmpty else { return }
+
+        let followedBillNumbers = BillFollowStore.shared.followedNumbers
+        let resolvedMPMemberID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID")
 
         let granularityMap = Dictionary(uniqueKeysWithValues:
             granularity.map { ($0.key, $0.value.rawValue) }
@@ -96,9 +100,10 @@ final class TopicFollowStore {
         var body: [String: Any] = [
             "token": token,
             "topic_ids": Array(followedIDs),
-            "granularity": granularityMap,
+            "bill_ids": Array(followedBillNumbers),
+            "granularity": granularityMap
         ]
-        if let mpID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID") {
+        if let mpID = resolvedMPMemberID {
             body["my_mp_member_id"] = mpID
         }
 

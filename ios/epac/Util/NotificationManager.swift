@@ -4,9 +4,9 @@
 //
 
 import Foundation
-import UserNotifications
-import UIKit
 import Observation
+import UIKit
+import UserNotifications
 
 // Manages APNs registration, token storage, and notification routing.
 //
@@ -36,12 +36,13 @@ final class NotificationManager: NSObject {
     /// Requests authorization and registers for remote notifications.
     /// Safe to call multiple times — the system returns the existing status.
     func requestAuthorization() async {
+        guard !AppEnvironment.isMarketingCaptureMode else { return }
         do {
-            let granted = try await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .badge, .sound])
-            if granted {
-                await UIApplication.shared.registerForRemoteNotifications()
-            }
+			let granted = try await UNUserNotificationCenter.current()
+				.requestAuthorization(options: [.alert, .badge, .sound])
+			if granted {
+				UIApplication.shared.registerForRemoteNotifications()
+			}
             Log.debug("Notification authorization: \(granted)")
         } catch {
             Log.debug("Notification auth error: \(error.localizedDescription)")

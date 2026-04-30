@@ -12,7 +12,7 @@ struct GazetteService {
     // MARK: - Public
 
     static func fetchAll() async throws -> [GazetteEntry] {
-        async let partI  = fetch(url: partIURL,  part: .partI)
+        async let partI  = fetch(url: partIURL, part: .partI)
         async let partII = fetch(url: partIIURL, part: .partII)
         let (i, ii) = try await (partI, partII)
         return (i + ii).sorted { $0.publicationDate > $1.publicationDate }

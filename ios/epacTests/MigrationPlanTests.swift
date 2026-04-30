@@ -1,7 +1,7 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import Foundation
+import SwiftData
+import Testing
 
 // Tests for EpacMigrationPlan structural correctness.
 //

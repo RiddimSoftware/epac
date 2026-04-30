@@ -14,8 +14,8 @@
 //  shows again.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @MainActor
 struct OnboardingView: View {

@@ -3,8 +3,8 @@
 //  epac-widget
 //
 
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 @main
 struct epacWidgetBundle: WidgetBundle {

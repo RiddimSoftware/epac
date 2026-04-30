@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import SwiftData
 import Kanna
-import SWXMLHash
 import Sentry
+import SwiftData
+import SWXMLHash
 
 @ModelActor
 actor Fetch: ObservableObject {
@@ -337,7 +337,7 @@ actor Fetch: ObservableObject {
 				if foundLink {
 					Log.debug("Associated links for \(match.lastName) (\(match.firstName))")
 				}
-			} else if index < 5 && expenditures.count > 0 {
+			} else if index < 5 && !expenditures.isEmpty {
 				Log.debug("Could not match HTML row \(index): '\(nameText)'")
 			}
 		}
@@ -519,8 +519,7 @@ actor Fetch: ObservableObject {
 			}
 			if text.contains("hansard") {
 				href = debatelink["href"]
-			}
-			else if text.contains("projected") {
+			} else if text.contains("projected") {
 				throw NSError(domain: "", code: 3)
 			}
 		}
@@ -630,6 +629,8 @@ actor Fetch: ObservableObject {
 	                        let url = hosturl.appending(path: membersSearchPath)
 	                        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 	                        request.httpMethod = "POST"
+	                        // [String: String] is always JSON-serializable; force-try here is safe by construction.
+	                        // swiftlint:disable:next force_try
 	                        request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
 	                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 	                        request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -651,10 +652,15 @@ actor Fetch: ObservableObject {
 	                                                name: name,
 	                                                lastName: lastName,
 	                                                firstName: firstName,
-	                                                photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
+	                                                // ourcommons.ca members search response shape is part of the API contract; a missing
+                                                // field here means the API broke and we want to fail loudly. Replace with guard-let
+                                                // when the upstream API stabilises around a typed schema.
+                                                // swiftlint:disable force_cast
+                                                photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
 	                                                riding: member["constituencyNameEn"] as! String,
 	                                                province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
 	                                                party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
+                                                // swiftlint:enable force_cast
 	                                                memberID: personID
 	                                        )
 	                                        modelContext.insert(mp)
@@ -665,7 +671,6 @@ actor Fetch: ObservableObject {
 	                        }
 	                }
 	        
-
 	func downloadConstituencies() async throws {
 		Log.debug("Fetch.downloadConstituencies()")
 		guard let url = URL(string: constituenciesPath, relativeTo: hosturl) else {

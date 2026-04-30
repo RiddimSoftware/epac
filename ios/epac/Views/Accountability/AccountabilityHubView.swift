@@ -20,6 +20,10 @@ struct AccountabilityHubView: View {
 						Label("Promise Tracker", systemImage: "checklist.checked")
 					}
 					.accessibilityHint("Opens campaign promise tracker")
+					NavigationLink(destination: ReconciliationCallsView()) {
+						Label("TRC Calls to Action", systemImage: "figure.stand.line.dotted.figure.stand")
+					}
+					.accessibilityHint("Opens Truth and Reconciliation Commission Calls to Action tracker")
 					NavigationLink(destination: ExpendituresView()) {
 						Label(NSLocalizedString("Expenditures", comment: ""), systemImage: "dollarsign.circle.fill")
 					}
@@ -44,6 +48,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("accountability.projectCosts", comment: ""), systemImage: "chart.bar.doc.horizontal.fill")
 					}
 					.accessibilityHint("Opens federal project cost lifecycle view")
+					NavigationLink(destination: NHSTrackerView()) {
+						Label("NHS Housing Tracker", systemImage: "house.lodge.fill")
+					}
+					.accessibilityHint("Opens National Housing Strategy targets vs. units delivered tracker")
 					NavigationLink(destination: FederalFinancesView()) {
 						Label("Federal Finances", systemImage: "chart.line.uptrend.xyaxis")
 					}
@@ -56,6 +64,10 @@ struct AccountabilityHubView: View {
 						Label(NSLocalizedString("contracts.navTitle", comment: ""), systemImage: "building.columns.fill")
 					}
 					.accessibilityHint("Opens federal government contracts from proactive disclosure")
+					NavigationLink(destination: GICAppointmentsView()) {
+						Label("GIC Appointments", systemImage: "person.crop.circle.badge.checkmark")
+					}
+					.accessibilityHint("Opens Governor in Council appointment tracker")
 				}
 			}
 			.listStyle(.insetGrouped)

@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 struct PartyLineScoreCalculatorTests {
 
@@ -42,6 +42,34 @@ struct PartyLineScoreCalculatorTests {
             memberParty: .liberal
         )
         #expect(result == nil)
+    }
+
+    @Test func pairedAndAbstainedVotesAreExcludedFromDenominator() {
+        let myVotes = [
+            vote(voteID: 1, memberID: 10, ballot: "Yea"),
+            vote(voteID: 2, memberID: 10, ballot: "Paired"),
+            vote(voteID: 3, memberID: 10, ballot: "Abstained")
+        ]
+        let allByVoteID: [Int: [MemberVote]] = [
+            1: [vote(voteID: 1, memberID: 10, ballot: "Yea"),
+                vote(voteID: 1, memberID: 11, ballot: "Yea")],
+            2: [vote(voteID: 2, memberID: 10, ballot: "Paired"),
+                vote(voteID: 2, memberID: 11, ballot: "Yea")],
+            3: [vote(voteID: 3, memberID: 10, ballot: "Abstained"),
+                vote(voteID: 3, memberID: 11, ballot: "Nay")]
+        ]
+        let partyMap: [Int: Party] = [10: .liberal, 11: .liberal]
+
+        let result = PartyLineScoreCalculator.compute(
+            memberVotes: myVotes,
+            allVotesByID: allByVoteID,
+            partyForMemberID: { partyMap[$0] },
+            memberParty: .liberal
+        )
+
+        #expect(result?.totalVotes == 1)
+        #expect(result?.withPartyCount == 1)
+        #expect(result?.score == 1.0)
     }
 
     // MARK: - Score computation
@@ -154,12 +182,38 @@ struct PartyLineScoreCalculatorTests {
         #expect(result?.withPartyCount == 0)
     }
 
+    @Test func nayOnlyVotesCanProducePerfectScore() {
+        let myVotes = [
+            vote(voteID: 1, memberID: 10, ballot: "Nay"),
+            vote(voteID: 2, memberID: 10, ballot: "Nay")
+        ]
+        let allByVoteID: [Int: [MemberVote]] = [
+            1: [vote(voteID: 1, memberID: 10, ballot: "Nay"),
+                vote(voteID: 1, memberID: 11, ballot: "Nay"),
+                vote(voteID: 1, memberID: 12, ballot: "Yea"),
+                vote(voteID: 1, memberID: 13, ballot: "Nay")],
+            2: [vote(voteID: 2, memberID: 10, ballot: "Nay"),
+                vote(voteID: 2, memberID: 11, ballot: "Nay"),
+                vote(voteID: 2, memberID: 12, ballot: "Nay")]
+        ]
+        let partyMap: [Int: Party] = [10: .conservative, 11: .conservative, 12: .conservative, 13: .conservative]
+
+        let result = PartyLineScoreCalculator.compute(
+            memberVotes: myVotes,
+            allVotesByID: allByVoteID,
+            partyForMemberID: { partyMap[$0] },
+            memberParty: .conservative
+        )
+
+        #expect(result?.score == 1.0)
+        #expect(result?.totalVotes == 2)
+        #expect(result?.withPartyCount == 2)
+    }
+
     // MARK: - Votes skipped when no co-party members voted
 
     @Test func voteWithNoCoPartyMembersIsSkippedInNumeratorButCountedInTotal() {
         // Member 10 votes Yea on voteID=1, but no co-party members have any rows for that vote.
-        // That vote is excluded from both numerator and denominator (guard !coPartyVotes.isEmpty).
-        // This means total stays 0 → result = nil.
         let myVotes = [vote(voteID: 1, memberID: 10, ballot: "Yea")]
         let allByVoteID: [Int: [MemberVote]] = [
             1: [vote(voteID: 1, memberID: 10, ballot: "Yea")]  // only the member themselves
@@ -178,6 +232,31 @@ struct PartyLineScoreCalculatorTests {
         #expect(result?.totalVotes == 1)
         #expect(result?.withPartyCount == 0)
         #expect(result?.score == 0.0)
+    }
+
+    @Test func independentMemberWithoutCaucusScoresZeroForQualifyingVotes() {
+        let myVotes = [
+            vote(voteID: 1, memberID: 10, ballot: "Yea"),
+            vote(voteID: 2, memberID: 10, ballot: "Nay")
+        ]
+        let allByVoteID: [Int: [MemberVote]] = [
+            1: [vote(voteID: 1, memberID: 10, ballot: "Yea"),
+                vote(voteID: 1, memberID: 20, ballot: "Yea")],
+            2: [vote(voteID: 2, memberID: 10, ballot: "Nay"),
+                vote(voteID: 2, memberID: 20, ballot: "Nay")]
+        ]
+        let partyMap: [Int: Party] = [10: .independent, 20: .liberal]
+
+        let result = PartyLineScoreCalculator.compute(
+            memberVotes: myVotes,
+            allVotesByID: allByVoteID,
+            partyForMemberID: { partyMap[$0] },
+            memberParty: .independent
+        )
+
+        #expect(result?.score == 0.0)
+        #expect(result?.totalVotes == 2)
+        #expect(result?.withPartyCount == 0)
     }
 
     // MARK: - recordedVote case insensitivity

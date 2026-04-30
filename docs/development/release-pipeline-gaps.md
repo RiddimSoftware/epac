@@ -186,6 +186,10 @@ required iPhone sizes (6.1", 6.5", 6.7" / 6.9") from the same source, named so
 fastlane drops them in the right device set. Apple actually lets you reuse a
 6.5" set for 6.7" if you don't have explicit 6.7" assets.
 
+**Progress.** EPAC-554 adds the iPad Pro 13" and iPad Pro 12.9" variants to the
+same render step and fastlane screenshot directory. The remaining cleanup is the
+additional iPhone size variants.
+
 ---
 
 ## Gap 11 — `deliver-metadata.yml` workflow had never actually worked

@@ -1,6 +1,6 @@
+@testable import epac
 import Foundation
 import Testing
-@testable import epac
 
 @Suite(.serialized)
 struct NetworkServiceTests {
@@ -243,6 +243,151 @@ struct NetworkServiceTests {
         #expect(seenValidators == [nil, #""bills-v1""#, nil])
     }
 
+    @Test func backendRequestsAttachAnonymousDeviceIDForRateLimiting() async throws {
+        let url = BackendConfig.shared.baseURL.appending(path: "/api/v1/live")
+        let harness = try makeHarness()
+        var seenDeviceIDs: [String?] = []
+
+        MockURLProtocol.requestHandler = { request in
+            seenDeviceIDs.append(request.value(forHTTPHeaderField: "X-Device-ID"))
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data(#"{"status":"ok"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            rateLimitDeviceIDProvider: { "review-device-id" }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        _ = try await service.data(from: url)
+
+        #expect(seenDeviceIDs == ["review-device-id"])
+    }
+
+    @Test func externalRequestsDoNotAttachRateLimitDeviceID() async throws {
+        let url = URL(string: "https://example.test/api/v1/live")!
+        let harness = try makeHarness()
+        var seenDeviceIDs: [String?] = []
+
+        MockURLProtocol.requestHandler = { request in
+            seenDeviceIDs.append(request.value(forHTTPHeaderField: "X-Device-ID"))
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data(#"{"status":"ok"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            rateLimitDeviceIDProvider: { "review-device-id" }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        _ = try await service.data(from: url)
+
+        #expect(seenDeviceIDs == [nil])
+    }
+
+    @Test func rateLimitedResponseRetriesAfterRetryAfterDelay() async throws {
+        let url = URL(string: "https://example.test/api/v1/live")!
+        let harness = try makeHarness()
+        var requestCount = 0
+        let requestedDelays = RequestedDelayRecorder()
+
+        MockURLProtocol.requestHandler = { _ in
+            requestCount += 1
+            if requestCount == 1 {
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 429,
+                        httpVersion: nil,
+                        headerFields: ["Retry-After": "0"]
+                    )!,
+                    Data(#"{"error":"rate limit exceeded"}"#.utf8)
+                )
+            }
+
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["ETag": #""live-v1""#]
+                )!,
+                Data(#"{"status":"ok"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            sleep: { delay in await requestedDelays.append(delay) }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        let (data, response) = try await service.data(from: url)
+
+        #expect(data == Data(#"{"status":"ok"}"#.utf8))
+        #expect((response as? HTTPURLResponse)?.statusCode == 200)
+        #expect(requestCount == 2)
+        #expect(await requestedDelays.values == [0])
+    }
+
+    @Test func rateLimitedResponseReturnsAfterRetryBudgetIsExhausted() async throws {
+        let url = URL(string: "https://example.test/api/v1/members")!
+        let harness = try makeHarness()
+        var requestCount = 0
+
+        MockURLProtocol.requestHandler = { _ in
+            requestCount += 1
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 429,
+                    httpVersion: nil,
+                    headerFields: ["Retry-After": "0"]
+                )!,
+                Data(#"{"error":"rate limit exceeded"}"#.utf8)
+            )
+        }
+
+        let service = NetworkService(
+            session: harness.session,
+            cacheStore: harness.cacheStore,
+            sleep: { _ in }
+        )
+
+        defer { harness.cleanup() }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        let (_, response) = try await service.data(from: url)
+
+        #expect((response as? HTTPURLResponse)?.statusCode == 429)
+        #expect(requestCount == 4)
+    }
+
     private func makeHarness() throws -> NetworkServiceHarness {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
@@ -259,6 +404,8 @@ struct NetworkServiceTests {
 
         return NetworkServiceHarness(
             service: service,
+            session: session,
+            cacheStore: cacheStore,
             userDefaultsSuiteName: suiteName,
             cacheDirectory: cacheDirectory
         )
@@ -267,12 +414,26 @@ struct NetworkServiceTests {
 
 private struct NetworkServiceHarness {
     let service: NetworkService
+    let session: URLSession
+    let cacheStore: HTTPResponseCacheStore
     let userDefaultsSuiteName: String
     let cacheDirectory: URL
 
     func cleanup() {
         UserDefaults.standard.removePersistentDomain(forName: userDefaultsSuiteName)
         try? FileManager.default.removeItem(at: cacheDirectory)
+    }
+}
+
+private actor RequestedDelayRecorder {
+    private var delays: [Double] = []
+
+    var values: [Double] {
+        delays
+    }
+
+    func append(_ delay: Double) {
+        delays.append(delay)
     }
 }
 

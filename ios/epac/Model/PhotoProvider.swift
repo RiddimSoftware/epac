@@ -15,7 +15,6 @@ class PhotoProvider {
 		hostURL = URL(string: "https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/\(parliamentNumber)")!
 	}
 
-
 	func getPhotoURL(lastName: String, firstName: String, party: Party) -> URL {
 
 		let url = hostURL.appending(

@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 struct ParlVULinkBuilderTests {
 
@@ -35,6 +35,7 @@ struct ParlVULinkBuilderTests {
             parliament: 45,
             date: nil,
             agendaItems: [],
+            witnesses: [],
             webcastURL: webcastURL,
             publicationURL: URL(string: "https://www.ourcommons.ca/DocumentViewer/en/45-1/PROC/meeting-25/evidence"),
             evidenceURL: nil
@@ -53,6 +54,7 @@ struct ParlVULinkBuilderTests {
             parliament: 45,
             date: nil,
             agendaItems: [],
+            witnesses: [],
             webcastURL: nil,
             publicationURL: URL(string: "https://www.ourcommons.ca/DocumentViewer/en/45-1/PROC/meeting-25/evidence"),
             evidenceURL: nil

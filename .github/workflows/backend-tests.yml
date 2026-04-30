@@ -1,18 +1,17 @@
 name: Backend Go tests
 
 on:
-  pull_request:
-    paths: ['backend/**']
   push:
     branches: [main]
     paths: ['backend/**']
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     strategy:
       matrix:
-        lambda: [daily-fetch, loader, search, member-speeches, toronto-council]
+        lambda: [daily-fetch, loader, search, member-speeches, on-this-day, riding-boundary, toronto-council, openapi, live-status]
     name: Test ${{ matrix.lambda }}
     steps:
       - uses: actions/checkout@v4

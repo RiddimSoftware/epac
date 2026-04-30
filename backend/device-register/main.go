@@ -8,6 +8,7 @@
 //	{
 //	  "token":           "hex-encoded APNs device token",
 //	  "topic_ids":       ["housing", "climate"],
+//	  "bill_ids":        ["C-5", "S-2"],
 //	  "granularity":     {"housing": "everyDebate", "climate": "onlyMyMP"},
 //	  "my_mp_member_id": "278707"   // optional; Hansard Affiliation DbId
 //	}
@@ -33,6 +34,7 @@ import (
 type RegisterRequest struct {
 	Token        string            `json:"token"`
 	TopicIds     []string          `json:"topic_ids"`
+	BillIds      []string          `json:"bill_ids"`
 	Granularity  map[string]string `json:"granularity"`
 	MyMPMemberId string            `json:"my_mp_member_id"`
 }
@@ -64,6 +66,9 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 	if r.TopicIds == nil {
 		r.TopicIds = []string{}
 	}
+	if r.BillIds == nil {
+		r.BillIds = []string{}
+	}
 	if r.Granularity == nil {
 		r.Granularity = map[string]string{}
 	}
@@ -84,14 +89,15 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 	}
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO device_subscriptions (token, topic_ids, granularity, my_mp_member_id, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO device_subscriptions (token, topic_ids, bill_ids, granularity, my_mp_member_id, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (token) DO UPDATE SET
 			topic_ids       = EXCLUDED.topic_ids,
+			bill_ids        = EXCLUDED.bill_ids,
 			granularity     = EXCLUDED.granularity,
 			my_mp_member_id = EXCLUDED.my_mp_member_id,
 			updated_at      = EXCLUDED.updated_at`,
-		r.Token, r.TopicIds, granJSON, myMP, time.Now().UTC(),
+		r.Token, r.TopicIds, r.BillIds, granJSON, myMP, time.Now().UTC(),
 	)
 	if err != nil {
 		return errResp(http.StatusInternalServerError, fmt.Sprintf("upsert: %v", err)), nil

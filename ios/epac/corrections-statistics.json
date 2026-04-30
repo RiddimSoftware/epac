@@ -1,0 +1,90 @@
+{
+  "annual_statistics": [
+    {
+      "care_and_custody_spending": 1862657518,
+      "cost_per_inmate": 151092,
+      "fiscal_year": "2021 to 2022",
+      "indigenous_in_custody": 4028,
+      "indigenous_in_custody_percent": 32.7,
+      "non_indigenous_in_custody": 8300,
+      "not_readmitted_five_years_percent": 87.9,
+      "recidivism_rate_percent": 12.1,
+      "total_in_custody": 12328
+    },
+    {
+      "care_and_custody_spending": 1941837555,
+      "cost_per_inmate": 148754,
+      "fiscal_year": "2022 to 2023",
+      "indigenous_in_custody": 4223,
+      "indigenous_in_custody_percent": 32.4,
+      "non_indigenous_in_custody": 8831,
+      "not_readmitted_five_years_percent": 88.6,
+      "recidivism_rate_percent": 11.4,
+      "total_in_custody": 13054
+    },
+    {
+      "care_and_custody_spending": 2119199375,
+      "cost_per_inmate": 152956,
+      "fiscal_year": "2023 to 2024",
+      "indigenous_in_custody": 4579,
+      "indigenous_in_custody_percent": 33.0,
+      "non_indigenous_in_custody": 9276,
+      "not_readmitted_five_years_percent": 89.9,
+      "recidivism_rate_percent": 10.1,
+      "total_in_custody": 13855
+    }
+  ],
+  "generated_at": "2026-04-28T23:26:18.040070Z",
+  "indigenous_population_share": {
+    "percent_of_canada": 5.0,
+    "population": 1807250,
+    "source_title": "Statistics Canada 2021 Census Profile",
+    "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/page.cfm?DGUIDlist=2021A000011124&GENDERlist=1&HEADERlist=30%2C19&LANG=E&STATISTIClist=1%2C4&SearchText=Canada",
+    "year": "2021"
+  },
+  "oci_highlights": [
+    {
+      "source_url": "https://oci-bec.gc.ca/en/content/office-correctional-investigator-annual-report-2024-25",
+      "summary": "OCI's 2024-2025 annual report describes Indigenous people as approximately one third of individuals in federal custody, with complex and disproportionate health needs.",
+      "title": "Indigenous people account for about one third of federal custody"
+    },
+    {
+      "source_url": "https://oci-bec.gc.ca/en/content/office-correctional-investigator-annual-report-2024-25",
+      "summary": "OCI highlights gaps in trauma-informed and culturally informed mental health care for Indigenous prisoners, including limited access to appropriate practitioners and continuity of care on release.",
+      "title": "Culturally informed mental health services are limited"
+    },
+    {
+      "source_url": "https://oci-bec.gc.ca/en/content/office-correctional-investigator-annual-report-2024-25",
+      "summary": "OCI reports that Healing Lodges are accessible to only a small fraction of the Indigenous population in custody, largely for people nearing sentence end.",
+      "title": "Healing Lodge access remains narrow"
+    }
+  ],
+  "reference_fiscal_year": "2023 to 2024",
+  "source": {
+    "note": "In-custody population and Indigenous representation use CSC ICAF; recidivism and spending use CSC Departmental Results Reports.",
+    "title": "CSC Departmental Results Report and Indigenous Corrections Accountability Framework",
+    "url": "https://www.canada.ca/en/correctional-service/corporate/transparency/reporting/departmental-results-reports/2023-2024.html"
+  },
+  "sources": [
+    {
+      "note": "Five-year non-readmission indicator and Care and Custody spending.",
+      "title": "Correctional Service Canada Departmental Results Report 2023-2024",
+      "url": "https://www.canada.ca/en/correctional-service/corporate/transparency/reporting/departmental-results-reports/2023-2024.html"
+    },
+    {
+      "note": "In-custody Indigenous and non-Indigenous population trend.",
+      "title": "Correctional Service Canada Indigenous Corrections Accountability Framework 2023-2024",
+      "url": "https://www.canada.ca/en/correctional-service/corporate/library/offenders/indigenous/indigenous-accountability-report/accountability-report-2023-2024.html"
+    },
+    {
+      "note": "Independent annual report highlights relevant to federal corrections debates.",
+      "title": "Office of the Correctional Investigator Annual Report 2024-2025",
+      "url": "https://oci-bec.gc.ca/en/content/office-correctional-investigator-annual-report-2024-25"
+    },
+    {
+      "note": "National Indigenous population share for comparison.",
+      "title": "Statistics Canada 2021 Census Profile",
+      "url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/page.cfm?DGUIDlist=2021A000011124&GENDERlist=1&HEADERlist=30%2C19&LANG=E&STATISTIClist=1%2C4&SearchText=Canada"
+    }
+  ]
+}

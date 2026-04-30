@@ -116,5 +116,13 @@
 	</array>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
+	<key>BackendBaseURL</key>
+	<string>$(BACKEND_BASE_URL)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>epac adds House of Commons sitting days to your calendar.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>epac adds House of Commons sitting days to your calendar.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>epac shows your approximate location on your federal riding boundary map only when you tap the location button.</string>
 </dict>
 </plist>

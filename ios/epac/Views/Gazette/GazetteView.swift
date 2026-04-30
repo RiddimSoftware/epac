@@ -4,7 +4,7 @@ struct GazetteView: View {
     @State private var entries: [GazetteEntry] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var partFilter: GazettePart? = nil
+    @State private var partFilter: GazettePart?
     @State private var searchText = ""
     @State private var isRetryDisabled = false
 

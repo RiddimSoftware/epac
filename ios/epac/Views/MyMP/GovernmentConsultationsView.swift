@@ -30,14 +30,14 @@ struct GovernmentConsultationsView: View {
 	}
 
 	private let topics: [TopicItem] = [
-		TopicItem(id: "environment",  label: NSLocalizedString("consult.topic.environment",  comment: ""), icon: "leaf.fill",         color: .green),
-		TopicItem(id: "housing",      label: NSLocalizedString("consult.topic.housing",      comment: ""), icon: "house.fill",         color: .blue),
-		TopicItem(id: "health",       label: NSLocalizedString("consult.topic.health",       comment: ""), icon: "heart.fill",         color: .red),
-		TopicItem(id: "indigenous",   label: NSLocalizedString("consult.topic.indigenous",   comment: ""), icon: "person.3.fill",      color: .orange),
-		TopicItem(id: "finance",      label: NSLocalizedString("consult.topic.finance",      comment: ""), icon: "chart.bar.fill",     color: .indigo),
-		TopicItem(id: "immigration",  label: NSLocalizedString("consult.topic.immigration",  comment: ""), icon: "globe",              color: .teal),
-		TopicItem(id: "agriculture",  label: NSLocalizedString("consult.topic.agriculture",  comment: ""), icon: "fork.knife",         color: .brown),
-		TopicItem(id: "justice",      label: NSLocalizedString("consult.topic.justice",      comment: ""), icon: "scale.3d",           color: .purple),
+		TopicItem(id: "environment", label: NSLocalizedString("consult.topic.environment", comment: ""), icon: "leaf.fill", color: .green),
+		TopicItem(id: "housing", label: NSLocalizedString("consult.topic.housing", comment: ""), icon: "house.fill", color: .blue),
+		TopicItem(id: "health", label: NSLocalizedString("consult.topic.health", comment: ""), icon: "heart.fill", color: .red),
+		TopicItem(id: "indigenous", label: NSLocalizedString("consult.topic.indigenous", comment: ""), icon: "person.3.fill", color: .orange),
+		TopicItem(id: "finance", label: NSLocalizedString("consult.topic.finance", comment: ""), icon: "chart.bar.fill", color: .indigo),
+		TopicItem(id: "immigration", label: NSLocalizedString("consult.topic.immigration", comment: ""), icon: "globe", color: .teal),
+		TopicItem(id: "agriculture", label: NSLocalizedString("consult.topic.agriculture", comment: ""), icon: "fork.knife", color: .brown),
+		TopicItem(id: "justice", label: NSLocalizedString("consult.topic.justice", comment: ""), icon: "scale.3d", color: .purple)
 	]
 
 	var body: some View {

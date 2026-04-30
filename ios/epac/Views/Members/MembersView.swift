@@ -5,8 +5,8 @@
 //  Created by Codex on 2025-XX-XX.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 import UIKit
 
 struct MembersView: View {
@@ -380,7 +380,3 @@ private struct PartyFilterView: View {
 		isCabinetMinister: true
 	)
 }
-
-
-
-

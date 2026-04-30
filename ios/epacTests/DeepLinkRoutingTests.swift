@@ -1,6 +1,6 @@
-import Testing
-import Foundation
 @testable import epac
+import Foundation
+import Testing
 
 // Tests for the Universal Link URL parsing logic.
 //

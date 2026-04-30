@@ -1,10 +1,11 @@
 import Observation
-import SwiftUI
-import SwiftData
 import Sentry
+import SwiftData
+import SwiftUI
 
 private let ridingNameKey = "epac.myMP.ridingName"
 private let memberNameKey = "epac.myMP.memberName"
+private let postalCodeKey = "epac.myMP.postalCode"
 
 @MainActor
 @Observable
@@ -18,6 +19,7 @@ class PostalCodeViewModel {
 
     static var savedRidingName: String? { UserDefaults.standard.string(forKey: ridingNameKey) }
     static var savedMemberName: String? { UserDefaults.standard.string(forKey: memberNameKey) }
+    static var savedPostalCode: String? { UserDefaults.standard.string(forKey: postalCodeKey) }
 
     func lookup(modelContext: ModelContext) async {
         let trimmed = postalCode.trimmingCharacters(in: .whitespaces)
@@ -30,9 +32,16 @@ class PostalCodeViewModel {
             let ridingName = try await service.lookupRiding(postalCode: trimmed)
 
             // Resolve MP from local SwiftData — stays on @MainActor, no data race.
-            let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+            // Sort by fromDateTime descending so the most-recent serving MP is first.
+            let descriptor = FetchDescriptor<ParliamentMember>(
+                sortBy: [SortDescriptor(\.fromDateTime, order: .reverse)]
+            )
+            let allMembers = (try? modelContext.fetch(descriptor)) ?? []
             let normalized = RidingLookupService.normalizeRidingName(ridingName)
+            // Only match currently serving MPs (toDateTime == nil). If local data is stale
+            // and has no current MP yet, mp is nil and the empty-name fallback path applies.
             let mp = allMembers.first {
+                $0.toDateTime == nil &&
                 RidingLookupService.normalizeRidingName($0.riding) == normalized
             }
 
@@ -51,6 +60,7 @@ class PostalCodeViewModel {
 
     func confirm() {
         guard let result else { return }
+        UserDefaults.standard.set(postalCode.trimmingCharacters(in: .whitespaces), forKey: postalCodeKey)
         UserDefaults.standard.set(result.ridingName, forKey: ridingNameKey)
         // If no MP resolved yet, save the riding name as a placeholder so the
         // home feed shows something meaningful rather than the "Find Your MP" prompt.
@@ -59,6 +69,7 @@ class PostalCodeViewModel {
     }
 
     static func clear() {
+        UserDefaults.standard.removeObject(forKey: postalCodeKey)
         UserDefaults.standard.removeObject(forKey: ridingNameKey)
         UserDefaults.standard.removeObject(forKey: memberNameKey)
     }

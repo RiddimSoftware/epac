@@ -21,10 +21,10 @@ class SpeechNavigator {
 	}
 }
 
-//@Observable class SittingNavigator {
+// @Observable class SittingNavigator {
 //	var hansard: Hansard
 //	
-//}
+// }
 
 @Observable
 class SubjectNavigator {

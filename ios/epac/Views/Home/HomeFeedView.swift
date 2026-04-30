@@ -11,16 +11,19 @@
 //  5. Today's most recent debates (from latest Hansard in SwiftData)
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @MainActor
 struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var fetch: Fetch
     @Environment(NavigationRouter.self) private var router
     @Environment(NetworkMonitor.self) private var networkMonitor
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isSittingToday = false
     @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
+    @State private var liveParliamentStatus: LiveParliamentStatus?
     @State private var nextSittingDate: Date?
     @State private var latestRecordedVote: RecordedVote?
     @State private var latestMemberVote: MemberVote?
@@ -35,12 +38,35 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
+    @State private var showLiveInfo = false
+    @State private var postSittingHansard: Hansard?
+    @State private var onThisDayItems: [OnThisDayItem] = []
+    @State private var onThisDayDismissedDate = UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate") ?? ""
+    @State private var didRecordOnThisDayImpression = false
+    @State private var selectedOnThisDaySpeech: OnThisDaySpeechSelection?
+
+    private let liveParliamentService = LiveParliamentService()
+    private let onThisDayService = OnThisDayService()
 
     var body: some View {
         NavigationStack {
             List {
+                switch liveCardState {
+                case .live(let status):
+                    liveParliamentSection(status)
+                case .todayPublished(let hansard, let subject):
+                    postSittingSection(hansard: hansard, subject: subject)
+                case .todayPending:
+                    postSittingPendingSection
+                case .hidden:
+                    EmptyView()
+                }
                 // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
+                if shouldShowOnThisDaySection {
+                    onThisDaySection
+                }
+                electionCountdownSection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
                     followedBillsSection
@@ -51,7 +77,13 @@ struct HomeFeedView: View {
                 if !mySenators.isEmpty {
                     senatorsSection
                 }
+                reconciliationContextCard
+                correctionsContextCard
                 healthcareContextCard
+                consumerPriceIndexContextCard
+                studentFinanceContextCard
+                employmentInsuranceContextCard
+                transportationSafetyContextCard
                 if !recentSubjects.isEmpty {
                     recentDebatesSection
                 }
@@ -77,6 +109,7 @@ struct HomeFeedView: View {
             .accessibilityIdentifier("home-feed-scroll")
             .refreshable {
                 await loadFeed()
+                await refreshLiveParliamentStatus()
                 if !networkMonitor.isConnected {
                     showRefreshToast = true
                 }
@@ -105,17 +138,141 @@ struct HomeFeedView: View {
                     .accessibilityLabel(NSLocalizedString("settings.title", comment: ""))
                 }
             }
-            .task { await loadFeed() }
+            .task {
+                await loadFeed()
+                await refreshLiveParliamentStatus()
+            }
+            .task(id: scenePhase) {
+                await pollLiveParliamentStatus(while: scenePhase)
+            }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .navigationDestination(item: $selectedOnThisDaySpeech) { selection in
+                SpeechView(hansard: selection.hansard, subject: selection.subject)
+            }
         }
     }
 
     // MARK: - Section 1: Today in Parliament
+
+    private func liveParliamentSection(_ status: LiveParliamentStatus) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.s) {
+                    Label(liveBadgeText(for: status), systemImage: liveBadgeIcon(for: status))
+                        .font(.epacCaption.weight(.bold))
+                        .foregroundStyle(liveBadgeColor(for: status))
+                        .labelStyle(.titleAndIcon)
+                    Spacer()
+                    Button {
+                        showLiveInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.epacSubheadline)
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(Color.epacText.secondary)
+                    .accessibilityLabel(NSLocalizedString("home.live.infoTitle", comment: ""))
+                    .popover(isPresented: $showLiveInfo) { liveInfoPopover }
+                }
+
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    Text(liveHeadline(for: status))
+                        .font(.epacHeadline)
+                        .foregroundStyle(Color.epacText.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(liveDetail(for: status))
+                        .font(.epacSubheadline)
+                        .foregroundStyle(Color.epacText.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: EpacSpacing.s) {
+                    Text(String(
+                        format: NSLocalizedString("home.live.updated", comment: ""),
+                        status.checkedAt.formatted(date: .omitted, time: .shortened)
+                    ))
+                    if let billNumber = status.currentBillNumber {
+                        Text(billNumber)
+                    }
+                }
+                .font(.epacCaption)
+                .foregroundStyle(Color.epacText.tertiary)
+            }
+            .padding(.vertical, EpacSpacing.s)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private func postSittingSection(hansard: Hansard, subject: SubjectOfBusiness) -> some View {
+        Section {
+            NavigationLink(destination: SpeechView(hansard: hansard, subject: subject)) {
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                    Label(
+                        NSLocalizedString("home.live.todayBadge", comment: ""),
+                        systemImage: "building.columns.fill"
+                    )
+                    .font(.epacCaption.weight(.bold))
+                    .foregroundStyle(Color.epacBrand.accent)
+                    .labelStyle(.titleAndIcon)
+
+                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                        Text(hansard.date.formatted(date: .long, time: .omitted))
+                            .font(.epacHeadline)
+                            .foregroundStyle(Color.epacText.primary)
+                        Text(subject.title)
+                            .font(.epacSubheadline)
+                            .foregroundStyle(Color.epacText.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Text(NSLocalizedString("home.live.tapToRead", comment: ""))
+                        .font(.epacCaption.weight(.semibold))
+                        .foregroundStyle(Color.epacBrand.accent)
+                }
+                .padding(.vertical, EpacSpacing.s)
+            }
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private var postSittingPendingSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: EpacSpacing.m) {
+                Label(
+                    NSLocalizedString("home.live.todayBadge", comment: ""),
+                    systemImage: "building.columns.fill"
+                )
+                .font(.epacCaption.weight(.bold))
+                .foregroundStyle(Color.epacText.secondary)
+                .labelStyle(.titleAndIcon)
+
+                Text(NSLocalizedString("home.live.comingSoon", comment: ""))
+                    .font(.epacSubheadline)
+                    .foregroundStyle(Color.epacText.secondary)
+            }
+            .padding(.vertical, EpacSpacing.s)
+            .accessibilityIdentifier("home-live-parliament-card")
+        }
+    }
+
+    private var liveInfoPopover: some View {
+        VStack(alignment: .leading, spacing: EpacSpacing.s) {
+            Text(NSLocalizedString("home.live.infoTitle", comment: ""))
+                .font(.epacHeadline)
+            Text(NSLocalizedString("home.live.infoBody", comment: ""))
+                .font(.epacCallout)
+                .foregroundStyle(Color.epacText.secondary)
+        }
+        .padding(EpacSpacing.m)
+        .frame(maxWidth: 320, alignment: .leading)
+        .presentationCompactAdaptation(.popover)
+    }
 
     private var todaySection: some View {
         Section {
@@ -231,7 +388,13 @@ struct HomeFeedView: View {
         }
     }
 
-    private func todayMetricRow(icon: String, title: String, headline: String, detail: String) -> some View {
+    private func todayMetricRow(
+        icon: String,
+        title: String,
+        headline: String,
+        detail: String,
+        detailLineLimit: Int? = nil
+    ) -> some View {
         HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: icon)
                 .foregroundStyle(Color.epacBrand.accent)
@@ -244,15 +407,59 @@ struct HomeFeedView: View {
                 Text(headline)
                     .font(.epacSubheadline.weight(.semibold))
                     .foregroundStyle(Color.epacText.primary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(detail)
                     .font(.epacCaption)
                     .foregroundStyle(Color.epacText.secondary)
-                    .lineLimit(2)
+                    .lineLimit(detailLineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
         }
         .contentShape(Rectangle())
+    }
+
+    // MARK: - On this day
+
+    private var shouldShowOnThisDaySection: Bool {
+        !onThisDayItems.isEmpty && onThisDayDismissedDate != ottawaTodayString
+    }
+
+    private var onThisDaySection: some View {
+        Section {
+            ForEach(onThisDayItems.prefix(5)) { item in
+                Button {
+                    Task { await openOnThisDayItem(item) }
+                } label: {
+                    todayMetricRow(
+                        icon: item.kind == .vote ? "checkmark.ballot.fill" : "quote.bubble.fill",
+                        title: item.detailText,
+                        headline: item.title,
+                        detail: item.excerpt,
+                        detailLineLimit: 1
+                    )
+                    .padding(.vertical, EpacSpacing.xs)
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            HStack {
+                Text(NSLocalizedString("home.onThisDay.title", comment: ""))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button {
+                    dismissOnThisDay()
+                } label: {
+                    Image(systemName: "xmark.circle")
+                }
+                .accessibilityLabel(NSLocalizedString("home.onThisDay.dismiss", comment: ""))
+            }
+        }
+        .onAppear {
+            guard !didRecordOnThisDayImpression else { return }
+            didRecordOnThisDayImpression = true
+            OnThisDayTelemetry.record(.impression)
+        }
     }
 
     // MARK: - Section 2: Your MP's activity
@@ -268,7 +475,7 @@ struct HomeFeedView: View {
                         VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                             Text(name)
                                 .font(.epacSubheadline.weight(.semibold))
-                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                             Text(String(format: NSLocalizedString("home.myMP.activityCount", comment: ""), myMPActivityCount))
                                 .font(.epacCaption)
                                 .foregroundStyle(Color.epacText.secondary)
@@ -316,7 +523,7 @@ struct HomeFeedView: View {
                         Text(state.lastKnownStage)
                             .font(.epacCaption)
                             .foregroundStyle(Color.epacText.secondary)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
                 }
@@ -389,6 +596,7 @@ struct HomeFeedView: View {
                             Text(senator.caucusFullName)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer()
                         Image(systemName: "arrow.up.right.square")
@@ -397,6 +605,62 @@ struct HomeFeedView: View {
                     }
                 }
                 .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
+            }
+        }
+    }
+
+    // MARK: - Reconciliation contextual card (shown when Indigenous/reconciliation topic is followed)
+
+    @ViewBuilder
+    private var reconciliationContextCard: some View {
+        if topicStore.isFollowing("indigenous") {
+            Section {
+                ReconciliationContextCard()
+            } header: {
+                Text("Reconciliation")
+            }
+        }
+    }
+
+    // MARK: - Corrections contextual card (shown when Indigenous or justice topic is followed)
+
+    @ViewBuilder
+    private var correctionsContextCard: some View {
+        if topicStore.isFollowing("justice") || topicStore.isFollowing("indigenous"),
+           let snapshot = CorrectionsStatisticsDatabase.snapshot(),
+           let latest = snapshot.latestAnnualStatistic {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Federal corrections")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Indigenous in custody")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(latest.indigenousInCustodyPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Canada population share")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("5-year recidivism rate")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(percentLabel(latest.recidivismRatePercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: snapshot.source.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Federal Corrections")
+            } footer: {
+                Text("Reference year: \(CorrectionsStatisticsDatabase.fiscalYearLabel(snapshot.referenceFiscalYear))")
             }
         }
     }
@@ -429,6 +693,191 @@ struct HomeFeedView: View {
         }
     }
 
+    // MARK: - Consumer Price Index contextual card (shown when "economy" or "agriculture" topic followed + province known)
+
+    @ViewBuilder
+    private var consumerPriceIndexContextCard: some View {
+        if topicStore.isFollowing("economy") || topicStore.isFollowing("agriculture"),
+           let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: provinceAbbrev) {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Inflation in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("All-items")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.allItemsYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Food")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.foodYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Canada")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: ConsumerPriceIndexStatisticsDatabase.snapshot()?.source.url
+                        ?? ConsumerPriceIndexStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Consumer Price Index")
+            } footer: {
+                Text("Reference month: \(ConsumerPriceIndexStatisticsDatabase.monthLabel(cpi.referenceMonth))")
+            }
+        }
+    }
+
+    // MARK: - Student finance contextual card (shown when "education" topic followed + province known)
+
+    @ViewBuilder
+    private var studentFinanceContextCard: some View {
+        if topicStore.isFollowing("education"),
+           let finance = StudentFinancialAssistanceStatisticsDatabase.statistic(for: provinceAbbrev),
+           let tuition = finance.latestTuitionYear {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Student costs in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Average undergraduate tuition")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(tuition.averageUndergraduateTuition.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    if let tuitionChange = tuition.yearOverYearChangePercent {
+                        HStack {
+                            Text("Tuition vs. last year")
+                                .font(.epacCallout)
+                            Spacer()
+                            Text(yearOverYearLabel(tuitionChange))
+                                .font(.epacCallout.monospacedDigit())
+                        }
+                    }
+                    if let latestCSFA = finance.latestCSFAYear {
+                        HStack {
+                            Text("CSL recipients")
+                                .font(.epacCallout)
+                            Spacer()
+                            Text(latestCSFA.loanRecipients.formatted())
+                                .font(.epacCallout.monospacedDigit())
+                        }
+                    }
+                    Link("View source", destination: StudentFinancialAssistanceStatisticsDatabase.snapshot()?.source.url
+                        ?? StudentFinancialAssistanceStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Student Financial Assistance")
+            } footer: {
+                Text("Tuition year: \(StudentFinancialAssistanceStatisticsDatabase.academicYearLabel(tuition.academicYear))")
+            }
+        }
+    }
+
+    // MARK: - Employment Insurance contextual card (shown when "labour" topic followed + province known)
+
+    @ViewBuilder
+    private var employmentInsuranceContextCard: some View {
+        if topicStore.isFollowing("labour"),
+           let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: provinceAbbrev) {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("EI in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Regular beneficiaries")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(ei.beneficiaries.formatted())
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Average weekly benefit")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0))))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    Link("View source", destination: EmploymentInsuranceStatisticsDatabase.snapshot()?.source.url
+                        ?? EmploymentInsuranceStatisticsDatabase.fallbackSource.url)
+                        .font(.epacCaption)
+                }
+            } header: {
+                Text("Employment Insurance")
+            } footer: {
+                Text("Reference month: \(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))")
+            }
+        }
+    }
+
+    // MARK: - Transportation safety contextual card (shown when "transport" topic followed + province known)
+
+    @ViewBuilder
+    private var transportationSafetyContextCard: some View {
+        if topicStore.isFollowing("transport"),
+           let road = TransportSafetyStatisticsDatabase.roadStatistic(for: provinceAbbrev),
+           let rail = TransportSafetyStatisticsDatabase.latestModeYear("rail") {
+            Section {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    Text("Road safety in \(provinceAbbrev)")
+                        .font(.epacSubheadline.weight(.semibold))
+                    HStack {
+                        Text("Fatalities")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(TransportSafetyStatisticsDatabase.rateLabel(road.fatalitiesPer100k, unit: "per 100k"))
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    HStack {
+                        Text("Rail accidents \(rail.year)")
+                            .font(.epacCallout)
+                        Spacer()
+                        Text(rail.accidents.formatted())
+                            .font(.epacCallout.monospacedDigit())
+                    }
+                    NavigationLink(destination: TransportationSafetyView()) {
+                        Text("View national transport safety")
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacBrand.accent)
+                    }
+                }
+            } header: {
+                Text("Transport Safety")
+            } footer: {
+                Text("Road reference year: \(road.referenceYear)")
+            }
+        }
+    }
+
+    // MARK: - Election countdown
+
+    // The mandated date is statutorily fixed and cheap to compute, so the
+    // values are recalculated on each render rather than cached in @State.
+    private var electionCountdownSection: some View {
+        let lastElection = ElectionDateCalculator.last45thGeneralElection
+        let mandated = ElectionDateCalculator.nextMandatedDate(after: lastElection)
+        let days = ElectionDateCalculator.daysRemaining(now: Date(), mandatedDate: mandated)
+        return Section {
+            NavigationLink(destination: ElectionDetailView(
+                lastElectionDate: lastElection,
+                mandatedDate: mandated,
+                daysRemaining: days
+            )) {
+                ElectionCountdownCard(mandatedDate: mandated, daysRemaining: days)
+            }
+        }
+    }
+
     // MARK: - Section 5: Recent debates
 
     private var recentDebatesSection: some View {
@@ -436,7 +885,7 @@ struct HomeFeedView: View {
             ForEach(recentSubjects) { subject in
                 Text(subject.title)
                     .font(.epacSubheadline)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, EpacSpacing.xs)
             }
             if latestHansard != nil {
@@ -488,6 +937,9 @@ struct HomeFeedView: View {
         ))) ?? []
         latestHansard = hansards.first
         parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
+        if liveParliamentStatus?.isSitting == true {
+            parliamentDayStatus = .sitting
+        }
         recentSubjects = Array(
             (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
         )
@@ -509,6 +961,114 @@ struct HomeFeedView: View {
         } else {
             latestMemberVote = nil
         }
+
+        await refreshOnThisDay()
+    }
+
+    private func refreshOnThisDay() async {
+        guard networkMonitor.isConnected || AppEnvironment.isEvidenceCaptureMode else { return }
+        do {
+            let items = try await onThisDayService.fetch(date: Date(), limit: 5)
+            if items != onThisDayItems {
+                didRecordOnThisDayImpression = false
+            }
+            onThisDayItems = items
+        } catch {
+            Log.error("HomeFeedView on-this-day refresh failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func pollLiveParliamentStatus(while phase: ScenePhase) async {
+        guard phase == .active else { return }
+        await refreshLiveParliamentStatus()
+        while !Task.isCancelled {
+            do {
+                let interval: Double = livePollingInterval
+                try await Task.sleep(for: .seconds(interval))
+            } catch {
+                return
+            }
+            await refreshLiveParliamentStatus()
+        }
+    }
+
+    private var livePollingInterval: Double {
+        guard let status = liveParliamentStatus, !status.isSitting,
+              let changedAt = status.lastChangedAt else {
+            return 120
+        }
+        // After a sitting ends and > 6h have elapsed, slow to hourly to
+        // conserve resources while we wait for Hansard to publish.
+        return Date().timeIntervalSince(changedAt) > 6 * 3600 ? 3600 : 120
+    }
+
+    private func refreshLiveParliamentStatus() async {
+        guard networkMonitor.isConnected else { return }
+        do {
+            let status = try await liveParliamentService.fetchStatus()
+            liveParliamentStatus = status
+            if status.isSitting {
+                parliamentDayStatus = .sitting
+            }
+            resolvePostSittingHansard(for: status)
+        } catch {
+            Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func resolvePostSittingHansard(for status: LiveParliamentStatus) {
+        guard !status.isSitting, let sittingDate = status.sittingDate else {
+            postSittingHansard = nil
+            return
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/Toronto")
+        guard let date = formatter.date(from: sittingDate) else {
+            postSittingHansard = nil
+            return
+        }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
+        let descriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { $0.date >= start && $0.date < end }
+        )
+        postSittingHansard = (try? modelContext.fetch(descriptor))?.first
+    }
+
+    // Returns today's date string (YYYY-MM-DD) in Ottawa local time.
+    private var ottawaTodayString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/Toronto")
+        return formatter.string(from: Date())
+    }
+
+    private func dismissOnThisDay() {
+        onThisDayDismissedDate = ottawaTodayString
+        UserDefaults.standard.set(onThisDayDismissedDate, forKey: "epac.onThisDay.dismissedDate")
+        OnThisDayTelemetry.record(.dismiss)
+    }
+
+    private enum LiveCardState {
+        case live(LiveParliamentStatus)
+        case todayPublished(Hansard, SubjectOfBusiness)
+        case todayPending
+        case hidden
+    }
+
+    private var liveCardState: LiveCardState {
+        guard let status = liveParliamentStatus else { return .hidden }
+        if status.isSitting { return .live(status) }
+        guard let sittingDate = status.sittingDate, sittingDate == ottawaTodayString else {
+            return .hidden
+        }
+        if let hansard = postSittingHansard,
+           let subject = hansard.orders.first?.subjects.first {
+            return .todayPublished(hansard, subject)
+        }
+        return .todayPending
     }
 
     private var todayStatusDetail: String {
@@ -559,6 +1119,40 @@ struct HomeFeedView: View {
         case .notSitting:
             return Color.epacText.secondary
         }
+    }
+
+    private func liveBadgeText(for status: LiveParliamentStatus) -> String {
+        status.divisionInProgress
+            ? NSLocalizedString("home.live.voteBadge", comment: "")
+            : NSLocalizedString("home.live.badge", comment: "")
+    }
+
+    private func liveBadgeIcon(for status: LiveParliamentStatus) -> String {
+        status.divisionInProgress ? "checkmark.ballot.fill" : "circle.fill"
+    }
+
+    private func liveBadgeColor(for status: LiveParliamentStatus) -> Color {
+        status.divisionInProgress ? Color.epacStatus.warning : Color.epacStatus.destructive
+    }
+
+    private func liveHeadline(for status: LiveParliamentStatus) -> String {
+        if let title = status.currentItemTitle, !title.isEmpty {
+            return title
+        }
+        return status.businessType
+    }
+
+    private func liveDetail(for status: LiveParliamentStatus) -> String {
+        if status.divisionInProgress {
+            return NSLocalizedString("home.live.resultIncoming", comment: "")
+        }
+        if let speaker = status.currentSpeakerName, !speaker.isEmpty {
+            return String(format: NSLocalizedString("home.live.speaker", comment: ""), speaker)
+        }
+        return String(
+            format: NSLocalizedString("home.live.updated", comment: ""),
+            status.checkedAt.formatted(date: .omitted, time: .shortened)
+        )
     }
 
     private var hasFollowedMPContext: Bool {
@@ -636,6 +1230,82 @@ struct HomeFeedView: View {
         return nil
     }
 
+    private func openOnThisDayItem(_ item: OnThisDayItem) async {
+        OnThisDayTelemetry.record(.tap, itemID: item.id)
+        switch item.kind {
+        case .speech:
+            await openOnThisDaySpeech(item)
+        case .vote:
+            if let billNumber = item.billNumber, !billNumber.isEmpty {
+                router.pendingSearchQuery = billNumber
+            } else {
+                router.pendingSearchQuery = item.title
+            }
+            router.selectedTab = .search
+        }
+    }
+
+    private func openOnThisDaySpeech(_ item: OnThisDayItem) async {
+        guard let date = item.parsedDate else {
+            router.pendingSearchQuery = item.subjectTitle ?? item.title
+            router.selectedTab = .search
+            return
+        }
+
+        do {
+            if resolveHansard(on: date) == nil {
+                try await fetch.downloadHansard(date)
+            }
+            guard let hansard = resolveHansard(on: date),
+                  let subject = resolveSubject(for: item, in: hansard) else {
+                router.pendingSearchQuery = item.subjectTitle ?? item.title
+                router.selectedTab = .search
+                return
+            }
+            prepareOnThisDaySpeechResume(item, subject: subject)
+            selectedOnThisDaySpeech = OnThisDaySpeechSelection(hansard: hansard, subject: subject)
+        } catch {
+            Log.error("HomeFeedView on-this-day speech open failed: \(error.localizedDescription)")
+            router.pendingSearchQuery = item.subjectTitle ?? item.title
+            router.selectedTab = .search
+        }
+    }
+
+    private func resolveHansard(on date: Date) -> Hansard? {
+        let start = Calendar.current.startOfDay(for: date)
+        guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return nil }
+        let descriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { $0.date >= start && $0.date < end }
+        )
+        return (try? modelContext.fetch(descriptor))?.first
+    }
+
+    private func resolveSubject(for item: OnThisDayItem, in hansard: Hansard) -> SubjectOfBusiness? {
+        let subjects = hansard.orders.flatMap(\.subjects)
+        if let interventionID = item.interventionID,
+           let exact = subjects.first(where: { subject in
+               subject.speeches.contains { $0.hansardID == interventionID }
+           }) {
+            return exact
+        }
+        if let subjectTitle = item.subjectTitle,
+           let titleMatch = subjects.first(where: { $0.title.localizedCaseInsensitiveCompare(subjectTitle) == .orderedSame }) {
+            return titleMatch
+        }
+        return subjects.first
+    }
+
+    private func prepareOnThisDaySpeechResume(_ item: OnThisDayItem, subject: SubjectOfBusiness) {
+        guard let interventionID = item.interventionID,
+              let speech = subject.speeches.first(where: { $0.hansardID == interventionID }) else {
+            return
+        }
+        subject.currentSpeech = speech
+        subject.currentSpeechID = speech.hansardID
+        speech.currentMessage = nil
+        speech.currentMessageID = nil
+    }
+
     private static func trimmedExcerpt(_ text: String) -> String {
         let cleaned = text
             .replacingOccurrences(of: "\n", with: " ")
@@ -643,6 +1313,17 @@ struct HomeFeedView: View {
         guard cleaned.count > 140 else { return cleaned }
         let end = cleaned.index(cleaned.startIndex, offsetBy: 140)
         return String(cleaned[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+    }
+
+    private func yearOverYearLabel(_ value: Double) -> String {
+        if value > 0 {
+            return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
+        }
+        return "\(value.formatted(.number.precision(.fractionLength(1))))%"
+    }
+
+    private func percentLabel(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(1))))%"
     }
 
     private func trackTodayCardTap(_ target: String) {
@@ -655,6 +1336,20 @@ private struct HomeSpeechHighlight {
     let subject: SubjectOfBusiness
     let memberName: String
     let excerpt: String
+}
+
+private struct OnThisDaySpeechSelection: Hashable, Identifiable {
+    let id = UUID()
+    let hansard: Hansard
+    let subject: SubjectOfBusiness
+
+    static func == (lhs: OnThisDaySpeechSelection, rhs: OnThisDaySpeechSelection) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
 private enum HomeParliamentDayStatus {

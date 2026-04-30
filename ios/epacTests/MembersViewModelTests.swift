@@ -1,7 +1,7 @@
-import Testing
-import SwiftData
-import Foundation
 @testable import epac
+import Foundation
+import SwiftData
+import Testing
 
 // MembersViewModel holds no SwiftData state itself — its filteredMembers(from:)
 // and clearAllFilters() operate on plain values. We still create ParliamentMember
@@ -199,5 +199,16 @@ struct MembersViewModelTests {
 		#expect(vm.selectedProvince == nil)
 		#expect(vm.selectedStatus == .current)
 		#expect(!vm.isAnyFilterActive)
+	}
+
+	@Test func isAnyFilterActiveIsFalseOnDefaultInit() {
+		let vm = MembersViewModel()
+		#expect(!vm.isAnyFilterActive)
+	}
+
+	@Test func isAnyFilterActiveIsTrueWhenCabinetFilterApplied() {
+		let vm = MembersViewModel()
+		vm.selectedCabinet = .cabinetOnly
+		#expect(vm.isAnyFilterActive)
 	}
 }

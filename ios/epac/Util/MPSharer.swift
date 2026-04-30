@@ -3,8 +3,8 @@
 //  epac
 //
 
-import Foundation
 import ActivityView
+import Foundation
 
 // Builds a share payload for an MP profile with a verified openparliament.ca link.
 // openparliament.ca politician slugs are lowercase-hyphenated full names,

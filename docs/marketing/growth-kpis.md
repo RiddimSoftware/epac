@@ -47,6 +47,7 @@ user is a potential sharer and a civic engagement data point.
 | Press / media | 1 media mention per quarter | Zero mentions after outreach | Planned — EPAC-179 |
 | Apple Search Ads | CPI < $3, D7 retention > 25% | CPI > $5 (screenshot problem) | Not yet running |
 | App Clip (EPAC-75) | Installs via `epac-appclip` campaign link | < 1% of total installs | Live |
+| Newsletter welcome sequence | Email 1 sends immediately; Emails 2 and 3 complete within 7 days; installs attributed to `epac-newsletter-welcome` | Stale facts or no attributed installs after first month | Planned — EPAC-343 |
 
 ---
 
@@ -58,6 +59,8 @@ user is a potential sharer and a civic engagement data point.
 4. Which channel is under-performing? Diagnose or deprioritize.
 5. Revise month-6 and month-12 targets if baseline understanding has changed significantly.
 6. Is conversion rate ≥ 3%? If not, screenshot refresh (EPAC-109) is the highest-leverage action.
+7. Are the welcome-sequence facts still current? Refresh anything older than the
+   limits in `docs/marketing/newsletter/welcome-sequence.md`.
 
 ---
 

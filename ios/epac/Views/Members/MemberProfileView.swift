@@ -5,10 +5,10 @@
 //  Created by Codex on 2026-01-28.
 //
 
-import SwiftUI
-import SwiftData
 import ActivityView
 import AppIntents
+import SwiftData
+import SwiftUI
 
 struct MemberProfileView: View {
 	let member: ParliamentMember
@@ -36,6 +36,7 @@ struct MemberProfileView: View {
 	@State private var lobbyingComms: [LobbyistCommunication] = []
 	@State private var showCopiedConfirmation = false
 	@State private var lobbyingLoaded = false
+	@State private var showEthics = false
 	@State private var shareItem: ActivityItem?
 
 	init(member: ParliamentMember) {
@@ -192,6 +193,11 @@ struct MemberProfileView: View {
 				.background(Color(.secondarySystemBackground))
 				.cornerRadius(12)
 
+				RidingBoundaryMapCard(ridingName: member.riding, party: member.party)
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(12)
+
 				if let position = cabinetPosition {
 					CabinetPositionSection(position: position)
 				}
@@ -273,12 +279,12 @@ struct MemberProfileView: View {
 								VStack(alignment: .leading, spacing: 3) {
 									Text(comm.organizationName)
 										.font(.subheadline)
-										.lineLimit(2)
+										.fixedSize(horizontal: false, vertical: true)
 									if !comm.subjectMatter.isEmpty {
 										Text(comm.subjectMatter)
 											.font(.caption2)
 											.foregroundStyle(.secondary)
-											.lineLimit(2)
+											.fixedSize(horizontal: false, vertical: true)
 									}
 									if let d = comm.communicationDate {
 										Text(d, style: .date)
@@ -323,6 +329,56 @@ struct MemberProfileView: View {
 					}
 				}
 			}
+
+			// MARK: Ethics disclosures
+			let ethicsInvestigations = EthicsInvestigationsDatabase.investigations(for: member.lastName)
+			DisclosureGroup(
+				isExpanded: $showEthics,
+				content: {
+					if ethicsInvestigations.isEmpty {
+						VStack(alignment: .leading, spacing: 6) {
+							Text("No Commissioner reports found for this MP.")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+								.padding(.vertical, 4)
+							Link("View annual compliance status (CIEC)", destination: EthicsInvestigationsDatabase.complianceStatusURL)
+								.font(.caption)
+							Link("Public registry — disclosures and statements", destination: EthicsInvestigationsDatabase.registryURL)
+								.font(.caption)
+						}
+					} else {
+						ForEach(ethicsInvestigations) { investigation in
+							VStack(alignment: .leading, spacing: 3) {
+								Text(investigation.reportTitle)
+									.font(.subheadline)
+								Text("\(investigation.type) · \(EthicsInvestigationsDatabase.formattedDate(investigation.date))")
+									.font(.caption2)
+									.foregroundStyle(.secondary)
+								Link("Read report →", destination: investigation.pageURL)
+									.font(.caption2)
+									.foregroundStyle(.tint)
+							}
+							.padding(.vertical, 2)
+						}
+						Link("All Commissioner reports", destination: EthicsInvestigationsDatabase.commissionerURL)
+							.font(.caption)
+							.foregroundStyle(.tint)
+					}
+				},
+				label: {
+					HStack {
+						Image(systemName: "checkmark.shield.fill")
+							.foregroundStyle(.tint)
+						Text("Ethics Disclosures")
+							.font(.subheadline)
+							.fontWeight(.semibold)
+					}
+				}
+			)
+			.padding()
+			.background(Color.appSurface)
+			.cornerRadius(12)
+
 			// MARK: Written Questions
 			WrittenQuestionsSection(member: member)
 
@@ -343,6 +399,7 @@ struct MemberProfileView: View {
 		.accessibilityIdentifier("mp-profile-scroll")
 		.padding()
 		.animation(.none, value: showLobbying)
+		.animation(.none, value: showEthics)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
 			if member.memberID > 0 {
@@ -461,10 +518,17 @@ struct MemberHighlightsCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
-            Divider().frame(height: 40)
-            statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 0) {
+                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+                Divider().frame(height: 40)
+                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+            }
+            VStack(spacing: 8) {
+                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
+                Divider()
+                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
+            }
         }
         .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
@@ -500,6 +564,7 @@ struct ProfileDetailRow: View {
 					.foregroundColor(.secondary)
 				Text(value)
 					.font(.headline)
+					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
 	}

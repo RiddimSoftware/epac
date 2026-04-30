@@ -77,13 +77,12 @@ enum MemberSpeechServiceError: Error {
 }
 
 struct MemberSpeechService {
-    private static let base = "https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production"
-
     static func fetchPage(memberId: Int, page: Int, perPage: Int = 20, topic: String? = nil) async throws -> MemberSpeechesPage {
+        let base = BackendConfig.shared.baseURL.absoluteString
         var components = URLComponents(string: "\(base)/members/\(memberId)/speeches")!
         var queryItems = [
             URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)"),
+            URLQueryItem(name: "per_page", value: "\(perPage)")
         ]
         if let topic {
             queryItems.append(URLQueryItem(name: "topic", value: topic))

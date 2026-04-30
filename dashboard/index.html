@@ -245,16 +245,59 @@
     }
 
     .release-title {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px;
+      align-items: start;
       font-weight: 700;
     }
 
-    .release ul {
-      margin: 0;
-      padding-left: 18px;
+    .release-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .release-note {
       color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .release-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .release-link {
+      color: var(--blue);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .release-link:hover {
+      text-decoration: underline;
+    }
+
+    .status-ready {
+      color: var(--green);
+      background: color-mix(in srgb, var(--green) 18%, #2c3340);
+    }
+
+    .status-review {
+      color: var(--blue);
+      background: color-mix(in srgb, var(--blue) 18%, #2c3340);
+    }
+
+    .status-waiting {
+      color: var(--amber);
+      background: color-mix(in srgb, var(--amber) 16%, #2c3340);
+    }
+
+    .status-rejected {
+      color: var(--red);
+      background: color-mix(in srgb, var(--red) 16%, #2c3340);
     }
 
     .health-row {
@@ -402,6 +445,11 @@
       recent_reviews: []
     };
 
+    const defaultReleases = {
+      generated_at: null,
+      releases: []
+    };
+
     const missionStats = [
       ["Data Sources Live", "15", "official government sources"],
       ["Provincial Coverage", "3 / 13", "provinces with data"],
@@ -503,17 +551,29 @@
       }).join("") : `<p class="empty">Epic progress will appear after dashboard data refreshes.</p>`;
     }
 
-    function renderReleases(jira) {
-      const done = [...(jira.done_this_week || [])].slice(0, 4);
-      document.getElementById("releases").innerHTML = done.length ? done.map(item => (
+    function releaseStatusClass(state) {
+      if (!state) return "";
+      if (state === "READY_FOR_SALE" || state === "READY_FOR_DISTRIBUTION" || state === "APPROVED") return "status-ready";
+      if (state === "IN_REVIEW" || state === "PROCESSING_FOR_APP_STORE") return "status-review";
+      if (state.includes("REJECTED") || state === "INVALID_BINARY") return "status-rejected";
+      return "status-waiting";
+    }
+
+    function renderReleases(releaseData) {
+      const releases = [...((releaseData || {}).releases || [])].slice(0, 10);
+      document.getElementById("releases").innerHTML = releases.length ? releases.map(item => (
         `<article class="release">
           <div class="release-title">
-            <span>${escapeHtml(item.key)} shipped</span>
-            <span class="subtle">${relativeTime(item.updated)}</span>
+            <span class="release-name">${escapeHtml(item.name || item.tag || "Release")}</span>
+            <span class="badge ${releaseStatusClass(item.app_store_state || "")}">${escapeHtml(item.status_label || "GitHub Release")}</span>
           </div>
-          <ul><li>${escapeHtml(item.summary)}</li></ul>
+          <p class="release-note">${escapeHtml(item.notes || "No release notes recorded.")}</p>
+          <div class="release-footer">
+            <span class="subtle">${escapeHtml(item.version || item.tag || "")} &middot; ${relativeTime(item.date)}</span>
+            ${item.url ? `<a class="release-link" href="${escapeHtml(item.url)}">View release</a>` : ""}
+          </div>
         </article>`
-      )).join("") : `<p class="empty">No completed tickets were reported in the latest dashboard data.</p>`;
+      )).join("") : `<p class="empty">Release history will appear after dashboard data refreshes.</p>`;
     }
 
     function renderBacklogHealth(jira) {
@@ -541,18 +601,19 @@
     }
 
     async function init() {
-      const [jira, asc] = await Promise.all([
+      const [jira, asc, releases] = await Promise.all([
         loadJson("./data/jira.json", defaultJira),
-        loadJson("./data/asc.json", defaultAsc)
+        loadJson("./data/asc.json", defaultAsc),
+        loadJson("./data/releases.json", defaultReleases)
       ]);
-      const updated = [jira.generated_at, asc.generated_at].filter(Boolean).sort().pop();
+      const updated = [jira.generated_at, asc.generated_at, releases.generated_at].filter(Boolean).sort().pop();
       document.getElementById("updated").textContent =
-        `Last updated: ${relativeTime(updated)} | Data: Jira + App Store Connect`;
+        `Last updated: ${relativeTime(updated)} | Data: Jira + App Store Connect + GitHub Releases`;
       renderMetrics(jira, asc);
       renderInProgress(jira.in_progress);
       renderBacklogHealth(jira);
       renderEpics(jira.epic_progress);
-      renderReleases(jira);
+      renderReleases(releases);
       renderMissionStats();
     }
 
