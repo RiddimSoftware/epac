@@ -3,6 +3,9 @@
 # Shared implementation lives in RiddimSoftware/riddim-release reusable workflows.
 # Keep this file thin: epac owns only event filtering, repo-local build/test inputs,
 # and secret inheritance. Bot prompts, guards, and merge behavior stay centralized.
+# Bot logins:
+# - developer-bot opens implementation PRs.
+# - riddim-reviewer-bot reviews developer-bot PRs and requests fix-ups.
 #
 # Required org secrets with selected-repository access to epac:
 # - CLAUDE_CODE_OAUTH_TOKEN
@@ -65,7 +68,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      github.event.review.user.login == 'reviewer-bot' &&
+      github.event.review.user.login == 'riddim-reviewer-bot' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
@@ -82,7 +85,7 @@ jobs:
       github.event_name == 'pull_request' &&
       (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
       github.event.pull_request.user.login == 'developer-bot' &&
-      github.event.sender.login != 'reviewer-bot' &&
+      github.event.sender.login != 'riddim-reviewer-bot' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
