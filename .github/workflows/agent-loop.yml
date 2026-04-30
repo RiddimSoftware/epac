@@ -98,9 +98,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     uses: RiddimSoftware/riddim-release/.github/workflows/rebase-watcher.yml@main
     with:
-      owner: ${{ github.repository_owner }}
-      repo: ${{ github.event.repository.name }}
-      base_branch: main
-      build_cmd: 'echo "no build configured for rebase check"'
-      test_cmd: 'echo "no tests configured for rebase check"'
+      consumer_repo: ${{ github.repository }}
+      # base_branch defaults to main
+      # autonomous_label defaults to "autonomous"
     secrets: inherit
