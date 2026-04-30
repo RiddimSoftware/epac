@@ -32,18 +32,11 @@ class PostalCodeViewModel {
             let ridingName = try await service.lookupRiding(postalCode: trimmed)
 
             // Resolve MP from local SwiftData — stays on @MainActor, no data race.
-            // Sort by fromDateTime descending so the most-recent serving MP is first.
             let descriptor = FetchDescriptor<ParliamentMember>(
                 sortBy: [SortDescriptor(\.fromDateTime, order: .reverse)]
             )
             let allMembers = (try? modelContext.fetch(descriptor)) ?? []
-            let normalized = RidingLookupService.normalizeRidingName(ridingName)
-            // Only match currently serving MPs (toDateTime == nil). If local data is stale
-            // and has no current MP yet, mp is nil and the empty-name fallback path applies.
-            let mp = allMembers.first {
-                $0.toDateTime == nil &&
-                RidingLookupService.normalizeRidingName($0.riding) == normalized
-            }
+            let mp = Self.currentMember(for: ridingName, in: allMembers)
 
             result = RidingLookupResult(
                 memberName: mp?.name ?? "",
@@ -56,6 +49,28 @@ class PostalCodeViewModel {
             errorMessage = NSLocalizedString("riding.error.networkError", comment: "")
             SentrySDK.capture(error: error)
         }
+    }
+
+    static func currentMember(for ridingName: String, in members: [ParliamentMember]) -> ParliamentMember? {
+        let normalized = RidingLookupService.normalizeRidingName(ridingName)
+        return members
+            .filter {
+                $0.toDateTime == nil
+                    && RidingLookupService.normalizeRidingName($0.riding) == normalized
+            }
+            .sorted { lhs, rhs in
+                switch (lhs.fromDateTime, rhs.fromDateTime) {
+                case let (lhsDate?, rhsDate?):
+                    return lhsDate > rhsDate
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                case (nil, nil):
+                    return lhs.name < rhs.name
+                }
+            }
+            .first
     }
 
     func confirm() {
