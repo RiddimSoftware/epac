@@ -5,7 +5,7 @@ import Testing
 
 // Tests for EpacMigrationPlan structural correctness.
 //
-// True end-to-end migration tests (V3 SQLite file → V5 container) require a
+// True end-to-end migration tests (V3 SQLite file -> latest container) require a
 // real on-disk store pre-seeded with the old schema metadata; that can't be
 // done in an in-memory unit test. What we CAN verify here:
 //   • the schemas array is in the required chronological order

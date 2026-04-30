@@ -191,7 +191,7 @@ class XMLBro {
 
 	                                        for node in element.children {
 
-	                                                if let elem = node as? XMLElement {
+	                                                if let elem = node as? SWXMLHash.XMLElement {
 
 	                                                        // Recursively get text from sub-elements
 
@@ -213,11 +213,11 @@ class XMLBro {
 
 	                        }
 
-	func text(fromXMLElement element: XMLElement) -> String {
+	func text(fromXMLElement element: SWXMLHash.XMLElement) -> String {
 		var text = String()
 		if !element.children.isEmpty {
 			for node in element.children {
-				if let elem = node as? XMLElement {
+				if let elem = node as? SWXMLHash.XMLElement {
 					text.append(self.text(fromXMLElement: elem))
 				} else {
 					text.append(node.description)
@@ -344,7 +344,7 @@ private extension String {
 	var nonEmpty: String? { isEmpty ? nil : self }
 }
 
-extension XMLElement {
+extension SWXMLHash.XMLElement {
 	func trimmedText() -> String {
 		return text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
 	}

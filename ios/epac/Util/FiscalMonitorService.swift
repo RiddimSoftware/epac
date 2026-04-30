@@ -191,7 +191,7 @@ struct FiscalMonitorService {
 		return baseURL
 	}
 
-	private static func tableValues(_ table: XMLElement) -> [String: [Double]] {
+	private static func tableValues(_ table: Kanna.XMLElement) -> [String: [Double]] {
 		var rows: [String: [Double]] = [:]
 		for row in table.css("tr") {
 			let key = normalized(row.at_css("th")?.text)
