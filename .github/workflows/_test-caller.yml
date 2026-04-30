@@ -1,0 +1,7 @@
+name: Test reusable workflow call
+on:
+  workflow_dispatch:
+jobs:
+  call-riddim-release:
+    uses: RiddimSoftware/riddim-release/.github/workflows/_test-callable.yml@feature/RIDDIM-103-reusable-workflow-access
+    secrets: inherit
