@@ -83,12 +83,12 @@ jobs:
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
       trigger_type: changes_requested
-      issue_number: ${{ github.event.pull_request.number }}
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
     secrets:
       DEV_BOT_APP_ID: ${{ secrets.DEV_BOT_APP_ID }}
       DEV_BOT_PRIVATE_KEY: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
+      CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
 
   # ── Reviewer: runs when developer-bot opens or updates a PR ──────────────
   reviewer:
@@ -106,6 +106,7 @@ jobs:
     secrets:
       REVIEWER_BOT_APP_ID: ${{ secrets.REVIEWER_BOT_APP_ID }}
       REVIEWER_BOT_PRIVATE_KEY: ${{ secrets.REVIEWER_BOT_PRIVATE_KEY }}
+      CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
 
   # ── Rebase watcher: detects stale PRs on push / schedule ─────────────────
   rebase-watcher:
