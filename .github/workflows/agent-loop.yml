@@ -9,8 +9,10 @@
 #
 # Required org secrets with selected-repository access to epac:
 # - CLAUDE_CODE_OAUTH_TOKEN
-# - DEV_BOT_PAT
-# - REVIEWER_BOT_PAT
+# - DEV_BOT_APP_ID
+# - DEV_BOT_PRIVATE_KEY
+# - REVIEWER_BOT_APP_ID
+# - REVIEWER_BOT_PRIVATE_KEY
 #
 # Required labels:
 # - agent:build starts a developer run from a GitHub issue.
@@ -63,7 +65,8 @@ jobs:
       issue_body: ${{ github.event.issue.body || '' }}
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
+      dev_bot_app_id: ${{ secrets.DEV_BOT_APP_ID }}
+      dev_bot_private_key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
 
   developer-fixup:
     name: Developer agent from reviewer changes requested
@@ -81,7 +84,8 @@ jobs:
       review_comments: ${{ github.event.review.body || '' }}
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
+      dev_bot_app_id: ${{ secrets.DEV_BOT_APP_ID }}
+      dev_bot_private_key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
 
   reviewer:
     name: Reviewer agent for developer PR
@@ -97,7 +101,8 @@ jobs:
       pr_number: ${{ github.event.pull_request.number }}
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      REVIEWER_BOT_PAT: ${{ secrets.REVIEWER_BOT_PAT }}
+      REVIEWER_BOT_APP_ID: ${{ secrets.REVIEWER_BOT_APP_ID }}
+      REVIEWER_BOT_PRIVATE_KEY: ${{ secrets.REVIEWER_BOT_PRIVATE_KEY }}
 
   rebase-watcher:
     name: Detect and route stale PRs for rebase
