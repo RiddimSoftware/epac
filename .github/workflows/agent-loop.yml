@@ -61,14 +61,16 @@ jobs:
       trigger_type: issue_labeled
       issue_number: ${{ github.event.issue.number }}
       issue_body: ${{ github.event.issue.body || '' }}
-    secrets: inherit
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
 
   developer-fixup:
     name: Developer agent from reviewer changes requested
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      github.event.review.user.login == 'riddim-reviewer-bot' &&
+      github.event.review.user.login == 'riddim-riddim-reviewer-bot[bot]' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
@@ -77,21 +79,25 @@ jobs:
       issue_number: ${{ github.event.pull_request.number }}
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
-    secrets: inherit
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
 
   reviewer:
     name: Reviewer agent for developer PR
     if: >-
       github.event_name == 'pull_request' &&
       (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
-      github.event.pull_request.user.login == 'developer-bot' &&
-      github.event.sender.login != 'riddim-reviewer-bot' &&
+      github.event.pull_request.user.login == 'riddim-riddim-developer-bot[bot]' &&
+      github.event.sender.login != 'riddim-riddim-reviewer-bot[bot]' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
     with:
       pr_number: ${{ github.event.pull_request.number }}
-    secrets: inherit
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      REVIEWER_BOT_PAT: ${{ secrets.REVIEWER_BOT_PAT }}
 
   rebase-watcher:
     name: Detect and route stale PRs for rebase
@@ -101,4 +107,5 @@ jobs:
       consumer_repo: ${{ github.repository }}
       # base_branch defaults to main
       # autonomous_label defaults to "autonomous"
-    secrets: inherit
+    secrets:
+      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
