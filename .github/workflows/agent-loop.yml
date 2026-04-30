@@ -70,7 +70,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      contains(github.event.review.user.login, 'reviewer-bot') &&
+      github.event.review.user.login == 'riddim-riddim-reviewer-bot[bot]' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
@@ -88,8 +88,8 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
-      contains(github.event.pull_request.user.login, 'developer-bot') &&
-      !contains(github.event.sender.login, 'reviewer-bot') &&
+      github.event.pull_request.user.login == 'riddim-riddim-developer-bot[bot]' &&
+      github.event.sender.login != 'riddim-riddim-reviewer-bot[bot]' &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
