@@ -2,12 +2,20 @@
 # Sensitive paths require human review before merging.
 # See docs/agent-loop-enrollment.md for branch protection setup.
 
-# Workflows and scripts
-.github/workflows/   @RiddimSoftware/owners
-.github/scripts/     @RiddimSoftware/owners
-CODEOWNERS           @RiddimSoftware/owners
+# Workflows and CI scripts — team ownership + individual owner
+/.github/           @RiddimSoftware/owners @SunnyPurewal
+CODEOWNERS          @RiddimSoftware/owners @SunnyPurewal
 
 # iOS release pipeline
-fastlane/            @RiddimSoftware/owners
-Gemfile              @RiddimSoftware/owners
-ios/                 @RiddimSoftware/owners
+/fastlane/          @RiddimSoftware/owners @SunnyPurewal
+Gemfile             @RiddimSoftware/owners @SunnyPurewal
+/ios/               @RiddimSoftware/owners @SunnyPurewal
+
+# Scripts
+/scripts/           @SunnyPurewal
+
+# Credentials and secrets
+*.pem               @SunnyPurewal
+*.key               @SunnyPurewal
+*Secrets*           @SunnyPurewal
+**/Info.plist       @SunnyPurewal
