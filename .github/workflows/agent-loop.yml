@@ -40,7 +40,7 @@ jobs:
       !contains(github.event.issue.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
-      trigger_type: issue-build
+      trigger_type: issue_labeled
       issue_number: ${{ github.event.issue.number }}
       issue_body: ${{ github.event.issue.body || '' }}
     secrets: inherit
@@ -50,12 +50,12 @@ jobs:
     if: >-
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'changes_requested' &&
-      github.event.review.user.login == 'reviewer-bot' &&
+      contains(github.event.review.user.login, 'reviewer-bot') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/developer.yml@main
     with:
-      trigger_type: pr-fixup
+      trigger_type: changes_requested
       pr_number: ${{ github.event.pull_request.number }}
       review_comments: ${{ github.event.review.body || '' }}
     secrets: inherit
@@ -64,8 +64,8 @@ jobs:
     name: Reviewer agent for developer PR
     if: >-
       github.event_name == 'pull_request' &&
-      github.event.pull_request.user.login == 'developer-bot' &&
-      github.event.sender.login != 'reviewer-bot' &&
+      contains(github.event.pull_request.user.login, 'developer-bot') &&
+      !contains(github.event.sender.login, 'reviewer-bot') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:pause') &&
       !contains(github.event.pull_request.labels.*.name, 'agent:needs-human')
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
