@@ -1,5 +1,6 @@
 @testable import epac
 import SnapshotTesting
+import SwiftData
 import SwiftUI
 import XCTest
 
@@ -39,6 +40,30 @@ final class SnapshotTests: XCTestCase {
                        record: isRecording, file: file, testName: testName, line: line)
         assertSnapshot(of: a11y, as: .image(on: .iPhone13Pro), named: "\(name)_a11y",
                        record: isRecording, file: file, testName: testName, line: line)
+    }
+
+    private func snapshotLightDarkXXL<V: View>(
+        _ view: V,
+        name: String,
+        file: StaticString = #file,
+        testName: String = #function,
+        line: UInt = #line
+    ) {
+        let light = UIHostingController(rootView: view.environment(\.colorScheme, .light))
+        let dark  = UIHostingController(rootView: view.environment(\.colorScheme, .dark))
+        let xxl   = UIHostingController(rootView: view.environment(\.sizeCategory, .extraExtraLarge))
+
+        assertSnapshot(of: light, as: .image(on: .iPhone13Pro), named: "\(name)_light",
+                       record: isRecording, file: file, testName: testName, line: line)
+        assertSnapshot(of: dark, as: .image(on: .iPhone13Pro), named: "\(name)_dark",
+                       record: isRecording, file: file, testName: testName, line: line)
+        assertSnapshot(of: xxl, as: .image(on: .iPhone13Pro), named: "\(name)_xxl",
+                       record: isRecording, file: file, testName: testName, line: line)
+    }
+
+    private func makeSnapshotModelContainer() throws -> ModelContainer {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        return try ModelContainer(for: Schema(SchemaV8.models), configurations: config)
     }
 
     private static func member(party: Party) -> ParliamentMember {
@@ -201,6 +226,27 @@ final class SnapshotTests: XCTestCase {
             HomeRefreshErrorToast()
                 .frame(width: 375),
             name: "HomeFeed_refreshErrorToast"
+        )
+    }
+
+    // MARK: - Settings IA (EPAC-476)
+
+    @MainActor
+    func testSettings_root() throws {
+        let postalCode = PostalCodeViewModel()
+        postalCode.postalCode = "K1A 0A6"
+        postalCode.result = RidingLookupResult(
+            memberName: "Sample MP",
+            ridingName: "Sample Riding",
+            partyName: "Sample Party"
+        )
+        postalCode.confirm()
+        defer { PostalCodeViewModel.clear() }
+
+        snapshotLightDarkXXL(
+            SettingsView()
+                .modelContainer(try makeSnapshotModelContainer()),
+            name: "Settings_root"
         )
     }
 
