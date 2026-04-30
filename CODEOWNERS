@@ -1,0 +1,13 @@
+# CODEOWNERS — epac
+# Sensitive paths require human review before merging.
+# See docs/agent-loop-enrollment.md for branch protection setup.
+
+# Workflows and scripts
+.github/workflows/   @RiddimSoftware/owners
+.github/scripts/     @RiddimSoftware/owners
+CODEOWNERS           @RiddimSoftware/owners
+
+# iOS release pipeline
+fastlane/            @RiddimSoftware/owners
+Gemfile              @RiddimSoftware/owners
+ios/                 @RiddimSoftware/owners
