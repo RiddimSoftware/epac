@@ -1,7 +1,3 @@
-# CODEOWNERS — epac
-# Sensitive paths require human review before merging.
-# See docs/agent-loop-enrollment.md for branch protection setup.
-
 # Workflows and CI scripts — team ownership + individual owner
 /.github/           @RiddimSoftware/owners @SunnyPurewal
 CODEOWNERS          @RiddimSoftware/owners @SunnyPurewal
@@ -10,12 +6,24 @@ CODEOWNERS          @RiddimSoftware/owners @SunnyPurewal
 /fastlane/          @RiddimSoftware/owners @SunnyPurewal
 Gemfile             @RiddimSoftware/owners @SunnyPurewal
 /ios/               @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.entitlements      @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.xcconfig          @RiddimSoftware/owners @SunnyPurewal
+/ios/**/Info.plist          @RiddimSoftware/owners @SunnyPurewal
+/ios/**/*.xcprivacy         @RiddimSoftware/owners @SunnyPurewal
+/ios/epac.xcodeproj/        @RiddimSoftware/owners @SunnyPurewal
 
 # Scripts
 /scripts/           @SunnyPurewal
+Gemfile             @RiddimSoftware/owners @SunnyPurewal
 
 # Credentials and secrets
 *.pem               @SunnyPurewal
 *.key               @SunnyPurewal
+*.p8                @SunnyPurewal
+*.p12               @SunnyPurewal
+*.cer               @SunnyPurewal
+*.mobileprovision   @SunnyPurewal
+*.provisionprofile  @SunnyPurewal
 *Secrets*           @SunnyPurewal
+*secrets*           @SunnyPurewal
 **/Info.plist       @SunnyPurewal
