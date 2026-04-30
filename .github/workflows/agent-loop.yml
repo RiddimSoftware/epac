@@ -14,6 +14,8 @@
 # - agent:pause suppresses reviewer/developer automation.
 # - agent:needs-human marks work that should stay with a person.
 # - agent:attempt-1, agent:attempt-2, agent:attempt-3 track retry budget.
+# - agent:rebase-attempt-1, agent:rebase-attempt-2, agent:rebase-attempt-3 track rebase retry budget.
+# - agent:rebase-failed marks a PR where all rebase attempts were exhausted.
 #
 # Required branch protection on main:
 # - require build/test/swiftlint checks
@@ -29,6 +31,10 @@ on:
     types: [opened, synchronize, ready_for_review]
   pull_request_review:
     types: [submitted]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -82,4 +88,16 @@ jobs:
     uses: RiddimSoftware/riddim-release/.github/workflows/reviewer.yml@main
     with:
       pr_number: ${{ github.event.pull_request.number }}
+    secrets: inherit
+
+  rebase-watcher:
+    name: Detect and route stale PRs for rebase
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    uses: RiddimSoftware/riddim-release/.github/workflows/rebase-watcher.yml@main
+    with:
+      owner: ${{ github.repository_owner }}
+      repo: ${{ github.event.repository.name }}
+      base_branch: main
+      build_cmd: 'echo "no build configured for rebase check"'
+      test_cmd: 'echo "no tests configured for rebase check"'
     secrets: inherit
