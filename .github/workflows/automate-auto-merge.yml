@@ -1,5 +1,6 @@
-# Enables GitHub auto-merge when the `automate` label is added to an epac PR.
+# Enables GitHub auto-merge when the `automate` label is added to a PR.
 # Shared implementation lives in RiddimSoftware/riddim-release.
+# Requires org/repo secrets: DEV_BOT_APP_ID, DEV_BOT_PRIVATE_KEY.
 name: Automate Auto-Merge
 
 on:
@@ -13,9 +14,10 @@ permissions:
 jobs:
   call:
     if: ${{ github.event.label.name == 'automate' }}
-    uses: RiddimSoftware/riddim-release/.github/workflows/automate-auto-merge.yml@feature/RIDDIM-139-automate-auto-merge
+    uses: RiddimSoftware/riddim-release/.github/workflows/automate-auto-merge.yml@main
     with:
       pr_number: ${{ github.event.pull_request.number }}
       repository: ${{ github.repository }}
     secrets:
-      dev_bot_pat: ${{ secrets.DEV_BOT_PAT }}
+      dev_bot_app_id: ${{ secrets.DEV_BOT_APP_ID }}
+      dev_bot_private_key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
