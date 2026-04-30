@@ -1,20 +1,31 @@
-# CODEOWNERS — epac
+# CODEOWNERS - epac
 # High-risk paths require review from @SunnyPurewal before merging.
-# Patterns are ordered specific → general (CODEOWNERS is first-match-wins).
+# GitHub applies the last matching pattern, so keep broad areas before any
+# future narrower overrides.
 # See docs/agent-loop-enrollment.md for branch protection setup.
 
-# Credentials (most specific — must come first)
-**/*.pem                @SunnyPurewal
-**/*.key                @SunnyPurewal
-**/*Secrets*            @SunnyPurewal
+# Credentials and signing artifacts
+**/*.pem                    @SunnyPurewal
+**/*.key                    @SunnyPurewal
+**/*.p8                     @SunnyPurewal
+**/*.p12                    @SunnyPurewal
+**/*.cer                    @SunnyPurewal
+**/*.mobileprovision        @SunnyPurewal
+**/*.provisionprofile       @SunnyPurewal
+**/*Secrets*                @SunnyPurewal
+**/*secrets*                @SunnyPurewal
 
 # iOS signing and configuration
-/ios/**/*.entitlements  @SunnyPurewal
-/ios/**/*.xcconfig      @SunnyPurewal
-/ios/**/Info.plist      @SunnyPurewal
+/ios/**/*.entitlements      @SunnyPurewal
+/ios/**/*.xcconfig          @SunnyPurewal
+/ios/**/Info.plist          @SunnyPurewal
+/ios/**/*.xcprivacy         @SunnyPurewal
+/ios/epac.xcodeproj/        @SunnyPurewal
 
 # Release pipeline
-/fastlane/              @SunnyPurewal
+/fastlane/                  @SunnyPurewal
+/ios/fastlane/              @SunnyPurewal
 
-# Workflow changes
-/.github/               @SunnyPurewal
+# Workflow changes and ownership policy
+/.github/                   @SunnyPurewal
+/CODEOWNERS                 @SunnyPurewal
