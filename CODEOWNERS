@@ -1,13 +1,20 @@
 # CODEOWNERS — epac
-# Sensitive paths require human review before merging.
+# High-risk paths require review from @SunnyPurewal before merging.
+# Patterns are ordered specific → general (CODEOWNERS is first-match-wins).
 # See docs/agent-loop-enrollment.md for branch protection setup.
 
-# Workflows and scripts
-.github/workflows/   @RiddimSoftware/owners
-.github/scripts/     @RiddimSoftware/owners
-CODEOWNERS           @RiddimSoftware/owners
+# Credentials (most specific — must come first)
+**/*.pem                @SunnyPurewal
+**/*.key                @SunnyPurewal
+**/*Secrets*            @SunnyPurewal
 
-# iOS release pipeline
-fastlane/            @RiddimSoftware/owners
-Gemfile              @RiddimSoftware/owners
-ios/                 @RiddimSoftware/owners
+# iOS signing and configuration
+/ios/**/*.entitlements  @SunnyPurewal
+/ios/**/*.xcconfig      @SunnyPurewal
+/ios/**/Info.plist      @SunnyPurewal
+
+# Release pipeline
+/fastlane/              @SunnyPurewal
+
+# Workflow changes
+/.github/               @SunnyPurewal
