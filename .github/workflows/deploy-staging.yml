@@ -19,7 +19,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy ${{ matrix.service }} to staging
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:

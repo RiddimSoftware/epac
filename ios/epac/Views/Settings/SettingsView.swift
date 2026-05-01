@@ -201,7 +201,7 @@ struct SettingsView: View {
             )
             Button(NSLocalizedString("settings.about.feedback", comment: "")) {
                 let subject = "epac%20feedback"
-                if let url = URL(string: "mailto:sunny@riddimsoftware.com?subject=\(subject)") {
+                if let url = URL(string: "mailto:epac@riddimsoftware.com?subject=\(subject)") {
                     UIApplication.shared.open(url)
                 }
             }

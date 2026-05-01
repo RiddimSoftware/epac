@@ -22,7 +22,7 @@ import (
 const (
 	pipelineName      = "live-status"
 	sourceURL         = "https://www.ourcommons.ca/en"
-	defaultUserAgent  = "epac/1.0 (mailto:sunny@riddimsoftware.com)"
+	defaultUserAgent  = "epac/1.0 (mailto:epac@riddimsoftware.com)"
 	defaultBusiness   = "Adjourned"
 	defaultCacheValue = "max-age=90"
 	calendarCacheTTL  = 24 * time.Hour
