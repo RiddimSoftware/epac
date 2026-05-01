@@ -165,6 +165,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           BACKEND_BASE_URL: https://staging-api.epac.riddimsoftware.com
           NEW_VERSION: ${{ needs.compute-version.outputs.next_version }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: bundle exec fastlane deploy
 
       - name: Upload dSYMs to Sentry
