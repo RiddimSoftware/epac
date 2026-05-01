@@ -5,7 +5,7 @@ on:
 
 jobs:
   refresh:
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     permissions:
       contents: write         # To commit JSON files back to repo
       id-token: write         # To authenticate to AWS via OIDC

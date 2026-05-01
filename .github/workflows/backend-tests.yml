@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         lambda: [daily-fetch, loader, search, member-speeches, on-this-day, riding-boundary, toronto-council, openapi, live-status]

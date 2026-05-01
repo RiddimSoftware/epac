@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     steps:
       - name: Check /health endpoint
         env:
