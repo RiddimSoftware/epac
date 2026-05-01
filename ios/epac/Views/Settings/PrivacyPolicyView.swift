@@ -68,7 +68,7 @@ struct PrivacyPolicyView: View {
                 }
 
                 PolicySection(title: "Contact") {
-                    Text("Questions about this policy? Contact us at sunny@riddimsoftware.com.")
+                    Text("Questions about this policy? Contact us at epac@riddimsoftware.com.")
                 }
             }
             .padding()
