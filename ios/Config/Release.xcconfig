@@ -1,1 +1,1 @@
-BACKEND_BASE_URL = https:/$()/smun5g2szc.execute-api.us-east-1.amazonaws.com/production
+BACKEND_BASE_URL = https:/$()/api.epac.riddimsoftware.com
