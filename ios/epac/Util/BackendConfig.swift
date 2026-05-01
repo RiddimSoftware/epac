@@ -12,7 +12,7 @@ struct BackendConfig {
     static let shared = BackendConfig()
 
     /// Production AWS API Gateway base URL. All builds use this by default.
-    static let productionBaseURL = URL(string: "https://smun5g2szc.execute-api.us-east-1.amazonaws.com/production")!
+    static let productionBaseURL = URL(string: "https://api.epac.riddimsoftware.com")!
 
     /// Effective backend base URL for this run. Runtime environment overrides
     /// win first for local testing; otherwise the Info.plist build setting
