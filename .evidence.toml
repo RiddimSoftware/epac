@@ -1,6 +1,5 @@
 scheme = "epac"
 bundle_id = "net.dinglebox.cabinetdoor"
-simulator_udid = "FCFAF817-6694-402D-B116-A86EDAF34237"
 evidence_dir = "docs/build-evidence"
 screenshot_targets = ["6.9", "6.5", "6.1", "5.5", "ipad-13"]
 preview_targets = ["app-preview"]

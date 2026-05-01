@@ -1,2 +1,2 @@
 app_identifier("net.dinglebox.cabinetdoor")
-team_id("ZG82TFXU3C")
+team_id(ENV["APPLE_TEAM_ID"])
