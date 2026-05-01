@@ -5,6 +5,8 @@
 #
 # Required status check on main: pr-build
 
+name: PR Build
+
 on:
   pull_request:
     branches: [main]
@@ -16,3 +18,4 @@ jobs:
       scheme: "epac"
       project: "epac.xcodeproj"
       working_directory: "ios"
+      runner_labels: ${{ vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]' }}
