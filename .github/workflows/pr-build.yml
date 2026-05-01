@@ -18,4 +18,4 @@ jobs:
       scheme: "epac"
       project: "epac.xcodeproj"
       working_directory: "ios"
-      runner_labels: ${{ vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]' }}
+      runner_labels: "${{ vars.RUNNER_LABELS_MAC || '[\"self-hosted\",\"macOS\"]' }}"
