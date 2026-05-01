@@ -60,6 +60,8 @@ jobs:
 
       - name: Deliver metadata to App Store Connect
         working-directory: ios
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: bundle exec fastlane deliver
 
       - name: Summary
