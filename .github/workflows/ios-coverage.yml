@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   coverage:
-    runs-on: ["self-hosted","macOS"]
+    runs-on: macos-15
     env:
       IOS_COVERAGE_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro Max
     steps:
