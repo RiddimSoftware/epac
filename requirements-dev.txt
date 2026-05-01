@@ -1,0 +1,5 @@
+# Development dependencies for local tooling and CI scripts.
+# Install with: pip install -r requirements-dev.txt
+
+# Cucumber's reference Gherkin parser — used by scripts/journeys/lint.py
+gherkin-official==39.0.0
