@@ -33,11 +33,17 @@ extension View {
 	/// `.ultraThinMaterial` on earlier releases.
 	@ViewBuilder
 	func glassHeaderStyle() -> some View {
+		// glassEffect() requires Xcode 26 (Swift 6.2+). Fall back to
+		// ultraThinMaterial when building with an earlier toolchain.
+#if swift(>=6.2)
 		if #available(iOS 26.0, *) {
 			self.glassEffect()
 		} else {
 			self.background(.ultraThinMaterial)
 		}
+#else
+		self.background(.ultraThinMaterial)
+#endif
 	}
 }
 
