@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 // Global on/off switches for each notification category. Per-member sub-preferences
 // (votes/speeches) remain in MemberFollowStore. Schedulers check both the global

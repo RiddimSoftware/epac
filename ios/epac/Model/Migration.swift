@@ -18,7 +18,7 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
     // non-optional `contactFetched: Bool`. SwiftData can't infer a default for
     // non-optional properties during lightweight migration, so didMigrate sets
     // it explicitly on all pre-existing records.
-    static let migrateV3toV4 = MigrationStage.custom(
+    nonisolated(unsafe) static let migrateV3toV4 = MigrationStage.custom(
         fromVersion: SchemaV3.self,
         toVersion: SchemaV4.self,
         willMigrate: nil,
@@ -33,28 +33,28 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 
     // Lightweight stage: V5 adds RecordedVote and MemberVote. Adding new model
     // types with no removal or rename is always a safe lightweight migration.
-    static let migrateV4toV5 = MigrationStage.lightweight(
+    nonisolated(unsafe) static let migrateV4toV5 = MigrationStage.lightweight(
         fromVersion: SchemaV4.self,
         toVersion: SchemaV5.self
     )
 
     // Lightweight stage: V6 adds WrittenQuestion. Pure new table, no existing
     // model changes.
-    static let migrateV5toV6 = MigrationStage.lightweight(
+    nonisolated(unsafe) static let migrateV5toV6 = MigrationStage.lightweight(
         fromVersion: SchemaV5.self,
         toVersion: SchemaV6.self
     )
 
     // Lightweight stage: V7 adds FiscalMonitorEntry. Pure new table, no
     // existing model changes.
-    static let migrateV6toV7 = MigrationStage.lightweight(
+    nonisolated(unsafe) static let migrateV6toV7 = MigrationStage.lightweight(
         fromVersion: SchemaV6.self,
         toVersion: SchemaV7.self
     )
 
     // Lightweight stage: V8 adds CabinetPosition. Pure new table, no
     // existing model changes.
-    static let migrateV7toV8 = MigrationStage.lightweight(
+    nonisolated(unsafe) static let migrateV7toV8 = MigrationStage.lightweight(
         fromVersion: SchemaV7.self,
         toVersion: SchemaV8.self
     )

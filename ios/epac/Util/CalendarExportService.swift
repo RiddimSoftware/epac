@@ -22,7 +22,7 @@ enum CalendarExportError: LocalizedError {
 
 @MainActor
 final class CalendarExportService {
-	private let eventStore: EKEventStore
+	nonisolated(unsafe) private let eventStore: EKEventStore
 
 	init(eventStore: EKEventStore = EKEventStore()) {
 		self.eventStore = eventStore
