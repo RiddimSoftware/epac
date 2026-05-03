@@ -6,6 +6,7 @@ on:
       - "docs/journeys/**"
       - "scripts/journeys/lint.py"
       - "requirements-dev.txt"
+  merge_group:
 
 jobs:
   lint:

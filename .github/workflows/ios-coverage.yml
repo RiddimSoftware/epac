@@ -10,6 +10,7 @@ on:
       - '.github/workflows/ios-coverage.yml'
       - 'scripts/ci/ios_coverage_report.py'
       - 'scripts/ci/test_ios_coverage_report.py'
+  merge_group:
   push:
     branches: [main]
     paths:
