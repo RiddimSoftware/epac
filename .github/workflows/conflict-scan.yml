@@ -1,0 +1,16 @@
+# Conflict Scan — consumer shim
+# Fires on push to main. Finds conflicting autonomous PRs and resolves
+# them autonomously via single-turn Opus. Logic lives in agent-loop.
+name: Conflict Scan
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  conflict-scan:
+    uses: RiddimSoftware/agent-loop/.github/workflows/conflict-scan.yml@main
+    secrets: inherit
+
