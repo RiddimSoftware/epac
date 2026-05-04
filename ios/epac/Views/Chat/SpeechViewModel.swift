@@ -18,14 +18,19 @@ class SpeechViewModel {
 	var speakers: [String: ParliamentMember] = [:]
 	var didFinish = false
 	var isResuming = false
-	private let cachingResolver: CachingMemberResolver = CachingMemberResolver()
+
+	// Injected resolver dependency. Defaults to CachingMemberResolver (production)
+	// so callers don't need to supply one. In unit tests, pass a mock conforming
+	// to MemberResolving to avoid SwiftData/network I/O.
+	private let resolver: any MemberResolving
 
 	var tapAnywhereOpacity: Double {
 		messages.count < 2 || isResuming ? 1 : 0
 	}
 
-	init(messages: [Message] = []) {
+	init(messages: [Message] = [], resolver: any MemberResolving = CachingMemberResolver()) {
 		self.messages = messages
+		self.resolver = resolver
 	}
 
 	func append(_ message: Message, speaker: ParliamentMember) {
@@ -37,7 +42,7 @@ class SpeechViewModel {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
-		cachingResolver.reset()
+		resolver.resetCache()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
@@ -78,7 +83,10 @@ class SpeechViewModel {
 			currentSpeech.currentMessageID = message.hansardID
 		}
 
-		let speaker = (resolver ?? cachingResolver).resolve(
+		// Use the method-level override when provided (e.g. tests); fall back to
+		// the injected stored resolver.
+		let activeResolver = resolver ?? self.resolver
+		let speaker = activeResolver.resolve(
 			firstName: message.firstName,
 			lastName: message.lastName,
 			partyAbbreviation: message.partyAbbreviation,

@@ -8,6 +8,16 @@ import Observation
 import Sentry
 import SwiftUI
 
+// Protocol describing the expenditure-fetch operations ExpendituresViewModel
+// needs. Fetch conforms in production; tests supply a mock without network I/O.
+protocol ExpendituresFetching: Sendable {
+	func expenditures(year: Int, quarter: Int) async throws
+	func downloadExpenditures(year: Int, quarter: Int) async throws
+}
+
+// Fetch already implements both methods — conformance is additive.
+extension Fetch: ExpendituresFetching {}
+
 @MainActor
 @Observable
 class ExpendituresViewModel {
@@ -70,7 +80,7 @@ class ExpendituresViewModel {
 	}
 
 	@MainActor
-	func loadData(expenditures: [SummaryExpenditure], fetch: Fetch) async {
+	func loadData(expenditures: [SummaryExpenditure], fetch: any ExpendituresFetching) async {
 		loadFailed = false
 		let exists = expenditures.contains { $0.year == selectedYear && $0.quarter == selectedQuarter }
 		if !exists {
@@ -88,7 +98,7 @@ class ExpendituresViewModel {
 
 	/// Force-reloads the current period from the network, bypassing the SwiftData cache.
 	@MainActor
-	func refresh(fetch: Fetch) async {
+	func refresh(fetch: any ExpendituresFetching) async {
 		loadFailed = false
 		isLoading = true
 		defer { isLoading = false }
