@@ -1,13 +1,21 @@
 //
 //  SittingCalendarViewModel.swift
 //  epac
-//
 
 import Foundation
 import HorizonCalendar
 import Observation
 import Sentry
 import SwiftData
+
+// Protocol describing the calendar-download capability SittingCalendarViewModel
+// needs. Fetch conforms in production; tests supply a mock without network I/O.
+protocol SittingCalendarFetching: Sendable {
+	func downloadSittingCalendar(_ year: Int) async throws
+}
+
+// Fetch already implements downloadSittingCalendar — conformance is additive.
+extension Fetch: SittingCalendarFetching {}
 
 @MainActor
 @Observable
@@ -37,7 +45,9 @@ class SittingCalendarViewModel {
 			.sorted()
 	}
 
-	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
+	// fetch param typed as the protocol so tests can inject a mock without
+	// a real ModelContainer-backed Fetch actor.
+	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: any SittingCalendarFetching) async {
 		loadFailed = false
 		do {
 			var calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
@@ -60,7 +70,7 @@ class SittingCalendarViewModel {
 	}
 
 	/// Force-reloads the current year from the network, bypassing the SwiftData cache.
-	func refresh(modelContext: ModelContext, fetch: Fetch) async {
+	func refresh(modelContext: ModelContext, fetch: any SittingCalendarFetching) async {
 		loadFailed = false
 		do {
 			try await fetch.downloadSittingCalendar(currentYear)
@@ -84,7 +94,7 @@ class SittingCalendarViewModel {
 		}
 	}
 
-	func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange, modelContext: ModelContext, fetch: Fetch) {
+	func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange, modelContext: ModelContext, fetch: any SittingCalendarFetching) {
 		if visibleDayRange.lowerBound.components.year! != currentYear {
 			currentYear = visibleDayRange.lowerBound.components.year!
 			Task {

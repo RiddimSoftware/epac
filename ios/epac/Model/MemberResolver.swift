@@ -24,6 +24,16 @@ protocol MemberResolving {
         modelContext: ModelContext,
         fetch: Fetch
     ) -> ParliamentMember
+
+    // Clears any in-memory caching state. SpeechViewModel calls this on reset
+    // so a new conversation does not bleed speakers from a previous one.
+    // Default implementation is a no-op so simple mock types don't need to
+    // implement it.
+    func resetCache()
+}
+
+extension MemberResolving {
+    func resetCache() {}
 }
 
 @MainActor
@@ -78,7 +88,8 @@ final class CachingMemberResolver: MemberResolving {
 		)
 	}
 
-	func reset() { cache.reset() }
+	// Satisfies the MemberResolving.resetCache() requirement.
+	func resetCache() { cache.reset() }
 }
 
 @MainActor
