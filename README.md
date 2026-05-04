@@ -6,4 +6,6 @@ iOS civic-engagement app — Canada's House of Commons Hansard debates in a grou
 
 ## Development
 
-See `CLAUDE.md` for the full engineering guide.
+See `CLAUDE.md` for the full engineering guide.   
+
+Stack: SwiftUI + SwiftData (iOS 17+), Python backend, static website.
