@@ -3,9 +3,9 @@
 # Calls the reusable pr-build workflow in riddim-release on every PR to main.
 # Catches compile errors before auto-merge can land a broken reviewer-bot fix.
 #
-# Required status check on main: pr-build
+# Required status check on main: success
 
-name: PR Build
+name: CI
 
 on:
   pull_request:
@@ -13,10 +13,19 @@ on:
   merge_group:
 
 jobs:
-  pr-build:
+  build:
     uses: RiddimSoftware/riddim-release/.github/workflows/pr-build.yml@main
     with:
       scheme: "epac"
       project: "epac.xcodeproj"
       working_directory: "ios"
       runner_labels: "${{ vars.RUNNER_LABELS_MAC || '[\"self-hosted\",\"macOS\"]' }}"
+  success:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            exit 1
+          fi
