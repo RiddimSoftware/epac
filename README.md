@@ -6,4 +6,4 @@ iOS civic-engagement app — Canada's House of Commons Hansard debates in a grou
 
 ## Development
 
-See `CLAUDE.md` for the full engineering guide.
+See `CLAUDE.md` for the full engineering guide (smoke 3 conflict target).
