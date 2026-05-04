@@ -1,0 +1,50 @@
+# Transitions the linked Jira issue when a PR is opened, merged, or declined.
+#
+# Required org secrets: JIRA_EMAIL, JIRA_API_TOKEN
+# Required org/repo var: JIRA_BASE_URL (e.g. https://riddim.atlassian.net)
+
+name: Jira PR Transitions
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+    branches: [main]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  in-review:
+    name: PR opened → In Review
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    uses: RiddimSoftware/agent-config/.github/workflows/jira-pr-transitions.yml@main
+    with:
+      transition_to: In Review
+      pr_title: ${{ github.event.pull_request.title }}
+      jira_base_url: ${{ vars.JIRA_BASE_URL }}
+    secrets:
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+  done:
+    name: PR merged → Done
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    uses: RiddimSoftware/agent-config/.github/workflows/jira-pr-transitions.yml@main
+    with:
+      transition_to: Done
+      pr_title: ${{ github.event.pull_request.title }}
+      jira_base_url: ${{ vars.JIRA_BASE_URL }}
+    secrets:
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+  in-progress:
+    name: PR declined → In Progress
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'changes_requested'
+    uses: RiddimSoftware/agent-config/.github/workflows/jira-pr-transitions.yml@main
+    with:
+      transition_to: In Progress
+      pr_title: ${{ github.event.pull_request.title }}
+      jira_base_url: ${{ vars.JIRA_BASE_URL }}
+    secrets:
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
