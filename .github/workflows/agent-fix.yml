@@ -1,0 +1,19 @@
+# Developer Fix — consumer shim
+# Handles pull_request_review events so agent-fix routing stays in a
+# dedicated file rather than main.yml (avoids cross-event startup_failure).
+# All fix logic lives in RiddimSoftware/agent-loop/.github/workflows/agent-fix.yml
+name: Developer Fix
+on:
+  pull_request_review:
+    types: [submitted]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  agent-fix:
+    uses: RiddimSoftware/agent-loop/.github/workflows/agent-fix.yml@main
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+    secrets: inherit
+

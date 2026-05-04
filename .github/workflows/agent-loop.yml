@@ -1,0 +1,20 @@
+# Agent Loop — consumer shim
+# All routing logic lives in RiddimSoftware/agent-loop/.github/workflows/main.yml
+name: Agent Loop
+on:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
+  pull_request_target:
+    types: [closed]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+jobs:
+  agent-loop:
+    uses: RiddimSoftware/agent-loop/.github/workflows/main.yml@main
+    secrets: inherit
+
