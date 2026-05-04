@@ -7,3 +7,4 @@ iOS civic-engagement app — Canada's House of Commons Hansard debates in a grou
 ## Development
 
 See `CLAUDE.md` for the full engineering guide.
+Available on the [App Store](https://apps.apple.com/ca/app/epac/id1224459142).
