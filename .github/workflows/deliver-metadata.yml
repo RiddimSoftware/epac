@@ -1,11 +1,5 @@
 name: Deliver App Store Metadata
 
-# Pushes updated App Store listing metadata (description, keywords, subtitle,
-# promotional text, release notes) to App Store Connect whenever any metadata
-# file changes on main. No binary upload, no screenshot upload, no submission.
-#
-# Also runnable manually via workflow_dispatch to force a sync at any time.
-
 on:
   push:
     branches: [main]
@@ -14,66 +8,17 @@ on:
       - 'ios/fastlane/Deliverfile'
   workflow_dispatch:
 
-concurrency:
-  group: deliver-metadata
-  cancel-in-progress: true   # if two metadata pushes land in quick succession, only run the latest
-
 permissions:
-  id-token: write   # OIDC AWS auth
   contents: read
+  id-token: write
 
 jobs:
-  deliver:
-    name: Push metadata to App Store Connect
-    runs-on: macos-15
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Fetch App Store Connect credentials
-        run: |
-          SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id appstore/connect-api \
-            --region us-east-1 \
-            --query SecretString \
-            --output text)
-          KEY_ID=$(echo "$SECRET" | jq -r '.key_id')
-          echo "ASC_KEY_ID=$KEY_ID"         >> "$GITHUB_ENV"
-          echo "ASC_ISSUER_ID=$(echo "$SECRET" | jq -r '.issuer_id')" >> "$GITHUB_ENV"
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$SECRET" | jq -r '.private_key' \
-            > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/*.p8
-
-      - name: Set up Ruby and Fastlane
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-          working-directory: ios
-
-      - name: Deliver metadata to App Store Connect
-        working-directory: ios
-        env:
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-        run: bundle exec fastlane deliver
-
-      - name: Summary
-        run: |
-          echo "## Metadata delivered to App Store Connect"
-          echo ""
-          echo "Updated fields:"
-          echo "- Description, subtitle, keywords"
-          echo "- Promotional text"
-          echo "- Release notes (What's New)"
-          echo "- Support and marketing URLs"
-          echo ""
-          echo "Screenshots and binary were not touched."
-          echo "Changes are visible immediately in App Store Connect."
-          echo "They go live to users on the next approved app version."
+  call:
+    uses: RiddimSoftware/riddim-release/.github/workflows/deliver-metadata.yml@main
+    with:
+      ios_workdir:         ${{ vars.IOS_WORKDIR || 'ios' }}
+      bundle_id:           ${{ vars.BUNDLE_ID }}
+      team_id:             ${{ vars.TEAM_ID }}
+      runner_labels_mac:   ${{ contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') && '["macos-15"]' || (vars.RUNNER_LABELS_MAC || '["macos-15"]') }}
+      runner_labels_linux: ${{ contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') && '["ubuntu-latest"]' || (vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    secrets: inherit
