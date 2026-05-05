@@ -244,6 +244,7 @@ def snapshot_to_json(snapshot: CabinetSnapshot) -> str:
 
 
 def main(argv: list[str]) -> int:
+    print("DEBUG: cabinet_ingest starting")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",
