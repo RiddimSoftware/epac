@@ -145,13 +145,13 @@ Before requesting review, the author must:
 - [ ] **Build passes.** Run `xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
 - [ ] **App runs.** Install and launch on the simulator: `xcrun simctl install FCFAF817-6694-402D-B116-A86EDAF34237 <DerivedData>/epac.app && xcrun simctl launch FCFAF817-6694-402D-B116-A86EDAF34237 net.dinglebox.cabinetdoor`
 - [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
-- [ ] **Evidence posted.** Add a PR comment and a Jira comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
+- [ ] **Evidence posted.** Add a PR comment and a Linear comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
 - [ ] **Size.** Aim for < 300 changed lines (tighter target for parallel work — see "Multi-developer workflow" below). Anything > 400 lines needs a written justification in the description and should be split if possible. Never mix feature and refactor in the same PR.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
 - [ ] **Tests.** If the change is testable, tests are included or an existing test is updated.
 - [ ] **Screenshots.** UI changes include before/after screenshots in the description.
-- [ ] **Jira link.** Reference the ticket (`Resolves EPAC-N`) in the description.
+- [ ] **Linear link.** Reference the ticket (`Resolves EPAC-N`) in the description.
 - [ ] **Release note.** If the change is user-facing, add a `Release-Note:` line to the PR description (see below). The daily release pipeline collects these automatically.
 - [ ] **Description structure** (see below).
 
@@ -232,14 +232,14 @@ Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
 
 1. `gh pr diff N` — read the full diff
 2. Read /Users/sunny/code/epac/CLAUDE.md (architecture rules, PR standards)
-3. Read the linked Jira ticket's acceptance criteria
+3. Read the linked Linear issue's acceptance criteria
 4. Make ONE consolidated pass of fixes directly on the branch (commit + push)
 5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac \
    -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build 2>&1 | tail -3
 6. Run relevant tests
 7. Post one PR comment with: build status, what changed and why, what was left alone and why
 8. Squash-merge: gh pr merge N --squash --delete-branch
-9. Transition the Jira ticket to Done
+9. Transition the Linear issue to Done
 10. Report back: merged (commit SHA) OR blocked (reasons)
 ```
 
@@ -309,9 +309,9 @@ The team runs an **async** standup as a single GitHub Discussion thread per spri
 - **Blocked:** none / <ticket + what you need>
 ```
 
-Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Jira ticket and the open PR list.
+Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Linear issue and the open PR list.
 
-The current sprint's Discussion thread is linked from the active sprint's planning ticket in Jira.
+The current sprint's Discussion thread is linked from the active sprint's planning ticket in Linear.
 
 ---
 
@@ -329,15 +329,15 @@ For a small team: the developer acts as both Development Team and Product Owner,
 |---|---|---|---|
 | Sprint Planning | Monday morning | 30 min | Pick backlog items, set the sprint goal |
 | Daily check-in | Each morning | 10 min | What's in progress, what's blocked |
-| Sprint Review | Friday afternoon | 30 min | Demo what shipped; update Jira |
+| Sprint Review | Friday afternoon | 30 min | Demo what shipped; update Linear |
 | Retrospective | Friday afternoon | 20 min | One thing to do differently next sprint |
 | Backlog Refinement | Wednesday | 20 min | Estimate and order upcoming items (max 10% of sprint = ~4h/week) |
 
 ### Backlog
 
-- The backlog lives in Jira under project **EPAC**.
+- The backlog lives in Linear under project **EPAC**.
 - Items are ordered by a combination of user value and risk. Risky unknowns are pulled early.
-- Each item has: a clear acceptance criterion (definition of done), an effort estimate, and a Jira issue type (Story, Task, or Bug).
+- Each item has: a clear acceptance criterion (definition of done), an effort estimate, and a Linear issue type (via label) (Story, Task, or Bug).
 
 ### Definition of Done
 
@@ -345,13 +345,13 @@ A ticket is Done when:
 1. Code is merged to `main` via an approved PR
 2. The app builds without warnings on the current Xcode release
 3. Relevant tests pass
-4. The Jira ticket is transitioned to Done
+4. The Linear issue is transitioned to Done
 
 ### Estimation Convention
 
-We estimate in **hours of focused work** (not story points, not ideal days). After estimating, **divide by 100** before entering the value in the Jira story-points field. This is a deliberate calibration experiment: it keeps estimates small, prevents anchoring, and makes velocity numbers easy to reason about at our scale.
+We estimate in **hours of focused work** (not story points, not ideal days). After estimating, **divide by 100** before entering the value in the Linear estimate field. This is a deliberate calibration experiment: it keeps estimates small, prevents anchoring, and makes velocity numbers easy to reason about at our scale.
 
-| Real estimate | Jira value |
+| Real estimate | Linear estimate value |
 |---|---|
 | 4h | 0.04 |
 | 8h | 0.08 |
@@ -362,19 +362,17 @@ We estimate in **hours of focused work** (not story points, not ideal days). Aft
 
 The Scrum Guide (Schwaber & Sutherland, 2020) is clear: **velocity is a planning tool, not a performance metric.** Do not use it to compare sprints or to pressure estimates.
 
-### Jira Ticket Lifecycle
+### Linear Issue Lifecycle
 
 Every ticket must be kept current. Three moments require action:
 
-| Event | Jira action |
+| Event | Linear action |
 |---|---|
-| Picking up a ticket | Transition → **In Progress**; comment with branch name |
-| PR opened | Comment with PR URL (`https://github.com/RiddimSoftware/epac/pull/N`) |
-| PR merged | Transition → **Done** |
+| Picking up an issue | Auto-transitioned to **In Progress** on first push of `claude/<id>` branch (Linear GitHub integration); set manually via `save_issue` if you claim before pushing |
+| PR opened | Auto-linked by Linear; the Developer also posts the PR URL as a Linear comment for human readability |
+| PR merged | Auto-transitioned to **Done** by Linear's GitHub integration |
 
-Never open a PR without the ticket already In Progress. Never merge without transitioning to Done.
-
-Transition IDs (EPAC project): To Do = `11`, In Progress = `21`, Done = `31`.
+Verify state matches reality at session boundaries — the integration is best-effort. If a PR is open but the issue is still `Todo`, fix it via `save_issue`.
 
 ### Backlog Artifacts
 
@@ -383,7 +381,7 @@ Every ticket that ships produces at least one artifact visible in the GitHub mon
 - A test file or updated test (required for logic changes)
 - A screenshot in the PR description (required for UI changes)
 
-The PR number is linked in the Jira ticket as a comment with the full GitHub URL.
+The PR number is linked in the Linear issue as a comment with the full GitHub URL.
 
 ---
 
