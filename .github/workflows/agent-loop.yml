@@ -8,6 +8,9 @@ on:
     types: [closed]
   pull_request_review:
     types: [submitted]
+  workflow_run:
+    workflows: ["pr-build"]
+    types: [completed]
   workflow_dispatch:
 permissions:
   contents: read
