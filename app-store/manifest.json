@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "bundle_id": "net.dinglebox.cabinetdoor",
+  "apple_app_id": "1224459142",
+  "primary_locale": "en-CA",
+  "locales": [
+    "en-CA"
+  ],
+  "device_classes": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_67"
+  ]
+}

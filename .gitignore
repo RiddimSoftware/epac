@@ -22,6 +22,7 @@ docs/marketing/preview/raw-capture-*.mp4
 !**/*/fixtures/*.xml
 !website/*.xml
 !ios/fastlane/metadata/**/*.txt
+!app-store/metadata/**/*.txt
 
 # Xcode
 #

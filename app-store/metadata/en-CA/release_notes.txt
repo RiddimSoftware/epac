@@ -1,0 +1,10 @@
+What's new in epac:
+
+• Home feed — your MP's activity, followed bills, topics, and consultations in one place
+• Topic notifications — get notified when a topic you follow is debated in the House
+• Bill tracker — see new bills introduced since your last visit, with a dot badge on arrival
+• City council coverage — Toronto and Vancouver council votes alongside federal Parliament
+• Offline resilience — debates and votes load gracefully on slow or interrupted connections
+• Apple Watch complication — Parliament sitting status on your wrist
+
+epac only shows verified data from official government sources. Nothing is generated or editorialized.
