@@ -1,1 +1,1 @@
-hansard,mp,vote,bills,senate,election,mpp,riding,federal,debate,expenditure,petition,accountability
+hansard,mp,vote,bills,senate,election,committee,riding,federal,debate,expenditure,petition
