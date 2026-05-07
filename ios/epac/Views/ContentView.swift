@@ -27,6 +27,7 @@ struct ContentView: View {
 	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
 	@State private var showOnboarding = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
+	private let recordWebToAppOpen = RecordWebToAppOpen.live()
 
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
@@ -405,7 +406,7 @@ struct ContentView: View {
 			router.selectedTab = .home
 		case "app", nil:
 			if let (pathURL, originalPath) = encodedPathUniversalLink(from: url) {
-				recordWebToAppOpen(path: originalPath)
+				Task { await recordWebToAppOpen.execute(path: originalPath) }
 				handleUniversalLink(pathURL)
 				return
 			}
@@ -443,21 +444,6 @@ struct ContentView: View {
 		slug
 			.replacingOccurrences(of: ".html", with: "")
 			.replacingOccurrences(of: "-", with: " ")
-	}
-
-	private func recordWebToAppOpen(path: String) {
-		var components = URLComponents()
-		components.scheme = "https"
-		components.host = "epac.riddimsoftware.com"
-		components.path = "/app/telemetry/"
-		components.queryItems = [
-			URLQueryItem(name: "event", value: "app-open"),
-			URLQueryItem(name: "path", value: path),
-			URLQueryItem(name: "ts", value: String(Int(Date().timeIntervalSince1970 * 1000)))
-		]
-
-		guard let url = components.url else { return }
-		URLSession.shared.dataTask(with: url).resume()
 	}
 
 	private func navigateToMember(memberID: Int) {

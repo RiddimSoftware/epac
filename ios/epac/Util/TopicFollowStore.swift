@@ -26,11 +26,6 @@ final class TopicFollowStore {
     private(set) var followedIDs: Set<String> = []
     private(set) var granularity: [String: TopicNotificationGranularity] = [:]
 
-    // Resolved against BackendConfig at call time so a scheme override flows through.
-    private static var registerURL: URL {
-        BackendConfig.shared.baseURL.appendingPathComponent("device/register")
-    }
-
     private init() {
         let d = UserDefaults.standard
         if let data = d.data(forKey: key),
@@ -48,17 +43,13 @@ final class TopicFollowStore {
     func isFollowing(_ id: String) -> Bool { followedIDs.contains(id) }
 
     func follow(_ id: String) {
-        followedIDs.insert(id)
-        if granularity[id] == nil { granularity[id] = .everyDebate }
-        save()
-        Task { await registerDevice() }
+        persistFollowedTopic(id)
+        TriggerDeviceRegistration.live().trigger(myMPMemberID: nil)
     }
 
     func unfollow(_ id: String) {
-        followedIDs.remove(id)
-        granularity.removeValue(forKey: id)
-        save()
-        Task { await registerDevice() }
+        persistUnfollowedTopic(id)
+        TriggerDeviceRegistration.live().trigger(myMPMemberID: nil)
     }
 
     func toggle(_ id: String) { isFollowing(id) ? unfollow(id) : follow(id) }
@@ -70,9 +61,8 @@ final class TopicFollowStore {
     }
 
     func setGranularity(_ value: TopicNotificationGranularity, for id: String) {
-        granularity[id] = value
-        save()
-        Task { await registerDevice() }
+        persistGranularity(value, for: id)
+        TriggerDeviceRegistration.live().trigger(myMPMemberID: nil)
     }
 
     // MARK: - Topic matching
@@ -87,33 +77,26 @@ final class TopicFollowStore {
     /// Registers the current APNs token + topic preferences with the backend.
     /// Call on app launch after the token is received, and whenever preferences change.
     func registerDevice(myMPMemberID: String? = nil) async {
-        guard let token = UserDefaults.standard.string(forKey: "epac.apnsToken"),
-              !token.isEmpty else { return }
+        await RegisterDevice.live().execute(myMPMemberID: myMPMemberID)
+    }
 
-        let followedBillNumbers = BillFollowStore.shared.followedNumbers
-        let resolvedMPMemberID = myMPMemberID ?? UserDefaults.standard.string(forKey: "epac.myMPMemberID")
+    // MARK: - Persistence helpers
 
-        let granularityMap = Dictionary(uniqueKeysWithValues:
-            granularity.map { ($0.key, $0.value.rawValue) }
-        )
+    func persistFollowedTopic(_ id: String) {
+        followedIDs.insert(id)
+        if granularity[id] == nil { granularity[id] = .everyDebate }
+        save()
+    }
 
-        var body: [String: Any] = [
-            "token": token,
-            "topic_ids": Array(followedIDs),
-            "bill_ids": Array(followedBillNumbers),
-            "granularity": granularityMap
-        ]
-        if let mpID = resolvedMPMemberID {
-            body["my_mp_member_id"] = mpID
-        }
+    func persistUnfollowedTopic(_ id: String) {
+        followedIDs.remove(id)
+        granularity.removeValue(forKey: id)
+        save()
+    }
 
-        guard let data = try? JSONSerialization.data(withJSONObject: body) else { return }
-        var req = URLRequest(url: Self.registerURL)
-        req.httpMethod = "POST"
-        req.httpBody = data
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        _ = try? await NetworkService.shared.data(for: req)
+    func persistGranularity(_ value: TopicNotificationGranularity, for id: String) {
+        granularity[id] = value
+        save()
     }
 
     // MARK: - Private
@@ -126,5 +109,13 @@ final class TopicFollowStore {
         if let encoded = try? JSONEncoder().encode(granularity) {
             d.set(encoded, forKey: granularityKey)
         }
+    }
+}
+
+extension TopicFollowStore: TopicFollowingStore, TopicRegistrationPreferencesProviding {
+    var followedTopicIDsForRegistration: Set<String> { followedIDs }
+
+    var topicGranularityForRegistration: [String: String] {
+        Dictionary(uniqueKeysWithValues: granularity.map { ($0.key, $0.value.rawValue) })
     }
 }

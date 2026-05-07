@@ -14,6 +14,7 @@ class SearchViewModel {
     var searchText = ""
 
     private static let maxPerSection = 50
+    private var searchHansard: any SearchHansardUseCase = SearchHansard.empty()
 
     // MARK: - Result types
 
@@ -35,8 +36,8 @@ class SearchViewModel {
     struct DebateResult: Identifiable {
         let id: String  // subject hansardID
         let hansardDate: Date
-        let subject: SubjectOfBusiness
-        let hansard: Hansard
+        let subjectID: String
+        let subjectTitle: String
     }
 
     struct SearchResults {
@@ -52,11 +53,14 @@ class SearchViewModel {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
     }
 
+    func configure(searchHansard: any SearchHansardUseCase) {
+        self.searchHansard = searchHansard
+    }
+
     func results(
         members: [ParliamentMember],
         votes: [RecordedVote],
         bills: [Bill],
-        hansards: [Hansard],
         query: String? = nil
     ) -> SearchResults {
         let q = (query ?? searchText).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -92,21 +96,13 @@ class SearchViewModel {
             }
         }
 
-        // Debates: match subject title (hansards arrive sorted newest-first)
-        outer: for hansard in hansards {
-            for order in hansard.orders {
-                for subject in order.subjects where !subject.speeches.isEmpty {
-                    if subject.title.localizedCaseInsensitiveContains(q) {
-                        out.debates.append(DebateResult(
-                            id: subject.hansardID,
-                            hansardDate: hansard.date,
-                            subject: subject,
-                            hansard: hansard
-                        ))
-                        if out.debates.count >= Self.maxPerSection { break outer }
-                    }
-                }
-            }
+        out.debates = searchHansard.execute(query: q).map { match in
+            DebateResult(
+                id: match.id,
+                hansardDate: match.hansardDate,
+                subjectID: match.subjectID,
+                subjectTitle: match.subjectTitle
+            )
         }
 
         return out
