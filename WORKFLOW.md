@@ -61,9 +61,6 @@ agent:
   max_retry_backoff_ms: 300000
   max_resume_attempts: 5
   max_fix_attempts: 3
-  max_concurrent_agents_by_state:
-    In Progress: 1
-    Todo: 1
   github_bot:
     enabled: true
     path_prefix: /Users/sunny/code/agent-config/bin
