@@ -33,6 +33,7 @@ repositories:
       - review
 reviewer:
   enabled: true
+  polling_interval_ms: 30000
   bot_identity_wrapper_path: /Users/sunny/code/agent-config/bin
   opener_allowlist:
     - riddim-developer-bot
