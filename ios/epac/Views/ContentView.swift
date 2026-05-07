@@ -695,8 +695,8 @@ private struct AppStoreScreenshotPageView: View {
 						votePill(t("appStore.screenshot.votes.nay"), count: "11", color: .appDestructive)
 						votePill(t("appStore.screenshot.votes.paired"), count: "2", color: .appWarning)
 					}
-					activityRow(title: "Bill C-226", detail: t("appStore.screenshot.votes.row1.detail"), color: .appPositive)
-					activityRow(title: "Bill C-48", detail: t("appStore.screenshot.votes.row2.detail"), color: .appDestructive)
+					activityRow(title: t("appStore.screenshot.votes.row1.title"), detail: t("appStore.screenshot.votes.row1.detail"), color: .appPositive)
+					activityRow(title: t("appStore.screenshot.votes.row2.title"), detail: t("appStore.screenshot.votes.row2.detail"), color: .appDestructive)
 					sourceBadge(t("appStore.screenshot.votes.source"))
 				}
 			}
@@ -731,7 +731,7 @@ private struct AppStoreScreenshotPageView: View {
 		case .bill:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Bill C-226", systemImage: "doc.text.fill")
+					header(t("appStore.screenshot.bill.header"), systemImage: "doc.text.fill")
 					Text(t("appStore.screenshot.bill.title"))
 						.font(.system(size: 21, weight: .bold, design: .rounded))
 						.fixedSize(horizontal: false, vertical: true)

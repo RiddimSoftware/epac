@@ -781,7 +781,9 @@
 "appStore.screenshot.votes.yea" = "Pour";
 "appStore.screenshot.votes.nay" = "Contre";
 "appStore.screenshot.votes.paired" = "Jumelé";
+"appStore.screenshot.votes.row1.title" = "Projet de loi C-226";
 "appStore.screenshot.votes.row1.detail" = "2e lecture — renvoyé au comité";
+"appStore.screenshot.votes.row2.title" = "Projet de loi C-48";
 "appStore.screenshot.votes.row2.detail" = "Cité au débat sur l'examen des projets";
 "appStore.screenshot.votes.source" = "Source : Votes par appel nominal du Parlement du Canada";
 "appStore.screenshot.myMP.header" = "Mon député";
@@ -792,6 +794,7 @@
 "appStore.screenshot.myMP.row2.detail" = "Transparence des prix d'épicerie";
 "appStore.screenshot.myMP.row3.title" = "Suivi";
 "appStore.screenshot.myMP.row3.detail" = "Recevez des alertes sur les votes et débats";
+"appStore.screenshot.bill.header" = "Projet de loi C-226";
 "appStore.screenshot.bill.title" = "Cadre national sur la transparence des prix alimentaires";
 "appStore.screenshot.bill.stage1" = "1re lecture";
 "appStore.screenshot.bill.stage2" = "2e lecture";

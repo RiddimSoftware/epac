@@ -779,7 +779,9 @@
 "appStore.screenshot.votes.yea" = "Yea";
 "appStore.screenshot.votes.nay" = "Nay";
 "appStore.screenshot.votes.paired" = "Paired";
+"appStore.screenshot.votes.row1.title" = "Bill C-226";
 "appStore.screenshot.votes.row1.detail" = "Second reading - moved to committee";
+"appStore.screenshot.votes.row2.title" = "Bill C-48";
 "appStore.screenshot.votes.row2.detail" = "Referenced in debate on project reviews";
 "appStore.screenshot.votes.source" = "Source: Parliament of Canada recorded divisions";
 "appStore.screenshot.myMP.header" = "My MP";
@@ -790,6 +792,7 @@
 "appStore.screenshot.myMP.row2.detail" = "Transparency in grocery pricing";
 "appStore.screenshot.myMP.row3.title" = "Follow";
 "appStore.screenshot.myMP.row3.detail" = "Get vote and debate notifications";
+"appStore.screenshot.bill.header" = "Bill C-226";
 "appStore.screenshot.bill.title" = "National Framework for Food Price Transparency Act";
 "appStore.screenshot.bill.stage1" = "First reading";
 "appStore.screenshot.bill.stage2" = "Second reading";
