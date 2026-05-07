@@ -406,6 +406,11 @@ struct MemberProfileView: View {
 				try? await fetch.downloadWrittenQuestions(memberID: member.memberID)
 			}
 		}
+		.onAppear {
+			if followStore.isFollowing(member.memberID) {
+				ReviewRequestManager.shared.recordFollowedMemberProfileView(memberID: member.memberID)
+			}
+		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
 		.toolbar {
@@ -439,6 +444,9 @@ struct MemberProfileView: View {
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					followStore.toggle(member.memberID)
+					if followStore.isFollowing(member.memberID) {
+						ReviewRequestManager.shared.recordFollowedMemberProfileView(memberID: member.memberID)
+					}
 					HapticEngine.light()
 				} label: {
 					Label(
