@@ -144,15 +144,55 @@ final class epacUITests: XCTestCase {
 
     func testCaptureAppStoreScreenshotSources() throws {
         let outputDir = ProcessInfo.processInfo.environment["APPSTORE_SCREENSHOT_DIR"] ?? "/tmp/epac-appstore-screenshots"
+        let screenshotLocale = ProcessInfo.processInfo.environment["APPSTORE_SCREENSHOT_LOCALE"] ?? "en-CA"
+        let isFrench = screenshotLocale.lowercased().hasPrefix("fr")
 
-        XCUIDevice.shared.orientation = .portrait
-        let plan = ScreenshotPlan(
-            name: "EPAC App Store screenshot sources",
-            launchHook: LaunchHook(
-                launchArguments: ["-UIAnimationsDisabled", "YES", "-AppStoreScreenshots"],
-                launchEnvironment: ["APPSTORE_SCREENSHOT_DIR": outputDir]
-            ),
-            scenes: [
+        var launchArguments = ["-UIAnimationsDisabled", "YES", "-AppStoreScreenshots"]
+        if isFrench {
+            launchArguments += ["-AppleLanguages", "(fr-CA)", "-AppleLocale", "fr_CA"]
+        }
+
+        let scenes: [ScreenshotPlan.Scene]
+        if isFrench {
+            scenes = [
+                ScreenshotPlan.Scene(
+                    name: "Le Parlement dans votre poche",
+                    anchors: [.staticText("Le Parlement dans votre poche")],
+                    navigation: [.swipeLeft],
+                    captureName: "01-parliament-in-your-pocket"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Voyez chaque vote de votre député",
+                    anchors: [.staticText("Voyez chaque vote de votre député")],
+                    navigation: [.swipeLeft],
+                    captureName: "02-see-how-your-mp-votes"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Tout sur votre député",
+                    anchors: [.staticText("Tout sur votre député")],
+                    navigation: [.swipeLeft],
+                    captureName: "03-your-mp-everything-they-do"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Suivez un projet de loi de A à Z",
+                    anchors: [.staticText("Suivez un projet de loi de A à Z")],
+                    navigation: [.swipeLeft],
+                    captureName: "04-track-a-bill-start-to-finish"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Voyez qui influence votre député",
+                    anchors: [.staticText("Voyez qui influence votre député")],
+                    navigation: [.swipeLeft],
+                    captureName: "05-know-whos-influencing-your-mp"
+                ),
+                ScreenshotPlan.Scene(
+                    name: "Contactez votre député en un geste",
+                    anchors: [.staticText("Contactez votre député en un geste")],
+                    captureName: "06-contact-them-in-one-tap"
+                )
+            ]
+        } else {
+            scenes = [
                 ScreenshotPlan.Scene(
                     name: "Parliament in your pocket",
                     anchors: [.staticText("Parliament in your pocket")],
@@ -188,7 +228,20 @@ final class epacUITests: XCTestCase {
                     anchors: [.staticText("Contact them in one tap")],
                     captureName: "06-contact-them-in-one-tap"
                 )
-            ],
+            ]
+        }
+
+        XCUIDevice.shared.orientation = .portrait
+        let plan = ScreenshotPlan(
+            name: "EPAC App Store screenshot sources",
+            launchHook: LaunchHook(
+                launchArguments: launchArguments,
+                launchEnvironment: [
+                    "APPSTORE_SCREENSHOT_DIR": outputDir,
+                    "APPSTORE_SCREENSHOT_LOCALE": screenshotLocale
+                ]
+            ),
+            scenes: scenes,
             outputDirectory: OutputDirectory(explicitURL: URL(fileURLWithPath: outputDir)),
             anchorTimeout: 5
         )
