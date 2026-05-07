@@ -41,6 +41,13 @@ struct DeepLinkRoutingTests {
         #expect(segments.dropFirst().first == "2024-04-29")
     }
 
+    @Test func eventURLSegments() {
+        let url = URL(string: "https://epac.riddimsoftware.com/event/2026-05-25")!
+        let segments = url.pathComponents.filter { $0 != "/" }
+        #expect(segments.first == "event")
+        #expect(segments.dropFirst().first == "2026-05-25")
+    }
+
     @Test func topicURLSlugConversion() {
         let url = URL(string: "https://epac.riddimsoftware.com/topic/housing-affordability")!
         let segments = url.pathComponents.filter { $0 != "/" }

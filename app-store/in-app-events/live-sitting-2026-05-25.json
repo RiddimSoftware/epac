@@ -1,0 +1,18 @@
+{
+  "referenceName": "sitting-2026-05-25",
+  "eventName": "Live House of Commons Sitting",
+  "shortSummary": "Follow live bills and votes from Parliament.",
+  "longDescription": "Track the latest bills, vote outcomes, and parliamentary debates live. Search hansard and follow your representatives.",
+  "eventPurpose": "LIVE_EVENT",
+  "priority": "HIGH",
+  "deepLink": "epac://event/2026-05-25",
+  "startDate": "2026-05-25T09:00:00Z",
+  "endDate": "2026-05-25T17:00:00Z",
+  "territories": ["en-CA"],
+  "imagery": {
+    "en-CA": {
+      "square": "square-en-CA.png",
+      "landscape": "landscape-en-CA.png"
+    }
+  }
+}

@@ -326,7 +326,7 @@ struct ContentView: View {
 	/// legacy query-parameter links (/app?date=...) fall through to ContentViewModel.
 	private func handleOpenURL(_ url: URL) {
 		guard let scheme = url.scheme?.lowercased() else { return }
-		if scheme == "cabinetdoor" {
+		if scheme == "cabinetdoor" || scheme == "epac" {
 			handleCustomScheme(url)
 		} else if scheme == "https" || scheme == "http" {
 			handleUniversalLink(url)
@@ -345,10 +345,10 @@ struct ContentView: View {
 			if let id = pathID { navigateToMember(memberID: id) }
 		case "vote":
 			router.selectedTab = .accountability
-		case "sitting":
+		case "sitting", "event":
 			// Rebuild as a path-based URL so ContentViewModel's sitting parser can consume it.
 			let dateStr = url.pathComponents.dropFirst().first ?? ""
-			if let rebuilt = URL(string: "cabinetdoor:///sitting/\(dateStr)") {
+			if let rebuilt = URL(string: "cabinetdoor:///\(host)/\(dateStr)") {
 				viewModel.onOpenURL(rebuilt, modelContext: modelContext, fetch: fetch)
 			}
 			router.selectedTab = .parliament
