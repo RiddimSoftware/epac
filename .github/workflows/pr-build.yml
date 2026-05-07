@@ -9,10 +9,22 @@ permissions:
   contents: read
 
 jobs:
-  pr-build:
+  build:
     uses: RiddimSoftware/riddim-release/.github/workflows/pr-build.yml@main
     with:
       scheme: "epac"
       project: "epac.xcodeproj"
       working_directory: "ios"
       runner_labels: "${{ vars.RUNNER_LABELS_MAC || '[\"self-hosted\",\"macOS\"]' }}"
+
+  pr-build:
+    name: pr-build
+    needs: [build]
+    runs-on: ["self-hosted","macOS"]
+    if: always()
+    steps:
+      - name: Check build passed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            exit 1
+          fi
