@@ -7,12 +7,11 @@
 //
 
 import Foundation
-import SwiftData
 import SWXMLHash
 
 class XMLBro {
 	private var xml: XMLIndexer
-	var ordersOfBusiness: [OrderOfBusiness] = []
+	var ordersOfBusiness: [OrderOfBusinessDTO] = []
 	var date: Date = Date()
 	var hansardID: String = ""
 	var parliamentNumber: Int = 0
@@ -22,8 +21,8 @@ class XMLBro {
 		self.xml = XMLHash.parse(xml)
 	}
 
-	func hansard() -> Hansard {
-		return Hansard(date: date, hansardID: hansardID, parliamentNumber: parliamentNumber, sessionNumber: sessionNumber, orders: ordersOfBusiness)
+	func hansard() -> HansardDTO {
+		return HansardDTO(date: date, hansardID: hansardID, parliamentNumber: parliamentNumber, sessionNumber: sessionNumber, orders: ordersOfBusiness)
 	}
 
 	func parseXML() -> Self {
@@ -51,7 +50,7 @@ class XMLBro {
 			guard let oobID = oob.element?.attribute(by: "id")?.trimmedText() else {
 				continue
 			}
-			let order = OrderOfBusiness(hansardID: oobID, catchline: catchline)
+			var subjects: [SubjectOfBusinessDTO] = []
 			for sob in oob["SubjectOfBusiness"].all {
 				let title = sob["SubjectOfBusinessTitle"].element?.trimmedText()
 				guard let title else {
@@ -61,7 +60,7 @@ class XMLBro {
 					continue
 				}
 				let content = sob["SubjectOfBusinessContent"]
-				let subject = SubjectOfBusiness(title: title, hansardID: sobID)
+				var speeches: [SpeechDTO] = []
 				for intervention in content["Intervention"].all {
 					var personspeaking: String = ""
 					for affiliation in intervention["PersonSpeaking"]["Affiliation"].all {
@@ -85,7 +84,7 @@ class XMLBro {
 					
 					if let lastName {
 						let messages = contentParas.map { p in
-							SpeechMessage(
+							SpeechMessageDTO(
 								firstName: String(firstName),
 								lastName: String(lastName),
 								partyAbbreviation: parsed.partyAbbreviation,
@@ -95,16 +94,30 @@ class XMLBro {
 								timestamp: date
 							)
 						}
-						let speech = Speech(messages: messages, hansardID: interventionID, date: date, title: title)
-						subject.speeches.append(speech)
+						let speech = SpeechDTO(
+							messages: messages,
+							hansardID: interventionID,
+							currentMessageID: nil,
+							date: date,
+							length: messages.count,
+							title: title
+						)
+						speeches.append(speech)
 					}
 				}
-				if !subject.speeches.isEmpty {
-					order.subjects.append(subject)
+				if !speeches.isEmpty {
+					subjects.append(
+						SubjectOfBusinessDTO(
+							title: title,
+							hansardID: sobID,
+							speeches: speeches,
+							currentSpeechID: nil
+						)
+					)
 				}
 			}
-			if !order.subjects.isEmpty {
-				ordersOfBusiness.append(order)
+			if !subjects.isEmpty {
+				ordersOfBusiness.append(OrderOfBusinessDTO(hansardID: oobID, catchline: catchline, subjects: subjects))
 			}
 		}
 		return self
@@ -231,11 +244,11 @@ class XMLBro {
 }
 
 extension XMLBro {
-	static func parseMembers(_ xml: String) -> [ParliamentMember] {
+	static func parseMembers(_ xml: String) -> [ParliamentMemberDTO] {
 		let xml = XMLHash.parse(xml)
 		let membersXML = xml["ArrayOfMemberOfParliament"]["MemberOfParliament"].all
 		Log.debug("Parsing \(membersXML.count) members from XML")
-		var members = [ParliamentMember]()
+		var members = [ParliamentMemberDTO]()
 		let dateFormatter = ISO8601DateFormatter()
 		dateFormatter.formatOptions = [.withInternetDateTime, .withDashSeparatorInDate, .withColonSeparatorInTime]
 		for member in membersXML {
@@ -258,27 +271,34 @@ extension XMLBro {
 			let party = Party.partyWithAbbreviation(caucus)
 			let province = Province(rawValue: provinceName) ?? Province(rawValue: provinceName.replacingOccurrences(of: "é", with: "e")) ?? .Ontario
 			let provider = PhotoProvider(parliamentNumber: 45)
-			let mp = ParliamentMember(
+			let mp = ParliamentMemberDTO(
 				name: "\(firstName) \(lastName)",
+				memberID: personID,
 				lastName: lastName,
 				firstName: firstName,
 				photoURL: provider.getPhotoURL(lastName: lastName, firstName: firstName, party: party),
 				riding: constituencyName,
 				province: province,
 				party: party,
-				memberID: personID,
+				websiteURL: nil,
+				imageData: nil,
 				fromDateTime: fromDateTime,
-				toDateTime: toDateTime
+				toDateTime: toDateTime,
+				email: nil,
+				hillPhone: nil,
+				constituencyPhone: nil,
+				constituencyAddress: nil,
+				contactFetched: false
 			)
 			members.append(mp)
 		}
 		return members
 	}
 
-	static func parseConstituencies(_ xml: String) -> [Constituency] {
+	static func parseConstituencies(_ xml: String) -> [ConstituencyDTO] {
 		let xml = XMLHash.parse(xml)
 		let constituenciesXML = xml["ArrayOfConstituency"]["Constituency"].all
-		var constituencies = [Constituency]()
+		var constituencies = [ConstituencyDTO]()
 		for constituency in constituenciesXML {
 			let firstName = constituency["CurrentPersonOfficialFirstName"].element?.trimmedText()
 			let lastName = constituency["CurrentPersonOfficialLastName"].element?.trimmedText()
@@ -297,7 +317,7 @@ extension XMLBro {
 				Log.debug("Member XML invalid province")
 				continue
 			}
-			let c = Constituency(name: name, province: province, currentMemberFirstName: firstName, currentMemberLastName: lastName, currentMemberParty: party)
+			let c = ConstituencyDTO(name: name, province: province, currentMemberFirstName: firstName, currentMemberLastName: lastName, currentMemberParty: party)
 			constituencies.append(c)
 		}
 		return constituencies

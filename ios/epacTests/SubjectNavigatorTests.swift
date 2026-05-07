@@ -22,7 +22,7 @@ struct SubjectNavigatorTests {
 
 		bro.ordersOfBusiness.forEach { order in
 			order.subjects.forEach { subject in
-				let nav = SubjectNavigator(subject)
+				let nav = SubjectNavigator(SubjectOfBusiness(domain: subject))
 				while let msg = nav.next() {
 					if idCount[msg.hansardID] == nil {
 						idCount[msg.hansardID] = 0
@@ -43,7 +43,7 @@ struct SubjectNavigatorTests {
 		)!
 		let xmlstring = try String(contentsOf: fixtureURL, encoding: .utf8)
 		let bro = XMLBro(xml: xmlstring).parseXML()
-		let subject = bro.ordersOfBusiness[0].subjects[0]
+		let subject = SubjectOfBusiness(domain: bro.ordersOfBusiness[0].subjects[0])
 		let nav = SubjectNavigator(subject)
 
 		let firstMessage = nav.next()
