@@ -122,6 +122,7 @@ Fill this section only in a Product Hunt launch month.
 - [ ] Review `docs/marketing/newsletter/welcome-sequence.md`; refresh stale
       parliamentary/lobbying facts and send a Mailchimp test if any email copy
       changes.
+- [ ] Run `python3 scripts/marketing/check_promotional_text_staleness.py`; if promotional text is older than 30 days or includes stale factual wording, file a Linear ASO refresh task before closing the monthly cycle.
 
 ## Carried forward from last month
 

@@ -5,10 +5,15 @@ Maximum 170 characters.
 
 ## Current
 
-**Date:** 2026-04-27
-**Text:** Canada's 45th Parliament is sitting. Follow every vote, read every debate, track every bill — verified from official sources. Free.
+**Date:** 2026-05-07
+**Text:** Parliament is sitting. Follow every vote, read every debate, track every bill — verified from Hansard and official sources. Updated daily.
+
+**Monthly refresh hook:** Run `python3 scripts/marketing/check_promotional_text_staleness.py` during the ASO scorecard / monthly report cycle. If the text is older than 30 days or contains stale factual wording, open a Linear ASO refresh task before closing the cycle.
 
 ## Archive
+
+### 2026-04-27
+**Text:** Canada's 45th Parliament is sitting. Follow every vote, read every debate, track every bill — verified from official sources. Free.
 
 ### Pre-2026-04-27
 **Text:** Follow Parliament in real time. Track your MP's votes, read today's Hansard debates, and stay informed on every bill — straight from official sources.
