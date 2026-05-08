@@ -90,8 +90,7 @@ struct ReviewRequestManagerTests {
         )
 
         manager.recordAppOpen()
-        // Wait for the unstructured Task spawned by recordAppOpen to finish its async fetch chain.
-        try await Task.sleep(nanoseconds: 100_000_000)  // 100 ms
+        await manager.refreshRemoteConfigIfNeeded()
 
         manager.recordFollowedMemberProfileView(memberID: 7)
         manager.recordFollowedMemberProfileView(memberID: 7)

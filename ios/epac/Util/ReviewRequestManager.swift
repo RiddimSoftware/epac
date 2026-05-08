@@ -83,6 +83,7 @@ final class ReviewRequestManager {
         defaults.set(defaults.integer(forKey: openCountKey) + 1, forKey: openCountKey)
         defaults.set(defaults.integer(forKey: sessionNumberKey) + 1, forKey: sessionNumberKey)
         defaults.set([], forKey: sessionThreadsKey)
+        defaults.removeObject(forKey: memberProfileViewsKey)
 
         Task { await refreshRemoteConfigIfNeeded() }
     }
@@ -146,7 +147,7 @@ final class ReviewRequestManager {
         )
     }
 
-    private func refreshRemoteConfigIfNeeded() async {
+    func refreshRemoteConfigIfNeeded() async {
         if let fetchedAt = defaults.object(forKey: remoteConfigFetchedAtKey) as? Date,
            now().timeIntervalSince(fetchedAt) < remoteConfigTTL {
             return
@@ -168,14 +169,13 @@ final class ReviewRequestManager {
     }
 
     private nonisolated static func defaultTelemetryRecorder(_ event: String, _ payload: [String: String]) {
-        Log.warning("\(event) trigger=\(payload["trigger_source"] ?? "unknown")")
+        Log.info("\(event) trigger=\(payload["trigger_source"] ?? "unknown")")
 
-        SentrySDK.configureScope { scope in
+        SentrySDK.capture(message: event) { scope in
             scope.setTag(value: event, key: "event")
             payload.forEach { key, value in
                 scope.setTag(value: value, key: key)
             }
         }
-        SentrySDK.capture(message: event)
     }
 }
