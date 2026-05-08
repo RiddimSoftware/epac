@@ -6,11 +6,26 @@ struct DomainBoundaryTests {
 
 	@Test func domainFilesDoNotImportSwiftDataOrUIFrameworks() throws {
 		let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-		let domainDirectory = testsDirectory.deletingLastPathComponent().appendingPathComponent("epac/Domain")
+		let sourceRoot = testsDirectory.deletingLastPathComponent().appendingPathComponent("epac")
+		let protectedLocations = [
+			sourceRoot.appendingPathComponent("Domain"),
+			sourceRoot.appendingPathComponent("Model/Party.swift"),
+			sourceRoot.appendingPathComponent("Model/Province.swift")
+		]
 		let forbiddenImports = ["import SwiftData", "import SwiftUI", "import UIKit"]
+		let swiftFiles = try protectedLocations.flatMap { location -> [URL] in
+			var isDirectory: ObjCBool = false
+			guard FileManager.default.fileExists(atPath: location.path, isDirectory: &isDirectory) else {
+				throw BoundaryCoverageError.missingProtectedPath(location.path)
+			}
 
-		let enumerator = FileManager.default.enumerator(at: domainDirectory, includingPropertiesForKeys: nil)
-		let swiftFiles = (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
+			if isDirectory.boolValue {
+				let enumerator = FileManager.default.enumerator(at: location, includingPropertiesForKeys: nil)
+				return (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
+			}
+
+			return [location]
+		}
 		#expect(!swiftFiles.isEmpty)
 
 		let violations = try swiftFiles.flatMap { fileURL -> [String] in
@@ -95,4 +110,8 @@ struct DomainBoundaryTests {
 		#expect(member.domainDTO == dto)
 		#expect(member.initials == "JT")
 	}
+}
+
+private enum BoundaryCoverageError: Error {
+	case missingProtectedPath(String)
 }
