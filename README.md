@@ -55,12 +55,11 @@ open ios/epac.xcodeproj
 
 Then select the `epac` scheme and run it in the simulator.
 
-CLI equivalents:
+Alternatively, you can build from the command line:
 
 ```bash
 cd ios
-make build
-make simulator
+xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
 ```
 
 ### Backend and tooling prerequisites
