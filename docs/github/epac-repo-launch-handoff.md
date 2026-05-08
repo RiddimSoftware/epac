@@ -27,9 +27,15 @@ Output path:
 docs/brand/github-social-preview-1280x640.png
 ```
 
-## Seeded good first issue drafts
+## Seeded good first issues
 
-Each issue below is intentionally scoped to about 1–2 hours for a first-time contributor.
+The live GitHub issues seeded for this launch are:
+
+- #384 — `Localize SittingCalendarView accessibility labels and hints`
+- #385 — `Localize HomeFeedView accessibility labels for today card and followed bills`
+- #386 — `Localize Toronto and Vancouver councillor card accessibility labels`
+
+Each issue below is intentionally scoped to about 1–2 hours for a first-time contributor and should carry the `good first issue` label on GitHub.
 
 ---
 
