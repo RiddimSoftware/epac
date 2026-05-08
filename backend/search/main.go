@@ -53,6 +53,13 @@ type RankingConfig struct {
 	TopicBoost        float64
 }
 
+type SearchContext struct {
+	MyMPMemberID      string
+	TopicIDs          []string
+	BillIDs           []string
+	TopicKeywordHints []string
+}
+
 var dbConn *pgx.Conn
 
 func getDBConn(ctx context.Context) (*pgx.Conn, error) {
@@ -83,13 +90,19 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 
 func search(ctx context.Context, conn *pgx.Conn, params SearchParams, cfg RankingConfig) ([]SearchResult, error) {
 	languageHint := detectQueryLanguage(params.Query)
+	searchContext, err := loadSearchContext(ctx, conn, params.UserID)
+	if err != nil {
+		return nil, err
+	}
 
 	// PostgreSQL full-text search using language-specific GIN indexes.
 	// ts_headline generates a snippet with matched terms highlighted (stripped of tags here).
 	rows, err := conn.Query(ctx, rankedSpeechSearchSQL,
 		params.Query,
 		languageHint,
-		params.UserID,
+		searchContext.MyMPMemberID,
+		searchContext.TopicKeywordHints,
+		searchContext.BillIDs,
 		params.FromDate,
 		params.ToDate,
 		cfg.TextWeight,
@@ -125,20 +138,11 @@ const rankedSpeechSearchSQL = `
 				plainto_tsquery('english', $1) AS english_query,
 				plainto_tsquery('french', $1) AS french_query
 		),
-		user_context AS (
-			SELECT
-				my_mp_member_id,
-				topic_ids,
-				bill_ids
-			FROM device_subscriptions
-			WHERE token = NULLIF($3, '')
-			LIMIT 1
-		),
 		context AS (
 			SELECT
-				COALESCE((SELECT my_mp_member_id FROM user_context), '') AS my_mp_member_id,
-				COALESCE((SELECT topic_ids FROM user_context), ARRAY[]::TEXT[]) AS topic_ids,
-				COALESCE((SELECT bill_ids FROM user_context), ARRAY[]::TEXT[]) AS bill_ids
+				COALESCE($3, '') AS my_mp_member_id,
+				COALESCE($4::TEXT[], ARRAY[]::TEXT[]) AS topic_keywords,
+				COALESCE($5::TEXT[], ARRAY[]::TEXT[]) AS bill_ids
 		),
 		matches AS (
 		SELECT
@@ -162,57 +166,60 @@ const rankedSpeechSearchSQL = `
 			s.subject_title,
 			s.member_id,
 			(
-				$6 * GREATEST(
+				$8 * GREATEST(
 					CASE
 						WHEN s.search_vector_en @@ query.english_query
 							THEN ts_rank(s.search_vector_en, query.english_query) *
-								CASE WHEN $2 = 'en' THEN $10 ELSE 1.0 END
+								CASE WHEN $2 = 'en' THEN $12 ELSE 1.0 END
 						ELSE 0
 					END,
 					CASE
 						WHEN s.search_vector_fr @@ query.french_query
 							THEN ts_rank(s.search_vector_fr, query.french_query) *
-								CASE WHEN $2 = 'fr' THEN $10 ELSE 1.0 END
+								CASE WHEN $2 = 'fr' THEN $12 ELSE 1.0 END
 						ELSE 0
 					END
 				)
 			) + (
-				$7 * CASE
+				$9 * CASE
 					WHEN s.sitting_date IS NULL THEN 0
 					ELSE POWER(
 						0.5::DOUBLE PRECISION,
 						GREATEST(
 							0::DOUBLE PRECISION,
 							EXTRACT(EPOCH FROM (CURRENT_DATE::TIMESTAMP - s.sitting_date::TIMESTAMP)) / 86400.0
-						) / NULLIF($9, 0)
+						) / NULLIF($11, 0)
 					)
 				END
 			) + (
-				$8 * CASE
-					WHEN $3 = '' THEN 0
+				$10 * CASE
+					WHEN context.my_mp_member_id = ''
+						AND cardinality(context.topic_keywords) = 0
+						AND cardinality(context.bill_ids) = 0
+						THEN 0
 					ELSE (
 						CASE
 							WHEN context.my_mp_member_id <> ''
 								AND s.member_id = context.my_mp_member_id
-								THEN $11
+								THEN $13
 							ELSE 0
 						END
 						+ CASE
 							WHEN COALESCE(s.related_bill_ids, ARRAY[]::TEXT[]) && context.bill_ids
-								THEN $12
+								THEN $14
 							ELSE 0
 						END
 						+ CASE
 							WHEN EXISTS (
 								SELECT 1
-								FROM unnest(context.topic_ids) AS followed_topic(topic_id)
-								WHERE followed_topic.topic_id <> ''
+								FROM unnest(context.topic_keywords) AS followed_topic(keyword)
+								WHERE followed_topic.keyword <> ''
 									AND (
-										LOWER(COALESCE(s.subject_title, '')) LIKE '%' || REPLACE(LOWER(followed_topic.topic_id), '-', ' ') || '%'
-										OR LOWER(COALESCE(s.content, '')) LIKE '%' || REPLACE(LOWER(followed_topic.topic_id), '-', ' ') || '%'
+										LOWER(COALESCE(s.subject_title, '')) LIKE '%' || followed_topic.keyword || '%'
+										OR LOWER(COALESCE(s.content, '')) LIKE '%' || followed_topic.keyword || '%'
 									)
 							)
-								THEN $13
+								THEN $15
 							ELSE 0
 						END
 					)
@@ -226,8 +233,8 @@ const rankedSpeechSearchSQL = `
 				(s.search_vector_en @@ query.english_query)
 				OR (s.search_vector_fr @@ query.french_query)
 			)
-			AND ($4::DATE IS NULL OR s.sitting_date >= $4::DATE)
-			AND ($5::DATE IS NULL OR s.sitting_date <= $5::DATE)
+			AND ($6::DATE IS NULL OR s.sitting_date >= $6::DATE)
+			AND ($7::DATE IS NULL OR s.sitting_date <= $7::DATE)
 		)
 		SELECT intervention_id, title, snippet, sitting_date, subject_title, member_id
 		FROM matches
@@ -332,6 +339,34 @@ func scanResults(rows pgx.Rows) ([]SearchResult, error) {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 	return results, nil
+}
+
+func loadSearchContext(ctx context.Context, conn *pgx.Conn, userID string) (SearchContext, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return SearchContext{}, nil
+	}
+
+	var context SearchContext
+	err := conn.QueryRow(ctx, `
+		SELECT
+			COALESCE(my_mp_member_id, ''),
+			COALESCE(topic_ids, ARRAY[]::TEXT[]),
+			COALESCE(bill_ids, ARRAY[]::TEXT[])
+		FROM device_subscriptions
+		WHERE token = $1
+		LIMIT 1`,
+		userID,
+	).Scan(&context.MyMPMemberID, &context.TopicIDs, &context.BillIDs)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return SearchContext{}, nil
+		}
+		return SearchContext{}, fmt.Errorf("load search context: %w", err)
+	}
+
+	context.TopicKeywordHints = followedTopicKeywords(context.TopicIDs)
+	return context, nil
 }
 
 func paramsFromRequest(request events.APIGatewayProxyRequest) (SearchParams, error) {

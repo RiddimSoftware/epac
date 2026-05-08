@@ -46,60 +46,6 @@ type NotifyRequest struct {
 	SittingDate string `json:"sitting_date"` // optional override; defaults to yesterday Ottawa time
 }
 
-// topic is a named set of keywords mirroring ParliamentaryTopic in iOS.
-type topic struct {
-	id       string
-	name     string
-	keywords []string
-}
-
-var topics = []topic{
-	{id: "housing", name: "Housing", keywords: []string{"housing", "rent", "mortgage", "affordable housing", "logement", "loyer"}},
-	{id: "healthcare", name: "Healthcare", keywords: []string{"health", "pharmacare", "mental health", "dental", "pandemic", "santé"}},
-	{id: "climate", name: "Climate", keywords: []string{"climate", "carbon", "environment", "clean energy", "net zero", "emission", "énergie", "environnement"}},
-	{id: "economy", name: "Economy", keywords: []string{"budget", "fiscal", "inflation", "economic", "gdp", "debt", "déficit", "économie"}},
-	{id: "indigenous", name: "Indigenous affairs", keywords: []string{"indigenous", "first nations", "métis", "inuit", "reconciliation", "autochtone"}},
-	{id: "immigration", name: "Immigration", keywords: []string{"immigration", "refugee", "asylum", "citizenship", "border", "réfugié"}},
-	{id: "defence", name: "Defence", keywords: []string{"defence", "military", "nato", "armed forces", "défense", "armée"}},
-	{id: "justice", name: "Justice & Public Safety", keywords: []string{"justice", "crime", "police", "firearms", "gun", "corrections", "sécurité"}},
-	{id: "seniors", name: "Seniors", keywords: []string{"senior", "pension", "retirement", "old age", "aîné", "retraite"}},
-	{id: "agriculture", name: "Agriculture", keywords: []string{"agriculture", "farming", "food security", "grain", "livestock"}},
-	{id: "transport", name: "Transport & Infrastructure", keywords: []string{"transport", "rail", "aviation", "highway", "infrastructure", "transit"}},
-	{id: "taxation", name: "Taxation", keywords: []string{"tax", "gst", "hst", "income tax", "corporate tax", "impôt", "taxe"}},
-	{id: "foreign", name: "Foreign Affairs", keywords: []string{"foreign affairs", "international", "ukraine", "gaza", "sanctions", "treaty", "affaires étrangères"}},
-	{id: "education", name: "Education", keywords: []string{"education", "student", "university", "school", "tuition", "éducation", "étudiant"}},
-	{id: "childcare", name: "Child Care", keywords: []string{"child care", "daycare", "family", "children", "services de garde", "enfant"}},
-	{id: "energy", name: "Energy", keywords: []string{"energy", "oil", "gas", "pipeline", "electricity", "lng", "pétrole"}},
-	{id: "pharma", name: "Pharmaceuticals", keywords: []string{"drug", "pharmaceutical", "medication", "opioid", "naloxone", "médicament"}},
-	{id: "digital", name: "Digital & AI", keywords: []string{"digital", "artificial intelligence", "ai", "online harms", "privacy", "cybersecurity", "numérique"}},
-	{id: "labour", name: "Labour", keywords: []string{"labour", "labor", "union", "strike", "wage", "employment", "travail", "grève"}},
-	{id: "trade", name: "Trade", keywords: []string{"trade", "tariff", "cusma", "ceta", "export", "import", "commerce", "tarif"}},
-}
-
-// matchTopics returns IDs of topics whose keywords appear in the subject title.
-func matchTopics(subjectTitle string) []string {
-	lower := strings.ToLower(subjectTitle)
-	var matched []string
-	for _, t := range topics {
-		for _, kw := range t.keywords {
-			if strings.Contains(lower, kw) {
-				matched = append(matched, t.id)
-				break
-			}
-		}
-	}
-	return matched
-}
-
-func topicName(id string) string {
-	for _, t := range topics {
-		if t.id == id {
-			return t.name
-		}
-	}
-	return id
-}
-
 // ---- database types ----
 
 type subjectSummary struct {

@@ -84,4 +84,12 @@ struct NaturalResourcesStatisticsTests {
 		#expect(miningMatches.contains { $0.id == "naturalresources" })
 		#expect(energyMatches.contains { $0.id == "energy" })
 	}
+
+	@Test func expandedTopicKeywordsRemainCanonical() {
+		let defenceMatches = ParliamentaryTopic.matching("Veterans Affairs and NATO readiness")
+		let justiceMatches = ParliamentaryTopic.matching("Parole reform and correctional policy")
+
+		#expect(defenceMatches.contains { $0.id == "defence" })
+		#expect(justiceMatches.contains { $0.id == "justice" })
+	}
 }
