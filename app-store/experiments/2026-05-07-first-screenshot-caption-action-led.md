@@ -1,9 +1,24 @@
 # Experiment — First-screenshot caption: action-led vs tagline
 
-**Status:** proposed (deferred — gated on baseline traffic data)
+**Status:** completed (deferred-by-rule — shipped directly)
 **Created:** 2026-05-07
+**Completed:** 2026-05-07
 **Source:** [ASO Scorecard 2026-05-07](https://linear.app/riddimsoftware/initiative/aso-epac-04b0fbc7514c) · Experiment Planning Meeting
-**Linear issue:** _filed alongside this PR_
+**Linear issue:** [EPAC-1762](https://linear.app/riddimsoftware/issue/EPAC-1762)
+
+## Result
+
+**Decision:** Ship Variant B directly.
+
+**Rationale:**
+1. **Baseline Traffic:** App Store Connect Analytics for the 14-day period ending 2026-05-07 were unavailable (API 403 / No recent reports found in `docs/marketing/reports`).
+2. **Decision Rule:** Following the "Sample-size estimate" decision rule: _"If baseline < 100 / day, defer the experiment and instead ship the better-of-two-on-paper variant directly"_. Without a confirmed baseline above the 100/day floor, the experiment is deferred to avoid an underpowered PPO test.
+3. **Execution:** Variant B ("See every vote your MP casts") is adopted as the new default first screenshot for the en-CA locale.
+
+**Follow-up:**
+- Monitor install CVR MoM for any significant directional shifts.
+- Re-evaluate PPO potential once [EPAC-1752](https://linear.app/riddimsoftware/issue/EPAC-1752) and [EPAC-1753](https://linear.app/riddimsoftware/issue/EPAC-1753) have shipped and established a new traffic floor.
+
 **Owning product:** ePac (`net.dinglebox.cabinetdoor`, ASC `1224459142`)
 **Locale scope:** en-CA (CA App Store)
 **Surface:** Apple Product Page Optimization (PPO), default product page, Treatment slot 1 of 3
