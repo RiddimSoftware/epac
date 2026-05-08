@@ -3,19 +3,13 @@ workflow_template:
   managed: true
   source_ref: templates/WORKFLOW.template.md
   version: sha256:94cd413332b5cb8007ffa9a39dca419e2c5f40ecc9bbf8047198a38e3c400c1e
-  managed_block_sha256: 45f9a136b41c1cf4391448e379d460349084e78bb7477621323cd618e3b8a7bc
+  managed_block_sha256: 44b8565e0a7712446951a5ef1aff15491ba0c036e88ef24ebb4ceebb85141ca8
 extends: ../agent-config/symphony/shared.yml
 tracker:
   project_slug: EPAC
 repositories:
   - epac
-reviewer:
-  enabled: true
-  reserved_agent_slots: 4
-developer:
-  pr_fix_reserved_agent_slots: 4
-agent:
-  max_concurrent_agents: 10
+
 server:
   port: 4781
 ---
