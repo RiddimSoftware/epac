@@ -1,0 +1,310 @@
+{
+  "metadata": {
+    "naturalresources_decision": "Retain the existing `naturalresources` topic as canonical. Its stable ID is already stored in iOS user preferences and used by natural-resource context features, so the backend must adopt that same ID and keyword set instead of dropping it."
+  },
+  "topics": [
+    {
+      "id": "housing",
+      "name_key": "topic.housing",
+      "backend_name": "Housing",
+      "keywords": [
+        "housing",
+        "rent",
+        "mortgage",
+        "affordable housing",
+        "logement",
+        "loyer"
+      ]
+    },
+    {
+      "id": "healthcare",
+      "name_key": "topic.healthcare",
+      "backend_name": "Healthcare",
+      "keywords": [
+        "health",
+        "pharmacare",
+        "mental health",
+        "dental",
+        "pandemic",
+        "santé"
+      ]
+    },
+    {
+      "id": "climate",
+      "name_key": "topic.climate",
+      "backend_name": "Climate",
+      "keywords": [
+        "climate",
+        "carbon",
+        "environment",
+        "clean energy",
+        "net zero",
+        "emission",
+        "énergie",
+        "environnement"
+      ]
+    },
+    {
+      "id": "economy",
+      "name_key": "topic.economy",
+      "backend_name": "Economy",
+      "keywords": [
+        "budget",
+        "fiscal",
+        "inflation",
+        "economic",
+        "gdp",
+        "debt",
+        "déficit",
+        "économie"
+      ]
+    },
+    {
+      "id": "indigenous",
+      "name_key": "topic.indigenous",
+      "backend_name": "Indigenous affairs",
+      "keywords": [
+        "indigenous",
+        "first nations",
+        "métis",
+        "inuit",
+        "reconciliation",
+        "autochtone"
+      ]
+    },
+    {
+      "id": "immigration",
+      "name_key": "topic.immigration",
+      "backend_name": "Immigration",
+      "keywords": [
+        "immigration",
+        "refugee",
+        "asylum",
+        "citizenship",
+        "border",
+        "réfugié"
+      ]
+    },
+    {
+      "id": "defence",
+      "name_key": "topic.defence",
+      "backend_name": "Defence",
+      "keywords": [
+        "defence",
+        "military",
+        "NATO",
+        "armed forces",
+        "veteran",
+        "Veterans Affairs",
+        "ancien combattant",
+        "défense",
+        "armée"
+      ]
+    },
+    {
+      "id": "justice",
+      "name_key": "topic.justice",
+      "backend_name": "Justice & Public Safety",
+      "keywords": [
+        "justice",
+        "crime",
+        "police",
+        "firearms",
+        "gun",
+        "corrections",
+        "correctional",
+        "prison",
+        "parole",
+        "recidivism",
+        "incarceration",
+        "sécurité"
+      ]
+    },
+    {
+      "id": "seniors",
+      "name_key": "topic.seniors",
+      "backend_name": "Seniors",
+      "keywords": [
+        "senior",
+        "pension",
+        "retirement",
+        "old age",
+        "aîné",
+        "retraite"
+      ]
+    },
+    {
+      "id": "agriculture",
+      "name_key": "topic.agriculture",
+      "backend_name": "Agriculture",
+      "keywords": [
+        "agriculture",
+        "farming",
+        "food security",
+        "grain",
+        "livestock"
+      ]
+    },
+    {
+      "id": "transport",
+      "name_key": "topic.transport",
+      "backend_name": "Transport & Infrastructure",
+      "keywords": [
+        "transport",
+        "rail",
+        "aviation",
+        "highway",
+        "infrastructure",
+        "transit"
+      ]
+    },
+    {
+      "id": "taxation",
+      "name_key": "topic.taxation",
+      "backend_name": "Taxation",
+      "keywords": [
+        "tax",
+        "GST",
+        "HST",
+        "income tax",
+        "corporate tax",
+        "impôt",
+        "taxe"
+      ]
+    },
+    {
+      "id": "foreign",
+      "name_key": "topic.foreign",
+      "backend_name": "Foreign Affairs",
+      "keywords": [
+        "foreign affairs",
+        "international",
+        "Ukraine",
+        "Gaza",
+        "sanctions",
+        "treaty",
+        "affaires étrangères"
+      ]
+    },
+    {
+      "id": "education",
+      "name_key": "topic.education",
+      "backend_name": "Education",
+      "keywords": [
+        "education",
+        "student",
+        "student debt",
+        "youth",
+        "university",
+        "school",
+        "tuition",
+        "éducation",
+        "étudiant"
+      ]
+    },
+    {
+      "id": "childcare",
+      "name_key": "topic.childcare",
+      "backend_name": "Child Care",
+      "keywords": [
+        "child care",
+        "daycare",
+        "family",
+        "children",
+        "services de garde",
+        "enfant"
+      ]
+    },
+    {
+      "id": "energy",
+      "name_key": "topic.energy",
+      "backend_name": "Energy",
+      "keywords": [
+        "energy",
+        "oil",
+        "gas",
+        "pipeline",
+        "electricity",
+        "LNG",
+        "pétrole"
+      ]
+    },
+    {
+      "id": "naturalresources",
+      "name_key": "topic.naturalResources",
+      "backend_name": "Natural Resources",
+      "keywords": [
+        "natural resources",
+        "forestry",
+        "forest",
+        "lumber",
+        "timber",
+        "mining",
+        "minerals",
+        "mineral production",
+        "potash",
+        "wood harvest",
+        "ressources naturelles",
+        "foresterie",
+        "mines"
+      ]
+    },
+    {
+      "id": "pharma",
+      "name_key": "topic.pharma",
+      "backend_name": "Pharmaceuticals",
+      "keywords": [
+        "drug",
+        "pharmaceutical",
+        "medication",
+        "opioid",
+        "naloxone",
+        "médicament"
+      ]
+    },
+    {
+      "id": "digital",
+      "name_key": "topic.digital",
+      "backend_name": "Digital & AI",
+      "keywords": [
+        "digital",
+        "artificial intelligence",
+        "AI",
+        "online harms",
+        "privacy",
+        "cybersecurity",
+        "numérique"
+      ]
+    },
+    {
+      "id": "labour",
+      "name_key": "topic.labour",
+      "backend_name": "Labour",
+      "keywords": [
+        "labour",
+        "labor",
+        "union",
+        "strike",
+        "wage",
+        "employment",
+        "travail",
+        "grève"
+      ]
+    },
+    {
+      "id": "trade",
+      "name_key": "topic.trade",
+      "backend_name": "Trade",
+      "keywords": [
+        "trade",
+        "tariff",
+        "CUSMA",
+        "CETA",
+        "export",
+        "import",
+        "commerce",
+        "tarif"
+      ]
+    }
+  ]
+}

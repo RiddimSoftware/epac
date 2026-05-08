@@ -165,14 +165,30 @@ func TestRankingSQLDocumentsRequiredComponents(t *testing.T) {
 		"POWER(",
 		"my_mp_member_id",
 		"related_bill_ids",
-		"topic_ids",
+		"topic_keywords",
 		"rank_score DESC",
-		"s.sitting_date >= $4::DATE",
-		"s.sitting_date <= $5::DATE",
+		"s.sitting_date >= $6::DATE",
+		"s.sitting_date <= $7::DATE",
 	}
 	for _, term := range required {
 		if !strings.Contains(rankedSpeechSearchSQL, term) {
 			t.Fatalf("ranked SQL missing %q", term)
+		}
+	}
+}
+
+func TestFollowedTopicKeywordsUseCanonicalTaxonomy(t *testing.T) {
+	got := followedTopicKeywords([]string{"naturalresources", "defence", "naturalresources"})
+	required := []string{
+		"natural resources",
+		"forestry",
+		"veterans affairs",
+		"défense",
+	}
+
+	for _, keyword := range required {
+		if !containsString(got, keyword) {
+			t.Fatalf("followedTopicKeywords missing %q in %v", keyword, got)
 		}
 	}
 }
@@ -223,4 +239,13 @@ func assertDate(t *testing.T, got *time.Time, want string) {
 	if formatted := got.Format("2006-01-02"); formatted != want {
 		t.Fatalf("date = %s, want %s", formatted, want)
 	}
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
