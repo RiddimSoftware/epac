@@ -55,11 +55,30 @@ open ios/epac.xcodeproj
 
 Then select the `epac` scheme and run it in the simulator.
 
-Alternatively, you can build from the command line:
+Alternatively, build from the command line:
 
 ```bash
 cd ios
 xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
+```
+
+The `ios/Makefile` wraps that command in a friendlier `make build` target. If you want to use it, install [xcbeautify](https://github.com/cpisciotta/xcbeautify) first:
+
+```bash
+brew install xcbeautify
+cd ios && make build
+```
+
+To build and deploy to the simulator in one step:
+
+```bash
+cd ios && make simulator
+```
+
+`make simulator` looks up the UUID for the simulator named `iPhone 17 Pro Max` automatically. To target a different simulator, override `SIM_NAME`:
+
+```bash
+cd ios && make simulator SIM_NAME='iPhone 16'
 ```
 
 ### Backend and tooling prerequisites
