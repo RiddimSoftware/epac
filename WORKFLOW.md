@@ -229,7 +229,7 @@ or human confirmation.
   `swift run symphonyd --validate-only /Users/sunny/code/epac/WORKFLOW.md`.
 - For iOS app changes, run `cd ios && make build`. If the Makefile dependencies
   are unavailable, run this equivalent command and report the substitution:
-  `cd ios && xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build`.
+  `cd ios && xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,name=YOUR_SIMULATOR_NAME' build`.
 - For changed iOS ViewModel, service, manager, or model logic, add or update
   unit tests and run `cd ios && make test` or the narrowest equivalent
   `xcodebuild test` command.
