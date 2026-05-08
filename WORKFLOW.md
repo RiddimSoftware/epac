@@ -3,16 +3,12 @@ workflow_template:
   managed: true
   source_ref: templates/WORKFLOW.template.md
   version: sha256:94cd413332b5cb8007ffa9a39dca419e2c5f40ecc9bbf8047198a38e3c400c1e
-  managed_block_sha256: c8bb0b220ac17d6140f93e4d2c99043a29314cf3082080d0d7eb96d9d94ad8a2
+  managed_block_sha256: 45f9a136b41c1cf4391448e379d460349084e78bb7477621323cd618e3b8a7bc
 extends: ../agent-config/symphony/shared.yml
 tracker:
   project_slug: EPAC
 repositories:
-  - slug: RiddimSoftware/epac
-    local_path: /Users/sunny/code/epac
-    capabilities:
-      - edit
-      - review
+  - epac
 reviewer:
   enabled: true
   reserved_agent_slots: 4
