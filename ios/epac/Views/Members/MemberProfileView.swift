@@ -406,6 +406,11 @@ struct MemberProfileView: View {
 				try? await fetch.downloadWrittenQuestions(memberID: member.memberID)
 			}
 		}
+		.onAppear {
+			if followStore.isFollowing(member.memberID) {
+				ReviewRequestManager.shared.recordFollowedMemberProfileView(memberID: member.memberID)
+			}
+		}
 		.navigationTitle(member.name)
 		.navigationBarTitleDisplayMode(.large)
 		.toolbar {
@@ -437,12 +442,12 @@ struct MemberProfileView: View {
 				.accessibilityHint("Opens a picker to select another member for comparison")
 			}
 			ToolbarItem(placement: .topBarTrailing) {
-				Button {
-					followStore.toggle(member.memberID)
-					HapticEngine.light()
-				} label: {
-					Label(
-						followStore.isFollowing(member.memberID)
+			        Button {
+			                followStore.toggle(member.memberID)
+			                HapticEngine.light()
+			        } label: {
+			                Label(
+			                        followStore.isFollowing(member.memberID)
 							? NSLocalizedString("follow.unfollow", comment: "")
 							: NSLocalizedString("follow.follow", comment: ""),
 						systemImage: followStore.isFollowing(member.memberID) ? "bell.fill" : "bell"

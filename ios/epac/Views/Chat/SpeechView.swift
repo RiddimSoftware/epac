@@ -205,6 +205,10 @@ struct SpeechView: View {
 		.onAppear {
 			viewModel.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 			resolveSavedMemberProvince()
+			ReviewRequestManager.shared.recordDebateThreadRead(
+				hansardID: hansard.hansardID,
+				subjectTitle: subject.title
+			)
 		}
 		.activitySheet($item)
 		.toolbar {

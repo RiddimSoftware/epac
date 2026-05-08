@@ -95,6 +95,5 @@ struct BillNotificationScheduler {
             trigger: nil
         )
         UNUserNotificationCenter.current().add(request)
-        ReviewRequestManager.shared.requestReviewIfAppropriate()
     }
 }

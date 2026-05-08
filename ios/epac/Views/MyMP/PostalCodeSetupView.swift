@@ -120,7 +120,6 @@ struct PostalCodeSetupView: View {
                 viewModel.confirm()
                 HapticEngine.success()
                 onDone()
-                ReviewRequestManager.shared.requestReviewIfAppropriate()
             } label: {
                 Text(NSLocalizedString("riding.setup.confirmButton", comment: ""))
                     .frame(maxWidth: .infinity)

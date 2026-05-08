@@ -108,11 +108,10 @@ Sincerely,
 			URLQueryItem(name: "subject", value: template.subject),
 			URLQueryItem(name: "body", value: template.body)
 		]
-		guard let url = components.url else { return }
-		UIApplication.shared.open(url)
-		HapticEngine.medium()
-		ReviewRequestManager.shared.requestReviewIfAppropriate()
-	}
+        guard let url = components.url else { return }
+        UIApplication.shared.open(url)
+        HapticEngine.medium()
+    }
 }
 
 // MARK: - SwiftUI button
