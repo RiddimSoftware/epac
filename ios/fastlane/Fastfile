@@ -13,6 +13,31 @@ platform :ios do
       in_house:     false
     )
 
+    require 'spaceship'
+    app = Spaceship::ConnectAPI::App.find("net.dinglebox.cabinetdoor")
+    version = app.get_edit_app_store_version
+    unless version
+      UI.user_error!("No editable App Store version found. Create it manually in ASC first.")
+    end
+
+    supported_locales = version.get_app_store_version_localizations.map(&:locale)
+    Dir.glob("./fastlane/metadata/*").each do |dir|
+      next unless File.directory?(dir)
+      locale = File.basename(dir)
+      unless supported_locales.include?(locale)
+        UI.user_error!(
+          "Localization '#{locale}' found in repo but NOT in App Store Connect.\n\n" \
+          "DO NOT let fastlane auto-create it — Apple's create-localization endpoint runs a\n" \
+          "global app-name uniqueness check and will reject with 'Cannot add localization due\n" \
+          "to app name' (see docs/development/release-pipeline-gaps.md Gap 3).\n\n" \
+          "Operator steps:\n" \
+          "  1. Open https://appstoreconnect.apple.com → My Apps → ePac → App Store tab\n" \
+          "  2. Under the editable version, click '+' next to localizations and add '#{locale}'\n" \
+          "  3. Re-run: bundle exec fastlane deliver\n"
+        )
+      end
+    end
+
     upload_to_app_store(
       api_key:              api_key,
       skip_binary_upload:   true,
@@ -20,7 +45,7 @@ platform :ios do
       force:                true,
       metadata_path:        "./fastlane/metadata",
       screenshots_path:     "./fastlane/screenshots",
-      skip_screenshots:     true
+      skip_screenshots:     false
     )
     end
 

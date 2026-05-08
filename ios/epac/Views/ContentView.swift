@@ -514,46 +514,64 @@ struct ContentView: View {
 // MARK: - App Store screenshot mode
 
 private struct AppStoreScreenshotShowcaseView: View {
-	@State private var selection = 0
+	@State private var selection = Self.initialSelection()
 
-	private let pages: [AppStoreScreenshotPage] = [
-		.init(
-			headline: "Parliament in your pocket",
-			subtitle: "Follow bills, debates, votes, and your representatives from official records.",
-			accent: Color(red: 0.0, green: 0.44, blue: 0.89),
-			kind: .overview
-		),
-		.init(
-			headline: "See how your MP votes",
-			subtitle: "Every recorded division, grouped by Yea, Nay, paired, and absent.",
-			accent: .appPositive,
-			kind: .votes
-		),
-		.init(
-			headline: "Your MP. Everything they do.",
-			subtitle: "Speeches, votes, expenses, and contact details in one sourced profile.",
-			accent: Color.party(.liberal),
-			kind: .myMP
-		),
-		.init(
-			headline: "Track a bill start to finish",
-			subtitle: "See each stage from first reading to committee, votes, and Royal Assent.",
-			accent: Color.billStatus(.inProgress),
-			kind: .bill
-		),
-		.init(
-			headline: "Know who's influencing your MP",
-			subtitle: "Lobbying communications stay linked to the public registry source.",
-			accent: Color(red: 0.0, green: 0.64, blue: 0.69),
-			kind: .lobbying
-		),
-		.init(
-			headline: "Contact them in one tap",
-			subtitle: "Start from a real vote or debate and keep the official context attached.",
-			accent: .appWarning,
-			kind: .contact
-		)
-	]
+	private static func initialSelection() -> Int {
+		let arguments = ProcessInfo.processInfo.arguments
+		guard let index = arguments.firstIndex(of: "-AppStoreScreenshotPage"),
+			  let valueIndex = arguments.index(index, offsetBy: 1, limitedBy: arguments.endIndex),
+			  valueIndex < arguments.endIndex,
+			  let page = Int(arguments[valueIndex]) else {
+			return 0
+		}
+
+		return min(max(page, 0), 5)
+	}
+
+	private var pages: [AppStoreScreenshotPage] {
+		[
+			.init(
+				headline: t("appStore.screenshot.page1.headline"),
+				subtitle: t("appStore.screenshot.page1.subtitle"),
+				accent: Color(red: 0.0, green: 0.44, blue: 0.89),
+				kind: .overview
+			),
+			.init(
+				headline: t("appStore.screenshot.page2.headline"),
+				subtitle: t("appStore.screenshot.page2.subtitle"),
+				accent: .appPositive,
+				kind: .votes
+			),
+			.init(
+				headline: t("appStore.screenshot.page3.headline"),
+				subtitle: t("appStore.screenshot.page3.subtitle"),
+				accent: Color.party(.liberal),
+				kind: .myMP
+			),
+			.init(
+				headline: t("appStore.screenshot.page4.headline"),
+				subtitle: t("appStore.screenshot.page4.subtitle"),
+				accent: Color.billStatus(.inProgress),
+				kind: .bill
+			),
+			.init(
+				headline: t("appStore.screenshot.page5.headline"),
+				subtitle: t("appStore.screenshot.page5.subtitle"),
+				accent: Color(red: 0.0, green: 0.64, blue: 0.69),
+				kind: .lobbying
+			),
+			.init(
+				headline: t("appStore.screenshot.page6.headline"),
+				subtitle: t("appStore.screenshot.page6.subtitle"),
+				accent: .appWarning,
+				kind: .contact
+			)
+		]
+	}
+
+	private func t(_ key: String) -> String {
+		NSLocalizedString(key, comment: "")
+	}
 
 	var body: some View {
 		TabView(selection: $selection) {
@@ -586,6 +604,10 @@ private struct AppStoreScreenshotPage {
 
 private struct AppStoreScreenshotPageView: View {
 	let page: AppStoreScreenshotPage
+
+	private func t(_ key: String) -> String {
+		NSLocalizedString(key, comment: "")
+	}
 
 	var body: some View {
 		ZStack(alignment: .topLeading) {
@@ -634,40 +656,40 @@ private struct AppStoreScreenshotPageView: View {
 		case .overview:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Today in Parliament", systemImage: "building.columns.fill")
+					header(t("appStore.screenshot.overview.header"), systemImage: "building.columns.fill")
 					metricGrid([
-						("Bills", "C-226", "Second reading"),
-						("Debate", "Food prices", "Hansard 45-1"),
-						("Vote alerts", "On", "Followed bills")
+						(t("appStore.screenshot.overview.metric1.label"), "C-226", t("appStore.screenshot.overview.metric1.detail")),
+						(t("appStore.screenshot.overview.metric2.label"), t("appStore.screenshot.overview.metric2.value"), t("appStore.screenshot.overview.metric2.detail")),
+						(t("appStore.screenshot.overview.metric3.label"), t("appStore.screenshot.overview.metric3.value"), t("appStore.screenshot.overview.metric3.detail"))
 					])
-					activityRow(title: "Bill C-226 moved at second reading", detail: "National Framework for Food Price Transparency Act", color: page.accent)
-					activityRow(title: "Question from Andrew Lawton", detail: "Elgin-St. Thomas-London South, CPC", color: Color.party(.conservative))
-					sourceBadge("Source: House of Commons Hansard, 45th Parliament")
+					activityRow(title: t("appStore.screenshot.overview.row1.title"), detail: t("appStore.screenshot.overview.row1.detail"), color: page.accent)
+					activityRow(title: t("appStore.screenshot.overview.row2.title"), detail: t("appStore.screenshot.overview.row2.detail"), color: Color.party(.conservative))
+					sourceBadge(t("appStore.screenshot.overview.source"))
 				}
 			}
 		case .votes:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Voting record", systemImage: "checklist.checked")
+					header(t("appStore.screenshot.votes.header"), systemImage: "checklist.checked")
 					Text("Gurbux Saini")
 						.font(.system(size: 30, weight: .bold, design: .rounded))
-					Text("Fleetwood-Port Kells - Liberal")
+					Text(t("appStore.screenshot.votes.memberDetail"))
 						.font(.system(size: 18, weight: .medium, design: .rounded))
 						.foregroundStyle(.secondary)
 					HStack(spacing: 14) {
-						votePill("Yea", count: "42", color: .appPositive)
-						votePill("Nay", count: "11", color: .appDestructive)
-						votePill("Paired", count: "2", color: .appWarning)
+						votePill(t("appStore.screenshot.votes.yea"), count: "42", color: .appPositive)
+						votePill(t("appStore.screenshot.votes.nay"), count: "11", color: .appDestructive)
+						votePill(t("appStore.screenshot.votes.paired"), count: "2", color: .appWarning)
 					}
-					activityRow(title: "Bill C-226", detail: "Second reading - moved to committee", color: .appPositive)
-					activityRow(title: "Bill C-48", detail: "Referenced in debate on project reviews", color: .appDestructive)
-					sourceBadge("Source: Parliament of Canada recorded divisions")
+					activityRow(title: t("appStore.screenshot.votes.row1.title"), detail: t("appStore.screenshot.votes.row1.detail"), color: .appPositive)
+					activityRow(title: t("appStore.screenshot.votes.row2.title"), detail: t("appStore.screenshot.votes.row2.detail"), color: .appDestructive)
+					sourceBadge(t("appStore.screenshot.votes.source"))
 				}
 			}
 		case .myMP:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("My MP", systemImage: "person.crop.circle.fill")
+					header(t("appStore.screenshot.myMP.header"), systemImage: "person.crop.circle.fill")
 					HStack(spacing: 18) {
 						Circle()
 							.fill(Color.party(.liberal).opacity(0.18))
@@ -679,64 +701,64 @@ private struct AppStoreScreenshotPageView: View {
 							Text("Fleetwood-Port Kells")
 								.font(.system(size: 15, weight: .medium, design: .rounded))
 								.foregroundStyle(.secondary)
-								Text("Liberal")
-									.font(.system(size: 12, weight: .semibold, design: .rounded))
-									.padding(.horizontal, 12)
-									.padding(.vertical, 6)
-									.background(Color.party(.liberal).opacity(0.16))
-									.clipShape(Capsule())
+							Text(t("appStore.screenshot.myMP.party"))
+								.font(.system(size: 12, weight: .semibold, design: .rounded))
+								.padding(.horizontal, 12)
+								.padding(.vertical, 6)
+								.background(Color.party(.liberal).opacity(0.16))
+								.clipShape(Capsule())
 						}
 					}
-					activityRow(title: "Speech", detail: "Food price transparency second reading", color: Color.party(.liberal))
-					activityRow(title: "Question", detail: "Transparency in grocery pricing", color: Color.party(.conservative))
-					activityRow(title: "Follow", detail: "Get vote and debate notifications", color: page.accent)
+					activityRow(title: t("appStore.screenshot.myMP.row1.title"), detail: t("appStore.screenshot.myMP.row1.detail"), color: Color.party(.liberal))
+					activityRow(title: t("appStore.screenshot.myMP.row2.title"), detail: t("appStore.screenshot.myMP.row2.detail"), color: Color.party(.conservative))
+					activityRow(title: t("appStore.screenshot.myMP.row3.title"), detail: t("appStore.screenshot.myMP.row3.detail"), color: page.accent)
 				}
 			}
 		case .bill:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Bill C-226", systemImage: "doc.text.fill")
-					Text("National Framework for Food Price Transparency Act")
+					header(t("appStore.screenshot.bill.header"), systemImage: "doc.text.fill")
+					Text(t("appStore.screenshot.bill.title"))
 						.font(.system(size: 21, weight: .bold, design: .rounded))
 						.fixedSize(horizontal: false, vertical: true)
 					VStack(alignment: .leading, spacing: 14) {
-						stage("First reading", done: true)
-						stage("Second reading", done: true)
-						stage("Committee", done: false, current: true)
-						stage("Report stage", done: false)
-						stage("Third reading", done: false)
+						stage(t("appStore.screenshot.bill.stage1"), done: true)
+						stage(t("appStore.screenshot.bill.stage2"), done: true)
+						stage(t("appStore.screenshot.bill.stage3"), done: false, current: true)
+						stage(t("appStore.screenshot.bill.stage4"), done: false)
+						stage(t("appStore.screenshot.bill.stage5"), done: false)
 					}
-					sourceBadge("Source: LEGISinfo and House of Commons Hansard")
+					sourceBadge(t("appStore.screenshot.bill.source"))
 				}
 			}
 		case .lobbying:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Lobbying", systemImage: "person.2.wave.2.fill")
-					Text("Public registry links stay attached")
+					header(t("appStore.screenshot.lobbying.header"), systemImage: "person.2.wave.2.fill")
+					Text(t("appStore.screenshot.lobbying.title"))
 						.font(.system(size: 21, weight: .bold, design: .rounded))
-					activityRow(title: "Agriculture and Agri-Food", detail: "Consumer pricing and supply chain policy", color: Color.party(.liberal))
-					activityRow(title: "Industry", detail: "Market transparency and competition", color: page.accent)
-					activityRow(title: "Finance", detail: "Affordability measures", color: .appWarning)
-					sourceBadge("Source: Commissioner of Lobbying registry")
+					activityRow(title: t("appStore.screenshot.lobbying.row1.title"), detail: t("appStore.screenshot.lobbying.row1.detail"), color: Color.party(.liberal))
+					activityRow(title: t("appStore.screenshot.lobbying.row2.title"), detail: t("appStore.screenshot.lobbying.row2.detail"), color: page.accent)
+					activityRow(title: t("appStore.screenshot.lobbying.row3.title"), detail: t("appStore.screenshot.lobbying.row3.detail"), color: .appWarning)
+					sourceBadge(t("appStore.screenshot.lobbying.source"))
 				}
 			}
 		case .contact:
 			phoneFrame {
 				VStack(alignment: .leading, spacing: 18) {
-					header("Contact your MP", systemImage: "envelope.fill")
+					header(t("appStore.screenshot.contact.header"), systemImage: "envelope.fill")
 					VStack(alignment: .leading, spacing: 10) {
-						Text("Subject")
+						Text(t("appStore.screenshot.contact.subject"))
 							.font(.system(size: 16, weight: .semibold, design: .rounded))
 							.foregroundStyle(.secondary)
-						Text("Bill C-226 second reading")
+						Text(t("appStore.screenshot.contact.subjectLine"))
 							.font(.system(size: 19, weight: .bold, design: .rounded))
 					}
 					Divider()
-					Text("I am writing about Bill C-226, An Act to establish a national framework to improve food price transparency. Please share how you plan to vote and why.")
+					Text(t("appStore.screenshot.contact.body"))
 						.font(.system(size: 17, weight: .regular, design: .rounded))
 						.lineSpacing(5)
-					Text("Send")
+					Text(t("appStore.screenshot.contact.send"))
 						.font(.system(size: 18, weight: .bold, design: .rounded))
 						.frame(maxWidth: .infinity)
 						.padding(.vertical, 16)
@@ -769,6 +791,8 @@ private struct AppStoreScreenshotPageView: View {
 					.foregroundStyle(page.accent)
 				Text(title)
 					.font(.system(size: 19, weight: .heavy, design: .rounded))
+					.lineLimit(1)
+					.minimumScaleFactor(0.72)
 				Spacer()
 			}
 		)
@@ -782,13 +806,19 @@ private struct AppStoreScreenshotPageView: View {
 						Text(metric.0)
 							.font(.system(size: 12, weight: .semibold, design: .rounded))
 							.foregroundStyle(.secondary)
-							.frame(width: 70, alignment: .leading)
+							.lineLimit(1)
+							.minimumScaleFactor(0.72)
+							.frame(width: 82, alignment: .leading)
 						Text(metric.1)
 							.font(.system(size: 18, weight: .heavy, design: .rounded))
-							.frame(width: 72, alignment: .leading)
+							.lineLimit(2)
+							.minimumScaleFactor(0.7)
+							.frame(width: 110, alignment: .leading)
 						Text(metric.2)
 							.font(.system(size: 12, weight: .medium, design: .rounded))
 							.foregroundStyle(.secondary)
+							.lineLimit(2)
+							.minimumScaleFactor(0.75)
 							.frame(maxWidth: .infinity, alignment: .leading)
 					}
 					.frame(maxWidth: .infinity, alignment: .leading)
@@ -809,10 +839,13 @@ private struct AppStoreScreenshotPageView: View {
 				VStack(alignment: .leading, spacing: 5) {
 					Text(title)
 						.font(.system(size: 17, weight: .bold, design: .rounded))
+						.lineLimit(2)
+						.minimumScaleFactor(0.75)
 					Text(detail)
 						.font(.system(size: 13, weight: .medium, design: .rounded))
 						.foregroundStyle(.secondary)
 						.lineLimit(2)
+						.minimumScaleFactor(0.75)
 				}
 				Spacer()
 			}
@@ -829,6 +862,8 @@ private struct AppStoreScreenshotPageView: View {
 					.font(.system(size: 22, weight: .heavy, design: .rounded))
 				Text(label)
 					.font(.system(size: 12, weight: .bold, design: .rounded))
+					.lineLimit(1)
+					.minimumScaleFactor(0.72)
 			}
 			.frame(maxWidth: .infinity)
 			.padding(.vertical, 16)
@@ -845,9 +880,11 @@ private struct AppStoreScreenshotPageView: View {
 					.foregroundStyle(done ? .appPositive : current ? page.accent : .secondary)
 				Text(label)
 					.font(.system(size: 17, weight: current ? .heavy : .semibold, design: .rounded))
+					.lineLimit(1)
+					.minimumScaleFactor(0.75)
 				Spacer()
 				if current {
-					Text("Current")
+					Text(t("appStore.screenshot.bill.current"))
 						.font(.system(size: 14, weight: .bold, design: .rounded))
 						.padding(.horizontal, 10)
 						.padding(.vertical, 5)
@@ -864,6 +901,8 @@ private struct AppStoreScreenshotPageView: View {
 			Text(text)
 				.font(.system(size: 11, weight: .semibold, design: .rounded))
 				.foregroundStyle(.secondary)
+				.lineLimit(2)
+				.multilineTextAlignment(.center)
 				.padding(.horizontal, 12)
 				.padding(.vertical, 8)
 				.background(Color(UIColor.tertiarySystemBackground))
