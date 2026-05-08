@@ -55,9 +55,7 @@ final class NotificationManager: NSObject {
         let token = tokenData.map { String(format: "%02x", $0) }.joined()
         UserDefaults.standard.set(token, forKey: "epac.apnsToken")
         Log.debug("APNs token registered: \(token.prefix(12))...")
-        Task {
-            await TopicFollowStore.shared.registerDevice()
-        }
+        TriggerDeviceRegistration.live().trigger(myMPMemberID: nil)
     }
 
     /// Call from `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`.

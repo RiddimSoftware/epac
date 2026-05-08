@@ -11,7 +11,6 @@ struct SearchView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(NavigationRouter.self) var router
 
-    @State private var hansards: [Hansard] = []
     @State private var members: [ParliamentMember] = []
     @State private var votes: [RecordedVote] = []
 
@@ -24,8 +23,12 @@ struct SearchView: View {
     // running 6000+ string comparisons on every keystroke.
     @State private var debouncedQuery = ""
 
-    private var results: SearchViewModel.SearchResults {
-        viewModel.results(members: members, votes: votes, bills: bills, hansards: hansards, query: debouncedQuery)
+    private func updateSearch() {
+        viewModel.updateResults(members: members, votes: votes, bills: bills, query: debouncedQuery)
+    }
+
+    private func updateSearchInputs() {
+        viewModel.updateSearchInputs(members: members, votes: votes, bills: bills)
     }
 
     var body: some View {
@@ -33,7 +36,7 @@ struct SearchView: View {
             Group {
                 if debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines).count < 2 {
                     promptView
-                } else if results.isEmpty {
+                } else if viewModel.searchResults.isEmpty {
                     ContentUnavailableView.search(text: viewModel.searchText)
                 } else {
                     resultsList
@@ -64,25 +67,31 @@ struct SearchView: View {
                 members = (try? modelContext.fetch(
                     FetchDescriptor<ParliamentMember>(sortBy: [SortDescriptor(\ParliamentMember.lastName)])
                 )) ?? []
+                updateSearchInputs()
             }
             if votes.isEmpty {
                 votes = (try? modelContext.fetch(
                     FetchDescriptor<RecordedVote>(sortBy: [SortDescriptor(\RecordedVote.date, order: .reverse)])
                 )) ?? []
+                updateSearchInputs()
             }
-            if hansards.isEmpty {
-                hansards = (try? modelContext.fetch(
-                    FetchDescriptor<Hansard>(sortBy: [SortDescriptor(\Hansard.date, order: .reverse)])
-                )) ?? []
-            }
+            viewModel.configure(
+                searchHansard: SearchHansard(
+                    store: CachingHansardSearchStore(
+                        base: SwiftDataHansardSearchStore(modelContext: modelContext)
+                    )
+                )
+            )
             if bills.isEmpty {
                 bills = (try? await BillsService.fetchBills()) ?? []
+                updateSearchInputs()
             }
         }
         .onAppear {
             if let query = router.pendingSearchQuery {
                 viewModel.searchText = query
                 debouncedQuery = query
+                updateSearch()
                 router.pendingSearchQuery = nil
             }
         }
@@ -91,6 +100,7 @@ struct SearchView: View {
             do {
                 try await Task.sleep(nanoseconds: 300_000_000)
                 debouncedQuery = viewModel.searchText
+                updateSearch()
             } catch {
                 // Task cancelled by a newer keystroke — do nothing.
             }
@@ -111,9 +121,9 @@ struct SearchView: View {
 
     private var resultsList: some View {
         List {
-            if !results.members.isEmpty {
+            if !viewModel.searchResults.members.isEmpty {
                 Section(NSLocalizedString("search.section.members", comment: "")) {
-                    ForEach(results.members) { result in
+                    ForEach(viewModel.searchResults.members) { result in
                         Button {
                             selectedMember = result.member
                         } label: {
@@ -132,9 +142,9 @@ struct SearchView: View {
                 }
             }
 
-            if !results.votes.isEmpty {
+            if !viewModel.searchResults.votes.isEmpty {
                 Section(NSLocalizedString("search.section.votes", comment: "")) {
-                    ForEach(results.votes) { result in
+                    ForEach(viewModel.searchResults.votes) { result in
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
                                 if !result.vote.billNumberCode.isEmpty {
@@ -163,9 +173,9 @@ struct SearchView: View {
                 }
             }
 
-            if !results.bills.isEmpty {
+            if !viewModel.searchResults.bills.isEmpty {
                 Section(NSLocalizedString("search.section.bills", comment: "")) {
-                    ForEach(results.bills) { result in
+                    ForEach(viewModel.searchResults.bills) { result in
                         NavigationLink(destination: BillDetailView(bill: result.bill)) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(result.bill.number)
@@ -179,15 +189,14 @@ struct SearchView: View {
                 }
             }
 
-            if !results.debates.isEmpty {
+            if !viewModel.searchResults.debates.isEmpty {
                 Section(NSLocalizedString("search.section.debates", comment: "")) {
-                    ForEach(results.debates) { result in
+                    ForEach(viewModel.searchResults.debates) { result in
                         Button {
-                            selectedSubject = result.subject
-                            selectedHansard = result.hansard
+                            selectDebate(result)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(result.subject.title)
+                                Text(result.subjectTitle)
                                     .font(.headline)
                                     .foregroundStyle(.primary)
                                 Text(result.hansardDate.formatted(date: .long, time: .omitted))
@@ -196,12 +205,18 @@ struct SearchView: View {
                             }
                             .padding(.vertical, 2)
                         }
-                        .accessibilityLabel(result.subject.title)
+                        .accessibilityLabel(result.subjectTitle)
                         .accessibilityHint(result.hansardDate.formatted(date: .long, time: .omitted))
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+    }
+
+    private func selectDebate(_ result: SearchViewModel.DebateResult) {
+        let (hansard, subject) = viewModel.resolveDebate(result, modelContext: modelContext)
+        selectedHansard = hansard
+        selectedSubject = subject
     }
 }

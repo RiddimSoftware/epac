@@ -93,3 +93,7 @@ struct BillChangeNotification {
     let bill: Bill
     let previousStage: String
 }
+
+extension BillFollowStore: BillRegistrationPreferencesProviding {
+    var followedBillIDsForRegistration: Set<String> { followedNumbers }
+}

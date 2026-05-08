@@ -301,8 +301,7 @@ struct OnboardingView: View {
                            ? NSLocalizedString("onboarding.skip", comment: "")
                            : String(format: NSLocalizedString("onboarding.topics.follow", comment: ""),
                                     selectedTopics.count)) {
-                let store = TopicFollowStore.shared
-                for id in selectedTopics { store.follow(id) }
+                FollowTopic.live().execute(topicIDs: selectedTopics)
                 Log.info("onboarding.step.2.completed topicsFollowed=\(selectedTopics.count)")
                 advance()
             }
