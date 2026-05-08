@@ -142,8 +142,8 @@ We follow the spirit of continuous integration: keep branches short-lived (aim f
 
 Before requesting review, the author must:
 
-- [ ] **Build passes.** Run `xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
-- [ ] **App runs.** Install and launch on the simulator: `xcrun simctl install FCFAF817-6694-402D-B116-A86EDAF34237 <DerivedData>/epac.app && xcrun simctl launch FCFAF817-6694-402D-B116-A86EDAF34237 net.dinglebox.cabinetdoor`
+- [ ] **Build passes.** Run `cd ios && make build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
+- [ ] **App runs.** Install and launch on the simulator: `cd ios && make simulator`
 - [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
 - [ ] **Evidence posted.** Add a PR comment and a Linear comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
@@ -234,8 +234,7 @@ Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
 2. Read /Users/sunny/code/epac/CLAUDE.md (architecture rules, PR standards)
 3. Read the linked Linear issue's acceptance criteria
 4. Make ONE consolidated pass of fixes directly on the branch (commit + push)
-5. Build: cd ios && xcodebuild -project epac.xcodeproj -scheme epac \
-   -destination 'platform=iOS Simulator,id=FCFAF817-6694-402D-B116-A86EDAF34237' build 2>&1 | tail -3
+5. Build: cd ios && make build 2>&1 | tail -3
 6. Run relevant tests
 7. Post one PR comment with: build status, what changed and why, what was left alone and why
 8. Squash-merge: gh pr merge N --squash --delete-branch
