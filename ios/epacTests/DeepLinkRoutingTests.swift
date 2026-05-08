@@ -1,5 +1,6 @@
 @testable import epac
 import Foundation
+import SwiftData
 import Testing
 
 // Tests for the Universal Link URL parsing logic.
@@ -106,5 +107,29 @@ struct DeepLinkRoutingTests {
         #expect(parseSittingDate("not-a-date") == nil)
         #expect(parseSittingDate("2024/04/29") == nil)
         #expect(parseSittingDate("2024-04-29") != nil)
+    }
+
+    @MainActor
+    @Test func eventURLRoutesToHansard() throws {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(SchemaV8.models), configurations: config)
+        let context = container.mainContext
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let date = try #require(formatter.date(from: "2026-05-25"))
+        
+        let hansard = Hansard(date: date, hansardID: "h-test", parliamentNumber: 44, sessionNumber: 1, orders: [])
+        context.insert(hansard)
+        try context.save()
+        
+        let viewModel = ContentViewModel()
+        let fetch = Fetch(modelContainer: container)
+        
+        let url = URL(string: "cabinetdoor:///event/2026-05-25")!
+        viewModel.onOpenURL(url, modelContext: context, fetch: fetch)
+        
+        #expect(viewModel.selectedHansard?.date == date)
     }
 }

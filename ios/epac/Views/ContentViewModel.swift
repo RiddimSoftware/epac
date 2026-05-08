@@ -68,6 +68,7 @@ class ContentViewModel {
 		if let firstSegment = segments.first, (firstSegment == "sitting" || firstSegment == "event"), let dateStr = segments.dropFirst().first {
 			if firstSegment == "event" {
 				Log.info("event_card_tap date=\(dateStr)")
+				recordEventCardTap(dateStr: dateStr)
 			}
 			
 			// Guard with a regex before parsing: DateFormatter on Darwin is lenient
@@ -147,5 +148,20 @@ class ContentViewModel {
 		do { try await membersDownload } catch { Log.debug("Failed to download members: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
 		do { try await constituenciesDownload } catch { Log.debug("Failed to download constituencies: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
 		do { try await votesDownload } catch { Log.debug("Failed to download voting records: \(error.localizedDescription)"); SentrySDK.capture(error: error) }
+	}
+
+	private func recordEventCardTap(dateStr: String) {
+		var components = URLComponents()
+		components.scheme = "https"
+		components.host = "epac.riddimsoftware.com"
+		components.path = "/app/telemetry/"
+		components.queryItems = [
+			URLQueryItem(name: "event", value: "event_card_tap"),
+			URLQueryItem(name: "date", value: dateStr),
+			URLQueryItem(name: "ts", value: String(Int(Date().timeIntervalSince1970 * 1000)))
+		]
+
+		guard let url = components.url else { return }
+		URLSession.shared.dataTask(with: url).resume()
 	}
 }
