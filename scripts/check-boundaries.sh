@@ -109,6 +109,7 @@ else
     fi
 
     # Check: must not import APNs clients directly
+    # Currently checks the standard Go APNs client 'github.com/sideshow/apns2'
     APNS_IMPORTS=$(grep -rn \
       '"github.com/sideshow/apns2' \
       "$dir" 2>/dev/null || true)
