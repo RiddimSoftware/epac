@@ -122,6 +122,9 @@ Fill this section only in a Product Hunt launch month.
 - [ ] Review `docs/marketing/newsletter/welcome-sequence.md`; refresh stale
       parliamentary/lobbying facts and send a Mailchimp test if any email copy
       changes.
+- [ ] Confirm no open "ASO: Refresh en-CA promotional text" tasks exist in
+      Linear. (This check is automated via `.github/workflows/aso-staleness-check.yml`, 
+      which files a task if the copy is stale or the sitting-status claim is false.)
 
 ## Carried forward from last month
 

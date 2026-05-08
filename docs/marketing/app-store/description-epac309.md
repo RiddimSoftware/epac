@@ -2,14 +2,14 @@
 
 **Status:** Ready to upload to App Store Connect  
 **Locale:** en-CA (primary). French (fr-CA) translation needed — see EPAC-77.  
-**Last updated:** 2026-04-27
+**Last updated:** 2026-05-07
 
 ---
 
 ## Promotional text (170 chars max — shown above description, updateable without a new submission)
 
 ```
-Parliament is in session. See what your MP voted on, read their speeches, and track every bill — using only verified government data.
+Parliament is sitting. Follow every vote, read every debate, track every bill — verified from Hansard and official sources. Updated daily.
 ```
 
 ---
@@ -96,7 +96,7 @@ Built by Riddim Software, an independent Canadian developer.
 
 | Section | Characters | Limit | Status |
 |---------|-----------|-------|--------|
-| Promotional text | 133 | 170 | ✅ |
+| Promotional text | 138 | 170 | ✅ |
 | Full description | ~2,850 | 4,000 | ✅ room for additions |
 
 ---
