@@ -24,22 +24,23 @@ struct HomeFeedView: View {
     @State private var isSittingToday = false
     @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
     @State private var liveParliamentStatus: LiveParliamentStatus?
+    @State private var liveCardDecision: HomeLiveCardDecision = .hidden
     @State private var nextSittingDate: Date?
-    @State private var latestRecordedVote: RecordedVote?
-    @State private var latestMemberVote: MemberVote?
+    @State private var latestVote: HomeVoteRecord?
+    @State private var latestMemberVote: HomeMemberVoteRecord?
     @State private var latestSpeechHighlight: HomeSpeechHighlight?
     @State private var myMPActivityCount = 0
+    @State private var savedMemberName: String?
     @State private var showPostalCodeSetup = false
     @State private var showSettings = false
-    @State private var recentSubjects: [SubjectOfBusiness] = []
-    @State private var latestHansard: Hansard?
+    @State private var recentSubjectTitles: [String] = []
+    @State private var latestHansardDate: Date?
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
     @State private var showLiveInfo = false
-    @State private var postSittingHansard: Hansard?
     @State private var onThisDayItems: [OnThisDayItem] = []
     @State private var onThisDayDismissedDate = UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate") ?? ""
     @State private var didRecordOnThisDayImpression = false
@@ -51,11 +52,11 @@ struct HomeFeedView: View {
     var body: some View {
         NavigationStack {
             List {
-                switch liveCardState {
+                switch liveCardDecision {
                 case .live(let status):
                     liveParliamentSection(status)
-                case .todayPublished(let hansard, let subject):
-                    postSittingSection(hansard: hansard, subject: subject)
+                case .todayPublished(let hansardID, let date, let subjectTitle):
+                    postSittingSection(hansardID: hansardID, hansardDate: date, subjectTitle: subjectTitle)
                 case .todayPending:
                     postSittingPendingSection
                 case .hidden:
@@ -84,10 +85,10 @@ struct HomeFeedView: View {
                 studentFinanceContextCard
                 employmentInsuranceContextCard
                 transportationSafetyContextCard
-                if !recentSubjects.isEmpty {
+                if !recentSubjectTitles.isEmpty {
                     recentDebatesSection
                 }
-                if PostalCodeViewModel.savedMemberName == nil
+                if savedMemberName == nil
                     && billStore.followedNumbers.isEmpty
                     && topicStore.followedIDs.isEmpty {
                     Section {
@@ -209,9 +210,15 @@ struct HomeFeedView: View {
         }
     }
 
-    private func postSittingSection(hansard: Hansard, subject: SubjectOfBusiness) -> some View {
+    private func postSittingSection(hansardID: String, hansardDate: Date, subjectTitle: String) -> some View {
         Section {
-            NavigationLink(destination: SpeechView(hansard: hansard, subject: subject)) {
+            NavigationLink {
+                if let hansard = fetchHansard(by: hansardID),
+                   let subject = hansard.orders.flatMap(\.subjects).first(where: { $0.title == subjectTitle })
+                       ?? hansard.orders.first?.subjects.first {
+                    SpeechView(hansard: hansard, subject: subject)
+                }
+            } label: {
                 VStack(alignment: .leading, spacing: EpacSpacing.m) {
                     Label(
                         NSLocalizedString("home.live.todayBadge", comment: ""),
@@ -222,10 +229,10 @@ struct HomeFeedView: View {
                     .labelStyle(.titleAndIcon)
 
                     VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                        Text(hansard.date.formatted(date: .long, time: .omitted))
+                        Text(hansardDate.formatted(date: .long, time: .omitted))
                             .font(.epacHeadline)
                             .foregroundStyle(Color.epacText.primary)
-                        Text(subject.title)
+                        Text(subjectTitle)
                             .font(.epacSubheadline)
                             .foregroundStyle(Color.epacText.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -288,17 +295,23 @@ struct HomeFeedView: View {
 
                 Divider()
 
-                if let vote = latestRecordedVote {
+                if let vote = latestVote {
                     todayVoteRow(vote)
                 }
 
                 if let highlight = latestSpeechHighlight {
-                    NavigationLink(destination: SpeechView(hansard: highlight.hansard, subject: highlight.subject)) {
+                    NavigationLink {
+                        if let hansard = fetchHansard(by: highlight.hansardID),
+                           let subject = hansard.orders.flatMap(\.subjects).first(where: { $0.title == highlight.subjectTitle })
+                            ?? hansard.orders.first?.subjects.first {
+                            SpeechView(hansard: hansard, subject: subject)
+                        }
+                    } label: {
                         todayMetricRow(
                             icon: "quote.bubble.fill",
                             title: NSLocalizedString("home.today.latestSpeech", comment: ""),
                             headline: highlight.excerpt,
-                            detail: "\(highlight.memberName) · \(highlight.hansard.date.formatted(date: .abbreviated, time: .omitted))"
+                            detail: "\(highlight.memberName) · \(highlight.hansardDate.formatted(date: .abbreviated, time: .omitted))"
                         )
                     }
                     .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("speech") })
@@ -356,14 +369,19 @@ struct HomeFeedView: View {
     }
 
     @ViewBuilder
-    private func todayVoteRow(_ vote: RecordedVote) -> some View {
-        if let memberVote = latestMemberVote {
-            NavigationLink(destination: VoteDetailView(mv: memberVote, rv: vote)) {
+    private func todayVoteRow(_ vote: HomeVoteRecord) -> some View {
+        if let mv = latestMemberVote {
+            NavigationLink {
+                if let rv = fetchRecordedVote(by: vote.voteID),
+                   let memberVote = fetchMemberVote(memberID: mv.memberID, voteID: mv.voteID) {
+                    VoteDetailView(mv: memberVote, rv: rv)
+                }
+            } label: {
                 todayMetricRow(
                     icon: "checkmark.ballot.fill",
                     title: NSLocalizedString("home.today.latestVote", comment: ""),
                     headline: vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn,
-                    detail: voteSummary(vote, memberVote: memberVote)
+                    detail: voteSummary(vote, memberVote: mv)
                 )
             }
             .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("vote") })
@@ -466,7 +484,7 @@ struct HomeFeedView: View {
 
     private var myMPSection: some View {
         Section {
-            if let name = PostalCodeViewModel.savedMemberName {
+            if let name = savedMemberName {
                 NavigationLink(destination: MyMPView()) {
                     HStack {
                         Image(systemName: "person.fill.viewfinder")
@@ -882,13 +900,13 @@ struct HomeFeedView: View {
 
     private var recentDebatesSection: some View {
         Section(header: Text(NSLocalizedString("home.recentDebates", comment: "")).accessibilityAddTraits(.isHeader)) {
-            ForEach(recentSubjects) { subject in
-                Text(subject.title)
+            ForEach(recentSubjectTitles, id: \.self) { title in
+                Text(title)
                     .font(.epacSubheadline)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, EpacSpacing.xs)
             }
-            if latestHansard != nil {
+            if latestHansardDate != nil {
                 Button {
                     router.selectedTab = .parliament
                 } label: {
@@ -909,25 +927,26 @@ struct HomeFeedView: View {
             onThisDayFetching: onThisDayService,
             followPreferenceReading: FollowPreferenceAdapter()
         )
-        let snapshot = await useCase.execute()
-        
+        let snapshot = await useCase.execute(preservingOnThisDayItems: onThisDayItems)
+
         self.isSittingToday = snapshot.isSittingToday
         self.parliamentDayStatus = snapshot.parliamentDayStatus
         self.liveParliamentStatus = snapshot.liveParliamentStatus
+        self.liveCardDecision = snapshot.liveCardDecision
         self.nextSittingDate = snapshot.nextSittingDate
-        self.latestRecordedVote = snapshot.latestRecordedVote
+        self.latestVote = snapshot.latestVote
         self.latestMemberVote = snapshot.latestMemberVote
         self.latestSpeechHighlight = snapshot.latestSpeechHighlight
         self.myMPActivityCount = snapshot.myMPActivityCount
-        self.recentSubjects = snapshot.recentSubjects
-        self.latestHansard = snapshot.latestHansard
-        self.postSittingHansard = snapshot.postSittingHansard
-        
+        self.savedMemberName = snapshot.savedMemberName
+        self.recentSubjectTitles = snapshot.recentSubjectTitles
+        self.latestHansardDate = snapshot.latestHansardDate
+
         if self.onThisDayItems != snapshot.onThisDayItems {
-             self.didRecordOnThisDayImpression = false
+            self.didRecordOnThisDayImpression = false
         }
         self.onThisDayItems = snapshot.onThisDayItems
-        
+
         self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
         self.mySenators = snapshot.civicContext.mySenators
     }
@@ -967,34 +986,13 @@ struct HomeFeedView: View {
         do {
             let result = try await useCase.execute()
             self.liveParliamentStatus = result.liveParliamentStatus
-            self.postSittingHansard = result.postSittingHansard
+            self.liveCardDecision = result.liveCardDecision
             if let newStatus = result.parliamentDayStatus {
                 self.parliamentDayStatus = newStatus
             }
         } catch {
             Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
         }
-    }
-
-    private func resolvePostSittingHansard(for status: LiveParliamentStatus) {
-        guard !status.isSitting, let sittingDate = status.sittingDate else {
-            postSittingHansard = nil
-            return
-        }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "America/Toronto")
-        guard let date = formatter.date(from: sittingDate) else {
-            postSittingHansard = nil
-            return
-        }
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: date)
-        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
-        let descriptor = FetchDescriptor<Hansard>(
-            predicate: #Predicate { $0.date >= start && $0.date < end }
-        )
-        postSittingHansard = (try? modelContext.fetch(descriptor))?.first
     }
 
     // Returns today's date string (YYYY-MM-DD) in Ottawa local time.
@@ -1011,34 +1009,14 @@ struct HomeFeedView: View {
         OnThisDayTelemetry.record(.dismiss)
     }
 
-    private enum LiveCardState {
-        case live(LiveParliamentStatus)
-        case todayPublished(Hansard, SubjectOfBusiness)
-        case todayPending
-        case hidden
-    }
-
-    private var liveCardState: LiveCardState {
-        guard let status = liveParliamentStatus else { return .hidden }
-        if status.isSitting { return .live(status) }
-        guard let sittingDate = status.sittingDate, sittingDate == ottawaTodayString else {
-            return .hidden
-        }
-        if let hansard = postSittingHansard,
-           let subject = hansard.orders.first?.subjects.first {
-            return .todayPublished(hansard, subject)
-        }
-        return .todayPending
-    }
-
     private var todayStatusDetail: String {
         if parliamentDayStatus == .sitting {
             return Date().formatted(date: .abbreviated, time: .omitted)
         }
-        if parliamentDayStatus == .adjourned, let latestHansard {
+        if parliamentDayStatus == .adjourned, let latestHansardDate {
             return String(
                 format: NSLocalizedString("home.today.adjournedDetail", comment: ""),
-                latestHansard.date.formatted(date: .abbreviated, time: .omitted)
+                latestHansardDate.formatted(date: .abbreviated, time: .omitted)
             )
         }
         if let nextSittingDate {
@@ -1116,14 +1094,14 @@ struct HomeFeedView: View {
     }
 
     private var hasFollowedMPContext: Bool {
-        PostalCodeViewModel.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
+        savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
     }
 
     private var offlineCacheText: String {
         let syncDates = [
             UserDefaults.standard.object(forKey: "epac.sync.hansard") as? Date,
             UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
-            latestHansard?.date
+            latestHansardDate
         ].compactMap { $0 }
         guard let lastSync = syncDates.max() else {
             return NSLocalizedString("home.today.offline", comment: "")
@@ -1134,7 +1112,7 @@ struct HomeFeedView: View {
         )
     }
 
-    private func voteSummary(_ vote: RecordedVote, memberVote: MemberVote?) -> String {
+    private func voteSummary(_ vote: HomeVoteRecord, memberVote: HomeMemberVoteRecord?) -> String {
         var parts: [String] = []
         if !vote.billNumberCode.isEmpty { parts.append(vote.billNumberCode) }
         if !vote.resultEn.isEmpty { parts.append(vote.resultEn) }
@@ -1143,6 +1121,27 @@ struct HomeFeedView: View {
             parts.append(String(format: NSLocalizedString("home.today.myMPBallot", comment: ""), memberVote.recordedVote))
         }
         return parts.joined(separator: " · ")
+    }
+
+    // MARK: - SwiftData navigation helpers (lazy lookup for domain-typed decisions)
+
+    private func fetchHansard(by hansardID: String) -> Hansard? {
+        let descriptor = FetchDescriptor<Hansard>(predicate: #Predicate { $0.hansardID == hansardID })
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    private func fetchRecordedVote(by voteID: Int) -> RecordedVote? {
+        var descriptor = FetchDescriptor<RecordedVote>(predicate: #Predicate { $0.voteID == voteID })
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    private func fetchMemberVote(memberID: Int, voteID: Int) -> MemberVote? {
+        var descriptor = FetchDescriptor<MemberVote>(
+            predicate: #Predicate<MemberVote> { $0.memberID == memberID && $0.voteID == voteID }
+        )
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
     }
 
 

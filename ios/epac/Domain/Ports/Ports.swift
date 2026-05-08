@@ -7,13 +7,13 @@ import Foundation
 
 @MainActor
 protocol HomeFeedRepository: Sendable {
-    func fetchSittingCalendars() async throws -> [SittingCalendar]
-    func fetchAllMembers() async throws -> [ParliamentMember]
-    func fetchSpeechMessages(for lastName: String) async throws -> [SpeechMessage]
-    func fetchLatestHansards(limit: Int) async throws -> [Hansard]
-    func fetchHansards(between start: Date, and end: Date) async throws -> [Hansard]
-    func fetchLatestRecordedVote() async throws -> RecordedVote?
-    func fetchMemberVote(memberID: Int, voteID: Int) async throws -> MemberVote?
+    func fetchSittingDates() async throws -> [Date]
+    func fetchAllMembers() async throws -> [HomeFollowedMember]
+    func fetchMPActivityCount(for lastName: String) async throws -> Int
+    func fetchLatestHansards(limit: Int) async throws -> [HomeHansardRecord]
+    func fetchHansards(between start: Date, and end: Date) async throws -> [HomeHansardRecord]
+    func fetchLatestVote() async throws -> HomeVoteRecord?
+    func fetchMemberVote(memberID: Int, voteID: Int) async throws -> HomeMemberVoteRecord?
     func fetchSenators(for provinceAbbrev: String) async throws -> [Senator]
 }
 

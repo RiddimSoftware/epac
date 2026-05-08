@@ -13,8 +13,9 @@ struct FollowedCivicContext {
 }
 
 struct HomeSpeechHighlight {
-    let hansard: Hansard
-    let subject: SubjectOfBusiness
+    let hansardID: String
+    let hansardDate: Date
+    let subjectTitle: String
     let memberName: String
     let excerpt: String
 }
@@ -29,21 +30,22 @@ struct HomeFeedSnapshot {
     let isSittingToday: Bool
     let parliamentDayStatus: HomeParliamentDayStatus
     let liveParliamentStatus: LiveParliamentStatus?
+    let liveCardDecision: HomeLiveCardDecision
     let nextSittingDate: Date?
-    
-    let followedMember: ParliamentMember?
+
+    let followedMember: HomeFollowedMember?
     let myMPActivityCount: Int
-    
+    let savedMemberName: String?
+    let hasPersonalizedContext: Bool
+
     let civicContext: FollowedCivicContext
-    
-    let recentSubjects: [SubjectOfBusiness]
-    let latestHansard: Hansard?
-    let postSittingHansard: Hansard?
-    
+
+    let recentSubjectTitles: [String]
+    let latestHansardDate: Date?
     let latestSpeechHighlight: HomeSpeechHighlight?
-    
-    let latestRecordedVote: RecordedVote?
-    let latestMemberVote: MemberVote?
-    
+
+    let latestVote: HomeVoteRecord?
+    let latestMemberVote: HomeMemberVoteRecord?
+
     let onThisDayItems: [OnThisDayItem]
 }

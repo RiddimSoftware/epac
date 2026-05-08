@@ -12,7 +12,7 @@ struct LoadHomeFeed {
     private let onThisDayFetching: OnThisDayFetching
     private let followPreferenceReading: FollowPreferenceReading
     private let clock: Clock
-    
+
     init(
         repository: HomeFeedRepository,
         liveParliamentStatusFetching: LiveParliamentStatusFetching,
@@ -26,62 +26,63 @@ struct LoadHomeFeed {
         self.followPreferenceReading = followPreferenceReading
         self.clock = clock
     }
-    
-    func execute() async -> HomeFeedSnapshot {
+
+    // preservingOnThisDayItems: returned unchanged when the network fetch fails so
+    // an offline pull-to-refresh doesn't erase the last successful snapshot.
+    func execute(preservingOnThisDayItems existing: [OnThisDayItem] = []) async -> HomeFeedSnapshot {
         let today = Calendar.current.startOfDay(for: clock.now)
-        
-        let calendars = (try? await repository.fetchSittingCalendars()) ?? []
-        let allSittingDates = calendars.flatMap(\.sittings).map { Calendar.current.startOfDay(for: $0) }
-        let isSittingToday = allSittingDates.contains { Calendar.current.isDate($0, inSameDayAs: today) }
-        let nextSittingDate = allSittingDates.filter { $0 > today }.sorted().first
-        
+        let ottawaTodayString = makeOttawaTodayString(from: clock.now)
+
+        let sittingDates = (try? await repository.fetchSittingDates()) ?? []
+        let isSittingToday = sittingDates.contains { Calendar.current.isDate($0, inSameDayAs: today) }
+        let nextSittingDate = sittingDates.filter { $0 > today }.sorted().first
+
         let allMembers = (try? await repository.fetchAllMembers()) ?? []
         let savedMemberName = followPreferenceReading.savedMemberName()
         let followedMemberIDs = followPreferenceReading.followedMemberIDs()
         let followedMember = resolveFollowedMember(from: allMembers, savedName: savedMemberName, followedIDs: followedMemberIDs)
-        
-        var myMPActivityCount = 0
-        var provinceAbbrev = ""
-        var mySenators: [Senator] = []
-        
-        if let name = savedMemberName {
-            let lastName = name.components(separatedBy: " ").last ?? name
-            let msgs = (try? await repository.fetchSpeechMessages(for: lastName)) ?? []
-            myMPActivityCount = msgs.filter {
-                $0.lastName.localizedCaseInsensitiveContains(lastName)
-            }.count
+
+        let myMPActivityCount: Int
+        if let lastName = followedMember?.lastName
+            ?? savedMemberName.map({ $0.components(separatedBy: " ").last ?? $0 }) {
+            myMPActivityCount = (try? await repository.fetchMPActivityCount(for: lastName)) ?? 0
+        } else {
+            myMPActivityCount = 0
         }
-        
-        if let mp = followedMember {
-            provinceAbbrev = mp.province.shortCode
-            if !provinceAbbrev.isEmpty {
-                mySenators = (try? await repository.fetchSenators(for: provinceAbbrev)) ?? []
-            }
+
+        let mySenators: [Senator]
+        let provinceAbbrev: String
+        if let mp = followedMember, !mp.provinceCode.isEmpty {
+            provinceAbbrev = mp.provinceCode
+            mySenators = (try? await repository.fetchSenators(for: provinceAbbrev)) ?? []
+        } else {
+            provinceAbbrev = ""
+            mySenators = []
         }
-        
+
         let hansards = (try? await repository.fetchLatestHansards(limit: 10)) ?? []
         let latestHansard = hansards.first
-        
+
         let liveParliamentStatus = try? await liveParliamentStatusFetching.fetchStatus()
-        
+
         var parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard, isSittingToday: isSittingToday)
         if liveParliamentStatus?.isSitting == true {
             parliamentDayStatus = .sitting
         }
-        
-        let recentSubjects = Array(
-            (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
+
+        let recentSubjectTitles = Array(
+            (hansards.first?.subjectRecords.map(\.title) ?? []).prefix(3)
         )
         let latestSpeechHighlight = makeLatestSpeechHighlight(for: followedMember, in: hansards)
-        
-        let latestRecordedVote = try? await repository.fetchLatestRecordedVote()
-        
-        var latestMemberVote: MemberVote? = nil
-        if let memberID = followedMember?.memberID, let voteID = latestRecordedVote?.voteID {
+
+        let latestVote = try? await repository.fetchLatestVote()
+
+        var latestMemberVote: HomeMemberVoteRecord?
+        if let memberID = followedMember?.memberID, let voteID = latestVote?.voteID {
             latestMemberVote = try? await repository.fetchMemberVote(memberID: memberID, voteID: voteID)
         }
-        
-        var postSittingHansard: Hansard? = nil
+
+        var postSittingHansard: HomeHansardRecord?
         if let status = liveParliamentStatus, !status.isSitting, let sittingDate = status.sittingDate {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
@@ -94,36 +95,73 @@ struct LoadHomeFeed {
                 }
             }
         }
-        
-        let onThisDayItems = (try? await onThisDayFetching.fetch(date: clock.now, limit: 5)) ?? []
-        
+
+        let liveCardDecision = computeLiveCardDecision(
+            status: liveParliamentStatus,
+            postSittingHansard: postSittingHansard,
+            ottawaTodayString: ottawaTodayString
+        )
+
+        let onThisDayItems = (try? await onThisDayFetching.fetch(date: clock.now, limit: 5)) ?? existing
+
         let civicContext = FollowedCivicContext(
             followedBills: followPreferenceReading.followedBillNumbers(),
             followedTopics: followPreferenceReading.followedTopicIDs(),
             mySenators: mySenators,
             provinceAbbrev: provinceAbbrev
         )
-        
+
+        let hasPersonalizedContext = savedMemberName != nil
+            || !followPreferenceReading.followedMemberIDs().isEmpty
+            || !followPreferenceReading.followedBillNumbers().isEmpty
+            || !followPreferenceReading.followedTopicIDs().isEmpty
+
         return HomeFeedSnapshot(
             isSittingToday: isSittingToday,
             parliamentDayStatus: parliamentDayStatus,
             liveParliamentStatus: liveParliamentStatus,
+            liveCardDecision: liveCardDecision,
             nextSittingDate: nextSittingDate,
             followedMember: followedMember,
             myMPActivityCount: myMPActivityCount,
+            savedMemberName: savedMemberName,
+            hasPersonalizedContext: hasPersonalizedContext,
             civicContext: civicContext,
-            recentSubjects: recentSubjects,
-            latestHansard: latestHansard,
-            postSittingHansard: postSittingHansard,
+            recentSubjectTitles: recentSubjectTitles,
+            latestHansardDate: latestHansard?.date,
             latestSpeechHighlight: latestSpeechHighlight,
-            latestRecordedVote: latestRecordedVote,
+            latestVote: latestVote,
             latestMemberVote: latestMemberVote,
             onThisDayItems: onThisDayItems
         )
     }
-    
-    private func resolveFollowedMember(from members: [ParliamentMember], savedName: String?, followedIDs: [Int]) -> ParliamentMember? {
-        if let savedName = savedName,
+
+    private func makeOttawaTodayString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/Toronto")
+        return formatter.string(from: date)
+    }
+
+    private func computeLiveCardDecision(
+        status: LiveParliamentStatus?,
+        postSittingHansard: HomeHansardRecord?,
+        ottawaTodayString: String
+    ) -> HomeLiveCardDecision {
+        guard let status else { return .hidden }
+        if status.isSitting { return .live(status) }
+        guard let sittingDate = status.sittingDate, sittingDate == ottawaTodayString else {
+            return .hidden
+        }
+        if let hansard = postSittingHansard {
+            let subjectTitle = hansard.subjectRecords.first?.title ?? ""
+            return .todayPublished(hansardID: hansard.hansardID, date: hansard.date, subjectTitle: subjectTitle)
+        }
+        return .todayPending
+    }
+
+    private func resolveFollowedMember(from members: [HomeFollowedMember], savedName: String?, followedIDs: [Int]) -> HomeFollowedMember? {
+        if let savedName,
            let match = members.first(where: {
                $0.name.localizedCaseInsensitiveContains(savedName) ||
                savedName.localizedCaseInsensitiveContains($0.lastName)
@@ -136,38 +174,35 @@ struct LoadHomeFeed {
         return nil
     }
 
-    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?, isSittingToday: Bool) -> HomeParliamentDayStatus {
+    private func resolveParliamentDayStatus(today: Date, latestHansard: HomeHansardRecord?, isSittingToday: Bool) -> HomeParliamentDayStatus {
         guard isSittingToday else { return .notSitting }
         if let latest = latestHansard, Calendar.current.isDate(latest.date, inSameDayAs: today) {
             return .adjourned
         }
         return .sitting
     }
-    
-    private func makeLatestSpeechHighlight(for mp: ParliamentMember?, in hansards: [Hansard]) -> HomeSpeechHighlight? {
+
+    private func makeLatestSpeechHighlight(for mp: HomeFollowedMember?, in hansards: [HomeHansardRecord]) -> HomeSpeechHighlight? {
         guard let member = mp else { return nil }
         let lastName = member.lastName
         for hansard in hansards {
-            for order in hansard.orders {
-                for subject in order.subjects {
-                    for speech in subject.speeches {
-                        for message in speech.messages {
-                            if message.lastName.localizedCaseInsensitiveCompare(lastName) == .orderedSame {
-                                return HomeSpeechHighlight(
-                                    hansard: hansard,
-                                    subject: subject,
-                                    memberName: member.name,
-                                    excerpt: trimmedExcerpt(message.content)
-                                )
-                            }
-                        }
+            for subject in hansard.subjectRecords {
+                for message in subject.messages {
+                    if message.lastName.localizedCaseInsensitiveCompare(lastName) == .orderedSame {
+                        return HomeSpeechHighlight(
+                            hansardID: hansard.hansardID,
+                            hansardDate: hansard.date,
+                            subjectTitle: subject.title,
+                            memberName: member.name,
+                            excerpt: trimmedExcerpt(message.content)
+                        )
                     }
                 }
             }
         }
         return nil
     }
-    
+
     private func trimmedExcerpt(_ text: String) -> String {
         let cleaned = text
             .replacingOccurrences(of: "\n", with: " ")
