@@ -2,9 +2,13 @@ SHELL := /bin/bash
 .PHONY: build deploy-simulator simulator test
 
 OUTPUT_DIR = .build
-# We use a hint to find a specific simulator, but fall back to any available iPhone if missing.
-SIM_NAME ?= iPhone 17 Pro Max
-SIM_UUID := $(shell xcrun simctl list devices available | grep -v unavailable | grep "$(SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || xcrun simctl list devices available | grep -v unavailable | grep "iPhone" | head -1 | grep -oE '[A-F0-9-]{36}')
+# Dynamically detect an available iPhone simulator
+AVAILABLE_SIM := $(shell xcrun simctl list devices available | grep -v unavailable | grep "iPhone" | head -1)
+DETECTED_SIM_NAME := $(shell echo '$(AVAILABLE_SIM)' | sed -E 's/^[[:space:]]+(.*) \([A-F0-9-]{36}\).*/\1/')
+DETECTED_SIM_UUID := $(shell echo '$(AVAILABLE_SIM)' | grep -oE '[A-F0-9-]{36}')
+
+SIM_NAME ?= $(DETECTED_SIM_NAME)
+SIM_UUID = $(shell xcrun simctl list devices available | grep -v unavailable | grep "$(SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_SIM_UUID)")
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
