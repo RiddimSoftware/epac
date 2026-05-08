@@ -37,10 +37,8 @@ struct LoadHomeFeed {
         
         let allMembers = (try? await repository.fetchAllMembers()) ?? []
         let savedMemberName = followPreferenceReading.savedMemberName()
-        var followedMember: ParliamentMember? = nil
-        if let name = savedMemberName {
-            followedMember = allMembers.first { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }
-        }
+        let followedMemberIDs = followPreferenceReading.followedMemberIDs()
+        let followedMember = resolveFollowedMember(from: allMembers, savedName: savedMemberName, followedIDs: followedMemberIDs)
         
         var myMPActivityCount = 0
         var provinceAbbrev = ""
@@ -52,12 +50,12 @@ struct LoadHomeFeed {
             myMPActivityCount = msgs.filter {
                 $0.lastName.localizedCaseInsensitiveContains(lastName)
             }.count
-            
-            if let mp = followedMember {
-                provinceAbbrev = mp.province.shortCode
-                if !provinceAbbrev.isEmpty {
-                    mySenators = (try? await repository.fetchSenators()) ?? []
-                }
+        }
+        
+        if let mp = followedMember {
+            provinceAbbrev = mp.province.shortCode
+            if !provinceAbbrev.isEmpty {
+                mySenators = (try? await repository.fetchSenators(for: provinceAbbrev)) ?? []
             }
         }
         
@@ -66,7 +64,7 @@ struct LoadHomeFeed {
         
         let liveParliamentStatus = try? await liveParliamentStatusFetching.fetchStatus()
         
-        var parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
+        var parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard, isSittingToday: isSittingToday)
         if liveParliamentStatus?.isSitting == true {
             parliamentDayStatus = .sitting
         }
@@ -124,12 +122,26 @@ struct LoadHomeFeed {
         )
     }
     
-    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?) -> HomeParliamentDayStatus {
-        guard let latest = latestHansard else { return .notSitting }
-        if Calendar.current.isDate(latest.date, inSameDayAs: today) {
+    private func resolveFollowedMember(from members: [ParliamentMember], savedName: String?, followedIDs: [Int]) -> ParliamentMember? {
+        if let savedName = savedName,
+           let match = members.first(where: {
+               $0.name.localizedCaseInsensitiveContains(savedName) ||
+               savedName.localizedCaseInsensitiveContains($0.lastName)
+           }) {
+            return match
+        }
+        if let followedID = followedIDs.first {
+            return members.first { $0.memberID == followedID }
+        }
+        return nil
+    }
+
+    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?, isSittingToday: Bool) -> HomeParliamentDayStatus {
+        guard isSittingToday else { return .notSitting }
+        if let latest = latestHansard, Calendar.current.isDate(latest.date, inSameDayAs: today) {
             return .adjourned
         }
-        return .notSitting
+        return .sitting
     }
     
     private func makeLatestSpeechHighlight(for mp: ParliamentMember?, in hansards: [Hansard]) -> HomeSpeechHighlight? {

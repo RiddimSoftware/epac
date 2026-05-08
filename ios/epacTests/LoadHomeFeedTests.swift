@@ -52,7 +52,7 @@ class MockHomeFeedRepository: HomeFeedRepository {
     func fetchHansards(between start: Date, and end: Date) async throws -> [Hansard] { [] }
     func fetchLatestRecordedVote() async throws -> RecordedVote? { nil }
     func fetchMemberVote(memberID: Int, voteID: Int) async throws -> MemberVote? { nil }
-    func fetchSenators() async throws -> [Senator] { [] }
+    func fetchSenators(for provinceAbbrev: String) async throws -> [Senator] { [] }
 }
 
 class MockLiveParliamentStatusFetching: LiveParliamentStatusFetching {
@@ -81,6 +81,7 @@ class MockOnThisDayFetching: OnThisDayFetching {
 class MockFollowPreferenceReading: FollowPreferenceReading {
     func followedBillNumbers() -> [String] { [] }
     func followedTopicIDs() -> [String] { [] }
+    func followedMemberIDs() -> [Int] { [] }
     func savedMemberName() -> String? { nil }
     func dismissedOnThisDayDate() -> String? { nil }
     func dismissOnThisDay(dateString: String) {}

@@ -14,7 +14,7 @@ protocol HomeFeedRepository: Sendable {
     func fetchHansards(between start: Date, and end: Date) async throws -> [Hansard]
     func fetchLatestRecordedVote() async throws -> RecordedVote?
     func fetchMemberVote(memberID: Int, voteID: Int) async throws -> MemberVote?
-    func fetchSenators() async throws -> [Senator]
+    func fetchSenators(for provinceAbbrev: String) async throws -> [Senator]
 }
 
 protocol LiveParliamentStatusFetching: Sendable {
@@ -29,6 +29,7 @@ protocol OnThisDayFetching: Sendable {
 protocol FollowPreferenceReading: Sendable {
     func followedBillNumbers() -> [String]
     func followedTopicIDs() -> [String]
+    func followedMemberIDs() -> [Int]
     func savedMemberName() -> String?
     func dismissedOnThisDayDate() -> String?
     func dismissOnThisDay(dateString: String)

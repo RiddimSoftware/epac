@@ -5,5 +5,5 @@
 
 import Foundation
 
-extension LiveParliamentService: @unchecked Sendable, LiveParliamentStatusFetching {}
+extension LiveParliamentService: LiveParliamentStatusFetching {}
 extension OnThisDayService: @unchecked Sendable, OnThisDayFetching {}

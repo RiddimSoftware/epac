@@ -52,8 +52,8 @@ struct HomeFeedSwiftDataRepository: HomeFeedRepository {
         return try modelContext.fetch(descriptor).first
     }
     
-    func fetchSenators() async throws -> [Senator] {
+    func fetchSenators(for provinceAbbrev: String) async throws -> [Senator] {
         let allSenators = await SenatorsService.fetchSenators()
-        return allSenators
+        return SenatorsService.senators(for: provinceAbbrev, from: allSenators)
     }
 }

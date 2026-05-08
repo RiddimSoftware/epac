@@ -15,6 +15,10 @@ struct FollowPreferenceAdapter: FollowPreferenceReading {
         Array(TopicFollowStore.shared.followedIDs)
     }
     
+    func followedMemberIDs() -> [Int] {
+        Array(MemberFollowStore.shared.followedIDs)
+    }
+    
     func savedMemberName() -> String? {
         UserDefaults.standard.string(forKey: "epac.postalCode.savedMemberName")
     }
