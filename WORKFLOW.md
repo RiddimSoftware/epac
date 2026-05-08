@@ -2,34 +2,11 @@
 workflow_template:
   managed: true
   source_ref: templates/WORKFLOW.template.md
-  version: sha256:d11e5afd0a04401bf1dfc5551d79866fe4458ba26b838060c58de56f3c0219fc
-  managed_block_sha256: 91732291ff28f1e12ddd3c68f59588c3db3d1b8ec43dd25dae576d61d31daf7e
+  version: sha256:94cd413332b5cb8007ffa9a39dca419e2c5f40ecc9bbf8047198a38e3c400c1e
+  managed_block_sha256: c8bb0b220ac17d6140f93e4d2c99043a29314cf3082080d0d7eb96d9d94ad8a2
+extends: ../agent-config/symphony/shared.yml
 tracker:
-  kind: linear
-  endpoint: https://api.linear.app/graphql
-  api_key: $LINEAR_API_KEY
-  api_key_aws_secret:
-    secret_id: linear/api-key
-    profile: riddim-agent
-    region: us-east-1
   project_slug: EPAC
-  active_states:
-    - Todo
-    - In Progress
-  terminal_states:
-    - Done
-    - Canceled
-    - Cancelled
-    - Duplicate
-  stale_claim_reconciliation:
-    enabled: false
-    source_state: In Progress
-    target_state: Todo
-    idle_after_ms: 86400000
-    require_no_open_pr: true
-    require_no_local_worker: true
-polling:
-  interval_ms: 30000
 repositories:
   - slug: RiddimSoftware/epac
     local_path: /Users/sunny/code/epac
@@ -38,75 +15,11 @@ repositories:
       - review
 reviewer:
   enabled: true
-  polling_interval_ms: 30000
   reserved_agent_slots: 4
-  bot_identity_wrapper_path: /Users/sunny/code/agent-config/bin
-  opener_allowlist:
-    - riddim-developer-bot
-    - app/riddim-developer-bot
 developer:
   pr_fix_reserved_agent_slots: 4
-workspace:
-  root: ./.symphony/workspaces
-  repository_root: .
-  base_branch: main
-  branch_prefix_template: claude
-  use_git_worktree: true
-  require_clean_root: true
-  # Optional destructive preflight for disposable root checkouts. When enabled,
-  # Symphony fetches origin/main, switches the root checkout back to main,
-  # hard-resets tracked changes, and removes untracked files except preserved paths.
-  root_repair:
-    enabled: false
-    remote: origin
-    preserve:
-      - .symphony/
-      - WORKFLOW.md
-hooks:
-  timeout_ms: 60000
 agent:
-  providers:
-    - name: codex
-      weight: 1
-    - name: claude
-      weight: 1
   max_concurrent_agents: 10
-  max_turns: 20
-  max_retry_backoff_ms: 300000
-  github_bot:
-    enabled: true
-    path_prefix: /Users/sunny/code/agent-config/bin
-    aws_profile: riddim-agent
-    expected_login: riddim-developer-bot[bot]
-    git_author_name: riddim-developer-bot
-    git_author_email: developer-bot@riddimsoftware.com
-  reviewer_bot:
-    enabled: true
-    aws_profile: riddim-agent
-    expected_login: riddim-reviewer-bot[bot]
-    git_author_name: riddim-reviewer-bot
-    git_author_email: reviewer-bot@riddimsoftware.com
-codex:
-  command: codex app-server
-  approval_policy:
-    mode: never
-  thread_sandbox:
-    mode: danger-full-access
-  turn_sandbox_policy:
-    mode: danger-full-access
-  turn_timeout_ms: 3600000
-  read_timeout_ms: 5000
-  stall_timeout_ms: 300000
-claude:
-  command: claude --dangerously-skip-permissions -p
-  turn_timeout_ms: 3600000
-gemini:
-  command: gemini
-  approval_mode: auto_edit
-  skip_trust: true
-  include_directories:
-    - /Users/sunny/code
-  turn_timeout_ms: 3600000
 server:
   port: 4781
 ---
@@ -242,17 +155,6 @@ Additional rules beyond the standard repository rules above:
   screenshot/evidence flow and include the resulting assets or links in the PR.
 <!-- /symphony-workflow:local-section -->
 
-<!-- symphony-workflow:local-section id=bot_runbook -->
-## Bot Environment and Runbook
-
-This workflow uses the org-standard developer-bot and reviewer-bot environment.
-Validate and run with:
-
-- `cd /Users/sunny/code/autopilot && swift run symphonyd --validate-only /Users/sunny/code/epac/WORKFLOW.md`
-- `cd /Users/sunny/code/autopilot && swift run symphonyd /Users/sunny/code/epac/WORKFLOW.md --once`
-- `cd /Users/sunny/code/autopilot && swift run symphonyd /Users/sunny/code/epac/WORKFLOW.md`
-<!-- /symphony-workflow:local-section -->
-
 Verification expectations:
-- See the Verification Expectations section in this prompt for area-specific commands.
+- Run `cd ios && make build`. See the Verification Expectations section for area-specific commands.
 - Report any verification that could not run with the exact command and reason.
