@@ -35,13 +35,15 @@ grep_files() {
   grep -rn --include="$glob" "$pattern" "$dir" 2>/dev/null || true
 }
 
+IOS_FORBIDDEN_PATTERN='import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter\|UNNotification\|UNNotificationRequest\|UNNotificationResponse\|UNMutableNotificationContent\|UIApplication\|registerForRemoteNotifications'
+
 # ── iOS Domain boundary (EPAC-1741) ───────────────────────────────────────────
 header "iOS Domain layer (ios/epac/Domain/)"
 
 DOMAIN_DIR="$REPO_ROOT/ios/epac/Domain"
 if [[ -d "$DOMAIN_DIR" ]]; then
   FRAMEWORK_IMPORTS=$(grep_files \
-    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter' \
+    "$IOS_FORBIDDEN_PATTERN" \
     "*.swift" "$DOMAIN_DIR")
   if [[ -n "$FRAMEWORK_IMPORTS" ]]; then
     while IFS= read -r line; do fail "$line"; done <<< "$FRAMEWORK_IMPORTS"
@@ -58,7 +60,7 @@ header "iOS Application layer (ios/epac/Application/)"
 APP_DIR="$REPO_ROOT/ios/epac/Application"
 if [[ -d "$APP_DIR" ]]; then
   FRAMEWORK_IMPORTS=$(grep_files \
-    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter' \
+    "$IOS_FORBIDDEN_PATTERN" \
     "*.swift" "$APP_DIR")
   if [[ -n "$FRAMEWORK_IMPORTS" ]]; then
     while IFS= read -r line; do fail "$line"; done <<< "$FRAMEWORK_IMPORTS"
