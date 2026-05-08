@@ -1,12 +1,19 @@
 # Experiment — Subtitle: accountability framing vs activity framing
 
-**Status:** proposed (deferred — gated on [EPAC-1755](https://linear.app/riddimsoftware/issue/EPAC-1755) shipping AND on baseline traffic)
+**Status:** deferred (gated on [EPAC-1755](https://linear.app/riddimsoftware/issue/EPAC-1755) 14-day baseline; re-evaluate after 2026-05-21)
 **Created:** 2026-05-07
+**Last Updated:** 2026-05-07 (Agent: EPAC-1763 deferral)
 **Source:** [ASO Scorecard 2026-05-07](https://linear.app/riddimsoftware/initiative/aso-epac-04b0fbc7514c) · Experiment Planning Meeting
-**Linear issue:** _filed alongside this PR_
+**Linear issue:** [EPAC-1763](https://linear.app/riddimsoftware/issue/EPAC-1763)
 **Owning product:** ePac (`net.dinglebox.cabinetdoor`, ASC `1224459142`)
 **Locale scope:** en-CA (CA App Store)
 **Surface:** Apple Product Page Optimization (PPO), default product page, Treatment slot 2 of 3
+
+## Result (2026-05-07)
+
+**Decision:** Defer.
+**Reason:** EPAC-1755 ("Track Parliament sessions live") was merged on 2026-05-07. The 14-day post-ship baseline period required by this spec has not elapsed.
+**Next steps:** Re-evaluate traffic floor and baseline CVR after 2026-05-21.
 
 ## Hypothesis
 
