@@ -27,10 +27,12 @@ skip()  { echo "  ↷ SKIP: $*"; }
 header(){ echo; echo "── $* ──"; }
 
 grep_files() {
-  # grep_files <pattern> <path_glob>
+  # grep_files <pattern> <path_glob> <directory>
   # Prints matching file:line pairs; returns 1 if no matches (grep behaviour).
-  local pattern="$1"; shift
-  grep -rn --include="$1" "$pattern" "$REPO_ROOT" 2>/dev/null || true
+  local pattern="$1"
+  local glob="$2"
+  local dir="${3:-$REPO_ROOT}"
+  grep -rn --include="$glob" "$pattern" "$dir" 2>/dev/null || true
 }
 
 # ── iOS Domain boundary (EPAC-1741) ───────────────────────────────────────────
@@ -39,12 +41,12 @@ header "iOS Domain layer (ios/epac/Domain/)"
 DOMAIN_DIR="$REPO_ROOT/ios/epac/Domain"
 if [[ -d "$DOMAIN_DIR" ]]; then
   FRAMEWORK_IMPORTS=$(grep_files \
-    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit' \
+    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter' \
     "*.swift" "$DOMAIN_DIR")
   if [[ -n "$FRAMEWORK_IMPORTS" ]]; then
     while IFS= read -r line; do fail "$line"; done <<< "$FRAMEWORK_IMPORTS"
   else
-    pass "No SwiftUI/SwiftData/UIKit imports in ios/epac/Domain/"
+    pass "No SwiftUI/SwiftData/UIKit/APNs/URLSession imports in ios/epac/Domain/"
   fi
 else
   skip "ios/epac/Domain/ does not exist yet — boundary will be enforced by EPAC-1741"
@@ -56,12 +58,12 @@ header "iOS Application layer (ios/epac/Application/)"
 APP_DIR="$REPO_ROOT/ios/epac/Application"
 if [[ -d "$APP_DIR" ]]; then
   FRAMEWORK_IMPORTS=$(grep_files \
-    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit' \
+    'import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter' \
     "*.swift" "$APP_DIR")
   if [[ -n "$FRAMEWORK_IMPORTS" ]]; then
     while IFS= read -r line; do fail "$line"; done <<< "$FRAMEWORK_IMPORTS"
   else
-    pass "No SwiftUI/SwiftData/UIKit imports in ios/epac/Application/"
+    pass "No SwiftUI/SwiftData/UIKit/APNs/URLSession imports in ios/epac/Application/"
   fi
 else
   skip "ios/epac/Application/ does not exist yet — boundary will be enforced by EPAC-1742"
