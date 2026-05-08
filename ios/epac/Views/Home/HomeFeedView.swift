@@ -903,80 +903,36 @@ struct HomeFeedView: View {
     // MARK: - Data loading
 
     private func loadFeed() async {
-        // Section 1: Check sitting calendar
-        let today = Calendar.current.startOfDay(for: Date())
-        let calendars = (try? modelContext.fetch(FetchDescriptor<SittingCalendar>())) ?? []
-        let allSittingDates = calendars.flatMap(\.sittings).map { Calendar.current.startOfDay(for: $0) }
-        isSittingToday = allSittingDates.contains { Calendar.current.isDate($0, inSameDayAs: today) }
-        nextSittingDate = allSittingDates.filter { $0 > today }.sorted().first
-
-        // Section 2: Count MP activities (speech messages by last name)
-        let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-        let followedMember = resolveFollowedMember(from: allMembers)
-        if let name = PostalCodeViewModel.savedMemberName {
-            let lastName = name.components(separatedBy: " ").last ?? name
-            let msgs = (try? modelContext.fetch(FetchDescriptor<SpeechMessage>())) ?? []
-            myMPActivityCount = msgs.filter {
-                $0.lastName.localizedCaseInsensitiveContains(lastName)
-            }.count
-
-            // Resolve province for healthcare contextual card
-            if let mp = followedMember {
-                provinceAbbrev = mp.province.shortCode
-                // Load senators for the user's province if not already loaded.
-                if mySenators.isEmpty && !provinceAbbrev.isEmpty {
-                    let allSenators = await SenatorsService.fetchSenators()
-                    mySenators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
-                }
-            }
-        }
-
-        // Section 5: Recent subjects from latest Hansard
-        let hansards = (try? modelContext.fetch(FetchDescriptor<Hansard>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        ))) ?? []
-        latestHansard = hansards.first
-        parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard)
-        if liveParliamentStatus?.isSitting == true {
-            parliamentDayStatus = .sitting
-        }
-        recentSubjects = Array(
-            (hansards.first?.orders.flatMap { $0.subjects } ?? []).prefix(3)
+        let useCase = LoadHomeFeed(
+            repository: HomeFeedSwiftDataRepository(modelContext: modelContext),
+            liveParliamentStatusFetching: liveParliamentService,
+            onThisDayFetching: onThisDayService,
+            followPreferenceReading: FollowPreferenceAdapter()
         )
-        latestSpeechHighlight = makeLatestSpeechHighlight(for: followedMember, in: hansards)
-
-        var voteDescriptor = FetchDescriptor<RecordedVote>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        voteDescriptor.fetchLimit = 1
-        latestRecordedVote = (try? modelContext.fetch(voteDescriptor))?.first
-
-        if let memberID = followedMember?.memberID, let voteID = latestRecordedVote?.voteID {
-            var memberVoteDescriptor = FetchDescriptor<MemberVote>(
-                predicate: #Predicate<MemberVote> { $0.memberID == memberID && $0.voteID == voteID },
-                sortBy: [SortDescriptor(\.voteID, order: .reverse)]
-            )
-            memberVoteDescriptor.fetchLimit = 1
-            latestMemberVote = (try? modelContext.fetch(memberVoteDescriptor))?.first
-        } else {
-            latestMemberVote = nil
+        let snapshot = await useCase.execute()
+        
+        self.isSittingToday = snapshot.isSittingToday
+        self.parliamentDayStatus = snapshot.parliamentDayStatus
+        self.liveParliamentStatus = snapshot.liveParliamentStatus
+        self.nextSittingDate = snapshot.nextSittingDate
+        self.latestRecordedVote = snapshot.latestRecordedVote
+        self.latestMemberVote = snapshot.latestMemberVote
+        self.latestSpeechHighlight = snapshot.latestSpeechHighlight
+        self.myMPActivityCount = snapshot.myMPActivityCount
+        self.recentSubjects = snapshot.recentSubjects
+        self.latestHansard = snapshot.latestHansard
+        self.postSittingHansard = snapshot.postSittingHansard
+        
+        if self.onThisDayItems != snapshot.onThisDayItems {
+             self.didRecordOnThisDayImpression = false
         }
-
-        await refreshOnThisDay()
+        self.onThisDayItems = snapshot.onThisDayItems
+        
+        self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
+        self.mySenators = snapshot.civicContext.mySenators
     }
 
-    private func refreshOnThisDay() async {
-        guard networkMonitor.isConnected || AppEnvironment.isEvidenceCaptureMode else { return }
-        do {
-            let items = try await onThisDayService.fetch(date: Date(), limit: 5)
-            if items != onThisDayItems {
-                didRecordOnThisDayImpression = false
-            }
-            onThisDayItems = items
-        } catch {
-            Log.error("HomeFeedView on-this-day refresh failed: \(error.localizedDescription)")
-        }
-    }
+
 
     private func pollLiveParliamentStatus(while phase: ScenePhase) async {
         guard phase == .active else { return }
@@ -1004,13 +960,17 @@ struct HomeFeedView: View {
 
     private func refreshLiveParliamentStatus() async {
         guard networkMonitor.isConnected else { return }
+        let useCase = RefreshLiveParliamentStatus(
+            liveParliamentStatusFetching: liveParliamentService,
+            repository: HomeFeedSwiftDataRepository(modelContext: modelContext)
+        )
         do {
-            let status = try await liveParliamentService.fetchStatus()
-            liveParliamentStatus = status
-            if status.isSitting {
-                parliamentDayStatus = .sitting
+            let result = try await useCase.execute()
+            self.liveParliamentStatus = result.liveParliamentStatus
+            self.postSittingHansard = result.postSittingHansard
+            if let newStatus = result.parliamentDayStatus {
+                self.parliamentDayStatus = newStatus
             }
-            resolvePostSittingHansard(for: status)
         } catch {
             Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
         }
@@ -1185,50 +1145,7 @@ struct HomeFeedView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func resolveFollowedMember(from members: [ParliamentMember]) -> ParliamentMember? {
-        if let savedName = PostalCodeViewModel.savedMemberName,
-           let match = members.first(where: {
-               $0.name.localizedCaseInsensitiveContains(savedName) ||
-               savedName.localizedCaseInsensitiveContains($0.lastName)
-           }) {
-            return match
-        }
-        if let followedID = MemberFollowStore.shared.followedIDs.first {
-            return members.first { $0.memberID == followedID }
-        }
-        return nil
-    }
 
-    private func resolveParliamentDayStatus(today: Date, latestHansard: Hansard?) -> HomeParliamentDayStatus {
-        guard isSittingToday else { return .notSitting }
-        if let latestHansard, Calendar.current.isDate(latestHansard.date, inSameDayAs: today) {
-            return .adjourned
-        }
-        return .sitting
-    }
-
-    private func makeLatestSpeechHighlight(for member: ParliamentMember?, in hansards: [Hansard]) -> HomeSpeechHighlight? {
-        guard let member else { return nil }
-        let memberLastName = member.lastName
-        for hansard in hansards.prefix(20) {
-            for subject in hansard.orders.flatMap(\.subjects) {
-                for speech in subject.speeches {
-                    if let message = speech.messages.first(where: {
-                        $0.lastName.localizedCaseInsensitiveCompare(memberLastName) == .orderedSame ||
-                        member.name.localizedCaseInsensitiveContains($0.lastName)
-                    }) {
-                        return HomeSpeechHighlight(
-                            hansard: hansard,
-                            subject: subject,
-                            memberName: member.name,
-                            excerpt: Self.trimmedExcerpt(message.content)
-                        )
-                    }
-                }
-            }
-        }
-        return nil
-    }
 
     private func openOnThisDayItem(_ item: OnThisDayItem) async {
         OnThisDayTelemetry.record(.tap, itemID: item.id)
@@ -1331,13 +1248,6 @@ struct HomeFeedView: View {
     }
 }
 
-private struct HomeSpeechHighlight {
-    let hansard: Hansard
-    let subject: SubjectOfBusiness
-    let memberName: String
-    let excerpt: String
-}
-
 private struct OnThisDaySpeechSelection: Hashable, Identifiable {
     let id = UUID()
     let hansard: Hansard
@@ -1350,10 +1260,4 @@ private struct OnThisDaySpeechSelection: Hashable, Identifiable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-}
-
-private enum HomeParliamentDayStatus {
-    case sitting
-    case adjourned
-    case notSitting
 }
