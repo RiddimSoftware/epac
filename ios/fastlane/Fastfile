@@ -25,8 +25,7 @@ platform :ios do
       next unless File.directory?(dir)
       locale = File.basename(dir)
       unless supported_locales.include?(locale)
-        UI.message("Localization '#{locale}' found in repo but not on App Store Connect editable version. Auto-creating it...")
-        version.create_app_store_version_localization(attributes: { locale: locale })
+        UI.user_error!("Localization '#{locale}' found in repo but not on App Store Connect editable version. Please create it manually in ASC first.")
       end
     end
 
@@ -37,7 +36,7 @@ platform :ios do
       force:                true,
       metadata_path:        "./fastlane/metadata",
       screenshots_path:     "./fastlane/screenshots",
-      skip_screenshots:     true
+      skip_screenshots:     false
     )
     end
 
