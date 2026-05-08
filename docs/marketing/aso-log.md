@@ -16,9 +16,20 @@ Record every keyword field change here with rationale.
 **fr-CA before:** (none — first time)
 **fr-CA after:** `parlement,depute,senat,chambre,vote,projet-de-loi,politique,canada,gouvernement,hansard,depenses`
 
+## 2026-05-07 (EPAC-1762)
+
+**Screenshot change:** First frame caption changed from tagline to action-led.
+**Locale:** en-CA (en-US keywords unchanged)
+**Before:** "Parliament in your pocket"
+**After:** "See every vote your MP casts"
+
+**Rationale:**
+- Action-led captions with concrete user jobs ("See every vote") recognize search intent faster than taglines.
+- Aligns first screenshot with search terms `mp` and `vote`.
+- Experiment deferred due to low/unknown baseline traffic floor; Variant B shipped directly per Scorecard "ship + iterate" recommendation.
+
 **Next review:** 2026-07-27
 
-## Template for future entries
 
 ## YYYY-MM-DD (EPAC-XXX)
 
