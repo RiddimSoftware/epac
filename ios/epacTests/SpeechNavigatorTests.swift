@@ -23,7 +23,7 @@ struct SpeechNavigatorTests {
 		bro.ordersOfBusiness.forEach { order in
 			order.subjects.forEach { subject in
 				subject.speeches.forEach { speech in
-					let nav = SpeechNavigator(speech)
+					let nav = SpeechNavigator(Speech(domain: speech))
 					while let msg = nav.next() {
 						if idCount[msg.hansardID] == nil {
 							idCount[msg.hansardID] = 0

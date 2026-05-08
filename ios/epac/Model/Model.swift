@@ -7,8 +7,6 @@
 
 import Foundation
 import SwiftData
-import SwiftUI
-import UIKit
 
 typealias SittingCalendar = SchemaV5.SittingCalendar
 typealias Hansard = SchemaV5.Hansard
@@ -865,14 +863,6 @@ enum SchemaV5: VersionedSchema {
 			self.sessionNumber = sessionNumber
 			self.orders = orders
 		}
-		init(xml: String) {
-			let hansard = XMLBro(xml: xml).parseXML().hansard()
-			date = hansard.date
-			hansardID = hansard.hansardID
-			parliamentNumber = hansard.parliamentNumber
-			sessionNumber = hansard.sessionNumber
-			orders = hansard.orders
-		}
 	}
 
 	@Model
@@ -1204,136 +1194,6 @@ enum SchemaV8: VersionedSchema {
 			self.sourceTitle = sourceTitle
 			self.sourceURL = sourceURL
 			self.asOfDate = asOfDate
-		}
-	}
-}
-
-	enum Province: String, Codable, CaseIterable, Identifiable {
-	var id: Self { self }
-
-	var shortCode: String {
-		switch self {
-			case .Alberta: return "AB"
-			case .BC: return "BC"
-			case .Manitoba: return "MB"
-			case .NB: return "NB"
-			case .NL: return "NL"
-			case .NWT: return "NT"
-			case .NS: return "NS"
-			case .Nunavut: return "NU"
-			case .Ontario: return "ON"
-			case .PEI: return "PE"
-			case .Quebec: return "QC"
-			case .Saskatchewan: return "SK"
-			case .Yukon: return "YT"
-		}
-	}
-
-	case Alberta = "Alberta"
-	case BC = "British Columbia"
-	case Manitoba = "Manitoba"
-	case NB = "New Brunswick"
-	case NL = "Newfoundland and Labrador"
-	case NWT = "Northwest Territories"
-	case NS = "Nova Scotia"
-	case Nunavut = "Nunavut"
-	case Ontario = "Ontario"
-	case PEI = "Prince Edward Island"
-	case Quebec = "Quebec"
-	case Saskatchewan = "Saskatchewan"
-	case Yukon = "Yukon"
-}
-
-enum Party: Codable, CaseIterable, Identifiable {
-	var id: Self { self }
-	case conservative
-	case liberal
-	case newdemocratic
-	case bloc
-	case green
-	case independent
-
-	var abbreviation: String {
-		switch self {
-			case .conservative:     return "CPC"
-			case .liberal:          return "Lib"
-			case .newdemocratic:    return "NDP"
-			case .bloc:             return "BQ"
-			case .green:            return "GP"
-			case .independent:      return "Ind"
-		}
-	}
-
-	var localizedAbbreviation: String {
-		switch self {
-			case .conservative:     return NSLocalizedString("CPC", comment: "")
-			case .liberal:          return NSLocalizedString("Lib", comment: "")
-			case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
-			case .bloc:             return NSLocalizedString("BQ", comment: "")
-			case .green:            return NSLocalizedString("GP", comment: "")
-			case .independent:      return NSLocalizedString("Ind", comment: "")
-		}
-	}
-
-	var image: UIImage? {
-		return UIImage(named: self.abbreviation)
-	}
-
-	var fullName: String {
-		switch self {
-			case .conservative:     return NSLocalizedString("Conservative", comment: "")
-			case .liberal:          return NSLocalizedString("Liberal", comment: "")
-			case .newdemocratic:    return NSLocalizedString("New Democratic Party", comment: "")
-			case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
-			case .green:            return NSLocalizedString("Green Party", comment: "")
-			case .independent:      return NSLocalizedString("Independent", comment: "")
-		}
-	}
-
-	var shortName: String {
-		switch self {
-			case .conservative:     return NSLocalizedString("Conservative", comment: "")
-			case .liberal:          return NSLocalizedString("Liberal", comment: "")
-			case .newdemocratic:    return NSLocalizedString("NDP", comment: "")
-			case .bloc:             return NSLocalizedString("Bloc Québécois", comment: "")
-			case .green:            return NSLocalizedString("Green Party", comment: "")
-			case .independent:      return NSLocalizedString("Independent", comment: "")
-		}
-	}
-
-	var colour: UIColor {
-		switch self {
-			case .conservative:     return UIColor(rgb: 0x1A4782)
-			case .liberal:          return UIColor(rgb: 0xd71920)
-			case .newdemocratic:    return UIColor(rgb: 0xF37021)
-			case .bloc:             return UIColor(rgb: 0x33B2CC)
-			case .green:            return UIColor(rgb: 0x3D9B35)
-			case .independent:            return UIColor.darkText
-		}
-	}
-
-	static func partyWithAbbreviation(_ name: String) -> Party {
-		if let party = Party.allCases.first(where: {
-			$0.localizedAbbreviation.caseInsensitiveCompare(name) == .orderedSame ||
-			$0.abbreviation.caseInsensitiveCompare(name) == .orderedSame ||
-			$0.fullName.caseInsensitiveCompare(name) == .orderedSame ||
-			$0.shortName.caseInsensitiveCompare(name) == .orderedSame
-		}) {
-			return party
-		}
-		return .independent
-	}
-
-	// Official party website domains. Independents intentionally have no
-	// website — Independent is a listing, not a party.
-	var websiteURL: URL? {
-		switch self {
-		case .liberal:        return URL(string: "https://liberal.ca")
-		case .conservative:   return URL(string: "https://www.conservative.ca")
-		case .newdemocratic:  return URL(string: "https://www.ndp.ca")
-		case .bloc:           return URL(string: "https://www.blocquebecois.org")
-		case .green:          return URL(string: "https://www.greenparty.ca")
-		case .independent:    return nil
 		}
 	}
 }

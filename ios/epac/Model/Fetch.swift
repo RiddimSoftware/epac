@@ -136,7 +136,7 @@ actor Fetch: ObservableObject {
 		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
 		do {
 			let xml = try await downloadXML(forDate: date)
-			let hansard = Hansard(xml: xml)
+			let hansard = Hansard(domain: XMLBro(xml: xml).parseXML().hansard())
 			modelContext.insert(hansard)
 			try modelContext.save()
 			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
@@ -601,17 +601,17 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: 7)
 		}
 		Log.debug("Got XML string")
-		let members = XMLBro.parseMembers(utfstringvalue)
-		Log.debug("parsed XML \(members.count) members")
+		let memberDTOs = XMLBro.parseMembers(utfstringvalue)
+		Log.debug("parsed XML \(memberDTOs.count) members")
 		let existingMembers = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
 		Log.debug("Found \(existingMembers.count) existing members")
 		let existingNames = Set(existingMembers.map { $0.name })
 
 		Log.debug("Inserting members")
 		try? modelContext.transaction {
-			for member in members {
-				if !existingNames.contains(member.name) {
-					modelContext.insert(member)
+			for dto in memberDTOs {
+				if !existingNames.contains(dto.name) {
+					modelContext.insert(ParliamentMember(domain: dto))
 				}
 			}
 		}
@@ -648,8 +648,9 @@ actor Fetch: ObservableObject {
 	                                let personID = member["personId"] as? Int ?? 0
 	                                let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
 	                                if existing == nil {
-	                                        let mp = ParliamentMember(
+	                                        let dto = ParliamentMemberDTO(
 	                                                name: name,
+	                                                memberID: personID,
 	                                                lastName: lastName,
 	                                                firstName: firstName,
 	                                                // ourcommons.ca members search response shape is part of the API contract; a missing
@@ -660,10 +661,18 @@ actor Fetch: ObservableObject {
 	                                                riding: member["constituencyNameEn"] as! String,
 	                                                province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
 	                                                party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
+	                                                websiteURL: nil,
+	                                                imageData: nil,
                                                 // swiftlint:enable force_cast
-	                                                memberID: personID
+	                                                fromDateTime: nil,
+	                                                toDateTime: nil,
+	                                                email: nil,
+	                                                hillPhone: nil,
+	                                                constituencyPhone: nil,
+	                                                constituencyAddress: nil,
+	                                                contactFetched: false
 	                                        )
-	                                        modelContext.insert(mp)
+	                                        modelContext.insert(ParliamentMember(domain: dto))
 	                                        try modelContext.save()
 	                                }
 	                        } else {
@@ -681,8 +690,8 @@ actor Fetch: ObservableObject {
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: 7)
 		}
-		let constituencies = XMLBro.parseConstituencies(utfstringvalue)
-		constituencies.forEach { modelContext.insert($0) }
+		let constituencyDTOs = XMLBro.parseConstituencies(utfstringvalue)
+		constituencyDTOs.map(Constituency.init(domain:)).forEach { modelContext.insert($0) }
 		try modelContext.save()
 	}
 
