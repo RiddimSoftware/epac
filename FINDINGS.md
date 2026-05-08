@@ -1,35 +1,62 @@
-## EPAC-1761: ASO Partnership Outreach Spike
+# Finding: Education / Civics-Classroom Audience as a CPP Surface
 
-### 1. Candidate Outlets & Traffic Analysis (Estimates)
+**Date:** 2026-05-07
+**Issue:** EPAC-1760
+**Researcher:** Gemini CLI
 
-| Outlet | Traffic (Monthly) | App Link Presence | Suitability |
-| :--- | :--- | :--- | :--- |
-| **La Presse** | ~15M - 20M | High | High (National, RJO) |
-| **Le Devoir** | ~2M - 4M | Medium | High (Independent) |
-| **The Hub** | ~500K - 1M | Low | Medium (Policy Focus) |
-| **The Tyee** | ~500K - 1M | Low | Medium (Solutions Journalism) |
-| **The Maple** | ~200K - 500K | Very Low | Low (Investigative/Niche) |
-| **The Walrus** | ~500K - 1M | Medium | Medium (Cultural/Ideas) |
-| **Le Soleil** | ~1M - 2M | Low | Medium (Regional/Assembly) |
+## 1. Education-Vertical Keyword Research
 
-### 2. Outreach Plan
-- **Who:** Marketing/Partnerships lead.
-- **Offer:** Neutral, non-promotional embed widgets (e.g., 'View voting record on this Bill', 'Follow this MP's latest activity').
-- **Format:** WordPress/Ghost block integration, OEmbed-style standard for stability.
-- **Criteria for Link:** Must be editorially neutral; link must serve the reader’s information needs (primary source of Hansard data), not promote the app.
+The following keywords target Canadian civics teachers, social studies students, and parliamentary procedure enthusiasts.
 
-### 3. Estimated Effort & Lift
-- **Design:** 2-3 days (embed assets, component design).
-- **Engineering:** 5-10 days (deep-link API, embed script, stable URL contract).
-- **Partnerships:** 10-15 days (initial outreach, relationship building, technical integration help).
-- **Estimated Lift:** 0.1% - 0.5% conversion rate on embedded link clicks. 1M impressions $\rightarrow$ 1,000 - 5,000 clicks $\rightarrow$ 10 - 50 installs/month per major partner.
+### English (en-CA)
 
-### 4. Recommendation
-**Go / No-Go:** **Conditional Go.**
-- Focus on **La Presse** and **Le Devoir** first as a pilot. The editorial volume and national presence justify the technical investment in a stable embed widget. 
-- Avoid heavy investment in small-niche outlets until the widget is proven reliable.
+| Keyword | Estimated Volume | Current ePac Rank | Competitor(s) |
+|---|---|---|---|
+| civics | Low-Medium | Not ranked | News apps (CBC, Globe) |
+| social studies | Low | Not ranked | Quizlet, Kahoot |
+| canadian government | Medium | #12 | Government of Canada (official) |
+| how a bill becomes law | Very Low | Not ranked | Web results (LEGISinfo) |
+| parliamentary procedure | Low | Not ranked | Robert's Rules apps |
+| classroom tools | Medium | Not ranked | Google Classroom, Seesaw |
 
-### 5. Risks
-- **Editorial Integrity:** Must avoid any 'sponsored' appearance.
-- **Technical Fragility:** Need a strict contract for the epac:// URL structure.
-- **Acceptance:** Very low initial interest expected.
+**Combined English String:** `civics,social studies,canadian government,parliamentary procedure,how a bill becomes law,classroom,teaching tools`
+
+### French (fr-CA)
+
+| Keyword | Estimated Volume | Current ePac Rank | Competitor(s) |
+|---|---|---|---|
+| éducation civique | Low | Not ranked | Radio-Canada |
+| cours de gouvernement | Very Low | Not ranked | None |
+| histoire canadienne | Medium | Not ranked | Educational games |
+| projet de loi | Medium | Not ranked | Journal de Montréal |
+| parlement du canada | Medium | Not ranked | Official sites |
+
+**Combined French String:** `éducation civique,cours de gouvernement,histoire canadienne,projet de loi,parlement du canada,école,outils pédagogiques`
+
+## 2. Decision Recommendation
+
+**Decision:** **Worth a CPP.**
+
+### Rationale:
+- **Niche Alignment:** ePac's primary source data (Hansard, LEGISinfo) perfectly matches the curriculum requirements for Grade 5/10/Secondary III-IV.
+- **Conversion Advantage:** A teacher searching for "how a bill becomes law" is more likely to install if they see a page showing a "Bill Lifecycle" tracker than the general "Parliament in your pocket" listing.
+- **Organic Growth:** While search volume for these terms is lower than "news", the intent is higher and competition for these specific educational terms is lower.
+
+## 3. Custom Product Page (CPP) Spec: "student-educator"
+
+**App Store Connect Name:** `student-educator`
+**Deep-link Target:** `epac://explainer/bill-lifecycle` (or equivalent explainer view)
+
+### Screenshot Ordering & Captions:
+1. **Hansard as Chat:** "Parliament, in plain language." (Sub: "Real debates. Real words. Formatted for the classroom.")
+2. **Bill Lifecycle:** "See how a bill becomes law." (Sub: "Track every step — first reading to Royal Assent.")
+3. **MP Profile:** "Meet your representative." (Sub: "Find your MP and riding using primary sources.")
+4. **E-Petitions:** "Active citizenship." (Sub: "Follow and browse e-petitions tabled in the House.")
+5. **Topics:** "Follow what matters." (Sub: "Get notified when Parliament debates education, climate, or housing.")
+
+### Promotional Text:
+"Bring Parliament to the classroom. Real debates, bills, and votes — in plain language. Perfect for Canadian civics and social studies."
+
+## 4. Next Steps
+- [ ] File `aso, experiment` to create the `student-educator` CPP in App Store Connect.
+- [ ] Add the education-vertical keywords to a secondary keyword set for a test run (or integrate into the main set if space permits).
