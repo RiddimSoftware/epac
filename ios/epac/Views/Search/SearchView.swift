@@ -23,8 +23,8 @@ struct SearchView: View {
     // running 6000+ string comparisons on every keystroke.
     @State private var debouncedQuery = ""
 
-    private var results: SearchViewModel.SearchResults {
-        viewModel.results(members: members, votes: votes, bills: bills, query: debouncedQuery)
+    private func updateSearch() {
+        viewModel.updateResults(members: members, votes: votes, bills: bills, query: debouncedQuery)
     }
 
     var body: some View {
@@ -32,7 +32,7 @@ struct SearchView: View {
             Group {
                 if debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines).count < 2 {
                     promptView
-                } else if results.isEmpty {
+                } else if viewModel.searchResults.isEmpty {
                     ContentUnavailableView.search(text: viewModel.searchText)
                 } else {
                     resultsList
@@ -86,6 +86,7 @@ struct SearchView: View {
             do {
                 try await Task.sleep(nanoseconds: 300_000_000)
                 debouncedQuery = viewModel.searchText
+                updateSearch()
             } catch {
                 // Task cancelled by a newer keystroke — do nothing.
             }
@@ -106,9 +107,9 @@ struct SearchView: View {
 
     private var resultsList: some View {
         List {
-            if !results.members.isEmpty {
+            if !viewModel.searchResults.members.isEmpty {
                 Section(NSLocalizedString("search.section.members", comment: "")) {
-                    ForEach(results.members) { result in
+                    ForEach(viewModel.searchResults.members) { result in
                         Button {
                             selectedMember = result.member
                         } label: {
@@ -127,9 +128,9 @@ struct SearchView: View {
                 }
             }
 
-            if !results.votes.isEmpty {
+            if !viewModel.searchResults.votes.isEmpty {
                 Section(NSLocalizedString("search.section.votes", comment: "")) {
-                    ForEach(results.votes) { result in
+                    ForEach(viewModel.searchResults.votes) { result in
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
                                 if !result.vote.billNumberCode.isEmpty {
@@ -158,9 +159,9 @@ struct SearchView: View {
                 }
             }
 
-            if !results.bills.isEmpty {
+            if !viewModel.searchResults.bills.isEmpty {
                 Section(NSLocalizedString("search.section.bills", comment: "")) {
-                    ForEach(results.bills) { result in
+                    ForEach(viewModel.searchResults.bills) { result in
                         NavigationLink(destination: BillDetailView(bill: result.bill)) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(result.bill.number)
@@ -174,9 +175,9 @@ struct SearchView: View {
                 }
             }
 
-            if !results.debates.isEmpty {
+            if !viewModel.searchResults.debates.isEmpty {
                 Section(NSLocalizedString("search.section.debates", comment: "")) {
-                    ForEach(results.debates) { result in
+                    ForEach(viewModel.searchResults.debates) { result in
                         Button {
                             selectDebate(result)
                         } label: {
@@ -200,17 +201,8 @@ struct SearchView: View {
     }
 
     private func selectDebate(_ result: SearchViewModel.DebateResult) {
-        let hansardDate = result.hansardDate
-        let subjectID = result.subjectID
-
-        let hansardDescriptor = FetchDescriptor<Hansard>(
-            predicate: #Predicate { $0.date == hansardDate }
-        )
-        let subjectDescriptor = FetchDescriptor<SubjectOfBusiness>(
-            predicate: #Predicate { $0.hansardID == subjectID }
-        )
-
-        selectedHansard = try? modelContext.fetch(hansardDescriptor).first
-        selectedSubject = try? modelContext.fetch(subjectDescriptor).first
+        let (hansard, subject) = viewModel.resolveDebate(result, modelContext: modelContext)
+        selectedHansard = hansard
+        selectedSubject = subject
     }
 }

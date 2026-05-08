@@ -5,6 +5,7 @@
 
 import Foundation
 import Observation
+import SwiftData
 
 // Filters cached parliamentary data across four corpora: MPs, votes, bills, debate subjects.
 // Results per section are capped to keep SwiftUI responsive on large datasets.
@@ -12,6 +13,7 @@ import Observation
 @Observable
 class SearchViewModel {
     var searchText = ""
+    var searchResults = SearchResults()
 
     private static let maxPerSection = 50
     private var searchHansard: any SearchHansardUseCase = SearchHansard.empty()
@@ -57,14 +59,17 @@ class SearchViewModel {
         self.searchHansard = searchHansard
     }
 
-    func results(
+    func updateResults(
         members: [ParliamentMember],
         votes: [RecordedVote],
         bills: [Bill],
         query: String? = nil
-    ) -> SearchResults {
+    ) {
         let q = (query ?? searchText).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard q.count >= 2 else { return SearchResults() }
+        guard q.count >= 2 else {
+            searchResults = SearchResults()
+            return
+        }
 
         var out = SearchResults()
 
@@ -105,6 +110,23 @@ class SearchViewModel {
             )
         }
 
-        return out
+        searchResults = out
+    }
+    
+    func resolveDebate(_ result: DebateResult, modelContext: ModelContext) -> (Hansard?, SubjectOfBusiness?) {
+        let hansardDate = result.hansardDate
+        let subjectID = result.subjectID
+
+        let hansardDescriptor = FetchDescriptor<Hansard>(
+            predicate: #Predicate { $0.date == hansardDate }
+        )
+        let subjectDescriptor = FetchDescriptor<SubjectOfBusiness>(
+            predicate: #Predicate { $0.hansardID == subjectID }
+        )
+
+        let hansard = try? modelContext.fetch(hansardDescriptor).first
+        let subject = try? modelContext.fetch(subjectDescriptor).first
+        
+        return (hansard, subject)
     }
 }
