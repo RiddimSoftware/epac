@@ -27,6 +27,10 @@ struct SearchView: View {
         viewModel.updateResults(members: members, votes: votes, bills: bills, query: debouncedQuery)
     }
 
+    private func updateSearchInputs() {
+        viewModel.updateSearchInputs(members: members, votes: votes, bills: bills)
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -63,21 +67,31 @@ struct SearchView: View {
                 members = (try? modelContext.fetch(
                     FetchDescriptor<ParliamentMember>(sortBy: [SortDescriptor(\ParliamentMember.lastName)])
                 )) ?? []
+                updateSearchInputs()
             }
             if votes.isEmpty {
                 votes = (try? modelContext.fetch(
                     FetchDescriptor<RecordedVote>(sortBy: [SortDescriptor(\RecordedVote.date, order: .reverse)])
                 )) ?? []
+                updateSearchInputs()
             }
-            viewModel.configure(searchHansard: SearchHansard(store: SwiftDataHansardSearchStore(modelContext: modelContext)))
+            viewModel.configure(
+                searchHansard: SearchHansard(
+                    store: CachingHansardSearchStore(
+                        base: SwiftDataHansardSearchStore(modelContext: modelContext)
+                    )
+                )
+            )
             if bills.isEmpty {
                 bills = (try? await BillsService.fetchBills()) ?? []
+                updateSearchInputs()
             }
         }
         .onAppear {
             if let query = router.pendingSearchQuery {
                 viewModel.searchText = query
                 debouncedQuery = query
+                updateSearch()
                 router.pendingSearchQuery = nil
             }
         }

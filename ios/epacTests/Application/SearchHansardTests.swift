@@ -25,6 +25,19 @@ struct SearchHansardTests {
         #expect(useCase.execute(query: "h").isEmpty)
         #expect(useCase.execute(query: " ").isEmpty)
     }
+
+    @Test func cachingStoreLoadsBaseDocumentsOnlyOnce() throws {
+        let base = CountingHansardSearchStore(documents: [
+            HansardSearchDocument(subjectID: "a", subjectTitle: "Housing affordability", hansardDate: .now)
+        ])
+        let store = CachingHansardSearchStore(base: base)
+
+        let first = try store.loadDocuments()
+        let second = try store.loadDocuments()
+
+        #expect(first == second)
+        #expect(base.loadCount == 1)
+    }
 }
 
 private struct StubHansardSearchStore: HansardSearchStore {
@@ -32,5 +45,20 @@ private struct StubHansardSearchStore: HansardSearchStore {
 
     func loadDocuments() throws -> [HansardSearchDocument] {
         documents
+    }
+}
+
+@MainActor
+private final class CountingHansardSearchStore: HansardSearchStore {
+    let documents: [HansardSearchDocument]
+    private(set) var loadCount = 0
+
+    init(documents: [HansardSearchDocument]) {
+        self.documents = documents
+    }
+
+    func loadDocuments() throws -> [HansardSearchDocument] {
+        loadCount += 1
+        return documents
     }
 }

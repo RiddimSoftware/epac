@@ -1,10 +1,57 @@
 @testable import epac
+import Foundation
 import SwiftData
 import Testing
-import Foundation
 
 @MainActor
 struct SearchViewModelTests {
+    @Test func configureRefreshesExistingDebateQuery() {
+        let viewModel = SearchViewModel()
+
+        viewModel.updateResults(members: [], votes: [], bills: [], query: "housing")
+        #expect(viewModel.searchResults.debates.isEmpty)
+
+        viewModel.configure(searchHansard: StubSearchHansardUseCase(matches: [
+            SearchHansard.Match(
+                subjectID: "subject-1",
+                subjectTitle: "Housing affordability",
+                hansardDate: Date(timeIntervalSince1970: 1_000)
+            )
+        ]))
+
+        #expect(viewModel.searchResults.debates.map(\.subjectID) == ["subject-1"])
+    }
+
+    @Test func updatingInputsRefreshesExistingBillQuery() {
+        let viewModel = SearchViewModel()
+
+        viewModel.updateResults(members: [], votes: [], bills: [], query: "C-42")
+        #expect(viewModel.searchResults.bills.isEmpty)
+
+        viewModel.updateSearchInputs(
+            members: [],
+            votes: [],
+            bills: [
+                Bill(
+                    id: "C-42",
+                    number: "C-42",
+                    title: "An Act respecting search regressions",
+                    sponsorName: "Jane Doe",
+                    status: .inProgress,
+                    currentStage: "First Reading",
+                    introducedDate: nil,
+                    stages: [],
+                    legisInfoURL: URL(string: "https://example.com/bills/C-42")!,
+                    billType: .privateMember,
+                    parliament: 44,
+                    session: 1
+                )
+            ]
+        )
+
+        #expect(viewModel.searchResults.bills.map(\.bill.number) == ["C-42"])
+    }
+
     @Test func resolveDebateReturnsMatchingModels() throws {
         let container = try ModelContainer(
             for: Hansard.self, SubjectOfBusiness.self,
@@ -38,5 +85,14 @@ struct SearchViewModelTests {
         
         #expect(resolvedHansard?.hansardID == "h1")
         #expect(resolvedSubject?.hansardID == targetSubjectID)
+    }
+}
+
+@MainActor
+private struct StubSearchHansardUseCase: SearchHansardUseCase {
+    let matches: [SearchHansard.Match]
+
+    func execute(query: String) -> [SearchHansard.Match] {
+        matches
     }
 }
