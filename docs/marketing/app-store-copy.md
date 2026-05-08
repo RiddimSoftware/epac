@@ -8,7 +8,7 @@ Maximum 170 characters.
 **Date:** 2026-05-07
 **Text:** Parliament is sitting. Follow every vote, read every debate, track every bill — verified from Hansard and official sources. Updated daily.
 
-**Monthly refresh hook:** Run `python3 scripts/marketing/check_promotional_text_staleness.py --create-linear-issue` during the ASO scorecard / monthly report cycle. If the text is older than 30 days or contains stale factual wording, this will automatically file a Linear ASO refresh task. Ensure `LINEAR_API_KEY` is set in your environment.
+**Monthly refresh hook:** Automated via `.github/workflows/aso-staleness-check.yml`. The scheduled check runs daily; if the text is older than 30 days, contains stale factual wording, or claims "Parliament is sitting" during an adjournment (verified via the House of Commons calendar), it automatically files a Linear ASO refresh task.
 
 ## Archive
 

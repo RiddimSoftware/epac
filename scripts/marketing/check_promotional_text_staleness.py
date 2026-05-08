@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 import json
 import os
 from pathlib import Path
@@ -36,9 +36,11 @@ STALE_PATTERNS = {
     "hard-coded Parliament number": re.compile(r"\b\d{1,2}(?:st|nd|rd|th) Parliament\b", re.IGNORECASE),
     "uses 'free'": re.compile(r"\bfree\b", re.IGNORECASE),
 }
+SITTING_CLAIM_PATTERN = re.compile(r"\bsitting\b", re.IGNORECASE)
 
 LINEAR_GRAPHQL_URL = "https://api.linear.app/graphql"
 LINEAR_EPAC_TEAM_KEY = "EPAC"
+SITTING_CALENDAR_URL_TEMPLATE = "https://www.ourcommons.ca/en/sitting-calendar/{year}"
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,7 @@ class FreshnessReport:
     last_refreshed_at: date
     age_days: int
     warnings: list[str]
+    is_sitting_confirmed: bool | None = None
 
     @property
     def is_stale(self) -> bool:
@@ -87,6 +90,11 @@ def parse_args() -> argparse.Namespace:
             "Requires LINEAR_API_KEY env var."
         ),
     )
+    parser.add_argument(
+        "--skip-calendar-check",
+        action="store_true",
+        help="Do not fetch the sitting calendar from ourcommons.ca",
+    )
     return parser.parse_args()
 
 
@@ -117,20 +125,75 @@ def last_refresh_date(path: Path) -> date:
         raise ValueError(f"{date_file} must contain a YYYY-MM-DD date; got: {raw!r}") from exc
 
 
+def fetch_sitting_days(year: int) -> set[str]:
+    """Fetch the annual sitting calendar and return a set of ISO date strings for sitting days."""
+    url = SITTING_CALENDAR_URL_TEMPLATE.format(year=year)
+    try:
+        req = Request(url, headers={"User-Agent": "epac-staleness-checker/1.0"})
+        with urlopen(req, timeout=15) as resp:
+            html = resp.read().decode("utf-8")
+        
+        # Regex matches dates in class attributes that also contain 'chamber-meeting'.
+        # Example: <div class="2026-05-08 ... chamber-meeting ...">
+        pattern = re.compile(
+            r'class=["\'][^"\']*\b(\d{4}-\d{2}-\d{2})\b[^"\']*\bchamber-meeting\b',
+            re.IGNORECASE | re.DOTALL
+        )
+        return set(pattern.findall(html))
+    except (URLError, Exception) as exc:
+        print(f"Warning: Could not fetch sitting calendar from {url}: {exc}", file=sys.stderr)
+        return set()
+
+
+def check_sitting_claim(text: str, today: date, sitting_days: set[str]) -> str | None:
+    """Verify 'sitting' claims against the calendar. Returns a warning string if stale."""
+    if not SITTING_CLAIM_PATTERN.search(text):
+        return None
+    
+    # If we couldn't fetch the calendar, we can't confirm/deny.
+    if not sitting_days:
+        return None
+
+    # We allow a +/- 3 day window to account for weekends and short adjournments
+    # while the promotional text remains 'close enough' to being true.
+    for i in range(-3, 4):
+        check_date = today + timedelta(days=i)
+        if check_date.isoformat() in sitting_days:
+            return None
+
+    return "claims Parliament is sitting, but no chamber meetings found within +/- 3 days"
+
+
 def warning_labels(text: str) -> list[str]:
     return [label for label, pattern in STALE_PATTERNS.items() if pattern.search(text)]
 
 
-def build_report(path: Path, today: date) -> FreshnessReport:
+def build_report(path: Path, today: date, skip_calendar: bool = False) -> FreshnessReport:
     text = path.read_text(encoding="utf-8").strip()
     refreshed_at = last_refresh_date(path)
     age_days = (today - refreshed_at).days
+    
+    warnings = warning_labels(text)
+    
+    is_sitting_confirmed = None
+    if not skip_calendar and SITTING_CLAIM_PATTERN.search(text):
+        sitting_days = fetch_sitting_days(today.year)
+        # If today is near the end of the year, we might need next year too, 
+        # but for staleness 3 days is usually fine.
+        sitting_warning = check_sitting_claim(text, today, sitting_days)
+        if sitting_warning:
+            warnings.append(sitting_warning)
+            is_sitting_confirmed = False
+        elif sitting_days:
+            is_sitting_confirmed = True
+
     return FreshnessReport(
         path=path,
         text=text,
         last_refreshed_at=refreshed_at,
         age_days=age_days,
-        warnings=warning_labels(text),
+        warnings=warnings,
+        is_sitting_confirmed=is_sitting_confirmed,
     )
 
 
@@ -205,11 +268,18 @@ def create_linear_issue(report: FreshnessReport, api_key: str) -> str:
 
 
 def render_text(report: FreshnessReport) -> str:
+    status = "REFRESH REQUIRED" if report.is_stale else "fresh"
+    if report.is_sitting_confirmed is False:
+        status = "STALE (SITTING CLAIM FAILED)"
+
     lines = [
         f"Promotional text file: {report.path}",
         f"Last App Store Connect submission: {report.last_refreshed_at.isoformat()} ({report.age_days} days ago)",
-        f"Freshness status: {'REFRESH REQUIRED' if report.is_stale else 'fresh'}",
+        f"Freshness status: {status}",
     ]
+    if report.is_sitting_confirmed is True:
+        lines.insert(2, "Sitting status: Confirmed via House of Commons calendar")
+
     if report.warnings:
         lines.append("Stale-copy risks: " + ", ".join(report.warnings))
     lines.append(f"Current text: {report.text}")
@@ -229,6 +299,7 @@ def render_json(report: FreshnessReport) -> str:
         "age_days": report.age_days,
         "warnings": report.warnings,
         "is_stale": report.is_stale,
+        "is_sitting_confirmed": report.is_sitting_confirmed,
     }
     return json.dumps(payload, indent=2)
 
@@ -236,7 +307,7 @@ def render_json(report: FreshnessReport) -> str:
 def main() -> int:
     args = parse_args()
     try:
-        report = build_report(args.path, args.today)
+        report = build_report(args.path, args.today, skip_calendar=args.skip_calendar_check)
     except (FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

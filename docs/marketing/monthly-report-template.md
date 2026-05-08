@@ -122,7 +122,9 @@ Fill this section only in a Product Hunt launch month.
 - [ ] Review `docs/marketing/newsletter/welcome-sequence.md`; refresh stale
       parliamentary/lobbying facts and send a Mailchimp test if any email copy
       changes.
-- [ ] Run `python3 scripts/marketing/check_promotional_text_staleness.py --create-linear-issue`; if the promotional text is older than 30 days or includes stale factual wording, this will automatically file a Linear ASO refresh task. Ensure `LINEAR_API_KEY` is set in your environment.
+- [ ] Confirm no open "ASO: Refresh en-CA promotional text" tasks exist in
+      Linear. (This check is automated via `.github/workflows/aso-staleness-check.yml`, 
+      which files a task if the copy is stale or the sitting-status claim is false.)
 
 ## Carried forward from last month
 

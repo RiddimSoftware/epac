@@ -2,7 +2,7 @@
 
 **Status:** Ready to upload to App Store Connect  
 **Locale:** en-CA (primary). French (fr-CA) translation needed — see EPAC-77.  
-**Last updated:** 2026-04-27
+**Last updated:** 2026-05-07
 
 ---
 
