@@ -25,7 +25,8 @@ platform :ios do
       next unless File.directory?(dir)
       locale = File.basename(dir)
       unless supported_locales.include?(locale)
-        UI.user_error!("Localization '#{locale}' found in repo but not on App Store Connect editable version. Create it manually in ASC first to avoid global name conflicts.")
+        UI.message("Localization '#{locale}' found in repo but not on App Store Connect editable version. Auto-creating it...")
+        version.create_app_store_version_localization(attributes: { locale: locale })
       end
     end
 
