@@ -2,11 +2,17 @@ SHELL := /bin/bash
 .PHONY: build deploy-simulator simulator test
 
 OUTPUT_DIR = .build
-SIM_UUID = 2D6396B5-48FF-418E-94F5-5EA2AA741AB5
+# Dynamically detect an available iPhone simulator
+AVAILABLE_SIM := $(shell xcrun simctl list devices available | grep -v unavailable | grep "iPhone" | head -1)
+DETECTED_SIM_NAME := $(shell echo '$(AVAILABLE_SIM)' | sed -E 's/^[[:space:]]+(.*) \([A-F0-9-]{36}\).*/\1/')
+DETECTED_SIM_UUID := $(shell echo '$(AVAILABLE_SIM)' | grep -oE '[A-F0-9-]{36}')
+
+SIM_NAME ?= $(DETECTED_SIM_NAME)
+SIM_UUID = $(shell xcrun simctl list devices available | grep -v unavailable | grep "$(SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_SIM_UUID)")
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
-DESTINATION = 'platform=iOS Simulator,name=iPhone 17 Pro Max'
+DESTINATION = 'platform=iOS Simulator,id=$(SIM_UUID)'
 
 build:
 	set -o pipefail && xcodebuild -project epac.xcodeproj -scheme epac -configuration Debug -sdk $(SDK) -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) build -quiet | xcbeautify --quiet
