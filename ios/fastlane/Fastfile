@@ -25,7 +25,16 @@ platform :ios do
       next unless File.directory?(dir)
       locale = File.basename(dir)
       unless supported_locales.include?(locale)
-        UI.user_error!("Localization '#{locale}' found in repo but not on App Store Connect editable version. Please create it manually in ASC first.")
+        UI.user_error!(
+          "Localization '#{locale}' found in repo but NOT in App Store Connect.\n\n" \
+          "DO NOT let fastlane auto-create it — Apple's create-localization endpoint runs a\n" \
+          "global app-name uniqueness check and will reject with 'Cannot add localization due\n" \
+          "to app name' (see docs/development/release-pipeline-gaps.md Gap 3).\n\n" \
+          "Operator steps:\n" \
+          "  1. Open https://appstoreconnect.apple.com → My Apps → ePac → App Store tab\n" \
+          "  2. Under the editable version, click '+' next to localizations and add '#{locale}'\n" \
+          "  3. Re-run: bundle exec fastlane deliver\n"
+        )
       end
     end
 
