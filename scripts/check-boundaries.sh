@@ -108,6 +108,16 @@ else
       pass "No pgx imports in $relative"
     fi
 
+    # Check: must not import APNs clients directly
+    APNS_IMPORTS=$(grep -rn \
+      '"github.com/sideshow/apns2' \
+      "$dir" 2>/dev/null || true)
+    if [[ -n "$APNS_IMPORTS" ]]; then
+      while IFS= read -r line; do fail "APNs client import in $relative: $line"; done <<< "$APNS_IMPORTS"
+    else
+      pass "No APNs client imports in $relative"
+    fi
+
     # Check: must not import net/http directly (should use a port)
     HTTP_IMPORTS=$(grep -rn \
       '"net/http"' \

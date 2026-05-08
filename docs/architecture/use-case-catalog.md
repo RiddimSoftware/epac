@@ -156,6 +156,9 @@ Ports: None.
 Primary adapters: Shared topic taxonomy parser.
 Current implementation:
   shared/topic-taxonomy/parliamentary_topics.json
+  backend/topic-notifier/topic_taxonomy_gen.go
+  backend/search/topic_taxonomy_gen.go
+  ios/epac/Model/ParliamentaryTopic.swift
 ```
 
 > **Policy notes:** Keywords are product policy, shared across iOS and backend adapters. Retain the existing `naturalresources` topic as canonical. Its stable ID is already stored in iOS user preferences and used by natural-resource context features, so the backend must adopt that same ID and keyword set instead of dropping it.
