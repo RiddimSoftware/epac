@@ -1,6 +1,6 @@
 # EPAC-1744 repo launch handoff
 
-This file captures the exact repo-level metadata and seeded `good first issue` drafts for the EPAC open-source launch surface.
+This file captures the exact repo-level metadata and seeded `good first issue` set for the EPAC open-source launch surface.
 
 ## Repository settings
 
@@ -11,7 +11,7 @@ Apply these values on `RiddimSoftware/epac`:
 - **Topics:** `ios`, `swift`, `civic-tech`, `canada`, `parliament`, `hansard`, `open-source`
 - **Issues:** enabled
 - **Discussions:** disabled
-- **Social preview image:** `docs/brand/github-social-preview-1280x640.png`
+- **Social preview image:** `docs/brand/github-social-preview-1280x640.png` (uploaded; live on the public repo page)
 
 ## Social preview asset
 
@@ -34,8 +34,10 @@ The live GitHub issues seeded for this launch are:
 - #384 — `Localize SittingCalendarView accessibility labels and hints`
 - #385 — `Localize HomeFeedView accessibility labels for today card and followed bills`
 - #386 — `Localize Toronto and Vancouver councillor card accessibility labels`
+- #394 — `Localize chat-toolbar and explainer accessibility copy`
+- #395 — `Remove the force-unwrapped source URL in VancouverVotesView`
 
-Each issue below is intentionally scoped to about 1–2 hours for a first-time contributor and should carry the `good first issue` label on GitHub.
+Each issue below is intentionally scoped to about 1–2 hours for a first-time contributor and carries the `good first issue` label on GitHub.
 
 ---
 
