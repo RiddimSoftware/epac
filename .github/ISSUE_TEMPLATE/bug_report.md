@@ -5,9 +5,9 @@ title: 'Bug: '
 labels: bug
 ---
 ## App version
-- [ ] iOS app version:
-- [ ] iOS version:
-- [ ] Device:
+* **iOS app version:** [e.g. 1.2.3]
+* **iOS version:** [e.g. 17.4]
+* **Device:** [e.g. iPhone 15 Pro]
 
 ## Repro steps
 1. 
@@ -17,4 +17,4 @@ labels: bug
 ## Actual behavior
 
 ## Screenshot
-- [ ] Attached (if applicable)
+[Add screenshot here if applicable]
