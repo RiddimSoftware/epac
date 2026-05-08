@@ -1,4 +1,9 @@
 ---
+workflow_template:
+  managed: true
+  source_ref: templates/WORKFLOW.template.md
+  version: sha256:d11e5afd0a04401bf1dfc5551d79866fe4458ba26b838060c58de56f3c0219fc
+  managed_block_sha256: 91732291ff28f1e12ddd3c68f59588c3db3d1b8ec43dd25dae576d61d31daf7e
 tracker:
   kind: linear
   endpoint: https://api.linear.app/graphql
@@ -34,10 +39,13 @@ repositories:
 reviewer:
   enabled: true
   polling_interval_ms: 30000
+  reserved_agent_slots: 4
   bot_identity_wrapper_path: /Users/sunny/code/agent-config/bin
   opener_allowlist:
     - riddim-developer-bot
     - app/riddim-developer-bot
+developer:
+  pr_fix_reserved_agent_slots: 4
 workspace:
   root: ./.symphony/workspaces
   repository_root: .
@@ -45,7 +53,15 @@ workspace:
   branch_prefix_template: claude
   use_git_worktree: true
   require_clean_root: true
-  reset_root_before_dispatch: true
+  # Optional destructive preflight for disposable root checkouts. When enabled,
+  # Symphony fetches origin/main, switches the root checkout back to main,
+  # hard-resets tracked changes, and removes untracked files except preserved paths.
+  root_repair:
+    enabled: false
+    remote: origin
+    preserve:
+      - .symphony/
+      - WORKFLOW.md
 hooks:
   timeout_ms: 60000
 agent:
@@ -54,13 +70,9 @@ agent:
       weight: 1
     - name: claude
       weight: 1
-    - name: gemini
-      weight: 1
-  max_concurrent_agents: 1
+  max_concurrent_agents: 10
   max_turns: 20
   max_retry_backoff_ms: 300000
-  max_resume_attempts: 5
-  max_fix_attempts: 3
   github_bot:
     enabled: true
     path_prefix: /Users/sunny/code/agent-config/bin
@@ -70,7 +82,6 @@ agent:
     git_author_email: developer-bot@riddimsoftware.com
   reviewer_bot:
     enabled: true
-    path_prefix: /Users/sunny/code/agent-config/bin
     aws_profile: riddim-agent
     expected_login: riddim-reviewer-bot[bot]
     git_author_name: riddim-reviewer-bot
@@ -91,15 +102,17 @@ claude:
   turn_timeout_ms: 3600000
 gemini:
   command: gemini
-  approval_mode: yolo
+  approval_mode: auto_edit
   skip_trust: true
+  include_directories:
+    - /Users/sunny/code
   turn_timeout_ms: 3600000
 server:
   port: 4781
 ---
 # epac Symphony Workflow
 
-You are coordinating Linear issue {{ issue.identifier }} for EPAC: {{ issue.title }}.
+You are implementing Linear issue {{ issue.identifier }} for epac: {{ issue.title }}.
 
 State: {{ issue.state }}
 Estimate: {{ issue.estimate }}
@@ -123,6 +136,58 @@ Before editing files:
 - Add a Linear comment with the selected provider, workspace path, and start time.
 - If the issue is not In Progress, stop and report the blocker.
 
+Repository rules:
+- Symphony starts you in an issue-specific git worktree. Do not edit the root checkout or create another worktree unless the issue explicitly requires it.
+- Keep the root checkout on main if you inspect it.
+- Keep each change scoped to one Linear issue and one pull request.
+- Treat the handoff context's routing decision as binding when present.
+- Use the current branch from the handoff context.
+- If the routing decision points at another repository, or if you can prove the routing evidence is wrong, stop and leave a blocking Linear comment instead of switching repos or opening a PR elsewhere.
+- If the handoff mode is `fix_existing_pr` or `resumed`: push fixes to the existing PR branch. Do not open a new PR under any circumstances.
+- If the issue estimate is missing in this prompt, treat it as the standard 8 complexity tier and mention the missing estimate in the PR body and a Linear comment.
+
+PR ownership lifecycle:
+Your responsibility is to own the PR from creation until one of these terminal
+conditions:
+- Symphony reviewer mode only acts on PRs labeled `autonomous`: it posts review
+  comments as `riddim-reviewer-bot[bot]` and, on approval, arms GitHub's native
+  auto-merge.
+- GitHub automerge completes the merge — stop and leave a summary comment in
+  Linear.
+- A reviewer blocks the PR with requested changes — push fixes and update your
+  Linear blocker comment.
+- A human-gated check requires manual intervention — leave a detailed Linear
+  comment with the exact action needed and stop.
+
+Do not manually merge the PR. GitHub automerge owns all merges. Your role is to
+push a shippable branch and keep the PR unblocked.
+
+PR handoff contract:
+- Create at least one commit for the issue before handoff.
+- Confirm the branch is clean with `git status --porcelain`.
+- Refresh the repo root with `git fetch origin main` and rebase the worktree branch onto `origin/main`.
+- Push the branch to origin before opening the PR.
+- Use plain `gh`; Symphony has already set `RIDDIM_DEV_BOT_GH=1` and verified the `gh agent-bot status` preflight so `gh pr create` opens as `riddim-developer-bot[bot]`.
+- Fresh run: open exactly one PR with `gh pr create --label autonomous`.
+- Fresh run: include `Reviewer-Boundary: review-only` in the PR body so the legacy developer-fix workflow skips this PR and Symphony's WakeDeveloperForPRAction owns fix cycles.
+- Resumed or fix_existing_pr run: push to the existing branch. Do not create a new PR.
+- Use the PR title format `[{{ issue.identifier }}]: <short description>`.
+- Include verification evidence and any skipped checks with reasons in the PR body.
+
+Durable state for resume:
+After opening or updating the PR, leave a Linear comment with:
+- Implementation notes and key decisions made.
+- Verification evidence (commands run and pass/fail results).
+- Tradeoffs or known limitations.
+- Any blockers or follow-up work required.
+
+This comment is the resume packet. A fresh agent session rebuilds context from
+it, so write it as a self-contained handoff — not a conversation summary.
+
+After posting the resume comment, stop. Do not wait for review, CI, automerge,
+or human confirmation.
+
+<!-- symphony-workflow:local-section id=purpose -->
 ## Purpose
 
 This repository is the epac implementation repository. It contains the SwiftUI
@@ -134,23 +199,15 @@ Symphony work here should produce product changes, backend changes, website
 changes, App Store metadata/assets, release-support changes, or repo
 maintenance that belongs in `RiddimSoftware/epac`.
 
+If the issue requires changes outside `RiddimSoftware/epac`, stop and leave a
+Linear comment asking for the ticket to be split or rerouted.
+<!-- /symphony-workflow:local-section -->
+
+<!-- symphony-workflow:local-section id=epac_repository_rules -->
 ## Repository Rules
 
-- The default and only target repository for EPAC implementation work is
-  `RiddimSoftware/epac`.
-- Keep each change scoped to one Linear issue, one target repository, and one
-  pull request.
-- Treat the handoff context's routing decision as binding when present.
-- If the routing decision points at another repository, or if you can prove the
-  routing evidence is wrong, stop and leave a blocking Linear comment instead
-  of switching repos or opening a PR elsewhere.
-- If the issue requires changes outside `RiddimSoftware/epac`, stop and leave a
-  Linear comment asking for the ticket to be split or rerouted.
-- If the handoff mode is `fix_existing_pr` or `resumed`, push fixes to the
-  existing PR branch. Do not open a new PR.
-- If the issue estimate is missing in this prompt, treat it as the standard 8
-  complexity tier and mention the missing estimate in the PR body and a Linear
-  comment.
+Additional rules beyond the standard repository rules above:
+
 - All user-facing civic content displayed by the app must trace to authoritative
   source data. Do not invent, summarize, or rewrite parliamentary content with
   LLM-generated text.
@@ -161,68 +218,9 @@ maintenance that belongs in `RiddimSoftware/epac`.
   deployment commands unless the issue explicitly authorizes that release or
   infrastructure action. When a human gate is required, leave a detailed Linear
   comment and stop.
+<!-- /symphony-workflow:local-section -->
 
-## Repository Discipline
-
-Symphony starts you in an issue-specific git worktree. Do not inspect, edit, or
-run commands from the root checkout. Do not create another worktree unless the
-issue explicitly requires it. Use the current branch from the handoff context.
-
-## Handoff Expectations
-
-When implementation is needed, the repo-scoped worker should:
-
-- make the smallest coherent change that satisfies the issue;
-- create at least one commit for the issue before handoff;
-- confirm the branch is clean with `git status --porcelain`;
-- from this worktree, run `git fetch origin main` and rebase the current branch
-  onto `origin/main`;
-- push the branch to origin before opening the PR;
-- use plain `gh`; Symphony has already set `RIDDIM_DEV_BOT_GH=1` and verified
-  the `gh agent-bot status` preflight so `gh pr create` opens as
-  `riddim-developer-bot[bot]`;
-- fresh run: open exactly one PR with `gh pr create --label autonomous`;
-- fresh run: include `Reviewer-Boundary: review-only` in the PR body so the
-  legacy developer-fix workflow skips this PR and Symphony's
-  WakeDeveloperForPRAction owns fix cycles;
-- resumed or fix_existing_pr run: push to the existing branch and do not create
-  a new PR;
-- use the PR title format `[{{ issue.identifier }}]: <short description>`;
-- include verification evidence and any skipped checks with reasons in the PR
-  body. For UI or screenshot changes, include before/after screenshots or a
-  short screen recording.
-
-## PR Ownership Lifecycle
-
-Your responsibility is to own the PR from creation until one of these terminal
-conditions:
-
-- GitHub automerge completes the merge: stop and leave a summary comment in
-  Linear.
-- A reviewer blocks the PR with requested changes: push fixes and update your
-  Linear blocker comment.
-- A human-gated check requires manual intervention: leave a detailed Linear
-  comment with the exact action needed and stop.
-
-Do not manually merge the PR. GitHub automerge owns all merges. Your role is to
-push a shippable branch and keep the PR unblocked.
-
-## Durable State For Resume
-
-After opening or updating the PR, leave a Linear comment with:
-
-- Implementation notes and key decisions made.
-- Verification evidence, including commands run and pass/fail results.
-- Screenshots or recordings for UI, screenshot, or App Store asset changes.
-- Tradeoffs or known limitations.
-- Any blockers or follow-up work required.
-
-This comment is the resume packet. A fresh agent session rebuilds context from
-it, so write it as a self-contained handoff, not a conversation summary.
-
-After posting the resume comment, stop. Do not wait for review, CI, automerge,
-or human confirmation.
-
+<!-- symphony-workflow:local-section id=verification_expectations -->
 ## Verification Expectations
 
 - For `WORKFLOW.md` changes, validate from `/Users/sunny/code/autopilot` with
@@ -242,22 +240,19 @@ or human confirmation.
   affected service tests, including `backend/openapi` when the contract changes.
 - For UI, App Store screenshot, or marketing asset changes, run the documented
   screenshot/evidence flow and include the resulting assets or links in the PR.
-- Report any verification that could not run with the exact command and reason.
+<!-- /symphony-workflow:local-section -->
 
+<!-- symphony-workflow:local-section id=bot_runbook -->
 ## Bot Environment and Runbook
 
-This workflow uses the org-standard developer-bot and reviewer-bot environment:
-
-- `agent.github_bot.enabled: true`
-- `agent.github_bot.path_prefix: /Users/sunny/code/agent-config/bin`
-- `agent.reviewer_bot.enabled: true`
-- `agent.reviewer_bot.path_prefix: /Users/sunny/code/agent-config/bin`
-- `agent.github_bot.aws_profile: riddim-agent`
-- expected developer login: `riddim-developer-bot[bot]`
-- expected reviewer login: `riddim-reviewer-bot[bot]`
-
-Validate and run this workflow with:
+This workflow uses the org-standard developer-bot and reviewer-bot environment.
+Validate and run with:
 
 - `cd /Users/sunny/code/autopilot && swift run symphonyd --validate-only /Users/sunny/code/epac/WORKFLOW.md`
 - `cd /Users/sunny/code/autopilot && swift run symphonyd /Users/sunny/code/epac/WORKFLOW.md --once`
 - `cd /Users/sunny/code/autopilot && swift run symphonyd /Users/sunny/code/epac/WORKFLOW.md`
+<!-- /symphony-workflow:local-section -->
+
+Verification expectations:
+- See the Verification Expectations section in this prompt for area-specific commands.
+- Report any verification that could not run with the exact command and reason.
