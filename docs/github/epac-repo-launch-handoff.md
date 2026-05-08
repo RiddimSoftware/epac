@@ -51,7 +51,7 @@ Localize SittingCalendarView accessibility labels and hints
 ## Acceptance criteria
 
 - Replace the hardcoded English accessibility strings in `SittingCalendarView.swift` with localization keys.
-- Add matching entries to both `ios/epac/en.lproj/Localizable.strings` and `ios/epac/fr-CA.lproj/Localizable.strings`.
+- Add matching entries to both `ios/epac/en.lproj/Localizable.strings` and `ios/epac/fr.lproj/Localizable.strings`.
 - Cover the Today / Upcoming legend, year navigation, and refresh/loading controls that currently use string literals.
 - Run `python3 scripts/localization/check_localizations.py --github-warnings` and confirm no missing keys.
 - Run `swiftlint --strict ios/epac/Views/Calendar/SittingCalendarView.swift` and confirm zero violations.
