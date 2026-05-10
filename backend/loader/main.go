@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -46,9 +47,21 @@ type MemberArray struct {
 	Members []Member `xml:"MemberOfParliament"`
 }
 
+type PBOPublication struct {
+	ID                  string  `json:"id"`
+	Title               string  `json:"title"`
+	PublicationDate     *string `json:"publication_date"`
+	MethodologyCategory *string `json:"methodology_category"`
+	SourceURL           string  `json:"source_url"`
+	PDFURL              *string `json:"pdf_url"`
+	SummaryText         *string `json:"summary_text"`
+	ContentHash         string  `json:"content_hash"`
+}
+
 func main() {
 	membersPath := flag.String("members", "../../data/members/all.xml", "path to members all.xml")
 	speechesDir := flag.String("speeches", "../../data/hansard", "directory containing Hansard XML files")
+	pboPath := flag.String("pbo", "", "path to PBO publications JSON file")
 	flag.Parse()
 
 	passedFlags := make(map[string]bool)
@@ -109,6 +122,16 @@ func main() {
 			} else {
 				fmt.Printf("  Successfully upserted %d entries\n", n)
 			}
+		}
+	}
+
+	if passedFlags["pbo"] {
+		fmt.Printf("Loading PBO publications from %s...\n", *pboPath)
+		if n, err := loadPBO(ctx, conn, *pboPath); err != nil {
+			fmt.Printf("Error loading PBO publications: %v\n", err)
+			recordHealth(ctx, conn, "pbo-publications", 0, err)
+		} else {
+			recordHealth(ctx, conn, "pbo-publications", n, nil)
 		}
 	}
 }
@@ -459,6 +482,77 @@ func loadMembers(ctx context.Context, conn *pgx.Conn, filename string) error {
 	return err
 }
 
+func loadPBO(ctx context.Context, conn *pgx.Conn, filename string) (int, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	var publications []PBOPublication
+	if err := json.NewDecoder(f).Decode(&publications); err != nil {
+		return 0, err
+	}
+
+	batch := &pgx.Batch{}
+	for _, pub := range publications {
+		batch.Queue(`
+            INSERT INTO pbo_publications
+                (id, title, publication_date, methodology_category,
+                 source_url, pdf_url, summary_text, content_hash, ingested_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            ON CONFLICT (source_url) DO UPDATE SET
+                title                = EXCLUDED.title,
+                publication_date     = EXCLUDED.publication_date,
+                methodology_category = EXCLUDED.methodology_category,
+                pdf_url              = EXCLUDED.pdf_url,
+                summary_text         = EXCLUDED.summary_text,
+                content_hash         = EXCLUDED.content_hash,
+                ingested_at          = NOW()
+            WHERE pbo_publications.content_hash <> EXCLUDED.content_hash
+               OR pbo_publications.pdf_url IS DISTINCT FROM EXCLUDED.pdf_url
+               OR pbo_publications.summary_text IS DISTINCT FROM EXCLUDED.summary_text
+               OR pbo_publications.methodology_category IS DISTINCT FROM EXCLUDED.methodology_category
+        `, pub.ID, pub.Title, pub.PublicationDate, pub.MethodologyCategory, pub.SourceURL, pub.PDFURL, pub.SummaryText, pub.ContentHash)
+	}
+
+	br := conn.SendBatch(ctx, batch)
+	defer br.Close()
+
+	inserted := 0
+	for i := 0; i < len(publications); i++ {
+		if _, err := br.Exec(); err != nil {
+			return inserted, fmt.Errorf("upsert %d: %w", i, err)
+		}
+		inserted++
+	}
+	fmt.Printf("  Successfully upserted %d PBO publications\n", inserted)
+	return inserted, nil
+}
+
+func recordHealth(ctx context.Context, conn *pgx.Conn, name string, count int, runErr error) {
+	now := time.Now().UTC()
+	var errMsg *string
+	var successAt *time.Time
+	var recordCount *int
+	if runErr == nil {
+		successAt = &now
+		recordCount = &count
+	} else {
+		s := runErr.Error()
+		errMsg = &s
+	}
+	_, _ = conn.Exec(ctx, `
+		INSERT INTO pipeline_health (name, last_run_at, last_success_at, last_error, record_count, expected_interval_hours)
+		VALUES ($1, $2, $3, $4, $5, 24)
+		ON CONFLICT (name) DO UPDATE SET
+			last_run_at     = EXCLUDED.last_run_at,
+			last_success_at = COALESCE(EXCLUDED.last_success_at, pipeline_health.last_success_at),
+			last_error      = EXCLUDED.last_error,
+			record_count    = COALESCE(EXCLUDED.record_count, pipeline_health.record_count)
+	`, name, now, successAt, errMsg, recordCount)
+}
+
 func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 	_, err := conn.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS members (
@@ -502,6 +596,18 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 			) STORED
 		);
 
+        CREATE TABLE IF NOT EXISTS pbo_publications (
+            id                    TEXT PRIMARY KEY,
+            title                 TEXT NOT NULL,
+            publication_date      DATE,
+            methodology_category  TEXT,
+            source_url            TEXT NOT NULL UNIQUE,
+            pdf_url               TEXT,
+            summary_text          TEXT,
+            content_hash          TEXT NOT NULL,
+            ingested_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+
 		ALTER TABLE speeches
 			ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en',
 			ADD COLUMN IF NOT EXISTS search_vector_en TSVECTOR GENERATED ALWAYS AS (
@@ -540,6 +646,9 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 
 		CREATE INDEX IF NOT EXISTS speeches_subject_idx
 			ON speeches(subject_title);
+
+        CREATE INDEX IF NOT EXISTS idx_pbo_pub_date ON pbo_publications(publication_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_pbo_category ON pbo_publications(methodology_category);
 	`)
 	return err
 }
