@@ -2,13 +2,13 @@
 //  OnboardingView.swift
 //  epac
 //
-//  6-step onboarding flow (EPAC-435):
-//  1. Welcome — value prop "Canada's parliament, in your pocket"
-//  2. Postal code — riding lookup (reuses PostalCodeViewModel)
+//  6-step onboarding flow (EPAC-621):
+//  1. Welcome — one-line value prop "Canada's parliament, in your pocket"
+//  2. Postal code — capture for riding lookup
 //  3. MP confirm — "Your MP is X — follow?"
-//  4. Topics — chip picker, 1+ required
-//  5. Notifications — per-category toggles (daily digest, MP votes, bill status)
-//  6. Home — completion auto-navigates to Home (no extra screen needed)
+//  4. Topics — pick 1+ topics to follow
+//  5. Notifications — per-category toggles
+//  6. Home — land on home (triggered by completion)
 //
 //  Each step logs a telemetry event. Every step has a Skip path.
 //
@@ -33,16 +33,20 @@ struct OnboardingView: View {
         TabView(selection: $page) {
             welcomeScreen.tag(0)
             postalCodeScreen.tag(1)
-            topicsScreen.tag(2)
-            notificationsScreen.tag(3)
-            completionScreen.tag(4)
+            mpConfirmScreen.tag(2)
+            topicsScreen.tag(3)
+            notificationsScreen.tag(4)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .overlay(alignment: .topTrailing) {
-            if page < totalPages - 1 {
+            if page < totalPages {
                 Button(NSLocalizedString("onboarding.skip", comment: "")) {
                     Log.info("onboarding.step.\(page).skipped")
-                    complete()
+                    if page == totalPages - 1 {
+                        complete()
+                    } else {
+                        advance()
+                    }
                 }
                 .font(.epacSubheadline)
                 .foregroundStyle(Color.epacText.secondary)
@@ -81,16 +85,16 @@ struct OnboardingView: View {
             Spacer()
             VStack(spacing: EpacSpacing.xl) {
                 Image(systemName: "building.columns.fill")
-                    .font(.system(size: 64))
+                    .font(.system(size: 80))
                     .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
 
-                VStack(spacing: EpacSpacing.s) {
+                VStack(spacing: EpacSpacing.m) {
                     Text(NSLocalizedString("onboarding.welcome.title", comment: ""))
                         .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
 
-                    Text(NSLocalizedString("onboarding.welcome.tagline", comment: ""))
+                    Text(NSLocalizedString("onboarding.welcome.oneLineValueProp", comment: ""))
                         .font(.epacHeadline)
                         .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
@@ -104,12 +108,13 @@ struct OnboardingView: View {
                     DataPointRow(icon: "person.2.badge.key.fill",
                                  text: NSLocalizedString("onboarding.what.point3", comment: ""))
                 }
-                .padding(.horizontal, EpacSpacing.s)
+                .padding(.top, EpacSpacing.l)
 
                 Text(NSLocalizedString("onboarding.what.trust", comment: ""))
                     .font(.epacCaption)
                     .foregroundStyle(Color.epacText.secondary)
                     .multilineTextAlignment(.center)
+                    .padding(.top, EpacSpacing.m)
             }
             .padding(.horizontal, EpacSpacing.xl)
 
@@ -155,10 +160,10 @@ struct OnboardingView: View {
                             .padding()
                             .background(Color.epacSurface.elevated)
                             .cornerRadius(12)
-                            .onSubmit { Task { await postalCodeVM.lookup(modelContext: modelContext) } }
+                            .onSubmit { lookupAndAdvance() }
 
                         Button {
-                            Task { await postalCodeVM.lookup(modelContext: modelContext) }
+                            lookupAndAdvance()
                         } label: {
                             Group {
                                 if postalCodeVM.isLoading {
@@ -185,75 +190,116 @@ struct OnboardingView: View {
                             .padding(.horizontal, EpacSpacing.l)
                     }
 
-                    if let result = postalCodeVM.result {
-                        mpResultCard(result)
-                            .padding(.horizontal, EpacSpacing.l)
-                    }
-
                     Spacer(minLength: 80)
                 }
             }
 
-            if postalCodeVM.result == nil {
-                ContinueButton(label: NSLocalizedString("onboarding.skip", comment: ""),
-                               style: .secondary) {
-                    Log.info("onboarding.step.1.skipped")
-                    advance()
-                }
-                .padding(.horizontal, EpacSpacing.l)
-                .padding(.bottom, 60)
+            ContinueButton(label: NSLocalizedString("onboarding.skip", comment: ""),
+                           style: .secondary) {
+                Log.info("onboarding.step.1.skipped")
+                advance()
             }
+            .padding(.horizontal, EpacSpacing.l)
+            .padding(.bottom, 60)
         }
     }
 
-    private func mpResultCard(_ result: RidingLookupResult) -> some View {
-        VStack(spacing: EpacSpacing.m) {
-            VStack(spacing: EpacSpacing.xs) {
-                Text(result.ridingName)
-                    .font(.epacTitle.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                if !result.memberName.isEmpty {
-                    Text(result.memberName)
-                        .font(.epacSubheadline)
-                        .foregroundStyle(Color.epacText.secondary)
-                    if !result.partyName.isEmpty {
-                        Text(result.partyName)
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacText.secondary)
-                    }
-                } else {
-                    Text(NSLocalizedString("riding.result.mpLoadingLater", comment: ""))
-                        .font(.epacCaption)
-                        .foregroundStyle(Color.epacText.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.epacSurface.elevated)
-            .cornerRadius(12)
-
-            ContinueButton(label: NSLocalizedString("onboarding.mp.follow", comment: "")) {
-                postalCodeVM.confirm()
-                HapticEngine.success()
-                // Follow the MP in MemberFollowStore using the saved name to resolve memberID.
-                if !result.memberName.isEmpty {
-                    let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-                    if let mp = members.first(where: {
-                        $0.name.localizedCaseInsensitiveContains(result.memberName) ||
-                        result.memberName.localizedCaseInsensitiveContains($0.lastName)
-                    }) {
-                        MemberFollowStore.shared.follow(mp.memberID)
-                        Log.info("onboarding.step.1.mpFollowed memberID=\(mp.memberID)")
-                    }
-                }
+    private func lookupAndAdvance() {
+        Task {
+            await postalCodeVM.lookup(modelContext: modelContext)
+            if postalCodeVM.result != nil {
                 Log.info("onboarding.step.1.completed")
                 advance()
             }
         }
     }
 
-    // MARK: - Step 3: Topics
+    // MARK: - Step 3: MP Confirm
+
+    private var mpConfirmScreen: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            if let result = postalCodeVM.result {
+                VStack(spacing: EpacSpacing.xl) {
+                    Image(systemName: "person.fill.viewfinder")
+                        .font(.system(size: 64))
+                        .foregroundStyle(Color.epacBrand.accent)
+                        .accessibilityHidden(true)
+
+                    VStack(spacing: EpacSpacing.s) {
+                        Text(String(format: NSLocalizedString("onboarding.mp.confirm.title", comment: ""),
+                                    result.memberName.isEmpty ? result.ridingName : result.memberName))
+                            .font(.epacDisplay.bold())
+                            .multilineTextAlignment(.center)
+
+                        Text(NSLocalizedString("onboarding.mp.confirm.subtitle", comment: ""))
+                            .font(.epacHeadline)
+                            .foregroundStyle(Color.epacText.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    if !result.memberName.isEmpty {
+                        VStack(spacing: EpacSpacing.xs) {
+                            Text(result.ridingName)
+                                .font(.epacSubheadline)
+                                .foregroundStyle(Color.epacText.secondary)
+                            Text(result.partyName)
+                                .font(.epacCaption)
+                                .foregroundStyle(Color.epacText.secondary)
+                        }
+                    } else {
+                        Text(NSLocalizedString("riding.result.mpLoadingLater", comment: ""))
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
+                    }
+                }
+                .padding(.horizontal, EpacSpacing.xl)
+            } else {
+                // If they reached here without a result (skipped step 2), show a generic message
+                VStack(spacing: EpacSpacing.m) {
+                    Text(NSLocalizedString("myMP.noMP.title", comment: ""))
+                        .font(.epacDisplay.bold())
+                    Text(NSLocalizedString("myMP.noMP.description", comment: ""))
+                        .font(.epacBody)
+                        .foregroundStyle(Color.epacText.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, EpacSpacing.xl)
+            }
+            Spacer()
+
+            VStack(spacing: EpacSpacing.m) {
+                if let result = postalCodeVM.result {
+                    ContinueButton(label: NSLocalizedString("onboarding.mp.confirm.follow", comment: "")) {
+                        postalCodeVM.confirm()
+                        HapticEngine.success()
+                        if !result.memberName.isEmpty {
+                            let members = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
+                            if let mp = members.first(where: {
+                                $0.name.localizedCaseInsensitiveContains(result.memberName) ||
+                                result.memberName.localizedCaseInsensitiveContains($0.lastName)
+                            }) {
+                                MemberFollowStore.shared.follow(mp.memberID)
+                                Log.info("onboarding.step.2.mpFollowed memberID=\(mp.memberID)")
+                            }
+                        }
+                        Log.info("onboarding.step.2.completed")
+                        advance()
+                    }
+                }
+
+                ContinueButton(label: NSLocalizedString("onboarding.mp.confirm.skip", comment: ""),
+                               style: .secondary) {
+                    Log.info("onboarding.step.2.skipped")
+                    advance()
+                }
+            }
+            .padding(.horizontal, EpacSpacing.l)
+            .padding(.bottom, 60)
+        }
+    }
+
+    // MARK: - Step 4: Topics
 
     private var topicsScreen: some View {
         VStack(spacing: 0) {
@@ -301,8 +347,12 @@ struct OnboardingView: View {
                            ? NSLocalizedString("onboarding.skip", comment: "")
                            : String(format: NSLocalizedString("onboarding.topics.follow", comment: ""),
                                     selectedTopics.count)) {
-                FollowTopic.live().execute(topicIDs: selectedTopics)
-                Log.info("onboarding.step.2.completed topicsFollowed=\(selectedTopics.count)")
+                if !selectedTopics.isEmpty {
+                    FollowTopic.live().execute(topicIDs: selectedTopics)
+                    Log.info("onboarding.step.3.completed topicsFollowed=\(selectedTopics.count)")
+                } else {
+                    Log.info("onboarding.step.3.skipped")
+                }
                 advance()
             }
             .padding(.horizontal, EpacSpacing.l)
@@ -310,7 +360,7 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: - Step 4: Notifications (per-category toggles)
+    // MARK: - Step 5: Notifications
 
     private var notificationsScreen: some View {
         VStack(spacing: 0) {
@@ -359,63 +409,16 @@ struct OnboardingView: View {
                 ContinueButton(label: NSLocalizedString("onboarding.notifications.allow", comment: "")) {
                     Task {
                         await notificationManager.requestAuthorization()
-                        Log.info("onboarding.step.3.completed notifAllowed=true")
-                        advance()
+                        Log.info("onboarding.step.4.completed notifAllowed=true")
+                        complete()
                     }
                 }
                 Button(NSLocalizedString("onboarding.notifications.skip", comment: "")) {
-                    Log.info("onboarding.step.3.skipped")
-                    advance()
+                    Log.info("onboarding.step.4.skipped")
+                    complete()
                 }
                 .font(.epacSubheadline)
                 .foregroundStyle(Color.epacText.secondary)
-            }
-            .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
-        }
-    }
-
-    // MARK: - Step 5: Completion
-
-    private var completionScreen: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: EpacSpacing.xl) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.epacBrand.positive)
-                    .accessibilityHidden(true)
-
-                VStack(spacing: EpacSpacing.s) {
-                    Text(NSLocalizedString("onboarding.promise.title", comment: ""))
-                        .font(.epacDisplay.bold())
-                        .multilineTextAlignment(.center)
-
-                    Text(NSLocalizedString("onboarding.promise.subtitle", comment: ""))
-                        .font(.epacBody)
-                        .foregroundStyle(Color.epacText.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                VStack(alignment: .leading, spacing: EpacSpacing.m) {
-                    PromiseRow(icon: "building.columns.fill",
-                               text: NSLocalizedString("onboarding.promise.point1", comment: ""))
-                    if !selectedTopics.isEmpty {
-                        PromiseRow(icon: "tag.fill",
-                                   text: String(format: NSLocalizedString("onboarding.promise.point2", comment: ""),
-                                                selectedTopics.count))
-                    }
-                    PromiseRow(icon: "lock.shield.fill",
-                               text: NSLocalizedString("onboarding.promise.point3", comment: ""))
-                }
-                .padding(.horizontal, EpacSpacing.s)
-            }
-            .padding(.horizontal, EpacSpacing.xl)
-            Spacer()
-
-            ContinueButton(label: NSLocalizedString("onboarding.promise.start", comment: "")) {
-                Log.info("onboarding.completed")
-                complete()
             }
             .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)
@@ -433,6 +436,7 @@ struct OnboardingView: View {
     }
 
     private func complete() {
+        Log.info("onboarding.completed")
         UserDefaults.standard.set(true, forKey: "epac.onboarding.completed")
         onComplete()
     }
@@ -449,24 +453,6 @@ private struct DataPointRow: View {
             Image(systemName: icon)
                 .font(.epacBody)
                 .foregroundStyle(Color.epacBrand.accent)
-                .frame(width: 24)
-                .accessibilityHidden(true)
-            Text(text)
-                .font(.epacSubheadline)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
-
-private struct PromiseRow: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: EpacSpacing.m) {
-            Image(systemName: icon)
-                .font(.epacBody)
-                .foregroundStyle(Color.epacBrand.positive)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             Text(text)

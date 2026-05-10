@@ -742,12 +742,12 @@
 "home.onThisDay.title" = "À cette date dans les législatures passées";
 "home.onThisDay.dismiss" = "Masquer À cette date";
 
-/* Onboarding v2 (EPAC-435) */
-"onboarding.welcome.title" = "Le Parlement canadien";
-"onboarding.welcome.tagline" = "Dans votre poche.";
-"onboarding.mp.follow" = "Suivre mon député →";
-"onboarding.topics.subtitle.v2" = "Choisissez les sujets qui vous importent. Soyez informé quand le Parlement en débat.";
-"onboarding.notifications.subtitle.v2" = "Choisissez ce que vous recevez. Vous pouvez modifier ces paramètres en tout temps dans Réglages.";
+/* Onboarding v2 (EPAC-621) */
+"onboarding.welcome.oneLineValueProp" = "Le Parlement du Canada dans votre poche";
+"onboarding.mp.confirm.title" = "Votre député est %@";
+"onboarding.mp.confirm.subtitle" = "Suivez-le pour être averti lorsqu'il prend la parole ou vote.";
+"onboarding.mp.confirm.follow" = "Suivre mon député";
+"onboarding.mp.confirm.skip" = "Plus tard";
 
 /* App Store screenshots (EPAC-1753) */
 "appStore.screenshot.page1.headline" = "Le Parlement dans votre poche";
