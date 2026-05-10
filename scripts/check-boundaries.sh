@@ -109,10 +109,14 @@ else
     fi
 
     # Check: must not import APNs clients directly
-    # Currently checks the standard Go APNs client 'github.com/sideshow/apns2'
-    APNS_IMPORTS=$(grep -rn \
-      '"github.com/sideshow/apns2' \
-      "$dir" 2>/dev/null || true)
+    # Catch both the third-party apns2 client and the repo-local topic-notifier
+    # module, which is where APNs delivery currently lives in this repo.
+    APNS_IMPORTS=$(
+      {
+        grep -rn '"github.com/sideshow/apns2' "$dir"
+        grep -rn '"epac/topic-notifier' "$dir"
+      } 2>/dev/null || true
+    )
     if [[ -n "$APNS_IMPORTS" ]]; then
       while IFS= read -r line; do fail "APNs client import in $relative: $line"; done <<< "$APNS_IMPORTS"
     else
