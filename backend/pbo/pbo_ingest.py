@@ -20,7 +20,6 @@ import argparse
 import hashlib
 import json
 import logging
-import os
 import re
 import ssl
 import sys
@@ -29,7 +28,6 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 

@@ -88,3 +88,5 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 *.sketch
 __pycache__
+backend/loader/loader
+backend/*/loader
