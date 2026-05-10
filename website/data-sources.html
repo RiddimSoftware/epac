@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Sources — epac</title>
+  <meta name="description" content="Every fact in epac traces to an official government source. See the full list of authoritative data sources powering the app.">
+  <link rel="canonical" href="https://epac.riddimsoftware.com/data-sources.html">
+  <link rel="stylesheet" href="default.css">
+  <style>
+    .page { max-width: 860px; margin: 0 auto; padding: 40px 6%; }
+    .page h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 12px; }
+    .page .lede { font-size: 1.2rem; opacity: 0.7; margin-bottom: 48px; line-height: 1.5; }
+    
+    .source-section { margin-bottom: 60px; }
+    .source-section h2 { font-size: 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; margin-bottom: 24px; }
+    
+    .source-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; }
+    .source-card { background: var(--card-bg, #f2f2f7); border-radius: 16px; padding: 24px; }
+    .source-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .source-card .agency { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; margin-bottom: 16px; display: block; }
+    .source-card p { font-size: 0.95rem; line-height: 1.6; opacity: 0.8; margin-bottom: 16px; }
+    .source-card .link { font-size: 0.9rem; color: var(--primary, #007aff); text-decoration: none; font-weight: 600; }
+    .source-card .link:hover { text-decoration: underline; }
+
+    footer { padding: 60px 6%; opacity: 0.4; font-size: 0.9rem; text-align: center; }
+  </style>
+  <script defer src="/open-in-app.js"></script>
+</head>
+<body>
+  <nav style="padding: 24px 6%; max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+    <a href="/" style="font-size: 1.6rem; font-weight: 800; text-decoration: none; color: inherit;">epac</a>
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <a href="/features.html" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">Features</a>
+      <a href="/faq.html" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">FAQ</a>
+      <a href="/blog/" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">Blog</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1>Authoritative Sources</h1>
+    <p class="lede">epac is built on the principle of verifiable truth. We do not use generative AI to summarize debates, and we do not use news reports as primary data. Every vote, speech, and expense traces directly to the official record.</p>
+
+    <div class="source-section">
+      <h2>Parliamentary Records</h2>
+      <div class="source-grid">
+        <div class="source-card">
+          <span class="agency">House of Commons</span>
+          <h3>Hansard (Debates)</h3>
+          <p>The official verbatim record of everything said in the House of Commons. Updated daily following each sitting.</p>
+          <a href="https://www.ourcommons.ca/documentviewer/en/house/latest/hansard" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">House of Commons</span>
+          <h3>Recorded Divisions</h3>
+          <p>The official voting record for every Member of Parliament on every bill, motion, and amendment.</p>
+          <a href="https://www.ourcommons.ca/members/en/votes" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Library of Parliament</span>
+          <h3>LEGISinfo</h3>
+          <p>The essential tool for finding information on legislation currently before Parliament, including bill text and status.</p>
+          <a href="https://www.parl.ca/legisinfo/" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">House of Commons</span>
+          <h3>Proactive Disclosure</h3>
+          <p>Quarterly reports on MP travel, hospitality, and contract expenditures.</p>
+          <a href="https://www.ourcommons.ca/ProactiveDisclosure/en/house-officers" class="link">View official record →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-section">
+      <h2>Government &amp; Agency Data</h2>
+      <div class="source-grid">
+        <div class="source-card">
+          <span class="agency">Elections Canada</span>
+          <h3>Electoral Data</h3>
+          <p>Official riding boundaries, election results, and political financing disclosures.</p>
+          <a href="https://www.elections.ca" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Statistics Canada</span>
+          <h3>Census &amp; Economic Data</h3>
+          <p>Riding-level census profiles, Consumer Price Index (CPI), and Employment Insurance (EI) statistics.</p>
+          <a href="https://www.statcan.gc.ca" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Commissioner of Lobbying</span>
+          <h3>Registry of Lobbyists</h3>
+          <p>Public record of lobbying registrations and communication reports filed by organizations and consultants.</p>
+          <a href="https://lobbycanada.gc.ca" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Canada Energy Regulator (CER)</span>
+          <h3>Energy Statistics</h3>
+          <p>Provincial and national energy production, consumption, and trade data.</p>
+          <a href="https://www.cer-rec.gc.ca" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">IRCC</span>
+          <h3>Immigration Statistics</h3>
+          <p>Monthly data on permanent residents, temporary residents, and citizenship grants.</p>
+          <a href="https://www.canada.ca/en/immigration-refugees-citizenship/corporate/reports-statistics.html" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Health Canada</span>
+          <h3>Health Advisories &amp; Stats</h3>
+          <p>Public health notices and provincial health indicator context.</p>
+          <a href="https://www.canada.ca/en/health-canada.html" class="link">View official record →</a>
+        </div>
+        <div class="source-card">
+          <span class="agency">Parliamentary Budget Officer</span>
+          <h3>Legislative Costing</h3>
+          <p>Independent economic and financial analysis provided to Parliament, including bill cost estimates.</p>
+          <a href="https://www.pbo-dpb.ca" class="link">View official record →</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>&copy; <a href="https://riddimsoftware.com" style="color: inherit; text-decoration: none;">Riddim Software</a>. Built for Canadians. &middot; <a href="/blog/" style="color: inherit; text-decoration: none;">Blog</a> &middot; <a href="/faq.html" style="color: inherit; text-decoration: none;">FAQ</a> &middot; <a href="/changelog.html" style="color: inherit; text-decoration: none;">Changelog</a> &middot; <a href="/data-sources.html" style="color: inherit; text-decoration: none;">Sources</a> &middot; <a href="/educators.html" style="color: inherit; text-decoration: none;">Educators</a> &middot; <a href="/subscribe.html" style="color: inherit; text-decoration: none;">Newsletter</a> &middot; <a href="/press.html" style="color: inherit; text-decoration: none;">Press</a> &middot; <a href="/privacy.html" style="color: inherit; text-decoration: none;">Privacy</a></p>
+  </footer>
+</body>
+</html>
