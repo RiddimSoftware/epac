@@ -1,0 +1,53 @@
+name: PBO Ingestion
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC (02:00 ET)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Run full backfill'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Extract PBO Publications
+        id: extract
+        run: |
+          BACKFILL_FLAG=""
+          if [[ "${{ github.event.inputs.backfill }}" != "true" && "${{ github.event_name }}" == "schedule" ]]; then
+            BACKFILL_FLAG="--no-backfill"
+          fi
+          python3 backend/pbo/pbo_ingest.py $BACKFILL_FLAG > pbo_publications.json
+
+      - name: Load PBO Publications
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL is not set. Skipping load."
+            exit 0
+          fi
+          cd backend/loader
+          go build -o loader main.go
+          ./loader -pbo ../../pbo_publications.json
