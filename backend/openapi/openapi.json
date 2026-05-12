@@ -17,6 +17,7 @@
     { "name": "Bills", "description": "Bill list and status metadata." },
     { "name": "Search", "description": "Postgres full-text search across Hansard speech records." },
     { "name": "Devices", "description": "Device registration for followed-topic notifications." },
+    { "name": "Fiscal", "description": "Government spending, estimates, and budgetary records." },
     { "name": "Operations", "description": "Health and API documentation endpoints." }
   ],
   "paths": {
@@ -603,6 +604,68 @@
         }
       }
     },
+    "/api/v1/estimates": {
+      "get": {
+        "tags": ["Fiscal"],
+        "summary": "List Main Estimates by fiscal year",
+        "operationId": "listEstimates",
+        "parameters": [
+          {
+            "name": "fiscal_year",
+            "in": "query",
+            "required": true,
+            "description": "Fiscal year in YYYY-YY format (e.g., 2024-25).",
+            "schema": { "type": "string", "example": "2024-25" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estimates for the fiscal year",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EstimatesResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
+    "/api/v1/estimates/{org_id}": {
+      "get": {
+        "tags": ["Fiscal"],
+        "summary": "Get estimates for a specific organization",
+        "operationId": "getOrganizationEstimates",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "description": "Canonical organization ID from GC InfoBase.",
+            "schema": { "type": "integer", "example": 1 }
+          },
+          {
+            "name": "fiscal_year",
+            "in": "query",
+            "description": "Optional fiscal year filter.",
+            "schema": { "type": "string", "example": "2024-25" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estimates for the organization",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EstimatesResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/search": {
       "get": {
         "tags": ["Search"],
@@ -1177,6 +1240,26 @@
           "expected_interval_hours": { "type": "integer" },
           "healthy": { "type": "boolean" },
           "stale_for": { "type": "string" }
+        }
+      },
+      "EstimatesResponse": {
+        "type": "object",
+        "required": ["estimates"],
+        "properties": {
+          "estimates": { "type": "array", "items": { "$ref": "#/components/schemas/Estimate" } }
+        }
+      },
+      "Estimate": {
+        "type": "object",
+        "required": ["fiscal_year", "organization_id", "organization_name", "vote_number", "vote_description", "authorities", "source"],
+        "properties": {
+          "fiscal_year": { "type": "string", "example": "2024-25" },
+          "organization_id": { "type": "integer", "example": 1 },
+          "organization_name": { "type": "string", "example": "Agriculture and Agri-Food Canada" },
+          "vote_number": { "type": "integer", "example": 1 },
+          "vote_description": { "type": "string", "example": "Operating expenditures" },
+          "authorities": { "type": "number", "example": 1234567.89 },
+          "source": { "type": "string", "example": "GC InfoBase" }
         }
       }
     }
