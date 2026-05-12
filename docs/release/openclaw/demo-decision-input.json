@@ -1,0 +1,12 @@
+{
+  "candidateVersion": "1.4.2",
+  "candidateBuild": "20260512.1",
+  "action": "app_store_submit_for_review",
+  "evaluatedAt": "2026-05-12T20:00:00Z",
+  "sourceOfTruth": "manual_release_receipt",
+  "previousVersion": "1.4.1",
+  "previousState": "READY_FOR_SALE",
+  "previousStateChangedAt": "2026-05-12T04:30:00Z",
+  "riskSignals": [],
+  "override": null
+}

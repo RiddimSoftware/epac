@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "policyId": "epac.openclaw.release-decision.v1",
+  "description": "Read-only OpenClaw policy for authorizing the epac release-manager path before App Store submission or release actions.",
+  "minimumHoursAfterPreviousTerminalState": 24,
+  "terminalPreviousVersionStates": [
+    "APPROVED",
+    "READY_FOR_SALE",
+    "RELEASED",
+    "PHASED_RELEASE_COMPLETE",
+    "DEVELOPER_REMOVED_FROM_SALE"
+  ],
+  "acceptedFallbackSources": [
+    "github_release_metadata",
+    "linear_release_issue_status",
+    "manual_release_receipt"
+  ],
+  "actions": {
+    "testflight_upload": {
+      "requires24HourGate": false,
+      "defaultDecision": "allow",
+      "notes": "Build upload/processing is allowed because it does not submit or release the App Store version."
+    },
+    "app_store_submit_for_review": {
+      "requires24HourGate": true,
+      "defaultDecision": "wait",
+      "overrideDecision": "request_approval"
+    },
+    "manual_release": {
+      "requires24HourGate": true,
+      "defaultDecision": "wait",
+      "overrideDecision": "request_approval"
+    },
+    "phased_release_continue": {
+      "requires24HourGate": false,
+      "defaultDecision": "request_approval",
+      "notes": "Continuation is a release-manager action and needs a human confirmation, but not the previous-version 24-hour age gate."
+    },
+    "emergency_hotfix_release": {
+      "requires24HourGate": true,
+      "defaultDecision": "request_approval",
+      "overrideDecision": "allow",
+      "notes": "May bypass the 24-hour gate only with an explicit emergency or human-approved override receipt."
+    }
+  },
+  "riskSignalOutcomes": {
+    "ci": "block",
+    "review": "request_approval",
+    "crash": "escalate",
+    "app_store_metadata": "request_approval",
+    "human_override": "request_approval"
+  },
+  "sourceOfTruthOrder": [
+    {
+      "name": "app_store_connect_app_store_version",
+      "requiredFields": ["previousVersion", "previousState", "previousStateChangedAt"],
+      "notes": "Primary source. Use App Store Connect appStoreVersions/appStoreState plus the timestamp at which the previous version reached an accepted terminal state."
+    },
+    {
+      "name": "github_release_metadata",
+      "requiredFields": ["previousVersion", "previousReleasedAt", "releaseTag"],
+      "notes": "Fallback only when App Store Connect is unavailable. The release-manager receipt must identify the GitHub release/tag used."
+    },
+    {
+      "name": "linear_release_issue_status",
+      "requiredFields": ["previousVersion", "previousStateChangedAt", "linearIssue"],
+      "notes": "Fallback only when App Store Connect is unavailable and a Linear release issue records the reviewed/released timestamp."
+    },
+    {
+      "name": "manual_release_receipt",
+      "requiredFields": ["previousVersion", "previousStateChangedAt", "approver", "publicAuditNote"],
+      "notes": "Last-resort documented fallback for demos or credential outages; it must be public-safe."
+    }
+  ],
+  "overrideRequiredFields": [
+    "approvedBy",
+    "approvedAt",
+    "reason",
+    "candidateVersion",
+    "candidateBuild",
+    "publicAuditNote"
+  ],
+  "allowedDecisions": ["allow", "wait", "request_approval", "escalate", "block"]
+}
