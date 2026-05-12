@@ -78,6 +78,37 @@ def generate_riding_images():
     return count
 
 
+def generate_mp_images():
+    import shutil
+    mp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mp")
+    out_dir = os.path.join(OG_DIR, "mp")
+    if os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+    if not os.path.exists(mp_dir):
+        print("  ⚠️  No mp/ directory. Run generate_mps.py first.")
+        return 0
+    count = 0
+    for slug in sorted(os.listdir(mp_dir)):
+        subdir = os.path.join(mp_dir, slug)
+        if not os.path.isdir(subdir):
+            continue
+        html_path = os.path.join(subdir, "index.html")
+        if not os.path.exists(html_path):
+            continue
+        content = open(html_path, encoding="utf-8").read()
+        h1 = re.search(r"<h1[^>]*>(.*?)</h1>", content)
+        h2 = re.search(r"<h2[^>]*>(.*?)</h2>", content)
+        name   = html_lib.unescape(h1.group(1)) if h1 else slug
+        riding = html_lib.unescape(h2.group(1)) if h2 else ""
+        # Clean up riding if it's "MP for Riding Name"
+        riding = riding.replace("MP for ", "").split("<")[0].strip()
+        with open(os.path.join(out_dir, f"{slug}.svg"), "w", encoding="utf-8") as f:
+            f.write(make_svg(name, f"MP for {riding}", "Member of Parliament"))
+        count += 1
+    return count
+
+
 def generate_topic_images():
     out_dir = os.path.join(OG_DIR, "topics")
     os.makedirs(out_dir, exist_ok=True)
@@ -102,15 +133,22 @@ def inject_og_tags():
             updated += 1
 
     base = os.path.dirname(os.path.abspath(__file__))
-    for subdir, tag_suffix in [("ridings", "ridings"), ("topics", "topics")]:
+    for subdir, tag_suffix in [("ridings", "ridings"), ("topics", "topics"), ("mp", "mp")]:
         d = os.path.join(base, subdir)
         if not os.path.exists(d):
             continue
-        for fname in os.listdir(d):
-            if not fname.endswith(".html") or fname == "index.html":
-                continue
-            inject(os.path.join(d, fname),
-                   f"{SITE_ROOT}/og/{tag_suffix}/{fname[:-5]}.svg")
+        if subdir == "mp":
+            for slug in os.listdir(d):
+                subdir_path = os.path.join(d, slug)
+                if os.path.isdir(subdir_path):
+                    inject(os.path.join(subdir_path, "index.html"),
+                           f"{SITE_ROOT}/og/mp/{slug}.svg")
+        else:
+            for fname in os.listdir(d):
+                if not fname.endswith(".html") or fname == "index.html":
+                    continue
+                inject(os.path.join(d, fname),
+                       f"{SITE_ROOT}/og/{tag_suffix}/{fname[:-5]}.svg")
 
     return updated
 
@@ -120,6 +158,10 @@ if __name__ == "__main__":
     r = generate_riding_images()
     print(f"  ✓ {r} riding images → og/ridings/")
 
+    print("Generating MP OG images...")
+    m = generate_mp_images()
+    print(f"  ✓ {m} MP images → og/mp/")
+
     print("Generating topic OG images...")
     t = generate_topic_images()
     print(f"  ✓ {t} topic images → og/topics/")
@@ -128,4 +170,4 @@ if __name__ == "__main__":
     u = inject_og_tags()
     print(f"  ✓ Updated {u} HTML files with og:image tags")
 
-    print(f"\nDone. {r + t} SVG images generated.")
+    print(f"\nDone. {r + m + t} SVG images generated.")
