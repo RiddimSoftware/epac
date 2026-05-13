@@ -621,6 +621,7 @@
 "settings.about.github" = "GitHub (code source ouvert)";
 "settings.about.brandBrief" = "Brief de marque";
 "settings.about.feedback" = "Envoyer des commentaires";
+"settings.about.suggestFeature" = "Suggérer une fonctionnalité";
 "settings.about.rate" = "Évaluer epac";
 
 "settings.developer.title" = "Développeur";
