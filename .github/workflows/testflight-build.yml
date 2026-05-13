@@ -112,7 +112,6 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.version.outputs.next_version }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           bundle exec fastlane deploy \
             scheme:${{ vars.SCHEME }} \
@@ -120,22 +119,6 @@ jobs:
             team_id:${{ vars.TEAM_ID }} \
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
             extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
-
-      - name: Upload dSYMs to Sentry
-        if: ${{ !inputs.dry_run }}
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        run: |
-          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
-            echo "SENTRY_AUTH_TOKEN not set - skipping dSYM upload"
-            exit 0
-          fi
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install getsentry/tools/sentry-cli
-          sentry-cli debug-files upload \
-            --include-sources \
-            "${{ vars.IOS_WORKDIR || 'ios' }}/build/${{ vars.SCHEME }}.xcarchive"
 
       - name: Delete ephemeral keychain
         if: ${{ always() && !inputs.dry_run }}
