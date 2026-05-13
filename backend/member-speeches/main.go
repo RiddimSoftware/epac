@@ -71,7 +71,7 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	memberId := req.PathParameters["id"]
+	memberId := memberIDFromPath(req.PathParameters)
 	if memberId == "" {
 		return jsonError(http.StatusBadRequest, "missing member id"), nil
 	}
@@ -226,6 +226,13 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       string(body),
 	}, nil
+}
+
+func memberIDFromPath(pathParameters map[string]string) string {
+	if memberId := strings.TrimSpace(pathParameters["id"]); memberId != "" {
+		return memberId
+	}
+	return strings.TrimSpace(pathParameters["memberId"])
 }
 
 func jsonError(status int, msg string) events.APIGatewayProxyResponse {

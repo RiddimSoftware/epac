@@ -63,8 +63,14 @@ jobs:
         if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
         working-directory: backend/${{ matrix.service }}
         env:
-          FUNCTION_NAME: epac-${{ matrix.service }}-production
+          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
+          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
         run: |
+          set -euo pipefail
+          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
+          fi
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
@@ -74,10 +80,16 @@ jobs:
       - name: Sync production DATABASE_URL from Secrets Manager
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
         env:
-          FUNCTION_NAME: epac-${{ matrix.service }}-production
+          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
+          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
           DATABASE_URL_SECRET_ID: epac/database-url
         run: |
           set -euo pipefail
+
+          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
+          fi
 
           DATABASE_URL=$(aws secretsmanager get-secret-value \
             --secret-id "$DATABASE_URL_SECRET_ID" \
@@ -111,7 +123,8 @@ jobs:
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && matrix.service == 'search' }}
         env:
           API_NAME: epac-api-api
-          FUNCTION_NAME: epac-search-production
+          CANONICAL_FUNCTION_NAME: epac-search-production
+          LEGACY_FUNCTION_NAME: search
           ROUTE_KEY: GET /search/speeches
           STATEMENT_ID: apigateway-search-speeches-production
         run: |
@@ -122,6 +135,11 @@ jobs:
           if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
             echo "API ${API_NAME} not found"
             exit 1
+          fi
+
+          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
           fi
 
           LAMBDA_ARN=$(aws lambda get-function \
