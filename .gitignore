@@ -5,6 +5,7 @@
 gpt2_*/
 /model*/
 .env/
+.venv-release/
 function.zip
 bootstrap
 .build/
