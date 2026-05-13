@@ -10,7 +10,26 @@ Target database: `epac` on the Aurora PostgreSQL 15 cluster referenced by the
 The cluster had no existing tables before this work. The checked-in migrations
 start with `002_speeches_enriched.sql`, which alters the `speeches` table rather
 than creating it. Before applying the migration files, the base `speeches` table
-was created using the schema already embedded in `backend/hansard-backfill`.
+was created using the table definition from `backend/hansard-backfill/main.go`
+`ensureSchema` at commit `f76b936bac04b4eac3ec5e5dbacf6864b89f8ade`.
+
+Exact bootstrap SQL applied before the migration files:
+
+```sql
+CREATE TABLE IF NOT EXISTS speeches (
+    intervention_id  TEXT PRIMARY KEY,
+    filename         TEXT,
+    speaker_name     TEXT,
+    content          TEXT,
+    sitting_date     DATE,
+    parliament_num   INT,
+    session_num      INT,
+    member_id        TEXT,
+    subject_title    TEXT,
+    intervention_seq INT,
+    word_count       INT
+);
+```
 
 No migration files were edited.
 
