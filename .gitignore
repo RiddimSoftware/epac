@@ -91,3 +91,10 @@ fastlane/test_output
 __pycache__
 backend/loader/loader
 backend/*/loader
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
