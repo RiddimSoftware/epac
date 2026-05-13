@@ -65,7 +65,9 @@ class ContentViewModel {
 
 		// Path-based format: /sitting/[yyyy-MM-dd] or /event/[yyyy-MM-dd]
 		let segments = url.pathComponents.filter { $0 != "/" }
-		if let firstSegment = segments.first, (firstSegment == "sitting" || firstSegment == "event"), let dateStr = segments.dropFirst().first {
+		if let firstSegment = segments.first,
+		   firstSegment == "sitting" || firstSegment == "event",
+		   let dateStr = segments.dropFirst().first {
 			if firstSegment == "event" {
 				Log.info("event_card_tap date=\(dateStr)")
 				recordEventCardTap(dateStr: dateStr)
