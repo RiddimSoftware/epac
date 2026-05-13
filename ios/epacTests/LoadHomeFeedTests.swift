@@ -3,8 +3,8 @@
 //  epacTests
 //
 
-import XCTest
 @testable import epac
+import XCTest
 
 @MainActor
 final class LoadHomeFeedTests: XCTestCase {

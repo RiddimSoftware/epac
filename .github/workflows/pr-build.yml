@@ -9,7 +9,26 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run SwiftLint
+        run: swiftlint --strict --reporter github-actions-logging
+
+  localization:
+    name: Localization Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit localization coverage
+        run: python3 scripts/localization/check_localizations.py --github-warnings
+
   build:
+    name: iOS Build
     uses: RiddimSoftware/riddim-release/.github/workflows/pr-build.yml@main
     with:
       scheme: "epac"
@@ -19,12 +38,21 @@ jobs:
 
   pr-build:
     name: pr-build
-    needs: [build]
+    needs: [lint, localization, build]
     runs-on: ["self-hosted","macOS"]
     if: always()
     steps:
-      - name: Check build passed
+      - name: Check required PR gates passed
         run: |
+          if [ "${{ needs.lint.result }}" != "success" ]; then
+            echo "SwiftLint failed"
+            exit 1
+          fi
+          if [ "${{ needs.localization.result }}" != "success" ]; then
+            echo "Localization audit failed"
+            exit 1
+          fi
           if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "iOS build failed"
             exit 1
           fi

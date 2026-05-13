@@ -951,8 +951,6 @@ struct HomeFeedView: View {
         self.mySenators = snapshot.civicContext.mySenators
     }
 
-
-
     private func pollLiveParliamentStatus(while phase: ScenePhase) async {
         guard phase == .active else { return }
         await refreshLiveParliamentStatus()
@@ -1143,8 +1141,6 @@ struct HomeFeedView: View {
         descriptor.fetchLimit = 1
         return try? modelContext.fetch(descriptor).first
     }
-
-
 
     private func openOnThisDayItem(_ item: OnThisDayItem) async {
         OnThisDayTelemetry.record(.tap, itemID: item.id)
