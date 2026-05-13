@@ -52,6 +52,8 @@ jobs:
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
+          aws lambda wait function-updated \
+            --function-name "$FUNCTION_NAME"
 
       - name: Sync staging DATABASE_URL from Secrets Manager
         if: ${{ contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
@@ -86,6 +88,8 @@ jobs:
             --function-name "$FUNCTION_NAME" \
             --environment "$UPDATED_ENV" \
             >/dev/null
+          aws lambda wait function-updated \
+            --function-name "$FUNCTION_NAME"
 
       - name: Ensure search speeches route
         if: ${{ matrix.service == 'search' }}
