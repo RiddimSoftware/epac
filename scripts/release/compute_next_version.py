@@ -121,13 +121,21 @@ def choose_existing_train(versions: list[AppStoreVersion], current: str) -> str 
 
 
 def bump_version(version: str, bump: str) -> str:
+    original_part_count = len(version.split("."))
     parts = (version.split(".") + ["0", "0"])[:3]
     major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
     if bump == "major":
-        return f"{major + 1}.0.0"
+        bumped = [major + 1, 0, 0]
+    elif bump == "minor":
+        bumped = [major, minor + 1, 0]
+    else:
+        bumped = [major, minor, patch + 1]
+
+    if bump in {"major", "minor"} and original_part_count == 2:
+        return f"{bumped[0]}.{bumped[1]}"
     if bump == "minor":
-        return f"{major}.{minor + 1}.0"
-    return f"{major}.{minor}.{patch + 1}"
+        return f"{bumped[0]}.{bumped[1]}.{bumped[2]}"
+    return f"{bumped[0]}.{bumped[1]}.{bumped[2]}"
 
 
 def main() -> None:
