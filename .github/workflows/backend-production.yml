@@ -69,6 +69,40 @@ jobs:
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
 
+      - name: Sync production DATABASE_URL from Secrets Manager
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
+        env:
+          FUNCTION_NAME: epac-${{ matrix.service }}-production
+          DATABASE_URL_SECRET_ID: epac/database-url
+        run: |
+          set -euo pipefail
+
+          DATABASE_URL=$(aws secretsmanager get-secret-value \
+            --secret-id "$DATABASE_URL_SECRET_ID" \
+            --query SecretString \
+            --output text)
+          if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
+            DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
+          fi
+          if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
+            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
+            exit 1
+          fi
+
+          CURRENT_ENV=$(aws lambda get-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --query 'Environment.Variables' \
+            --output json)
+          UPDATED_ENV=$(jq -cn \
+            --argjson current "${CURRENT_ENV:-null}" \
+            --arg database_url "$DATABASE_URL" \
+            '{Variables: (($current // {}) + {DATABASE_URL: $database_url})}')
+
+          aws lambda update-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --environment "$UPDATED_ENV" \
+            >/dev/null
+
       - name: Ensure search speeches route
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && matrix.service == 'search' }}
         env:
