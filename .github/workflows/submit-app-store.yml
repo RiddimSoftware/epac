@@ -1,6 +1,5 @@
 name: Submit App Store Review
 
-# Keep this in sync with the shared release workflow in riddim-release.
 on:
   workflow_dispatch:
     inputs:
@@ -15,20 +14,194 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
+concurrency:
+  group: app-store-review-submission
+  cancel-in-progress: false
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+
 jobs:
-  call:
-    uses: RiddimSoftware/riddim-release/.github/workflows/release-app-store.yml@main
-    with:
-      apple_app_id:        ${{ vars.APPLE_APP_ID }}
-      bundle_id:           ${{ vars.BUNDLE_ID }}
-      ios_workdir:         ${{ vars.IOS_WORKDIR || 'ios' }}
-      primary_locale:      ${{ vars.PRIMARY_LOCALE || 'en-CA' }}
-      tag:                 ${{ inputs.tag }}
-      dry_run:             ${{ inputs.dry_run || false }}
-      approval_environment: ${{ vars.APPROVAL_ENVIRONMENT || 'app-store-release' }}
-      runner_labels_mac:    ${{ vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]' }}
-      runner_labels_linux:  ${{ vars.RUNNER_LABELS_LINUX || '["self-hosted","macOS"]' }}
-    secrets: inherit
+  find-build:
+    name: Find matching TestFlight build
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    outputs:
+      build_number: ${{ steps.find.outputs.build_number }}
+      build_version: ${{ steps.find.outputs.build_version }}
+      upload_time: ${{ steps.find.outputs.upload_time }}
+      tag: ${{ steps.resolve-tag.outputs.tag }}
+      version: ${{ steps.resolve-tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: resolve-tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#app/v}"
+          VERSION="${VERSION#v}"
+          VERSION="${VERSION%%-rc.*}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Clear runner AWS profile overrides
+        run: |
+          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+          unset-current-credentials: true
+
+      - name: Fetch App Store Connect credentials
+        run: scripts/runner/fetch_asc_secret.sh
+
+      - name: Install Python dependencies
+        run: python3 -m pip install PyJWT requests cryptography --quiet
+
+      - name: Find build matching release version
+        id: find
+        shell: bash
+        env:
+          VERSION: ${{ steps.resolve-tag.outputs.version }}
+        run: |
+          set +e
+          python3 scripts/release/find_qualifying_build.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            --app-id "${{ vars.APPLE_APP_ID }}" \
+            --latest \
+            --version "$VERSION" \
+            --output-format github-output 2> /tmp/find-build.err
+          status=$?
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::No valid TestFlight build found for version $VERSION."
+            cat /tmp/find-build.err
+            exit "$status"
+          fi
+
+  approve-release:
+    name: Approve App Store submission
+    needs: find-build
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    environment: ${{ vars.APPROVAL_ENVIRONMENT || 'app-store-release' }}
+    steps:
+      - name: Release candidate summary
+        run: |
+          {
+            echo "## Release candidate ready for approval"
+            echo ""
+            echo "- Version: ${{ needs.find-build.outputs.build_version }}"
+            echo "- Build: #${{ needs.find-build.outputs.build_number }}"
+            echo "- Tag: ${{ needs.find-build.outputs.tag }}"
+            echo "- Uploaded: ${{ needs.find-build.outputs.upload_time }}"
+            echo "- Dry run: ${{ inputs.dry_run }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  submit:
+    name: Submit build for App Store review
+    needs:
+      - find-build
+      - approve-release
+    if: ${{ !inputs.dry_run }}
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clear runner AWS profile overrides
+        run: |
+          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+          unset-current-credentials: true
+
+      - name: Fetch App Store Connect credentials
+        run: scripts/runner/fetch_asc_secret.sh
+
+      - name: Set up Ruby and Bundler
+        if: ${{ !contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+
+      - name: Install Ruby bundle
+        if: ${{ contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') }}
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: |
+          export BUNDLE_VERSION=system
+          echo "BUNDLE_VERSION=system" >> "$GITHUB_ENV"
+          bundle config set path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Write release notes from GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES_PATH: ${{ vars.IOS_WORKDIR || 'ios' }}/fastlane/metadata/${{ vars.PRIMARY_LOCALE || 'en-CA' }}/release_notes.txt
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$RELEASE_NOTES_PATH")"
+          gh release view "${{ needs.find-build.outputs.tag }}" \
+            --json body --jq '.body' \
+            > "$RELEASE_NOTES_PATH"
+
+      - name: Upload metadata and screenshots to App Store
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: |
+          bundle exec fastlane run deliver \
+            api_key_path:/tmp/asc_api_key.json \
+            app_identifier:${{ vars.BUNDLE_ID }} \
+            skip_binary_upload:true \
+            skip_screenshots:false \
+            skip_metadata:false \
+            submit_for_review:false \
+            run_precheck_before_submit:false \
+            precheck_include_in_app_purchases:false \
+            force:true
+
+      - name: Submit build for App Store review
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: |
+          bundle exec fastlane run deliver \
+            api_key_path:/tmp/asc_api_key.json \
+            app_identifier:${{ vars.BUNDLE_ID }} \
+            skip_binary_upload:true \
+            skip_screenshots:true \
+            skip_metadata:true \
+            submit_for_review:true \
+            run_precheck_before_submit:false \
+            precheck_include_in_app_purchases:false \
+            force:true \
+            phased_release:true \
+            automatic_release:false \
+            build_number:"${{ needs.find-build.outputs.build_number }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "## App Store submission complete"
+            echo ""
+            echo "- Version: ${{ needs.find-build.outputs.build_version }}"
+            echo "- Build: #${{ needs.find-build.outputs.build_number }}"
+            echo "- Tag: ${{ needs.find-build.outputs.tag }}"
+            echo "- Status: Submitted for review"
+            echo "- Automatic release: disabled"
+          } >> "$GITHUB_STEP_SUMMARY"

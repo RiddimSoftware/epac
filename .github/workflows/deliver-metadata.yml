@@ -12,13 +12,61 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: deliver-app-store-metadata
+  cancel-in-progress: false
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+
 jobs:
-  call:
-    uses: RiddimSoftware/riddim-release/.github/workflows/deliver-metadata.yml@main
-    with:
-      ios_workdir:         ${{ vars.IOS_WORKDIR || 'ios' }}
-      bundle_id:           ${{ vars.BUNDLE_ID }}
-      team_id:             ${{ vars.TEAM_ID }}
-      runner_labels_mac:   ${{ contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') && '["macos-15"]' || (vars.RUNNER_LABELS_MAC || '["macos-15"]') }}
-      runner_labels_linux: ${{ contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') && '["ubuntu-latest"]' || (vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
-    secrets: inherit
+  deliver:
+    name: Push metadata to App Store Connect
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clear runner AWS profile overrides
+        run: |
+          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+          unset-current-credentials: true
+
+      - name: Fetch App Store Connect credentials
+        run: scripts/runner/fetch_asc_secret.sh
+
+      - name: Set up Ruby and Bundler
+        if: ${{ !contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+
+      - name: Install Ruby bundle
+        if: ${{ contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') }}
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: |
+          export BUNDLE_VERSION=system
+          echo "BUNDLE_VERSION=system" >> "$GITHUB_ENV"
+          bundle config set path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Deliver metadata to App Store Connect
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: bundle exec fastlane deliver
+
+      - name: Summary
+        run: |
+          {
+            echo "## Metadata delivered to App Store Connect"
+            echo ""
+            echo "Updated App Store metadata and screenshots only."
+            echo "Binary upload and App Review submission were not touched."
+          } >> "$GITHUB_STEP_SUMMARY"
