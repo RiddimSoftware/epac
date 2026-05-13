@@ -65,7 +65,10 @@ jobs:
         run: scripts/runner/fetch_asc_secret.sh
 
       - name: Install Python dependencies
-        run: python3 -m pip install PyJWT requests cryptography --quiet
+        run: |
+          python3 -m venv .venv-release
+          .venv-release/bin/python -m pip install --upgrade pip --quiet
+          .venv-release/bin/python -m pip install PyJWT requests cryptography --quiet
 
       - name: Find build matching release version
         id: find
@@ -74,7 +77,7 @@ jobs:
           VERSION: ${{ steps.resolve-tag.outputs.version }}
         run: |
           set +e
-          python3 scripts/release/find_qualifying_build.py \
+          .venv-release/bin/python scripts/release/find_qualifying_build.py \
             --key-id "$ASC_KEY_ID" \
             --issuer-id "$ASC_ISSUER_ID" \
             --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \

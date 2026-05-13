@@ -72,13 +72,16 @@ jobs:
 
       - name: Install release helper dependencies
         if: ${{ !inputs.dry_run }}
-        run: python3 -m pip install PyJWT requests cryptography --quiet
+        run: |
+          python3 -m venv .venv-release
+          .venv-release/bin/python -m pip install --upgrade pip --quiet
+          .venv-release/bin/python -m pip install PyJWT requests cryptography --quiet
 
       - name: Compute TestFlight version train
         id: version
         if: ${{ !inputs.dry_run }}
         run: |
-          python3 scripts/release/compute_next_version.py \
+          .venv-release/bin/python scripts/release/compute_next_version.py \
             --key-id "$ASC_KEY_ID" \
             --issuer-id "$ASC_ISSUER_ID" \
             --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8" \
