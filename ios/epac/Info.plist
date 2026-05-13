@@ -116,6 +116,8 @@
 	</array>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
+	<key>FeedvoteBoardURL</key>
+	<string>https://epac.feedvote.app/</string>
 	<key>BackendBaseURL</key>
 	<string>$(BACKEND_BASE_URL)</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
