@@ -2,6 +2,29 @@
 
 **Issue:** EPAC-1772
 
+## Live Board / Publishing Evidence
+
+**Public board URL:** https://epac.feedvote.app/
+
+**Linear backlog-state check:** Before submitting the seed requests, I searched Linear for the exact proposed request titles and for close matches across Hansard summaries, bill milestone notifications, MP vote filters, MP speech notifications, promise tracking, home feed customization, accessibility text sizing, and bill keyword search. I found related epac backlog items, but no matching requests in **Done** or **In Progress**. The closest matches I checked were still backlog/Todo items, including EPAC-1035 (Todo), EPAC-1229 (Todo), EPAC-1130 (Todo), and EPAC-961 (Todo).
+
+**Feedvote submission status (2026-05-13T05:34Z):** The public Feedvote board accepts anonymous submissions but currently has moderation enabled (`requireApproval: true`). I submitted the eight seed requests through `POST https://api.feedvote.app/public/epac/feedback`; Feedvote returned `201` for each request with `status: backlog`, `votesCount: 1`, and `moderationStatus: pending`. Because pending requests are not visible on the public board, a Feedvote admin must approve these requests before the Definition of Done is fully satisfied.
+
+Submitted Feedvote IDs:
+
+| Request | Feedvote ID | Moderation |
+|---|---|---|
+| Plain-language summaries of debates | `cmp3mk9k40yboo10w4coi3zhe` | pending |
+| Notifications for bill milestones | `cmp3mkqi80ybso10wjroabmuf` | pending |
+| Filter MP voting records by topic | `cmp3mkqmm0ybwo10wjkd9v40e` | pending |
+| Push notifications for MP speeches | `cmp3mkqqx0yc0o10wq514183q` | pending |
+| Track governing party election promises | `cmp3mkqv90yc4o10w8nyks7gu` | pending |
+| Customize home feed regions and committees | `cmp3mkqzo0yc8o10w0jg26e74` | pending |
+| Ajuster la taille du texte | `cmp3mkr3z0ycco10wt9ri970u` | pending |
+| Recherche de projets de loi par mot-clé | `cmp3mkr8d0ycgo10wk13rnrgr` | pending |
+
+**Remaining external gate:** Update the Feedvote board presentation copy in the Feedvote admin settings and approve the pending submissions so the header, welcome message, prompt, and 8+ requests are publicly visible.
+
 ## Board Copy
 
 **Header / Tagline:**
