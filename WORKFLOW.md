@@ -9,13 +9,6 @@ tracker:
   project_slug: EPAC
 repositories:
   - epac
-reviewer:
-  reserved_agent_slots: 2
-developer:
-  pr_fix_reserved_agent_slots: 2
-agent:
-  max_concurrent_agents: 6
-
 
 server:
   port: 4781
