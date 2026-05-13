@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-staging.yml'
+      - 'scripts/ci/backend_staging_smoke.py'
   workflow_dispatch:
 
 concurrency:
@@ -151,3 +152,19 @@ jobs:
             --principal apigateway.amazonaws.com \
             --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/*/search/speeches" \
             >/dev/null 2>&1 || true
+
+  smoke:
+    name: Smoke test staging backend
+    runs-on: ubuntu-latest
+    needs: deploy
+    env:
+      STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL || 'https://staging-api.epac.riddimsoftware.com' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run staging backend smoke tests
+        run: python3 scripts/ci/backend_staging_smoke.py --base-url "$STAGING_API_BASE_URL"
