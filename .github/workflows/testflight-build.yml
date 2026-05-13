@@ -70,6 +70,23 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: scripts/runner/fetch_asc_secret.sh
 
+      - name: Install release helper dependencies
+        if: ${{ !inputs.dry_run }}
+        run: python3 -m pip install PyJWT requests cryptography --quiet
+
+      - name: Compute TestFlight version train
+        id: version
+        if: ${{ !inputs.dry_run }}
+        run: |
+          python3 scripts/release/compute_next_version.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8" \
+            --app-id "${{ vars.APPLE_APP_ID }}" \
+            --bump minor \
+            --prefer-existing-train \
+            --output-format github-output
+
       - name: Fetch distribution certificate
         if: ${{ !inputs.dry_run }}
         run: scripts/runner/fetch_distribution_cert.sh
@@ -90,6 +107,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         env:
+          NEW_VERSION: ${{ steps.version.outputs.next_version }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
@@ -128,6 +146,8 @@ jobs:
             echo ""
             echo "- Workflow source: ${{ github.event_name }}"
             echo "- Commit: ${{ github.sha }}"
+            echo "- Version: ${{ steps.version.outputs.next_version }}"
+            echo "- Version source: ${{ steps.version.outputs.version_source }}"
             echo "- Build: #${{ steps.build-number.outputs.build_number }}"
             echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
           } >> "$GITHUB_STEP_SUMMARY"

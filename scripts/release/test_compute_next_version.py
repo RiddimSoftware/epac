@@ -67,6 +67,28 @@ class TestBumpVersion(unittest.TestCase):
     def test_major_resets_minor_and_patch(self):
         self.assertEqual(self.bump("2.3.9", "major"), "3.0.0")
 
+    def test_version_compare_handles_two_part_versions(self):
+        self.assertTrue(self.__class__.cnv.is_greater_version("1.10", "1.9"))
+        self.assertFalse(self.__class__.cnv.is_greater_version("1.9", "1.10"))
+
+    def test_choose_existing_train_prefers_highest_non_live_version(self):
+        versions = [
+            self.__class__.cnv.AppStoreVersion("1.9", "READY_FOR_SALE"),
+            self.__class__.cnv.AppStoreVersion("1.10", "PREPARE_FOR_SUBMISSION"),
+            self.__class__.cnv.AppStoreVersion("2.0", "PREPARE_FOR_SUBMISSION"),
+        ]
+        self.assertEqual(
+            self.__class__.cnv.choose_existing_train(versions, "1.9"),
+            "2.0",
+        )
+
+    def test_choose_existing_train_ignores_live_and_lower_versions(self):
+        versions = [
+            self.__class__.cnv.AppStoreVersion("1.8", "PREPARE_FOR_SUBMISSION"),
+            self.__class__.cnv.AppStoreVersion("1.9", "READY_FOR_SALE"),
+        ]
+        self.assertIsNone(self.__class__.cnv.choose_existing_train(versions, "1.9"))
+
 
 class TestJwtShape(unittest.TestCase):
     """Verify the token we'd send is structurally valid (no network)."""
