@@ -23,6 +23,44 @@ func TestHandleRequest_MissingMemberId(t *testing.T) {
 	}
 }
 
+func TestMemberIDFromPath(t *testing.T) {
+	tests := []struct {
+		name           string
+		pathParameters map[string]string
+		want           string
+	}{
+		{
+			name:           "rest route id",
+			pathParameters: map[string]string{"id": "278707"},
+			want:           "278707",
+		},
+		{
+			name:           "http api memberId",
+			pathParameters: map[string]string{"memberId": "279135"},
+			want:           "279135",
+		},
+		{
+			name:           "id takes precedence",
+			pathParameters: map[string]string{"id": "278707", "memberId": "279135"},
+			want:           "278707",
+		},
+		{
+			name:           "trims value",
+			pathParameters: map[string]string{"memberId": " 279135 "},
+			want:           "279135",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := memberIDFromPath(tt.pathParameters)
+			if got != tt.want {
+				t.Fatalf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestJsonError(t *testing.T) {
 	resp := jsonError(http.StatusNotFound, "speech not found")
 	if resp.StatusCode != http.StatusNotFound {
