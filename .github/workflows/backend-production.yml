@@ -1,4 +1,4 @@
-name: Deploy Backend Production
+name: Promote Backend Production
 
 on:
   workflow_dispatch:

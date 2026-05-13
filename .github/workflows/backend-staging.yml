@@ -1,11 +1,11 @@
-name: Deploy Backend Staging
+name: Backend Staging Deploy
 
 on:
   push:
     branches: [main]
     paths:
       - 'backend/**'
-      - '.github/workflows/deploy-staging.yml'
+      - '.github/workflows/backend-staging.yml'
   workflow_dispatch:
 
 concurrency:

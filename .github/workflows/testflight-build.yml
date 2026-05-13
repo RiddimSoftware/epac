@@ -1,4 +1,4 @@
-name: Create Release
+name: TestFlight Build
 
 on:
   workflow_dispatch:
