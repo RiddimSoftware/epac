@@ -29,12 +29,32 @@ jobs:
 
   build:
     name: iOS Build
-    uses: RiddimSoftware/riddim-release/.github/workflows/pr-build.yml@main
-    with:
-      scheme: "epac"
-      project: "epac.xcodeproj"
-      working_directory: "ios"
-      runner_labels: "${{ vars.RUNNER_LABELS_MAC || '[\"self-hosted\",\"macOS\"]' }}"
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git for package resolution
+        run: |
+          cat > "$RUNNER_TEMP/ci-gitconfig" <<'EOF'
+          [url "https://github.com/"]
+            insteadOf = git@github.com:
+            insteadOf = ssh://git@github.com/
+            insteadOf = git://github.com/
+          EOF
+          echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/ci-gitconfig" >> "$GITHUB_ENV"
+
+      - name: Build
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -project epac.xcodeproj \
+            -scheme epac \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$GITHUB_WORKSPACE/.deriveddata" \
+            -jobs "$(sysctl -n hw.logicalcpu)" \
+            CODE_SIGNING_ALLOWED=NO \
+            GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
+            ENABLE_TESTABILITY=NO
 
   pr-build:
     name: pr-build

@@ -1,40 +1,133 @@
 name: TestFlight Build
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
-      bump:
-        description: 'Version bump type (patch / minor / major)'
-        required: false
-        type: choice
-        default: patch
-        options: [patch, minor, major]
       dry_run:
-        description: Skip signing, archive, upload, and draft release creation
+        description: Skip signing, archive, and TestFlight upload
         required: true
         type: boolean
         default: false
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
+concurrency:
+  group: testflight-build
+  cancel-in-progress: false
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+
 jobs:
-  call:
-    # GitHub requires a static reusable-workflow ref here. epac pins the
-    # matching inner riddim-release checkout with repo variable RIDDIM_RELEASE_REF.
-    uses: RiddimSoftware/riddim-release/.github/workflows/build-deploy.yml@main
-    with:
-      apple_app_id:        ${{ vars.APPLE_APP_ID }}
-      bundle_id:           ${{ vars.BUNDLE_ID }}
-      team_id:             ${{ vars.TEAM_ID }}
-      scheme:              ${{ vars.SCHEME }}
-      xcodeproj_path:      ${{ vars.XCODEPROJ_PATH }}
-      ios_workdir:         ${{ vars.IOS_WORKDIR || 'ios' }}
-      primary_locale:      ${{ vars.PRIMARY_LOCALE || 'en-CA' }}
-      dry_run:             ${{ inputs.dry_run }}
-      extra_bundle_ids:    ${{ vars.EXTRA_BUNDLE_IDS || '' }}
-      runner_labels_mac:   ${{ vars.RUNNER_LABELS_MAC || '["macos-15"]' }}
-      runner_labels_linux: ${{ vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]' }}
-      has_app_clip:        true
-    secrets: inherit
+  build-upload:
+    name: Archive and upload to TestFlight
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Set up Ruby and Bundler
+        if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+
+      - name: Install Ruby bundle
+        if: ${{ !inputs.dry_run && contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        run: |
+          export BUNDLE_VERSION=system
+          echo "BUNDLE_VERSION=system" >> "$GITHUB_ENV"
+          bundle config set path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Clear runner AWS profile overrides
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials via OIDC
+        if: ${{ !inputs.dry_run }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+          unset-current-credentials: true
+
+      - name: Fetch App Store Connect credentials
+        if: ${{ !inputs.dry_run }}
+        run: scripts/runner/fetch_asc_secret.sh
+
+      - name: Fetch distribution certificate
+        if: ${{ !inputs.dry_run }}
+        run: scripts/runner/fetch_distribution_cert.sh
+
+      - name: Create ephemeral keychain
+        if: ${{ !inputs.dry_run }}
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: scripts/runner/ephemeral_keychain.sh create
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run: skipped signing, archive, TestFlight upload, dSYM upload, and keychain setup."
+
+      - name: Build and upload to TestFlight
+        id: build-number
+        if: ${{ !inputs.dry_run }}
+        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          bundle exec fastlane deploy \
+            scheme:${{ vars.SCHEME }} \
+            bundle_id:${{ vars.BUNDLE_ID }} \
+            team_id:${{ vars.TEAM_ID }} \
+            xcodeproj:${{ vars.XCODEPROJ_PATH }} \
+            extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
+
+      - name: Upload dSYMs to Sentry
+        if: ${{ !inputs.dry_run }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "SENTRY_AUTH_TOKEN not set - skipping dSYM upload"
+            exit 0
+          fi
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install getsentry/tools/sentry-cli
+          sentry-cli debug-files upload \
+            --include-sources \
+            "${{ vars.IOS_WORKDIR || 'ios' }}/build/${{ vars.SCHEME }}.xcarchive"
+
+      - name: Delete ephemeral keychain
+        if: ${{ always() && !inputs.dry_run }}
+        run: scripts/runner/ephemeral_keychain.sh cleanup
+
+      - name: Summary
+        if: ${{ !inputs.dry_run }}
+        run: |
+          {
+            echo "## TestFlight build uploaded"
+            echo ""
+            echo "- Workflow source: ${{ github.event_name }}"
+            echo "- Commit: ${{ github.sha }}"
+            echo "- Build: #${{ steps.build-number.outputs.build_number }}"
+            echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
+          } >> "$GITHUB_STEP_SUMMARY"
