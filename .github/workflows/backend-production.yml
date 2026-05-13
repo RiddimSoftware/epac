@@ -80,10 +80,16 @@ jobs:
       - name: Sync production DATABASE_URL from Secrets Manager
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
         env:
-          FUNCTION_NAME: epac-${{ matrix.service }}-production
+          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
+          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
           DATABASE_URL_SECRET_ID: epac/database-url
         run: |
           set -euo pipefail
+
+          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
+          fi
 
           DATABASE_URL=$(aws secretsmanager get-secret-value \
             --secret-id "$DATABASE_URL_SECRET_ID" \
