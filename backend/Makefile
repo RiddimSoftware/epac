@@ -1,6 +1,6 @@
 # Makefile for deploying Go Lambda functions
 
-.PHONY: create-lambda update-lambda build package clean create-api delete-api add-endpoint schedule-lambda schedule-rate-lambda
+.PHONY: create-lambda update-lambda build package clean create-api delete-api add-endpoint schedule-lambda schedule-rate-lambda bootstrap-staging
 
 # AWS Role ARN for the Lambda function. Can be overridden on the command line or set as an environment variable.
 ROLE_ARN ?= arn:aws:iam::227530433709:role/epac-lambda-role
@@ -138,6 +138,39 @@ schedule-lambda:
 		--rule "$$RULE_NAME" \
 		--targets "ID=1,Arn=$$LAMBDA_ARN"; \
 	echo "Successfully scheduled $(SERVICE)."
+
+# Create all 10 staging Lambda functions (epac-*-staging) if they do not already exist.
+# Builds a placeholder binary from the health service; the staging deploy workflow overwrites
+# each function with the real binary on first run. Idempotent — skips functions that exist.
+# Usage: make bootstrap-staging [ROLE_ARN=arn:aws:iam::...]
+AWS_REGION ?= us-east-1
+export AWS_REGION
+
+bootstrap-staging:
+	@echo "Building placeholder binary from health service..."
+	cd health && GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go
+	cd health && zip -q bootstrap-placeholder.zip bootstrap
+	@for svc in daily-fetch loader search member-speeches on-this-day riding-boundary health device-register openapi live-status; do \
+		fname="epac-$$svc-staging"; \
+		if aws lambda get-function --function-name "$$fname" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
+			echo "  $$fname: already exists, skipping"; \
+		else \
+			echo "  $$fname: creating..."; \
+			aws lambda create-function \
+				--function-name "$$fname" \
+				--runtime provided.al2023 \
+				--architecture arm64 \
+				--handler bootstrap \
+				--role "$(ROLE_ARN)" \
+				--region "$(AWS_REGION)" \
+				--zip-file fileb://health/bootstrap-placeholder.zip \
+				--output text --query 'FunctionName' > /dev/null; \
+			aws lambda wait function-active --function-name "$$fname" --region "$(AWS_REGION)"; \
+			echo "  $$fname: created"; \
+		fi; \
+	done
+	@rm -f health/bootstrap health/bootstrap-placeholder.zip
+	@echo "bootstrap-staging complete."
 
 # Schedule a Lambda function at an EventBridge rate expression
 # Usage: make schedule-rate-lambda SERVICE=live-status FUNCTION_NAME=epac-live-status-staging RATE="rate(2 minutes)"
