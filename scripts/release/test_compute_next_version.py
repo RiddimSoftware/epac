@@ -55,8 +55,14 @@ class TestBumpVersion(unittest.TestCase):
     def test_minor(self):
         self.assertEqual(self.bump("1.8.3", "minor"), "1.9.0")
 
+    def test_minor_preserves_two_part_app_store_version_shape(self):
+        self.assertEqual(self.bump("1.9", "minor"), "1.10")
+
     def test_major(self):
         self.assertEqual(self.bump("1.8.3", "major"), "2.0.0")
+
+    def test_major_preserves_two_part_app_store_version_shape(self):
+        self.assertEqual(self.bump("1.9", "major"), "2.0")
 
     def test_zero_base(self):
         self.assertEqual(self.bump("0.0.0", "patch"), "0.0.1")
