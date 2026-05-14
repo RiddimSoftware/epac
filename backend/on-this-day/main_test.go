@@ -25,7 +25,20 @@ func TestHandleRequest_InvalidDate(t *testing.T) {
 }
 
 func TestHandleRequest_MissingDatabaseURL(t *testing.T) {
+	// Close and nil the cached connection so getDBConn is forced to re-read
+	// DATABASE_URL rather than reusing a warm connection from a prior test.
+	if dbConn != nil {
+		dbConn.Close(context.Background())
+		dbConn = nil
+	}
+	orig := os.Getenv("DATABASE_URL")
 	os.Unsetenv("DATABASE_URL")
+	t.Cleanup(func() {
+		if orig != "" {
+			os.Setenv("DATABASE_URL", orig)
+		}
+	})
+
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		QueryStringParameters: map[string]string{"date": "2026-04-29"},
 	})
