@@ -54,7 +54,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging DATABASE_URL from Secrets Manager
-        if: ${{ contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
+        if: ${{ contains(fromJSON('["search","member-speeches","on-this-day","health","device-register","live-status"]'), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           DATABASE_URL_SECRET_ID: epac/database-url
