@@ -7,7 +7,6 @@ struct SettingsView: View {
     @State private var selectedAppIcon = AppIconOption.current
     @State private var appIconError: String?
     @State private var showPostalCodeChange = false
-    @State private var showFeedvoteSafari = false
     @State private var postalCodeStore = PostalCodeStore.shared
 
     private var appVersion: String {
@@ -39,13 +38,6 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showPostalCodeChange) {
                 PostalCodeSetupView { showPostalCodeChange = false }
-            }
-            .sheet(isPresented: $showFeedvoteSafari) {
-                if let urlString = Bundle.main.object(forInfoDictionaryKey: "FeedvoteBoardURL") as? String,
-                   let url = URL(string: urlString) {
-                    SafariView(url: url)
-                        .ignoresSafeArea()
-                }
             }
         }
     }
@@ -217,17 +209,6 @@ struct SettingsView: View {
                 }
             }
             .foregroundStyle(.tint)
-            if Bundle.main.object(forInfoDictionaryKey: "FeedvoteBoardURL") is String {
-                Button {
-                    showFeedvoteSafari = true
-                } label: {
-                    Label(
-                        NSLocalizedString("settings.about.suggestFeature", comment: ""),
-                        systemImage: "lightbulb.fill"
-                    )
-                }
-                .foregroundStyle(.tint)
-            }
             Link(
                 NSLocalizedString("settings.about.rate", comment: ""),
                 destination: URL(string: "itms-apps://itunes.apple.com/app/id1224459142?action=write-review")!
