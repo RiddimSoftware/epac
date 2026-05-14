@@ -3,7 +3,7 @@
 // Path parameter: id (member_id / Affiliation DbId from Hansard XML)
 // Query parameters:
 //   - page     int  (default 1)
-//   - per_page int  (default 20, max 100)
+//   - per_page int  (default 20, max 100 — clamped, not rejected)
 //   - topic    string (ILIKE filter on subject_title)
 package main
 
@@ -23,6 +23,9 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jackc/pgx/v5"
 )
+
+const maxPerPage     = 100
+const defaultPerPage = 20
 
 type SpeechEntry struct {
 	InterventionId string  `json:"id"`
@@ -70,35 +73,12 @@ func getDBConn(ctx context.Context) (*pgx.Conn, error) {
 	return dbConn, err
 }
 
-func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	memberId := memberIDFromPath(req.PathParameters)
-	if memberId == "" {
-		return jsonError(http.StatusBadRequest, "missing member id"), nil
-	}
-
-	page := 1
-	if p := req.QueryStringParameters["page"]; p != "" {
-		if n, err := strconv.Atoi(p); err == nil && n > 0 {
-			page = n
-		}
-	}
-
-	perPage := 20
-	if pp := req.QueryStringParameters["per_page"]; pp != "" {
-		if n, err := strconv.Atoi(pp); err == nil && n > 0 && n <= 100 {
-			perPage = n
-		}
-	}
-
-	topic := strings.TrimSpace(req.QueryStringParameters["topic"])
-
-	conn, err := getDBConn(ctx)
-	if err != nil {
-		return jsonError(http.StatusInternalServerError, err.Error()), nil
-	}
-
+// queryMemberSpeeches executes the paginated query against an established connection.
+// Extracted to allow direct injection in integration tests without going through getDBConn.
+func queryMemberSpeeches(ctx context.Context, conn *pgx.Conn, memberId string, page, perPage int, topic string) (MemberSpeechesResponse, error) {
 	// Count total matching speeches
 	var total int
+	var err error
 	if topic != "" {
 		err = conn.QueryRow(ctx,
 			`SELECT COUNT(*) FROM speeches WHERE member_id = $1 AND subject_title ILIKE $2`,
@@ -111,7 +91,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		).Scan(&total)
 	}
 	if err != nil {
-		return jsonError(http.StatusInternalServerError, err.Error()), nil
+		return MemberSpeechesResponse{}, err
 	}
 
 	offset := (page - 1) * perPage
@@ -140,7 +120,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		)
 	}
 	if err != nil {
-		return jsonError(http.StatusInternalServerError, err.Error()), nil
+		return MemberSpeechesResponse{}, err
 	}
 	defer rows.Close()
 
@@ -157,7 +137,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 			filename     string
 		)
 		if err := rows.Scan(&id, &date, &parlNum, &sessNum, &subjectTitle, &content, &wordCount, &filename); err != nil {
-			return jsonError(http.StatusInternalServerError, err.Error()), nil
+			return MemberSpeechesResponse{}, err
 		}
 
 		entry := SpeechEntry{
@@ -182,10 +162,10 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		speeches = append(speeches, entry)
 	}
 	if err := rows.Err(); err != nil {
-		return jsonError(http.StatusInternalServerError, err.Error()), nil
+		return MemberSpeechesResponse{}, err
 	}
 
-	// Stats: total speeches, avg word count, top topic
+	// Stats: total speeches, avg word count, top topic (always over full member history)
 	stats := MemberStats{}
 	conn.QueryRow(ctx, `
 		SELECT
@@ -206,7 +186,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 
 	pages := int(math.Ceil(float64(total) / float64(perPage)))
 
-	resp := MemberSpeechesResponse{
+	return MemberSpeechesResponse{
 		MemberId: memberId,
 		Page:     page,
 		PerPage:  perPage,
@@ -214,6 +194,42 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		Pages:    pages,
 		Stats:    stats,
 		Speeches: speeches,
+	}, nil
+}
+
+func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	memberId := memberIDFromPath(req.PathParameters)
+	if memberId == "" {
+		return jsonError(http.StatusBadRequest, "missing member id"), nil
+	}
+
+	page := 1
+	if p := req.QueryStringParameters["page"]; p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			page = n
+		}
+	}
+
+	perPage := defaultPerPage
+	if pp := req.QueryStringParameters["per_page"]; pp != "" {
+		if n, err := strconv.Atoi(pp); err == nil && n > 0 {
+			if n > maxPerPage {
+				n = maxPerPage
+			}
+			perPage = n
+		}
+	}
+
+	topic := strings.TrimSpace(req.QueryStringParameters["topic"])
+
+	conn, err := getDBConn(ctx)
+	if err != nil {
+		return jsonError(http.StatusInternalServerError, err.Error()), nil
+	}
+
+	resp, err := queryMemberSpeeches(ctx, conn, memberId, page, perPage, topic)
+	if err != nil {
+		return jsonError(http.StatusInternalServerError, err.Error()), nil
 	}
 
 	body, err := json.Marshal(resp)
