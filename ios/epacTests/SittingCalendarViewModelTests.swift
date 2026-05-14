@@ -1,5 +1,6 @@
 @testable import epac
 import Foundation
+import SwiftData
 import Testing
 
 // Tests for the pure computed properties of SittingCalendarViewModel — no
@@ -17,6 +18,12 @@ struct SittingCalendarViewModelTests {
 
     private func date(year: Int, month: Int, day: Int) -> Date {
         Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
+    }
+
+    private func makeContext() throws -> ModelContext {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
+        return ModelContext(container)
     }
 
     // MARK: - sittingDayCount
@@ -61,5 +68,66 @@ struct SittingCalendarViewModelTests {
         let result = vm.upcomingSittingDates(from: anchor, throughDays: 30)
         #expect(result.count == 2)
         #expect(result[0] < result[1])
+    }
+
+    @Test func rapidRefreshKeepsNewestCompletedLoadApplied() async throws {
+        let context = try makeContext()
+        let year = Calendar.current.component(.year, from: Date())
+        let staleDate = date(year: year, month: 12, day: 1)
+        let freshDate = date(year: year, month: 12, day: 2)
+        let fetcher = DelayedCalendarFetcher(context: context, staleDate: staleDate, freshDate: freshDate)
+        let vm = SittingCalendarViewModel()
+        vm.currentYear = year
+
+        let firstRefresh = Task { await vm.refresh(modelContext: context, fetch: fetcher) }
+        try await Task.sleep(for: .milliseconds(10))
+        let secondRefresh = Task { await vm.refresh(modelContext: context, fetch: fetcher) }
+
+        await firstRefresh.value
+        await secondRefresh.value
+
+        #expect(fetcher.downloadCallCount == 2)
+        #expect(vm.futureDates.contains(dateComponents(year: year, month: 12, day: 2)))
+        #expect(!vm.futureDates.contains(dateComponents(year: year, month: 12, day: 1)))
+        #expect(!vm.loadFailed)
+    }
+}
+
+@MainActor
+private final class DelayedCalendarFetcher: SittingCalendarFetching {
+    private let context: ModelContext
+    private let staleDate: Date
+    private let freshDate: Date
+    private(set) var downloadCallCount = 0
+
+    init(context: ModelContext, staleDate: Date, freshDate: Date) {
+        self.context = context
+        self.staleDate = staleDate
+        self.freshDate = freshDate
+    }
+
+    nonisolated func downloadSittingCalendar(_ year: Int) async throws {
+        let callNumber = await MainActor.run {
+            downloadCallCount += 1
+            return downloadCallCount
+        }
+
+        if callNumber == 1 {
+            try await Task.sleep(for: .milliseconds(80))
+            await MainActor.run { upsertCalendar(year: year, sittings: [staleDate]) }
+        } else {
+            try await Task.sleep(for: .milliseconds(10))
+            await MainActor.run { upsertCalendar(year: year, sittings: [freshDate]) }
+        }
+    }
+
+    private func upsertCalendar(year: Int, sittings: [Date]) {
+        let descriptor = FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })
+        if let existing = try? context.fetch(descriptor).first {
+            existing.sittings = sittings
+        } else {
+            context.insert(SittingCalendar(year: year, sittings: sittings))
+        }
+        try? context.save()
     }
 }
