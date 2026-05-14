@@ -75,7 +75,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync production DATABASE_URL from Secrets Manager
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","search","member-speeches"]'), matrix.service) }}
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","loader","search","member-speeches","on-this-day","riding-boundary","health","device-register","live-status"]'), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
