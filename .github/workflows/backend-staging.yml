@@ -89,7 +89,6 @@ jobs:
           aws lambda wait function-updated \
             --function-name "$FUNCTION_NAME"
 
-
   smoke:
     name: Smoke test staging backend
     runs-on: ubuntu-latest
@@ -102,6 +101,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Ensure staging routes are synced
+        env:
+          API_NAME: epac-api-api
+          ENV_NAME: staging
+          STAGE_NAME: staging
+        run: ./scripts/ci/ensure-staging-api-routes.sh
 
       - name: Run staging backend smoke tests
         run: python3 scripts/ci/backend_staging_smoke.py --base-url "$STAGING_API_BASE_URL"
