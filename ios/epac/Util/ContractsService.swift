@@ -21,7 +21,7 @@ struct ContractsService {
         var items: [URLQueryItem] = [
             URLQueryItem(name: "resource_id", value: resourceID),
             URLQueryItem(name: "limit", value: String(limit)),
-            URLQueryItem(name: "sort", value: "contract_value desc")
+            URLQueryItem(name: "sort", value: "contract_value desc NULLS LAST")
         ]
         if let q = query, !q.isEmpty {
             items.append(URLQueryItem(name: "q", value: q))
