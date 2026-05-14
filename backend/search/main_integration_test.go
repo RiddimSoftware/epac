@@ -459,7 +459,9 @@ func TestSearchSpeechesUserContext_AppliesBillBoost(t *testing.T) {
 func TestSearchSpeechesLegacyFallback(t *testing.T) {
 	ctx := context.Background()
 	conn := connectIntegrationDB(t)
-	defer conn.Close(ctx)
+	// No defer conn.Close here: testdb.Connect registers its own t.Cleanup to close
+	// the connection, and closing it early via defer would cause the t.Cleanup
+	// registered below (restoreSpeechVectors) to fail with "conn closed".
 	resetSearchTables(t, conn)
 
 	seedSpeech(t, conn, speechFixture{
