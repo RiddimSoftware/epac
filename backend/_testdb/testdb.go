@@ -2,10 +2,12 @@ package _testdb
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -149,4 +151,74 @@ func SeedDeviceSubscription(t *testing.T, conn *pgx.Conn, token, myMPMemberID st
 	if err != nil {
 		t.Fatalf("failed to seed device subscription: %v", err)
 	}
+}
+
+// LiveSessionRow represents a row in the live_session cache table.
+type LiveSessionRow struct {
+	IsSitting          bool
+	BusinessType       string
+	CurrentItemTitle   *string
+	CurrentBillNumber  *string
+	CurrentSpeakerName *string
+	DivisionInProgress bool
+	SourceURL          string
+	SourceSnapshot     json.RawMessage
+	CheckedAt          time.Time
+	LastChangedAt      *time.Time
+	SittingDate        *string
+}
+
+func ClearLiveSessionRows(t *testing.T, conn *pgx.Conn) error {
+	t.Helper()
+	_, err := conn.Exec(context.Background(), `TRUNCATE TABLE live_session`)
+	return err
+}
+
+func SeedLiveSession(t *testing.T, conn *pgx.Conn, row LiveSessionRow) error {
+	t.Helper()
+	sourceURL := strings.TrimSpace(row.SourceURL)
+	if sourceURL == "" {
+		sourceURL = "https://www.ourcommons.ca/en"
+	}
+	snapshot := []byte("{}")
+	if len(row.SourceSnapshot) > 0 {
+		snapshot = row.SourceSnapshot
+	}
+	checkedAt := row.CheckedAt
+	if checkedAt.IsZero() {
+		checkedAt = time.Now().UTC()
+	}
+
+	_, err := conn.Exec(context.Background(), `
+		INSERT INTO live_session (
+			id, is_sitting, business_type, current_item_title, current_bill_number,
+			current_speaker_name, division_in_progress, source_url, source_snapshot,
+			last_polled_at, last_changed_at, sitting_date
+		)
+		VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11)
+		ON CONFLICT (id) DO UPDATE SET
+			is_sitting           = EXCLUDED.is_sitting,
+			business_type        = EXCLUDED.business_type,
+			current_item_title    = EXCLUDED.current_item_title,
+			current_bill_number   = EXCLUDED.current_bill_number,
+			current_speaker_name  = EXCLUDED.current_speaker_name,
+			division_in_progress = EXCLUDED.division_in_progress,
+			source_url           = EXCLUDED.source_url,
+			source_snapshot      = EXCLUDED.source_snapshot,
+			last_polled_at       = EXCLUDED.last_polled_at,
+			last_changed_at      = EXCLUDED.last_changed_at,
+			sitting_date         = COALESCE(EXCLUDED.sitting_date, live_session.sitting_date)
+	`, row.IsSitting, row.BusinessType, row.CurrentItemTitle, row.CurrentBillNumber, row.CurrentSpeakerName,
+		row.DivisionInProgress, sourceURL, string(snapshot), checkedAt, row.LastChangedAt, row.SittingDate)
+	if err != nil {
+		t.Fatalf("failed to seed live_session row: %v", err)
+	}
+	return nil
+}
+
+func CountLiveSessionRows(t *testing.T, conn *pgx.Conn) (int, error) {
+	t.Helper()
+	var count int
+	err := conn.QueryRow(context.Background(), `SELECT COUNT(*) FROM live_session`).Scan(&count)
+	return count, err
 }

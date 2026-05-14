@@ -3,6 +3,7 @@ module live-status
 go 1.24.0
 
 require (
+	epac/_testdb v0.0.0
 	epac/observability v0.0.0
 	github.com/aws/aws-lambda-go v1.52.0
 	github.com/jackc/pgx/v5 v5.8.0
@@ -32,3 +33,4 @@ require (
 )
 
 replace epac/observability => ../observability
+replace epac/_testdb => ../_testdb
