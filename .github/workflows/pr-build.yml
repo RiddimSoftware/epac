@@ -12,8 +12,6 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: ["self-hosted","macOS"]
-    container:
-      image: ghcr.io/realm/swiftlint:latest
     steps:
       - uses: actions/checkout@v4
       - name: Run SwiftLint
