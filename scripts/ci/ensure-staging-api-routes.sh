@@ -10,6 +10,26 @@ API_ID="${API_ID:-}"
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
+remove_existing_invoke_permissions() {
+  local function_name="$1"
+  local service="$2"
+  local env="$3"
+  local policy
+
+  if ! policy=$(aws lambda get-policy --region "${REGION}" --function-name "${function_name}" --query Policy --output text 2>/dev/null); then
+    return 0
+  fi
+
+  while IFS= read -r statement_id; do
+    [ -z "${statement_id}" ] && continue
+    aws lambda remove-permission \
+      --region "${REGION}" \
+      --function-name "${function_name}" \
+      --statement-id "${statement_id}" \
+      >/dev/null 2>&1 || true
+  done < <(printf '%s' "${policy}" | jq -r --arg prefix "apigateway-${service}-${env}" 'fromjson | .Statement[]? | select(.Sid | startswith($prefix)) | .Sid')
+}
+
 if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
   if [ -n "${STAGING_API_BASE_URL:-}" ]; then
     DOMAIN_NAME="${STAGING_API_BASE_URL#*://}"
@@ -109,14 +129,17 @@ for route_def in "${ROUTES[@]}"; do
   SOURCE_PATH="${ROUTE_KEY#* }"
   SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
   SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
+  STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
+
+  remove_existing_invoke_permissions "${FUNCTION_NAME}" "${SERVICE}" "${ENV_NAME}"
 
   aws lambda add-permission \
     --function-name "${FUNCTION_NAME}" \
-    --statement-id "apigateway-${SERVICE}-${ENV_NAME}" \
+    --statement-id "${STATEMENT_ID}" \
     --action lambda:InvokeFunction \
     --principal apigateway.amazonaws.com \
     --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}" \
-    >/dev/null 2>&1 || true
+    >/dev/null
 
 done
 
