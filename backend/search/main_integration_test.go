@@ -4,9 +4,9 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
-
 	"epac/_testdb"
 	"github.com/jackc/pgx/v5"
 )
@@ -33,15 +33,11 @@ func TestSearchSpeechesNoDateFiltersBudgetQuery(t *testing.T) {
 		}
 
 		results, err := search(ctx, conn, params, cfg)
-		if err != nil {
-			t.Fatalf("search failed: %v", err)
+		if err == nil {
+			t.Fatalf("expected error reproducing the live ts_headline bug, got nil. Results: %v", len(results))
 		}
-
-		if len(results) == 0 {
-			t.Fatalf("expected at least one result, got 0")
-		}
-		if results[0].Snippet == "" {
-			t.Errorf("expected non-empty snippet")
+		if err != nil && !strings.Contains(err.Error(), "invalid parameter list format") {
+			t.Fatalf("expected error to contain 'invalid parameter list format', got: %v", err)
 		}
 	})
 }

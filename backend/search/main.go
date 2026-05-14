@@ -134,7 +134,7 @@ func search(ctx context.Context, conn *pgx.Conn, params SearchParams, cfg Rankin
 
 const rankedSpeechSearchSQL = `
 		WITH query AS (
-			SELECTT
+			SELECT
 				plainto_tsquery('english', $1) AS english_query,
 				plainto_tsquery('french', $1) AS french_query
 		),
