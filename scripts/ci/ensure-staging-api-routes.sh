@@ -10,24 +10,31 @@ API_ID="${API_ID:-}"
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-remove_existing_invoke_permissions() {
+remove_permission_statement() {
   local function_name="$1"
-  local service="$2"
-  local env="$3"
+  local statement_id="$2"
+  aws lambda remove-permission \
+    --region "${REGION}" \
+    --function-name "${function_name}" \
+    --statement-id "${statement_id}" \
+    >/dev/null 2>&1 || true
+}
+
+remove_matching_invoke_permissions() {
+  local function_name="$1"
+  local statement_prefix="$2"
   local policy
 
   if ! policy=$(aws lambda get-policy --region "${REGION}" --function-name "${function_name}" --query Policy --output text 2>/dev/null); then
     return 0
   fi
 
-  while IFS= read -r statement_id; do
+  printf '%s' "${policy}" | jq -r --arg prefix "${statement_prefix}" '
+    fromjson | .Statement[]? | select(.Sid | startswith($prefix)) | .Sid
+  ' 2>/dev/null | while IFS= read -r statement_id; do
     [ -z "${statement_id}" ] && continue
-    aws lambda remove-permission \
-      --region "${REGION}" \
-      --function-name "${function_name}" \
-      --statement-id "${statement_id}" \
-      >/dev/null 2>&1 || true
-  done < <(printf '%s' "${policy}" | jq -r --arg prefix "apigateway-${service}-${env}" 'fromjson | .Statement[]? | select(.Sid | startswith($prefix)) | .Sid')
+    remove_permission_statement "${function_name}" "${statement_id}"
+  done
 }
 
 if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
@@ -130,16 +137,41 @@ for route_def in "${ROUTES[@]}"; do
   SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
   SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
   STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
+  STATEMENT_PREFIX="apigateway-${SERVICE}-${ENV_NAME}"
+  SOURCE_ARN="arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}"
 
-  remove_existing_invoke_permissions "${FUNCTION_NAME}" "${SERVICE}" "${ENV_NAME}"
+  remove_permission_statement "${FUNCTION_NAME}" "${STATEMENT_ID}"
+  remove_matching_invoke_permissions "${FUNCTION_NAME}" "${STATEMENT_PREFIX}"
 
-  aws lambda add-permission \
-    --function-name "${FUNCTION_NAME}" \
-    --statement-id "${STATEMENT_ID}" \
-    --action lambda:InvokeFunction \
-    --principal apigateway.amazonaws.com \
-    --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}" \
-    >/dev/null
+  if ! aws lambda add-permission \
+      --region "${REGION}" \
+      --function-name "${FUNCTION_NAME}" \
+      --statement-id "${STATEMENT_ID}" \
+      --action lambda:InvokeFunction \
+      --principal apigateway.amazonaws.com \
+      --source-arn "${SOURCE_ARN}" \
+      >/dev/null 2>&1; then
+    if aws lambda add-permission \
+      --region "${REGION}" \
+      --function-name "${FUNCTION_NAME}" \
+      --statement-id "${STATEMENT_ID}" \
+      --action lambda:InvokeFunction \
+      --principal apigateway.amazonaws.com \
+      --source-arn "${SOURCE_ARN}" \
+      >/dev/null 2>&1; then
+      :
+    else
+      remove_permission_statement "${FUNCTION_NAME}" "${STATEMENT_ID}"
+      remove_matching_invoke_permissions "${FUNCTION_NAME}" "${STATEMENT_PREFIX}"
+      aws lambda add-permission \
+        --region "${REGION}" \
+        --function-name "${FUNCTION_NAME}" \
+        --statement-id "${STATEMENT_ID}" \
+        --action lambda:InvokeFunction \
+        --principal apigateway.amazonaws.com \
+        --source-arn "${SOURCE_ARN}"
+    fi
+  fi
 
 done
 
