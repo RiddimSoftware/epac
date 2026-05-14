@@ -1,0 +1,33 @@
+name: Backend Python tests
+
+on:
+  pull_request:
+    paths: ['backend/**']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pipeline:
+          - cabinet
+          - corrections-statistics
+          - cpi-statistics
+          - cpp-oas-statistics
+          - ei-statistics
+          - fiscal-monitor
+          - pbo
+          - student-finance-statistics
+          - transport-safety-statistics
+          - vac-statistics
+    name: Test ${{ matrix.pipeline }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run tests
+        working-directory: backend/${{ matrix.pipeline }}
+        run: python3 -m unittest discover -v
