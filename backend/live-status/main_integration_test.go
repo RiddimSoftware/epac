@@ -59,12 +59,8 @@ func apiV2Request(deviceID string) events.APIGatewayV2HTTPRequest {
 
 func setupDatabase(t *testing.T) *pgx.Conn {
 	t.Helper()
-	ctx := context.Background()
 	conn := testdb.Connect(t)
-	if err := testdb.ApplyLiveStatusMigrations(ctx, conn); err != nil {
-		t.Fatalf("apply live-status migrations: %v", err)
-	}
-	if err := testdb.ClearLiveSessionRows(ctx, conn); err != nil {
+	if err := testdb.ClearLiveSessionRows(t, conn); err != nil {
 		t.Fatalf("clear live_session rows: %v", err)
 	}
 	return conn
@@ -118,7 +114,7 @@ func testLiveStatusAPICachedRow(t *testing.T, expectedCheckedAt time.Time, expec
 	t.Helper()
 	ctx := context.Background()
 	conn := setupDatabase(t)
-	if err := testdb.SeedLiveSession(ctx, conn, testdb.LiveSessionRow{
+	if err := testdb.SeedLiveSession(t, conn, testdb.LiveSessionRow{
 		IsSitting:    expectedIsSitting,
 		BusinessType: expectedBusinessType,
 		CheckedAt:    expectedCheckedAt,
@@ -239,7 +235,7 @@ func TestLiveStatusScheduledWrite_InsertsRow(t *testing.T) {
 func TestLiveStatusScheduledWrite_UpdatesExistingRow(t *testing.T) {
 	ctx := context.Background()
 	conn := setupDatabase(t)
-	if err := testdb.SeedLiveSession(ctx, conn, testdb.LiveSessionRow{
+	if err := testdb.SeedLiveSession(t, conn, testdb.LiveSessionRow{
 		IsSitting:    false,
 		BusinessType: "Adjourned",
 		CheckedAt:    time.Date(2026, 4, 27, 12, 30, 0, 0, time.UTC),
