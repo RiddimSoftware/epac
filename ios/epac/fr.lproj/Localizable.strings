@@ -648,7 +648,7 @@
 "gazette.detail.navTitle" = "Avis";
 "gazette.detail.summary" = "Résumé";
 "gazette.detail.source" = "Source";
-"gazette.detail.fullText" = "Lire le texte intégral sur canadagazette.gc.ca";
+"gazette.detail.fullText" = "Lire le texte intégral sur gazette.gc.ca";
 "gazette.detail.sourceLabel" = "Source officielle";
 
 /* Federal Contracts (EPAC-117) */

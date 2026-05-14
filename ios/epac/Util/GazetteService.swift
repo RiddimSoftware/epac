@@ -1,13 +1,13 @@
 import Foundation
 
 // Fetches Canada Gazette notices from the official RSS feeds.
-// Source: canadagazette.gc.ca — authoritative Government of Canada publication.
+// Source: gazette.gc.ca — authoritative Government of Canada publication.
 // No AI-generated content.
 
 struct GazetteService {
 
-    private static let partIURL  = URL(string: "https://canadagazette.gc.ca/rss/p1-en.xml")!
-    private static let partIIURL = URL(string: "https://canadagazette.gc.ca/rss/p2-en.xml")!
+    private static let partIURL  = URL(string: "https://gazette.gc.ca/rss/p1-eng.xml")!
+    private static let partIIURL = URL(string: "https://gazette.gc.ca/rss/p2-eng.xml")!
 
     // MARK: - Public
 
