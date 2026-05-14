@@ -42,6 +42,8 @@ class SmokeCheck:
     headers: dict[str, str] | None = None
     deterministic_note: str = ""
     fixture_note: str = ""
+    # When False, the validator receives raw response bytes instead of parsed JSON.
+    expect_json: bool = True
 
     def url(self, base_url: str) -> str:
         base = base_url.rstrip("/")
@@ -122,9 +124,78 @@ def validate_device_register(status: int, payload: Any) -> None:
         raise SmokeFailure("device registration: safe invalid request must return HTTP 400")
 
 
+def validate_search_min_args(status: int, payload: Any) -> None:
+    """Anti-regression validator for the 2026-05-14 production failure (no date filters)."""
+    if status != 200:
+        raise SmokeFailure(f"search:min-args: expected HTTP 200, got {status}")
+    body = require_dict(payload, "search:min-args")
+    if "error" in body:
+        raise SmokeFailure(f"search:min-args: unexpected error key: {body['error']}")
+    require_list(body, "search:min-args", "results")
+
+
+def validate_error_body(endpoint: str, fragment: str) -> Callable[[int, Any], None]:
+    """Returns a validator that asserts the response has an error key containing fragment."""
+    def _validate(status: int, payload: Any) -> None:
+        body = require_dict(payload, endpoint)
+        if "error" not in body:
+            raise SmokeFailure(f"{endpoint}: expected error key in response body")
+        if fragment.lower() not in str(body["error"]).lower():
+            raise SmokeFailure(f"{endpoint}: error body does not contain '{fragment}': {body['error']}")
+    return _validate
+
+
+def validate_error_no_stack(endpoint: str) -> Callable[[int, Any], None]:
+    """Returns a validator that asserts error body is present and does not leak stack traces."""
+    def _validate(status: int, payload: Any) -> None:
+        body = require_dict(payload, endpoint)
+        if "error" not in body:
+            raise SmokeFailure(f"{endpoint}: expected error key in 404 response body")
+        error_str = str(body["error"])
+        for leak_pattern in ("Traceback", "panic:", "goroutine ", "runtime error"):
+            if leak_pattern in error_str:
+                raise SmokeFailure(f"{endpoint}: stack trace leaked in error body")
+    return _validate
+
+
+def validate_member_speeches_invalid_page(status: int, payload: Any) -> None:
+    body = require_dict(payload, "member-speeches:invalid-page")
+    # Accept 400 with error key, or 200 with total strictly equal to 0
+    if status == 400:
+        if "error" not in body:
+            raise SmokeFailure("member-speeches:invalid-page: HTTP 400 response missing error key")
+        return
+    if "total" not in body:
+        raise SmokeFailure("member-speeches:invalid-page: HTTP 200 response missing total field")
+    if body["total"] != 0:
+        raise SmokeFailure(f"member-speeches:invalid-page: expected total=0 for page=-1, got {body['total']}")
+
+
+
+def validate_on_this_day_min_args(_: int, payload: Any) -> None:
+    """on-this-day with no date param — endpoint uses today's date as default."""
+    body = require_dict(payload, "on-this-day:min-args")
+    require_keys(body, "on-this-day:min-args", {"date", "items"})
+    require_list(body, "on-this-day:min-args", "items")
+
+
+def validate_calendar(status: int, payload: Any) -> None:
+    # payload is raw bytes when expect_json=False
+    raw = payload if isinstance(payload, bytes) else b""
+    if not raw.lstrip().startswith(b"BEGIN:VCALENDAR"):
+        raise SmokeFailure(f"calendar:happy: response body does not start with BEGIN:VCALENDAR")
+
+
+def validate_openapi(status: int, payload: Any) -> None:
+    body = require_dict(payload, "openapi-json")
+    if "paths" not in body:
+        raise SmokeFailure("openapi-json: response body missing 'paths' key")
+
+
 CHECKS = [
+    # --- health ---
     SmokeCheck(
-        name="health",
+        name="health:default",
         method="GET",
         path="/health",
         query={},
@@ -133,28 +204,91 @@ CHECKS = [
         deterministic_note="Contract check accepts ok/degraded HealthResponse and catches DB/Lambda error bodies.",
         fixture_note="Pipeline freshness can make this degraded until staging data jobs are seeded and scheduled.",
     ),
+    # --- search ---
     SmokeCheck(
-        name="search",
+        name="search:min-args",
         method="GET",
         path="/search/speeches",
-        query={"q": "housing", "from_date": "2020-01-01", "to_date": "2035-12-31"},
+        query={"q": "budget"},
+        expected_statuses={200},
+        validator=validate_search_min_args,
+        deterministic_note="Primary anti-regression check for the 2026-05-14 production failure. No date filters exercises the filter-free SQL path.",
+        fixture_note="Result count is data-dependent; empty list is acceptable.",
+    ),
+    SmokeCheck(
+        name="search:all-args",
+        method="GET",
+        path="/search/speeches",
+        query={"q": "housing", "from_date": "2020-01-01", "to_date": "2035-12-31", "user_id": "smoke-test"},
         expected_statuses={200},
         validator=validate_search,
         deterministic_note="Contract check verifies ranked search responds with the expected JSON envelope.",
         fixture_note="Result count is data-dependent; seeded speeches would allow non-empty assertions.",
     ),
     SmokeCheck(
-        name="member speeches",
+        name="search:empty-query",
+        method="GET",
+        path="/search/speeches",
+        query={"q": ""},
+        expected_statuses={400},
+        validator=validate_error_body("search:empty-query", "missing 'q'"),
+        deterministic_note="Negative check — empty q param must return HTTP 400 with a message referencing 'q'.",
+        fixture_note="No fixture required; validates input validation gate.",
+    ),
+    SmokeCheck(
+        name="search:malformed-date",
+        method="GET",
+        path="/search/speeches",
+        query={"q": "health", "from_date": "not-a-date"},
+        expected_statuses={400},
+        validator=validate_error_body("search:malformed-date", "from_date"),
+        deterministic_note="Negative check — invalid from_date must return HTTP 400 with a message referencing 'from_date'.",
+        fixture_note="No fixture required; validates date parsing guard.",
+    ),
+    # --- member speeches ---
+    SmokeCheck(
+        name="member-speeches:min-args",
         method="GET",
         path="/api/v1/members/0/speeches",
-        query={"page": "1", "per_page": "1"},
+        query={},
         expected_statuses={200},
         validator=validate_member_speeches,
-        deterministic_note="Contract check uses a harmless member id and accepts an empty speech page.",
+        deterministic_note="Contract check uses a harmless member id with no pagination params.",
         fixture_note="Seeded member/person records would allow an assertion against a known current MP.",
     ),
     SmokeCheck(
-        name="on-this-day",
+        name="member-speeches:all-args",
+        method="GET",
+        path="/api/v1/members/0/speeches",
+        query={"page": "1", "per_page": "10"},
+        expected_statuses={200},
+        validator=validate_member_speeches,
+        deterministic_note="Contract check uses explicit pagination params.",
+        fixture_note="Seeded member/person records would allow an assertion against a known current MP.",
+    ),
+    SmokeCheck(
+        name="member-speeches:invalid-page",
+        method="GET",
+        path="/api/v1/members/0/speeches",
+        query={"page": "-1"},
+        expected_statuses={400, 200},
+        validator=validate_member_speeches_invalid_page,
+        deterministic_note="Negative check — page=-1 should return 400 or 200 with total=0. Documents current behavior.",
+        fixture_note="No fixture required.",
+    ),
+    # --- on-this-day ---
+    SmokeCheck(
+        name="on-this-day:min-args",
+        method="GET",
+        path="/api/v1/on-this-day",
+        query={},
+        expected_statuses={200},
+        validator=validate_on_this_day_min_args,
+        deterministic_note="No date param — endpoint defaults to today's date. Documents and locks expected behavior.",
+        fixture_note="Items list will be empty outside active sitting periods.",
+    ),
+    SmokeCheck(
+        name="on-this-day:all-args",
         method="GET",
         path="/api/v1/on-this-day",
         query={"date": "2030-01-01", "limit": "1"},
@@ -164,7 +298,18 @@ CHECKS = [
         fixture_note="Seeded historical speeches would allow a known moment assertion.",
     ),
     SmokeCheck(
-        name="riding boundary",
+        name="on-this-day:invalid-date",
+        method="GET",
+        path="/api/v1/on-this-day",
+        query={"date": "not-a-date"},
+        expected_statuses={400},
+        validator=validate_error_body("on-this-day:invalid-date", "date"),
+        deterministic_note="Negative check — invalid date param must return HTTP 400.",
+        fixture_note="No fixture required; validates date parsing guard.",
+    ),
+    # --- riding boundary ---
+    SmokeCheck(
+        name="riding-boundary:happy",
         method="GET",
         path="/api/v1/ridings/spadina-harbourfront/boundary",
         query={},
@@ -174,7 +319,18 @@ CHECKS = [
         fixture_note="No database fixture required; depends on the upstream Represent boundary provider.",
     ),
     SmokeCheck(
-        name="live status",
+        name="riding-boundary:unknown-slug",
+        method="GET",
+        path="/api/v1/ridings/this-is-not-a-real-riding-slug/boundary",
+        query={},
+        expected_statuses={404},
+        validator=validate_error_no_stack("riding-boundary:unknown-slug"),
+        deterministic_note="Negative check — unknown slug must return HTTP 404 with error body and no stack trace leak.",
+        fixture_note="No fixture required.",
+    ),
+    # --- live status ---
+    SmokeCheck(
+        name="live-status:default",
         method="GET",
         path="/api/v1/live",
         query={},
@@ -183,8 +339,9 @@ CHECKS = [
         deterministic_note="Contract check validates the cached live-status response shape.",
         fixture_note="The exact sitting state is time/data-dependent and is not asserted.",
     ),
+    # --- device registration ---
     SmokeCheck(
-        name="device registration",
+        name="device-register:missing-token",
         method="POST",
         path="/api/v1/device/register",
         query={},
@@ -195,10 +352,76 @@ CHECKS = [
         deterministic_note="Safe negative contract check confirms invalid registration is rejected before writing data.",
         fixture_note="A successful 200 registration requires a test APNs token fixture and cleanup policy.",
     ),
+    SmokeCheck(
+        name="device-register:malformed-json",
+        method="POST",
+        path="/api/v1/device/register",
+        query={},
+        body=b"not-json",
+        headers={"Content-Type": "application/json"},
+        expected_statuses={400},
+        validator=validate_error_body("device-register:malformed-json", ""),
+        deterministic_note="Negative check — malformed JSON body must return HTTP 400 with an error key.",
+        fixture_note="No fixture required; validates request parsing guard.",
+    ),
+    # --- openapi ---
+    SmokeCheck(
+        name="openapi-json",
+        method="GET",
+        path="/openapi.json",
+        query={},
+        expected_statuses={200},
+        validator=validate_openapi,
+        deterministic_note="Contract check verifies the OpenAPI spec endpoint returns valid JSON with a paths key.",
+        fixture_note="No fixture required; catches OpenAPI generation regressions.",
+    ),
+    # --- additional edge cases to complete the ≥21 matrix ---
+    SmokeCheck(
+        name="search:future-only",
+        method="GET",
+        path="/search/speeches",
+        query={"q": "senate", "from_date": "2040-01-01"},
+        expected_statuses={200},
+        validator=validate_search_min_args,
+        deterministic_note="Edge case: from_date only (no to_date) with a far-future date. Should return empty results without error.",
+        fixture_note="No fixture required; future date guarantees empty results without staging data dependency.",
+    ),
+    SmokeCheck(
+        name="member-speeches:unknown-member",
+        method="GET",
+        path="/api/v1/members/999999999/speeches",
+        query={},
+        expected_statuses={200, 404},
+        validator=validate_member_speeches_invalid_page,
+        deterministic_note="Edge case: large member ID that does not exist. Documents whether the handler returns 200+empty or 404.",
+        fixture_note="No fixture required.",
+    ),
+    SmokeCheck(
+        name="on-this-day:far-past",
+        method="GET",
+        path="/api/v1/on-this-day",
+        query={"date": "1985-06-15"},
+        expected_statuses={200},
+        validator=validate_on_this_day,
+        deterministic_note="Edge case: a 1985 date exercises the handler against historical data that predates the app's primary corpus.",
+        fixture_note="Items list is data-dependent; empty list is acceptable.",
+    ),
+    # --- calendar ---
+    SmokeCheck(
+        name="calendar:happy",
+        method="GET",
+        path="/api/v1/calendar/house.ics",
+        query={},
+        expected_statuses={200},
+        validator=validate_calendar,
+        expect_json=False,
+        deterministic_note="Contract check verifies the iCal endpoint returns a valid VCALENDAR body.",
+        fixture_note="No fixture required; calendar is generated from the parliamentary schedule.",
+    ),
 ]
 
 
-def fetch_json(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
+def fetch_response(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
     headers = {
         "Accept": "application/json",
         "User-Agent": "epac-staging-smoke/1.0",
@@ -222,6 +445,9 @@ def fetch_json(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
     except urllib.error.URLError as error:
         raise SmokeFailure(f"{check.name}: request failed: {error}") from error
 
+    if not check.expect_json:
+        return status, raw
+
     try:
         payload = json.loads(raw.decode("utf-8"))
     except json.JSONDecodeError as error:
@@ -234,7 +460,7 @@ def run_check(check: SmokeCheck, base_url: str) -> tuple[bool, str]:
     last_error = ""
     for attempt in range(1, RETRIES + 1):
         try:
-            status, payload = fetch_json(check, base_url)
+            status, payload = fetch_response(check, base_url)
             if status not in check.expected_statuses:
                 expected = ", ".join(str(code) for code in sorted(check.expected_statuses))
                 raise SmokeFailure(f"{check.name}: expected HTTP {expected}, got {status}")
