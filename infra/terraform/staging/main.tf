@@ -23,12 +23,15 @@ resource "aws_lambda_function" "staging" {
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   handler       = "bootstrap"
+  publish       = false
 
   # Placeholder zip — CI overwrites code on every staging deploy.
   filename = "${path.module}/placeholder.zip"
 
   lifecycle {
-    ignore_changes = [filename, source_code_hash]
+    # filename/source_code_hash: managed by the staging deploy workflow.
+    # environment: DATABASE_URL is injected by the deploy workflow via Secrets Manager.
+    ignore_changes = [filename, source_code_hash, environment]
   }
 }
 

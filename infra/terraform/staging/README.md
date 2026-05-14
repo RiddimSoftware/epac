@@ -20,7 +20,7 @@ terraform apply  # idempotent once imported
 
 ## Import existing resources
 
-All staging resources were created manually (EPAC-1847/1848). Import them into state before running `apply`:
+All staging resources were created manually (EPAC-1847/1848/1849). Import them into state before running `apply`:
 
 ```bash
 export AWS_PROFILE=riddim-agent
@@ -50,8 +50,9 @@ terraform import \
 terraform import aws_apigatewayv2_domain_name.staging staging-api.epac.riddimsoftware.com
 
 # API Gateway API mapping (format: api-mapping-id/domain-name)
+# oo5a6a maps staging-api.epac.riddimsoftware.com → epac-api-staging (f4x35gduxl)
 terraform import aws_apigatewayv2_api_mapping.staging \
-  ece51c/staging-api.epac.riddimsoftware.com
+  oo5a6a/staging-api.epac.riddimsoftware.com
 
 # Route53 alias A record
 terraform import aws_route53_record.staging_api \

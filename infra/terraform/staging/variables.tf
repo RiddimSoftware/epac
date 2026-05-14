@@ -11,9 +11,9 @@ variable "lambda_role_arn" {
 }
 
 variable "apigw_api_id" {
-  description = "API Gateway v2 API ID (epac-api-api)"
+  description = "API Gateway v2 API ID (epac-api-staging — dedicated staging API)"
   type        = string
-  default     = "smun5g2szc"
+  default     = "f4x35gduxl"
 }
 
 variable "route53_zone_id" {
