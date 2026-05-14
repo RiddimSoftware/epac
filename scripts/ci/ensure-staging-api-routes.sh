@@ -56,12 +56,12 @@ fi
 # Route Key | Method | Function suffix | Payload version
 ROUTES=(
   "GET /health|GET|health|2.0"
-  "GET /search/speeches|GET|search|2.0"
-  "GET /api/v1/members/{id}/speeches|GET|member-speeches|2.0"
-  "GET /api/v1/on-this-day|GET|on-this-day|2.0"
-  "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|2.0"
+  "GET /search/speeches|GET|search|1.0"
+  "GET /api/v1/members/{id}/speeches|GET|member-speeches|1.0"
+  "GET /api/v1/on-this-day|GET|on-this-day|1.0"
+  "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
   "GET /api/v1/live|GET|live-status|2.0"
-  "POST /api/v1/device/register|POST|device-register|2.0"
+  "POST /api/v1/device/register|POST|device-register|1.0"
 )
 
 for route_def in "${ROUTES[@]}"; do
