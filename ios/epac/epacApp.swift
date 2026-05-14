@@ -67,7 +67,7 @@ struct epacApp: App {
 
 		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
 			SentrySDK.start { options in
-				options.dsn = dsn
+				options.dsn = "https://\(dsn)"
 				options.enableCrashHandler = true
 				options.tracesSampleRate = 0.1
 			}
