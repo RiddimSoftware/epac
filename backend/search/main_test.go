@@ -159,6 +159,24 @@ func TestRankingConfigRejectsInvalidEnv(t *testing.T) {
 	}
 }
 
+func TestTsHeadlineOptionsHaveNoEmptySelectors(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		sql  string
+	}{
+		{"ranked", rankedSpeechSearchSQL},
+		{"legacy", legacySpeechSearchSQL},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, token := range []string{"StartSel=", "StopSel="} {
+				if strings.Contains(tc.sql, token) {
+					t.Fatalf("%s SQL unexpectedly contains %q", tc.name, token)
+				}
+			}
+		})
+	}
+}
+
 func TestRankingSQLDocumentsRequiredComponents(t *testing.T) {
 	required := []string{
 		"ts_rank",
