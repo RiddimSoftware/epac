@@ -158,14 +158,18 @@ def validate_error_no_stack(endpoint: str) -> Callable[[int, Any], None]:
     return _validate
 
 
-def validate_member_speeches_invalid_page(_: int, payload: Any) -> None:
+def validate_member_speeches_invalid_page(status: int, payload: Any) -> None:
     body = require_dict(payload, "member-speeches:invalid-page")
-    # Accept either 400 with error key, or 200 with total=0
-    if "error" in body:
+    # Accept 400 with error key, or 200 with total strictly equal to 0
+    if status == 400:
+        if "error" not in body:
+            raise SmokeFailure("member-speeches:invalid-page: HTTP 400 response missing error key")
         return
-    if "total" in body:
-        return
-    raise SmokeFailure("member-speeches:invalid-page: expected error key or total field")
+    if "total" not in body:
+        raise SmokeFailure("member-speeches:invalid-page: HTTP 200 response missing total field")
+    if body["total"] != 0:
+        raise SmokeFailure(f"member-speeches:invalid-page: expected total=0 for page=-1, got {body['total']}")
+
 
 
 def validate_on_this_day_min_args(_: int, payload: Any) -> None:
