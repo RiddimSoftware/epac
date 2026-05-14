@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,12 +32,16 @@ func TestSearchSpeechesNoDateFiltersBudgetQuery(t *testing.T) {
 			TopicBoost:        0.65,
 		}
 
-		_, err := search(ctx, conn, params, cfg)
-		if err == nil {
-			t.Fatalf("expected error reproducing the live ts_headline bug, got nil")
+		results, err := search(ctx, conn, params, cfg)
+		if err != nil {
+			t.Fatalf("search failed: %v", err)
 		}
-		if !strings.Contains(err.Error(), "invalid parameter list format") {
-			t.Fatalf("expected error to contain 'invalid parameter list format', got: %v", err)
+
+		if len(results) == 0 {
+			t.Fatalf("expected at least one result, got 0")
+		}
+		if results[0].Snippet == "" {
+			t.Errorf("expected non-empty snippet")
 		}
 	})
 }
