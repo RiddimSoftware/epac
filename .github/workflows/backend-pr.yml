@@ -1,0 +1,56 @@
+name: Backend PR
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-pr.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - search
+          - member-speeches
+          - on-this-day
+          - live-status
+          - device-register
+          - health
+          - riding-boundary
+          - openapi
+    name: Test ${{ matrix.service }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: epac
+          POSTGRES_PASSWORD: epac
+          POSTGRES_DB: epac_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/${{ matrix.service }}/go.mod
+      - name: Unit tests
+        working-directory: backend/${{ matrix.service }}
+        run: go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
+      - name: Integration tests
+        working-directory: backend/${{ matrix.service }}
+        env:
+          DATABASE_URL: postgresql://epac:epac@localhost:5432/epac_test?sslmode=disable
+        run: go test -tags=integration ./...
