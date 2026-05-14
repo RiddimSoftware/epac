@@ -48,6 +48,43 @@ struct FiscalMonitorServiceTests {
 		#expect(entry.sourceURL == "https://www.canada.ca/content/dam/fin/publications/fm-rf/2025/12/2025-12-eng.pdf")
 	}
 
+	@Test func parseIssueAcceptsFootnotedRevenueRow() throws {
+		let html = fiscalMonitorHTML(
+			rows: """
+					<tr><th scope="row" class="fnt-nrml">Revenues<sup>1</sup></th><td>31,949</td><td>33,657</td><td>83,389</td><td>89,855</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Program expenses, excluding net actuarial losses</th><td>-42,190</td><td>-40,000</td><td>-86,290</td><td>-87,000</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Public debt charges</th><td>-4,386</td><td>-4,513</td><td>-8,556</td><td>-8,886</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Net actuarial losses</th><td>-335</td><td>-415</td><td>-670</td><td>-830</td></tr>
+					<tr><th scope="row">Budgetary balance (deficit/surplus)</th><td>-14,962</td><td>-11,271</td><td>-12,127</td><td>-6,861</td></tr>
+			"""
+		)
+
+		let url = URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2025/06.html")!
+		let entry = try FiscalMonitorService.parseIssue(html: html, url: url)
+
+		#expect(entry.revenueMillions == 33_657)
+		#expect(entry.yearToDateBudgetaryBalanceMillions == -6_861)
+	}
+
+	@Test func parseIssueAcceptsNetActuarialLossesAndGainsLabels() throws {
+		let html = fiscalMonitorHTML(
+			rows: """
+					<tr><th scope="row" class="fnt-nrml">Revenues</th><td>40,000</td><td>41,000</td><td>200,000</td><td>205,000</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Program expenses, excluding net actuarial losses and gains</th><td>-38,000</td><td>-39,000</td><td>-190,000</td><td>-191,000</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Public debt charges</th><td>-4,000</td><td>-4,200</td><td>-20,000</td><td>-20,500</td></tr>
+					<tr><th scope="row" class="fnt-nrml">Net actuarial (losses) gains</th><td>126</td><td>-466</td><td>-1,553</td><td>-2,535</td></tr>
+					<tr><th scope="row">Budgetary balance (deficit/surplus)</th><td>-1,874</td><td>-2,666</td><td>-11,553</td><td>-9,035</td></tr>
+			"""
+		)
+
+		let url = URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor/2025/09.html")!
+		let entry = try FiscalMonitorService.parseIssue(html: html, url: url)
+
+		#expect(entry.programExpenseMillions == 39_000)
+		#expect(entry.netActuarialLossesMillions == 466)
+		#expect(entry.budgetaryBalanceMillions == -2_666)
+	}
+
 	@Test func parseIssueLinksFindsCurrentFiscalYearCandidates() throws {
 		let html = """
 		<html><body>
@@ -99,5 +136,24 @@ struct FiscalMonitorServiceTests {
 		#expect(issues.count == 2)
 		#expect(issues.contains { $0.year == 2026 && $0.month == 2 && $0.fiscalYearStart == 2025 })
 		#expect(issues.contains { $0.year == 2025 && $0.month == 4 && $0.fiscalYearStart == 2025 })
+	}
+
+	private func fiscalMonitorHTML(rows: String) -> String {
+		"""
+		<html>
+		<head>
+			<title>The Fiscal Monitor</title>
+			<meta name="dcterms.issued" content="2026-02-27"/>
+		</head>
+		<body>
+			<table class="table table-bordered">
+				<caption>Table 1<br><strong>Summary statement of transactions</strong><br><small>$ millions</small></caption>
+				<tbody>
+		\(rows)
+				</tbody>
+			</table>
+		</body>
+		</html>
+		"""
 	}
 }

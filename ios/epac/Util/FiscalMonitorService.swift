@@ -157,12 +157,42 @@ struct FiscalMonitorService {
 		}
 
 		let values = tableValues(table)
-		let revenue = try currentMonthValue("Revenues", values: values, url: url)
-		let programExpenses = abs(try currentMonthValue("Program expenses, excluding net actuarial losses", values: values, url: url))
-		let publicDebtCharges = abs(try currentMonthValue("Public debt charges", values: values, url: url))
-		let netActuarialLosses = abs(try currentMonthValue("Net actuarial losses", values: values, url: url))
-		let balance = try currentMonthValue("Budgetary balance (deficit/surplus)", values: values, url: url)
-		let yearToDateBalance = try yearToDateValue("Budgetary balance (deficit/surplus)", values: values, url: url)
+		let revenue = try currentMonthValue(
+			"Revenues",
+			values: values,
+			url: url,
+			matching: { $0 == "Revenues" || $0.hasPrefix("Revenues ") }
+		)
+		let programExpenses = abs(try currentMonthValue(
+			"Program expenses, excluding net actuarial losses",
+			values: values,
+			url: url,
+			matching: { $0.hasPrefix("Program expenses, excluding net actuarial") }
+		))
+		let publicDebtCharges = abs(try currentMonthValue(
+			"Public debt charges",
+			values: values,
+			url: url,
+			matching: { $0 == "Public debt charges" }
+		))
+		let netActuarialLosses = abs(try currentMonthValue(
+			"Net actuarial losses",
+			values: values,
+			url: url,
+			matching: { $0.hasPrefix("Net actuarial") }
+		))
+		let balance = try currentMonthValue(
+			"Budgetary balance (deficit/surplus)",
+			values: values,
+			url: url,
+			matching: { $0 == "Budgetary balance (deficit/surplus)" }
+		)
+		let yearToDateBalance = try yearToDateValue(
+			"Budgetary balance (deficit/surplus)",
+			values: values,
+			url: url,
+			matching: { $0 == "Budgetary balance (deficit/surplus)" }
+		)
 		let annualProjection = parseAnnualProjection(doc)
 
 		return FiscalMonitorParsedEntry(
@@ -194,7 +224,7 @@ struct FiscalMonitorService {
 	private static func tableValues(_ table: Kanna.XMLElement) -> [String: [Double]] {
 		var rows: [String: [Double]] = [:]
 		for row in table.css("tr") {
-			let key = normalized(row.at_css("th")?.text)
+			let key = tableRowLabel(row.at_css("th")?.text)
 			guard !key.isEmpty else { continue }
 			let numbers = row.css("td").compactMap { parseAmount($0.text) }
 			if !numbers.isEmpty {
@@ -204,15 +234,25 @@ struct FiscalMonitorService {
 		return rows
 	}
 
-	private static func currentMonthValue(_ row: String, values: [String: [Double]], url: URL) throws -> Double {
-		guard let numbers = values[row], numbers.count >= 2 else {
+	private static func currentMonthValue(
+		_ row: String,
+		values: [String: [Double]],
+		url: URL,
+		matching predicate: (String) -> Bool
+	) throws -> Double {
+		guard let numbers = values.first(where: { predicate($0.key) })?.value, numbers.count >= 2 else {
 			throw FiscalMonitorServiceError.valueMissing(row, url)
 		}
 		return numbers[1]
 	}
 
-	private static func yearToDateValue(_ row: String, values: [String: [Double]], url: URL) throws -> Double {
-		guard let numbers = values[row], numbers.count >= 4 else {
+	private static func yearToDateValue(
+		_ row: String,
+		values: [String: [Double]],
+		url: URL,
+		matching predicate: (String) -> Bool
+	) throws -> Double {
+		guard let numbers = values.first(where: { predicate($0.key) })?.value, numbers.count >= 4 else {
 			throw FiscalMonitorServiceError.valueMissing("\(row) year-to-date", url)
 		}
 		return numbers[3]
@@ -268,6 +308,11 @@ struct FiscalMonitorService {
 			.replacingOccurrences(of: "\u{00a0}", with: " ")
 			.replacingOccurrences(of: #"[\s\r\n\t]+"#, with: " ", options: .regularExpression)
 			.trimmingCharacters(in: .whitespacesAndNewlines)
+	}
+
+	private static func tableRowLabel(_ raw: String?) -> String {
+		normalized(raw)
+			.replacingOccurrences(of: #"\s*\d+$"#, with: "", options: .regularExpression)
 	}
 
 	private static func monthName(_ month: Int) -> String {
