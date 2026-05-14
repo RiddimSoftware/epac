@@ -472,6 +472,7 @@
 "committees.navTitle" = "Comités";
 "committees.error.title" = "Impossible de charger les comités";
 "committees.error.description" = "Vérifiez votre connexion et réessayez.";
+"committees.retry" = "Réessayer";
 "committees.empty.title" = "Aucun comité";
 "committees.noMeetings" = "Aucune réunion récente";
 "committees.meeting.number" = "Réunion %d";

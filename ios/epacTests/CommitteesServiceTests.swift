@@ -3,6 +3,30 @@ import Foundation
 import Testing
 
 struct CommitteesServiceTests {
+	@Test func parsesCommitteesFromCurrentHouseListHTML() {
+		let html = """
+		<a data-toggle="collapse" href="#collapse-ACVA">
+			<div class="accordion-bar-title">
+				<span class="committee-acronym-cell">ACVA</span>
+				<span class="committee-name">Veterans Affairs</span>
+			</div>
+		</a>
+		<a data-toggle="collapse" href="#collapse-FINA">
+			<div class="accordion-bar-title">
+				<span class="committee-acronym-cell">FINA</span>
+				<span class="committee-name">Finance</span>
+			</div>
+		</a>
+		"""
+
+		let committees = CommitteesService.parseCommitteesHTML(html)
+
+		#expect(committees.map(\.acronym) == ["ACVA", "FINA"])
+		#expect(committees[0].id == "ACVA")
+		#expect(committees[0].name == "Veterans Affairs")
+		#expect(committees[0].committeeURL.absoluteString == "https://www.ourcommons.ca/Committees/en/ACVA")
+	}
+
 	@Test func parsesUpcomingAndRecentMeetingsWithWitnesses() throws {
 		let now = try #require(ISO8601DateFormatter().date(from: "2026-04-28T12:00:00Z"))
 		let items: [[String: Any]] = [

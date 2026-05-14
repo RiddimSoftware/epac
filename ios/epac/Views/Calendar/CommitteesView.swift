@@ -48,11 +48,17 @@ struct CommitteesView: View {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
             } else if loadFailed && committees.isEmpty {
-                ContentUnavailableView(
-                    NSLocalizedString("committees.error.title", comment: ""),
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(NSLocalizedString("committees.error.description", comment: ""))
-                )
+                VStack(spacing: 16) {
+                    ContentUnavailableView(
+                        NSLocalizedString("committees.error.title", comment: ""),
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(NSLocalizedString("committees.error.description", comment: ""))
+                    )
+                    Button(NSLocalizedString("committees.retry", comment: "")) {
+                        Task { await load() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else if committees.isEmpty {
                 ContentUnavailableView(
                     NSLocalizedString("committees.empty.title", comment: ""),
@@ -153,11 +159,17 @@ struct CommitteeMeetingsView: View {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
             } else if loadFailed && !hasMeetings {
-                ContentUnavailableView(
-                    NSLocalizedString("committees.error.title", comment: ""),
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(NSLocalizedString("committees.error.description", comment: ""))
-                )
+                VStack(spacing: 16) {
+                    ContentUnavailableView(
+                        NSLocalizedString("committees.error.title", comment: ""),
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(NSLocalizedString("committees.error.description", comment: ""))
+                    )
+                    Button(NSLocalizedString("committees.retry", comment: "")) {
+                        Task { await load() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else if !hasMeetings && !isLoading {
                 ContentUnavailableView(
                     NSLocalizedString("committees.noMeetings", comment: ""),

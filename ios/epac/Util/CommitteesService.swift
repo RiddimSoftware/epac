@@ -8,8 +8,9 @@
 //  Endpoint: https://api.open.ourcommons.ca/ocd/
 //  All data traces to an authoritative Parliament of Canada source.
 //
-//  API discovery notes (2026-04-27):
-//  - /ocd/committees/ returns a paginated list of committees with id, acronymEn, longNameEn
+//  API discovery notes:
+//  - The previously used api.open.ourcommons.ca /ocd/committees/ host no longer
+//    resolves. The official Committees list page remains the authoritative source.
 //  - /ocd/committees/{id}/meetings/ returns paginated meetings per committee
 //  - Evidence/interventions endpoint may not exist; if absent the UI falls back
 //    to showing meeting metadata + a deep-link to parl.ca
@@ -19,6 +20,7 @@ import Foundation
 
 struct CommitteesService {
     private static let baseURL = URL(string: "https://api.open.ourcommons.ca")!
+    private static let committeesWebBaseURL = URL(string: "https://www.ourcommons.ca")!
 
     struct CommitteeMeetingsResult: Sendable {
         let upcoming: [CommitteeMeeting]
@@ -31,36 +33,52 @@ struct CommitteesService {
     /// Returns [] on any network or parse failure.
     static func fetchCommittees(parliament: Int = 45) async -> [ParliamentaryCommittee] {
         guard var components = URLComponents(
-            url: baseURL.appendingPathComponent("ocd/committees/"),
+            url: committeesWebBaseURL.appendingPathComponent("Committees/en/List"),
             resolvingAgainstBaseURL: false
         ) else { return [] }
         components.queryItems = [
-            URLQueryItem(name: "parliament", value: String(parliament)),
-            URLQueryItem(name: "chamber", value: "HOC"),
-            URLQueryItem(name: "pageSize", value: "50"),
-            URLQueryItem(name: "format", value: "json")
+            URLQueryItem(name: "parl", value: String(parliament)),
+            URLQueryItem(name: "session", value: "1")
         ]
         guard let url = components.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = json["items"] as? [[String: Any]]
+              let html = String(data: data, encoding: .utf8)
         else { return [] }
 
-        return items.compactMap { item -> ParliamentaryCommittee? in
-            // API may return id or committeeCode as the identifier
-            guard let id = item["id"] as? String ?? item["committeeCode"] as? String,
-                  let name = item["longNameEn"] as? String ?? item["nameEn"] as? String
+        return parseCommitteesHTML(html)
+    }
+
+    static func parseCommitteesHTML(_ html: String) -> [ParliamentaryCommittee] {
+        let pattern = #"""
+        <span\s+class="committee-acronym-cell">\s*([^<]+?)\s*</span>\s*
+        <span\s+class="committee-name">\s*([^<]+?)\s*</span>
+        """#
+        guard let regex = try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive, .dotMatchesLineSeparators, .allowCommentsAndWhitespace]
+        ) else { return [] }
+
+        let nsRange = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, range: nsRange)
+
+        var seen: Set<String> = []
+        return matches.compactMap { match -> ParliamentaryCommittee? in
+            guard let acronymRange = Range(match.range(at: 1), in: html),
+                  let nameRange = Range(match.range(at: 2), in: html)
             else { return nil }
-            let acronym = item["acronymEn"] as? String ?? item["committeeCode"] as? String ?? ""
-            let chamber = item["chamberCode"] as? String ?? "HOC"
-            let urlStr = item["url"] as? String
-                ?? "https://www.ourcommons.ca/committees/en/\(acronym)"
-            let committeeURL = URL(string: urlStr) ?? URL(string: "https://www.ourcommons.ca")!
+
+            let acronym = decodeHTML(String(html[acronymRange])).trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = decodeHTML(String(html[nameRange])).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !acronym.isEmpty, !name.isEmpty, seen.insert(acronym).inserted else { return nil }
+
             return ParliamentaryCommittee(
-                id: id, acronym: acronym, name: name,
-                chamberCode: chamber, committeeURL: committeeURL
+                id: acronym,
+                acronym: acronym,
+                name: name,
+                chamberCode: "HOC",
+                committeeURL: committeesWebBaseURL.appendingPathComponent("Committees/en/\(acronym)")
             )
         }
     }
@@ -269,5 +287,14 @@ struct CommitteesService {
             }
         }
         return nil
+    }
+
+    private static func decodeHTML(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#233;", with: "e")
+            .replacingOccurrences(of: "&nbsp;", with: " ")
     }
 }
