@@ -470,6 +470,7 @@
 "committees.navTitle" = "Committees";
 "committees.error.title" = "Couldn't Load Committees";
 "committees.error.description" = "Check your connection and try again.";
+"committees.retry" = "Retry";
 "committees.empty.title" = "No Committees";
 "committees.noMeetings" = "No Recent Meetings";
 "committees.meeting.number" = "Meeting %d";
