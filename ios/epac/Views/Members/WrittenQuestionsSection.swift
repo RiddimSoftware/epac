@@ -2,7 +2,7 @@
 // epac
 //
 // Collapsed disclosure section showing written questions (Questions on the Order Paper)
-// submitted by an MP. Data from api.open.ourcommons.ca. Overdue questions (no response
+// submitted by an MP. Data from our data source links (openparliament.ca). Overdue questions (no response
 // after 45 days) shown with a distinct badge per Parliament of Canada convention.
 
 import SwiftData

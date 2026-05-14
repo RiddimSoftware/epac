@@ -91,6 +91,30 @@ struct SittingCalendarViewModelTests {
         #expect(!vm.futureDates.contains(dateComponents(year: year, month: 12, day: 1)))
         #expect(!vm.loadFailed)
     }
+
+    @Test func refreshPreservesSittingDatesFromOtherYears() async throws {
+        let context = try makeContext()
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let previousYear = currentYear - 1
+        let refreshedCurrentYearDate = date(year: currentYear, month: 12, day: 1)
+        let fetcher = SingleYearCalendarFetcher(context: context, updatedDates: [currentYear: [refreshedCurrentYearDate]])
+
+        let vm = SittingCalendarViewModel()
+        vm.currentYear = currentYear
+        vm.dates = [
+            dateComponents(year: previousYear, month: 6, day: 10),
+            dateComponents(year: currentYear, month: 1, day: 1)
+        ]
+
+        await vm.refresh(modelContext: context, fetch: fetcher)
+
+        #expect(vm.dates.contains(dateComponents(year: previousYear, month: 6, day: 10)))
+        #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 1, day: 1)))
+        #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
+        #expect(vm.futureDates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
+        #expect(fetcher.downloadCalls == 1)
+        #expect(!vm.loadFailed)
+    }
 }
 
 @MainActor
@@ -130,4 +154,35 @@ private final class DelayedCalendarFetcher: SittingCalendarFetching {
         }
         try? context.save()
     }
+}
+
+@MainActor
+private final class SingleYearCalendarFetcher: SittingCalendarFetching {
+    private let context: ModelContext
+    private let updatedDates: [Int: [Date]]
+    private(set) var downloadCalls = 0
+
+    init(context: ModelContext, updatedDates: [Int: [Date]]) {
+        self.context = context
+        self.updatedDates = updatedDates
+    }
+
+    nonisolated func downloadSittingCalendar(_ year: Int) async throws {
+        await MainActor.run {
+            downloadCalls += 1
+        }
+        await MainActor.run {
+            upsertCalendar(context: context, year: year, sittings: updatedDates[year] ?? [])
+        }
+    }
+}
+
+private func upsertCalendar(context: ModelContext, year: Int, sittings: [Date]) {
+    let descriptor = FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })
+    if let existing = try? context.fetch(descriptor).first {
+        existing.sittings = sittings
+    } else {
+        context.insert(SittingCalendar(year: year, sittings: sittings))
+    }
+    try? context.save()
 }

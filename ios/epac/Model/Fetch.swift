@@ -11,7 +11,7 @@ import Sentry
 import SwiftData
 import SWXMLHash
 
-@ModelActor
+	@ModelActor
 actor Fetch: ObservableObject {
         private let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
         private let calendarPath: String = "en/sitting-calendar/%d"
@@ -39,7 +39,14 @@ actor Fetch: ObservableObject {
 
         private var downloadsInProgress: Set<String> = []
         private var failedDownloads: Set<String> = []
-	private let openAPIURL = URL(string: "https://api.open.ourcommons.ca")!
+	private let openAPIURL = URL(string: "https://api.openparliament.ca")!
+	private let openParliamentAPIURL = URL(string: "https://api.openparliament.ca")!
+	private let votePageSize = 200
+
+	private enum VotingEndpoint {
+		case openCommons
+		case openParliament
+	}
 	func sittingCalendar(_ year: Int) async throws -> SittingCalendar {
 		Log.debug("Fetch.sittingCalendar(year: \(year))")
 		let calendar = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
@@ -726,51 +733,16 @@ actor Fetch: ObservableObject {
 
 		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
 		do {
-			var page = 1
-			var hasMore = true
-			let isoFormatter = ISO8601DateFormatter()
-			isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-			while hasMore {
-				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-				components.path = "/ocd/votes/"
-				components.queryItems = [
-					URLQueryItem(name: "parliament", value: String(parliament)),
-					URLQueryItem(name: "pageSize", value: "200"),
-					URLQueryItem(name: "page", value: String(page)),
-					URLQueryItem(name: "format", value: "json")
-				]
-				guard let url = components.url else { break }
-				let (data, response) = try await NetworkService.shared.data(from: url)
-				guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-					  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-					  let items = json["items"] as? [[String: Any]] else { break }
-				hasMore = !items.isEmpty && items.count == 200
-				page += 1
-				for item in items {
-					guard let id = item["id"] as? Int else { continue }
-					let dateStr = item["date"] as? String ?? ""
-					let date = isoFormatter.date(from: dateStr) ?? Date()
-					let descObj = item["description"] as? [String: String]
-					let desc = descObj?["en"] ?? item["description"] as? String ?? ""
-					let resultObj = item["result"] as? [String: String]
-					let result = resultObj?["en"] ?? item["result"] as? String ?? ""
-					let vote = RecordedVote(
-						voteID: id,
-						parliament: item["parliament"] as? Int ?? parliament,
-						session: item["session"] as? Int ?? 0,
-						number: item["number"] as? Int ?? 0,
-						date: date,
-						descriptionEn: desc,
-						billNumberCode: item["billNumberCode"] as? String ?? "",
-						yea: item["yea"] as? Int ?? 0,
-						nay: item["nay"] as? Int ?? 0,
-						paired: item["paired"] as? Int ?? 0,
-						resultEn: result
-					)
-					modelContext.insert(vote)
+			do {
+				try await fetchVotingRecords(parliament: parliament, from: .openCommons)
+			} catch {
+				if shouldFallbackVotes(error: error),
+				   try modelContext.fetchCount(FetchDescriptor<RecordedVote>()) == 0 {
+					Log.debug("downloadVotingRecords: falling back to openparliament API due legacy host error: \(error.localizedDescription)")
+					try await fetchVotingRecords(parliament: parliament, from: .openParliament)
+				} else {
+					throw error
 				}
-				try modelContext.save()
-				UserDefaults.standard.set(Date(), forKey: "epac.sync.votes")
 			}
 			writeLatestVoteSummaryForWidgets()
 			transaction.finish(status: .ok)
@@ -813,35 +785,369 @@ actor Fetch: ObservableObject {
 		))
 		guard existing.isEmpty else { return }
 
+		do {
+			try await downloadMemberVotes(memberID: memberID, from: .openCommons)
+		} catch {
+			if shouldFallbackVotes(error: error),
+			   try modelContext.fetchCount(FetchDescriptor<MemberVote>(predicate: #Predicate { $0.memberID == memberID })) == 0 {
+				Log.debug("downloadMemberVotes(\(memberID)): falling back to openparliament API due legacy host error: \(error.localizedDescription)")
+				try await downloadMemberVotes(memberID: memberID, from: .openParliament)
+			} else {
+				throw error
+			}
+		}
+	}
+
+	private func fetchVotingRecords(parliament: Int, from source: VotingEndpoint) async throws {
+		var page = 1
+		var hasMore = true
+		let isoFormatter = ISO8601DateFormatter()
+		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+		while hasMore {
+			let (voteItems, continuePagination) = try await loadVotingPage(
+				parliament: parliament,
+				page: page,
+				from: source,
+				isoFormatter: isoFormatter
+			)
+			for vote in voteItems {
+				modelContext.insert(vote)
+			}
+			hasMore = continuePagination
+			page += 1
+		}
+		try modelContext.save()
+	}
+
+	private func downloadMemberVotes(memberID: Int, from source: VotingEndpoint) async throws {
 		var page = 1
 		var hasMore = true
 		while hasMore {
-			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-			components.path = "/ocd/members/\(memberID)/votes/"
-			components.queryItems = [
-				URLQueryItem(name: "pageSize", value: "200"),
-				URLQueryItem(name: "page", value: String(page)),
-				URLQueryItem(name: "format", value: "json")
-			]
-			guard let url = components.url else { break }
-			let (data, response) = try await NetworkService.shared.data(from: url)
-			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-				  let items = json["items"] as? [[String: Any]] else { break }
-			hasMore = !items.isEmpty && items.count == 200
-			page += 1
-			for item in items {
-				guard let voteID = item["voteId"] as? Int,
-					  let ballot = item["recordedVote"] as? String else { continue }
-				let mv = MemberVote(voteID: voteID, memberID: memberID, recordedVote: ballot)
-				// link to RecordedVote if already stored
-				mv.vote = try? modelContext.fetch(FetchDescriptor<RecordedVote>(
+			let (votes, continuePagination) = try await loadMemberVotes(
+				memberID: memberID,
+				page: page,
+				from: source
+			)
+			for (voteID, ballot) in votes {
+				let memberVote = MemberVote(voteID: voteID, memberID: memberID, recordedVote: ballot)
+				memberVote.vote = try? modelContext.fetch(FetchDescriptor<RecordedVote>(
 					predicate: #Predicate { $0.voteID == voteID }
 				)).first
-				modelContext.insert(mv)
+				modelContext.insert(memberVote)
 			}
 			try modelContext.save()
+			hasMore = continuePagination
+			page += 1
 		}
+	}
+
+	private func shouldFallbackVotes(error: Error) -> Bool {
+		if let nsError = error as? URLError {
+			switch nsError.code {
+			case .cannotFindHost, .cannotConnectToHost, .notConnectedToInternet, .networkConnectionLost:
+				return true
+			default:
+				return false
+			}
+		}
+		return false
+	}
+
+	private func loadVotingPage(
+		parliament: Int,
+		page: Int,
+		from source: VotingEndpoint,
+		isoFormatter: ISO8601DateFormatter
+	) async throws -> (votes: [RecordedVote], hasMore: Bool) {
+		let components: URLComponents = {
+			switch source {
+			case .openCommons:
+				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+				components.path = "/ocd/votes/"
+				components.queryItems = [
+					URLQueryItem(name: "parliament", value: String(parliament)),
+					URLQueryItem(name: "pageSize", value: String(votePageSize)),
+					URLQueryItem(name: "page", value: String(page)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				return components
+			case .openParliament:
+				var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
+				components.path = "/votes/"
+				let offset = max(0, (page - 1) * votePageSize)
+				components.queryItems = [
+					URLQueryItem(name: "parliament", value: String(parliament)),
+					URLQueryItem(name: "limit", value: String(votePageSize)),
+					URLQueryItem(name: "offset", value: String(offset)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				return components
+			}
+		}()
+
+		guard let url = components.url else { return ([], false) }
+		let (data, response) = try await NetworkService.shared.data(from: url)
+		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			return ([], false)
+		}
+
+		switch source {
+		case .openCommons:
+			guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
+			let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament, isoFormatter: isoFormatter) }
+			return (votes, !votes.isEmpty && votes.count == votePageSize)
+			case .openParliament:
+				guard let objects = json["objects"] as? [[String: Any]] else { return ([], false) }
+				let votes = objects.compactMap { parseOpenParliamentVote($0, isoFormatter: isoFormatter) }
+				let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
+				return (votes, nextURL?.isEmpty == false)
+		}
+	}
+
+	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int, isoFormatter: ISO8601DateFormatter) -> RecordedVote? {
+		guard let id = item["id"] as? Int else { return nil }
+		let dateStr = item["date"] as? String ?? ""
+		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let descObj = item["description"] as? [String: String]
+		let desc = descObj?["en"] ?? item["description"] as? String ?? ""
+		let resultObj = item["result"] as? [String: String]
+		let result = resultObj?["en"] ?? item["result"] as? String ?? ""
+		return RecordedVote(
+			voteID: id,
+			parliament: item["parliament"] as? Int ?? parliament,
+			session: item["session"] as? Int ?? 0,
+			number: item["number"] as? Int ?? 0,
+			date: date,
+			descriptionEn: desc,
+			billNumberCode: item["billNumberCode"] as? String ?? "",
+			yea: item["yea"] as? Int ?? 0,
+			nay: item["nay"] as? Int ?? 0,
+			paired: item["paired"] as? Int ?? 0,
+			resultEn: result
+		)
+	}
+
+	private func parseOpenParliamentVote(_ item: [String: Any], isoFormatter: ISO8601DateFormatter) -> RecordedVote? {
+		guard let number = item["number"] as? Int,
+			  let sessionText = item["session"] as? String else { return nil }
+		let (voteParliament, session) = parseSessionComponents(from: sessionText)
+		let voteID = makeStableVoteID(parliament: voteParliament, session: session, number: number)
+		let dateStr = item["date"] as? String ?? ""
+		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let descObj = item["description"] as? [String: Any]
+		let desc = descObj?["en"] as? String ?? ""
+		let result = item["result"] as? String ?? ""
+		let bill = item["bill_url"] as? String
+		return RecordedVote(
+			voteID: voteID,
+			parliament: voteParliament,
+			session: session,
+			number: number,
+			date: date,
+			descriptionEn: desc,
+			billNumberCode: openParliamentBillCode(from: bill),
+			yea: item["yea_total"] as? Int ?? 0,
+			nay: item["nay_total"] as? Int ?? 0,
+			paired: item["paired_total"] as? Int ?? 0,
+			resultEn: result
+		)
+	}
+
+	private func loadMemberVotes(
+		memberID: Int,
+		page: Int,
+		from source: VotingEndpoint
+	) async throws -> (votes: [(voteID: Int, ballot: String)], hasMore: Bool) {
+		let politicianSlug: String?
+		if source == .openParliament {
+			politicianSlug = await openParliamentSlug(for: memberID)
+		} else {
+			politicianSlug = nil
+		}
+
+		let components: URLComponents = {
+			switch source {
+			case .openCommons:
+				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+				components.path = "/ocd/members/\(memberID)/votes/"
+				components.queryItems = [
+					URLQueryItem(name: "pageSize", value: String(votePageSize)),
+					URLQueryItem(name: "page", value: String(page)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				return components
+			case .openParliament:
+				var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
+				let offset = max(0, (page - 1) * votePageSize)
+				let slug = politicianSlug ?? ""
+				components.path = "/votes/ballots/"
+				components.queryItems = [
+					URLQueryItem(name: "politician", value: slug),
+					URLQueryItem(name: "limit", value: String(votePageSize)),
+					URLQueryItem(name: "offset", value: String(offset)),
+					URLQueryItem(name: "format", value: "json")
+				]
+				return components
+			}
+		}()
+
+		guard let url = components.url else { return ([], false) }
+		let (data, response) = try await NetworkService.shared.data(from: url)
+		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			return ([], false)
+		}
+
+		switch source {
+		case .openCommons:
+			guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
+			let votes = items.compactMap { item -> (Int, String)? in
+				guard let voteID = item["voteId"] as? Int,
+					  let ballot = item["recordedVote"] as? String else { return nil }
+				return (voteID, ballot)
+			}
+			return (votes, !votes.isEmpty && votes.count == votePageSize)
+		case .openParliament:
+			guard let items = json["objects"] as? [[String: Any]] else { return ([], false) }
+			let votes = items.compactMap { item -> (Int, String)? in
+				guard let ballotRaw = item["ballot"] as? String,
+					  let vote = openParliamentBallotID(from: item["vote_url"] as? String ?? "") else {
+					return nil
+				}
+				return (vote, normalizedBallot(ballotRaw))
+			}
+			let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
+			return (votes, nextURL?.isEmpty == false)
+		}
+	}
+
+	private func openParliamentSlug(for memberID: Int) async -> String {
+		// Open a conservative fallback: start with ourcommons-style slug and then look up a
+		// matching politician page if the guessed slug is not available.
+		guard let member = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(
+			predicate: #Predicate { $0.memberID == memberID }
+		)).first else { return "" }
+		let fallbackID = openParliamentSlug(firstName: member.firstName, lastName: member.lastName)
+		if await openParliamentSlugMatches(memberID: memberID, slug: fallbackID) {
+			return fallbackID
+		}
+		return await openParliamentSearchSlug(memberID: memberID, firstName: member.firstName, lastName: member.lastName) ?? fallbackID
+	}
+
+	private func openParliamentSlug(firstName: String, lastName: String) -> String {
+		return "\(firstName)-\(lastName)"
+			.lowercased()
+			.folding(options: .diacriticInsensitive, locale: .current)
+			.replacingOccurrences(of: " ", with: "-")
+			.filter { $0.isLetter || $0 == "-" }
+	}
+
+	private func openParliamentSlugMatches(memberID: Int, slug: String) async -> Bool {
+		guard !slug.isEmpty else { return false }
+		guard let url = URL(string: "/politicians/\(slug)/?format=json", relativeTo: openParliamentAPIURL) else { return false }
+		guard let (data, response) = try? await NetworkService.shared.data(from: url),
+			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			return false
+		}
+		return openParliamentOtherInfoMemberIDs(json).contains(String(memberID))
+	}
+
+	private func openParliamentSearchSlug(memberID: Int, firstName: String, lastName: String) async -> String? {
+		guard let components = makePoliticianSearchComponents(
+			firstName: firstName,
+			lastName: lastName
+		),
+			  let url = components.url else { return nil }
+
+		guard let (data, response) = try? await NetworkService.shared.data(from: url),
+			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+			  let objects = json["objects"] as? [[String: Any]] else {
+			return nil
+		}
+
+		for item in objects {
+			guard let url = item["url"] as? String else { continue }
+			if openParliamentOtherInfoMemberIDs(item).contains(String(memberID)) {
+				let slug = url.split(separator: "/").last.map(String.init)
+				return slug?.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+			}
+		}
+		return nil
+	}
+
+	private func makePoliticianSearchComponents(firstName: String, lastName: String) -> URLComponents? {
+		guard var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false) else { return nil }
+		components.path = "/politicians/"
+		components.queryItems = [
+			URLQueryItem(name: "q", value: "\(firstName) \(lastName)"),
+			URLQueryItem(name: "format", value: "json"),
+			URLQueryItem(name: "limit", value: String(votePageSize)),
+			URLQueryItem(name: "page", value: "1")
+		]
+		return components
+	}
+
+	private func openParliamentOtherInfoMemberIDs(_ object: [String: Any]) -> [String] {
+		guard let otherInfo = object["other_info"] as? [String: Any],
+			  let ids = otherInfo["parl_mp_id"] as? [String] else {
+			return []
+		}
+		return ids
+	}
+
+	private func normalizedBallot(_ rawBallot: String) -> String {
+		switch rawBallot.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) {
+		case "yes", "for", "aye":
+			return "Yea"
+		case "no", "against":
+			return "Nay"
+		case "paired":
+			return "Paired"
+		case "abstain", "absent":
+			return "Abstained"
+		default:
+			return rawBallot
+		}
+	}
+
+	private func makeStableVoteID(parliament: Int, session: Int, number: Int) -> Int {
+		let safeParliament = max(0, parliament)
+		let safeSession = max(0, session)
+		let safeNumber = max(0, number)
+		return (safeParliament * 1_000_000) + (safeSession * 10_000) + safeNumber
+	}
+
+	private func parseSessionComponents(from session: String) -> (Int, Int) {
+		let parts = session.split(separator: "-")
+		guard parts.count >= 2,
+			  let parliament = Int(parts[0]),
+			  let sessionNum = Int(parts[1]) else {
+			return (0, 0)
+		}
+		return (parliament, sessionNum)
+	}
+
+	private func openParliamentBillCode(from url: String?) -> String {
+		guard let url else { return "" }
+		let trimmed = url.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+		let segments = trimmed.split(separator: "/")
+		guard let last = segments.last, !last.isEmpty, !segments.isEmpty else { return "" }
+		return String(last)
+	}
+
+	private func openParliamentBallotID(from voteURL: String) -> Int? {
+		let trimmed = voteURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+		let segments = trimmed.split(separator: "/")
+		guard segments.count >= 3,
+			  segments[0] == "votes",
+			  let vote = Int(segments.last ?? ""),
+			  let (parliament, session) = Optional(parseSessionComponents(from: String(segments[1]))) else {
+			return nil
+		}
+		return makeStableVoteID(parliament: parliament, session: session, number: vote)
 	}
 
 	func downloadWrittenQuestions(memberID: Int, parliament: Int = 45) async throws {

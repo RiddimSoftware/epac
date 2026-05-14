@@ -21,6 +21,7 @@ env:
   FASTLANE_SKIP_UPDATE_CHECK: "1"
   SKIP_WAITING_FOR_BUILD_PROCESSING: "false"
   STAGING_BACKEND_BASE_URL: ${{ vars.STAGING_BACKEND_BASE_URL || 'https://staging-api.epac.riddimsoftware.com' }}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN_STAGING }}
   TESTFLIGHT_CHANGELOG: "Internal staging QA only. This build points at the staging backend and must not be treated as a production release candidate."
 
 jobs:

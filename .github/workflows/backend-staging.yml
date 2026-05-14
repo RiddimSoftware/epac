@@ -58,6 +58,7 @@ jobs:
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           DATABASE_URL_SECRET_ID: epac/database-url
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN_STAGING }}
         run: |
           set -euo pipefail
 
@@ -80,7 +81,8 @@ jobs:
           UPDATED_ENV=$(jq -cn \
             --argjson current "${CURRENT_ENV:-null}" \
             --arg database_url "$DATABASE_URL" \
-            '{Variables: (($current // {}) + {DATABASE_URL: $database_url})}')
+            --arg sentry_dsn "$SENTRY_DSN" \
+            '{Variables: (($current // {}) + {DATABASE_URL: $database_url} + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

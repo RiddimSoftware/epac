@@ -154,12 +154,12 @@ const rankedSpeechSearchSQL = `
 					THEN ts_headline(
 						'french', s.content,
 						query.french_query,
-						'MaxWords=50, MinWords=10, StartSel=, StopSel='
+						'MaxWords=50, MinWords=10'
 					)
 				ELSE ts_headline(
 					'english', s.content,
 					query.english_query,
-					'MaxWords=50, MinWords=10, StartSel=, StopSel='
+					'MaxWords=50, MinWords=10'
 				)
 				END AS snippet,
 			s.sitting_date,
@@ -256,7 +256,7 @@ const legacySpeechSearchSQL = `
 				ts_headline(
 					'english', content,
 					plainto_tsquery('english', $1),
-					'MaxWords=50, MinWords=10, StartSel=, StopSel='
+					'MaxWords=50, MinWords=10'
 				) AS snippet,
 				sitting_date,
 				subject_title,

@@ -79,8 +79,10 @@ class SittingCalendarViewModel {
 			let calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
 			guard isCurrentLoad(generation), currentYear == year else { return }
 			let splitDates = makeDateComponentSets(from: calendar?.sittings ?? [])
-			dates = splitDates.past
-			futureDates = splitDates.future
+			dates = dates.filter { $0.year != year }
+			futureDates = futureDates.filter { $0.year != year }
+			dates.formUnion(splitDates.past)
+			futureDates.formUnion(splitDates.future)
 		} catch {
 			guard isCurrentLoad(generation) else { return }
 			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")

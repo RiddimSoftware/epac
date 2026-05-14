@@ -5,7 +5,7 @@
 //  Created on 2026-04-27.
 //
 //  Domain model for parliamentary committee data.
-//  All data fetched from api.open.ourcommons.ca — an authoritative Parliament source.
+//  All data is sourced from api.openparliament.ca (documented open parliament source).
 //  No SwiftData: Codable structs only (meetings are ephemeral, not worth persisting).
 //
 

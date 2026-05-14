@@ -10,6 +10,12 @@ struct ParlVULinkBuilderTests {
         #expect(date != nil)
     }
 
+    @Test func csvDateParserReturnsDateForSlashDelimitedCalendarToken() {
+        let date = DateUtils.parseCSVDateString("1/26/2026")
+
+        #expect(date != nil)
+    }
+
     @Test func csvDateParserRejectsNonDateCalendarClassToken() {
         let date = DateUtils.parseCSVDateString("chamber-meeting")
 

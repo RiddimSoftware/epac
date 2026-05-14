@@ -44,7 +44,7 @@ struct SenatorsService {
 
     private static func fetchFromOpenAPI() async -> [Senator]? {
         guard let url = URL(string:
-            "https://api.open.ourcommons.ca/ocd/members/?parliament=45&chamber=Senate&pageSize=200&format=json"
+            "https://api.openparliament.ca/ocd/members/?parliament=45&chamber=Senate&pageSize=200&format=json"
         ) else { return nil }
 
         guard let (data, response) = try? await NetworkService.shared.data(from: url),

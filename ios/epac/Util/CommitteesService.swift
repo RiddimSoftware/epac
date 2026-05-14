@@ -4,12 +4,12 @@
 //
 //  Created on 2026-04-27.
 //
-//  Fetches committee data from the OurCommons open API.
-//  Endpoint: https://api.open.ourcommons.ca/ocd/
+//  Fetches committee data from the Parliament data endpoint.
+//  Endpoint: https://api.openparliament.ca
 //  All data traces to an authoritative Parliament of Canada source.
 //
 //  API discovery notes:
-//  - The previously used api.open.ourcommons.ca /ocd/committees/ host no longer
+//  - The previously used api.open.ourcommons.ca /ocd/committees/ host is no longer
 //    resolves. The official Committees list page remains the authoritative source.
 //  - /ocd/committees/{id}/meetings/ returns paginated meetings per committee
 //  - Evidence/interventions endpoint may not exist; if absent the UI falls back
@@ -19,7 +19,7 @@
 import Foundation
 
 struct CommitteesService {
-    private static let baseURL = URL(string: "https://api.open.ourcommons.ca")!
+    private static let baseURL = URL(string: "https://api.openparliament.ca")!
     private static let committeesWebBaseURL = URL(string: "https://www.ourcommons.ca")!
 
     struct CommitteeMeetingsResult: Sendable {

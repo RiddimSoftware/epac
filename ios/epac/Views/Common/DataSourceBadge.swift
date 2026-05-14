@@ -133,8 +133,8 @@ struct DataSource {
     static func votes(lastSync: Date? = nil) -> DataSource {
         DataSource(
             name: "Parliament of Canada",
-            description: "Recorded votes from the House of Commons, published via the Parliament of Canada open data API (api.open.ourcommons.ca).",
-            url: URL(string: "https://api.open.ourcommons.ca")!,
+            description: "Recorded votes from the House of Commons, published via the Parliament of Canada open data API (api.openparliament.ca).",
+            url: URL(string: "https://api.openparliament.ca")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
             vintage: nil,
             stalenessThreshold: 86400

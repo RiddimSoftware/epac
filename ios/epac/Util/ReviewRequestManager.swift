@@ -63,7 +63,11 @@ final class ReviewRequestManager {
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
                 return false
             }
-            SKStoreReviewController.requestReview(in: scene)
+            if #available(iOS 18, *) {
+                AppStore.requestReview(in: scene)
+            } else {
+                SKStoreReviewController.requestReview(in: scene)
+            }
             return true
         },
         telemetryRecorder: @escaping (String, [String: String]) -> Void = ReviewRequestManager.defaultTelemetryRecorder

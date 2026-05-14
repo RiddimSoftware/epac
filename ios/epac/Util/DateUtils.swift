@@ -29,6 +29,8 @@ final class DateUtils: Sendable {
 	static let instance = DateUtils()
 	private static let csvDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "en_CA"))!
 	private static let csvDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "yyyy-MM-dd", style: nil, locale: Locale(identifier: "fr_CA"))!
+	private static let slashDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "M/d/yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
+	private static let slashDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "M/d/yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
 	private let fullDateFormatter: DateFormatterInstance = DateFormatterInstance(format: nil, style: .full)!
 	private let htmlDateFormatter_en: DateFormatterInstance = DateFormatterInstance(format: "EEEE MMM dd, yyyy", style: nil, locale: Locale(identifier: "en_CA"))!
 	private let htmlDateFormatter_fr: DateFormatterInstance = DateFormatterInstance(format: "EEEE dd MMM yyyy", style: nil, locale: Locale(identifier: "fr_CA"))!
@@ -54,9 +56,9 @@ final class DateUtils: Sendable {
 
 	static func parseCSVDateString(_ string: String) -> Date? {
 		if Locale.current.identifier == "fr_CA" {
-			return csvDateFormatter_fr.formatter.date(from: string)
+			return csvDateFormatter_fr.formatter.date(from: string) ?? slashDateFormatter_fr.formatter.date(from: string)
 		} else {
-			return csvDateFormatter_en.formatter.date(from: string)
+			return csvDateFormatter_en.formatter.date(from: string) ?? slashDateFormatter_en.formatter.date(from: string)
 		}
 	}
 

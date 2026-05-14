@@ -38,7 +38,7 @@ struct PrivacyPolicyView: View {
                 PolicySection(title: "Network Requests") {
                     Text("epac makes network requests to official Canadian government sources to download parliamentary data:")
                     BulletList(items: [
-                        "Parliament of Canada (ourcommons.ca, api.open.ourcommons.ca) — Hansard, voting records, MP profiles, bills, expenditures",
+                        "Parliament of Canada (ourcommons.ca, api.openparliament.ca) — Hansard, voting records, MP profiles, bills, expenditures",
                         "Elections Canada (elections.ca) — Electoral data",
                         "Commissioner of Lobbying (lobbycanada.gc.ca) — Lobbying registry",
                         "Statistics Canada (statcan.gc.ca) — Census data references",
