@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket         = "epac-terraform-state"
-    key            = "epac/staging/terraform.tfstate"
+    key            = "epac/core/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "epac-terraform-locks"
     encrypt        = true

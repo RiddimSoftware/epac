@@ -110,4 +110,4 @@ The production API also contains older staging-target integrations left over fro
 
 - Lambda code is not managed by Terraform. `placeholder.zip` is used only to create missing production functions; `lifecycle.ignore_changes` prevents Terraform from overwriting deployed code.
 - Production stage `auto_deploy` remains `false` to preserve the existing production release gate.
-- State is local (`terraform.tfstate`). Remote state is out of scope here and tracked separately in EPAC-1852.
+- State is remote (S3). Remote state (S3 + DynamoDB lock) was added in EPAC-1852. State is stored in the `epac-terraform-state` bucket with locks in `epac-terraform-locks`.

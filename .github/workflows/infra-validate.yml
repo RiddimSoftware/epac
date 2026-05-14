@@ -1,0 +1,36 @@
+name: Infrastructure Validation
+
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/infra-validate.yml'
+
+jobs:
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.3"
+
+      - name: Validate Core
+        working-directory: infra/terraform/core
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate Staging
+        working-directory: infra/terraform/staging
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate Production
+        working-directory: infra/terraform/production
+        run: |
+          terraform init -backend=false
+          terraform validate
