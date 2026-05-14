@@ -110,7 +110,6 @@ jobs:
 
       - name: Ensure staging routes are synced
         env:
-          API_NAME: epac-api-api
           ENV_NAME: staging
           STAGE_NAME: staging
         run: ./scripts/ci/ensure-staging-api-routes.sh

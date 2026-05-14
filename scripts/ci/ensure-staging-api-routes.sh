@@ -2,18 +2,44 @@
 
 set -euo pipefail
 
-API_NAME="${API_NAME:-epac-api-api}"
+API_NAME="${API_NAME:-}"
 ENV_NAME="${ENV_NAME:-staging}"
 STAGE_NAME="${STAGE_NAME:-staging}"
 REGION="${AWS_REGION:-us-east-1}"
+API_ID="${API_ID:-}"
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-API_ID=$(aws apigatewayv2 get-apis \
-  --query "Items[?Name=='${API_NAME}'].ApiId | [0]" \
-  --output text)
 
 if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
-  echo "API ${API_NAME} not found" >&2
+  if [ -n "${STAGING_API_BASE_URL:-}" ]; then
+    DOMAIN_NAME="${STAGING_API_BASE_URL#*://}"
+    DOMAIN_NAME="${DOMAIN_NAME%%/*}"
+  elif [ -n "${DOMAIN_NAME:-}" ]; then
+    DOMAIN_NAME="${DOMAIN_NAME}"
+  elif [ -n "${CUSTOM_DOMAIN:-}" ]; then
+    DOMAIN_NAME="${CUSTOM_DOMAIN}"
+  fi
+
+  if [ -n "${DOMAIN_NAME}" ]; then
+    API_ID=$(aws apigatewayv2 get-api-mappings \
+      --domain-name "${DOMAIN_NAME}" \
+      --query "Items[?Stage=='${STAGE_NAME}'].ApiId | [0]" \
+      --output text)
+  fi
+
+  if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
+    API_ID=$(aws apigatewayv2 get-apis \
+      --query "Items[?Name=='${API_NAME}'].ApiId | [0]" \
+      --output text)
+  fi
+fi
+
+if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
+  if [ -n "${API_NAME}" ]; then
+    echo "API ${API_NAME} not resolved by name. Set API_ID or STAGING_API_BASE_URL correctly." >&2
+  else
+    echo "Unable to resolve API ID. Set API_ID or STAGING_API_BASE_URL and ensure API mappings exist." >&2
+  fi
   exit 1
 fi
 
@@ -84,6 +110,21 @@ for route_def in "${ROUTES[@]}"; do
 
 done
 
-aws apigatewayv2 create-deployment --api-id "${API_ID}" --stage-name "${STAGE_NAME}" >/dev/null
+DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
+  --api-id "${API_ID}" \
+  --query 'DeploymentId' \
+  --output text)
+
+if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${STAGE_NAME}" >/dev/null 2>&1; then
+  aws apigatewayv2 update-stage \
+    --api-id "${API_ID}" \
+    --stage-name "${STAGE_NAME}" \
+    --deployment-id "${DEPLOYMENT_ID}" >/dev/null
+else
+  aws apigatewayv2 create-stage \
+    --api-id "${API_ID}" \
+    --stage-name "${STAGE_NAME}" \
+    --deployment-id "${DEPLOYMENT_ID}" >/dev/null
+fi
 
 echo "Staging API route sync complete for ${API_ID} at stage ${STAGE_NAME}."
