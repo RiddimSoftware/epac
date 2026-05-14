@@ -153,12 +153,19 @@ platform :ios do
       clean:            false
     )
 
-    upload_to_testflight(
+    skip_waiting_for_build_processing =
+      ENV.fetch("SKIP_WAITING_FOR_BUILD_PROCESSING", "true") != "false"
+    testflight_options = {
       api_key:                           api_key,
       ipa:                               "build/epac.ipa",
-      skip_waiting_for_build_processing: true,
+      skip_waiting_for_build_processing: skip_waiting_for_build_processing,
       distribute_external:               false,
       notify_external_testers:           false
-    )
+    }
+    testflight_changelog = ENV.fetch("TESTFLIGHT_CHANGELOG", "")
+    unless testflight_changelog.empty?
+      testflight_options[:changelog] = testflight_changelog
+    end
+    upload_to_testflight(**testflight_options)
     end
 end
