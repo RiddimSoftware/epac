@@ -242,7 +242,7 @@ const rankedSpeechSearchSQL = `
 		LIMIT 50`
 
 const legacySpeechSearchSQL = `
-		SELECT
+		SELECTT
 			intervention_id,
 			title,
 			snippet,
