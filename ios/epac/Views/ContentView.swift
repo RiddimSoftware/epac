@@ -287,7 +287,7 @@ struct ContentView: View {
 				let constituencies = (try? modelContext.fetch(FetchDescriptor<Constituency>())) ?? []
 				await viewModel.downloadInitialData(members: members, constituencies: constituencies, modelContext: modelContext, fetch: fetch)
 				if router.selectedTab == .parliament, let selectedDate = viewModel.selectedDate {
-					viewModel.onSelectedDateChanged(to: selectedDate, modelContext: modelContext, fetch: fetch)
+					viewModel.onSelectedDateChanged(to: selectedDate)
 				}
 			}
 		}
