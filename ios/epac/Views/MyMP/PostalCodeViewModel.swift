@@ -3,10 +3,6 @@ import Sentry
 import SwiftData
 import SwiftUI
 
-private let ridingNameKey = "epac.myMP.ridingName"
-private let memberNameKey = "epac.myMP.memberName"
-private let postalCodeKey = "epac.myMP.postalCode"
-
 @MainActor
 @Observable
 class PostalCodeViewModel {
@@ -16,10 +12,11 @@ class PostalCodeViewModel {
     var errorMessage: String?
 
     private let service = RidingLookupService()
+    private let store = PostalCodeStore.shared
 
-    static var savedRidingName: String? { UserDefaults.standard.string(forKey: ridingNameKey) }
-    static var savedMemberName: String? { UserDefaults.standard.string(forKey: memberNameKey) }
-    static var savedPostalCode: String? { UserDefaults.standard.string(forKey: postalCodeKey) }
+    static var savedRidingName: String? { PostalCodeStore.shared.savedRidingName }
+    static var savedMemberName: String? { PostalCodeStore.shared.savedMemberName }
+    static var savedPostalCode: String? { PostalCodeStore.shared.savedPostalCode }
 
     func lookup(modelContext: ModelContext) async {
         let trimmed = postalCode.trimmingCharacters(in: .whitespaces)
@@ -75,17 +72,14 @@ class PostalCodeViewModel {
 
     func confirm() {
         guard let result else { return }
-        UserDefaults.standard.set(postalCode.trimmingCharacters(in: .whitespaces), forKey: postalCodeKey)
-        UserDefaults.standard.set(result.ridingName, forKey: ridingNameKey)
-        // If no MP resolved yet, save the riding name as a placeholder so the
-        // home feed shows something meaningful rather than the "Find Your MP" prompt.
-        UserDefaults.standard.set(result.memberName.isEmpty ? result.ridingName : result.memberName,
-                                  forKey: memberNameKey)
+        store.set(
+            postalCode: postalCode,
+            ridingName: result.ridingName,
+            memberName: result.memberName
+        )
     }
 
     static func clear() {
-        UserDefaults.standard.removeObject(forKey: postalCodeKey)
-        UserDefaults.standard.removeObject(forKey: ridingNameKey)
-        UserDefaults.standard.removeObject(forKey: memberNameKey)
+        PostalCodeStore.shared.clear()
     }
 }

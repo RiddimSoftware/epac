@@ -20,7 +20,7 @@ struct FollowPreferenceAdapter: FollowPreferenceReading {
     }
     
     func savedMemberName() -> String? {
-        UserDefaults.standard.string(forKey: "epac.postalCode.savedMemberName")
+        PostalCodeStore.shared.savedMemberName
     }
     
     func dismissedOnThisDayDate() -> String? {

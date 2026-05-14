@@ -37,6 +37,7 @@ struct HomeFeedView: View {
     @State private var latestHansardDate: Date?
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
+    @State private var postalCodeStore = PostalCodeStore.shared
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
@@ -148,6 +149,9 @@ struct HomeFeedView: View {
             }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
+            }
+            .onChange(of: postalCodeStore.savedMemberName) {
+                Task { await loadFeed() }
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()

@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var appIconError: String?
     @State private var showPostalCodeChange = false
     @State private var showFeedvoteSafari = false
+    @State private var postalCodeStore = PostalCodeStore.shared
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -53,14 +54,14 @@ struct SettingsView: View {
 
     private var accountSection: some View {
         Section(NSLocalizedString("settings.account.title", comment: "")) {
-            if let ridingName = PostalCodeViewModel.savedRidingName {
+            if let ridingName = postalCodeStore.savedRidingName {
                 LabeledContent(
                     NSLocalizedString("settings.account.riding", comment: ""),
                     value: ridingName
                 )
             }
-            if let memberName = PostalCodeViewModel.savedMemberName,
-               memberName != PostalCodeViewModel.savedRidingName {
+            if let memberName = postalCodeStore.savedMemberName,
+               memberName != postalCodeStore.savedRidingName {
                 LabeledContent(
                     NSLocalizedString("settings.account.mp", comment: ""),
                     value: memberName

@@ -113,11 +113,12 @@ struct MyMPView: View {
     @State private var showVancouverVotes = false
     @State private var torontoCouncillors: [TorontoCouncillor] = []
     @State private var showTorontoVotes = false
+    @State private var postalCodeStore = PostalCodeStore.shared
 
     var body: some View {
         NavigationStack {
             Group {
-                if PostalCodeViewModel.savedMemberName == nil && followStore.followedIDs.isEmpty {
+                if postalCodeStore.savedMemberName == nil && followStore.followedIDs.isEmpty {
                     // No postal code and no followed members → prompt to set up
                     noMPSetView
                 } else if isLoading && activities.isEmpty {
@@ -133,7 +134,7 @@ struct MyMPView: View {
                     activityList
                 }
             }
-            .navigationTitle(PostalCodeViewModel.savedMemberName ?? NSLocalizedString("myMP.navTitle", comment: ""))
+            .navigationTitle(postalCodeStore.savedMemberName ?? NSLocalizedString("myMP.navTitle", comment: ""))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -165,6 +166,9 @@ struct MyMPView: View {
                 TorontoVotesView()
             }
             .task { await loadActivities() }
+            .onChange(of: postalCodeStore.savedMemberName) {
+                Task { await loadActivities() }
+            }
         }
         .sheet(isPresented: $showPostalCodeSetup) {
             PostalCodeSetupView { showPostalCodeSetup = false }
@@ -281,7 +285,7 @@ struct MyMPView: View {
 
         // Resolve the saved MP (may be nil if no postal code set)
         var primaryMP: ParliamentMember?
-        if let memberName = PostalCodeViewModel.savedMemberName {
+        if let memberName = postalCodeStore.savedMemberName {
             primaryMP = allMembers.first(where: {
                 $0.name.localizedCaseInsensitiveContains(memberName) ||
                 memberName.localizedCaseInsensitiveContains($0.lastName)
@@ -302,7 +306,7 @@ struct MyMPView: View {
                     let allMPPs = await OntarioLegislatureService.fetchMPPs()
                     // Federal and provincial ridings don't align perfectly; match on
                     // the first significant word of each riding name as a heuristic.
-                    if let savedRiding = PostalCodeViewModel.savedRidingName,
+                    if let savedRiding = postalCodeStore.savedRidingName,
                        let firstWord = savedRiding.components(separatedBy: " ").first,
                        !firstWord.isEmpty {
                         ontarioMPP = allMPPs.first { mpp in
@@ -313,13 +317,13 @@ struct MyMPView: View {
                 }
 
                 // Load Vancouver City Council when the federal riding is in Vancouver
-                if let savedRiding = PostalCodeViewModel.savedRidingName,
+                if let savedRiding = postalCodeStore.savedRidingName,
                    VancouverCouncilService.isVancouverRiding(savedRiding) {
                     vancouverCouncillors = await VancouverCouncilService.fetchCouncillors()
                 }
 
                 // Load Toronto City Council when the federal riding is in Toronto.
-                if let savedRiding = PostalCodeViewModel.savedRidingName,
+                if let savedRiding = postalCodeStore.savedRidingName,
                    TorontoCouncilService.isTorontoRiding(savedRiding) {
                     let councillors = await TorontoCouncilService.fetchCouncillors()
                     torontoCouncillors = TorontoCouncilService.councillors(for: savedRiding, in: councillors)
