@@ -1,7 +1,7 @@
 import Foundation
 
 // Fetches Canada Gazette notices from the official RSS feeds.
-// Source: canadagazette.gc.ca — authoritative Government of Canada publication.
+// Source: gazette.gc.ca — authoritative Government of Canada publication.
 // No AI-generated content.
 
 struct GazetteService {

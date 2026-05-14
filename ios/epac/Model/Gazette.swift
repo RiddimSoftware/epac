@@ -1,7 +1,7 @@
 import Foundation
 
 // Canada Gazette entry — fetched fresh from RSS, not persisted.
-// Source: canadagazette.gc.ca (Government of Canada official journal).
+// Source: gazette.gc.ca (Government of Canada official journal).
 
 struct GazetteEntry: Identifiable, Codable {
     let id: String
