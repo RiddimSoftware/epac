@@ -173,3 +173,16 @@ schedule-rate-lambda:
 		--rule "$$RULE_NAME" \
 		--targets "ID=1,Arn=$$LAMBDA_ARN"; \
 	echo "Successfully scheduled $(SERVICE)."
+
+# Run integration tests across all backend services
+# Usage: make test-integration
+test-integration:
+	@echo "Starting Postgres for integration tests..."
+	cd .. && docker compose -f docker-compose.test.yml up -d
+	@echo "Waiting for Postgres to be ready..."
+	@sleep 3
+	@echo "Running integration tests..."
+	@awk '/\.\// {print $$1}' go.work | while read -r d; do \
+		echo "Testing $$d..."; \
+		(cd "$$d" && DATABASE_URL="postgresql://epac:epac@localhost:5432/epac_test?sslmode=disable" go test -tags=integration ./...) || exit 1; \
+	done
