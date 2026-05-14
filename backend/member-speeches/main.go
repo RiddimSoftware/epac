@@ -132,9 +132,9 @@ func queryMemberSpeeches(ctx context.Context, conn *pgx.Conn, memberId string, p
 			parlNum      *int
 			sessNum      *int
 			subjectTitle *string
-			content      string
+			content      *string
 			wordCount    *int
-			filename     string
+			filename     *string
 		)
 		if err := rows.Scan(&id, &date, &parlNum, &sessNum, &subjectTitle, &content, &wordCount, &filename); err != nil {
 			return MemberSpeechesResponse{}, err
@@ -146,18 +146,22 @@ func queryMemberSpeeches(ctx context.Context, conn *pgx.Conn, memberId string, p
 			SessionNum:     sessNum,
 			SubjectTitle:   subjectTitle,
 			WordCount:      wordCount,
-			Filename:       filename,
+		}
+		if filename != nil {
+			entry.Filename = *filename
 		}
 		if date != nil {
 			s := date.Format("2006-01-02")
 			entry.SittingDate = &s
 		}
 		// Preview: first 150 runes of content
-		runes := []rune(content)
-		if len(runes) > 150 {
-			entry.Preview = string(runes[:150])
-		} else {
-			entry.Preview = content
+		if content != nil {
+			runes := []rune(*content)
+			if len(runes) > 150 {
+				entry.Preview = string(runes[:150])
+			} else {
+				entry.Preview = *content
+			}
 		}
 		speeches = append(speeches, entry)
 	}
