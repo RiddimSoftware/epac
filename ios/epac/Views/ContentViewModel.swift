@@ -12,52 +12,20 @@ import SwiftUI
 @Observable
 class ContentViewModel {
 	var selectedDate: DateComponents?
+	var selectedSittingDate: Date?
 	var selectedHansard: Hansard?
 	var nonSittingDate: Date?
 	var selectedSubject: SubjectOfBusiness?
 	var selectedHansardID: PersistentIdentifier?
 
-	func onSelectedDateChanged(to newValue: DateComponents?, modelContext: ModelContext, fetch: Fetch) {
+	func onSelectedDateChanged(to newValue: DateComponents?) {
 		guard let newValue, let date = Calendar.current.date(from: newValue) else { return }
 
-		if let fetched = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first {
-			selectedHansard = fetched
-		} else {
-			Task { @MainActor in
-				do {
-					try await fetch.downloadHansard(date)
-					selectedHansard = try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
-					if let h = selectedHansard {
-						let subjectSubjects = h.orders.flatMap { $0.subjects }
-						let titles = h.orders.flatMap { $0.subjects }.map { $0.title }
-						WidgetDataWriter.writeRecentSubjects(titles)
-						WidgetDataWriter.reloadWidgets()
-						// Notify followed members who spoke in this Hansard.
-						let followedIDs = MemberFollowStore.shared.followedIDs
-						if !followedIDs.isEmpty {
-							let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-							let followed = allMembers.filter { followedIDs.contains($0.memberID) }
-							let messages = h.orders.flatMap { $0.subjects }.flatMap { $0.speeches }.flatMap { $0.messages }
-							let firstSubject = subjectSubjects.first?.title ?? ""
-							for mp in followed {
-								let spoke = messages.contains { $0.lastName.localizedCaseInsensitiveCompare(mp.lastName) == .orderedSame }
-								if spoke {
-									MemberNotificationScheduler.scheduleSpeechNotification(
-										memberName: mp.name,
-										subject: firstSubject,
-										memberID: mp.memberID
-									)
-								}
-							}
-						}
-					}
-				} catch {
-					Log.debug("Failed to fetch hansard \(date)")
-					SentrySDK.capture(error: error)
-					nonSittingDate = date
-				}
-			}
-		}
+		selectedSubject = nil
+		selectedHansard = nil
+		nonSittingDate = nil
+		selectedSittingDate = date
+		selectedDate = nil
 	}
 
 	func onOpenURL(_ url: URL, modelContext: ModelContext, fetch: Fetch) {
