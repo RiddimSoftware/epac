@@ -4,7 +4,7 @@ package main
 
 import (
 	"context"
-	"os"
+	"epac/_testdb"
 	"strings"
 	"testing"
 	"time"
@@ -15,20 +15,7 @@ import (
 
 func connectIntegrationDB(t *testing.T) *pgx.Conn {
 	t.Helper()
-
-	connStr := strings.TrimSpace(os.Getenv("TEST_DATABASE_URL"))
-	if connStr == "" {
-		connStr = strings.TrimSpace(os.Getenv("DATABASE_URL"))
-	}
-	if connStr == "" {
-		t.Fatal("missing TEST_DATABASE_URL or DATABASE_URL")
-	}
-
-	conn, err := pgx.Connect(context.Background(), connStr)
-	if err != nil {
-		t.Fatalf("connect test database: %v", err)
-	}
-	return conn
+	return _testdb.Connect(t)
 }
 
 func resetSearchTables(t *testing.T, conn *pgx.Conn) {
