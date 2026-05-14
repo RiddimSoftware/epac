@@ -62,5 +62,5 @@ terraform import aws_route53_record.staging_api \
 ## Notes
 
 - Lambda **code** is managed by `.github/workflows/backend-staging.yml`, not Terraform. The `placeholder.zip` is used only when creating a function from scratch; `lifecycle.ignore_changes` prevents Terraform from overwriting CI-deployed code.
-- State is local (`terraform.tfstate`). Add `.gitignore` entries for `*.tfstate*` and `.terraform/` — these are already covered by the repo root `.gitignore`.
-- Remote state (S3 + DynamoDB lock) is out of scope for now; tracked as a follow-on issue.
+- State is remote (S3). `terraform.tfstate` files should not be committed (covered by the repo root `.gitignore`).
+- Remote state (S3 + DynamoDB lock) is enabled. State is stored in the `epac-terraform-state` bucket with locks in `epac-terraform-locks`.
