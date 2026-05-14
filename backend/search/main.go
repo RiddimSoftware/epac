@@ -133,6 +133,7 @@ func search(ctx context.Context, conn *pgx.Conn, params SearchParams, cfg Rankin
 }
 
 const rankedSpeechSearchSQL = `
+		-- Keep headline options explicit; do not pass empty selectors to ts_headline.
 		WITH query AS (
 			SELECT
 				plainto_tsquery('english', $1) AS english_query,
