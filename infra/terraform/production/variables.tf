@@ -25,5 +25,5 @@ variable "production_domain" {
 variable "production_certificate_arn" {
   description = "ACM certificate ARN for the production API custom domain"
   type        = string
-  default     = "arn:aws:acm:us-east-1:227530433709:certificate/002670fa-5e3a-4187-8fe5-679b8cbb0bef"
+  default     = "arn:aws:acm:us-east-1:227530433709:certificate/f921ddcd-6d4d-4377-8b4e-00cea46d92a6"
 }

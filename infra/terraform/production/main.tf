@@ -26,6 +26,14 @@ locals {
     "device-register" = "1.0"
     "openapi"         = "2.0"
   }
+
+  # Existing Lambda policies already contain apigw-production-* statements for
+  # an older API. Use a distinct Sid prefix for this API to avoid AddPermission
+  # conflicts when Terraform creates the production invoke permissions.
+  api_permission_statement_ids = {
+    for service in keys(local.http_services) :
+    service => "apigw-epac-api-${service}"
+  }
 }
 
 # Production HTTP API (existing API ID smun5g2szc; import before apply).
@@ -238,7 +246,7 @@ resource "aws_apigatewayv2_route" "openapi_docs_v1" {
 resource "aws_lambda_permission" "production_apigw" {
   for_each = local.http_services
 
-  statement_id  = "apigw-production-${each.key}"
+  statement_id  = local.api_permission_statement_ids[each.key]
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.production[each.key].function_name
   principal     = "apigateway.amazonaws.com"

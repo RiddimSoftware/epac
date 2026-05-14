@@ -35,14 +35,25 @@ terraform import aws_apigatewayv2_stage.production smun5g2szc/production
 terraform import 'aws_lambda_function.production["search"]' search
 terraform import 'aws_lambda_function.production["member-speeches"]' member-speeches
 terraform import 'aws_lambda_function.production["daily-fetch"]' daily-fetch
+terraform import 'aws_lambda_function.production["loader"]' loader
+terraform import 'aws_lambda_function.production["on-this-day"]' on-this-day
+terraform import 'aws_lambda_function.production["riding-boundary"]' riding-boundary
+terraform import 'aws_lambda_function.production["health"]' health
+terraform import 'aws_lambda_function.production["device-register"]' device-register
+terraform import 'aws_lambda_function.production["openapi"]' openapi
+terraform import 'aws_lambda_function.production["live-status"]' live-status
 
-# Existing production Lambda invoke permissions
-terraform import 'aws_lambda_permission.production_apigw["search"]' search/apigateway-search
-terraform import 'aws_lambda_permission.production_apigw["member-speeches"]' member-speeches/epac-api-gateway
+# Production API Gateway Lambda invoke permissions
+#
+# Do not import the older search/apigateway-search or
+# member-speeches/epac-api-gateway statements as these resources. Those live
+# statements are narrow compatibility permissions, and existing apigw-production-*
+# statements belong to an older API. Terraform creates distinct non-conflicting
+# apigw-epac-api-* statements for this production API.
 
 # ACM certificate (aws_acm_certificate_validation does not support import; cert is already issued)
 terraform import aws_acm_certificate.production_api \
-  arn:aws:acm:us-east-1:227530433709:certificate/002670fa-5e3a-4187-8fe5-679b8cbb0bef
+  arn:aws:acm:us-east-1:227530433709:certificate/f921ddcd-6d4d-4377-8b4e-00cea46d92a6
 
 # Route53 ACM validation CNAME
 terraform import aws_route53_record.acm_validation \
@@ -63,6 +74,12 @@ terraform import aws_route53_record.production_api \
 # Existing API Gateway integrations that already target bare production Lambdas
 terraform import 'aws_apigatewayv2_integration.production["search"]' smun5g2szc/1h3ggkc
 terraform import 'aws_apigatewayv2_integration.production["member-speeches"]' smun5g2szc/1qd8e9q
+terraform import 'aws_apigatewayv2_integration.production["riding-boundary"]' smun5g2szc/3c889eq
+terraform import 'aws_apigatewayv2_integration.production["openapi"]' smun5g2szc/9jxvyi8
+terraform import 'aws_apigatewayv2_integration.production["health"]' smun5g2szc/bao37dr
+terraform import 'aws_apigatewayv2_integration.production["live-status"]' smun5g2szc/bkgkrrb
+terraform import 'aws_apigatewayv2_integration.production["device-register"]' smun5g2szc/ngmy84j
+terraform import 'aws_apigatewayv2_integration.production["on-this-day"]' smun5g2szc/vqfubhe
 
 # Existing API Gateway routes
 terraform import aws_apigatewayv2_route.search_legacy smun5g2szc/kia4ymj
@@ -74,13 +91,20 @@ terraform import aws_apigatewayv2_route.on_this_day smun5g2szc/ogjkher
 terraform import aws_apigatewayv2_route.riding_boundary smun5g2szc/cqw6o3i
 terraform import aws_apigatewayv2_route.live_status smun5g2szc/f7lnnps
 terraform import aws_apigatewayv2_route.device_register smun5g2szc/lorqdum
+terraform import aws_apigatewayv2_route.device_register_legacy smun5g2szc/l4f7i6t
+terraform import aws_apigatewayv2_route.house_calendar smun5g2szc/dcan8nq
+terraform import aws_apigatewayv2_route.house_calendar_legacy smun5g2szc/q86b4uc
+terraform import aws_apigatewayv2_route.openapi_json smun5g2szc/exikf69
+terraform import aws_apigatewayv2_route.openapi_docs smun5g2szc/iv982t1
+terraform import aws_apigatewayv2_route.openapi_json_v1 smun5g2szc/o9ecr6c
+terraform import aws_apigatewayv2_route.openapi_docs_v1 smun5g2szc/oolp6lm
 ```
 
 ## First apply expectations
 
-Only `search`, `member-speeches`, and `daily-fetch` exist as bare-name production Lambda functions today. The other seven functions are intentionally declared from `placeholder.zip`; their code and environment are deployment-workflow concerns.
+All 10 bare-name production Lambda functions currently exist and should be imported. If a function is absent in a fresh account, Terraform will create it from `placeholder.zip`; code and environment remain deployment-workflow concerns.
 
-Some currently existing production API routes still target staging Lambda functions. This module rewires those routes to bare-name production Lambda functions. After the missing production functions are created and all existing resources above are imported, a human should run `terraform plan` and confirm the remaining changes are the expected production cutover only. A later no-op plan should show 0 changes.
+The production API also contains older staging-target integrations left over from the API split. No current route should target those integrations. They are intentionally not imported into this desired-state module; after the managed resources above are imported, a human should run `terraform plan` and confirm the remaining changes are limited to creating the new `apigw-epac-api-*` Lambda invoke permissions. A later no-op plan should show 0 changes.
 
 ## Notes
 
