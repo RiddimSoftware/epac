@@ -1,0 +1,14 @@
+# epac infrastructure
+
+Terraform modules for the epac project:
+
+- **[core/](./core/)**: Core infrastructure for Terraform remote state (S3 bucket and DynamoDB table).
+- **[staging/](./staging/)**: Staging environment resources (Lambda, API Gateway, Route53).
+- **[production/](./production/)**: Production environment resources (Lambda, API Gateway, Route53).
+
+## Remote State
+
+All modules use the remote S3 backend with DynamoDB locking.
+
+1. **Bootstrap**: A human with AWS credentials must first apply the `core` module to create the backend resources.
+2. **Migration**: Once the core resources exist, run `terraform init` in `staging` and `production` to migrate existing local state to the remote backend.
