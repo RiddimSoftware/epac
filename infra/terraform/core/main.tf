@@ -19,6 +19,12 @@ resource "aws_s3_bucket" "terraform_state" {
   lifecycle {
     prevent_destroy = true
   }
+
+  tags = {
+    Project   = "epac"
+    ManagedBy = "terraform"
+    Ticket    = "EPAC-1852"
+  }
 }
 
 resource "aws_s3_bucket_versioning" "terraform_state" {
@@ -55,5 +61,11 @@ resource "aws_dynamodb_table" "terraform_locks" {
   attribute {
     name = "LockID"
     type = "S"
+  }
+
+  tags = {
+    Project   = "epac"
+    ManagedBy = "terraform"
+    Ticket    = "EPAC-1852"
   }
 }

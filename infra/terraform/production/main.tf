@@ -44,6 +44,7 @@ resource "aws_apigatewayv2_api" "production" {
   tags = {
     Project     = "epac"
     Environment = "production"
+    ManagedBy   = "terraform"
   }
 }
 
@@ -57,6 +58,12 @@ resource "aws_apigatewayv2_stage" "production" {
     detailed_metrics_enabled = false
     throttling_burst_limit   = 50
     throttling_rate_limit    = 20
+  }
+
+  tags = {
+    Project     = "epac"
+    Environment = "production"
+    ManagedBy   = "terraform"
   }
 }
 
@@ -80,6 +87,12 @@ resource "aws_lambda_function" "production" {
     # environment: DATABASE_URL and service secrets are injected outside Terraform.
     ignore_changes = [filename, source_code_hash, environment]
   }
+
+  tags = {
+    Project     = "epac"
+    Environment = "production"
+    ManagedBy   = "terraform"
+  }
 }
 
 # ACM certificate for the production custom domain (already issued; imported into state).
@@ -89,6 +102,12 @@ resource "aws_acm_certificate" "production_api" {
 
   lifecycle {
     create_before_destroy = true
+  }
+
+  tags = {
+    Project     = "epac"
+    Environment = "production"
+    ManagedBy   = "terraform"
   }
 }
 

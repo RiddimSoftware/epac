@@ -49,6 +49,12 @@ resource "aws_lambda_function" "staging" {
     # environment: DATABASE_URL is injected by the deploy workflow via Secrets Manager.
     ignore_changes = [filename, source_code_hash, environment]
   }
+
+  tags = {
+    Project     = "epac"
+    Environment = "staging"
+    ManagedBy   = "terraform"
+  }
 }
 
 # ACM certificate for the staging custom domain (already issued; imported into state).
@@ -58,6 +64,12 @@ resource "aws_acm_certificate" "staging_api" {
 
   lifecycle {
     create_before_destroy = true
+  }
+
+  tags = {
+    Project     = "epac"
+    Environment = "staging"
+    ManagedBy   = "terraform"
   }
 }
 
