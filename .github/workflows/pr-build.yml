@@ -59,7 +59,7 @@ jobs:
   pr-build:
     name: pr-build
     needs: [lint, localization, build]
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]') }}
     if: always()
     steps:
       - name: Check required PR gates passed
