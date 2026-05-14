@@ -318,7 +318,7 @@ struct HomeFeedView: View {
                         )
                     }
                     .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("speech") })
-                } else if hasFollowedMPContext {
+                } else if hasPersonalizedContext {
                     todayMetricRow(
                         icon: "quote.bubble",
                         title: NSLocalizedString("home.today.latestSpeech", comment: ""),
