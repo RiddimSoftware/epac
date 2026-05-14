@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-API_NAME="${API_NAME:-}"
+API_NAME="${API_NAME:-epac-api-staging}"
 ENV_NAME="${ENV_NAME:-staging}"
 STAGE_NAME="${STAGE_NAME:-staging}"
 REGION="${AWS_REGION:-us-east-1}"
@@ -21,16 +21,26 @@ if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
   fi
 
   if [ -n "${DOMAIN_NAME}" ]; then
-    API_ID=$(aws apigatewayv2 get-api-mappings \
+    if API_ID=$(aws apigatewayv2 get-api-mappings \
       --domain-name "${DOMAIN_NAME}" \
       --query "Items[?Stage=='${STAGE_NAME}'].ApiId | [0]" \
-      --output text)
+      --output text 2>/dev/null); then
+      :
+    else
+      echo "Warning: GetApiMappings denied or failed for ${DOMAIN_NAME}; falling back to API name lookup." >&2
+      API_ID="None"
+    fi
   fi
 
   if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
     API_ID=$(aws apigatewayv2 get-apis \
       --query "Items[?Name=='${API_NAME}'].ApiId | [0]" \
       --output text)
+    if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
+      API_ID=$(aws apigatewayv2 get-apis \
+        --query "Items[?Name=='epac-api-api'].ApiId | [0]" \
+        --output text)
+    fi
   fi
 fi
 
