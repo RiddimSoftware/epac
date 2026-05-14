@@ -46,10 +46,17 @@ final class DateUtils: Sendable {
 	}
 
 	static func getDate(forCSVDateString string: String) -> Date {
+		guard let date = parseCSVDateString(string) else {
+			preconditionFailure("Invalid CSV date string: \(string)")
+		}
+		return date
+	}
+
+	static func parseCSVDateString(_ string: String) -> Date? {
 		if Locale.current.identifier == "fr_CA" {
-			return csvDateFormatter_fr.formatter.date(from: string)!
+			return csvDateFormatter_fr.formatter.date(from: string)
 		} else {
-			return csvDateFormatter_en.formatter.date(from: string)!
+			return csvDateFormatter_en.formatter.date(from: string)
 		}
 	}
 

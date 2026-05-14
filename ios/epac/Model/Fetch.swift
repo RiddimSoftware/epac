@@ -569,10 +569,9 @@ actor Fetch: ObservableObject {
 					continue
 				}
 				let classes = attrclass.components(separatedBy: " ")
-				guard let datestring = classes.first else {
+				guard let date = classes.compactMap(DateUtils.parseCSVDateString).first else {
 					continue
 				}
-				let date = DateUtils.getDate(forCSVDateString: datestring)
 				dates.append(date)
 			}
 			dates.sort(by: >)

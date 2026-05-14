@@ -4,6 +4,18 @@ import Testing
 
 struct ParlVULinkBuilderTests {
 
+    @Test func csvDateParserReturnsDateForCalendarClassToken() {
+        let date = DateUtils.parseCSVDateString("2026-01-27")
+
+        #expect(date != nil)
+    }
+
+    @Test func csvDateParserRejectsNonDateCalendarClassToken() {
+        let date = DateUtils.parseCSVDateString("chamber-meeting")
+
+        #expect(date == nil)
+    }
+
     @Test func houseDebateURLUsesParlVUPowerBrowserPattern() {
         let date = DateUtils.getDate(forCSVDateString: "2026-01-27")
         let url = ParlVULinkBuilder.houseDebateURL(for: date)
