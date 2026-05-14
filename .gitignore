@@ -97,4 +97,5 @@ backend/*/loader
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+*.tfstate.lock.info
 *.tfplan
