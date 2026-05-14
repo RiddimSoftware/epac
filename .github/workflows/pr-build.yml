@@ -11,9 +11,7 @@ permissions:
 jobs:
   lint:
     name: SwiftLint
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/realm/swiftlint:latest
+    runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
       - name: Run SwiftLint
@@ -21,7 +19,7 @@ jobs:
 
   localization:
     name: Localization Audit
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
       - name: Audit localization coverage
@@ -29,7 +27,7 @@ jobs:
 
   build:
     name: iOS Build
-    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["self-hosted","macOS"]') }}
+    runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
 
