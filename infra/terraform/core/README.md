@@ -6,10 +6,11 @@ This module manages the core infrastructure required for Terraform remote state:
 
 ## Usage
 
-This module uses **local state** because it defines the resources needed for remote state.
+This module uses **remote state** (S3).
 
 ```bash
 cd infra/terraform/core
+export AWS_PROFILE=riddim-agent
 terraform init
 terraform apply
 ```

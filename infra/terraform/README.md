@@ -10,5 +10,5 @@ Terraform modules for the epac project:
 
 All modules use the remote S3 backend with DynamoDB locking.
 
-1. **Bootstrap**: A human with AWS credentials must first apply the `core` module to create the backend resources.
+1. **Bootstrap**: The `core` module has been applied and its state is stored in S3.
 2. **Migration**: Once the core resources exist, run `terraform init` in `staging` and `production` to migrate existing local state to the remote backend.
