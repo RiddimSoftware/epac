@@ -54,6 +54,7 @@ resource "aws_lambda_function" "staging" {
     Project     = "epac"
     Environment = "staging"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 
@@ -70,6 +71,7 @@ resource "aws_acm_certificate" "staging_api" {
     Project     = "epac"
     Environment = "staging"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 

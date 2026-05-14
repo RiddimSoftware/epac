@@ -45,6 +45,7 @@ resource "aws_apigatewayv2_api" "production" {
     Project     = "epac"
     Environment = "production"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 
@@ -64,6 +65,7 @@ resource "aws_apigatewayv2_stage" "production" {
     Project     = "epac"
     Environment = "production"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 
@@ -92,6 +94,7 @@ resource "aws_lambda_function" "production" {
     Project     = "epac"
     Environment = "production"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 
@@ -108,6 +111,7 @@ resource "aws_acm_certificate" "production_api" {
     Project     = "epac"
     Environment = "production"
     ManagedBy   = "terraform"
+    Ticket      = "EPAC-1852"
   }
 }
 
