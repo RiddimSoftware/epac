@@ -83,7 +83,7 @@ struct ContentView: View {
 			guard let date else { return }
 			let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
 			viewModel.selectedDate = components
-			viewModel.onSelectedDateChanged(to: components, modelContext: modelContext, fetch: fetch)
+			viewModel.onSelectedDateChanged(to: components)
 			router.selectedTab = .parliament
 			notificationManager.clearPendingDate()
 		}
@@ -494,20 +494,34 @@ struct ContentView: View {
 			SittingCalendarView(selectedDate: $viewModel.selectedDate)
 				.environmentObject(fetch)
 				.navigationDestination(item: $viewModel.selectedHansard) { hansard in
-					SittingView(hansard: hansard, selectedSubject: $viewModel.selectedSubject)
-						.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
-						.navigationDestination(item: $viewModel.selectedSubject) { subject in
-							SpeechView(hansard: hansard, subject: subject)
-								.onDisappear { Log.debug("onDisappear") }
-						}
+					hansardDestination(hansard)
+				}
+				.navigationDestination(item: $viewModel.selectedSittingDate) { date in
+					sittingLoaderDestination(date)
 				}
 				.navigationDestination(item: $viewModel.nonSittingDate) { date in
 					NonSittingDayView(date: date)
 				}
 				.onChange(of: viewModel.selectedDate) { _, newValue in
-					viewModel.onSelectedDateChanged(to: newValue, modelContext: modelContext, fetch: fetch)
+					viewModel.onSelectedDateChanged(to: newValue)
 				}
 		}
+	}
+
+	private func hansardDestination(_ hansard: Hansard) -> some View {
+		SittingView(hansard: hansard, selectedSubject: $viewModel.selectedSubject)
+			.navigationTitle(hansard.date.formatted(date: .abbreviated, time: .omitted))
+			.navigationDestination(item: $viewModel.selectedSubject) { subject in
+				SpeechView(hansard: hansard, subject: subject)
+					.onDisappear { Log.debug("onDisappear") }
+			}
+	}
+
+	private func sittingLoaderDestination(_ date: Date) -> some View {
+		SittingLoaderView(
+			date: date,
+			selectedSubject: $viewModel.selectedSubject
+		)
 	}
 }
 
