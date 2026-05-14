@@ -89,7 +89,7 @@ jobs:
   pr-build:
     name: pr-build
     needs: [lint, localization, build]
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check required PR gates passed
