@@ -62,6 +62,37 @@ func TestOneLineExcerpt(t *testing.T) {
 	}
 }
 
+func TestIsOptionalRankingSchemaError(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "missing members table",
+			err:  errString(`ERROR: relation "members" does not exist (SQLSTATE 42P01)`),
+			want: true,
+		},
+		{
+			name: "missing related bill column",
+			err:  errString(`ERROR: column s.related_bill_ids does not exist (SQLSTATE 42703)`),
+			want: true,
+		},
+		{
+			name: "unrelated query failure",
+			err:  errString(`ERROR: relation "speeches" does not exist (SQLSTATE 42P01)`),
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isOptionalRankingSchemaError(tc.err); got != tc.want {
+				t.Fatalf("isOptionalRankingSchemaError() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestScanSpeechItem(t *testing.T) {
 	row := fakeSpeechRow{
 		values: []any{
@@ -116,4 +147,10 @@ func (f fakeSpeechRow) Scan(dest ...any) error {
 
 func stringPtr(value string) *string {
 	return &value
+}
+
+type errString string
+
+func (e errString) Error() string {
+	return string(e)
 }
