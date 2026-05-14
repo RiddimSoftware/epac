@@ -111,6 +111,8 @@ struct MembersView: View {
 					Button(action: viewModel.clearAllFilters) {
 						Image(systemName: "xmark.circle.fill")
 					}
+					.accessibilityLabel("Clear filters")
+					.accessibilityIdentifier("members-clear-filters")
 				}
 			}
 		}
