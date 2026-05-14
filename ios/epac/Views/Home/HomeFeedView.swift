@@ -30,13 +30,13 @@ struct HomeFeedView: View {
     @State private var latestMemberVote: HomeMemberVoteRecord?
     @State private var latestSpeechHighlight: HomeSpeechHighlight?
     @State private var myMPActivityCount = 0
-    @State private var savedMemberName: String?
     @State private var showPostalCodeSetup = false
     @State private var showSettings = false
     @State private var recentSubjectTitles: [String] = []
     @State private var latestHansardDate: Date?
     @State private var billStore = BillFollowStore.shared
     @State private var topicStore = TopicFollowStore.shared
+    @State private var postalCodeStore = PostalCodeStore.shared
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
@@ -88,7 +88,7 @@ struct HomeFeedView: View {
                 if !recentSubjectTitles.isEmpty {
                     recentDebatesSection
                 }
-                if savedMemberName == nil
+                if postalCodeStore.savedMemberName == nil
                     && billStore.followedNumbers.isEmpty
                     && topicStore.followedIDs.isEmpty {
                     Section {
@@ -148,6 +148,9 @@ struct HomeFeedView: View {
             }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
+            }
+            .onChange(of: postalCodeStore.savedMemberName) {
+                Task { await loadFeed() }
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
@@ -315,7 +318,7 @@ struct HomeFeedView: View {
                         )
                     }
                     .simultaneousGesture(TapGesture().onEnded { trackTodayCardTap("speech") })
-                } else if hasFollowedMPContext {
+                } else if hasPersonalizedContext {
                     todayMetricRow(
                         icon: "quote.bubble",
                         title: NSLocalizedString("home.today.latestSpeech", comment: ""),
@@ -484,7 +487,7 @@ struct HomeFeedView: View {
 
     private var myMPSection: some View {
         Section {
-            if let name = savedMemberName {
+            if let name = postalCodeStore.savedMemberName {
                 NavigationLink(destination: MyMPView()) {
                     HStack {
                         Image(systemName: "person.fill.viewfinder")
@@ -938,7 +941,6 @@ struct HomeFeedView: View {
         self.latestMemberVote = snapshot.latestMemberVote
         self.latestSpeechHighlight = snapshot.latestSpeechHighlight
         self.myMPActivityCount = snapshot.myMPActivityCount
-        self.savedMemberName = snapshot.savedMemberName
         self.recentSubjectTitles = snapshot.recentSubjectTitles
         self.latestHansardDate = snapshot.latestHansardDate
 
@@ -1091,8 +1093,8 @@ struct HomeFeedView: View {
         )
     }
 
-    private var hasFollowedMPContext: Bool {
-        savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
+    private var hasPersonalizedContext: Bool {
+        postalCodeStore.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
     }
 
     private var offlineCacheText: String {
