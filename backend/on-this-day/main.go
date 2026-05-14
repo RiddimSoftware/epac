@@ -152,7 +152,7 @@ func queryOnThisDay(ctx context.Context, conn *pgx.Conn, date time.Time, limit i
 		LIMIT $2`,
 		date.Format("2006-01-02"), limit,
 	)
-	if err != nil && strings.Contains(err.Error(), "related_") {
+	if err != nil && isOptionalRankingSchemaError(err) {
 		rows, err = conn.Query(ctx, `
 			SELECT
 				s.intervention_id,
@@ -164,14 +164,12 @@ func queryOnThisDay(ctx context.Context, conn *pgx.Conn, date time.Time, limit i
 				s.member_id,
 				s.source_url
 			FROM speeches s
-			LEFT JOIN members m ON m.person_id = s.member_id
 			WHERE s.sitting_date IS NOT NULL
 				AND EXTRACT(MONTH FROM s.sitting_date) = EXTRACT(MONTH FROM $1::date)
 				AND EXTRACT(DAY FROM s.sitting_date) = EXTRACT(DAY FROM $1::date)
 				AND s.sitting_date < $1::date
 				AND COALESCE(s.content, '') <> ''
 			ORDER BY
-				CASE WHEN m.person_id IS NOT NULL AND (m.to_date IS NULL OR m.to_date >= CURRENT_DATE) THEN 1 ELSE 0 END DESC,
 				s.sitting_date DESC,
 				s.intervention_seq ASC NULLS LAST
 			LIMIT $2`,
@@ -195,6 +193,11 @@ func queryOnThisDay(ctx context.Context, conn *pgx.Conn, date time.Time, limit i
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 	return items, nil
+}
+
+func isOptionalRankingSchemaError(err error) bool {
+	message := err.Error()
+	return strings.Contains(message, "related_") || strings.Contains(message, `relation "members" does not exist`)
 }
 
 type speechRow interface {
