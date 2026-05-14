@@ -11,7 +11,7 @@ import Foundation
 struct BackendConfig {
     static let shared = BackendConfig()
 
-    /// Production custom domain base URL. All builds use this by default.
+    /// Production custom domain base URL.
     static let productionBaseURL = URL(string: "https://api.epac.riddimsoftware.com")!
 
     /// Effective backend base URL for this run. Runtime environment overrides
@@ -20,20 +20,29 @@ struct BackendConfig {
     let baseURL: URL
 
     init() {
-        self.baseURL = Self.resolvedBaseURL()
+        self.baseURL = Self.resolvedBaseURL(
+            envValue: ProcessInfo.processInfo.environment["BACKEND_BASE_URL"],
+            plistValue: Bundle.main.object(forInfoDictionaryKey: "BackendBaseURL") as? String
+        )
     }
 
-    private static func resolvedBaseURL() -> URL {
-        if let override = validURL(ProcessInfo.processInfo.environment["BACKEND_BASE_URL"]) {
+    /// Testable initializer: accepts the two resolution inputs directly so
+    /// unit tests don't need a real bundle or process environment.
+    init(envValue: String?, plistValue: String?) {
+        self.baseURL = Self.resolvedBaseURL(envValue: envValue, plistValue: plistValue)
+    }
+
+    static func resolvedBaseURL(envValue: String?, plistValue: String?) -> URL {
+        if let override = validURL(envValue) {
             return override
         }
-        if let configured = validURL(Bundle.main.object(forInfoDictionaryKey: "BackendBaseURL") as? String) {
+        if let configured = validURL(plistValue) {
             return configured
         }
         return productionBaseURL
     }
 
-    private static func validURL(_ rawValue: String?) -> URL? {
+    static func validURL(_ rawValue: String?) -> URL? {
         guard let rawValue else { return nil }
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty,
