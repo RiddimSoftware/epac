@@ -120,17 +120,32 @@ for route_def in "${ROUTES[@]}"; do
 
 done
 
-DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
-  --api-id "${API_ID}" \
-  --query 'DeploymentId' \
-  --output text)
-
-if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${STAGE_NAME}" >/dev/null 2>&1; then
-  aws apigatewayv2 update-stage \
+if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${STAGE_NAME}" --output json >/dev/null 2>&1; then
+  AUTO_DEPLOY=$(aws apigatewayv2 get-stage \
     --api-id "${API_ID}" \
     --stage-name "${STAGE_NAME}" \
-    --deployment-id "${DEPLOYMENT_ID}" >/dev/null
+    --query 'AutoDeploy' \
+    --output text)
+
+  if [ "${AUTO_DEPLOY}" != "True" ]; then
+    DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
+      --api-id "${API_ID}" \
+      --query 'DeploymentId' \
+      --output text)
+
+    aws apigatewayv2 update-stage \
+      --api-id "${API_ID}" \
+      --stage-name "${STAGE_NAME}" \
+      --deployment-id "${DEPLOYMENT_ID}" >/dev/null
+  else
+    echo "Stage ${STAGE_NAME} has AutoDeploy=true; skipping manual deployment binding."
+  fi
 else
+  DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
+    --api-id "${API_ID}" \
+    --query 'DeploymentId' \
+    --output text)
+
   aws apigatewayv2 create-stage \
     --api-id "${API_ID}" \
     --stage-name "${STAGE_NAME}" \
