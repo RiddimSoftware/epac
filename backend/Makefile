@@ -1,16 +1,22 @@
 # Makefile for deploying Go Lambda functions
 
-.PHONY: create-lambda update-lambda build package clean create-api delete-api add-endpoint schedule-lambda schedule-rate-lambda
+.PHONY: create-lambda update-lambda build test package clean create-api delete-api add-endpoint schedule-lambda schedule-rate-lambda
 
 # AWS Role ARN for the Lambda function. Can be overridden on the command line or set as an environment variable.
 ROLE_ARN ?= arn:aws:iam::227530433709:role/epac-lambda-role
+
+# Run tests for a service
+# Usage: make test SERVICE=search
+test:
+	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make test SERVICE=search"; exit 1; fi
+	cd $(SERVICE) && go test ./...
 
 # Build the Lambda binary for Linux ARM64 (recommended for AL2023)
 # Usage: make build SERVICE=search
 build:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make build SERVICE=search"; exit 1; fi
 	@echo "Building binary for $(SERVICE)..."
-	cd $(SERVICE) && GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go
+	cd $(SERVICE) && GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap .
 
 # Package the binary into a zip file
 # Usage: make package SERVICE=search

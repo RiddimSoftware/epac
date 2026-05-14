@@ -39,11 +39,8 @@ jobs:
           aws-region: us-east-1
 
       - name: Test and package Lambda
-        working-directory: backend/${{ matrix.service }}
-        run: |
-          go test ./...
-          GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go
-          zip -q function.zip bootstrap
+        working-directory: backend
+        run: make test package SERVICE=${{ matrix.service }}
 
       - name: Update staging Lambda
         working-directory: backend/${{ matrix.service }}
