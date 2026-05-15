@@ -2,32 +2,70 @@ name: Backend Python tests
 
 on:
   pull_request:
-    paths: ['backend/**']
-  workflow_dispatch:
+    paths:
+      - 'backend/cabinet/**'
+      - 'backend/corrections-statistics/**'
+      - 'backend/cpi-statistics/**'
+      - 'backend/cpp-oas-statistics/**'
+      - 'backend/ei-statistics/**'
+      - 'backend/fiscal-monitor/**'
+      - 'backend/pbo/**'
+      - 'backend/student-finance-statistics/**'
+      - 'backend/transport-safety-statistics/**'
+      - 'backend/vac-statistics/**'
 
 jobs:
-  test:
+  changes:
+    name: Detect changed pipelines
+    runs-on: ubuntu-latest
+    outputs:
+      pipelines: ${{ steps.detect.outputs.pipelines }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch base ref for diff
+        run: git fetch origin "$GITHUB_BASE_REF" --depth=1
+
+      - name: Detect which pipelines changed
+        id: detect
+        run: |
+          CHANGED=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD)
+          PIPELINES=()
+          for pipeline in cabinet corrections-statistics cpi-statistics cpp-oas-statistics ei-statistics fiscal-monitor pbo student-finance-statistics transport-safety-statistics vac-statistics; do
+            if echo "$CHANGED" | grep -q "^backend/$pipeline/"; then
+              PIPELINES+=("$pipeline")
+            fi
+          done
+          if [ ${#PIPELINES[@]} -eq 0 ]; then
+            echo 'pipelines=[]' >> "$GITHUB_OUTPUT"
+          else
+            PIPELINES_JSON=$(printf '%s\n' "${PIPELINES[@]}" | jq -R . | jq -c -s .)
+            echo "pipelines=$PIPELINES_JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+  python-tests:
+    name: python-tests / ${{ matrix.pipeline }}
+    needs: changes
+    if: needs.changes.outputs.pipelines != '[]' && needs.changes.outputs.pipelines != ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        pipeline:
-          - cabinet
-          - corrections-statistics
-          - cpi-statistics
-          - cpp-oas-statistics
-          - ei-statistics
-          - fiscal-monitor
-          - pbo
-          - student-finance-statistics
-          - transport-safety-statistics
-          - vac-statistics
-    name: Test ${{ matrix.pipeline }}
+        pipeline: ${{ fromJSON(needs.changes.outputs.pipelines) }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run tests
+
+      - name: Run unittest suite
+        # cpp-oas-statistics has no unittest suite yet — backfill tracked in child issue
+        if: matrix.pipeline != 'cpp-oas-statistics'
         working-directory: backend/${{ matrix.pipeline }}
-        run: python3 -m unittest discover -v
+        run: python3 -m unittest
+
+      - name: cpp-oas-statistics — no tests yet
+        # Remove this step and the guard above when the backfill child issue lands
+        if: matrix.pipeline == 'cpp-oas-statistics'
+        run: echo "cpp-oas-statistics has no unittest suite yet; skipping."
