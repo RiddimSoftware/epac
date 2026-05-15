@@ -154,18 +154,6 @@ jobs:
           bundle config set path vendor/bundle
           bundle install --jobs 4 --retry 3
 
-      - name: Write release notes from GitHub Release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES_PATH: ${{ vars.IOS_WORKDIR || 'ios' }}/fastlane/metadata/${{ vars.PRIMARY_LOCALE || 'en-CA' }}/release_notes.txt
-        run: |
-          set -euo pipefail
-          mkdir -p "$(dirname "$RELEASE_NOTES_PATH")"
-          gh release view "${{ needs.find-build.outputs.tag }}" \
-            --json body --jq '.body' \
-            > "$RELEASE_NOTES_PATH"
-
       - name: Submit build for App Store review
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         run: |
