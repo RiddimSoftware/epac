@@ -166,20 +166,6 @@ jobs:
             --json body --jq '.body' \
             > "$RELEASE_NOTES_PATH"
 
-      - name: Upload metadata and screenshots to App Store
-        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
-        run: |
-          bundle exec fastlane run deliver \
-            api_key_path:/tmp/asc_api_key.json \
-            app_identifier:${{ vars.BUNDLE_ID }} \
-            skip_binary_upload:true \
-            skip_screenshots:false \
-            skip_metadata:false \
-            submit_for_review:false \
-            run_precheck_before_submit:false \
-            precheck_include_in_app_purchases:false \
-            force:true
-
       - name: Submit build for App Store review
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         run: |
