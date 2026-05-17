@@ -81,6 +81,19 @@ jobs:
             build_jobs=6
           fi
           echo "Using $build_jobs xcodebuild jobs"
+          heartbeat() {
+            while true; do
+              sleep 60
+              echo "xcodebuild still running at $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            done
+          }
+          heartbeat &
+          heartbeat_pid=$!
+          cleanup_heartbeat() {
+            kill "$heartbeat_pid" 2>/dev/null || true
+            wait "$heartbeat_pid" 2>/dev/null || true
+          }
+          trap cleanup_heartbeat EXIT
           xcodebuild build \
             -project epac.xcodeproj \
             -scheme epac \
