@@ -129,6 +129,25 @@ jobs:
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
             extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
 
+      # ------------------------------------------------------------------
+      # Emit release-manifest.json for chain-of-custody receipt generation.
+      #
+      # Consumed by software-factory's chain-of-custody receipt generation;
+      # do not remove without coordinating with FAC team.
+      #
+      # Produces a deterministic build_number ↔ git_sha ↔ pr_numbers mapping
+      # that the factory receipt generator reads to populate
+      # release.built_from_sha. See EPAC-1929.
+      # ------------------------------------------------------------------
+      - name: Emit release manifest
+        if: ${{ !inputs.dry_run }}
+        env:
+          BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
+          GIT_SHA: ${{ github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          S3_BUCKET_PREFIX: s3://riddimsoftware-factory-transcripts/release-manifests
+        run: scripts/ci/emit_release_manifest.sh
+
       - name: Delete ephemeral keychain
         if: ${{ always() && !inputs.dry_run }}
         run: scripts/runner/ephemeral_keychain.sh cleanup
