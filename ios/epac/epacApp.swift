@@ -90,6 +90,7 @@ struct epacApp: App {
 				BackgroundRefreshManager.shared.modelContainer = sharedModelContainer
 				ReviewRequestManager.shared.recordAppOpen()
 				BackgroundRefreshManager.shared.scheduleRefresh()
+				Task { await HansardSubjectsRefresh.shared.refreshIfNeeded() }
 			}
 		}
 		#if targetEnvironment(macCatalyst)

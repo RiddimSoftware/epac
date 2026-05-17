@@ -38,6 +38,7 @@ final class BackgroundRefreshManager {
         let refreshTask = Task {
             let fetch = Fetch(modelContainer: container)
             await fetch.backgroundRefresh()
+            await HansardSubjectsRefresh.shared.refresh()
             Log.debug("BackgroundRefreshManager: refresh complete")
         }
 
