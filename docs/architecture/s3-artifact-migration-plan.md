@@ -10,7 +10,7 @@ This document catalogues every Postgres-bound backend endpoint and Python statis
 
 **Total estimated S3 storage (all artifacts, gzipped):** ~90–150 MB  
 **Maximum single-artifact size (gzipped):** ~200 KB per riding boundary file (338 ridings total); ~40 KB for the largest speech-per-member file  
-**Endpoints requiring design work before migration:** `/api/v1/on-this-day` (ranking bakes in current-MP state at publish time — see §6), `/api/v1/ridings/{slug}/boundary` (needs a new pre-build pipeline — see §9), `/api/v1/sittings/{date}/speeches` (corpus size decision — see §3)
+**Endpoints requiring design work before migration:** `/api/v1/on-this-day` (ranking bakes in current-MP state at publish time — see §6), `/api/v1/ridings/{slug}/boundary` (needs a new pre-build pipeline — see §9), `/api/v1/sittings/{date}/speeches` (corpus size decision — see §5)
 
 ---
 
@@ -38,7 +38,7 @@ These four endpoints have no S3 artifact equivalent and will be decommissioned a
 
 ---
 
-## 1. `GET /api/v1/members` — MP list ✅ (iOS direct today → backend planned)
+## 1. `GET /api/v1/members` — MP list 🔷 (iOS direct today → backend planned)
 
 **Current implementation status:** No backend Lambda. iOS `Fetch.swift` calls `https://www.ourcommons.ca/Members/en/search/XML?parliament=all&caucusId=all` directly and parses the XML response.
 
@@ -154,7 +154,30 @@ speeches/v1/by-member/{member_id}.json   # full history, all speeches + stats
 speeches/v1/member-index.json            # lightweight index: member_id → total_speeches, top_topic
 ```
 
-**Proposed JSON schema:** Same as current `MemberSpeechesResponse` in OpenAPI, with `page`/`per_page`/`pages` fields dropped (artifact is always complete). `stats` is embedded at root. Schema pointer: `#/components/schemas/MemberSpeechesResponse`.
+**Proposed artifact JSON schema** (explicit — `MemberSpeechesResponse` is incompatible because it requires `page`, `per_page`, `pages`, `total`):
+```json
+{
+  "member_id": "string (required)",
+  "stats": {
+    "total_speeches": "integer (required)",
+    "avg_word_count": "integer (required)",
+    "top_topic": "string (required)"
+  },
+  "speeches": [
+    {
+      "id": "string (required)",
+      "sitting_date": "string | null (date)",
+      "parliament_num": "integer | null",
+      "session_num": "integer | null",
+      "subject_title": "string | null",
+      "preview": "string (required)",
+      "word_count": "integer | null",
+      "filename": "string (required)"
+    }
+  ]
+}
+```
+Matches `#/components/schemas/MemberStats` for the `stats` field and `#/components/schemas/MemberSpeech` for each array entry. Pagination fields (`page`, `per_page`, `pages`, `total`) are absent — the artifact is always the complete speech history.
 
 **iOS consumer service:** `ios/epac/Util/MemberSpeechService.swift`
 
@@ -197,7 +220,23 @@ votes/v1/by-member/{member_id}.json    # all votes for one MP (complete, unpagin
 votes/v1/vote-index.json               # all votes metadata for cross-MP lookup
 ```
 
-**Proposed JSON schema:** Matches `#/components/schemas/MemberVotesResponse` without pagination fields.
+**Proposed artifact JSON schema** (explicit — `MemberVotesResponse` requires `page`, `per_page`, `total` which the artifact omits):
+```json
+{
+  "member_id": "string (required)",
+  "votes": [
+    {
+      "vote_id": "string (required)",
+      "date": "string (required, date)",
+      "bill_number": "string | null",
+      "summary": "string | null",
+      "vote": "string (required, enum: Yea | Nay | Paired | Absent)",
+      "source_url": "string | null (uri)"
+    }
+  ]
+}
+```
+Each `votes` entry matches `#/components/schemas/Vote`. Pagination fields are absent.
 
 **iOS consumer service:** `ios/epac/Model/Fetch.swift` (votes-related methods)
 
@@ -245,13 +284,27 @@ ORDER BY sitting_date DESC
 sittings/v1/all.json    # complete sitting list, unpaginated (~30 KB gzipped)
 ```
 
-**Proposed JSON schema:** Matches `#/components/schemas/SittingsResponse` without pagination fields. Array of `Sitting` objects.
+**Proposed artifact JSON schema** (explicit — `SittingsResponse` requires `page`, `per_page`, `total` which the artifact omits):
+```json
+{
+  "sittings": [
+    {
+      "date": "string (required, date)",
+      "parliament_num": "integer | null",
+      "session_num": "integer | null",
+      "sitting_num": "integer | null",
+      "source_url": "string (required, uri)"
+    }
+  ]
+}
+```
+Each `sittings` entry matches `#/components/schemas/Sitting`. Pagination fields are absent.
 
 **iOS consumer service:** `ios/epac/Model/Fetch.swift` (`sittingDates()` / calendar methods)
 
 ---
 
-## 5. `GET /api/v1/sittings/{date}/speeches` — Speeches for a sitting date ✅ (via speeches table)
+## 5. `GET /api/v1/sittings/{date}/speeches` — Speeches for a sitting date 🔷 (no Lambda; data in speeches table → publish to S3)
 
 **Current implementation status:** No dedicated Lambda, but the data lives in the `speeches` Postgres table populated by `daily-fetch`. This endpoint is listed in the OpenAPI spec as planned; the data would be served from the same `speeches` table.
 
@@ -305,7 +358,23 @@ ORDER BY intervention_seq ASC
 sittings/v1/by-date/{YYYY-MM-DD}.json    # all speeches for one sitting date
 ```
 
-**Proposed JSON schema:** `SpeechesResponse` without pagination fields. `speeches` array contains all interventions for the date. Schema pointer: `#/components/schemas/SpeechesResponse`.
+**Proposed artifact JSON schema** (explicit — `SpeechesResponse` requires `page`, `per_page`, `total` which the artifact omits):
+```json
+{
+  "date": "string (required, date)",
+  "speeches": [
+    {
+      "id": "string (required)",
+      "speaker_name": "string | null",
+      "member_id": "string | null",
+      "subject_title": "string | null",
+      "content": "string | null",
+      "source_url": "string | null (uri)"
+    }
+  ]
+}
+```
+Each `speeches` entry matches `#/components/schemas/Speech`. Pagination fields are absent; the artifact contains all interventions for the sitting date.
 
 **iOS consumer service:** `ios/epac/Model/Fetch.swift` (Hansard sitting fetch methods); `ios/epac/Views/Calendar/SittingCalendarViewModel.swift`
 
