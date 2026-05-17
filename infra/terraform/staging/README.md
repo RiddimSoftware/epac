@@ -1,6 +1,6 @@
 # epac staging infrastructure
 
-Terraform module for the epac staging backend: 10 Lambda functions, API Gateway v2 custom domain, ACM certificate, and Route53 DNS records.
+Terraform module for the epac staging backend: 13 Lambda functions, API Gateway v2 custom domain, ACM certificate, and Route53 DNS records.
 
 ## Prerequisites
 
@@ -28,6 +28,9 @@ export AWS_PROFILE=riddim-agent
 # Lambda functions
 terraform import 'aws_lambda_function.staging["daily-fetch"]'     epac-daily-fetch-staging
 terraform import 'aws_lambda_function.staging["loader"]'          epac-loader-staging
+terraform import 'aws_lambda_function.staging["members"]'         epac-members-staging
+terraform import 'aws_lambda_function.staging["sittings"]'        epac-sittings-staging
+terraform import 'aws_lambda_function.staging["bills"]'           epac-bills-staging
 terraform import 'aws_lambda_function.staging["search"]'          epac-search-staging
 terraform import 'aws_lambda_function.staging["member-speeches"]' epac-member-speeches-staging
 terraform import 'aws_lambda_function.staging["on-this-day"]'     epac-on-this-day-staging
@@ -58,6 +61,8 @@ terraform import aws_apigatewayv2_api_mapping.staging \
 terraform import aws_route53_record.staging_api \
   Z0066450A0OUY8MCI6XV_staging-api.epac.riddimsoftware.com_A
 ```
+
+The EPAC-1914 artifact-backed functions (`members`, `sittings`, and `bills`) may be new in an account. If the `terraform import` command reports that one of them does not exist, omit that import and let Terraform create it from `placeholder.zip`; CI will update the code afterward.
 
 ## Notes
 

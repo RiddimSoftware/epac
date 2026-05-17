@@ -2,6 +2,9 @@ locals {
   services = [
     "daily-fetch",
     "loader",
+    "members",
+    "sittings",
+    "bills",
     "search",
     "member-speeches",
     "on-this-day",
@@ -20,6 +23,9 @@ locals {
   http_services = {
     "health"          = "2.0"
     "search"          = "1.0"
+    "members"         = "1.0"
+    "sittings"        = "1.0"
+    "bills"           = "1.0"
     "member-speeches" = "1.0"
     "on-this-day"     = "1.0"
     "riding-boundary" = "1.0"
@@ -139,6 +145,30 @@ resource "aws_apigatewayv2_route" "search_speeches" {
   api_id    = var.apigw_api_id
   route_key = "GET /search/speeches"
   target    = "integrations/${aws_apigatewayv2_integration.staging["search"].id}"
+}
+
+resource "aws_apigatewayv2_route" "members" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/members"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["members"].id}"
+}
+
+resource "aws_apigatewayv2_route" "sittings" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/sittings"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["sittings"].id}"
+}
+
+resource "aws_apigatewayv2_route" "sitting_speeches" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/sittings/{date}/speeches"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["sittings"].id}"
+}
+
+resource "aws_apigatewayv2_route" "bills" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/bills"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["bills"].id}"
 }
 
 resource "aws_apigatewayv2_route" "member_speeches" {

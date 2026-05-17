@@ -18,7 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - _shared
           - search
+          - members
+          - sittings
+          - bills
           - member-speeches
           - on-this-day
           - live-status
@@ -27,6 +31,9 @@ jobs:
           - riding-boundary
           - hansard-subjects-index
           - openapi
+          - members-publisher
+          - sittings-publisher
+          - bills-publisher
     name: Test ${{ matrix.service }}
     services:
       postgres:
