@@ -23,6 +23,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
+| `ArtifactKey` | A relative S3/CDN artifact key such as `members/v1/all.json`. |
+| `ArtifactManifest` | The iOS-decoded manifest.json document used to compare artifact ETags before fetching payloads. |
 | `Manifest` | The root manifest.json document: schema version, generation timestamp, and sorted artifact entries. |
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 
@@ -41,7 +43,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `NotificationDelivering` | outbound | Send push notifications to subscribed devices via APNs. |
 | `SubjectsRepository` | outbound | Read Hansard subject records for artifact generation. |
 | `Clock` | outbound | Provide the current timestamp for scheduling and cache-freshness checks. |
-| `ArtifactStore` | outbound | List artifact keys and metadata from object storage; write manifest.json back. |
+| `ArtifactFetching` | inbound | Consumer-facing iOS port for fetching decoded CDN artifacts and manifest.json without exposing HTTP or disk details. |
+| `ManifestFetching` | outbound | Fetch manifest.json over HTTPS with conditional ETag requests. |
+| `ArtifactStore` | outbound | Backend: list artifact keys and metadata from object storage; write manifest.json back. iOS: read/write cached artifact payloads and ETags on disk. |
 
 ---
 
@@ -395,6 +399,24 @@ Current implementation:
 ```
 
 > **Schema contract:** `backend/manifest/README.md` is the only shared contract between the publisher (CI) and the consumer (iOS app). Bumping `schema_version` requires coordinated changes to both sides.
+
+---
+
+### FetchArtifact
+
+```
+Actor: iOS service or ViewModel consuming a CDN-published artifact
+Goal: Fetch the latest decoded artifact payload with ETag revalidation, on-disk cache reuse, and stale-cache offline fallback.
+Inputs: ArtifactKey, expected Decodable payload type.
+Outputs: Decoded payload, fresh manifest metadata, stale-cache warning, or typed ArtifactError.
+Entities / values: ArtifactKey, ArtifactManifest, ManifestEntry.
+Ports: ArtifactFetching, ArtifactStore, ManifestFetching.
+Primary adapters: ArtifactService, URLSessionArtifactStore, FileManagerArtifactStore, Info.plist ArtifactsBaseURL.
+Current implementation:
+  ios/epac/Util/ArtifactService.swift
+```
+
+> Boundary rule: consumers depend on `ArtifactFetching`; `URLSession`, `FileManager`, HTTP status handling, and cache paths stay inside `ArtifactService` adapters.
 
 ---
 
