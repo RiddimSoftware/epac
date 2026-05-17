@@ -15,9 +15,6 @@ enum AppRuntime {
 	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
-// AppDelegate receives UIKit callbacks that SwiftUI lifecycle doesn't expose.
-// didRegisterForRemoteNotificationsWithDeviceToken persists the APNs token and
-// triggers backend device registration whenever the system issues a new token.
 @MainActor
 class AppDelegate: NSObject, UIApplicationDelegate {
 	/// Injected by ContentView once it has created the router.
@@ -31,16 +28,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 	}
 
 	var coldLaunchAction: QuickAction?
-
-	func application(
-		_ application: UIApplication,
-		didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-	) {
-		let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-		UserDefaults.standard.set(token, forKey: "epac.apnsToken")
-		Log.debug("APNs token registered: \(token.prefix(12))...")
-		TriggerDeviceRegistration.live().trigger(myMPMemberID: nil)
-	}
 }
 
 @main
@@ -59,7 +46,6 @@ struct epacApp: App {
 		}
 	}()
 
-	@State private var notificationManager = NotificationManager()
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
@@ -92,7 +78,6 @@ struct epacApp: App {
 	var body: some Scene {
 		WindowGroup {
 			ContentView(modelContainer: sharedModelContainer, appDelegate: appDelegate)
-				.environment(notificationManager)
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { _, newPhase in

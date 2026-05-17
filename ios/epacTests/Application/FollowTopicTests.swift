@@ -3,15 +3,13 @@ import Testing
 
 @MainActor
 struct FollowTopicTests {
-    @Test func persistsUniqueTopicsAndTriggersDeviceRegistrationOnce() {
+    @Test func persistsUniqueTopics() {
         let store = TopicFollowingStoreSpy()
-        let deviceRegistration = DeviceRegistrationTriggerSpy()
-        let useCase = FollowTopic(store: store, deviceRegistration: deviceRegistration)
+        let useCase = FollowTopic(store: store)
 
         useCase.execute(topicIDs: ["healthcare", "housing", "healthcare", "   "])
 
         #expect(store.persistedTopicIDs == ["healthcare", "housing"])
-        #expect(deviceRegistration.triggerCalls == [nil])
     }
 }
 
@@ -21,13 +19,5 @@ private final class TopicFollowingStoreSpy: TopicFollowingStore {
 
     func persistFollowedTopic(_ topicID: String) {
         persistedTopicIDs.append(topicID)
-    }
-}
-
-private final class DeviceRegistrationTriggerSpy: DeviceRegistrationTriggering {
-    var triggerCalls: [String?] = []
-
-    func trigger(myMPMemberID: String?) {
-        triggerCalls.append(myMPMemberID)
     }
 }

@@ -33,7 +33,7 @@ struct TopicsView: View {
                     Button {
                         store.toggle(topic.id)
                     } label: {
-                        Image(systemName: store.isFollowing(topic.id) ? "bell.fill" : "bell")
+                        Image(systemName: store.isFollowing(topic.id) ? "star.fill" : "star")
                             .foregroundStyle(store.isFollowing(topic.id) ? Color.accentColor : Color.secondary)
                     }
                     .buttonStyle(.plain)
@@ -49,7 +49,7 @@ struct TopicsView: View {
                     Button(role: .destructive) {
                         store.unfollow(topic.id)
                     } label: {
-                        Label(NSLocalizedString("topic.unfollow", comment: ""), systemImage: "bell.slash")
+                        Label(NSLocalizedString("topic.unfollow", comment: ""), systemImage: "star.slash")
                     }
                 }
             }

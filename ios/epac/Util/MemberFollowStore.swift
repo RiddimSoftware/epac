@@ -2,17 +2,13 @@
 //  MemberFollowStore.swift
 //  epac
 //
-//  Persists the set of followed MPs and their notification preferences in UserDefaults.
+//  Persists the set of followed MPs in UserDefaults.
 //
 
 import Foundation
 import Observation
 
-struct FollowPreferences: Codable {
-    var votes: Bool = true
-    var speeches: Bool = true
-    var expenses: Bool = true
-}
+struct FollowPreferences: Codable {}
 
 @MainActor
 @Observable
@@ -20,7 +16,6 @@ final class MemberFollowStore {
     static let shared = MemberFollowStore()
 
     private let prefsKey = "epac.followedMembers"
-    // memberID → preferences
     private(set) var followed: [Int: FollowPreferences] = [:]
 
     private init() {
@@ -44,16 +39,6 @@ final class MemberFollowStore {
 
     func toggle(_ memberID: Int) {
         if isFollowing(memberID) { unfollow(memberID) } else { follow(memberID) }
-    }
-
-    func preferences(for memberID: Int) -> FollowPreferences {
-        followed[memberID] ?? FollowPreferences()
-    }
-
-    func setPreferences(_ prefs: FollowPreferences, for memberID: Int) {
-        guard followed[memberID] != nil else { return }
-        followed[memberID] = prefs
-        save()
     }
 
     var followedIDs: Set<Int> { Set(followed.keys) }

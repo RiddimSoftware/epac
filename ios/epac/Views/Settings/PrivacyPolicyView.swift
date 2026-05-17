@@ -29,8 +29,7 @@ struct PrivacyPolicyView: View {
                     Text("epac stores the following data locally on your device using Apple's SwiftData framework:")
                     BulletList(items: [
                         "Parliamentary data downloaded from official sources (Hansard debates, voting records, MP profiles, expenditures)",
-                        "Your preferences: followed MPs, followed bills, followed topics, your saved postal code",
-                        "Notification preferences you configure"
+                        "Your preferences: followed MPs, followed bills, followed topics, your saved postal code"
                     ])
                     Text("This data never leaves your device to Riddim Software's servers. It is not backed up to iCloud unless you have iCloud backup enabled for all apps.")
                 }
@@ -48,7 +47,7 @@ struct PrivacyPolicyView: View {
                 }
 
                 PolicySection(title: "Apple Platform Services") {
-                    Text("epac uses standard iOS frameworks. Apple may collect data according to its own privacy policy when you use iOS features such as push notifications, Siri, or Spotlight search integration.")
+                    Text("epac uses standard iOS frameworks. Apple may collect data according to its own privacy policy when you use iOS features such as Siri or Spotlight search integration.")
                 }
 
                 PolicySection(title: "No Third-Party Advertising or Analytics") {

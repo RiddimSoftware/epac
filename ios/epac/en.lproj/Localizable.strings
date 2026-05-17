@@ -207,9 +207,6 @@
 "follow.follow" = "Follow";
 "member.share" = "Share";
 "follow.unfollow" = "Unfollow";
-"follow.notification.vote" = "Voted %@ on %@";
-"follow.notification.speech" = "Spoke today: %@";
-"follow.notification.expense" = "Q%d %d expenses are now available";
 
 /* Party-line voting score */
 "partyLine.title" = "Party solidarity";
@@ -344,11 +341,6 @@
 "bill.follow" = "Follow";
 "bill.unfollow" = "Unfollow";
 "bill.share" = "Share";
-"bill.notification.stageChange" = "%@ advanced: %@";
-"bill.notification.royalAssent" = "%@ received Royal Assent";
-"bill.notification.defeated" = "%@ was defeated";
-"bill.notification.voteResult" = "Vote: %d Yea \u{2013} %d Nay.";
-"bill.notification.mpVote" = "%@ voted %@.";
 
 /* Government consultations view */
 "consult.navTitle" = "Consultations";
@@ -539,22 +531,13 @@
 "onboarding.what.trust" = "All from official government sources. Nothing generated or editorialized.";
 
 "onboarding.topics.title" = "What matters to you?";
-"onboarding.topics.subtitle" = "Follow up to 4 topics. Get notified when Parliament debates them.";
+"onboarding.topics.subtitle" = "Follow up to 4 topics to personalize your Home feed.";
 "onboarding.topics.follow" = "Follow %d topic(s) →";
-
-"onboarding.notifications.title" = "Stay informed";
-"onboarding.notifications.subtitle" = "We'll tell you when Parliament acts on things that matter to you.";
-"onboarding.notifications.preview1" = "When your MP speaks or votes";
-"onboarding.notifications.preview2" = "When a bill you follow advances";
-"onboarding.notifications.preview3" = "When Parliament debates a topic you follow";
-"onboarding.notifications.privacy" = "Notifications only. No tracking. No analytics.";
-"onboarding.notifications.allow" = "Allow Notifications →";
-"onboarding.notifications.skip" = "Not now";
 
 "onboarding.promise.title" = "You're set up";
 "onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
 "onboarding.promise.point1" = "Your MP's votes and speeches, as they happen";
-"onboarding.promise.point2" = "Notifications when Parliament debates your %d topic(s)";
+"onboarding.promise.point2" = "A Home feed shaped by your %d topic(s)";
 "onboarding.promise.point3" = "No account required. No data sold. No ads.";
 "onboarding.promise.start" = "Start Exploring →";
 
@@ -566,19 +549,12 @@
 "settings.account.riding" = "Riding";
 "settings.account.mp" = "MP";
 "settings.account.postalCode" = "Postal code and riding";
-"settings.account.notifications" = "Notifications";
 
 "settings.location.title" = "My Location";
 "settings.location.riding" = "Riding";
 "settings.location.mp" = "MP";
 "settings.location.change" = "Change postal code";
 
-"settings.notifications.title" = "Notifications";
-"settings.notifications.hansard" = "New Hansard sittings";
-"settings.notifications.billVotes" = "Vote results on followed bills";
-"settings.notifications.memberActivity" = "Activity from followed MPs";
-"settings.notifications.topicConsultations" = "New consultations on followed topics";
-"settings.notifications.morningBriefing" = "Morning sitting-day briefing";
 
 "settings.appearance.title" = "Appearance";
 "settings.appearance.theme" = "Theme";
@@ -708,35 +684,6 @@
 "toronto.votes.empty.description" = "Toronto City Council vote records will appear here.";
 "toronto.votes.sourceLink" = "Source: Open Data Toronto";
 
-/* Notification Settings (EPAC-436) */
-"settings.notifications.manage" = "Manage Notifications";
-"notifications.section.permission" = "Permission";
-"notifications.permission.granted" = "Notifications enabled";
-"notifications.permission.denied" = "Notifications are turned off";
-"notifications.permission.deniedHint" = "Open iOS Settings to allow epac to send notifications.";
-"notifications.permission.openSettings" = "Open Settings";
-"notifications.permission.enable" = "Enable Notifications";
-"notifications.section.activity" = "Activity";
-"notifications.section.activity.footer" = "Per-MP overrides are available from each member's profile.";
-"notifications.category.mpVotes" = "Followed-MP votes";
-"notifications.category.mpSpeeches" = "Followed-MP speeches";
-"notifications.category.billStatus" = "Followed-bill status changes";
-"notifications.category.topicAlerts" = "Followed-topic alerts";
-"notifications.section.digests" = "Digests";
-"notifications.section.digests.footer" = "Delivered at 7 AM ET on the scheduled day.";
-"notifications.category.dailyDigest" = "Daily digest";
-"notifications.category.fridayDigest" = "Friday weekly digest";
-"notifications.section.governmentUpdates" = "Government updates";
-"notifications.category.hansardSittings" = "New Hansard sittings";
-"notifications.category.pboCosting" = "PBO costing notes";
-"notifications.category.lobbyingAlerts" = "Lobbying alerts";
-"notifications.section.general" = "General";
-"notifications.category.appAnnouncements" = "App announcements";
-"notifications.member.sectionTitle" = "Notifications for this MP";
-"notifications.member.votes" = "Votes";
-"notifications.member.speeches" = "Speeches";
-"notifications.member.expenses" = "Expenses";
-
 /* On This Day (EPAC-470) */
 "home.onThisDay.title" = "On this day in past Parliaments";
 "home.onThisDay.dismiss" = "Hide On This Day";
@@ -744,7 +691,7 @@
 /* Onboarding v2 (EPAC-621) */
 "onboarding.welcome.oneLineValueProp" = "Canada's parliament, in your pocket";
 "onboarding.mp.confirm.title" = "Your MP is %@";
-"onboarding.mp.confirm.subtitle" = "Follow them to get notified when they speak or vote.";
+"onboarding.mp.confirm.subtitle" = "Follow them to keep their activity close at hand.";
 "onboarding.mp.confirm.follow" = "Follow my MP";
 "onboarding.mp.confirm.skip" = "Maybe later";
 
@@ -767,7 +714,7 @@
 "appStore.screenshot.overview.metric2.label" = "Debate";
 "appStore.screenshot.overview.metric2.value" = "Food prices";
 "appStore.screenshot.overview.metric2.detail" = "Hansard 45-1";
-"appStore.screenshot.overview.metric3.label" = "Vote alerts";
+"appStore.screenshot.overview.metric3.label" = "Vote records";
 "appStore.screenshot.overview.metric3.value" = "On";
 "appStore.screenshot.overview.metric3.detail" = "Followed bills";
 "appStore.screenshot.overview.row1.title" = "Bill C-226 moved at second reading";
@@ -792,7 +739,7 @@
 "appStore.screenshot.myMP.row2.title" = "Question";
 "appStore.screenshot.myMP.row2.detail" = "Transparency in grocery pricing";
 "appStore.screenshot.myMP.row3.title" = "Follow";
-"appStore.screenshot.myMP.row3.detail" = "Get vote and debate notifications";
+"appStore.screenshot.myMP.row3.detail" = "Keep vote and debate activity close";
 "appStore.screenshot.bill.header" = "Bill C-226";
 "appStore.screenshot.bill.title" = "National Framework for Food Price Transparency Act";
 "appStore.screenshot.bill.stage1" = "First reading";
