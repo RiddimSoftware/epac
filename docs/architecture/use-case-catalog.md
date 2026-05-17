@@ -19,6 +19,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
+| `Manifest` | The root manifest.json document: schema version, generation timestamp, and sorted artifact entries. |
+| `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 
 ## Ports
 
@@ -31,6 +33,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `LiveParliamentStatusFetching` | outbound | Fetch the current House sitting status from the backend cache. |
 | `NotificationDelivering` | outbound | Send push notifications to subscribed devices via APNs. |
 | `Clock` | outbound | Provide the current timestamp for scheduling and cache-freshness checks. |
+| `ArtifactStore` | outbound | List artifact keys and metadata from object storage; write manifest.json back. |
 
 ---
 
@@ -265,6 +268,27 @@ Current implementation:
 ```
 
 > **Dependency:** Uses `MatchParliamentaryTopics` and the canonical taxonomy rather than an adapter-local copy.
+
+---
+
+### GenerateManifest
+
+```
+Actor: CI pipeline (GitHub Actions, post-artifact-publish step)
+Goal: Produce a deterministic manifest.json listing every artifact in the S3 bucket so the iOS app can diff against it and download only changed files.
+Inputs: S3 bucket name.
+Outputs: manifest.json written to s3://<bucket>/manifest.json with Cache-Control: public, max-age=60; fails if any artifact is missing required x-amz-meta-content-hash-sha256 metadata.
+Entities / values: Manifest, ManifestEntry.
+Ports: ArtifactStore.
+Primary adapters: S3ArtifactStore (AWS SDK v2 — ListObjectsV2 + HeadObject + PutObject), cmd/generate-manifest CLI entrypoint.
+Current implementation:
+  backend/manifest/manifest.go     (entities + ArtifactStore port)
+  backend/manifest/generate.go     (use case + Generate convenience fn)
+  backend/manifest/s3.go           (S3ArtifactStore adapter)
+  backend/manifest/cmd/generate-manifest/main.go
+```
+
+> **Schema contract:** `backend/manifest/README.md` is the only shared contract between the publisher (CI) and the consumer (iOS app). Bumping `schema_version` requires coordinated changes to both sides.
 
 ---
 
