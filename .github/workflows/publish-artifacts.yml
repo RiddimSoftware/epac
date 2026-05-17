@@ -60,8 +60,8 @@ jobs:
         id: healthz
         continue-on-error: true
         run: |
-          mkdir -p ./build/artifacts/healthz
-          printf 'ok\n' > ./build/artifacts/healthz/healthz.txt
+          mkdir -p ./build/artifacts/healthz/v1
+          printf 'ok\n' > ./build/artifacts/healthz/v1/healthz.txt
 
       - name: Verify publishable artifacts
         id: publishable
@@ -82,16 +82,20 @@ jobs:
         run: |
           aws s3 sync ./build/artifacts "s3://${{ vars.ARTIFACTS_BUCKET }}/" --delete --cache-control "public,max-age=31536000,immutable"
 
+      - name: Attach artifact content hashes
+        run: |
+          while IFS= read -r -d '' file; do
+            key="${file#./build/artifacts/}"
+            content_hash="$(sha256sum "$file" | cut -d ' ' -f1)"
+            aws s3 cp "$file" "s3://${{ vars.ARTIFACTS_BUCKET }}/${key}" --cache-control "public,max-age=31536000,immutable" --metadata "content-hash-sha256=${content_hash}"
+          done < <(find ./build/artifacts -type f -print0)
+
       - name: Generate and publish manifest
         env:
           ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
           GOWORK: ${{ github.workspace }}/backend/go.work
-          MANIFEST_CACHE_CONTROL: public,max-age=60
         run: |
           go run ./backend/manifest/cmd/generate-manifest
-          if [ -f ./build/artifacts/manifest.json ]; then
-            aws s3 cp ./build/artifacts/manifest.json "s3://${{ vars.ARTIFACTS_BUCKET }}/manifest.json" --cache-control "public,max-age=60" --content-type "application/json"
-          fi
 
       - name: Invalidate manifest
         run: |
