@@ -1,0 +1,114 @@
+name: Publish Artifacts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-artifacts
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish artifacts to S3
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clear runner AWS profile overrides
+        run: |
+          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ARTIFACTS_PUBLISHER_ROLE_ARN }}
+          aws-region: us-east-1
+          unset-current-credentials: true
+
+      - name: Validate publishing configuration
+        env:
+          ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
+          ARTIFACTS_DISTRIBUTION_ID: ${{ vars.ARTIFACTS_DISTRIBUTION_ID }}
+        run: |
+          missing=0
+          if [ -z "$ARTIFACTS_BUCKET" ]; then
+            echo "ARTIFACTS_BUCKET repository variable is required"
+            missing=1
+          fi
+          if [ -z "$ARTIFACTS_DISTRIBUTION_ID" ]; then
+            echo "ARTIFACTS_DISTRIBUTION_ID repository variable is required"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.work
+
+      - name: Prepare artifact staging
+        run: mkdir -p ./build/artifacts
+
+      - name: Build health check artifact
+        id: healthz
+        continue-on-error: true
+        run: |
+          mkdir -p ./build/artifacts/healthz
+          printf 'ok\n' > ./build/artifacts/healthz/healthz.txt
+
+      - name: Verify publishable artifacts
+        id: publishable
+        if: always()
+        env:
+          HEALTHZ_OUTCOME: ${{ steps.healthz.outcome }}
+        run: |
+          if [ "$HEALTHZ_OUTCOME" != 'success' ]; then
+            echo "No artifact pipelines succeeded"
+            exit 1
+          fi
+          if ! find ./build/artifacts -type f -print -quit | grep -q .; then
+            echo "No artifact files were staged"
+            exit 1
+          fi
+
+      - name: Sync artifacts to S3
+        run: |
+          aws s3 sync ./build/artifacts "s3://${{ vars.ARTIFACTS_BUCKET }}/" --delete --cache-control "public,max-age=31536000,immutable"
+
+      - name: Generate and publish manifest
+        env:
+          ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
+          GOWORK: ${{ github.workspace }}/backend/go.work
+          MANIFEST_CACHE_CONTROL: public,max-age=60
+        run: |
+          go run ./backend/manifest/cmd/generate-manifest
+          if [ -f ./build/artifacts/manifest.json ]; then
+            aws s3 cp ./build/artifacts/manifest.json "s3://${{ vars.ARTIFACTS_BUCKET }}/manifest.json" --cache-control "public,max-age=60" --content-type "application/json"
+          fi
+
+      - name: Invalidate manifest
+        run: |
+          aws cloudfront create-invalidation --distribution-id "${{ vars.ARTIFACTS_DISTRIBUTION_ID }}" --paths "/manifest.json"
+
+      - name: Summary
+        if: always()
+        run: |
+          mkdir -p ./build/artifacts
+          artifact_count="$(find ./build/artifacts -type f | wc -l | tr -d ' ')"
+          bytes_published="$(du -sb ./build/artifacts | cut -f1)"
+          {
+            echo "## Artifacts published"
+            echo ""
+            echo "- Files uploaded: ${artifact_count}"
+            echo "- Bytes published: ${bytes_published}"
+            echo ""
+            echo "### Files"
+            find ./build/artifacts -type f -printf '- %P (%s bytes)\n' | sort
+          } >> "$GITHUB_STEP_SUMMARY"
