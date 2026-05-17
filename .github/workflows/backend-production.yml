@@ -85,12 +85,13 @@ jobs:
           aws lambda wait function-updated \
             --function-name "$FUNCTION_NAME"
 
-      - name: Remove production legacy DATABASE_URL
-        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+      - name: Sync production DATABASE_URL from Secrets Manager
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","loader","search","on-this-day","riding-boundary","health","device-register","live-status"]'), matrix.service) }}
         env:
-          SERVICE: ${{ matrix.service }}
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
+          DATABASE_URL_SECRET_ID: epac/database-url
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
         run: |
           set -euo pipefail
 
@@ -98,11 +99,17 @@ jobs:
           if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
           fi
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            if [[ " members sittings bills " == *" $SERVICE "* ]]; then
-              echo "$CANONICAL_FUNCTION_NAME does not exist yet; skipping legacy DATABASE_URL removal until Terraform creates it."
-              exit 0
-            fi
+
+          DATABASE_URL=$(aws secretsmanager get-secret-value \
+            --secret-id "$DATABASE_URL_SECRET_ID" \
+            --query SecretString \
+            --output text)
+          if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
+            DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
+          fi
+          if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
+            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
+            exit 1
           fi
 
           CURRENT_ENV=$(aws lambda get-function-configuration \
@@ -111,7 +118,9 @@ jobs:
             --output json)
           UPDATED_ENV=$(jq -cn \
             --argjson current "${CURRENT_ENV:-null}" \
-            '{Variables: (($current // {}) | del(.DATABASE_URL))}')
+            --arg database_url "$DATABASE_URL" \
+            --arg sentry_dsn "$SENTRY_DSN" \
+            '{Variables: (($current // {}) + {DATABASE_URL: $database_url} + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

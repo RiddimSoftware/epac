@@ -94,7 +94,7 @@ resource "aws_lambda_function" "production" {
 
   lifecycle {
     # filename/source_code_hash: managed by the backend deploy workflow.
-    # environment: managed by the deploy workflow; legacy DATABASE_URL is removed there.
+    # environment: managed by the deploy workflow.
     ignore_changes = [filename, source_code_hash, environment]
   }
 

@@ -34,6 +34,18 @@ aws rds wait db-cluster-snapshot-available \
   --region "$AWS_REGION" \
   --db-cluster-snapshot-identifier "$SNAPSHOT_ID"
 
+aws rds modify-db-cluster \
+  --profile "$AWS_PROFILE" \
+  --region "$AWS_REGION" \
+  --db-cluster-identifier epac-db \
+  --no-deletion-protection \
+  --apply-immediately
+
+aws rds wait db-cluster-available \
+  --profile "$AWS_PROFILE" \
+  --region "$AWS_REGION" \
+  --db-cluster-identifier epac-db
+
 aws rds delete-db-instance \
   --profile "$AWS_PROFILE" \
   --region "$AWS_REGION" \
