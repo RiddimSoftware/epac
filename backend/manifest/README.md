@@ -1,10 +1,12 @@
 # manifest
 
 Go package that generates `manifest.json` for the epac S3 artifact bucket.
+The iOS app fetches the manifest on every refresh and downloads only artifacts
+whose ETag or SHA-256 hash has changed, avoiding a HEAD request per artifact.
 
-The manifest is the **port boundary** between the publishing pipeline (writer) and the iOS app (reader). Both sides depend on the schema documented here — a `schema_version` bump is a coordinated change.
+## Manifest schema
 
-## manifest.json schema
+`manifest.json` is written to the bucket root with `Cache-Control: public, max-age=60`.
 
 ```json
 {
@@ -15,7 +17,7 @@ The manifest is the **port boundary** between the publishing pipeline (writer) a
       "key": "members/v1/all.json",
       "size_bytes": 123456,
       "content_hash_sha256": "e3b0c44298fc1c149afb...",
-      "etag": "d41d8cd98f00b204e9800998ecf8427e",
+      "etag": "abc123",
       "last_modified": "2026-05-17T11:30:00Z",
       "schema_version": 1
     }
@@ -23,77 +25,109 @@ The manifest is the **port boundary** between the publishing pipeline (writer) a
 }
 ```
 
-### Fields
-
-| Field | Type | Description |
+| Field | Type | Notes |
 |---|---|---|
-| `schema_version` (root) | int | Manifest format version. Bump only when the manifest shape changes incompatibly. |
-| `generated_at` | RFC3339 UTC | When the manifest was written, truncated to second precision. |
-| `artifacts[].key` | string | S3 object key relative to the bucket root. |
-| `artifacts[].size_bytes` | int | Object size in bytes. |
-| `artifacts[].content_hash_sha256` | string | SHA-256 of the artifact content, written as S3 user metadata (`x-amz-meta-content-hash-sha256`) by the publisher at upload time. Empty string if the publisher did not set this field. |
-| `artifacts[].etag` | string | S3 ETag with surrounding quotes stripped. For multipart uploads the ETag is not an MD5; use `content_hash_sha256` for integrity checks. |
-| `artifacts[].last_modified` | RFC3339 UTC | S3 `LastModified` timestamp, truncated to second precision. |
-| `artifacts[].schema_version` | int | Schema version of the artifact's data payload, extracted from the key path. |
-
-The `artifacts` array is **sorted by key** so that manifest diffs are reviewable — the same bucket state always produces a byte-identical manifest.
+| `schema_version` (root) | int | Manifest envelope version. Bump when the envelope shape changes incompatibly. |
+| `generated_at` | RFC3339 UTC | Second-precision timestamp of when the manifest was written. |
+| `artifacts` | array | Sorted lexicographically by `key`. Same bucket state → byte-identical manifest. |
+| `key` | string | S3 object key relative to the bucket root. |
+| `size_bytes` | int | Object size in bytes from S3 ListObjectsV2. |
+| `content_hash_sha256` | string | Hex SHA-256 of the artifact payload, stored as S3 object metadata `x-amz-meta-content-hash-sha256` by the artifact publisher at write time. ETag for multipart uploads is not a simple MD5, so this field is the authoritative integrity check. |
+| `etag` | string | S3 ETag with surrounding quotes stripped. |
+| `last_modified` | RFC3339 UTC | Second-precision last-modified timestamp from S3. |
+| `schema_version` (per artifact) | int | Version of the artifact's own data schema, extracted from the key path `<dataset>/v<N>/...`. Defaults to 1 for keys without a version segment. |
 
 ## Artifact naming convention
+
+All artifacts follow the path pattern:
 
 ```
 <dataset>/v<N>/<file>.json
 ```
 
 Examples:
+- `members/v1/all.json` — all MPs, schema version 1
+- `bills/v2/all.json` — all bills, schema version 2
+- `expenditures/v1/by-member.json` — expenditures grouped by member
 
-```
-members/v1/all.json
-bills/v2/all.json
-expenditures/v1/2024.json
-```
-
-- `<dataset>` — lowercase identifier for the data domain (`members`, `bills`, `expenditures`, …).
-- `v<N>` — schema version of the artifact's JSON payload. The manifest extractor reads this component to populate `artifacts[].schema_version`.
-- `<file>.json` — descriptive filename. `all.json` is conventional for a complete dataset snapshot.
-
-Keys that do not match this pattern (no `/v<N>/` component) default to `schema_version: 1`.
-
-## Cache-Control conventions
-
-| Object | Cache-Control | Rationale |
-|---|---|---|
-| `manifest.json` | `public, max-age=60` | iOS re-checks ~minutely; short TTL keeps staleness bounded. |
-| Content artifacts | `public, max-age=31536000, immutable` | Keys are version-scoped; content never changes for a given key. |
+The version segment `v<N>` is the schema version of the artifact's data payload.
+It is also recorded as `schema_version` in the manifest entry so the iOS app
+can skip artifacts it does not understand without fetching them.
 
 ## Schema version bump rules
 
-The **root** `schema_version` field controls manifest format compatibility:
+**Manifest envelope** (`schema_version` at the root):
+- Bump when the manifest JSON shape changes incompatibly (e.g. renaming a field,
+  changing a field type, removing a field).
+- The iOS app is compiled against a specific envelope version and ignores
+  manifests with an unknown root `schema_version`.
+- A bump requires coordinated update of the iOS app and the publisher.
 
-1. **Additive change** (new optional field in `artifacts[]`): no bump needed; older readers ignore unknown fields.
-2. **Field rename or type change**: bump root `schema_version` to 2 and update the iOS parser in the same release train.
-3. **Field removal**: bump root `schema_version` and remove iOS code that reads the old field.
+**Artifact schema** (`schema_version` per artifact entry, and the `v<N>` in the key):
+- Bump when the artifact's own JSON payload changes incompatibly.
+- Old app versions continue using the old key (e.g. `members/v1/all.json`)
+  while new versions use the new key (`members/v2/all.json`).
+- Publishers write both keys during the transition window; old keys are removed
+  once the old app version is no longer supported.
 
-The **per-artifact** `schema_version` controls the artifact payload format. It is bumped by the owning publisher (e.g., the members pipeline) when the artifact JSON shape changes incompatibly. Older app versions ignore artifacts whose `schema_version` is higher than the version they were compiled against.
+## Cache-Control convention
 
-## Running locally
+| Object | Cache-Control | Rationale |
+|---|---|---|
+| `manifest.json` | `public, max-age=60` | Re-checked ~minutely so the app sees new artifacts quickly. |
+| Artifact files | `public, max-age=31536000, immutable` | Content-hashed; safe to cache for a year. |
 
-```bash
-# Point at a staging bucket
-ARTIFACTS_BUCKET=epac-artifacts-staging go run ./cmd/generate-manifest
+## Architecture
 
-# Explicit flag
-go run ./cmd/generate-manifest -bucket epac-artifacts-staging
+```
+GenerateManifest (use case)
+    │
+    └── ArtifactStore (port/interface)
+              │
+              └── S3ArtifactStore (adapter — AWS S3 via SDK v2)
 ```
 
-Requires AWS credentials with `s3:ListBucket`, `s3:GetObject` (for HeadObject), and `s3:PutObject` on the target bucket.
+The `ArtifactStore` interface is the boundary. Unit tests inject a mock;
+the CLI entrypoint uses `S3ArtifactStore`. No S3 types leak into the use case.
 
-## Clean Architecture
+## Usage
 
-| Layer | Symbol |
-|---|---|
-| Use case | `GenerateManifest` |
-| Entities | `Manifest`, `ManifestEntry` |
-| Port | `ArtifactStore` interface |
-| Adapter | `S3ArtifactStore` (in `s3.go`) |
+### As a library
 
-Unit tests inject a `mockStore` and never touch S3. The `Generate` convenience function wires `S3ArtifactStore` for production use.
+```go
+import "epac/manifest"
+
+// Uses default AWS credential chain (env vars, instance profile, etc.)
+if err := manifest.Generate(ctx, "my-artifacts-bucket"); err != nil {
+    log.Fatal(err)
+}
+```
+
+For testing, inject a custom `ArtifactStore`:
+
+```go
+uc := manifest.NewGenerateManifest(myMockStore)
+err := uc.Execute(ctx, "my-bucket")
+```
+
+### As a CLI binary
+
+```bash
+# Build
+go build -o generate-manifest ./cmd/generate-manifest
+
+# Run
+ARTIFACTS_BUCKET=my-artifacts-bucket ./generate-manifest
+# or
+./generate-manifest -bucket my-artifacts-bucket
+```
+
+The binary is invoked by the GHA publish workflow after all artifact uploads
+complete. It requires standard AWS credentials in the environment
+(`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`, or an
+IAM role attached to the GitHub Actions runner).
+
+Required IAM permissions:
+- `s3:ListBucket` on the artifact bucket
+- `s3:GetObject` (HeadObject) on all objects
+- `s3:PutObject` on `manifest.json`
