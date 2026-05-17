@@ -2,7 +2,7 @@
 
 Terraform modules for the epac project:
 
-- **[core/](./core/)**: Core infrastructure for Terraform remote state (S3 bucket and DynamoDB table).
+- **[core/](./core/)**: Core infrastructure for Terraform remote state plus artifact hosting (S3, CloudFront, OAC, ACM, Route53).
 - **[staging/](./staging/)**: Staging environment resources (Lambda, API Gateway, Route53).
 - **[production/](./production/)**: Production environment resources (Lambda, API Gateway, Route53).
 
