@@ -1,29 +1,3 @@
-# Workflows and CI scripts — team ownership + individual owner
-/.github/           @RiddimSoftware/owners @SunnyPurewal
-CODEOWNERS          @RiddimSoftware/owners @SunnyPurewal
-
-# iOS release pipeline
-/fastlane/          @RiddimSoftware/owners @SunnyPurewal
-Gemfile             @RiddimSoftware/owners @SunnyPurewal
-/ios/               @RiddimSoftware/owners @SunnyPurewal
-/ios/**/*.entitlements      @RiddimSoftware/owners @SunnyPurewal
-/ios/**/*.xcconfig          @RiddimSoftware/owners @SunnyPurewal
-/ios/**/Info.plist          @RiddimSoftware/owners @SunnyPurewal
-/ios/**/*.xcprivacy         @RiddimSoftware/owners @SunnyPurewal
-/ios/epac.xcodeproj/        @RiddimSoftware/owners @SunnyPurewal
-
-# Scripts
-/scripts/           @SunnyPurewal
-Gemfile             @RiddimSoftware/owners @SunnyPurewal
-
-# Credentials and secrets
-*.pem               @SunnyPurewal
-*.key               @SunnyPurewal
-*.p8                @SunnyPurewal
-*.p12               @SunnyPurewal
-*.cer               @SunnyPurewal
-*.mobileprovision   @SunnyPurewal
-*.provisionprofile  @SunnyPurewal
-*Secrets*           @SunnyPurewal
-*secrets*           @SunnyPurewal
-**/Info.plist       @SunnyPurewal
+# All paths route to a single repo-scoped team. Team membership is managed
+# in GitHub org settings, not in this file.
+*  @RiddimSoftware/epac-maintainers

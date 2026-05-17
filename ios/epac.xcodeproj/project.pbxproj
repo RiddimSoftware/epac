@@ -15,7 +15,6 @@
 		A31410122FABC14100000000 /* reconciliation-calls.json in Resources */ = {isa = PBXBuildFile; fileRef = A31410112FABC14100000000 /* reconciliation-calls.json */; };
 		A31410322FABC14100000000 /* ethics-investigations.json in Resources */ = {isa = PBXBuildFile; fileRef = A31410312FABC14100000000 /* ethics-investigations.json */; };
 		A38138C52DD39D6F0062421F /* HorizonCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = A38138C42DD39D6F0062421F /* HorizonCalendar */; };
-		A3E71D000000000000000003 /* Evidence in Frameworks */ = {isa = PBXBuildFile; productRef = A3E71D000000000000000002 /* Evidence */; };
 		A3BB28C82F2909BE00F9F1EB /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A33253CD2F2852E500531242 /* ExyteChat */; };
 		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
 		A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D5168F2DE4FD4C00148AA8 /* Logging */; };
@@ -179,7 +178,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3E71D000000000000000003 /* Evidence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -369,7 +367,6 @@
 			);
 			name = epacUITests;
 			packageProductDependencies = (
-				A3E71D000000000000000002 /* Evidence */,
 			);
 			productName = epacUITests;
 			productReference = A38427E02D062C8E00271C34 /* epacUITests.xctest */;
@@ -488,7 +485,6 @@
 				A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */,
 				A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 				A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
-				A3E71D000000000000000001 /* XCRemoteSwiftPackageReference "evidence" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A38427C42D062C8D00271C34 /* Products */;
@@ -1239,14 +1235,6 @@
 				minimumVersion = 8.0.0;
 			};
 		};
-		A3E71D000000000000000001 /* XCRemoteSwiftPackageReference "evidence" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RiddimSoftware/evidence";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1289,11 +1277,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A3DEAD0BEEF00000CAFE0001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
-		};
-		A3E71D000000000000000002 /* Evidence */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A3E71D000000000000000001 /* XCRemoteSwiftPackageReference "evidence" */;
-			productName = Evidence;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

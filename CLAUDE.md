@@ -144,8 +144,6 @@ Before requesting review, the author must:
 
 - [ ] **Build passes.** Run `cd ios && make build` and confirm `** BUILD SUCCEEDED **` before pushing. Fix any failures — even pre-existing ones — before the PR is opened.
 - [ ] **App runs.** Install and launch on the simulator: `cd ios && make simulator`
-- [ ] **Screenshot taken and committed.** `scripts/evidence/run-evidence.sh capture-evidence --ticket EPAC-N`, then commit `docs/build-evidence/EPAC-N-running.png` to the branch. Reference via the raw GitHub URL printed by the command — never use placeholder asset URLs (they render as broken images).
-- [ ] **Evidence posted.** Add a PR comment and a Linear comment with: `BUILD SUCCEEDED` confirmation, the embedded screenshot, and grep/diff output confirming the specific change.
 - [ ] **One logical change.** A PR should be explainable in one sentence of *why*, not a list of what. If you feel compelled to write "and also…" in the title, split the PR.
 - [ ] **Size.** Aim for < 300 changed lines (tighter target for parallel work — see "Multi-developer workflow" below). Anything > 400 lines needs a written justification in the description and should be split if possible. Never mix feature and refactor in the same PR.
 - [ ] **Self-review.** Read your own diff before requesting. Remove debug code, dead comments, stray prints.
@@ -196,16 +194,6 @@ Release-Note: Fixed bill sharing link on older iOS versions
 
 The daily App Store release pipeline (`scripts/release/generate_release_notes.py`) collects these lines from all PRs merged since the last release tag and writes `ios/fastlane/metadata/en-CA/release_notes.txt` automatically. Omit the line for CI, docs, infra, and refactoring PRs that have no visible user impact.
 
-### App Preview Video Regeneration
-
-Regenerate the 30-second App Store preview video with:
-
-```bash
-./scripts/marketing/record-app-preview.sh
-```
-
-The script launches the app with `--app-preview-mode`, records `AppPreviewRecordingTests/testAppPreviewSequence`, and writes `docs/marketing/preview/app-preview-final.mp4` as H.264 at 886x1920, 30fps, no audio.
-
 ### Backend Base URL
 
 The iOS app's backend base URL is centralized in `ios/epac/Util/BackendConfig.swift` — services in `Util/` should read `BackendConfig.shared.baseURL` rather than hardcoding their own host.
@@ -218,37 +206,8 @@ To point a local run at another backend, set the `BACKEND_BASE_URL` environment 
 
 `BackendConfig` accepts the override only when it parses as a valid HTTPS URL; anything else falls back to the `Info.plist` build setting, then the production default.
 
-### Post-PR-open review
-
-After `gh pr create`, the Developer spawns a subagent in the **Autonomous Code Reviewer** role (see Roles in `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`). The Developer waits for the Reviewer to report a merge result (merged, or blocked with reasons) before picking up the next ticket. The Developer does not review, fix, or merge directly.
-
-Spawn prompt template (Claude Code, via the Agent tool):
-
-```
-You are the Autonomous Code Reviewer for PR #N (https://github.com/RiddimSoftware/epac/pull/N), branch <branch>.
-Repo root: /Users/sunny/code/epac
-
-Follow the Reviewer role defined in ~/.claude/CLAUDE.md. For this PR:
-
-1. `gh pr diff N` — read the full diff
-2. Read /Users/sunny/code/epac/CLAUDE.md (architecture rules, PR standards)
-3. Read the linked Linear issue's acceptance criteria
-4. Make ONE consolidated pass of fixes directly on the branch (commit + push)
-5. Build: cd ios && make build 2>&1 | tail -3
-6. Run relevant tests
-7. Post one PR comment with: build status, what changed and why, what was left alone and why
-8. Squash-merge: gh pr merge N --squash --delete-branch
-9. Transition the Linear issue to Done
-10. Report back: merged (commit SHA) OR blocked (reasons)
-```
-
-**Why this is structured as a subagent rather than a human-attended review:** PR #3 shipped a broken main build because a merge conflict resolution silently dropped `@MainActor` from `MemberDownloadCoordinator`. A second pass would have caught it. Splitting Developer and Reviewer into separate roles — even when the Reviewer runs as a subagent of the same session — gives the review a clean context window and forces the Reviewer to re-read CLAUDE.md and the diff from scratch.
-
 ### PR Reviewer Expectations
 
-The Reviewer is spawned synchronously by the Developer at PR-open and is expected to complete the review-fix-merge cycle **immediately**, in the same session. There is no queue, no waiting, no "I'll get to it." The Developer is blocked on the Reviewer's return.
-
-- **Review immediately.** Do not defer. Do not return control until the PR is merged or definitively blocked with reasons.
 - Distinguish blocking from non-blocking findings: prefix non-blocking suggestions with `nit:` or `optional:` in the review comment.
 - Approve and merge if the approach is sound, even if you would have done it differently; leave a `nit:` for style.
 - Never raise "why didn't you use X?" without also explaining why X would be better for *this specific case*.
@@ -308,7 +267,7 @@ The team runs an **async** standup as a single GitHub Discussion thread per spri
 - **Blocked:** none / <ticket + what you need>
 ```
 
-Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens. The Autonomous Developer agent is exempt from posting standups; its activity is already visible on the linked Linear issue and the open PR list.
+Why one thread per sprint: searchable history, context survives the week, and "what is X working on?" is one search. Why 10:00 ET: gives the East Coast morning + West Coast wakeup an overlap window before the first PR of the day opens.
 
 The current sprint's Discussion thread is linked from the active sprint's planning ticket in Linear.
 
@@ -381,35 +340,6 @@ Every ticket that ships produces at least one artifact visible in the GitHub mon
 - A screenshot in the PR description (required for UI changes)
 
 The PR number is linked in the Linear issue as a comment with the full GitHub URL.
-
----
-
-## Marketing Automation
-
-### App Preview Video
-
-The App Store App Preview video is produced automatically using an XCUITest. Do not record manually.
-
-**To regenerate the App Preview video** after a significant UI change:
-
-```bash
-./scripts/marketing/record-app-preview.sh
-```
-
-This script:
-
-1. Builds epac for the iPhone simulator
-2. Starts `simctl recordVideo`
-3. Runs `AppPreviewRecordingTests/testAppPreviewSequence`
-4. Trims and encodes the output to 30 seconds at 886x1920
-5. Adds the silent AAC audio track App Store Connect expects
-6. Writes `docs/marketing/preview/app-preview-final.mp4`
-
-**When to regenerate:** After any change to `HomeFeedView`, `SpeechView`, `VoteDetailView`, lobbying views, or the contact sheet. The test catches navigation regressions; a failing test means the UI changed in a way that breaks the video sequence.
-
-**Adding a new scene to the video:** Edit `AppPreviewRecordingTests.swift`, add a new scene step, call it from `testAppPreviewSequence()`, and adjust the total duration. Add any new accessibility identifiers needed.
-
-**Upload:** After the script produces the file, upload manually to App Store Connect -> My Apps -> epac -> App Preview (6.9-inch slot). Apple validates the file on upload; check for H.264 format and 886x1920 resolution.
 
 ---
 
@@ -509,21 +439,3 @@ Adopt a 5-tab structure that groups features thematically and positions the pers
 
 The previous fallback — delete the SQLite files on schema incompatibility — silently destroyed all locally cached Hansard data, votes, and expenditures on every schema update. For a civic app users rely on during active political moments, losing the local cache is a bad experience. Proper migrations preserve data across updates.
 
----
-
----
-
-## Autonomous PR Loop
-
-epac uses the RiddimSoftware autonomous PR loop for routine changes. The loop handles the full developer → review → merge cycle without human intervention.
-
-**Runbooks (in `RiddimSoftware/riddim-release`):**
-- [Onboarding guide](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/onboarding.md) — how to enroll a new repo, branch protection settings, smoke test procedure
-- [Failure runbook](https://github.com/RiddimSoftware/riddim-release/blob/main/docs/agent-loop/failure-runbook.md) — how to read labels, pause a runaway loop, find Action logs, and perform manual overrides
-
-**Quick reference:**
-- Add `agent:build` to an issue to trigger the developer bot.
-- Add `agent:pause` to a PR to halt the loop immediately.
-- `agent:needs-human` means the attempt cap was hit — review the PR manually.
-- `startup_failure` on the reviewer job for a human-opened PR is **expected** — the reviewer only runs on developer-bot PRs.
-- If `agent:build` never fires: confirm Issues are enabled in Settings → Features.

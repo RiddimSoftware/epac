@@ -32,7 +32,7 @@ This repository is intentionally polyglot because each part of the product does 
 
 - **SwiftUI + SwiftData (`ios/`)** — the iPhone app, widgets, app clip, local persistence, and product UI.
 - **Go services (`backend/`)** — API endpoints, ingestion workers, and backend jobs that fetch, normalize, and serve parliamentary data.
-- **Python tools (`backend/` and `scripts/`)** — focused ingestion utilities, release helpers, localization checks, and evidence/marketing tooling.
+- **Python tools (`backend/` and `scripts/`)** — focused ingestion utilities, release helpers, localization checks, and marketing tooling.
 - **HTML/CSS/JS (`website/`)** — the public website, landing pages, topic pages, and App Store support web surfaces.
 - **Data snapshots (`data/` and bundled app assets)** — source-derived files that help feed the app experience.
 
