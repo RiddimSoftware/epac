@@ -82,12 +82,33 @@ jobs:
           DATABASE_URL="$database_url" go run . --output-dir ../../build/artifacts
           find ../../build/artifacts -type f -name '*.metadata.json' -delete
 
+      - name: Build hot parliamentary artifacts
+        env:
+          DATABASE_URL_SECRET_ID: epac/database-url
+        run: |
+          set -euo pipefail
+          secret=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_URL_SECRET_ID" --query SecretString --output text)
+          if printf '%s' "$secret" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
+            database_url=$(printf '%s' "$secret" | jq -r '.DATABASE_URL')
+          else
+            database_url=$secret
+          fi
+          if [ -z "$database_url" ] || [ "$database_url" = "null" ]; then
+            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
+            exit 1
+          fi
+
+          DATABASE_URL="$database_url" go run ./backend/members-publisher --output ./build/artifacts/members
+          DATABASE_URL="$database_url" go run ./backend/sittings-publisher --output ./build/artifacts/sittings
+          go run ./backend/bills-publisher --output ./build/artifacts/bills
+
       - name: Verify publishable artifacts
         id: publishable
         if: always()
         env:
           HEALTHZ_OUTCOME: ${{ steps.healthz.outcome }}
         run: |
+          set -euo pipefail
           if [ "$HEALTHZ_OUTCOME" != 'success' ]; then
             echo "No artifact pipelines succeeded"
             exit 1
@@ -95,6 +116,19 @@ jobs:
           if ! find ./build/artifacts -type f -print -quit | grep -q .; then
             echo "No artifact files were staged"
             exit 1
+          fi
+          test -s ./build/artifacts/members/v1/all.json
+          test -s ./build/artifacts/sittings/v1/all.json
+          test -s ./build/artifacts/bills/v1/all.json
+
+          if [ -d ./build/artifacts/sittings/v1/by-date ]; then
+            find ./build/artifacts/sittings/v1/by-date -name '*.json' -print0 | while IFS= read -r -d '' file; do
+              size=$(gzip -c "$file" | wc -c | tr -d ' ')
+              if [ "$size" -gt 5242880 ]; then
+                echo "$file exceeds 5 MiB gzipped (${size} bytes)"
+                exit 1
+              fi
+            done
           fi
 
       - name: Sync artifacts to S3

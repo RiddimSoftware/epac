@@ -16,6 +16,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `SubjectOfBusiness` | A labelled section within a Hansard (e.g., "Oral Questions"). |
 | `SpeechMessage` | One speaker's intervention within a subject, with text, word count, and member reference. |
 | `ParliamentMember` | An elected Member of Parliament with riding, party, and contact info. |
+| `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
+| `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
@@ -28,6 +30,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 |---|---|---|
 | `HansardRepository` | outbound | Load and store parsed Hansard records. |
 | `MemberRepository` | outbound | Resolve member records by ID, name, or riding. |
+| `SittingRepository` | outbound | List sitting dates and load speeches for a sitting date. |
+| `BillRepository` | outbound | List bills and resolve bill details by number. |
 | `TopicPreferenceStore` | outbound | Read and persist a device's followed topics and granularity settings. |
 | `DeviceRegistrationClient` | outbound | Persist a device's APNs token and subscription preferences to the backend. |
 | `LiveParliamentStatusFetching` | outbound | Fetch the current House sitting status from the backend cache. |
@@ -123,6 +127,82 @@ Current implementation:
   ios/epac/Util/RidingLookupService.swift
   ios/epac/Util/TopicFollowStore.swift (myMPMemberId storage)
 ```
+
+---
+
+### ListMembers
+
+```
+Actor: User (iOS app, Members tab) / Backend API caller
+Goal: Browse members of Parliament with optional province and party filters.
+Inputs: Province filter, party filter.
+Outputs: MembersResponse with ParliamentMember records.
+Entities / values: ParliamentMember.
+Ports: MemberRepository.
+Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts.
+Current implementation:
+  backend/members/main.go
+  backend/members-publisher/main.go
+```
+
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. The publisher remains the only Postgres reader for this use case.
+
+---
+
+### ListSittings
+
+```
+Actor: User (iOS app, Calendar / Hansard entry points) / Backend API caller
+Goal: Browse House sitting dates and their source metadata.
+Inputs: Page, per-page, optional from_date and to_date filters.
+Outputs: SittingsResponse with Sitting records.
+Entities / values: Sitting.
+Ports: SittingRepository.
+Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts.
+Current implementation:
+  backend/sittings/main.go
+  backend/sittings-publisher/main.go
+```
+
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `sittings/v1/all.json` in S3. The publisher remains the only Postgres reader for the sitting index.
+
+---
+
+### GetSittingSpeeches
+
+```
+Actor: User (iOS app, Hansard speech reader) / Backend API caller
+Goal: Read paginated Hansard interventions for one sitting date.
+Inputs: Sitting date, page, per-page.
+Outputs: SpeechesResponse with source-derived intervention IDs and speech content.
+Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, Sitting.
+Ports: HansardRepository, SittingRepository.
+Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts.
+Current implementation:
+  backend/sittings/main.go
+  backend/sittings-publisher/main.go
+```
+
+> **Adapter note:** EPAC-1914 returns HTTP 404 when the date artifact is missing and does not fall back to Postgres.
+
+---
+
+### ListBills
+
+```
+Actor: User (iOS app, Bills tab) / Backend API caller
+Goal: Browse current-session bills with optional status and parliament filters.
+Inputs: Status filter, Parliament number.
+Outputs: BillsResponse with Bill records.
+Entities / values: Bill.
+Ports: BillRepository.
+Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts.
+Current implementation:
+  backend/bills/main.go
+  backend/bills-publisher/main.go
+```
+
+> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. The current repo has no bills table, so the publisher uses the authoritative LEGISinfo JSON feed until a canonical backend bills table exists.
 
 ---
 

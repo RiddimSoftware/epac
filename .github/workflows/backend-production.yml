@@ -12,6 +12,9 @@ on:
           - all
           - daily-fetch
           - loader
+          - members
+          - sittings
+          - bills
           - search
           - member-speeches
           - on-this-day
@@ -36,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, search, member-speeches, on-this-day, riding-boundary, health, device-register, openapi, live-status]
+        service: [daily-fetch, loader, search, members, sittings, bills, member-speeches, on-this-day, riding-boundary, health, device-register, openapi, live-status]
     steps:
       - uses: actions/checkout@v4
 
@@ -60,6 +63,7 @@ jobs:
         if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
         working-directory: backend/${{ matrix.service }}
         env:
+          SERVICE: ${{ matrix.service }}
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
         run: |
@@ -67,6 +71,12 @@ jobs:
           FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
           if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
+          fi
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            if [[ " members sittings bills " == *" $SERVICE "* ]]; then
+              echo "$CANONICAL_FUNCTION_NAME does not exist yet; apply infra/terraform/production before deploying this new artifact-backed Lambda."
+              exit 0
+            fi
           fi
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
@@ -110,6 +120,49 @@ jobs:
             --arg database_url "$DATABASE_URL" \
             --arg sentry_dsn "$SENTRY_DSN" \
             '{Variables: (($current // {}) + {DATABASE_URL: $database_url} + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
+
+          aws lambda update-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --environment "$UPDATED_ENV" \
+            >/dev/null
+          aws lambda wait function-updated \
+            --function-name "$FUNCTION_NAME"
+
+      - name: Sync production artifact environment
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["members","sittings","bills"]'), matrix.service) }}
+        env:
+          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
+          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
+          ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
+          ARTIFACT_PREFIX: ${{ vars.EPAC_ARTIFACT_PREFIX_PRODUCTION || vars.EPAC_ARTIFACT_PREFIX }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
+        run: |
+          set -euo pipefail
+
+          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
+          fi
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            echo "$CANONICAL_FUNCTION_NAME does not exist yet; skipping artifact environment sync until Terraform creates it."
+            exit 0
+          fi
+
+          if [ -z "$ARTIFACT_BUCKET" ]; then
+            echo "EPAC_ARTIFACT_BUCKET_PRODUCTION, EPAC_ARTIFACT_BUCKET, or ARTIFACTS_BUCKET variable is required"
+            exit 1
+          fi
+
+          CURRENT_ENV=$(aws lambda get-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --query 'Environment.Variables' \
+            --output json)
+          UPDATED_ENV=$(jq -cn \
+            --argjson current "${CURRENT_ENV:-null}" \
+            --arg artifact_bucket "$ARTIFACT_BUCKET" \
+            --arg artifact_prefix "$ARTIFACT_PREFIX" \
+            --arg sentry_dsn "$SENTRY_DSN" \
+            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

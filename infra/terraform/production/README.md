@@ -1,6 +1,6 @@
 # epac production infrastructure
 
-Terraform module for the epac production backend: the production HTTP API, production stage, 10 bare-name Lambda functions, API Gateway v2 routes, Lambda invoke permissions, custom domain, ACM certificate, and Route53 DNS records.
+Terraform module for the epac production backend: the production HTTP API, production stage, 13 bare-name Lambda functions, API Gateway v2 routes, Lambda invoke permissions, custom domain, ACM certificate, and Route53 DNS records.
 
 ## Prerequisites
 
@@ -36,12 +36,20 @@ terraform import 'aws_lambda_function.production["search"]' search
 terraform import 'aws_lambda_function.production["member-speeches"]' member-speeches
 terraform import 'aws_lambda_function.production["daily-fetch"]' daily-fetch
 terraform import 'aws_lambda_function.production["loader"]' loader
+terraform import 'aws_lambda_function.production["members"]' members
+terraform import 'aws_lambda_function.production["sittings"]' sittings
+terraform import 'aws_lambda_function.production["bills"]' bills
 terraform import 'aws_lambda_function.production["on-this-day"]' on-this-day
 terraform import 'aws_lambda_function.production["riding-boundary"]' riding-boundary
 terraform import 'aws_lambda_function.production["health"]' health
 terraform import 'aws_lambda_function.production["device-register"]' device-register
 terraform import 'aws_lambda_function.production["openapi"]' openapi
 terraform import 'aws_lambda_function.production["live-status"]' live-status
+```
+
+The EPAC-1914 artifact-backed functions (`members`, `sittings`, and `bills`) may be new in an account. If the `terraform import` command reports that one of them does not exist, omit that import and let Terraform create it from `placeholder.zip`; the backend deployment workflow updates the code and artifact environment afterward.
+
+```bash
 
 # Production API Gateway Lambda invoke permissions
 #
@@ -102,7 +110,7 @@ terraform import aws_apigatewayv2_route.openapi_docs_v1 smun5g2szc/oolp6lm
 
 ## First apply expectations
 
-All 10 bare-name production Lambda functions currently exist and should be imported. If a function is absent in a fresh account, Terraform will create it from `placeholder.zip`; code and environment remain deployment-workflow concerns.
+All 13 bare-name production Lambda functions currently exist and should be imported. If a function is absent in a fresh account, Terraform will create it from `placeholder.zip`; code and environment remain deployment-workflow concerns.
 
 The production API also contains older staging-target integrations left over from the API split. No current route should target those integrations. They are intentionally not imported into this desired-state module; after the managed resources above are imported, a human should run `terraform plan` and confirm the remaining changes are limited to creating the new `apigw-epac-api-*` Lambda invoke permissions. A later no-op plan should show 0 changes.
 

@@ -84,6 +84,10 @@ fi
 ROUTES=(
   "GET /health|GET|health|2.0"
   "GET /search/speeches|GET|search|1.0"
+  "GET /api/v1/members|GET|members|1.0"
+  "GET /api/v1/sittings|GET|sittings|1.0"
+  "GET /api/v1/sittings/{date}/speeches|GET|sittings|1.0"
+  "GET /api/v1/bills|GET|bills|1.0"
   "GET /api/v1/members/{id}/speeches|GET|member-speeches|1.0"
   "GET /api/v1/on-this-day|GET|on-this-day|1.0"
   "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
@@ -136,6 +140,7 @@ for route_def in "${ROUTES[@]}"; do
   SOURCE_PATH="${ROUTE_KEY#* }"
   SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
   SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
+  SOURCE_PATH="${SOURCE_PATH//\{date\}/*}"
   STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
   STATEMENT_PREFIX="apigateway-${SERVICE}-${ENV_NAME}"
   SOURCE_ARN="arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}"
