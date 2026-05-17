@@ -338,6 +338,24 @@ Current implementation:
 
 ---
 
+### IngestArtifact
+
+```
+Actor: System (iOS artifact refresh coordinator)
+Goal: Persist decoded artifact snapshots into the local SwiftData store without blocking the main thread.
+Inputs: MembersArtifact, SittingsArtifact, BillsArtifact, HansardSubjectsArtifact.
+Outputs: IngestResult with inserted / updated / deleted counts and duration.
+Entities / values: ParliamentMember, SittingCalendar, Bill, Hansard, SubjectOfBusiness, SpeechMessage.
+Ports: Artifact ingest methods.
+Primary adapters: ArtifactIngestActor, SwiftData ModelContainer / ModelContext.
+Current implementation:
+  ios/epac/Util/ArtifactIngestActor.swift
+```
+
+> Boundary note: `ArtifactIngestActor` is the off-main-thread SwiftData write adapter. The refresh coordinator that triggers these methods lands in a separate issue; views continue reading through `@Query` / main-context fetches.
+
+---
+
 ### IngestHansard
 
 ```
