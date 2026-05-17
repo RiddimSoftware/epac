@@ -32,6 +32,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `DeviceRegistrationClient` | outbound | Persist a device's APNs token and subscription preferences to the backend. |
 | `LiveParliamentStatusFetching` | outbound | Fetch the current House sitting status from the backend cache. |
 | `NotificationDelivering` | outbound | Send push notifications to subscribed devices via APNs. |
+| `SubjectsRepository` | outbound | Read Hansard subject records for artifact generation. |
 | `Clock` | outbound | Provide the current timestamp for scheduling and cache-freshness checks. |
 | `ArtifactStore` | outbound | List artifact keys and metadata from object storage; write manifest.json back. |
 
@@ -289,6 +290,26 @@ Current implementation:
 ```
 
 > **Schema contract:** `backend/manifest/README.md` is the only shared contract between the publisher (CI) and the consumer (iOS app). Bumping `schema_version` requires coordinated changes to both sides.
+
+---
+
+### BuildHansardSubjectsIndex
+
+```
+Actor: Scheduler (GitHub Actions artifact publisher)
+Goal: Publish a compact JSON index of searchable Hansard subjects for iOS pre-warming.
+Inputs: Date window, parliament-count window (default current parliament plus previous two).
+Outputs: Deterministic subjects JSON artifact with schema version, generation time, window, and subject rows.
+Entities / values: Hansard, SubjectOfBusiness.
+Ports: SubjectsRepository, Clock.
+Primary adapters: hansard-subjects-index CLI, PostgreSQL speeches table, publish-artifacts workflow.
+Current implementation:
+  backend/hansard-subjects-index/application/usecase.go
+  backend/hansard-subjects-index/repository/postgres.go
+  .github/workflows/publish-artifacts.yml
+```
+
+> Boundary rule: artifact publishing, S3, CloudFront, and manifest concerns stay in the GitHub Actions workflow; the use case only reads source subjects and emits deterministic JSON.
 
 ---
 

@@ -20,6 +20,7 @@ type Intervention struct {
 	Id              string
 	MemberId        string
 	Speaker         string
+	SubjectID       string
 	SubjectTitle    string
 	InterventionSeq int
 	Content         string
@@ -168,9 +169,10 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 
 	// Subject-level state
 	var (
-		inSubjectTitle bool
-		currentSubject string
-		subjectSeq     int
+		inSubjectTitle   bool
+		currentSubjectID string
+		currentSubject   string
+		subjectSeq       int
 	)
 
 	// Intervention-level state
@@ -209,14 +211,21 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 				}
 
 			case "SubjectOfBusiness":
+				currentSubjectID = ""
 				currentSubject = ""
 				subjectSeq = 0
+				for _, a := range se.Attr {
+					if a.Name.Local == "id" {
+						currentSubjectID = a.Value
+					}
+				}
 
 			case "SubjectOfBusinessTitle":
 				inSubjectTitle = true
 
 			case "Intervention":
 				current = &Intervention{
+					SubjectID:       currentSubjectID,
 					SubjectTitle:    currentSubject,
 					InterventionSeq: subjectSeq,
 					Language:        currentFloorLanguage,
@@ -408,8 +417,8 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			INSERT INTO speeches (
 				intervention_id, filename, speaker_name, content,
 				sitting_date, parliament_num, session_num, member_id,
-				subject_title, intervention_seq, word_count, language
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+				subject_id, subject_title, intervention_seq, word_count, language
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				speaker_name     = EXCLUDED.speaker_name,
 				content          = EXCLUDED.content,
@@ -417,13 +426,14 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				parliament_num   = EXCLUDED.parliament_num,
 				session_num      = EXCLUDED.session_num,
 				member_id        = EXCLUDED.member_id,
+				subject_id       = EXCLUDED.subject_id,
 				subject_title    = EXCLUDED.subject_title,
 				intervention_seq = EXCLUDED.intervention_seq,
 				word_count       = EXCLUDED.word_count,
 				language         = EXCLUDED.language`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
-			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
+			inv.SubjectID, inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
 		)
 	}
 
@@ -576,6 +586,7 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 			parliament_num   INT,
 			session_num      INT,
 			member_id        TEXT,
+			subject_id       TEXT,
 			subject_title    TEXT,
 			intervention_seq INT,
 			word_count       INT,
@@ -609,6 +620,7 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
         );
 
 		ALTER TABLE speeches
+			ADD COLUMN IF NOT EXISTS subject_id TEXT,
 			ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en',
 			ADD COLUMN IF NOT EXISTS search_vector_en TSVECTOR GENERATED ALWAYS AS (
 				CASE
@@ -646,6 +658,9 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 
 		CREATE INDEX IF NOT EXISTS speeches_subject_idx
 			ON speeches(subject_title);
+
+		CREATE INDEX IF NOT EXISTS speeches_subject_id_idx
+			ON speeches(subject_id);
 
         CREATE INDEX IF NOT EXISTS idx_pbo_pub_date ON pbo_publications(publication_date DESC);
         CREATE INDEX IF NOT EXISTS idx_pbo_category ON pbo_publications(methodology_category);

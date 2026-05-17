@@ -76,6 +76,9 @@ func TestParseHansardCapturesProvenanceAndLinks(t *testing.T) {
 	if got.OrderTitle != "Routine Proceedings" {
 		t.Errorf("OrderTitle = %q", got.OrderTitle)
 	}
+	if got.SubjectID != "13316144" {
+		t.Errorf("SubjectID = %q, want 13316144", got.SubjectID)
+	}
 	if got.SubjectTitle != "Fair Representation Act" {
 		t.Errorf("SubjectTitle = %q", got.SubjectTitle)
 	}

@@ -25,6 +25,7 @@ jobs:
           - device-register
           - health
           - riding-boundary
+          - hansard-subjects-index
           - openapi
     name: Test ${{ matrix.service }}
     services:

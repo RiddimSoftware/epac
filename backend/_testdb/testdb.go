@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS speeches (
     parliament_num   INT,
     session_num      INT,
     member_id        TEXT,
+    subject_id       TEXT,
     subject_title    TEXT,
     intervention_seq INT,
     word_count       INT

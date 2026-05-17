@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lambda: [daily-fetch, loader, search, member-speeches, on-this-day, riding-boundary, toronto-council, openapi, live-status]
+        lambda: [daily-fetch, loader, search, member-speeches, on-this-day, riding-boundary, toronto-council, openapi, live-status, hansard-subjects-index]
     name: Test ${{ matrix.lambda }}
     steps:
       - uses: actions/checkout@v4

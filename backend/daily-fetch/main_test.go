@@ -15,7 +15,7 @@ const sampleHansardXML = `<?xml version="1.0" encoding="UTF-8"?>
   <ExtractedItem Name="ParliamentNumber">44</ExtractedItem>
   <ExtractedItem Name="SessionNumber">1</ExtractedItem>
   <ExtractedItem Name="Date">Monday, November 14, 2022</ExtractedItem>
-  <SubjectOfBusiness>
+  <SubjectOfBusiness id="subject-question-period">
     <SubjectOfBusinessTitle>Question Period</SubjectOfBusinessTitle>
     <Intervention id="11034856">
       <PersonSpeaking>
@@ -57,6 +57,9 @@ func TestParseHansard(t *testing.T) {
 	}
 	if first.SubjectTitle != "Question Period" {
 		t.Errorf("first.SubjectTitle = %q, want 'Question Period'", first.SubjectTitle)
+	}
+	if first.SubjectID != "subject-question-period" {
+		t.Errorf("first.SubjectID = %q, want 'subject-question-period'", first.SubjectID)
 	}
 	if first.InterventionSeq != 0 {
 		t.Errorf("first.InterventionSeq = %d, want 0", first.InterventionSeq)

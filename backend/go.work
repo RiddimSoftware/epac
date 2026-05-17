@@ -6,6 +6,7 @@ use (
 	./device-register
 	./estimates
 	./hansard-backfill
+	./hansard-subjects-index
 	./health
 	./live-status
 	./loader
