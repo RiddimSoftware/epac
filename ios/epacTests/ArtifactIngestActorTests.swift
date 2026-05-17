@@ -46,6 +46,47 @@ struct ArtifactIngestActorTests {
         #expect(remaining.first?.riding == "Halifax West")
     }
 
+    @Test func membersIngestClearsRemovedOptionalFields() async throws {
+        let container = try makeContainer()
+        let actor = ArtifactIngestActor(modelContainer: container)
+
+        let initial = MembersArtifact(members: [
+            member(
+                id: 1,
+                imageData: Data([1, 2, 3]),
+                email: "member@example.ca",
+                hillPhone: "613-555-0101",
+                constituencyPhone: "902-555-0101",
+                constituencyAddress: "1 Main Street",
+                contactFetched: true
+            )
+        ])
+
+        let first = try await actor.ingestMembers(initial)
+        #expect(first.inserted == 1)
+
+        let cleared = MembersArtifact(members: [
+            member(id: 1)
+        ])
+        let update = try await actor.ingestMembers(cleared)
+        #expect(update.inserted == 0)
+        #expect(update.updated == 1)
+        #expect(update.deleted == 0)
+
+        let second = try await actor.ingestMembers(cleared)
+        #expect(second.inserted == 0)
+        #expect(second.updated == 0)
+        #expect(second.deleted == 0)
+
+        let stored = try #require(container.mainContext.fetch(FetchDescriptor<ParliamentMember>()).first)
+        #expect(stored.imageData == nil)
+        #expect(stored.email == nil)
+        #expect(stored.hillPhone == nil)
+        #expect(stored.constituencyPhone == nil)
+        #expect(stored.constituencyAddress == nil)
+        #expect(!stored.contactFetched)
+    }
+
     @Test func sittingsIngestIsIdempotentAndDiffsDates() async throws {
         let container = try makeContainer()
         let actor = ArtifactIngestActor(modelContainer: container)
@@ -124,30 +165,33 @@ struct ArtifactIngestActorTests {
         #expect(hansards.first?.orders.first?.subjects.first?.title == "Housing affordability")
     }
 
-    @Test func billsIngestIsExplicitNoopUntilBillsHaveSwiftDataModel() async throws {
+    @Test func billsIngestRejectsNonEmptyPayloadUntilBillsHaveSwiftDataModel() async throws {
         let container = try makeContainer()
         let actor = ArtifactIngestActor(modelContainer: container)
 
-        let result = try await actor.ingestBills(BillsArtifact(bills: [
-            Bill(
-                id: "C-1",
-                number: "C-1",
-                title: "An Act respecting tests",
-                sponsorName: "Jane Doe",
-                status: .inProgress,
-                currentStage: "First Reading",
-                introducedDate: nil,
-                stages: [],
-                legisInfoURL: URL(string: "https://example.com/bills/C-1")!,
-                billType: .houseGovernment,
-                parliament: 45,
-                session: 1
-            )
-        ]))
+        let empty = try await actor.ingestBills(BillsArtifact(bills: []))
+        #expect(empty.inserted == 0)
+        #expect(empty.updated == 0)
+        #expect(empty.deleted == 0)
 
-        #expect(result.inserted == 0)
-        #expect(result.updated == 0)
-        #expect(result.deleted == 0)
+        await #expect(throws: ArtifactIngestError.unsupportedBillPersistence(recordCount: 1)) {
+            try await actor.ingestBills(BillsArtifact(bills: [
+                Bill(
+                    id: "C-1",
+                    number: "C-1",
+                    title: "An Act respecting tests",
+                    sponsorName: "Jane Doe",
+                    status: .inProgress,
+                    currentStage: "First Reading",
+                    introducedDate: nil,
+                    stages: [],
+                    legisInfoURL: URL(string: "https://example.com/bills/C-1")!,
+                    billType: .houseGovernment,
+                    parliament: 45,
+                    session: 1
+                )
+            ]))
+        }
     }
 
     @Test func mainRunLoopRemainsResponsiveDuringActorIngest() async throws {
@@ -179,7 +223,17 @@ struct ArtifactIngestActorTests {
         RunLoop.main.run(until: Date().addingTimeInterval(0.05))
     }
 
-    private func member(id: Int, riding: String? = nil, party: Party = .liberal) -> ParliamentMemberDTO {
+    private func member(
+        id: Int,
+        riding: String? = nil,
+        party: Party = .liberal,
+        imageData: Data? = nil,
+        email: String? = nil,
+        hillPhone: String? = nil,
+        constituencyPhone: String? = nil,
+        constituencyAddress: String? = nil,
+        contactFetched: Bool = false
+    ) -> ParliamentMemberDTO {
         ParliamentMemberDTO(
             name: "Member \(id)",
             memberID: id,
@@ -190,14 +244,14 @@ struct ArtifactIngestActorTests {
             province: .Ontario,
             party: party,
             websiteURL: nil,
-            imageData: nil,
+            imageData: imageData,
             fromDateTime: nil,
             toDateTime: nil,
-            email: nil,
-            hillPhone: nil,
-            constituencyPhone: nil,
-            constituencyAddress: nil,
-            contactFetched: false
+            email: email,
+            hillPhone: hillPhone,
+            constituencyPhone: constituencyPhone,
+            constituencyAddress: constituencyAddress,
+            contactFetched: contactFetched
         )
     }
 

@@ -36,6 +36,10 @@ struct HansardSubjectsArtifact: Codable, Sendable {
     let hansards: [HansardDTO]
 }
 
+enum ArtifactIngestError: Error, Equatable, Sendable {
+    case unsupportedBillPersistence(recordCount: Int)
+}
+
 @ModelActor
 actor ArtifactIngestActor {
     func ingestMembers(_ payload: MembersArtifact) async throws -> IngestResult {
@@ -127,11 +131,11 @@ actor ArtifactIngestActor {
 
     func ingestBills(_ payload: BillsArtifact) async throws -> IngestResult {
         let startedAt = Date()
-        _ = payload
 
-        // There is no SwiftData Bill model in the current schema. Keep the
-        // family boundary available without introducing a schema migration here.
         do {
+            guard payload.bills.isEmpty else {
+                throw ArtifactIngestError.unsupportedBillPersistence(recordCount: payload.bills.count)
+            }
             try modelContext.save()
             return makeResult(startedAt: startedAt, inserted: 0, updated: 0, deleted: 0)
         } catch {
@@ -192,22 +196,16 @@ actor ArtifactIngestActor {
         assign(&changed, member.websiteURL, dto.websiteURL) { member.websiteURL = dto.websiteURL }
         assign(&changed, member.fromDateTime, dto.fromDateTime) { member.fromDateTime = dto.fromDateTime }
         assign(&changed, member.toDateTime, dto.toDateTime) { member.toDateTime = dto.toDateTime }
-
-        if let imageData = dto.imageData {
-            assign(&changed, member.imageData, imageData) { member.imageData = imageData }
+        assign(&changed, member.imageData, dto.imageData) { member.imageData = dto.imageData }
+        assign(&changed, member.email, dto.email) { member.email = dto.email }
+        assign(&changed, member.hillPhone, dto.hillPhone) { member.hillPhone = dto.hillPhone }
+        assign(&changed, member.constituencyPhone, dto.constituencyPhone) {
+            member.constituencyPhone = dto.constituencyPhone
         }
-        updateOptionalContact(&changed, current: member.email, incoming: dto.email) { member.email = $0 }
-        updateOptionalContact(&changed, current: member.hillPhone, incoming: dto.hillPhone) { member.hillPhone = $0 }
-        updateOptionalContact(&changed, current: member.constituencyPhone, incoming: dto.constituencyPhone) {
-            member.constituencyPhone = $0
+        assign(&changed, member.constituencyAddress, dto.constituencyAddress) {
+            member.constituencyAddress = dto.constituencyAddress
         }
-        updateOptionalContact(&changed, current: member.constituencyAddress, incoming: dto.constituencyAddress) {
-            member.constituencyAddress = $0
-        }
-        if dto.contactFetched && !member.contactFetched {
-            member.contactFetched = true
-            changed = true
-        }
+        assign(&changed, member.contactFetched, dto.contactFetched) { member.contactFetched = dto.contactFetched }
         return changed
     }
 
@@ -249,17 +247,6 @@ actor ArtifactIngestActor {
     ) {
         guard current != incoming else { return }
         set()
-        changed = true
-    }
-
-    private func updateOptionalContact(
-        _ changed: inout Bool,
-        current: String?,
-        incoming: String?,
-        set: (String) -> Void
-    ) {
-        guard let incoming, current != incoming else { return }
-        set(incoming)
         changed = true
     }
 }
