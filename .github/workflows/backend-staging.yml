@@ -63,25 +63,18 @@ jobs:
           aws lambda wait function-updated \
             --function-name "$FUNCTION_NAME"
 
-      - name: Sync staging DATABASE_URL from Secrets Manager
-        if: ${{ contains(fromJSON('["search","on-this-day","health","device-register","live-status"]'), matrix.service) }}
+      - name: Remove staging legacy DATABASE_URL
         env:
+          SERVICE: ${{ matrix.service }}
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
-          DATABASE_URL_SECRET_ID: epac/database-url
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_STAGING }}
         run: |
           set -euo pipefail
 
-          DATABASE_URL=$(aws secretsmanager get-secret-value \
-            --secret-id "$DATABASE_URL_SECRET_ID" \
-            --query SecretString \
-            --output text)
-          if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
-            DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
-          fi
-          if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
-            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
-            exit 1
+          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            if [[ " members sittings bills " == *" $SERVICE "* ]]; then
+              echo "$FUNCTION_NAME does not exist yet; skipping legacy DATABASE_URL removal until Terraform creates it."
+              exit 0
+            fi
           fi
 
           CURRENT_ENV=$(aws lambda get-function-configuration \
@@ -90,9 +83,7 @@ jobs:
             --output json)
           UPDATED_ENV=$(jq -cn \
             --argjson current "${CURRENT_ENV:-null}" \
-            --arg database_url "$DATABASE_URL" \
-            --arg sentry_dsn "$SENTRY_DSN" \
-            '{Variables: (($current // {}) + {DATABASE_URL: $database_url} + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
+            '{Variables: (($current // {}) | del(.DATABASE_URL))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

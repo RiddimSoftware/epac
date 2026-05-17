@@ -54,7 +54,7 @@ resource "aws_lambda_function" "staging" {
 
   lifecycle {
     # filename/source_code_hash: managed by the staging deploy workflow.
-    # environment: DATABASE_URL is injected by the deploy workflow via Secrets Manager.
+    # environment: managed by the deploy workflow; legacy DATABASE_URL is removed there.
     ignore_changes = [filename, source_code_hash, environment]
   }
 
