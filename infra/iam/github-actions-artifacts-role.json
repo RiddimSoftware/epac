@@ -1,0 +1,88 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "IAM role for GitHub Actions artifact-publish pipeline (EPAC-1907). Grants least-privilege S3 write and CloudFront invalidation access via OIDC — no stored credentials.",
+  "Parameters": {
+    "ArtifactsBucketName": {
+      "Type": "String",
+      "Description": "Name of the S3 bucket used to store published artifacts."
+    },
+    "ArtifactsDistributionId": {
+      "Type": "String",
+      "Description": "CloudFront distribution ID for the artifacts CDN."
+    }
+  },
+  "Resources": {
+    "GitHubActionsArtifactsRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "GitHubActions-epac-artifacts",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:RiddimSoftware/epac:ref:refs/heads/main"
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PublishArtifacts",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject",
+                    "s3:PutObjectAcl",
+                    "s3:DeleteObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:s3:::${ArtifactsBucketName}/*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["s3:ListBucket"],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:s3:::${ArtifactsBucketName}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["cloudfront:CreateInvalidation"],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${ArtifactsDistributionId}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {"Key": "Project", "Value": "epac"},
+          {"Key": "ManagedBy", "Value": "CloudFormation"},
+          {"Key": "Ticket", "Value": "EPAC-1907"}
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RoleArn": {
+      "Description": "ARN to set as AWS_ARTIFACTS_PUBLISHER_ROLE_ARN in GitHub Actions secrets",
+      "Value": {"Fn::GetAtt": ["GitHubActionsArtifactsRole", "Arn"]}
+    }
+  }
+}
