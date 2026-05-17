@@ -19,11 +19,15 @@ jobs:
       matrix:
         service:
           - _shared
+          - member-content
           - search
           - members
           - sittings
           - bills
           - member-speeches
+          - member-speeches-publisher
+          - member-votes
+          - member-votes-publisher
           - on-this-day
           - live-status
           - device-register

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"epac/member-content"
 	"github.com/aws/aws-lambda-go/events"
 )
 
@@ -89,5 +90,75 @@ func TestJsonError_BadRequest(t *testing.T) {
 	}
 	if body["error"] != "missing member id" {
 		t.Errorf("got error %q, want 'missing member id'", body["error"])
+	}
+}
+
+func TestHandleRequest_ReadsSpeechFixture(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("ARTIFACTS_DIR", dir)
+	repository = nil
+	t.Cleanup(func() { repository = nil })
+
+	dateOld := "2024-01-01"
+	dateNew := "2024-01-02"
+	topic := "Housing"
+	otherTopic := "Budget"
+	wordCount := 150
+	seqOne := 1
+	seqTwo := 2
+	store := membercontent.FileStore{Root: dir}
+	if _, err := membercontent.WriteMemberSpeechesArtifacts(context.Background(), store, membercontent.MemberSpeechesArtifact{
+		MemberID: "278707",
+		Speeches: []membercontent.SpeechRecord{
+			{
+				InterventionID:  "old",
+				SittingDate:     &dateOld,
+				SubjectTitle:    &otherTopic,
+				Preview:         "older speech",
+				WordCount:       &wordCount,
+				Filename:        "HAN001-E.XML",
+				InterventionSeq: &seqOne,
+			},
+			{
+				InterventionID:  "new",
+				SittingDate:     &dateNew,
+				SubjectTitle:    &topic,
+				Preview:         "newer speech",
+				WordCount:       &wordCount,
+				Filename:        "HAN002-E.XML",
+				InterventionSeq: &seqTwo,
+			},
+		},
+	}); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		PathParameters: map[string]string{"id": "278707"},
+		QueryStringParameters: map[string]string{
+			"page":     "1",
+			"per_page": "1",
+			"topic":    "housing",
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", resp.StatusCode, resp.Body)
+	}
+
+	var body membercontent.MemberSpeechesResponse
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if body.Total != 1 {
+		t.Fatalf("total = %d, want 1", body.Total)
+	}
+	if len(body.Speeches) != 1 || body.Speeches[0].InterventionID != "new" {
+		t.Fatalf("speeches = %+v, want only newer housing speech", body.Speeches)
+	}
+	if body.Stats.TotalSpeeches != 2 {
+		t.Fatalf("stats.total_speeches = %d, want 2", body.Stats.TotalSpeeches)
 	}
 }

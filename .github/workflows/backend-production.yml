@@ -17,6 +17,7 @@ on:
           - bills
           - search
           - member-speeches
+          - member-votes
           - on-this-day
           - riding-boundary
           - health
@@ -39,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, search, members, sittings, bills, member-speeches, on-this-day, riding-boundary, health, device-register, openapi, live-status]
+        service: [daily-fetch, loader, search, members, sittings, bills, member-speeches, member-votes, on-this-day, riding-boundary, health, device-register, openapi, live-status]
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +86,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync production DATABASE_URL from Secrets Manager
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","loader","search","member-speeches","on-this-day","riding-boundary","health","device-register","live-status"]'), matrix.service) }}
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","loader","search","on-this-day","riding-boundary","health","device-register","live-status"]'), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
@@ -129,7 +130,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync production artifact environment
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["members","sittings","bills"]'), matrix.service) }}
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["members","sittings","bills","member-speeches","member-votes"]'), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}

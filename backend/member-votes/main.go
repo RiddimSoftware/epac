@@ -1,4 +1,4 @@
-// member-speeches Lambda — GET /api/v1/members/{id}/speeches
+// member-votes Lambda — GET /api/v1/members/{id}/votes
 package main
 
 import (
@@ -14,15 +14,15 @@ import (
 )
 
 type memberContentRepository interface {
-	ListMemberSpeeches(ctx context.Context, memberID string, page, perPage int, topic string) (membercontent.MemberSpeechesResponse, error)
+	ListMemberVotes(ctx context.Context, memberID string, page, perPage int) (membercontent.MemberVotesResponse, error)
 }
 
 type S3ArtifactMemberContentRepository struct {
 	store membercontent.Store
 }
 
-func (r S3ArtifactMemberContentRepository) ListMemberSpeeches(ctx context.Context, memberID string, page, perPage int, topic string) (membercontent.MemberSpeechesResponse, error) {
-	return membercontent.ListMemberSpeeches(ctx, r.store, memberID, page, perPage, topic)
+func (r S3ArtifactMemberContentRepository) ListMemberVotes(ctx context.Context, memberID string, page, perPage int) (membercontent.MemberVotesResponse, error) {
+	return membercontent.ListMemberVotes(ctx, r.store, memberID, page, perPage)
 }
 
 var repository memberContentRepository
@@ -47,14 +47,13 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 
 	page := membercontent.ParsePositiveInt(req.QueryStringParameters["page"], 1)
 	perPage := membercontent.ParsePositiveInt(req.QueryStringParameters["per_page"], membercontent.DefaultPerPage)
-	topic := strings.TrimSpace(req.QueryStringParameters["topic"])
 
 	repo, err := getRepository(ctx)
 	if err != nil {
 		return jsonError(http.StatusInternalServerError, err.Error()), nil
 	}
 
-	resp, err := repo.ListMemberSpeeches(ctx, memberID, page, perPage, topic)
+	resp, err := repo.ListMemberVotes(ctx, memberID, page, perPage)
 	if err != nil {
 		return jsonError(http.StatusInternalServerError, err.Error()), nil
 	}
@@ -88,5 +87,5 @@ func jsonError(status int, msg string) events.APIGatewayProxyResponse {
 }
 
 func main() {
-	lambda.Start(observability.WrapAPIGateway("member-speeches", HandleRequest))
+	lambda.Start(observability.WrapAPIGateway("member-votes", HandleRequest))
 }

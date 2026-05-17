@@ -18,7 +18,7 @@ SECURITY_GROUP_NAME="${SECURITY_GROUP_NAME:-epac-db-postgres-public}"
 SECURITY_GROUP_DESCRIPTION="${SECURITY_GROUP_DESCRIPTION:-Public PostgreSQL access for epac Aurora}"
 SECRET_ID="${SECRET_ID:-epac/database-url}"
 IAM_POLICY_NAME="${IAM_POLICY_NAME:-EpacDatabaseUrlSecretRead}"
-LAMBDA_FUNCTIONS_CSV="${LAMBDA_FUNCTIONS_CSV:-search,member-speeches,daily-fetch}"
+LAMBDA_FUNCTIONS_CSV="${LAMBDA_FUNCTIONS_CSV:-search,daily-fetch}"
 
 CREATE_DEFAULT_VPC="${CREATE_DEFAULT_VPC:-0}"
 SMOKE_TEST="${SMOKE_TEST:-0}"

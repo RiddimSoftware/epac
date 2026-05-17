@@ -89,6 +89,7 @@ ROUTES=(
   "GET /api/v1/sittings/{date}/speeches|GET|sittings|1.0"
   "GET /api/v1/bills|GET|bills|1.0"
   "GET /api/v1/members/{id}/speeches|GET|member-speeches|1.0"
+  "GET /api/v1/members/{id}/votes|GET|member-votes|1.0"
   "GET /api/v1/on-this-day|GET|on-this-day|1.0"
   "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
   "GET /api/v1/live|GET|live-status|2.0"

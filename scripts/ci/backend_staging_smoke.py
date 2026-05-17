@@ -93,6 +93,12 @@ def validate_member_speeches(_: int, payload: Any) -> None:
         raise SmokeFailure("member speeches: stats must be an object")
 
 
+def validate_member_votes(_: int, payload: Any) -> None:
+    body = require_dict(payload, "member votes")
+    require_keys(body, "member votes", {"member_id", "page", "per_page", "total", "pages", "votes"})
+    require_list(body, "member votes", "votes")
+
+
 def validate_on_this_day(_: int, payload: Any) -> None:
     body = require_dict(payload, "on-this-day")
     require_keys(body, "on-this-day", {"date", "items"})
@@ -275,6 +281,27 @@ CHECKS = [
         validator=validate_member_speeches_invalid_page,
         deterministic_note="Negative check — page=-1 should return 400 or 200 with total=0. Documents current behavior.",
         fixture_note="No fixture required.",
+    ),
+    # --- member votes ---
+    SmokeCheck(
+        name="member-votes:min-args",
+        method="GET",
+        path="/api/v1/members/0/votes",
+        query={},
+        expected_statuses={200},
+        validator=validate_member_votes,
+        deterministic_note="Contract check uses a harmless member id with no pagination params.",
+        fixture_note="Seeded member vote artifacts would allow an assertion against a known current MP.",
+    ),
+    SmokeCheck(
+        name="member-votes:all-args",
+        method="GET",
+        path="/api/v1/members/0/votes",
+        query={"page": "1", "per_page": "10"},
+        expected_statuses={200},
+        validator=validate_member_votes,
+        deterministic_note="Contract check uses explicit pagination params.",
+        fixture_note="Seeded member vote artifacts would allow an assertion against a known current MP.",
     ),
     # --- on-this-day ---
     SmokeCheck(
