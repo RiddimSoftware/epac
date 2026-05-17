@@ -23,8 +23,6 @@ struct HomeFeedView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var isSittingToday = false
     @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
-    @State private var liveParliamentStatus: LiveParliamentStatus?
-    @State private var liveCardDecision: HomeLiveCardDecision = .hidden
     @State private var nextSittingDate: Date?
     @State private var latestVote: HomeVoteRecord?
     @State private var latestMemberVote: HomeMemberVoteRecord?
@@ -40,29 +38,16 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
-    @State private var showLiveInfo = false
     @State private var onThisDayItems: [OnThisDayItem] = []
     @State private var onThisDayDismissedDate = UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate") ?? ""
     @State private var didRecordOnThisDayImpression = false
     @State private var selectedOnThisDaySpeech: OnThisDaySpeechSelection?
 
-    private let liveParliamentService = LiveParliamentService()
     private let onThisDayService = OnThisDayService()
 
     var body: some View {
         NavigationStack {
             List {
-                switch liveCardDecision {
-                case .live(let status):
-                    liveParliamentSection(status)
-                case .todayPublished(let hansardID, let date, let subjectTitle):
-                    postSittingSection(hansardID: hansardID, hansardDate: date, subjectTitle: subjectTitle)
-                case .todayPending:
-                    postSittingPendingSection
-                case .hidden:
-                    EmptyView()
-                }
-                // Always show today's Parliament status — VoiceOver users need to know whether sitting.
                 todaySection
                 if shouldShowOnThisDaySection {
                     onThisDaySection
@@ -110,7 +95,6 @@ struct HomeFeedView: View {
             .accessibilityIdentifier("home-feed-scroll")
             .refreshable {
                 await loadFeed()
-                await refreshLiveParliamentStatus()
                 if !networkMonitor.isConnected {
                     showRefreshToast = true
                 }
@@ -141,10 +125,6 @@ struct HomeFeedView: View {
             }
             .task {
                 await loadFeed()
-                await refreshLiveParliamentStatus()
-            }
-            .task(id: scenePhase) {
-                await pollLiveParliamentStatus(while: scenePhase)
             }
             .sheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
@@ -162,127 +142,6 @@ struct HomeFeedView: View {
     }
 
     // MARK: - Section 1: Today in Parliament
-
-    private func liveParliamentSection(_ status: LiveParliamentStatus) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: EpacSpacing.m) {
-                HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.s) {
-                    Label(liveBadgeText(for: status), systemImage: liveBadgeIcon(for: status))
-                        .font(.epacCaption.weight(.bold))
-                        .foregroundStyle(liveBadgeColor(for: status))
-                        .labelStyle(.titleAndIcon)
-                    Spacer()
-                    Button {
-                        showLiveInfo = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.epacSubheadline)
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(Color.epacText.secondary)
-                    .accessibilityLabel(NSLocalizedString("home.live.infoTitle", comment: ""))
-                    .popover(isPresented: $showLiveInfo) { liveInfoPopover }
-                }
-
-                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                    Text(liveHeadline(for: status))
-                        .font(.epacHeadline)
-                        .foregroundStyle(Color.epacText.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(liveDetail(for: status))
-                        .font(.epacSubheadline)
-                        .foregroundStyle(Color.epacText.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                HStack(spacing: EpacSpacing.s) {
-                    Text(String(
-                        format: NSLocalizedString("home.live.updated", comment: ""),
-                        status.checkedAt.formatted(date: .omitted, time: .shortened)
-                    ))
-                    if let billNumber = status.currentBillNumber {
-                        Text(billNumber)
-                    }
-                }
-                .font(.epacCaption)
-                .foregroundStyle(Color.epacText.tertiary)
-            }
-            .padding(.vertical, EpacSpacing.s)
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("home-live-parliament-card")
-        }
-    }
-
-    private func postSittingSection(hansardID: String, hansardDate: Date, subjectTitle: String) -> some View {
-        Section {
-            NavigationLink {
-                if let hansard = fetchHansard(by: hansardID),
-                   let subject = hansard.orders.flatMap(\.subjects).first(where: { $0.title == subjectTitle })
-                       ?? hansard.orders.first?.subjects.first {
-                    SpeechView(hansard: hansard, subject: subject)
-                }
-            } label: {
-                VStack(alignment: .leading, spacing: EpacSpacing.m) {
-                    Label(
-                        NSLocalizedString("home.live.todayBadge", comment: ""),
-                        systemImage: "building.columns.fill"
-                    )
-                    .font(.epacCaption.weight(.bold))
-                    .foregroundStyle(Color.epacBrand.accent)
-                    .labelStyle(.titleAndIcon)
-
-                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                        Text(hansardDate.formatted(date: .long, time: .omitted))
-                            .font(.epacHeadline)
-                            .foregroundStyle(Color.epacText.primary)
-                        Text(subjectTitle)
-                            .font(.epacSubheadline)
-                            .foregroundStyle(Color.epacText.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    Text(NSLocalizedString("home.live.tapToRead", comment: ""))
-                        .font(.epacCaption.weight(.semibold))
-                        .foregroundStyle(Color.epacBrand.accent)
-                }
-                .padding(.vertical, EpacSpacing.s)
-            }
-            .accessibilityIdentifier("home-live-parliament-card")
-        }
-    }
-
-    private var postSittingPendingSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: EpacSpacing.m) {
-                Label(
-                    NSLocalizedString("home.live.todayBadge", comment: ""),
-                    systemImage: "building.columns.fill"
-                )
-                .font(.epacCaption.weight(.bold))
-                .foregroundStyle(Color.epacText.secondary)
-                .labelStyle(.titleAndIcon)
-
-                Text(NSLocalizedString("home.live.comingSoon", comment: ""))
-                    .font(.epacSubheadline)
-                    .foregroundStyle(Color.epacText.secondary)
-            }
-            .padding(.vertical, EpacSpacing.s)
-            .accessibilityIdentifier("home-live-parliament-card")
-        }
-    }
-
-    private var liveInfoPopover: some View {
-        VStack(alignment: .leading, spacing: EpacSpacing.s) {
-            Text(NSLocalizedString("home.live.infoTitle", comment: ""))
-                .font(.epacHeadline)
-            Text(NSLocalizedString("home.live.infoBody", comment: ""))
-                .font(.epacCallout)
-                .foregroundStyle(Color.epacText.secondary)
-        }
-        .padding(EpacSpacing.m)
-        .frame(maxWidth: 320, alignment: .leading)
-        .presentationCompactAdaptation(.popover)
-    }
 
     private var todaySection: some View {
         Section {
@@ -926,7 +785,6 @@ struct HomeFeedView: View {
     private func loadFeed() async {
         let useCase = LoadHomeFeed(
             repository: HomeFeedSwiftDataRepository(modelContext: modelContext),
-            liveParliamentStatusFetching: liveParliamentService,
             onThisDayFetching: onThisDayService,
             followPreferenceReading: FollowPreferenceAdapter()
         )
@@ -934,8 +792,6 @@ struct HomeFeedView: View {
 
         self.isSittingToday = snapshot.isSittingToday
         self.parliamentDayStatus = snapshot.parliamentDayStatus
-        self.liveParliamentStatus = snapshot.liveParliamentStatus
-        self.liveCardDecision = snapshot.liveCardDecision
         self.nextSittingDate = snapshot.nextSittingDate
         self.latestVote = snapshot.latestVote
         self.latestMemberVote = snapshot.latestMemberVote
@@ -951,48 +807,6 @@ struct HomeFeedView: View {
 
         self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
         self.mySenators = snapshot.civicContext.mySenators
-    }
-
-    private func pollLiveParliamentStatus(while phase: ScenePhase) async {
-        guard phase == .active else { return }
-        await refreshLiveParliamentStatus()
-        while !Task.isCancelled {
-            do {
-                let interval: Double = livePollingInterval
-                try await Task.sleep(for: .seconds(interval))
-            } catch {
-                return
-            }
-            await refreshLiveParliamentStatus()
-        }
-    }
-
-    private var livePollingInterval: Double {
-        guard let status = liveParliamentStatus, !status.isSitting,
-              let changedAt = status.lastChangedAt else {
-            return 120
-        }
-        // After a sitting ends and > 6h have elapsed, slow to hourly to
-        // conserve resources while we wait for Hansard to publish.
-        return Date().timeIntervalSince(changedAt) > 6 * 3600 ? 3600 : 120
-    }
-
-    private func refreshLiveParliamentStatus() async {
-        guard networkMonitor.isConnected else { return }
-        let useCase = RefreshLiveParliamentStatus(
-            liveParliamentStatusFetching: liveParliamentService,
-            repository: HomeFeedSwiftDataRepository(modelContext: modelContext)
-        )
-        do {
-            let result = try await useCase.execute()
-            self.liveParliamentStatus = result.liveParliamentStatus
-            self.liveCardDecision = result.liveCardDecision
-            if let newStatus = result.parliamentDayStatus {
-                self.parliamentDayStatus = newStatus
-            }
-        } catch {
-            Log.error("HomeFeedView live status refresh failed: \(error.localizedDescription)")
-        }
     }
 
     // Returns today's date string (YYYY-MM-DD) in Ottawa local time.
@@ -1057,40 +871,6 @@ struct HomeFeedView: View {
         case .notSitting:
             return Color.epacText.secondary
         }
-    }
-
-    private func liveBadgeText(for status: LiveParliamentStatus) -> String {
-        status.divisionInProgress
-            ? NSLocalizedString("home.live.voteBadge", comment: "")
-            : NSLocalizedString("home.live.badge", comment: "")
-    }
-
-    private func liveBadgeIcon(for status: LiveParliamentStatus) -> String {
-        status.divisionInProgress ? "checkmark.ballot.fill" : "circle.fill"
-    }
-
-    private func liveBadgeColor(for status: LiveParliamentStatus) -> Color {
-        status.divisionInProgress ? Color.epacStatus.warning : Color.epacStatus.destructive
-    }
-
-    private func liveHeadline(for status: LiveParliamentStatus) -> String {
-        if let title = status.currentItemTitle, !title.isEmpty {
-            return title
-        }
-        return status.businessType
-    }
-
-    private func liveDetail(for status: LiveParliamentStatus) -> String {
-        if status.divisionInProgress {
-            return NSLocalizedString("home.live.resultIncoming", comment: "")
-        }
-        if let speaker = status.currentSpeakerName, !speaker.isEmpty {
-            return String(format: NSLocalizedString("home.live.speaker", comment: ""), speaker)
-        }
-        return String(
-            format: NSLocalizedString("home.live.updated", comment: ""),
-            status.checkedAt.formatted(date: .omitted, time: .shortened)
-        )
     }
 
     private var hasPersonalizedContext: Bool {

@@ -29,8 +29,6 @@ enum HomeParliamentDayStatus {
 struct HomeFeedSnapshot {
     let isSittingToday: Bool
     let parliamentDayStatus: HomeParliamentDayStatus
-    let liveParliamentStatus: LiveParliamentStatus?
-    let liveCardDecision: HomeLiveCardDecision
     let nextSittingDate: Date?
 
     let followedMember: HomeFollowedMember?

@@ -8,20 +8,17 @@ import Foundation
 @MainActor
 struct LoadHomeFeed {
     private let repository: HomeFeedRepository
-    private let liveParliamentStatusFetching: LiveParliamentStatusFetching
     private let onThisDayFetching: OnThisDayFetching
     private let followPreferenceReading: FollowPreferenceReading
     private let clock: Clock
 
     init(
         repository: HomeFeedRepository,
-        liveParliamentStatusFetching: LiveParliamentStatusFetching,
         onThisDayFetching: OnThisDayFetching,
         followPreferenceReading: FollowPreferenceReading,
         clock: Clock = SystemClock()
     ) {
         self.repository = repository
-        self.liveParliamentStatusFetching = liveParliamentStatusFetching
         self.onThisDayFetching = onThisDayFetching
         self.followPreferenceReading = followPreferenceReading
         self.clock = clock
@@ -31,7 +28,6 @@ struct LoadHomeFeed {
     // an offline pull-to-refresh doesn't erase the last successful snapshot.
     func execute(preservingOnThisDayItems existing: [OnThisDayItem] = []) async -> HomeFeedSnapshot {
         let today = Calendar.current.startOfDay(for: clock.now)
-        let ottawaTodayString = makeOttawaTodayString(from: clock.now)
 
         let sittingDates = (try? await repository.fetchSittingDates()) ?? []
         let isSittingToday = sittingDates.contains { Calendar.current.isDate($0, inSameDayAs: today) }
@@ -63,12 +59,7 @@ struct LoadHomeFeed {
         let hansards = (try? await repository.fetchLatestHansards(limit: 10)) ?? []
         let latestHansard = hansards.first
 
-        let liveParliamentStatus = try? await liveParliamentStatusFetching.fetchStatus()
-
-        var parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard, isSittingToday: isSittingToday)
-        if liveParliamentStatus?.isSitting == true {
-            parliamentDayStatus = .sitting
-        }
+        let parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard, isSittingToday: isSittingToday)
 
         let recentSubjectTitles = Array(
             (hansards.first?.subjectRecords.map(\.title) ?? []).prefix(3)
@@ -81,26 +72,6 @@ struct LoadHomeFeed {
         if let memberID = followedMember?.memberID, let voteID = latestVote?.voteID {
             latestMemberVote = try? await repository.fetchMemberVote(memberID: memberID, voteID: voteID)
         }
-
-        var postSittingHansard: HomeHansardRecord?
-        if let status = liveParliamentStatus, !status.isSitting, let sittingDate = status.sittingDate {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.timeZone = TimeZone(identifier: "America/Toronto")
-            if let date = formatter.date(from: sittingDate) {
-                let start = Calendar.current.startOfDay(for: date)
-                if let end = Calendar.current.date(byAdding: .day, value: 1, to: start) {
-                    let matchingHansards = try? await repository.fetchHansards(between: start, and: end)
-                    postSittingHansard = matchingHansards?.first
-                }
-            }
-        }
-
-        let liveCardDecision = computeLiveCardDecision(
-            status: liveParliamentStatus,
-            postSittingHansard: postSittingHansard,
-            ottawaTodayString: ottawaTodayString
-        )
 
         let onThisDayItems = (try? await onThisDayFetching.fetch(date: clock.now, limit: 5)) ?? existing
 
@@ -119,8 +90,6 @@ struct LoadHomeFeed {
         return HomeFeedSnapshot(
             isSittingToday: isSittingToday,
             parliamentDayStatus: parliamentDayStatus,
-            liveParliamentStatus: liveParliamentStatus,
-            liveCardDecision: liveCardDecision,
             nextSittingDate: nextSittingDate,
             followedMember: followedMember,
             myMPActivityCount: myMPActivityCount,
@@ -134,30 +103,6 @@ struct LoadHomeFeed {
             latestMemberVote: latestMemberVote,
             onThisDayItems: onThisDayItems
         )
-    }
-
-    private func makeOttawaTodayString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "America/Toronto")
-        return formatter.string(from: date)
-    }
-
-    private func computeLiveCardDecision(
-        status: LiveParliamentStatus?,
-        postSittingHansard: HomeHansardRecord?,
-        ottawaTodayString: String
-    ) -> HomeLiveCardDecision {
-        guard let status else { return .hidden }
-        if status.isSitting { return .live(status) }
-        guard let sittingDate = status.sittingDate, sittingDate == ottawaTodayString else {
-            return .hidden
-        }
-        if let hansard = postSittingHansard {
-            let subjectTitle = hansard.subjectRecords.first?.title ?? ""
-            return .todayPublished(hansardID: hansard.hansardID, date: hansard.date, subjectTitle: subjectTitle)
-        }
-        return .todayPending
     }
 
     private func resolveFollowedMember(from members: [HomeFollowedMember], savedName: String?, followedIDs: [Int]) -> HomeFollowedMember? {
