@@ -20,7 +20,6 @@ struct ContentView: View {
 	@Environment(\.scenePhase) private var scenePhase
 	var fetch: Fetch
 	var appDelegate: AppDelegate
-	@Environment(NotificationManager.self) private var notificationManager
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
@@ -54,11 +53,6 @@ struct ContentView: View {
 		if let followedBills = try? JSONEncoder().encode(["C-226": followedBill]) {
 			defaults.set(followedBills, forKey: "epac.followedBills")
 		}
-		defaults.set(false, forKey: "epac.notifications.hansard")
-		defaults.set(false, forKey: "epac.notifications.billVotes")
-		defaults.set(false, forKey: "epac.notifications.memberActivity")
-		defaults.set(false, forKey: "epac.notifications.topicConsultations")
-		defaults.set(false, forKey: "epac.notifications.morningBriefing")
 	}
 
 	var body: some View {
@@ -78,20 +72,6 @@ struct ContentView: View {
 		.environment(networkMonitor)
 		.onOpenURL { url in
 			handleOpenURL(url)
-		}
-		.onChange(of: notificationManager.pendingDate) { _, date in
-			guard let date else { return }
-			let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-			viewModel.selectedDate = components
-			viewModel.onSelectedDateChanged(to: components)
-			router.selectedTab = .parliament
-			notificationManager.clearPendingDate()
-		}
-		.onChange(of: notificationManager.pendingTopicId) { _, topicId in
-			guard topicId != nil else { return }
-			// Topic-debate notifications navigate to Accountability (Topics live there per ADR-001).
-			router.selectedTab = .accountability
-			notificationManager.clearPendingDate()
 		}
 		.onContinueUserActivity(CSSearchableItemActionType) { activity in
 			guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
@@ -121,14 +101,6 @@ struct ContentView: View {
 			// app, so this is offline-safe; backgroundRefresh re-seeds on subsequent
 			// launches to absorb shipped Cabinet shuffles.
 			try? await fetch.loadCabinetPositions()
-			// Skip the permission request when onboarding is showing — the
-			// onboarding flow presents a contextual prompt on screen 4. For
-			// returning users (onboarding already completed) we request here as
-			// before, so the prompt appears if they declined earlier and then
-			// changed their mind in Settings.
-			if !showOnboarding {
-				await notificationManager.requestAuthorization()
-			}
 			// Snapshot lightweight name data on @MainActor (no imageData access).
 			let nameEntries = members.map {
 				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)

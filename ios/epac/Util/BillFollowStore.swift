@@ -39,13 +39,11 @@ final class BillFollowStore {
             followedAt: Date()
         )
         save()
-        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
     func unfollow(_ number: String) {
         followed.removeValue(forKey: number)
         save()
-        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
     func toggle(_ bill: Bill) {
@@ -57,29 +55,25 @@ final class BillFollowStore {
     func unfollowAll() {
         followed.removeAll()
         save()
-        Task { await TopicFollowStore.shared.registerDevice() }
     }
 
-    /// Call after BillsService.fetchBills() to detect stage or status changes for followed bills.
-    /// Returns notification payloads that should be scheduled.
-    func detectChanges(in freshBills: [Bill]) -> [BillChangeNotification] {
-        var notifications: [BillChangeNotification] = []
+    /// Call after BillsService.fetchBills() to keep followed-bill state current.
+    func updateStoredState(in freshBills: [Bill]) {
+        var changed = false
         for bill in freshBills where followedNumbers.contains(bill.number) {
             guard let state = followed[bill.number] else { continue }
             let statusChanged = bill.status.rawValue != state.lastKnownStatus
             let stageChanged = !bill.currentStage.isEmpty && bill.currentStage != state.lastKnownStage
             if statusChanged || stageChanged {
-                notifications.append(BillChangeNotification(bill: bill, previousStage: state.lastKnownStage))
-                // Update stored state
                 followed[bill.number] = BillFollowState(
                     lastKnownStatus: bill.status.rawValue,
                     lastKnownStage: bill.currentStage,
                     followedAt: state.followedAt
                 )
+                changed = true
             }
         }
-        if !notifications.isEmpty { save() }
-        return notifications
+        if changed { save() }
     }
 
     private func save() {
@@ -87,13 +81,4 @@ final class BillFollowStore {
             UserDefaults.standard.set(encoded, forKey: key)
         }
     }
-}
-
-struct BillChangeNotification {
-    let bill: Bill
-    let previousStage: String
-}
-
-extension BillFollowStore: BillRegistrationPreferencesProviding {
-    var followedBillIDsForRegistration: Set<String> { followedNumbers }
 }

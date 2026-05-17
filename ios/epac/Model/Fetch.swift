@@ -79,7 +79,6 @@ actor Fetch: ObservableObject {
 		try? await downloadSittingCalendar(year - 1)
 		try? await downloadFiscalMonitorEntries()
 		try? loadCabinetPositions()
-		await refreshNearbyHansardsForNotifications()
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
@@ -93,51 +92,6 @@ actor Fetch: ObservableObject {
 		}
 	}
 
-	private func refreshNearbyHansardsForNotifications() async {
-		let topicEnabled = await MainActor.run {
-			NotificationPreferenceStore.shared.topicConsultations && !TopicFollowStore.shared.followedIDs.isEmpty
-		}
-		guard topicEnabled else { return }
-
-		let cal = Calendar.current
-		let today = cal.startOfDay(for: Date())
-		let minDate = cal.date(byAdding: .day, value: -2, to: today) ?? today
-		let maxDate = cal.date(byAdding: .day, value: 1, to: today) ?? today
-
-		let calendars = (try? modelContext.fetch(FetchDescriptor<SittingCalendar>())) ?? []
-		let allSittings = Set(calendars.flatMap(\.sittings))
-		let targetSittings = allSittings
-			.map { cal.startOfDay(for: $0) }
-			.filter { $0 >= minDate && $0 <= maxDate }
-			.sorted(by: >)
-
-		guard !targetSittings.isEmpty else { return }
-
-		let existingHansards = Set(
-			(try? modelContext.fetch(FetchDescriptor<Hansard>()).map { cal.startOfDay(for: $0.date) }) ?? []
-		)
-
-		for date in targetSittings {
-			guard !existingHansards.contains(date) else { continue }
-			do {
-				let identifier = try await hansard(date)
-				guard let hansard = modelContext.model(for: identifier) as? Hansard else { continue }
-				let subjects = hansard.orders.flatMap { $0.subjects }.map {
-					(title: $0.title, date: hansard.date)
-				}
-				let titles = hansard.orders.flatMap { $0.subjects }.map(\.title)
-				await MainActor.run {
-					TopicNotificationScheduler.checkAndNotify(subjectTitles: subjects)
-					WidgetDataWriter.writeRecentSubjects(titles)
-					WidgetDataWriter.reloadWidgets()
-				}
-				Log.debug("Background refresher downloaded Hansard for \(DateUtils.getCSVStringFromDate(date))")
-			} catch {
-				Log.debug("Background refresher failed to download \(DateUtils.getCSVStringFromDate(date)): \(error.localizedDescription)")
-			}
-		}
-	}
-	
 	func downloadHansard(_ date: Date) async throws {
 		Log.debug("Fetch.downloadHansard(date: \(date))")
 		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")

@@ -209,9 +209,6 @@
 "follow.follow" = "Suivre";
 "member.share" = "Partager";
 "follow.unfollow" = "Ne plus suivre";
-"follow.notification.vote" = "A voté %@ sur %@";
-"follow.notification.speech" = "A pris la parole aujourd'hui : %@";
-"follow.notification.expense" = "Les dépenses du T%d %d sont maintenant disponibles";
 
 /* Party-line voting score */
 "partyLine.title" = "Solidarité de parti";
@@ -346,11 +343,6 @@
 "bill.follow" = "Suivre";
 "bill.unfollow" = "Ne plus suivre";
 "bill.share" = "Partager";
-"bill.notification.stageChange" = "%@ a avancé\u{a0}: %@";
-"bill.notification.royalAssent" = "%@ a reçu la sanction royale";
-"bill.notification.defeated" = "%@ a été rejeté";
-"bill.notification.voteResult" = "Vote\u{a0}: %d pour \u{2013} %d contre.";
-"bill.notification.mpVote" = "%@ a voté %@.";
 
 /* Government consultations view */
 "consult.navTitle" = "Consultations";
@@ -531,22 +523,13 @@
 "onboarding.what.trust" = "Toutes les sources officielles du gouvernement. Rien de généré ou d'éditorialisé.";
 
 "onboarding.topics.title" = "Ce qui vous importe";
-"onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets. Soyez averti quand le Parlement en débat.";
+"onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets pour personnaliser votre accueil.";
 "onboarding.topics.follow" = "Suivre %d sujet(s) →";
-
-"onboarding.notifications.title" = "Restez informé";
-"onboarding.notifications.subtitle" = "Nous vous alerterons quand le Parlement agit sur ce qui vous tient à cœur.";
-"onboarding.notifications.preview1" = "Quand votre député parle ou vote";
-"onboarding.notifications.preview2" = "Quand un projet de loi suivi avance";
-"onboarding.notifications.preview3" = "Quand le Parlement débat d'un sujet suivi";
-"onboarding.notifications.privacy" = "Notifications seulement. Aucun suivi. Aucune publicité.";
-"onboarding.notifications.allow" = "Autoriser les notifications →";
-"onboarding.notifications.skip" = "Pas maintenant";
 
 "onboarding.promise.title" = "Vous êtes prêt";
 "onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
 "onboarding.promise.point1" = "Les votes et discours de votre député, en temps réel";
-"onboarding.promise.point2" = "Notifications quand le Parlement débat de vos %d sujet(s)";
+"onboarding.promise.point2" = "Un accueil adapté à vos %d sujet(s)";
 "onboarding.promise.point3" = "Aucun compte requis. Aucune donnée vendue. Sans publicité.";
 "onboarding.promise.start" = "Commencer à explorer →";
 
@@ -558,19 +541,12 @@
 "settings.account.riding" = "Circonscription";
 "settings.account.mp" = "Député";
 "settings.account.postalCode" = "Code postal et circonscription";
-"settings.account.notifications" = "Notifications";
 
 "settings.location.title" = "Ma localisation";
 "settings.location.riding" = "Circonscription";
 "settings.location.mp" = "Député";
 "settings.location.change" = "Modifier le code postal";
 
-"settings.notifications.title" = "Notifications";
-"settings.notifications.hansard" = "Nouvelles séances du Hansard";
-"settings.notifications.billVotes" = "Résultats de vote sur les projets de loi suivis";
-"settings.notifications.memberActivity" = "Activité des députés suivis";
-"settings.notifications.topicConsultations" = "Nouvelles consultations sur les sujets suivis";
-"settings.notifications.morningBriefing" = "Briefing matinal les jours de séance";
 
 "settings.appearance.title" = "Apparence";
 "settings.appearance.theme" = "Thème";
@@ -700,35 +676,6 @@
 "toronto.votes.empty.description" = "Les votes du conseil municipal de Toronto apparaîtront ici.";
 "toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";
 
-/* Notification Settings (EPAC-436) */
-"settings.notifications.manage" = "Gérer les notifications";
-"notifications.section.permission" = "Autorisation";
-"notifications.permission.granted" = "Notifications activées";
-"notifications.permission.denied" = "Les notifications sont désactivées";
-"notifications.permission.deniedHint" = "Ouvrez les réglages iOS pour autoriser epac à envoyer des notifications.";
-"notifications.permission.openSettings" = "Ouvrir les réglages";
-"notifications.permission.enable" = "Activer les notifications";
-"notifications.section.activity" = "Activité";
-"notifications.section.activity.footer" = "Les réglages propres à chaque député sont disponibles depuis son profil.";
-"notifications.category.mpVotes" = "Votes des députés suivis";
-"notifications.category.mpSpeeches" = "Discours des députés suivis";
-"notifications.category.billStatus" = "Changements d'état des projets de loi suivis";
-"notifications.category.topicAlerts" = "Alertes sur les sujets suivis";
-"notifications.section.digests" = "Résumés";
-"notifications.section.digests.footer" = "Envoyés à 7 h HE le jour prévu.";
-"notifications.category.dailyDigest" = "Résumé quotidien";
-"notifications.category.fridayDigest" = "Résumé hebdomadaire du vendredi";
-"notifications.section.governmentUpdates" = "Mises à jour gouvernementales";
-"notifications.category.hansardSittings" = "Nouvelles séances du Hansard";
-"notifications.category.pboCosting" = "Notes de coûts du DPB";
-"notifications.category.lobbyingAlerts" = "Alertes de lobbying";
-"notifications.section.general" = "Général";
-"notifications.category.appAnnouncements" = "Annonces de l'application";
-"notifications.member.sectionTitle" = "Notifications pour ce député";
-"notifications.member.votes" = "Votes";
-"notifications.member.speeches" = "Discours";
-"notifications.member.expenses" = "Dépenses";
-
 /* On This Day (EPAC-470) */
 "home.onThisDay.title" = "À cette date dans les législatures passées";
 "home.onThisDay.dismiss" = "Masquer À cette date";
@@ -736,7 +683,7 @@
 /* Onboarding v2 (EPAC-621) */
 "onboarding.welcome.oneLineValueProp" = "Le Parlement du Canada dans votre poche";
 "onboarding.mp.confirm.title" = "Votre député est %@";
-"onboarding.mp.confirm.subtitle" = "Suivez-le pour être averti lorsqu'il prend la parole ou vote.";
+"onboarding.mp.confirm.subtitle" = "Suivez-le pour garder son activité à portée de main.";
 "onboarding.mp.confirm.follow" = "Suivre mon député";
 "onboarding.mp.confirm.skip" = "Plus tard";
 
@@ -784,7 +731,7 @@
 "appStore.screenshot.myMP.row2.title" = "Question";
 "appStore.screenshot.myMP.row2.detail" = "Transparence des prix d'épicerie";
 "appStore.screenshot.myMP.row3.title" = "Suivi";
-"appStore.screenshot.myMP.row3.detail" = "Recevez des alertes sur les votes et débats";
+"appStore.screenshot.myMP.row3.detail" = "Gardez les votes et débats à portée de main";
 "appStore.screenshot.bill.header" = "Projet de loi C-226";
 "appStore.screenshot.bill.title" = "Cadre national sur la transparence des prix alimentaires";
 "appStore.screenshot.bill.stage1" = "1re lecture";

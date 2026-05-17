@@ -63,7 +63,7 @@ struct SittingLoaderView: View {
 				return
 			}
 			loadState = .loaded(hansard)
-			updateRecentSubjectsAndFollowNotifications(for: hansard)
+			updateRecentSubjects(for: hansard)
 		} catch {
 			Log.debug("Failed to fetch hansard \(date): \(error.localizedDescription)")
 			SentrySDK.capture(error: error)
@@ -75,30 +75,11 @@ struct SittingLoaderView: View {
 		try? modelContext.fetch(FetchDescriptor<Hansard>(predicate: #Predicate { $0.date == date })).first
 	}
 
-	private func updateRecentSubjectsAndFollowNotifications(for hansard: Hansard) {
+	private func updateRecentSubjects(for hansard: Hansard) {
 		let subjects = hansard.orders.flatMap { $0.subjects }
 		let titles = subjects.map { $0.title }
 		WidgetDataWriter.writeRecentSubjects(titles)
 		WidgetDataWriter.reloadWidgets()
-
-		let followedIDs = MemberFollowStore.shared.followedIDs
-		guard !followedIDs.isEmpty else { return }
-
-		let allMembers = (try? modelContext.fetch(FetchDescriptor<ParliamentMember>())) ?? []
-		let followed = allMembers.filter { followedIDs.contains($0.memberID) }
-		let messages = subjects.flatMap { $0.speeches }.flatMap { $0.messages }
-		let firstSubject = subjects.first?.title ?? ""
-
-		for member in followed {
-			let spoke = messages.contains { $0.lastName.localizedCaseInsensitiveCompare(member.lastName) == .orderedSame }
-			if spoke {
-				MemberNotificationScheduler.scheduleSpeechNotification(
-					memberName: member.name,
-					subject: firstSubject,
-					memberID: member.memberID
-				)
-			}
-		}
 	}
 }
 

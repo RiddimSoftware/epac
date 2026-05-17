@@ -69,12 +69,6 @@ struct SettingsView: View {
             }
             .foregroundStyle(.tint)
 
-            NavigationLink(destination: NotificationSettingsView()) {
-                Label(
-                    NSLocalizedString("settings.account.notifications", comment: ""),
-                    systemImage: "bell.badge"
-                )
-            }
         }
     }
 

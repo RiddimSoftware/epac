@@ -122,7 +122,7 @@ private struct AppPreviewPhoneFrame: View {
                     Label(scene.tabTitle, systemImage: scene.systemImage)
                         .font(.system(size: 20, weight: .semibold))
                     Spacer()
-                    Image(systemName: "bell.badge")
+                    Image(systemName: "star.circle")
                         .font(.system(size: 19, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                 }

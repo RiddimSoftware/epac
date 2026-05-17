@@ -2,13 +2,12 @@
 //  OnboardingView.swift
 //  epac
 //
-//  6-step onboarding flow (EPAC-621):
+//  4-step onboarding flow (EPAC-621):
 //  1. Welcome — one-line value prop "Canada's parliament, in your pocket"
 //  2. Postal code — capture for riding lookup
 //  3. MP confirm — "Your MP is X — follow?"
 //  4. Topics — pick 1+ topics to follow
-//  5. Notifications — per-category toggles
-//  6. Home — land on home (triggered by completion)
+//  Home — land on home after completion
 //
 //  Each step logs a telemetry event. Every step has a Skip path.
 //
@@ -23,11 +22,9 @@ struct OnboardingView: View {
     @State private var page = 0
     @State private var postalCodeVM = PostalCodeViewModel()
     @State private var selectedTopics: Set<String> = []
-    @State private var notifPrefs = NotificationPreferenceStore.shared
     @Environment(\.modelContext) private var modelContext
-    @Environment(NotificationManager.self) private var notificationManager
 
-    private let totalPages = 5
+    private let totalPages = 4
 
     var body: some View {
         TabView(selection: $page) {
@@ -35,7 +32,6 @@ struct OnboardingView: View {
             postalCodeScreen.tag(1)
             mpConfirmScreen.tag(2)
             topicsScreen.tag(3)
-            notificationsScreen.tag(4)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .overlay(alignment: .topTrailing) {
@@ -314,7 +310,7 @@ struct OnboardingView: View {
                     Text(NSLocalizedString("onboarding.topics.title", comment: ""))
                         .font(.epacDisplay.bold())
                         .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.topics.subtitle.v2", comment: ""))
+                    Text(NSLocalizedString("onboarding.topics.subtitle", comment: ""))
                         .font(.epacSubheadline)
                         .foregroundStyle(Color.epacText.secondary)
                         .multilineTextAlignment(.center)
@@ -354,71 +350,6 @@ struct OnboardingView: View {
                     Log.info("onboarding.step.3.skipped")
                 }
                 advance()
-            }
-            .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
-        }
-    }
-
-    // MARK: - Step 5: Notifications
-
-    private var notificationsScreen: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: EpacSpacing.xl) {
-                Image(systemName: "bell.badge.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.epacBrand.accent)
-                    .accessibilityHidden(true)
-
-                VStack(spacing: EpacSpacing.s) {
-                    Text(NSLocalizedString("onboarding.notifications.title", comment: ""))
-                        .font(.epacDisplay.bold())
-                        .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.notifications.subtitle.v2", comment: ""))
-                        .font(.epacSubheadline)
-                        .foregroundStyle(Color.epacText.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                VStack(alignment: .leading, spacing: EpacSpacing.m) {
-                    Toggle(NSLocalizedString("notifications.category.dailyDigest", comment: ""),
-                           isOn: $notifPrefs.dailyDigest)
-                    .font(.epacSubheadline)
-                    Toggle(NSLocalizedString("notifications.category.mpVotes", comment: ""),
-                           isOn: $notifPrefs.followedMPVotes)
-                    .font(.epacSubheadline)
-                    Toggle(NSLocalizedString("notifications.category.billStatus", comment: ""),
-                           isOn: $notifPrefs.followedBillStatusChanges)
-                    .font(.epacSubheadline)
-                }
-                .padding(EpacSpacing.m)
-                .background(Color.epacSurface.elevated)
-                .cornerRadius(12)
-                .padding(.horizontal, EpacSpacing.s)
-
-                Text(NSLocalizedString("onboarding.notifications.privacy", comment: ""))
-                    .font(.epacCaption)
-                    .foregroundStyle(Color.epacText.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, EpacSpacing.xl)
-            Spacer()
-
-            VStack(spacing: EpacSpacing.m) {
-                ContinueButton(label: NSLocalizedString("onboarding.notifications.allow", comment: "")) {
-                    Task {
-                        await notificationManager.requestAuthorization()
-                        Log.info("onboarding.step.4.completed notifAllowed=true")
-                        complete()
-                    }
-                }
-                Button(NSLocalizedString("onboarding.notifications.skip", comment: "")) {
-                    Log.info("onboarding.step.4.skipped")
-                    complete()
-                }
-                .font(.epacSubheadline)
-                .foregroundStyle(Color.epacText.secondary)
             }
             .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, 60)

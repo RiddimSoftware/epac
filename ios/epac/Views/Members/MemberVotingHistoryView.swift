@@ -97,9 +97,6 @@ struct MemberVotingHistoryView: View {
         isLoading = true
         loadFailed = false
         let mid = member.memberID
-        let countBefore = (try? modelContext.fetchCount(FetchDescriptor<MemberVote>(
-            predicate: #Predicate { $0.memberID == mid }
-        ))) ?? 0
         do {
             if forceRefresh {
                 try await fetch.refreshMemberVotes(memberID: mid)
@@ -116,21 +113,6 @@ struct MemberVotingHistoryView: View {
             .sorted { $0.voteID > $1.voteID }
             .map { mv in (mv: mv, rv: mv.vote) }
         isLoading = false
-
-        // Notify if new votes arrived and this member is followed.
-        // Only fires on the first sync (countBefore == 0) to avoid
-        // spamming notifications on every profile open.
-        if countBefore == 0, !votes.isEmpty,
-           MemberFollowStore.shared.isFollowing(mid),
-           let newest = votes.first {
-            let desc = newest.rv?.descriptionEn ?? "Vote #\(newest.mv.voteID)"
-            MemberNotificationScheduler.scheduleVoteNotification(
-                memberName: member.name,
-                ballot: newest.mv.recordedVote,
-                description: desc,
-                memberID: mid
-            )
-        }
     }
 }
 

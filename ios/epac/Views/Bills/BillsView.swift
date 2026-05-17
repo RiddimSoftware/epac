@@ -189,13 +189,7 @@ struct BillsView: View {
                     UserDefaults.standard.set(maxDate, forKey: "epac.bills.latestSeen")
                 }
             }
-            // Detect stage changes for followed bills and schedule notifications
-            let store = BillFollowStore.shared
-            let changes = store.detectChanges(in: bills)
-            for change in changes {
-                BillNotificationScheduler.schedule(change)
-            }
-            TopicNotificationScheduler.checkAndNotify(bills: bills)
+            BillFollowStore.shared.updateStoredState(in: bills)
         } catch {
             loadFailed = true
         }
