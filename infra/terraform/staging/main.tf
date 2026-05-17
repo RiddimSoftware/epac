@@ -7,6 +7,7 @@ locals {
     "bills",
     "search",
     "member-speeches",
+    "member-votes",
     "on-this-day",
     "riding-boundary",
     "health",
@@ -27,6 +28,7 @@ locals {
     "sittings"        = "1.0"
     "bills"           = "1.0"
     "member-speeches" = "1.0"
+    "member-votes"    = "1.0"
     "on-this-day"     = "1.0"
     "riding-boundary" = "1.0"
     "live-status"     = "2.0"
@@ -175,6 +177,12 @@ resource "aws_apigatewayv2_route" "member_speeches" {
   api_id    = var.apigw_api_id
   route_key = "GET /api/v1/members/{id}/speeches"
   target    = "integrations/${aws_apigatewayv2_integration.staging["member-speeches"].id}"
+}
+
+resource "aws_apigatewayv2_route" "member_votes" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/members/{id}/votes"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["member-votes"].id}"
 }
 
 resource "aws_apigatewayv2_route" "on_this_day" {

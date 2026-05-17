@@ -14,7 +14,11 @@ use (
 	./live-status
 	./loader
 	./manifest
+	./member-content
 	./member-speeches
+	./member-speeches-publisher
+	./member-votes
+	./member-votes-publisher
 	./members
 	./members-publisher
 	./observability

@@ -15,6 +15,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `Hansard` | A single sitting's parsed debate record, keyed by sitting date. |
 | `SubjectOfBusiness` | A labelled section within a Hansard (e.g., "Oral Questions"). |
 | `SpeechMessage` | One speaker's intervention within a subject, with text, word count, and member reference. |
+| `RecordedVote` | A House of Commons division record with date, bill reference, result, and member ballot. |
+| `MemberID` | The stable source identifier used to address a ParliamentMember across backend artifacts. |
 | `ParliamentMember` | An elected Member of Parliament with riding, party, and contact info. |
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
@@ -32,6 +34,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MemberRepository` | outbound | Resolve member records by ID, name, or riding. |
 | `SittingRepository` | outbound | List sitting dates and load speeches for a sitting date. |
 | `BillRepository` | outbound | List bills and resolve bill details by number. |
+| `MemberContentRepository` | outbound | Load per-member append-only content feeds such as speeches and recorded votes. |
 | `TopicPreferenceStore` | outbound | Read and persist a device's followed topics and granularity settings. |
 | `DeviceRegistrationClient` | outbound | Persist a device's APNs token and subscription preferences to the backend. |
 | `LiveParliamentStatusFetching` | outbound | Fetch the current House sitting status from the backend cache. |
@@ -279,13 +282,35 @@ Goal: Browse a member's paginated speech history, optionally filtered by topic.
 Inputs: Member ID, page number, optional topic filter.
 Outputs: Paginated list of SpeechMessages with stats (total speeches, average word count, top topic).
 Entities / values: SpeechMessage, ParliamentMember, ParliamentaryTopic.
-Ports: HansardRepository, MemberRepository.
-Primary adapters: MemberSpeechFeedViewModel, MemberSpeechFeedView, MemberSpeechService, member-speeches Lambda (GET /api/v1/members/{id}/speeches).
+Ports: MemberContentRepository.
+Primary adapters: MemberSpeechFeedViewModel, MemberSpeechFeedView, MemberSpeechService, member-speeches Lambda (GET /api/v1/members/{id}/speeches), S3ArtifactMemberContentRepository, member-speeches-publisher.
 Current implementation:
   ios/epac/Views/Members/MemberSpeechFeedViewModel.swift
   ios/epac/Views/Members/MemberSpeechFeedView.swift
   ios/epac/Util/MemberSpeechService.swift
   backend/member-speeches/main.go
+  backend/member-content/content.go
+  backend/member-speeches-publisher/main.go
+```
+
+---
+
+### ViewMemberVoteFeed
+
+```
+Actor: User (iOS app, Members tab -> member profile)
+Goal: Browse a member's recorded voting history.
+Inputs: Member ID, page number.
+Outputs: Paginated list of recorded votes with ballot, date, bill number, summary, and source URL.
+Entities / values: RecordedVote, ParliamentMember, MemberID.
+Ports: MemberContentRepository.
+Primary adapters: MemberVotingHistoryView, MemberVotingRecordView, member-votes Lambda (GET /api/v1/members/{id}/votes), S3ArtifactMemberContentRepository, member-votes-publisher.
+Current implementation:
+  ios/epac/Views/Members/MemberVotingHistoryView.swift
+  ios/epac/Views/Members/MemberVotingRecordView.swift
+  backend/member-votes/main.go
+  backend/member-content/content.go
+  backend/member-votes-publisher/main.go
 ```
 
 ---
