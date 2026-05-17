@@ -54,6 +54,7 @@ type Intervention struct {
 	SpeakerParty       string
 	SpeechTime         string
 	OrderTitle         string
+	SubjectID          string
 	SubjectTitle       string
 	SubjectQualifier   string
 	InterventionSeq    int
@@ -427,6 +428,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 	var (
 		currentOrderTitle string
 		inOrderTitle      bool
+		currentSubjectID  string
 		currentSubject    string
 		currentQualifier  string
 		currentTimestamp  string
@@ -468,6 +470,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 			case "OrderOfBusinessTitle":
 				inOrderTitle = true
 			case "SubjectOfBusiness":
+				currentSubjectID = attrValue(se, "id")
 				currentSubject = ""
 				currentQualifier = ""
 				subjectSeq = 0
@@ -498,6 +501,7 @@ func parseHansard(r io.Reader, filename string, meta SourceMetadata) ([]Interven
 					Id:                 attrValue(se, "id"),
 					SpeechTime:         currentTimestamp,
 					OrderTitle:         currentOrderTitle,
+					SubjectID:          currentSubjectID,
 					SubjectTitle:       currentSubject,
 					SubjectQualifier:   currentQualifier,
 					InterventionSeq:    subjectSeq,
@@ -772,7 +776,7 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			INSERT INTO speeches (
 				intervention_id, filename, speaker_name, content,
 				sitting_date, parliament_num, session_num, member_id,
-				subject_title, intervention_seq, word_count,
+				subject_id, subject_title, intervention_seq, word_count,
 				order_title, subject_qualifier, source_url, raw_xml_path,
 				source_etag, source_last_modified, language,
 				related_bill_ids, related_vote_ids, paragraph_ids,
@@ -780,7 +784,7 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
 				$12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
-				$22, $23
+				$22, $23, $24
 			)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				filename             = EXCLUDED.filename,
@@ -790,6 +794,7 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				parliament_num       = EXCLUDED.parliament_num,
 				session_num          = EXCLUDED.session_num,
 				member_id            = EXCLUDED.member_id,
+				subject_id           = EXCLUDED.subject_id,
 				subject_title        = EXCLUDED.subject_title,
 				intervention_seq     = EXCLUDED.intervention_seq,
 				word_count           = EXCLUDED.word_count,
@@ -807,7 +812,7 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				speech_time          = EXCLUDED.speech_time`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
-			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount,
+			inv.SubjectID, inv.SubjectTitle, inv.InterventionSeq, inv.WordCount,
 			inv.OrderTitle, inv.SubjectQualifier, inv.SourceURL, inv.RawXMLPath,
 			inv.SourceETag, inv.SourceLastModified, inv.Language,
 			inv.RelatedBillIDs, inv.RelatedVoteIDs, inv.ParagraphIDs,
@@ -849,12 +854,14 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 			parliament_num   INT,
 			session_num      INT,
 			member_id        TEXT,
+			subject_id       TEXT,
 			subject_title    TEXT,
 			intervention_seq INT,
 			word_count       INT
 		);
 
 		ALTER TABLE speeches
+		  ADD COLUMN IF NOT EXISTS subject_id          TEXT,
 		  ADD COLUMN IF NOT EXISTS order_title          TEXT,
 		  ADD COLUMN IF NOT EXISTS subject_qualifier    TEXT,
 		  ADD COLUMN IF NOT EXISTS source_url           TEXT,
@@ -875,6 +882,8 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 			ON speeches USING gin(to_tsvector('english', COALESCE(content, '')));
 		CREATE INDEX IF NOT EXISTS speeches_subject_idx
 			ON speeches(subject_title);
+		CREATE INDEX IF NOT EXISTS speeches_subject_id_idx
+			ON speeches(subject_id);
 		CREATE INDEX IF NOT EXISTS speeches_related_bill_ids_idx
 			ON speeches USING gin(related_bill_ids);
 	`)

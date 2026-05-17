@@ -20,6 +20,7 @@ type Intervention struct {
 	Id              string
 	MemberId        string
 	Speaker         string
+	SubjectID       string
 	SubjectTitle    string
 	InterventionSeq int
 	Content         string
@@ -163,9 +164,10 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 	)
 
 	var (
-		inSubjectTitle bool
-		currentSubject string
-		subjectSeq     int
+		inSubjectTitle   bool
+		currentSubjectID string
+		currentSubject   string
+		subjectSeq       int
 	)
 
 	var current *Intervention
@@ -200,12 +202,19 @@ func parseHansard(r io.Reader, filename string) ([]Intervention, error) {
 					}
 				}
 			case "SubjectOfBusiness":
+				currentSubjectID = ""
 				currentSubject = ""
 				subjectSeq = 0
+				for _, a := range se.Attr {
+					if a.Name.Local == "id" {
+						currentSubjectID = a.Value
+					}
+				}
 			case "SubjectOfBusinessTitle":
 				inSubjectTitle = true
 			case "Intervention":
 				current = &Intervention{
+					SubjectID:       currentSubjectID,
 					SubjectTitle:    currentSubject,
 					InterventionSeq: subjectSeq,
 					Language:        currentFloorLanguage,
@@ -388,8 +397,8 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 			INSERT INTO speeches (
 				intervention_id, filename, speaker_name, content,
 				sitting_date, parliament_num, session_num, member_id,
-				subject_title, intervention_seq, word_count, language
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+				subject_id, subject_title, intervention_seq, word_count, language
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			ON CONFLICT (intervention_id) DO UPDATE SET
 				speaker_name     = EXCLUDED.speaker_name,
 				content          = EXCLUDED.content,
@@ -397,13 +406,14 @@ func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Interve
 				parliament_num   = EXCLUDED.parliament_num,
 				session_num      = EXCLUDED.session_num,
 				member_id        = EXCLUDED.member_id,
+				subject_id       = EXCLUDED.subject_id,
 				subject_title    = EXCLUDED.subject_title,
 				intervention_seq = EXCLUDED.intervention_seq,
 				word_count       = EXCLUDED.word_count,
 				language         = EXCLUDED.language`,
 			inv.Id, inv.Filename, inv.Speaker, inv.Content,
 			date, parlNum, sessNum, memberId,
-			inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
+			inv.SubjectID, inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
 		)
 		valid++
 	}

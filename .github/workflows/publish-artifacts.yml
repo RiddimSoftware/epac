@@ -63,6 +63,25 @@ jobs:
           mkdir -p ./build/artifacts/healthz/v1
           printf 'ok\n' > ./build/artifacts/healthz/v1/healthz.txt
 
+      - name: Build Hansard subjects artifact
+        working-directory: backend/hansard-subjects-index
+        env:
+          DATABASE_URL_SECRET_ID: epac/database-url
+        run: |
+          set -euo pipefail
+          secret=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_URL_SECRET_ID" --query SecretString --output text)
+          if printf '%s' "$secret" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
+            database_url=$(printf '%s' "$secret" | jq -r '.DATABASE_URL')
+          else
+            database_url=$secret
+          fi
+          if [ -z "$database_url" ] || [ "$database_url" = "null" ]; then
+            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
+            exit 1
+          fi
+          DATABASE_URL="$database_url" go run . --output-dir ../../build/artifacts
+          find ../../build/artifacts -type f -name '*.metadata.json' -delete
+
       - name: Verify publishable artifacts
         id: publishable
         if: always()
