@@ -116,7 +116,11 @@ func TestDeterministicOrdering(t *testing.T) {
 			{Key: "a/v1/file.json", SizeBytes: 2, ETag: `"a"`, LastModified: ts},
 			{Key: "m/v1/file.json", SizeBytes: 3, ETag: `"m"`, LastModified: ts},
 		},
-		metas: map[string]manifest.ObjectMeta{},
+		metas: map[string]manifest.ObjectMeta{
+			"z/v1/file.json": {ContentHashSHA256: "sha256-z"},
+			"a/v1/file.json": {ContentHashSHA256: "sha256-a"},
+			"m/v1/file.json": {ContentHashSHA256: "sha256-m"},
+		},
 	}
 	uc := manifest.NewGenerateManifest(store)
 
@@ -146,7 +150,10 @@ func TestSchemaVersionExtraction(t *testing.T) {
 			{Key: "dataset/v3/all.json", SizeBytes: 100, ETag: `"x"`, LastModified: ts},
 			{Key: "other/flat.json", SizeBytes: 50, ETag: `"y"`, LastModified: ts},
 		},
-		metas: map[string]manifest.ObjectMeta{},
+		metas: map[string]manifest.ObjectMeta{
+			"dataset/v3/all.json": {ContentHashSHA256: "sha256-dataset"},
+			"other/flat.json":     {ContentHashSHA256: "sha256-other"},
+		},
 	}
 	uc := manifest.NewGenerateManifest(store)
 
@@ -165,5 +172,22 @@ func TestSchemaVersionExtraction(t *testing.T) {
 	}
 	if got.Artifacts[1].SchemaVersion != 1 {
 		t.Errorf("other/flat.json: schema_version got %d, want 1 (default)", got.Artifacts[1].SchemaVersion)
+	}
+}
+
+func TestMissingHashMetadataFails(t *testing.T) {
+	ts := time.Date(2026, 5, 17, 11, 30, 0, 0, time.UTC)
+	store := &mockStore{
+		objects: []manifest.ObjectInfo{
+			{Key: "members/v1/all.json", SizeBytes: 1000, ETag: `"abc"`, LastModified: ts},
+		},
+		// metas omits the key → HeadObject returns empty ContentHashSHA256
+		metas: map[string]manifest.ObjectMeta{},
+	}
+	uc := manifest.NewGenerateManifest(store)
+
+	err := uc.Execute(context.Background(), "test-bucket")
+	if err == nil {
+		t.Fatal("expected error for missing content_hash_sha256, got nil")
 	}
 }

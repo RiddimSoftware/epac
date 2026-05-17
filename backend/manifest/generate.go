@@ -90,6 +90,10 @@ func (g *GenerateManifest) buildEntries(ctx context.Context, bucket string, obje
 				results[idx] = result{err: fmt.Errorf("head %q: %w", o.Key, err)}
 				return
 			}
+			if meta.ContentHashSHA256 == "" {
+				results[idx] = result{err: fmt.Errorf("artifact %q is missing required x-amz-meta-content-hash-sha256 metadata; publish pipeline must set this field", o.Key)}
+				return
+			}
 			results[idx] = result{
 				entry: ManifestEntry{
 					Key:               o.Key,
