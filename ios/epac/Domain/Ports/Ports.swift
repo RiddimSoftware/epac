@@ -17,10 +17,6 @@ protocol HomeFeedRepository: Sendable {
     func fetchSenators(for provinceAbbrev: String) async throws -> [Senator]
 }
 
-protocol LiveParliamentStatusFetching: Sendable {
-    func fetchStatus() async throws -> LiveParliamentStatus
-}
-
 protocol OnThisDayFetching: Sendable {
     func fetch(date: Date, limit: Int) async throws -> [OnThisDayItem]
 }

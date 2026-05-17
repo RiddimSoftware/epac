@@ -209,20 +209,19 @@ Current implementation:
 ### FetchLiveParliamentStatus
 
 ```
-Actor: Scheduler (EventBridge, every 2 minutes during sitting windows) / User (iOS app, Home feed)
+Actor: Scheduler (EventBridge, every 2 minutes during sitting windows)
 Goal: Provide a fresh snapshot of whether the House is currently sitting and what business is in progress.
-Inputs: None (scheduler) / none (iOS poll).
-Outputs: LiveParliamentStatus (status, isSitting, businessType, currentItemTitle, currentSpeakerName, divisionInProgress, checkedAt).
+Inputs: None (EventBridge scheduled event).
+Outputs: LiveParliamentStatus persisted to PostgreSQL live_session table.
 Entities / values: LiveParliamentStatus.
-Ports: LiveParliamentStatusFetching, Clock.
-Primary adapters: live-status Lambda (EventBridge ingest + GET /api/v1/live), PostgreSQL live_session table (singleton), LiveParliamentService (iOS), HomeFeedView.
+Ports: Clock.
+Primary adapters: live-status Lambda (EventBridge ingest + GET /api/v1/live), PostgreSQL live_session table (singleton).
 Current implementation:
   backend/live-status/main.go
-  ios/epac/Util/LiveParliamentService.swift
-  ios/epac/Views/Home/HomeFeedView.swift
 ```
 
 > Architecture rationale: `docs/architecture/live-status-backend-epac165.md`.
+> iOS client removed in EPAC-1919 (Aurora teardown). Re-introduction tracked in EPAC-1928.
 
 ---
 
