@@ -13,7 +13,7 @@ import SwiftUI
 
 // MARK: - Bill
 
-struct Bill: Identifiable, Codable {
+struct Bill: Identifiable, Codable, Sendable {
     let id: String          // bill number e.g. "C-50", "S-12"
     let number: String      // same as id
     let title: String
@@ -30,7 +30,7 @@ struct Bill: Identifiable, Codable {
 
 // MARK: - BillStage
 
-struct BillStage: Identifiable, Codable {
+struct BillStage: Identifiable, Codable, Sendable {
     let id: String
     let name: String
     let completedDate: Date?
@@ -39,7 +39,7 @@ struct BillStage: Identifiable, Codable {
 
 // MARK: - BillStatus
 
-enum BillStatus: String, Codable, Equatable {
+enum BillStatus: String, Codable, Equatable, Sendable {
     case inProgress  = "InProgress"
     case royalAssent = "RoyalAssent"
     case defeated    = "Defeated"
@@ -64,7 +64,7 @@ enum BillStatus: String, Codable, Equatable {
 
 // MARK: - BillType
 
-enum BillType: String, Codable, Equatable {
+enum BillType: String, Codable, Equatable, Sendable {
     case houseGovernment   = "HouseGovernment"
     case privateMember     = "PrivateMember"
     case senateGovernment  = "SenateGovernment"

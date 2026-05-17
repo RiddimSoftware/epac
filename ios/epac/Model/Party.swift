@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum Party: Codable, CaseIterable, Identifiable {
+enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var id: Self { self }
 
 	case conservative

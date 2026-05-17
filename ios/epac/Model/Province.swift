@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum Province: String, Codable, CaseIterable, Identifiable {
+enum Province: String, Codable, CaseIterable, Identifiable, Sendable {
 	var id: Self { self }
 
 	case Alberta = "Alberta"
