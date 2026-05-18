@@ -110,6 +110,36 @@ struct DomainBoundaryTests {
 		#expect(member.domainDTO == dto)
 		#expect(member.initials == "JT")
 	}
+
+	@Test func appDoesNotContainWebToAppTelemetryBeacons() throws {
+		let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+		let sourceRoot = testsDirectory.deletingLastPathComponent().appendingPathComponent("epac")
+		let forbiddenSnippets = [
+			"/app/telemetry/",
+			"NetworkWebToAppTelemetryRecorder",
+			"URLSession.shared.dataTask(with: url).resume()",
+			#"URLQueryItem(name: "event", value: "app-open")"#,
+			#"URLQueryItem(name: "event", value: "event_card_tap")"#
+		]
+
+		let swiftFiles = try allSwiftFiles(in: sourceRoot)
+		let violations = try swiftFiles.flatMap { fileURL -> [String] in
+			let source = try String(contentsOf: fileURL, encoding: .utf8)
+			return forbiddenSnippets.compactMap { snippet in
+				source.contains(snippet) ? "\(fileURL.lastPathComponent): \(snippet)" : nil
+			}
+		}
+
+		#expect(violations.isEmpty, "Web-to-app telemetry beacons remain in app sources: \(violations.joined(separator: ", "))")
+	}
+
+	private func allSwiftFiles(in location: URL) throws -> [URL] {
+		guard let enumerator = FileManager.default.enumerator(at: location, includingPropertiesForKeys: nil) else {
+			throw BoundaryCoverageError.missingProtectedPath(location.path)
+		}
+
+		return (enumerator.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
+	}
 }
 
 private enum BoundaryCoverageError: Error {
