@@ -274,7 +274,7 @@ Current implementation:
 ### GetRidingBoundary
 
 ```
-Actor: User (iOS app, riding map surface) / Backend API caller
+Actor: Backend API caller
 Goal: Read a simplified federal riding boundary by slug.
 Inputs: Riding slug.
 Outputs: RidingBoundary GeoJSON payload with source metadata.
@@ -287,6 +287,7 @@ Current implementation:
 ```
 
 > **Adapter note:** EPAC-1916 moves provider fetch and Douglas-Peucker simplification to the publisher. The Lambda reads `ridings/v1/boundary/{slug}.json`; `ridings/v1/index.json` lists all published slugs.
+> **iOS note:** EPAC-1935 removed the MP-profile riding-boundary map surface, so the iOS app no longer calls this use case.
 
 ---
 

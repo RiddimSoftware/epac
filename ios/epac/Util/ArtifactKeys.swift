@@ -11,8 +11,8 @@ extension ArtifactKey {
     static let billsAll = ArtifactKey("bills/v1/all.json")
     static let calendarHouse = ArtifactKey("calendar/v1/house.ics")
 
-    static func ridingBoundary(slug: String) -> ArtifactKey {
-        ArtifactKey("ridings/v1/boundary/\(slug).json")
+    static func memberSpeeches(memberID: Int) -> ArtifactKey {
+        ArtifactKey("members/v1/by-id/\(memberID)/speeches.json")
     }
 
     static func sittingSpeeches(date: String) -> ArtifactKey {
