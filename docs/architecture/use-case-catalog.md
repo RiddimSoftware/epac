@@ -67,13 +67,12 @@ Inputs: Selected date (defaults to today), calendar window (visible month range)
 Outputs: List of sittings with subjects, sitting status (scheduled / cancelled / in-progress).
 Entities / values: Hansard, SubjectOfBusiness, LiveParliamentStatus.
 Ports: HansardRepository, LiveParliamentStatusFetching, Clock.
-Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing), LiveParliamentService.
+Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing).
 Current implementation:
   ios/epac/Views/Calendar/SittingCalendarViewModel.swift
   ios/epac/Views/Calendar/SittingCalendarView.swift
   ios/epac/Views/Calendar/SittingView.swift
   ios/epac/Views/Calendar/SittingViewModel.swift
-  ios/epac/Util/LiveParliamentService.swift
   ios/epac/Model/Fetch.swift (downloadCalendar)
 ```
 
@@ -335,11 +334,10 @@ Inputs: Topic selection, notification granularity (every speech / summary only).
 Outputs: Updated followed-topics list; registration sent to backend.
 Entities / values: ParliamentaryTopic, DeviceSubscription.
 Ports: TopicPreferenceStore, DeviceRegistrationClient.
-Primary adapters: TopicsView, TopicFollowStore, NotificationManager, device-register Lambda.
+Primary adapters: TopicsView, TopicFollowStore, device-register Lambda.
 Current implementation:
   ios/epac/Views/Topics/TopicsView.swift
   ios/epac/Util/TopicFollowStore.swift
-  ios/epac/Util/NotificationManager.swift
   backend/device-register/main.go
   backend/device-register/application/usecase.go
 ```
@@ -361,7 +359,7 @@ Primary adapters: Shared topic taxonomy parser.
 Current implementation:
   shared/topic-taxonomy/parliamentary_topics.json
   backend/topic-notifier/topic_taxonomy_gen.go
-  backend/search/topic_taxonomy_gen.go
+  backend/search/internal/usecase/topic_taxonomy_gen.go
   ios/epac/Model/ParliamentaryTopic.swift
 ```
 
@@ -378,10 +376,8 @@ Inputs: APNs device token, current topic/bill/member subscription payload.
 Outputs: Upserted DeviceSubscription record (backend); stored token in device keychain/UserDefaults.
 Entities / values: DeviceSubscription.
 Ports: DeviceRegistrationClient.
-Primary adapters: NotificationManager (token receipt), NotificationPreferenceStore, device-register Lambda (POST /api/v1/device/register), PostgreSQL device_subscriptions table.
+Primary adapters: device-register Lambda (POST /api/v1/device/register), PostgreSQL device_subscriptions table.
 Current implementation:
-  ios/epac/Util/NotificationManager.swift
-  ios/epac/Util/NotificationPreferenceStore.swift
   backend/device-register/main.go
   backend/device-register/application/usecase.go   ← clean use-case boundary exists here
   backend/device-register/repository/postgres.go
@@ -474,12 +470,9 @@ Inputs: Sitting date, ingested speeches from the speeches table.
 Outputs: APNs pushes delivered to matched device tokens; delivery errors logged.
 Entities / values: ParliamentaryTopic, DeviceSubscription, SpeechMessage.
 Ports: HansardRepository, TopicPreferenceStore, NotificationDelivering, Clock.
-Primary adapters: topic-notifier Lambda, PostgreSQL device_subscriptions table, APNs HTTP/2 sender, TopicNotificationScheduler (iOS local fallback), MemberNotificationScheduler (iOS, member-specific alerts).
+Primary adapters: topic-notifier Lambda, PostgreSQL device_subscriptions table, APNs HTTP/2 sender.
 Current implementation:
   backend/topic-notifier/main.go
-  ios/epac/Util/TopicNotificationScheduler.swift   ← local fallback only
-  ios/epac/Util/MemberNotificationScheduler.swift  ← member-activity local alerts
-  ios/epac/Util/NotificationManager.swift          ← remote notification receiver
 ```
 
 > **Dependency:** Uses `MatchParliamentaryTopics` and the canonical taxonomy rather than an adapter-local copy.
@@ -516,7 +509,7 @@ Inputs: Pipeline name, upstream source data, artifacts bucket, publish cadence.
 Outputs: `statistics/v1/<pipeline-name>/<dataset>.json` objects with SHA-256 content-hash metadata.
 Entities / values: ArtifactKey.
 Ports: StatisticsSink, Clock.
-Primary adapters: statistics pipeline CLIs, statistics_artifacts.py, boto3 S3 client, publish-artifacts workflow.
+Primary adapters: statistics pipeline CLIs, statistics_artifacts.py, boto3 S3 client.
 Current implementation:
   backend/cpi-statistics/cpi_statistics.py
   backend/fiscal-monitor/fiscal_monitor.py
@@ -527,10 +520,9 @@ Current implementation:
   backend/corrections-statistics/corrections_statistics.py
   backend/transport-safety-statistics/transport_safety_statistics.py
   backend/statistics_artifacts.py
-  .github/workflows/publish-artifacts.yml
 ```
 
-> Boundary rule: pipeline parsers own authoritative-source fetching and JSON composition; `statistics_artifacts.py` owns S3 keys, uploads, cache headers, and content-hash metadata. CloudFront invalidation and manifest generation remain in the workflow.
+> Boundary rule: pipeline parsers own authoritative-source fetching and JSON composition; `statistics_artifacts.py` owns S3 keys, uploads, cache headers, and content-hash metadata.
 
 ---
 
@@ -543,14 +535,13 @@ Inputs: Date window, parliament-count window (default current parliament plus pr
 Outputs: Deterministic subjects JSON artifact with schema version, generation time, window, and subject rows.
 Entities / values: Hansard, SubjectOfBusiness.
 Ports: SubjectsRepository, Clock.
-Primary adapters: hansard-subjects-index CLI, PostgreSQL speeches table, publish-artifacts workflow.
+Primary adapters: hansard-subjects-index CLI, PostgreSQL speeches table.
 Current implementation:
   backend/hansard-subjects-index/application/usecase.go
   backend/hansard-subjects-index/repository/postgres.go
-  .github/workflows/publish-artifacts.yml
 ```
 
-> Boundary rule: artifact publishing, S3, CloudFront, and manifest concerns stay in the GitHub Actions workflow; the use case only reads source subjects and emits deterministic JSON.
+> Boundary rule: artifact publishing, S3, CloudFront, and manifest concerns stay outside the use case; the use case only reads source subjects and emits deterministic JSON.
 
 ---
 

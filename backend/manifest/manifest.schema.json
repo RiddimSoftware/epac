@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://epac.riddimsoftware.com/schemas/manifest.schema.json",
+  "title": "epac artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "artifacts"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "size_bytes",
+        "content_hash_sha256",
+        "etag",
+        "last_modified",
+        "schema_version"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/][^\\n\\r]*$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "content_hash_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "etag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "last_modified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

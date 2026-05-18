@@ -1,12 +1,16 @@
 package manifest_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"epac/manifest"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 type mockStore struct {
@@ -189,5 +193,64 @@ func TestMissingHashMetadataFails(t *testing.T) {
 	err := uc.Execute(context.Background(), "test-bucket")
 	if err == nil {
 		t.Fatal("expected error for missing content_hash_sha256, got nil")
+	}
+}
+
+func TestManifestContractSampleMatchesWriterAndSchema(t *testing.T) {
+	ts := time.Date(2026, 5, 17, 11, 30, 0, 0, time.UTC)
+	store := &mockStore{
+		objects: []manifest.ObjectInfo{
+			{Key: "members/v1/all.json", SizeBytes: 123456, ETag: `"abc123"`, LastModified: ts},
+			{Key: "sittings/v1/all.json", SizeBytes: 45678, ETag: `"def456"`, LastModified: ts},
+		},
+		metas: map[string]manifest.ObjectMeta{
+			"members/v1/all.json":  {ContentHashSHA256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+			"sittings/v1/all.json": {ContentHashSHA256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"},
+		},
+	}
+	uc := manifest.NewGenerateManifestWithClock(store, func() time.Time {
+		return time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
+	})
+
+	if err := uc.Execute(context.Background(), "test-bucket"); err != nil {
+		t.Fatalf("generate manifest: %v", err)
+	}
+
+	samplePath := filepath.Join("testdata", "manifest.sample.json")
+	want, err := os.ReadFile(samplePath)
+	if err != nil {
+		t.Fatalf("read sample manifest: %v", err)
+	}
+	if !bytes.Equal(bytes.TrimSpace(store.written), bytes.TrimSpace(want)) {
+		t.Fatalf("generated manifest does not match %s\n--- got ---\n%s\n--- want ---\n%s", samplePath, store.written, want)
+	}
+
+	var decoded manifest.Manifest
+	if err := json.Unmarshal(want, &decoded); err != nil {
+		t.Fatalf("sample does not decode as manifest.Manifest: %v", err)
+	}
+
+	schemaData, err := os.ReadFile("manifest.schema.json")
+	if err != nil {
+		t.Fatalf("read manifest schema: %v", err)
+	}
+	var schemaDoc any
+	if err := json.Unmarshal(schemaData, &schemaDoc); err != nil {
+		t.Fatalf("decode manifest schema: %v", err)
+	}
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("manifest.schema.json", schemaDoc); err != nil {
+		t.Fatalf("add schema resource: %v", err)
+	}
+	schema, err := compiler.Compile("manifest.schema.json")
+	if err != nil {
+		t.Fatalf("compile manifest schema: %v", err)
+	}
+	var sample any
+	if err := json.Unmarshal(want, &sample); err != nil {
+		t.Fatalf("decode sample for schema validation: %v", err)
+	}
+	if err := schema.Validate(sample); err != nil {
+		t.Fatalf("sample does not validate against manifest.schema.json: %v", err)
 	}
 }

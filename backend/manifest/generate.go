@@ -30,6 +30,12 @@ func NewGenerateManifest(store ArtifactStore) *GenerateManifest {
 	return &GenerateManifest{store: store, now: time.Now}
 }
 
+// NewGenerateManifestWithClock creates a GenerateManifest use case with an
+// injected clock for deterministic contract tests.
+func NewGenerateManifestWithClock(store ArtifactStore, now func() time.Time) *GenerateManifest {
+	return &GenerateManifest{store: store, now: now}
+}
+
 // Execute lists all artifacts in bucket, builds a deterministic manifest, and
 // writes manifest.json back to the bucket root.
 func (g *GenerateManifest) Execute(ctx context.Context, bucket string) error {

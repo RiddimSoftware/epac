@@ -59,4 +59,12 @@ opt_in_rules:
   - redundant_nil_coalescing    # Catches `?? nil` no-ops.
   - closure_end_indentation     # Auto-fixable; keeps trailing closures aligned.
 
+custom_rules:
+  application_layer_framework_imports:
+    name: Application Layer Framework Imports
+    included: "ios/epac/Application/.*\\.swift"
+    regex: "^\\s*import\\s+(Foundation\\.URLSession|UIKit|SwiftData|SwiftUI)\\b"
+    message: "This file is in the Application layer. Framework imports must move to ios/epac/Util/ or ios/epac/Views/. See docs/architecture/use-case-catalog.md."
+    severity: error
+
 reporter: "xcode"
