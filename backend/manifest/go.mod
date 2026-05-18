@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 )
 
 require (
@@ -25,4 +26,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.1 // indirect
 	github.com/aws/smithy-go v1.25.1 // indirect
+	golang.org/x/text v0.29.0 // indirect
 )

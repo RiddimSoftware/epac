@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'backend/**'
+      - 'docs/architecture/use-case-catalog.md'
+      - 'scripts/ci/check_catalog_drift.sh'
+      - 'scripts/ci/check_go_dependency_rule.sh'
       - '.github/workflows/backend-pr.yml'
   workflow_dispatch:
 
@@ -12,6 +15,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  architecture:
+    name: Architecture enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backend Dependency Rule
+        run: scripts/ci/check_go_dependency_rule.sh
+      - name: Catalog drift
+        run: scripts/ci/check_catalog_drift.sh
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -37,6 +50,7 @@ jobs:
           - calendar
           - config
           - hansard-subjects-index
+          - manifest
           - openapi
           - members-publisher
           - sittings-publisher
