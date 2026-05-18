@@ -9,7 +9,6 @@ struct ReviewRequestManagerTests {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         defaults.set(now.addingTimeInterval(-8 * 86_400), forKey: "epac.review.installDate")
         defaults.set(6, forKey: "epac.review.openCount")
-        defaults.set(true, forKey: "epac.review.remoteConfig.enabled")
 
         var requestCount = 0
         var events: [(String, [String: String])] = []
@@ -17,7 +16,6 @@ struct ReviewRequestManagerTests {
         let manager = ReviewRequestManager(
             defaults: defaults,
             now: { now },
-            fetchConfigData: { _ in Data() },
             requestReview: {
                 requestCount += 1
                 return true
@@ -42,7 +40,6 @@ struct ReviewRequestManagerTests {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         defaults.set(now.addingTimeInterval(-8 * 86_400), forKey: "epac.review.installDate")
         defaults.set(6, forKey: "epac.review.openCount")
-        defaults.set(true, forKey: "epac.review.remoteConfig.enabled")
 
         var requestCount = 0
         var payloads: [[String: String]] = []
@@ -50,7 +47,6 @@ struct ReviewRequestManagerTests {
         let manager = ReviewRequestManager(
             defaults: defaults,
             now: { now },
-            fetchConfigData: { _ in Data() },
             requestReview: {
                 requestCount += 1
                 return true
@@ -68,49 +64,37 @@ struct ReviewRequestManagerTests {
         #expect(payloads.last?["trigger_source"] == "followed_mp_profile_repeat_view")
     }
 
-    @Test func remoteConfigFetchEnablesPrompting() async throws {
+    @Test func appOpenUpdatesLocalSessionState() async throws {
         let defaults = makeDefaults()
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        defaults.set(now.addingTimeInterval(-8 * 86_400), forKey: "epac.review.installDate")
-        defaults.set(5, forKey: "epac.review.openCount")
-
-        var requestCount = 0
 
         let manager = ReviewRequestManager(
             defaults: defaults,
             now: { now },
-            fetchConfigData: { _ in
-                Data(#"{"features":{"review_prompt":true}}"#.utf8)
-            },
-            requestReview: {
-                requestCount += 1
-                return true
-            },
+            requestReview: { true },
             telemetryRecorder: { _, _ in }
         )
 
         manager.recordAppOpen()
-        await manager.refreshRemoteConfigIfNeeded()
 
-        manager.recordFollowedMemberProfileView(memberID: 7)
-        manager.recordFollowedMemberProfileView(memberID: 7)
-
-        #expect(requestCount == 1)
+        #expect(defaults.integer(forKey: "epac.review.openCount") == 1)
+        #expect(defaults.integer(forKey: "epac.review.sessionNumber") == 1)
+        #expect(defaults.stringArray(forKey: "epac.review.sessionThreads") == [])
+        #expect(defaults.dictionary(forKey: "epac.review.memberProfileViews") == nil)
     }
 
-    @Test func disabledRemoteConfigBlocksPrompting() async throws {
+    @Test func recentPromptStillBlocksLocalPrompting() async throws {
         let defaults = makeDefaults()
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         defaults.set(now.addingTimeInterval(-8 * 86_400), forKey: "epac.review.installDate")
         defaults.set(6, forKey: "epac.review.openCount")
-        defaults.set(false, forKey: "epac.review.remoteConfig.enabled")
+        defaults.set(now.addingTimeInterval(-30 * 86_400), forKey: "epac.review.lastPromptDate")
 
         var requestCount = 0
 
         let manager = ReviewRequestManager(
             defaults: defaults,
             now: { now },
-            fetchConfigData: { _ in Data() },
             requestReview: {
                 requestCount += 1
                 return true
