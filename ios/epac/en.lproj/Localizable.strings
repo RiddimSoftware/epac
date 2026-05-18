@@ -386,8 +386,6 @@
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
 "home.seeAllDebates" = "Open Parliament tab →";
-"home.today.offline" = "Offline — showing cached Parliament data";
-"home.today.offlineCache" = "Offline — showing cached data from %@";
 "home.refresh.offlineError" = "Unable to refresh — you're offline";
 "home.today.latestVote" = "Latest recorded vote";
 "home.today.latestSpeech" = "Recent speech from your MP";

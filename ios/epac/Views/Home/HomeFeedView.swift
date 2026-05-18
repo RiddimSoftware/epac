@@ -145,13 +145,6 @@ struct HomeFeedView: View {
             VStack(alignment: .leading, spacing: EpacSpacing.m) {
                 todayHeader
 
-                if !networkMonitor.isConnected {
-                    Label(offlineCacheText, systemImage: "wifi.slash")
-                        .font(.epacCaption)
-                        .foregroundStyle(Color.epacStatus.warning)
-                        .accessibilityIdentifier("homeTodayOfflineState")
-                }
-
                 Divider()
 
                 if let vote = latestVote {
@@ -819,21 +812,6 @@ struct HomeFeedView: View {
 
     private var hasPersonalizedContext: Bool {
         postalCodeStore.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
-    }
-
-    private var offlineCacheText: String {
-        let syncDates = [
-            UserDefaults.standard.object(forKey: "epac.sync.hansard") as? Date,
-            UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
-            latestHansardDate
-        ].compactMap { $0 }
-        guard let lastSync = syncDates.max() else {
-            return NSLocalizedString("home.today.offline", comment: "")
-        }
-        return String(
-            format: NSLocalizedString("home.today.offlineCache", comment: ""),
-            lastSync.formatted(date: .abbreviated, time: .shortened)
-        )
     }
 
     private func voteSummary(_ vote: HomeVoteRecord, memberVote: HomeMemberVoteRecord?) -> String {
