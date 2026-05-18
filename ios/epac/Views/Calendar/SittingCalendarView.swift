@@ -26,6 +26,7 @@ struct SittingCalendarView: View {
 	@State private var isExportingCalendar = false
 	@State private var exportStatusMessage = ""
 	@State private var isShowingExportStatus = false
+	@State private var isTodayVisible = true
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -94,11 +95,26 @@ struct SittingCalendarView: View {
 				.onDaySelection({ day in
 					selectedDate = day.components
 				})
+				.onScroll({ visibleDayRange, _ in
+					updateTodayVisibility(for: visibleDayRange)
+				})
 				.interMonthSpacing(15)
 				.verticalDayMargin(8)
 				.horizontalDayMargin(8)
 				.padding([.leading, .trailing, .bottom])
+				.background(CalendarScrollsToTopDisabler())
 			VStack(alignment: .leading, spacing: 12) {
+				Button {
+					scrollToToday(animated: true)
+				} label: {
+					Label("Today", systemImage: "calendar.circle")
+						.frame(maxWidth: .infinity)
+				}
+				.buttonStyle(.borderedProminent)
+				.disabled(isTodayVisible)
+				.accessibilityHint(isTodayVisible ? "Today is already visible" : "Scrolls to today's date")
+				.accessibilityIdentifier("parliament-calendar-today-button")
+
 				HStack(spacing: 12) {
 					RoundedRectangle(cornerRadius: 6)
 						.fill(Color.appPositive)
@@ -126,12 +142,7 @@ struct SittingCalendarView: View {
 							.accessibilityHidden(true)
 						Text("Today")
 					}
-					.contentShape(Rectangle())
-					.onTapGesture {
-						calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
-					}
-					.accessibilityLabel("Today — tap to scroll to current month")
-					.accessibilityAddTraits(.isButton)
+					.accessibilityLabel("Today")
 
 					HStack(spacing: 8) {
 						RoundedRectangle(cornerRadius: 4)
@@ -154,7 +165,7 @@ struct SittingCalendarView: View {
 			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
 			if viewModel.dates.isEmpty {
 				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
-				calendarViewProxy.scrollToMonth(containing: .now, scrollPosition: .firstFullyVisiblePosition, animated: false)
+				scrollToToday(animated: false)
 			}
 			selectedDate = nil
 		}
@@ -258,29 +269,44 @@ struct SittingCalendarView: View {
 				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
-				NavigationLink(destination: OrderPaperView()) {
-					Label("Order Paper", systemImage: "doc.text.below.ecg")
-				}
-			}
-			ToolbarItem(placement: .topBarLeading) {
-				HStack(spacing: 4) {
+				Menu {
+					NavigationLink(destination: OrderPaperView()) {
+						Label("Order Paper", systemImage: "doc.text.below.ecg")
+					}
 					NavigationLink(destination: CommitteesView()) {
 						Label(
 							NSLocalizedString("committees.navTitle", comment: ""),
 							systemImage: "person.3"
 						)
 					}
-					.accessibilityLabel(NSLocalizedString("committees.navTitle", comment: ""))
 					NavigationLink(destination: OntarioDebatesView()) {
 						Label(
 							NSLocalizedString("ontario.debates.toolbarLabel", comment: ""),
 							systemImage: "building.2"
 						)
 					}
-					.accessibilityLabel(NSLocalizedString("ontario.debates.toolbarLabel", comment: ""))
+				} label: {
+					Image(systemName: "line.3.horizontal")
 				}
+				.accessibilityLabel("More parliamentary links")
 			}
 		}
+	}
+
+	private func updateTodayVisibility(for visibleDayRange: DayComponentsRange) {
+		let calendar = Calendar.current
+		guard let visibleStart = calendar.date(from: visibleDayRange.lowerBound.components),
+		      let visibleEnd = calendar.date(from: visibleDayRange.upperBound.components),
+		      let today = calendar.date(from: todayComponents) else {
+			isTodayVisible = false
+			return
+		}
+		isTodayVisible = visibleStart <= today && today <= visibleEnd
+	}
+
+	private func scrollToToday(animated: Bool) {
+		calendarViewProxy.scrollToDay(containing: .now, scrollPosition: .centered, animated: animated)
+		isTodayVisible = true
 	}
 
 	private func addNextSittingsToCalendar() async {
