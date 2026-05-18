@@ -543,7 +543,7 @@ ridings/v1/boundary/{slug}.json           # simplified boundary per riding (~20-
 
 **Proposed JSON schema:** Matches `#/components/schemas/RidingBoundary` in OpenAPI. No structural changes. Pre-built `source_note`, `representation_order`, `extent`, and `centroid` are computed at publish time rather than at Lambda runtime.
 
-**iOS runtime path after EPAC-1939:** `ios/epac/Util/RidingBoundaryService.swift` calls the backend API at `/api/v1/ridings/{slug}/boundary`. Do not add a direct iOS S3/CloudFront artifact reader.
+**iOS runtime path after EPAC-1939:** None; the MP-profile riding-boundary map surface and `RidingBoundaryService.swift` were retired in EPAC-1935. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
