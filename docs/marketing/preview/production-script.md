@@ -28,7 +28,7 @@ The script builds the app, boots the 6.9-inch simulator, starts `simctl recordVi
 | Timestamp | Screen | Automated scene | Text overlay for post-production |
 |---|---|---|---|
 | 0:00-0:05 | Home feed | Today in Parliament cards | "Your MP. Everything they do." |
-| 0:05-0:11 | My MP profile | MP activity and vote record | "Every word. Every vote." |
+| 0:05-0:11 | My MP profile | MP activity and vote record | "Every vote. Every detail." |
 | 0:11-0:17 | Debate / SpeechView | Hansard-style speech bubbles | "Hansard. Finally readable." |
 | 0:17-0:22 | Lobbying connections | Communications list | "Who's influencing them?" |
 | 0:22-0:27 | Vote detail | MP breakdown and debate link | "They said it. Then voted against it." |
