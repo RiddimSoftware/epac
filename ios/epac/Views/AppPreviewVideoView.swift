@@ -213,13 +213,13 @@ private struct AppPreviewPhoneFrame: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 12) {
-                        speechBubble("Every word. Every vote.")
-                            .accessibilityIdentifier("mp-profile-speech-row-0")
-                        voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "mp-profile-speech-list")
+                        voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "mp-profile-vote-row-0")
                             .accessibilityElement(children: .combine)
+                        activityRow(icon: "dollarsign.circle.fill", title: "Expenses", detail: "Quarterly House disclosures")
+                        activityRow(icon: "envelope.fill", title: "Contact", detail: "Official Hill and constituency offices")
                     }
                     .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("mp-profile-speech-list")
+                    .accessibilityIdentifier("mp-profile-civic-list")
                 }
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("mp-profile-scroll")
@@ -476,7 +476,7 @@ private struct AppPreviewScene {
             durationNanoseconds: 3_000_000_000
         ),
         AppPreviewScene(
-            headline: "Every word. Every vote.",
+            headline: "Every vote. Every detail.",
             tabTitle: "Members",
             systemImage: "person.2.fill",
             kind: .mpProfile,
@@ -532,8 +532,8 @@ private struct AppPreviewScene {
         "home-feed-today-card",
         "home-feed-my-mp-link",
         "mp-profile-scroll",
-        "mp-profile-speech-list",
-        "mp-profile-speech-row-0",
+        "mp-profile-civic-list",
+        "mp-profile-vote-row-0",
         "speech-view-scroll",
         "parliament-sitting-row-0",
         "lobbying-list-scroll",

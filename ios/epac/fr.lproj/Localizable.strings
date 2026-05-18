@@ -511,7 +511,7 @@
 
 "onboarding.what.title" = "L'application du Parlement canadien";
 "onboarding.what.subtitle" = "Fondée sur le dossier officiel du gouvernement.";
-"onboarding.what.point1" = "Chaque discours de votre député — du hansard officiel";
+"onboarding.what.point1" = "Le profil, la circonscription et les coordonnées de votre député — à partir des dossiers officiels";
 "onboarding.what.point2" = "Chaque vote — de l'API officielle de Parliament.ca";
 "onboarding.what.point3" = "Qui les influence — du registre du commissaire au lobbying";
 "onboarding.what.trust" = "Toutes les sources officielles du gouvernement. Rien de généré ou d'éditorialisé.";
@@ -522,7 +522,7 @@
 
 "onboarding.promise.title" = "Vous êtes prêt";
 "onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
-"onboarding.promise.point1" = "Les votes et discours de votre député, en temps réel";
+"onboarding.promise.point1" = "Les votes et mises à jour de responsabilité de votre député, en temps réel";
 "onboarding.promise.point2" = "Un accueil adapté à vos %d sujet(s)";
 "onboarding.promise.point3" = "Aucun compte requis. Aucune donnée vendue. Sans publicité.";
 "onboarding.promise.start" = "Commencer à explorer →";
@@ -683,13 +683,13 @@
 "appStore.screenshot.page2.headline" = "Voyez chaque vote de votre député";
 "appStore.screenshot.page2.subtitle" = "Chaque vote par appel nominal, regroupé par pour, contre, jumelé et absent.";
 "appStore.screenshot.page3.headline" = "Tout sur votre député";
-"appStore.screenshot.page3.subtitle" = "Discours, votes, dépenses et coordonnées dans un seul profil sourcé.";
+"appStore.screenshot.page3.subtitle" = "Votes, dépenses, lobbying et coordonnées dans un seul profil sourcé.";
 "appStore.screenshot.page4.headline" = "Suivez un projet de loi de A à Z";
 "appStore.screenshot.page4.subtitle" = "Chaque étape, de la 1re lecture au comité, aux votes et à la sanction royale.";
 "appStore.screenshot.page5.headline" = "Voyez qui influence votre député";
 "appStore.screenshot.page5.subtitle" = "Les communications de lobbying restent liées à leur registre public.";
 "appStore.screenshot.page6.headline" = "Contactez votre député en un geste";
-"appStore.screenshot.page6.subtitle" = "Partez d'un vrai vote ou débat en gardant le contexte officiel joint.";
+"appStore.screenshot.page6.subtitle" = "Partez d'un vrai vote en gardant le contexte officiel joint.";
 "appStore.screenshot.overview.header" = "Aujourd'hui au Parlement";
 "appStore.screenshot.overview.metric1.label" = "Projets";
 "appStore.screenshot.overview.metric1.detail" = "2e lecture";
@@ -716,12 +716,12 @@
 "appStore.screenshot.votes.source" = "Source : Votes par appel nominal du Parlement du Canada";
 "appStore.screenshot.myMP.header" = "Mon député";
 "appStore.screenshot.myMP.party" = "Libéral";
-"appStore.screenshot.myMP.row1.title" = "Discours";
-"appStore.screenshot.myMP.row1.detail" = "2e lecture sur la transparence des prix alimentaires";
-"appStore.screenshot.myMP.row2.title" = "Question";
-"appStore.screenshot.myMP.row2.detail" = "Transparence des prix d'épicerie";
+"appStore.screenshot.myMP.row1.title" = "Vote";
+"appStore.screenshot.myMP.row1.detail" = "Division no 926 — vote pour";
+"appStore.screenshot.myMP.row2.title" = "Dépenses";
+"appStore.screenshot.myMP.row2.detail" = "Divulgations trimestrielles de la Chambre";
 "appStore.screenshot.myMP.row3.title" = "Suivi";
-"appStore.screenshot.myMP.row3.detail" = "Gardez les votes et débats à portée de main";
+"appStore.screenshot.myMP.row3.detail" = "Gardez l'activité officielle à portée de main";
 "appStore.screenshot.bill.header" = "Projet de loi C-226";
 "appStore.screenshot.bill.title" = "Cadre national sur la transparence des prix alimentaires";
 "appStore.screenshot.bill.stage1" = "1re lecture";

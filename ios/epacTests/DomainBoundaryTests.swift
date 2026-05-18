@@ -4,6 +4,39 @@ import Testing
 
 struct DomainBoundaryTests {
 
+	@Test func productionAppDoesNotExposeRetiredMemberSpeechFeed() throws {
+		let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+		let sourceRoot = testsDirectory.deletingLastPathComponent().appendingPathComponent("epac")
+		let swiftFiles = try swiftFiles(in: sourceRoot)
+		let forbiddenMarkers = [
+			"MemberSpeechService",
+			"MemberSpeechFeedViewModel",
+			"MemberSpeechFeedView",
+			"MemberDebateActivityView",
+			"MemberSpeechEntry",
+			"MemberSpeechesPage",
+			"MemberStats",
+			"SpeechTopicChip",
+			"memberSpeeches(",
+			"members/v1/by-id/\\(memberID)/speeches.json",
+			"mp-profile-speech-list",
+			"mp-profile-speech-row",
+			"Every word. Every vote."
+		]
+
+		let violations = try swiftFiles.flatMap { fileURL -> [String] in
+			let source = try String(contentsOf: fileURL, encoding: .utf8)
+			return forbiddenMarkers.compactMap { marker in
+				source.contains(marker) ? "\(fileURL.lastPathComponent): \(marker)" : nil
+			}
+		}
+
+		#expect(
+			violations.isEmpty,
+			"Retired member speech feed markers found in production app source: \(violations.joined(separator: ", "))"
+		)
+	}
+
 	@Test func domainFilesDoNotImportSwiftDataOrUIFrameworks() throws {
 		let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		let sourceRoot = testsDirectory.deletingLastPathComponent().appendingPathComponent("epac")
@@ -122,7 +155,7 @@ struct DomainBoundaryTests {
 			#"URLQueryItem(name: "event", value: "event_card_tap")"#
 		]
 
-		let swiftFiles = try allSwiftFiles(in: sourceRoot)
+		let swiftFiles = try swiftFiles(in: sourceRoot)
 		let violations = try swiftFiles.flatMap { fileURL -> [String] in
 			let source = try String(contentsOf: fileURL, encoding: .utf8)
 			return forbiddenSnippets.compactMap { snippet in
@@ -133,12 +166,18 @@ struct DomainBoundaryTests {
 		#expect(violations.isEmpty, "Web-to-app telemetry beacons remain in app sources: \(violations.joined(separator: ", "))")
 	}
 
-	private func allSwiftFiles(in location: URL) throws -> [URL] {
-		guard let enumerator = FileManager.default.enumerator(at: location, includingPropertiesForKeys: nil) else {
+	private func swiftFiles(in location: URL) throws -> [URL] {
+		var isDirectory: ObjCBool = false
+		guard FileManager.default.fileExists(atPath: location.path, isDirectory: &isDirectory) else {
 			throw BoundaryCoverageError.missingProtectedPath(location.path)
 		}
+		guard isDirectory.boolValue else {
+			return location.pathExtension == "swift" ? [location] : []
+		}
 
-		return (enumerator.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
+		let enumerator = FileManager.default.enumerator(at: location, includingPropertiesForKeys: nil)
+		return (enumerator?.allObjects as? [URL] ?? [])
+			.filter { $0.pathExtension == "swift" }
 	}
 }
 
