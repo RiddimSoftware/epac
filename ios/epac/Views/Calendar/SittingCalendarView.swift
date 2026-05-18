@@ -249,27 +249,12 @@ struct SittingCalendarView: View {
 					ProgressView()
 						.accessibilityLabel(NSLocalizedString("sitting.calendar.export.inProgress", comment: ""))
 				} else {
-					Menu {
-						Button {
-							Task { await addNextSittingsToCalendar() }
-						} label: {
-							Label(
-								NSLocalizedString("sitting.calendar.export.addNext30", comment: ""),
-								systemImage: "calendar.badge.plus"
-							)
-						}
-						Button {
-							copyCalendarSubscriptionURL()
-						} label: {
-							Label(
-								NSLocalizedString("sitting.calendar.export.copySubscription", comment: ""),
-								systemImage: "link"
-							)
-						}
+					Button {
+						Task { await addNextSittingsToCalendar() }
 					} label: {
 						Image(systemName: "calendar.badge.plus")
 					}
-					.accessibilityLabel(NSLocalizedString("sitting.calendar.export.menuLabel", comment: ""))
+					.accessibilityLabel(NSLocalizedString("sitting.calendar.export.addNext30", comment: ""))
 				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
@@ -324,12 +309,6 @@ struct SittingCalendarView: View {
 		isShowingExportStatus = true
 	}
 
-	private func copyCalendarSubscriptionURL() {
-		let url = CalendarExportService.subscriptionURL()
-		UIPasteboard.general.string = url.absoluteString
-		exportStatusMessage = NSLocalizedString("sitting.calendar.export.copiedSubscription", comment: "")
-		isShowingExportStatus = true
-	}
 }
 
 extension Date: @retroactive Identifiable {

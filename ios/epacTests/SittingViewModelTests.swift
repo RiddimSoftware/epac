@@ -298,13 +298,6 @@ struct SittingViewModelTests {
 		#expect(days == [29, 12])
 	}
 
-	@Test func calendarExportSubscriptionURLUsesBackendBase() {
-		let baseURL = URL(string: "https://staging-api.epac.riddimsoftware.com")!
-		let url = CalendarExportService.subscriptionURL(baseURL: baseURL)
-
-		#expect(url.absoluteString == "https://staging-api.epac.riddimsoftware.com/api/v1/calendar/house.ics")
-	}
-
 	private func components(year: Int, month: Int, day: Int) -> DateComponents {
 		DateComponents(year: year, month: month, day: day)
 	}
