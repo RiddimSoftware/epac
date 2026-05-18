@@ -65,7 +65,7 @@ struct OrderPaperView: View {
 				ContentUnavailableView {
 					Label("No upcoming sittings loaded", systemImage: "calendar.badge.exclamationmark")
 				} description: {
-					Text("Open the Sitting Calendar tab to load upcoming sittings.")
+					Text("Open the Parliament tab calendar to choose a sitting.")
 				}
 			}
 		}

@@ -440,7 +440,7 @@ struct ContentView: View {
 	private func handleQuickAction(_ action: QuickAction) {
 		switch action {
 		case .todayInParliament:
-			// Navigate to Parliament tab — the sitting calendar shows today.
+			// Navigate to Parliament tab calendar.
 			router.selectedTab = .parliament
 
 		case .findMyMP:

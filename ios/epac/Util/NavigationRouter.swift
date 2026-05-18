@@ -64,7 +64,7 @@ class NavigationRouter {
 
 /// The three Home Screen Quick Actions available on long-press of the app icon.
 enum QuickAction: String {
-	/// Navigate to the Parliament tab (sitting calendar).
+	/// Navigate to the Parliament tab calendar.
 	case todayInParliament = "today"
 	/// Navigate to Home and open Find My MP or postal code setup if needed.
 	case findMyMP = "my-mp"

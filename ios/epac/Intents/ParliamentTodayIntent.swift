@@ -23,7 +23,7 @@ struct ParliamentTodayIntent: AppIntent {
         return .result(dialog: dialog)
     }
 
-    // Checks the cached sitting calendar stored in UserDefaults by Fetch.downloadCalendar.
+    // Checks the stored parliamentary calendar from UserDefaults.
     private func isSittingDay(_ date: Date) -> Bool {
         guard let stored = UserDefaults.standard.array(forKey: "calendardates_v2") as? [Date] else {
             return false
