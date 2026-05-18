@@ -10,35 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    outputs:
-      ios: ${{ steps.filter.outputs.ios }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Detect iOS changes
-        id: filter
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          if [ "$EVENT_NAME" != 'pull_request' ]; then
-            echo "ios=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git fetch origin "$BASE_REF" --depth=1
-          if git diff --name-only FETCH_HEAD..HEAD | grep -qE '^ios/|^\.swiftlint\.yml$'; then
-            echo "ios=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ios=false" >> "$GITHUB_OUTPUT"
-          fi
-
   lint:
     name: SwiftLint
-    needs: changes
-    if: needs.changes.outputs.ios == 'true'
     runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +20,6 @@ jobs:
 
   localization:
     name: Localization Audit
-    needs: changes
-    if: needs.changes.outputs.ios == 'true'
     runs-on: ["self-hosted","macOS"]
     steps:
       - uses: actions/checkout@v4
@@ -57,8 +28,6 @@ jobs:
 
   build:
     name: iOS Build
-    needs: changes
-    if: needs.changes.outputs.ios == 'true'
     runs-on: ["self-hosted","macOS"]
     timeout-minutes: 45
     steps:
@@ -118,15 +87,15 @@ jobs:
           LOC: ${{ needs.localization.result }}
           BUILD: ${{ needs.build.result }}
         run: |
-          if [ "$LINT" != 'success' ] && [ "$LINT" != 'skipped' ]; then
+          if [ "$LINT" != 'success' ]; then
             echo "SwiftLint failed (result: $LINT)"
             exit 1
           fi
-          if [ "$LOC" != 'success' ] && [ "$LOC" != 'skipped' ]; then
+          if [ "$LOC" != 'success' ]; then
             echo "Localization audit failed (result: $LOC)"
             exit 1
           fi
-          if [ "$BUILD" != 'success' ] && [ "$BUILD" != 'skipped' ]; then
+          if [ "$BUILD" != 'success' ]; then
             echo "iOS build failed (result: $BUILD)"
             exit 1
           fi
