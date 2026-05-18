@@ -7,7 +7,6 @@ EPAC-1742 introduces the first explicit application-layer slice for the iOS app.
 - `SearchHansard`: framework-free search logic over cached Hansard subject snapshots. The use case depends on a `HansardSearchStore` port; `SwiftDataHansardSearchStore` is the outer adapter.
 - `FollowTopic`: onboarding/UI follows topics through an inward use case instead of mutating `TopicFollowStore` directly. The use case persists through a store port and triggers device registration through a separate port.
 - `RegisterDevice`: composes the backend registration payload from push-token + follow-state ports and sends it through a `DeviceRegistrationGateway` port.
-- `RecordWebToAppOpen`: keeps `ContentView` from reaching into URLSession/network details for deep-link telemetry.
 
 ## Boundary rule
 

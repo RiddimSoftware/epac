@@ -26,7 +26,6 @@ struct ContentView: View {
 	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
 	@State private var showOnboarding = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
-	private let recordWebToAppOpen = RecordWebToAppOpen.live()
 
 	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
 		self.fetch = Fetch(modelContainer: modelContainer)
@@ -377,8 +376,7 @@ struct ContentView: View {
 			router.pendingShowPostalCodeSetup = true
 			router.selectedTab = .home
 		case "app", nil:
-			if let (pathURL, originalPath) = encodedPathUniversalLink(from: url) {
-				Task { await recordWebToAppOpen.execute(path: originalPath) }
+			if let (pathURL, _) = encodedPathUniversalLink(from: url) {
 				handleUniversalLink(pathURL)
 				return
 			}
