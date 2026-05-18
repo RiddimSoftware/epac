@@ -14,8 +14,18 @@ Run:
 
 ```bash
 python3 corrections_statistics.py --output ../../ios/epac/corrections-statistics.json
+ARTIFACTS_BUCKET=epac-artifacts python3 corrections_statistics.py --s3-publish
 python3 -m unittest
 ```
 
 The script logs structured JSON to stderr and writes the snapshot JSON to the
 requested output path.
+
+## S3 artifacts
+
+`--s3-publish` writes `statistics/v1/corrections-statistics/all.json` with
+`x-amz-meta-content-hash-sha256` metadata.
+
+The `Publish Artifacts` workflow runs this pipeline quarterly on day 22 at
+00:00 UTC in January, April, July, and October, and on every manual
+`workflow_dispatch`.

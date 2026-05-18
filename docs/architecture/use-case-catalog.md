@@ -46,6 +46,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ArtifactFetching` | inbound | Consumer-facing iOS port for fetching decoded CDN artifacts and manifest.json without exposing HTTP or disk details. |
 | `ManifestFetching` | outbound | Fetch manifest.json over HTTPS with conditional ETag requests. |
 | `ArtifactStore` | outbound | Backend: list artifact keys and metadata from object storage; write manifest.json back. iOS: read/write cached artifact payloads and ETags on disk. |
+| `StatisticsSink` | outbound | Backend statistics pipelines write deterministic JSON dataset artifacts without coupling parser logic to stdout, local files, Postgres, or S3 SDK details. |
 
 ---
 
@@ -425,6 +426,33 @@ Current implementation:
 ```
 
 > **Schema contract:** `backend/manifest/README.md` is the only shared contract between the publisher (CI) and the consumer (iOS app). Bumping `schema_version` requires coordinated changes to both sides.
+
+---
+
+### PublishStatisticsArtifacts
+
+```
+Actor: Scheduler (GitHub Actions artifact publisher) / Developer (manual run)
+Goal: Fetch authoritative government statistics sources, compose JSON snapshots, and publish CDN-ready S3 artifacts.
+Inputs: Pipeline name, upstream source data, artifacts bucket, publish cadence.
+Outputs: `statistics/v1/<pipeline-name>/<dataset>.json` objects with SHA-256 content-hash metadata.
+Entities / values: ArtifactKey.
+Ports: StatisticsSink, Clock.
+Primary adapters: statistics pipeline CLIs, statistics_artifacts.py, boto3 S3 client, publish-artifacts workflow.
+Current implementation:
+  backend/cpi-statistics/cpi_statistics.py
+  backend/fiscal-monitor/fiscal_monitor.py
+  backend/cpp-oas-statistics/cpp_oas_statistics.py
+  backend/ei-statistics/ei_statistics.py
+  backend/vac-statistics/vac_statistics.py
+  backend/student-finance-statistics/student_finance_statistics.py
+  backend/corrections-statistics/corrections_statistics.py
+  backend/transport-safety-statistics/transport_safety_statistics.py
+  backend/statistics_artifacts.py
+  .github/workflows/publish-artifacts.yml
+```
+
+> Boundary rule: pipeline parsers own authoritative-source fetching and JSON composition; `statistics_artifacts.py` owns S3 keys, uploads, cache headers, and content-hash metadata. CloudFront invalidation and manifest generation remain in the workflow.
 
 ---
 

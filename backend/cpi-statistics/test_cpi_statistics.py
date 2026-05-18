@@ -1,6 +1,17 @@
+import hashlib
+import json
 import unittest
 
+import cpi_statistics
 from cpi_statistics import build_statistics
+
+
+class FakeS3Client:
+    def __init__(self):
+        self.calls = []
+
+    def put_object(self, **kwargs):
+        self.calls.append(kwargs)
 
 
 def cpi_row(month, geography, category, value):
@@ -55,6 +66,29 @@ class CPIStatisticsTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             build_statistics(rows)
+
+    def test_publish_payload_writes_s3_artifacts_with_content_hash(self):
+        rows = []
+        rows.extend(category_rows("2025-03", "Canada", 150.0, 180.0, 170.0, 210.0))
+        rows.extend(category_rows("2026-03", "Canada", 153.0, 187.2, 176.8, 207.9))
+        rows.extend(category_rows("2025-03", "Ontario", 160.0, 190.0, 180.0, 200.0))
+        rows.extend(category_rows("2026-03", "Ontario", 164.0, 199.5, 183.6, 208.0))
+        payload = build_statistics(rows)
+        s3_client = FakeS3Client()
+
+        published = cpi_statistics.publish_payload(payload, bucket="artifact-bucket", s3_client=s3_client)
+
+        keys = [call["Key"] for call in s3_client.calls]
+        self.assertEqual(published[0].key, "statistics/v1/cpi-statistics/all.json")
+        self.assertIn("statistics/v1/cpi-statistics/national.json", keys)
+        self.assertIn("statistics/v1/cpi-statistics/province-on.json", keys)
+        all_call = s3_client.calls[0]
+        self.assertEqual(all_call["Bucket"], "artifact-bucket")
+        self.assertEqual(json.loads(all_call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            all_call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(all_call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":

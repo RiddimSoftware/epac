@@ -1,6 +1,17 @@
+import hashlib
+import json
 import unittest
 
+import ei_statistics
 from ei_statistics import build_statistics
+
+
+class FakeS3Client:
+    def __init__(self):
+        self.calls = []
+
+    def put_object(self, **kwargs):
+        self.calls.append(kwargs)
 
 
 def beneficiary_row(month, province, value):
@@ -84,6 +95,28 @@ class EIStatisticsTests(unittest.TestCase):
         alberta = payload["provinces"][0]
         self.assertIsNone(alberta["claims_received_previous_year"])
         self.assertIsNone(alberta["claims_year_over_year_change_percent"])
+
+    def test_publish_payload_writes_s3_artifacts_with_content_hash(self):
+        beneficiary_rows = [beneficiary_row("2026-03", "Ontario", 140)]
+        claim_rows = [claim_row("2026-03", "Ontario", 100)]
+        benefit_rows = [
+            benefit_row("2026-03", "Ontario", "Benefit payments", 58_800),
+            benefit_row("2026-03", "Ontario", "Benefit weeks", 140),
+        ]
+        payload = build_statistics(beneficiary_rows, claim_rows, benefit_rows)
+        s3_client = FakeS3Client()
+
+        published = ei_statistics.publish_payload(payload, bucket="artifact-bucket", s3_client=s3_client)
+
+        keys = [call["Key"] for call in s3_client.calls]
+        self.assertEqual(published[0].key, "statistics/v1/ei-statistics/all.json")
+        self.assertIn("statistics/v1/ei-statistics/province-on.json", keys)
+        call = s3_client.calls[0]
+        self.assertEqual(json.loads(call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":
