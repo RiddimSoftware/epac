@@ -115,7 +115,7 @@ struct MemberProfileView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(alignment: .center, spacing: 20) {
+			VStack(alignment: .center, spacing: 16) {
 				MemberAvatar(member: member)
 					.frame(width: 150, height: 150)
 					.padding(.top, 20)
@@ -141,11 +141,6 @@ struct MemberProfileView: View {
 				.padding()
 				.background(Color(.secondarySystemBackground))
 				.cornerRadius(12)
-
-				RidingBoundaryMapCard(ridingName: member.riding, party: member.party)
-					.padding()
-					.background(Color(.secondarySystemBackground))
-					.cornerRadius(12)
 
 				if let position = cabinetPosition {
 					CabinetPositionSection(position: position)

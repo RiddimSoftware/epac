@@ -251,17 +251,6 @@ struct DataSource {
         )
     }
 
-    static func electionsCanadaBoundaries() -> DataSource {
-        DataSource(
-            name: "Elections Canada",
-            description: "Federal electoral district boundary files for the 45th general election. App geometry is resolved through the Open North Represent API mirror of the 2023 federal electoral district set.",
-            url: URL(string: "https://www.elections.ca/content.aspx?dir=cir%2FmapsCorner%2Fvector&document=index&lang=e&section=res")!,
-            lastSyncDate: nil,
-            vintage: "2023 Representation Order",
-            stalenessThreshold: nil
-        )
-    }
-
     static func naturalResources() -> DataSource {
         DataSource(
             name: "NRCan",

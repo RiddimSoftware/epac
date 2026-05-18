@@ -15,10 +15,6 @@ extension ArtifactKey {
         ArtifactKey("members/v1/by-id/\(memberID)/speeches.json")
     }
 
-    static func ridingBoundary(slug: String) -> ArtifactKey {
-        ArtifactKey("ridings/v1/boundary/\(slug).json")
-    }
-
     static func sittingSpeeches(date: String) -> ArtifactKey {
         ArtifactKey("sittings/v1/by-date/\(date).json")
     }
