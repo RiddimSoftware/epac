@@ -420,22 +420,19 @@ LIMIT $2
 }
 ```
 
-**Design work required:** The current ranking joins against the live `members` table to determine whether each speech's MP is still sitting (current parliament). The S3 artifact must bake in this ranking at publish time. This means:
-1. The publish pipeline must accept the current active `member_id` set as a parameter.
-2. When members change (election, resignation), all 366 calendar-day artifacts must be regenerated.
-3. The `limit` parameter (defaults 5, max 20) becomes fixed at publish time. Recommendation: publish top-20 per day and let iOS trim to 5 locally.
+**EPAC-1916 implementation note:** The publisher writes one full ranked historical index. The Lambda filters the artifact by month/day and applies the request `limit`, so the API response shape stays unchanged while request-time Postgres reads are removed.
 
 **Estimated corpus size:** 366 calendar days × top-20 items × ~500 bytes = ~3.7 MB uncompressed; **~800 KB gzipped** total
 
 **Update frequency:** Daily during sitting season; on-member-change for re-ranking  
-**Update trigger:** `daily-fetch` publishes each new sitting day's MM-DD artifact after ingest; members sync triggers full 366-file regeneration
+**Update trigger:** `publish-artifacts` regenerates the full index from Aurora; members sync or Hansard ingest changes trigger a fresh publish
 
 **Proposed S3 key layout:**
 ```
-on-this-day/v1/{MM-DD}.json    # e.g. on-this-day/v1/04-29.json (366 files)
+on-this-day/v1/all.json    # full ranked historical index, filtered by Lambda
 ```
 
-**Proposed JSON schema:** `OnThisDayResponse` with `items` array fixed at 20 entries (iOS trims locally). Schema pointer: `#/components/schemas/OnThisDayResponse`.
+**Proposed JSON schema:** `{ "items": [...] }`, where each item matches `#/components/schemas/OnThisDayItem`. The Lambda wraps filtered items in `OnThisDayResponse`.
 
 **iOS consumer service:** `ios/epac/Util/OnThisDayService.swift`
 
@@ -480,15 +477,15 @@ bills/v1/current.json                                 # symlink-equivalent: late
 
 ---
 
-## 8. `GET /api/v1/config` — App configuration and feature flags 🔷
+## 8. `GET /api/v1/config` — App configuration and feature flags ✅
 
-**Current implementation status:** No backend Lambda and no Postgres table. The OpenAPI spec lists this endpoint, but it is not wired in either the staging or production Terraform configuration. Config is currently hardcoded in iOS.
+**Current implementation status:** EPAC-1916 adds a thin `backend/config` Lambda and publisher. No Postgres table is involved.
 
-**Proposed approach:** A manually-managed S3 artifact. No Postgres involved. A deploy-time step or manual publish writes the JSON.
+**Proposed approach:** A S3 artifact written by the artifact publish workflow. Environment-specific values should be isolated by artifact bucket or prefix, not by changing the response shape.
 
 **Proposed S3 key layout:**
 ```
-config/v1/app-config.json    # manually updated on deploy or feature-flag changes
+config/v1/app.json    # generated on deploy or feature-flag changes
 ```
 
 **Proposed JSON schema:** Matches `#/components/schemas/AppConfig`:
@@ -504,7 +501,7 @@ config/v1/app-config.json    # manually updated on deploy or feature-flag change
 
 **Estimated size:** < 1 KB  
 **Update frequency:** Manual (on release or feature-flag change)  
-**Update trigger:** Manual publish step in deploy workflow
+**Update trigger:** `publish-artifacts` workflow
 
 **iOS consumer service:** `ios/epac/Util/BackendConfig.swift` (no dedicated config service today — needs new `AppConfigService.swift`)
 
@@ -539,8 +536,7 @@ config/v1/app-config.json    # manually updated on deploy or feature-flag change
 **Proposed S3 key layout:**
 ```
 ridings/v1/index.json                     # all 338 riding slugs, names, external_ids (~15 KB)
-ridings/v1/by-slug/{slug}.json            # simplified boundary per riding (~20-200 KB)
-ridings/v1/by-fed-id/{external_id}.json  # same content, keyed by Elections Canada FED id
+ridings/v1/boundary/{slug}.json           # simplified boundary per riding (~20-200 KB)
 ```
 
 **Proposed JSON schema:** Matches `#/components/schemas/RidingBoundary` in OpenAPI. No structural changes. Pre-built `source_note`, `representation_order`, `extent`, and `centroid` are computed at publish time rather than at Lambda runtime.
@@ -599,13 +595,11 @@ SELECT ... WHERE e.organization_id = $1 AND e.fiscal_year = $2
 
 **Proposed S3 key layout:**
 ```
-estimates/v1/by-fiscal-year/{fiscal_year}.json    # e.g. estimates/v1/by-fiscal-year/2024-25.json
-estimates/v1/by-org/{org_id}.json                 # all years for one org
-estimates/v1/organizations.json                   # org list: id, name, abbr
-estimates/v1/current.json                         # latest fiscal year (symlink-equivalent)
+estimates/v1/all.json                 # all organizations and figures
+estimates/v1/by-org/{org_id}.json     # all years for one org
 ```
 
-**Proposed JSON schema:** Matches `#/components/schemas/EstimatesResponse`. `estimates/v1/by-fiscal-year/{fy}.json` is the full `EstimatesResponse` for that year.
+**Proposed JSON schema:** Matches `#/components/schemas/EstimatesResponse`. The Lambda filters `all.json` by fiscal year and reads `by-org/{org_id}.json` for organization detail.
 
 **iOS consumer service:** None today (Estimates UI not yet shipped). Will need a new `EstimatesService.swift`.
 
@@ -613,23 +607,15 @@ estimates/v1/current.json                         # latest fiscal year (symlink-
 
 ## 11. `GET /api/v1/calendar/house.ics` — Sitting calendar iCal feed ✅
 
-**Lambda directory:** `backend/live-status` (multi-route handler)  
-**Postgres tables:** `live_sitting_day`  
-**Primary query:**
-```sql
-SELECT sitting_date, is_sitting, source_url, fetched_at
-FROM live_sitting_day
-WHERE is_sitting = true AND sitting_date >= current_date - interval '30 days'
-ORDER BY sitting_date ASC
-```
-(Annual calendar is pre-fetched from ourcommons.ca and cached in `live_sitting_day`; the ICS endpoint reads from cache.)
+**Lambda directory:** `backend/calendar`
+**Postgres tables:** None for API reads. The publisher fetches the authoritative House sitting calendar HTML and emits ICS.
 
 **Current response format:** RFC 5545 iCalendar (`text/calendar`), one VEVENT per sitting day
 
 **Estimated artifact size:** ~365 sitting days/year × 200 bytes/VEVENT = ~73 KB per year; **~15 KB gzipped** for the current-year feed
 
 **Update frequency:** Annual (sitting calendar published by Parliament at start of year); on-demand when sittings are added mid-session  
-**Update trigger:** `live-status` Lambda currently refreshes `live_sitting_day` on a 24-hour TTL; post-migration, a cron publishes the ICS artifact after any change
+**Update trigger:** `publish-artifacts` workflow publishes the ICS artifact after fetching the authoritative sitting calendar
 
 **Proposed S3 key layout:**
 ```

@@ -21,6 +21,10 @@ func Connect(ctx context.Context) (*pgx.Conn, error) {
 	if connStr == "" {
 		return nil, errors.New("DATABASE_URL not set")
 	}
+	return ConnectWithURL(ctx, connStr)
+}
+
+func ConnectWithURL(ctx context.Context, connStr string) (*pgx.Conn, error) {
 	return pgx.Connect(ctx, connStr)
 }
 
@@ -35,7 +39,13 @@ func NewEstimatesRepository(conn *pgx.Conn) *EstimatesRepository {
 func (r *EstimatesRepository) FetchEstimates(ctx context.Context, filter usecase.EstimatesFilter) ([]usecase.Estimate, error) {
 	var rows pgx.Rows
 	var err error
-	if filter.OrgID != nil {
+	if filter.All {
+		rows, err = r.conn.Query(ctx, `
+			SELECT e.fiscal_year, e.organization_id, o.name, e.vote_number, e.vote_description, e.authorities, e.source
+			FROM estimates e
+			JOIN organizations o ON e.organization_id = o.id
+			ORDER BY e.fiscal_year DESC, o.name, e.vote_number`)
+	} else if filter.OrgID != nil {
 		if filter.FiscalYear != nil {
 			rows, err = r.conn.Query(ctx, `
 				SELECT e.fiscal_year, e.organization_id, o.name, e.vote_number, e.vote_description, e.authorities, e.source

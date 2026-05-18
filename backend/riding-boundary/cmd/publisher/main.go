@@ -1,22 +1,22 @@
-// riding-boundary Lambda - GET /api/v1/ridings/{slug}/boundary
+// riding-boundary publisher fetches federal riding boundaries once and emits
+// CDN-ready GeoJSON artifacts.
 package main
 
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
 
-	"epac/observability"
-	"epac/shared/artifacts"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -27,19 +27,21 @@ const (
 	defaultTolerance = 0.00012
 )
 
-var (
-	representBaseURL = "https://represent.opennorth.ca"
-	httpClient       = &http.Client{Timeout: 8 * time.Second}
-)
-
-var newArtifactStore = artifacts.NewFromEnv
-
 type boundaryListResponse struct {
 	Objects []boundaryListObject `json:"objects"`
 }
 
 type boundaryListObject struct {
-	URL        string `json:"url"`
+	Name       string `json:"name"`
+	ExternalID string `json:"external_id"`
+}
+
+type boundaryIndex struct {
+	Ridings []boundaryIndexEntry `json:"ridings"`
+}
+
+type boundaryIndexEntry struct {
+	Slug       string `json:"slug"`
 	Name       string `json:"name"`
 	ExternalID string `json:"external_id"`
 }
@@ -54,12 +56,9 @@ type boundaryDetail struct {
 
 type detailMeta struct {
 	RepresentationOrder string `json:"REP_ORDER"`
-	EnglishName         string `json:"ED_NAMEE"`
-	FrenchName          string `json:"ED_NAMEF"`
 }
 
 type geoPoint struct {
-	Type        string    `json:"type"`
 	Coordinates []float64 `json:"coordinates"`
 }
 
@@ -86,74 +85,83 @@ type boundaryResponse struct {
 	Geometry            geoGeometry `json:"geometry"`
 }
 
-func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	slug := strings.TrimSpace(req.PathParameters["slug"])
-	if slug == "" {
-		slug = slugFromPath(req.Path)
-	}
-	if slug == "" {
-		return jsonError(http.StatusBadRequest, "missing riding slug"), nil
-	}
+func main() {
+	output := flag.String("output", "../../../build/artifacts/ridings", "artifact output directory")
+	sourceBase := flag.String("source-url", envOrDefault("REPRESENT_BASE_URL", "https://represent.opennorth.ca"), "Represent API base URL")
+	tolerance := flag.Float64("tolerance", envFloat("RIDING_BOUNDARY_TOLERANCE", defaultTolerance), "Douglas-Peucker simplification tolerance")
+	flag.Parse()
 
-	body, err := readBoundary(ctx, slug)
+	ctx := context.Background()
+	client := &http.Client{Timeout: 20 * time.Second}
+	responses, err := buildBoundaryArtifacts(ctx, client, *sourceBase, *tolerance)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if artifacts.IsNotFound(err) {
-			status = http.StatusNotFound
-		}
-		return jsonError(status, err.Error()), nil
+		fmt.Fprintf(os.Stderr, "build boundary artifacts: %v\n", err)
+		os.Exit(1)
 	}
-
-	return events.APIGatewayProxyResponse{
-		StatusCode: http.StatusOK,
-		Headers: map[string]string{
-			"Content-Type":  "application/json",
-			"Cache-Control": "public, max-age=86400",
-		},
-		Body: string(body),
-	}, nil
+	if err := writeArtifacts(*output, responses); err != nil {
+		fmt.Fprintf(os.Stderr, "write boundary artifacts: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(os.Stderr, "published %d riding boundaries\n", len(responses))
 }
 
-func readBoundary(ctx context.Context, slug string) ([]byte, error) {
-	store, err := newArtifactStore(ctx)
-	if err != nil {
+func buildBoundaryArtifacts(ctx context.Context, client *http.Client, baseURL string, tolerance float64) ([]boundaryResponse, error) {
+	var listing boundaryListResponse
+	if err := getJSON(ctx, client, baseURL, boundarySetPath+"/?limit=400&format=json", &listing); err != nil {
 		return nil, err
 	}
-	return store.Get(ctx, fmt.Sprintf("ridings/v1/boundary/%s.json", slugify(slug)))
-}
-
-func resolveBoundary(ctx context.Context, slug string) (boundaryListObject, error) {
-	var listing boundaryListResponse
-	if err := getJSON(ctx, boundarySetPath+"/?limit=400&format=json", &listing); err != nil {
-		return boundaryListObject{}, err
-	}
-	target := slugify(slug)
+	responses := make([]boundaryResponse, 0, len(listing.Objects))
 	for _, object := range listing.Objects {
-		if object.ExternalID == slug || slugify(object.Name) == target {
-			return object, nil
+		if strings.TrimSpace(object.ExternalID) == "" {
+			continue
 		}
+		detail, err := fetchBoundaryDetail(ctx, client, baseURL, object.ExternalID)
+		if err != nil {
+			return nil, err
+		}
+		geometry, err := fetchBoundaryGeometry(ctx, client, baseURL, object.ExternalID)
+		if err != nil {
+			return nil, err
+		}
+		simplified, err := simplifyGeometry(geometry, tolerance)
+		if err != nil {
+			return nil, err
+		}
+		name := firstNonEmpty(detail.Name, object.Name)
+		responses = append(responses, boundaryResponse{
+			Slug:                slugify(name),
+			Name:                name,
+			ExternalID:          object.ExternalID,
+			RepresentationOrder: firstNonEmpty(detail.Metadata.RepresentationOrder, "2023"),
+			Source:              sourceTitle,
+			SourceURL:           sourceURL,
+			SourceNote:          fmt.Sprintf("Boundary geometry is resolved through Open North Represent's 2023 federal electoral district set, which mirrors the official Elections Canada 45th general election vector boundary files. Coordinates are simplified with Douglas-Peucker tolerance %.5f for mobile map rendering.", tolerance),
+			Extent:              detail.Extent,
+			Centroid:            detail.Centroid.Coordinates,
+			Geometry:            simplified,
+		})
 	}
-	return boundaryListObject{}, nil
+	return responses, nil
 }
 
-func fetchBoundaryDetail(ctx context.Context, externalID string) (boundaryDetail, error) {
+func fetchBoundaryDetail(ctx context.Context, client *http.Client, baseURL string, externalID string) (boundaryDetail, error) {
 	var detail boundaryDetail
-	err := getJSON(ctx, fmt.Sprintf("%s/%s/?format=json", boundarySetPath, url.PathEscape(externalID)), &detail)
+	err := getJSON(ctx, client, baseURL, fmt.Sprintf("%s/%s/?format=json", boundarySetPath, url.PathEscape(externalID)), &detail)
 	return detail, err
 }
 
-func fetchBoundaryGeometry(ctx context.Context, externalID string) (rawGeometry, error) {
+func fetchBoundaryGeometry(ctx context.Context, client *http.Client, baseURL string, externalID string) (rawGeometry, error) {
 	var geometry rawGeometry
-	err := getJSON(ctx, fmt.Sprintf("%s/%s/simple_shape?format=json", boundarySetPath, url.PathEscape(externalID)), &geometry)
+	err := getJSON(ctx, client, baseURL, fmt.Sprintf("%s/%s/simple_shape?format=json", boundarySetPath, url.PathEscape(externalID)), &geometry)
 	return geometry, err
 }
 
-func getJSON(ctx context.Context, path string, target any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, representBaseURL+path, nil)
+func getJSON(ctx context.Context, client *http.Client, baseURL string, path string, target any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+path, nil)
 	if err != nil {
 		return err
 	}
-	resp, err := httpClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -161,8 +169,22 @@ func getJSON(ctx context.Context, path string, target any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("boundary provider returned HTTP %d", resp.StatusCode)
 	}
-	limited := io.LimitReader(resp.Body, 8<<20)
-	return json.NewDecoder(limited).Decode(target)
+	return json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(target)
+}
+
+func writeArtifacts(output string, boundaries []boundaryResponse) error {
+	index := boundaryIndex{Ridings: make([]boundaryIndexEntry, 0, len(boundaries))}
+	for _, boundary := range boundaries {
+		index.Ridings = append(index.Ridings, boundaryIndexEntry{
+			Slug:       boundary.Slug,
+			Name:       boundary.Name,
+			ExternalID: boundary.ExternalID,
+		})
+		if err := writeJSON(filepath.Join(output, "v1", "boundary", boundary.Slug+".json"), boundary); err != nil {
+			return err
+		}
+	}
+	return writeJSON(filepath.Join(output, "v1", "index.json"), index)
 }
 
 func simplifyGeometry(geometry rawGeometry, tolerance float64) (geoGeometry, error) {
@@ -253,14 +275,6 @@ func samePoint(a, b []float64) bool {
 	return len(a) >= 2 && len(b) >= 2 && a[0] == b[0] && a[1] == b[1]
 }
 
-func slugFromPath(path string) string {
-	const prefix = "/api/v1/ridings/"
-	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, "/boundary") {
-		return ""
-	}
-	return strings.TrimSuffix(strings.TrimPrefix(path, prefix), "/boundary")
-}
-
 func slugify(value string) string {
 	decoded, err := url.PathUnescape(value)
 	if err == nil {
@@ -296,15 +310,34 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-func jsonError(status int, msg string) events.APIGatewayProxyResponse {
-	body, _ := json.Marshal(map[string]string{"error": msg})
-	return events.APIGatewayProxyResponse{
-		StatusCode: status,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       string(body),
+func writeJSON(path string, value any) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
 	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	return enc.Encode(value)
 }
 
-func main() {
-	lambda.Start(observability.WrapAPIGateway("riding-boundary", HandleRequest))
+func envOrDefault(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func envFloat(name string, fallback float64) float64 {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		var parsed float64
+		if _, err := fmt.Sscanf(value, "%f", &parsed); err == nil {
+			return parsed
+		}
+	}
+	return fallback
 }

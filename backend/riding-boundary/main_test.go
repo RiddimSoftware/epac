@@ -4,29 +4,28 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
 func TestHandleRequestReturnsBoundary(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case boundarySetPath + "/":
-			_, _ = w.Write([]byte(`{"objects":[{"url":"/boundaries/federal-electoral-districts-2023-representation-order/35100/","name":"Spadina—Harbourfront","external_id":"35100"}]}`))
-		case boundarySetPath + "/35100/":
-			_, _ = w.Write([]byte(`{"name":"Spadina—Harbourfront","external_id":"35100","metadata":{"REP_ORDER":"2023"},"extent":[-79.41,43.62,-79.36,43.66],"centroid":{"type":"Point","coordinates":[-79.39,43.64]}}`))
-		case boundarySetPath + "/35100/simple_shape":
-			_, _ = w.Write([]byte(`{"type":"MultiPolygon","coordinates":[[[[-79.41,43.62],[-79.40,43.63],[-79.39,43.64],[-79.38,43.65],[-79.36,43.66],[-79.41,43.62]]]]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-	t.Cleanup(func() { representBaseURL = "https://represent.opennorth.ca" })
-	representBaseURL = server.URL
+	dir := t.TempDir()
+	writeFixture(t, dir, "ridings/v1/boundary/spadina-harbourfront.json", `{
+		"slug":"spadina-harbourfront",
+		"name":"Spadina—Harbourfront",
+		"external_id":"35100",
+		"representation_order":"2023",
+		"source":"Elections Canada - Federal Electoral District Boundary Files",
+		"source_url":"https://www.elections.ca/content.aspx?dir=cir%2FmapsCorner%2Fvector&document=index&lang=e&section=res",
+		"source_note":"Boundary geometry is resolved through Open North Represent's 2023 federal electoral district set, which mirrors the official Elections Canada 45th general election vector boundary files.",
+		"extent":[-79.41,43.62,-79.36,43.66],
+		"centroid":[-79.39,43.64],
+		"geometry":{"type":"MultiPolygon","coordinates":[[[[-79.41,43.62],[-79.36,43.66],[-79.41,43.62]]]]}
+	}`)
+	t.Setenv("ARTIFACTS_DIR", dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		PathParameters: map[string]string{"slug": "spadina-harbourfront"},
@@ -53,13 +52,7 @@ func TestHandleRequestReturnsBoundary(t *testing.T) {
 }
 
 func TestHandleRequestNotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"objects":[]}`))
-	}))
-	defer server.Close()
-	t.Cleanup(func() { representBaseURL = "https://represent.opennorth.ca" })
-	representBaseURL = server.URL
+	t.Setenv("ARTIFACTS_DIR", t.TempDir())
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		PathParameters: map[string]string{"slug": "missing-riding"},
@@ -82,5 +75,16 @@ func TestSlugifyHandlesCanadianRidingPunctuation(t *testing.T) {
 		if got := slugify(input); got != want {
 			t.Fatalf("slugify(%q) = %q, want %q", input, got, want)
 		}
+	}
+}
+
+func writeFixture(t *testing.T, root, key, body string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(key))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir fixture: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
 	}
 }

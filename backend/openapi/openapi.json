@@ -317,14 +317,14 @@
       "get": {
         "tags": ["Members"],
         "summary": "Return a federal riding boundary polygon",
-        "description": "Returns simplified GeoJSON for a 2023 Representation Order federal electoral district, resolved from a riding name slug or Elections Canada FED id.",
+        "description": "Returns simplified GeoJSON for a 2023 Representation Order federal electoral district from the published riding boundary artifact.",
         "operationId": "getRidingBoundary",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "URL slug for the riding name, or the Elections Canada FED id.",
+            "description": "URL slug for the riding name.",
             "schema": { "type": "string", "example": "spadina-harbourfront" }
           }
         ],
@@ -459,7 +459,7 @@
       "get": {
         "tags": ["Parliament"],
         "summary": "Return subscribable House sitting calendar",
-        "description": "Returns an RFC 5545 iCalendar feed containing House of Commons sitting days from the backend sitting calendar cache.",
+        "description": "Returns an RFC 5545 iCalendar feed containing House of Commons sitting days from the published calendar artifact.",
         "operationId": "getHouseSittingCalendarICS",
         "responses": {
           "200": {
@@ -512,7 +512,7 @@
       "get": {
         "tags": ["Parliament"],
         "summary": "List prior-year Parliament moments from the same calendar day",
-        "description": "Returns ranked Hansard speech records from earlier years on the same month and day. Ranking prefers speeches by current sitting MPs, then speeches linked to bill or vote identifiers.",
+        "description": "Returns ranked Hansard speech records from earlier years on the same month and day from the published on-this-day artifact. Ranking is computed when the artifact is published.",
         "operationId": "listOnThisDay",
         "parameters": [
           {

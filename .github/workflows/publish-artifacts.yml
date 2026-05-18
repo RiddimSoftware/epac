@@ -114,7 +114,12 @@ jobs:
 
           DATABASE_URL="$database_url" go run ./backend/members-publisher --output ./build/artifacts/members
           DATABASE_URL="$database_url" go run ./backend/sittings-publisher --output ./build/artifacts/sittings
+          DATABASE_URL="$database_url" go run ./backend/on-this-day/cmd/publisher --output ./build/artifacts/on-this-day
+          DATABASE_URL="$database_url" go run ./backend/estimates/cmd/publisher --output ./build/artifacts/estimates
           go run ./backend/bills-publisher --output ./build/artifacts/bills
+          go run ./backend/riding-boundary/cmd/publisher --output ./build/artifacts/ridings
+          go run ./backend/live-status/cmd/calendar-publisher --output ./build/artifacts/calendar
+          go run ./backend/config/cmd/publisher --output ./build/artifacts/config
 
       - name: Build member speech artifacts
         working-directory: backend/member-speeches-publisher
@@ -172,6 +177,13 @@ jobs:
           test -s ./build/artifacts/members/v1/all.json
           test -s ./build/artifacts/sittings/v1/all.json
           test -s ./build/artifacts/bills/v1/all.json
+          test -s ./build/artifacts/on-this-day/v1/all.json
+          test -s ./build/artifacts/estimates/v1/all.json
+          test -s ./build/artifacts/calendar/v1/house.ics
+          test -s ./build/artifacts/config/v1/app.json
+          test -s ./build/artifacts/ridings/v1/index.json
+          find ./build/artifacts/estimates/v1/by-org -name '*.json' -print -quit | grep -q .
+          find ./build/artifacts/ridings/v1/boundary -name '*.json' -print -quit | grep -q .
           find ./build/artifacts/members/v1/by-id -path '*/speeches*.json' -type f -print -quit | grep -q .
           find ./build/artifacts/members/v1/by-id -path '*/votes*.json' -type f -print -quit | grep -q .
 
@@ -186,6 +198,14 @@ jobs:
           fi
 
           find ./build/artifacts/members/v1/by-id \( -path '*/speeches*.json' -o -path '*/votes*.json' \) -type f -print0 | while IFS= read -r -d '' file; do
+            size=$(gzip -c "$file" | wc -c | tr -d ' ')
+            if [ "$size" -gt 5242880 ]; then
+              echo "$file exceeds 5 MiB gzipped (${size} bytes)"
+              exit 1
+            fi
+          done
+
+          find ./build/artifacts/ridings/v1/boundary -name '*.json' -type f -print0 | while IFS= read -r -d '' file; do
             size=$(gzip -c "$file" | wc -c | tr -d ' ')
             if [ "$size" -gt 5242880 ]; then
               echo "$file exceeds 5 MiB gzipped (${size} bytes)"

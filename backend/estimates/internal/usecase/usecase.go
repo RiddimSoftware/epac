@@ -36,6 +36,7 @@ type OrgRecord struct {
 // EstimatesFilter is the search shape accepted by FetchEstimates.
 // At least one of OrgID or FiscalYear must be non-nil.
 type EstimatesFilter struct {
+	All        bool
 	OrgID      *int
 	FiscalYear *string
 }
@@ -43,10 +44,14 @@ type EstimatesFilter struct {
 // ErrInvalidFilter is returned when no filter criteria are supplied.
 var ErrInvalidFilter = errors.New("missing org_id or fiscal_year")
 
-// EstimatesRepository is the outbound port for persisting and fetching
-// federal Main Estimates and organization metadata.
-type EstimatesRepository interface {
+// EstimatesReader is the outbound port for fetching federal Main Estimates.
+type EstimatesReader interface {
 	FetchEstimates(ctx context.Context, filter EstimatesFilter) ([]Estimate, error)
+}
+
+// EstimatesWriter is the outbound port for persisting federal Main Estimates
+// and organization metadata.
+type EstimatesWriter interface {
 	UpsertOrganization(ctx context.Context, org OrgRecord) error
 	UpsertEstimate(ctx context.Context, est Estimate) error
 	RecordHealth(ctx context.Context, count int, runErr error)
@@ -54,15 +59,15 @@ type EstimatesRepository interface {
 
 // GetEstimates implements the read-side application policy.
 type GetEstimates struct {
-	repo EstimatesRepository
+	repo EstimatesReader
 }
 
-func NewGet(repo EstimatesRepository) *GetEstimates {
+func NewGet(repo EstimatesReader) *GetEstimates {
 	return &GetEstimates{repo: repo}
 }
 
 func (u *GetEstimates) Execute(ctx context.Context, filter EstimatesFilter) ([]Estimate, error) {
-	if filter.OrgID == nil && filter.FiscalYear == nil {
+	if !filter.All && filter.OrgID == nil && filter.FiscalYear == nil {
 		return nil, ErrInvalidFilter
 	}
 	return u.repo.FetchEstimates(ctx, filter)
@@ -72,10 +77,10 @@ func (u *GetEstimates) Execute(ctx context.Context, filter EstimatesFilter) ([]E
 // parsed CSV rows (organizations first so estimates can resolve names to IDs)
 // and record pipeline health on completion.
 type IngestEstimates struct {
-	repo EstimatesRepository
+	repo EstimatesWriter
 }
 
-func NewIngest(repo EstimatesRepository) *IngestEstimates {
+func NewIngest(repo EstimatesWriter) *IngestEstimates {
 	return &IngestEstimates{repo: repo}
 }
 

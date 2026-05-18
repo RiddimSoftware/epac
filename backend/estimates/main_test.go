@@ -1,7 +1,14 @@
 package main
 
 import (
+	"context"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
 func TestParseOrganizations(t *testing.T) {
@@ -49,5 +56,59 @@ func TestParseEstimates(t *testing.T) {
 	}
 	if estimates[1].OrganizationID != 2 || estimates[1].Authorities != 500000.00 {
 		t.Errorf("estimate[1] mismatch: %+v", estimates[1])
+	}
+}
+
+func TestHandleAPIReadsAllArtifactAndFiltersFiscalYear(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "estimates/v1/all.json", `{"estimates":[
+		{"fiscal_year":"2025-26","organization_id":1,"organization_name":"Agriculture and Agri-Food Canada","vote_number":1,"vote_description":"Operating expenditures","authorities":100,"source":"GC InfoBase"},
+		{"fiscal_year":"2024-25","organization_id":1,"organization_name":"Agriculture and Agri-Food Canada","vote_number":1,"vote_description":"Operating expenditures","authorities":50,"source":"GC InfoBase"}
+	]}`)
+	t.Setenv("ARTIFACTS_DIR", dir)
+
+	resp, err := handleAPI(context.Background(), events.APIGatewayV2HTTPRequest{
+		QueryStringParameters: map[string]string{"fiscal_year": "2025-26"},
+	})
+	if err != nil {
+		t.Fatalf("handleAPI error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d body = %s, want 200", resp.StatusCode, resp.Body)
+	}
+	if !strings.Contains(resp.Body, `"fiscal_year":"2025-26"`) || strings.Contains(resp.Body, `"fiscal_year":"2024-25"`) {
+		t.Fatalf("unexpected body: %s", resp.Body)
+	}
+}
+
+func TestHandleAPIReadsByOrgArtifact(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "estimates/v1/by-org/2.json", `{"estimates":[
+		{"fiscal_year":"2024-25","organization_id":2,"organization_name":"House of Commons","vote_number":1,"vote_description":"Program expenditures","authorities":500,"source":"GC InfoBase"}
+	]}`)
+	t.Setenv("ARTIFACTS_DIR", dir)
+
+	resp, err := handleAPI(context.Background(), events.APIGatewayV2HTTPRequest{
+		PathParameters: map[string]string{"org_id": "2"},
+	})
+	if err != nil {
+		t.Fatalf("handleAPI error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d body = %s, want 200", resp.StatusCode, resp.Body)
+	}
+	if !strings.Contains(resp.Body, `"organization_id":2`) {
+		t.Fatalf("unexpected body: %s", resp.Body)
+	}
+}
+
+func writeFixture(t *testing.T, root, key, body string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(key))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir fixture: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
 	}
 }

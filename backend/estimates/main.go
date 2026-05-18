@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"epac/estimates/internal/adapter/postgres"
+	artifactadapter "epac/estimates/internal/adapter/artifacts"
 	"epac/estimates/internal/usecase"
 	"epac/observability"
+	"epac/shared/artifacts"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -24,6 +25,8 @@ const (
 type Estimate = usecase.Estimate
 type EstimatesResponse = usecase.EstimatesResponse
 type OrgRecord = usecase.OrgRecord
+
+var newArtifactStore = artifacts.NewFromEnv
 
 func main() {
 	lambda.Start(handleLambda)
@@ -50,7 +53,7 @@ func handleLambda(ctx context.Context, raw json.RawMessage) (any, error) {
 		return handleAPI(ctx, req)
 	}
 
-	return handleIngest(ctx)
+	return "main estimates ingest moved to backend/estimates/cmd/publisher", nil
 }
 
 func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
@@ -58,31 +61,37 @@ func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.
 		return limitedResp, nil
 	}
 
-	conn, err := postgres.Connect(ctx)
+	store, err := newArtifactStore(ctx)
 	if err != nil {
-		return apiError(http.StatusServiceUnavailable, "database connection failed"), nil
+		return apiError(http.StatusServiceUnavailable, err.Error()), nil
 	}
-	defer conn.Close(ctx)
+	repo := artifactadapter.NewEstimatesRepository(store)
 
 	orgIDStr := req.PathParameters["org_id"]
 	fiscalYear := req.QueryStringParameters["fiscal_year"]
 
 	filter := usecase.EstimatesFilter{}
 	if orgIDStr != "" {
-		orgID, _ := strconv.Atoi(orgIDStr)
+		orgID, err := strconv.Atoi(orgIDStr)
+		if err != nil || orgID <= 0 {
+			return apiError(http.StatusBadRequest, "org_id must be a positive integer"), nil
+		}
 		filter.OrgID = &orgID
 	}
 	if fiscalYear != "" {
 		filter.FiscalYear = &fiscalYear
 	}
 
-	repo := postgres.NewEstimatesRepository(conn)
 	estimates, err := usecase.NewGet(repo).Execute(ctx, filter)
 	if err == usecase.ErrInvalidFilter {
 		return apiError(http.StatusBadRequest, "missing org_id or fiscal_year"), nil
 	}
 	if err != nil {
-		return apiError(http.StatusInternalServerError, "query failed"), nil
+		status := http.StatusInternalServerError
+		if artifacts.IsNotFound(err) {
+			status = http.StatusNotFound
+		}
+		return apiError(status, err.Error()), nil
 	}
 
 	body, _ := json.Marshal(EstimatesResponse{Estimates: estimates})
@@ -91,53 +100,6 @@ func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       string(body),
 	}, nil
-}
-
-func handleIngest(ctx context.Context) (string, error) {
-	conn, err := postgres.Connect(ctx)
-	if err != nil {
-		return "", fmt.Errorf("database connection failed: %w", err)
-	}
-	defer conn.Close(ctx)
-	repo := postgres.NewEstimatesRepository(conn)
-
-	// 1. Ingest Organizations
-	fmt.Println("Downloading organizations...")
-	orgsCSV, err := downloadCSV(organizationsURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to download organizations: %w", err)
-	}
-
-	nameToID := make(map[string]int)
-	orgs := parseOrganizations(orgsCSV)
-	for _, record := range orgs {
-		nameToID[record.Name] = record.ID
-		if record.LegalTitle != "" {
-			nameToID[record.LegalTitle] = record.ID
-		}
-		if record.Abbr != "" {
-			nameToID[record.Abbr] = record.ID
-		}
-		if record.DeptID != "" {
-			nameToID[record.DeptID] = record.ID
-		}
-	}
-
-	// 2. Ingest Estimates
-	fmt.Println("Downloading estimates...")
-	estsCSV, err := downloadCSV(estimatesURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to download estimates: %w", err)
-	}
-
-	count, err := usecase.NewIngest(repo).Execute(ctx, usecase.IngestInput{
-		Organizations: orgs,
-		Estimates:     parseEstimates(estsCSV, nameToID),
-	})
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("Processed %d Main Estimates records", count), nil
 }
 
 func parseOrganizations(records [][]string) []OrgRecord {

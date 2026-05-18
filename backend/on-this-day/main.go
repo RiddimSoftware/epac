@@ -13,12 +13,15 @@ import (
 	"time"
 
 	"epac/observability"
-	"epac/on-this-day/internal/adapter/postgres"
+	artifactadapter "epac/on-this-day/internal/adapter/artifacts"
 	"epac/on-this-day/internal/usecase"
+	"epac/shared/artifacts"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
+
+var newArtifactStore = artifacts.NewFromEnv
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	date, err := parseDate(req.QueryStringParameters["date"])
@@ -27,16 +30,20 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 	}
 	limit := parseLimit(req.QueryStringParameters["limit"])
 
-	conn, err := postgres.GetDBConn(ctx)
+	store, err := newArtifactStore(ctx)
 	if err != nil {
 		return jsonError(http.StatusInternalServerError, err.Error()), nil
 	}
 
-	repo := postgres.NewHansardRepository(conn)
+	repo := artifactadapter.NewHansardRepository(store)
 	uc := usecase.New(repo)
 	items, err := uc.Execute(ctx, date, limit)
 	if err != nil {
-		return jsonError(http.StatusInternalServerError, err.Error()), nil
+		status := http.StatusInternalServerError
+		if artifacts.IsNotFound(err) {
+			status = http.StatusNotFound
+		}
+		return jsonError(status, err.Error()), nil
 	}
 
 	body, err := json.Marshal(usecase.OnThisDayResponse{
@@ -48,8 +55,11 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 	}
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       string(body),
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Cache-Control": "public, max-age=300",
+		},
+		Body: string(body),
 	}, nil
 }
 

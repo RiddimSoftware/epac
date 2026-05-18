@@ -121,6 +121,19 @@ def validate_live_status(_: int, payload: Any) -> None:
         raise SmokeFailure("live status: is_sitting must be a boolean")
 
 
+def validate_estimates(_: int, payload: Any) -> None:
+    body = require_dict(payload, "estimates")
+    require_keys(body, "estimates", {"estimates"})
+    require_list(body, "estimates", "estimates")
+
+
+def validate_config(_: int, payload: Any) -> None:
+    body = require_dict(payload, "config")
+    require_keys(body, "config", {"minimum_supported_version", "features"})
+    if not isinstance(body["features"], dict):
+        raise SmokeFailure("config: features must be an object")
+
+
 def validate_device_register(status: int, payload: Any) -> None:
     body = require_dict(payload, "device registration")
     require_keys(body, "device registration", {"error"})
@@ -343,7 +356,7 @@ CHECKS = [
         expected_statuses={200},
         validator=validate_riding_boundary,
         deterministic_note="Contract check uses a 2023 federal riding slug and validates GeoJSON shape.",
-        fixture_note="No database fixture required; depends on the upstream Represent boundary provider.",
+        fixture_note="No database fixture required; response is served from the published S3 boundary artifact.",
     ),
     SmokeCheck(
         name="riding-boundary:unknown-slug",
@@ -354,6 +367,38 @@ CHECKS = [
         validator=validate_error_no_stack("riding-boundary:unknown-slug"),
         deterministic_note="Negative check — unknown slug must return HTTP 404 with error body and no stack trace leak.",
         fixture_note="No fixture required.",
+    ),
+    # --- estimates ---
+    SmokeCheck(
+        name="estimates:fiscal-year",
+        method="GET",
+        path="/api/v1/estimates",
+        query={"fiscal_year": "2024-25"},
+        expected_statuses={200},
+        validator=validate_estimates,
+        deterministic_note="Contract check verifies the fiscal-year filter returns the estimates envelope.",
+        fixture_note="Result count depends on the published estimates artifact; empty list is acceptable.",
+    ),
+    SmokeCheck(
+        name="estimates:missing-filter",
+        method="GET",
+        path="/api/v1/estimates",
+        query={},
+        expected_statuses={400},
+        validator=validate_error_body("estimates:missing-filter", "missing"),
+        deterministic_note="Negative check — estimates list requires fiscal_year unless an org id is in the path.",
+        fixture_note="No fixture required; validates input validation gate.",
+    ),
+    # --- config ---
+    SmokeCheck(
+        name="config:default",
+        method="GET",
+        path="/api/v1/config",
+        query={},
+        expected_statuses={200},
+        validator=validate_config,
+        deterministic_note="Contract check verifies the app config artifact response shape.",
+        fixture_note="Feature flag values are release-config dependent and not asserted.",
     ),
     # --- live status ---
     SmokeCheck(
