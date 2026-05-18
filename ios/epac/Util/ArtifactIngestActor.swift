@@ -439,17 +439,26 @@ actor ArtifactIngestActor {
             }
         }
 
-        let subjectDTOs = subjects.compactMap { title, records -> SubjectOfBusinessDTO? in
-            let speeches = records.compactMap {
-                speechDTO(from: $0, date: payload.date, membersByID: membersByID, membersByName: membersByName)
+        var subjectDTOs: [SubjectOfBusinessDTO] = []
+        for (title, records) in subjects {
+            var speeches: [SpeechDTO] = []
+            for record in records {
+                if let speech = speechDTO(
+                    from: record,
+                    date: payload.date,
+                    membersByID: membersByID,
+                    membersByName: membersByName
+                ) {
+                    speeches.append(speech)
+                }
             }
-            guard !speeches.isEmpty else { return nil }
-            return SubjectOfBusinessDTO(
+            guard !speeches.isEmpty else { continue }
+            subjectDTOs.append(SubjectOfBusinessDTO(
                 title: title,
                 hansardID: "\(payload.dateString)-subject-\(Self.slug(title))",
                 speeches: speeches,
                 currentSpeechID: nil
-            )
+            ))
         }
         guard !subjectDTOs.isEmpty else { return nil }
 

@@ -12,7 +12,9 @@ permissions:
 jobs:
   lint:
     name: SwiftLint
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:latest
     steps:
       - uses: actions/checkout@v4
       - name: Run SwiftLint
@@ -20,7 +22,7 @@ jobs:
 
   localization:
     name: Localization Audit
-    runs-on: ["self-hosted","macOS"]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Audit localization coverage
@@ -28,7 +30,7 @@ jobs:
 
   build:
     name: iOS Build
-    runs-on: ["self-hosted","macOS"]
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +49,10 @@ jobs:
         working-directory: ios
         timeout-minutes: 40
         run: |
+          package_cache="$RUNNER_TEMP/xcode-package-cache"
+          cloned_packages="$RUNNER_TEMP/xcode-cloned-source-packages"
+          rm -rf "$package_cache" "$cloned_packages"
+          mkdir -p "$package_cache" "$cloned_packages"
           build_jobs="$(sysctl -n hw.logicalcpu)"
           if [ "$build_jobs" -gt 6 ]; then
             build_jobs=6
@@ -70,6 +76,9 @@ jobs:
             -scheme epac \
             -destination "generic/platform=iOS" \
             -derivedDataPath "$GITHUB_WORKSPACE/.deriveddata" \
+            -clonedSourcePackagesDirPath "$cloned_packages" \
+            -packageCachePath "$package_cache" \
+            -disablePackageRepositoryCache \
             -jobs "$build_jobs" \
             CODE_SIGNING_ALLOWED=NO \
             GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
