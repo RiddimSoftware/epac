@@ -118,8 +118,6 @@
 	<string>$(SENTRY_DSN)</string>
 	<key>BackendBaseURL</key>
 	<string>$(BACKEND_BASE_URL)</string>
-	<key>ArtifactsBaseURL</key>
-	<string>$(ARTIFACTS_BASE_URL)</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>epac adds House of Commons sitting days to your calendar.</string>
 	<key>NSCalendarsUsageDescription</key>

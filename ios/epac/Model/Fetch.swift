@@ -59,12 +59,17 @@ actor Fetch: ObservableObject {
 	}
 	
 	func downloadSittingCalendar(_ year: Int) async throws {
-		try await downloadSittingCalendar(year, artifacts: ArtifactService.shared)
-	}
-
-	func downloadSittingCalendar(_ year: Int, artifacts: any ArtifactFetching) async throws {
 		Log.debug("Fetch.downloadSittingCalendar(year: \(year))")
-		_ = try await downloadCalendar(year: year, artifacts: artifacts)
+		let dates = try await downloadCalendar(year: year)
+		// Upsert: update existing record if present, insert if not
+		let existing = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
+		if let record = existing.first {
+			record.sittings = dates
+		} else {
+			let calendar = SittingCalendar(year: year, sittings: dates)
+			modelContext.insert(calendar)
+		}
+		try modelContext.save()
 	}
 
 	func backgroundRefresh() async {
@@ -87,16 +92,25 @@ actor Fetch: ObservableObject {
 		}
 	}
 
-	func downloadHansard(_ date: Date, artifacts: any ArtifactFetching = ArtifactService.shared) async throws {
+	func downloadHansard(_ date: Date) async throws {
 		Log.debug("Fetch.downloadHansard(date: \(date))")
 		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
 		do {
-			let dateString = DateUtils.getCSVStringFromDate(date)
-			let payload = try await artifacts.fetch(
-				.sittingSpeeches(date: dateString),
-				as: SittingSpeechesArtifact.self
-			)
-			_ = try await ArtifactIngestActor(modelContainer: modelContainer).ingestSittingSpeeches(payload)
+			let xml = try await downloadXML(forDate: date)
+			let incoming = XMLBro(xml: xml).parseXML().hansard()
+			let existing = try modelContext.fetch(FetchDescriptor<Hansard>(
+				predicate: #Predicate { $0.date == incoming.date }
+			))
+			if existing.count == 1, existing.first?.domainDTO == incoming {
+				UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
+				transaction.finish(status: .ok)
+				return
+			}
+			for hansard in existing {
+				deleteHansardAggregate(hansard)
+			}
+			modelContext.insert(Hansard(domain: incoming))
+			try modelContext.save()
 			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
 			transaction.finish(status: .ok)
 		} catch {
@@ -462,7 +476,6 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadXML(forDate date: Date) async throws -> String {
-		// Fallback Parliament XML downloader retained for diagnostics; app Hansard loading uses sittings artifacts.
 		Log.debug("Fetch.downloadXML(date: \(date))")
 		let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
 		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
@@ -511,31 +524,71 @@ actor Fetch: ObservableObject {
 		return utfstringvalue
 	}
 
-	func downloadCalendar(year: Int, artifacts: any ArtifactFetching = ArtifactService.shared) async throws -> [Date] {
+	func downloadCalendar(year: Int) async throws -> [Date] {
 		Log.debug("Fetch.downloadCalendar(year: \(year))")
-		Log.debug("Downloading calendar artifact")
-		let payload = try await artifacts.fetch(.sittingsAll, as: SittingsArtifact.self)
-		_ = try await ArtifactIngestActor(modelContainer: modelContainer).ingestSittings(payload)
-		let dates = payload.calendars.first { $0.year == year }?.sittings.sorted(by: >) ?? []
-		UserDefaults.standard.set(dates, forKey: "calendardates_v2")
-		// Write next sitting to App Group for widget. No-op if App Group is not registered.
-		let nextSitting = dates.filter { $0 >= Calendar.current.startOfDay(for: Date()) }.last
-		WidgetDataWriter.writeNextSitting(nextSitting)
-		WidgetDataWriter.writeParliamentStatus(sittingDates: dates)
-		WidgetDataWriter.reloadWidgets()
-		return dates
+		Log.debug("Downloading calendar \(year)")
+		let path = String(format: calendarPath, year)
+		let request = URLRequest(url: hosturl.appending(path: path), cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await NetworkService.shared.data(for: request)
+		Log.debug("Downloaded \(data.count) bytes")
+
+		if let htmlstring = String(data: data, encoding: .utf8),
+		   let doc = try? HTML(html: htmlstring, url: nil, encoding: String.Encoding.utf8) {
+			var dates: [Date] = []
+			for cssdate in doc.css("td.chamber-meeting") {
+				guard let attrclass = cssdate["class"],
+				      attrclass.contains("chamber-meeting") else {
+					continue
+				}
+				let classes = attrclass.components(separatedBy: " ")
+				guard let date = classes.compactMap(DateUtils.parseCSVDateString).first else {
+					continue
+				}
+				dates.append(date)
+			}
+			dates.sort(by: >)
+			UserDefaults.standard.set(dates, forKey: "calendardates_v2")
+			// Write next sitting to App Group for widget. No-op if App Group is not registered.
+			let nextSitting = dates.filter { $0 >= Calendar.current.startOfDay(for: Date()) }.last
+			WidgetDataWriter.writeNextSitting(nextSitting)
+			WidgetDataWriter.writeParliamentStatus(sittingDates: dates)
+			WidgetDataWriter.reloadWidgets()
+			return dates
+		} else {
+			return []
+		}
 
 	}
 
-	func downloadMembers(artifacts: any ArtifactFetching = ArtifactService.shared) async throws {
+	func downloadMembers() async throws {
 		Log.debug("Fetch.downloadMembers()")
-		let payload = try await artifacts.fetch(.membersAll, as: MembersArtifact.self)
-		Log.debug("parsed artifact \(payload.members.count) members")
-		_ = try await ArtifactIngestActor(modelContainer: modelContainer).ingestMembers(payload)
+		guard let url = URL(string: membersPath, relativeTo: hosturl) else {
+			throw NSError(domain: "", code: 6)
+		}
+		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await NetworkService.shared.data(for: request)
+		Log.debug("got data \(data.count)")
+		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
+			throw NSError(domain: "", code: 7)
+		}
+		Log.debug("Got XML string")
+		let memberDTOs = XMLBro.parseMembers(utfstringvalue)
+		Log.debug("parsed XML \(memberDTOs.count) members")
+		let existingMembers = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
+		Log.debug("Found \(existingMembers.count) existing members")
+		let existingNames = Set(existingMembers.map { $0.name })
+
+		Log.debug("Inserting members")
+		try modelContext.transaction {
+			for dto in memberDTOs {
+				if !existingNames.contains(dto.name) {
+					modelContext.insert(ParliamentMember(domain: dto))
+				}
+			}
+		}
 		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}
 	                func downloadMember(_ firstName: String, _ lastName: String) async throws {
-	                        // Single-member lookup stays on ourcommons.ca because the members artifact only carries full-list records.
 	                        let identifier = "\(firstName) \(lastName)"
 	                        guard !downloadsInProgress.contains(identifier), !failedDownloads.contains(identifier) else {
 	                                return
@@ -599,7 +652,6 @@ actor Fetch: ObservableObject {
 	                }
 	        
 	func downloadConstituencies() async throws {
-		// Constituency XML has no CloudFront artifact yet, so this authoritative Parliament source remains direct.
 		Log.debug("Fetch.downloadConstituencies()")
 		guard let url = URL(string: constituenciesPath, relativeTo: hosturl) else {
 			throw NSError(domain: "", code: 6)
@@ -615,7 +667,6 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadMemberContact(identifier: PersistentIdentifier) async throws {
-		// Contact details are not part of the members artifact yet, so this keeps using the Parliament member XML source.
 		guard let member = modelContext.model(for: identifier) as? ParliamentMember,
 			  member.memberID > 0,
 			  !member.contactFetched else { return }
@@ -640,7 +691,6 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadVotingRecords(parliament: Int = 44) async throws {
-		// Vote history artifact adoption is deferred until the SwiftData vote schema matches the member-content artifact.
 		if try modelContext.fetchCount(FetchDescriptor<RecordedVote>()) > 0 {
 			writeLatestVoteSummaryForWidgets()
 			return
@@ -1066,7 +1116,6 @@ actor Fetch: ObservableObject {
 	}
 
 	func downloadWrittenQuestions(memberID: Int, parliament: Int = 45) async throws {
-		// Written questions do not have a published CloudFront artifact yet, so they stay on Open Parliament.
 		let existing = try modelContext.fetch(FetchDescriptor<WrittenQuestion>(
 			predicate: #Predicate { $0.memberID == memberID }
 		))
@@ -1118,6 +1167,22 @@ actor Fetch: ObservableObject {
 			}
 			try modelContext.save()
 		}
+	}
+
+	private func deleteHansardAggregate(_ hansard: Hansard) {
+		for order in hansard.orders {
+			for subject in order.subjects {
+				for speech in subject.speeches {
+					for message in speech.messages {
+						modelContext.delete(message)
+					}
+					modelContext.delete(speech)
+				}
+				modelContext.delete(subject)
+			}
+			modelContext.delete(order)
+		}
+		modelContext.delete(hansard)
 	}
 
 	// MARK: - Cabinet positions

@@ -8,6 +8,8 @@
 
 This document catalogues every Postgres-bound backend endpoint and Python statistics pipeline, then designs the S3 artifact schema each will publish to after Aurora is retired. It is the primary input for the four backend migration issues.
 
+> **EPAC-1939 update:** iOS no longer consumes S3 or CloudFront artifacts directly. The S3 layouts below describe backend publishers, backend API serving paths, or release/support artifacts only. Any iOS mention records the current source-specific path or backend API client; it is not direction to wire the app to CDN artifacts.
+
 **Total estimated S3 storage (all artifacts, gzipped):** ~90–150 MB  
 **Maximum single-artifact size (gzipped):** ~200 KB per riding boundary file (338 ridings total); ~40 KB for the largest speech-per-member file  
 **Endpoints requiring design work before migration:** `/api/v1/on-this-day` (ranking bakes in current-MP state at publish time — see §6), `/api/v1/ridings/{slug}/boundary` (needs a new pre-build pipeline — see §9), `/api/v1/sittings/{date}/speeches` (corpus size decision — see §5)
@@ -86,7 +88,7 @@ Client-side province/party filtering is trivially fast on 338 records. No per-pr
 
 **Proposed JSON schema:** Matches `#/components/schemas/MembersResponse` in `backend/openapi/openapi.json`. No structural changes needed.
 
-**iOS consumer service:** `ios/epac/Model/Fetch.swift` (`members()` method) — will be redirected from ourcommons.ca XML to S3 JSON.
+**iOS runtime path after EPAC-1939:** `ios/epac/Model/Fetch.swift` member refresh remains on the authoritative ourcommons.ca XML source unless a future backend API or removal ticket replaces it. Do not wire iOS directly to S3/CloudFront artifacts.
 
 ---
 
@@ -135,12 +137,12 @@ SELECT subject_title FROM speeches WHERE member_id = $1 ... GROUP BY subject_tit
 
 **Per-member vs combined tradeoff:**
 
-| Option | Artifact size | iOS download | Notes |
+| Option | Artifact size | Backend/API read pattern | Notes |
 |---|---|---|---|
-| Per-member file (`by-member/{id}.json`) | ~200 KB uncompressed / ~40 KB gzipped per MP | Fetch only needed member | 338 files × 40 KB = ~13 MB total |
-| Single combined (`all-speeches.json`) | ~100 MB uncompressed / ~15 MB gzipped | Must download full corpus | Impractical for mobile |
+| Per-member file (`by-member/{id}.json`) | ~200 KB uncompressed / ~40 KB gzipped per MP | Read only the requested member | 338 files × 40 KB = ~13 MB total |
+| Single combined (`all-speeches.json`) | ~100 MB uncompressed / ~15 MB gzipped | Must read full corpus | Impractical for request-scoped API reads |
 
-**Decision: per-member files.** One artifact per member containing all speeches (unpaginated) plus embedded stats. iOS loads on first member-profile tap, then caches locally via SwiftData. The current pagination structure exists only to manage Lambda/DB query cost; S3 removes that constraint.
+**Decision: per-member files.** One artifact per member containing all speeches (unpaginated) plus embedded stats. The backend API can read one member artifact on demand. The iOS member speech feed was retired in EPAC-1934, so there is no app-side consumer to redirect. The current pagination structure exists only to manage Lambda/DB query cost; S3 removes that constraint for the backend serving path.
 
 **Estimated corpus size:** ~13 MB gzipped across 338 files  
 **Max single artifact:** ~40 KB gzipped (active MPs with long Hansard histories)
@@ -179,7 +181,7 @@ speeches/v1/member-index.json            # lightweight index: member_id → tota
 ```
 Matches `#/components/schemas/MemberStats` for the `stats` field and `#/components/schemas/MemberSpeech` for each array entry. Pagination fields (`page`, `per_page`, `pages`, `total`) are absent — the artifact is always the complete speech history.
 
-**iOS consumer service:** `ios/epac/Util/MemberSpeechService.swift`
+**iOS runtime path after EPAC-1939:** None; the member speech feed and `MemberSpeechService.swift` were retired in EPAC-1934. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -238,7 +240,7 @@ votes/v1/vote-index.json               # all votes metadata for cross-MP lookup
 ```
 Each `votes` entry matches `#/components/schemas/Vote`. Pagination fields are absent.
 
-**iOS consumer service:** `ios/epac/Model/Fetch.swift` (votes-related methods)
+**iOS runtime path after EPAC-1939:** `ios/epac/Model/Fetch.swift` votes-related methods stay on their existing source-specific paths until sibling work removes or replaces them. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -300,7 +302,7 @@ sittings/v1/all.json    # complete sitting list, unpaginated (~30 KB gzipped)
 ```
 Each `sittings` entry matches `#/components/schemas/Sitting`. Pagination fields are absent.
 
-**iOS consumer service:** `ios/epac/Model/Fetch.swift` (`sittingDates()` / calendar methods)
+**iOS runtime path after EPAC-1939:** `ios/epac/Model/Fetch.swift` calendar methods remain on the authoritative ourcommons.ca sitting-calendar HTML source. Backend S3 artifacts are for backend/API migration only.
 
 ---
 
@@ -345,7 +347,7 @@ ORDER BY intervention_seq ASC
 | Per sitting date | ~1,000 dates | ~60 KB/file | ~60 MB |
 | All speeches combined | 1 file | ~15 MB | ~15 MB |
 
-**Decision: per-date files.** iOS loads one date at a time when displaying a sitting's Hansard. The 60 KB per-file payload is appropriate for mobile. The combined 60 MB total is manageable for S3 but would be prohibitive as a single download. iOS can prefetch recent dates and cache indefinitely (Hansard does not change after publication).
+**Decision: per-date files.** Backend serving paths can load one date artifact at a time when returning a sitting's Hansard. The 60 KB per-file payload is appropriate for API reads. The combined 60 MB total is manageable for S3 but would be prohibitive as a single download. iOS remains on its existing source-specific/runtime path unless a future backend API or removal ticket replaces it.
 
 **Estimated corpus size:** ~60 MB gzipped total  
 **Max single artifact:** ~120 KB gzipped (a very full sitting day with 300+ interventions)
@@ -376,7 +378,7 @@ sittings/v1/by-date/{YYYY-MM-DD}.json    # all speeches for one sitting date
 ```
 Each `speeches` entry matches `#/components/schemas/Speech`. Pagination fields are absent; the artifact contains all interventions for the sitting date.
 
-**iOS consumer service:** `ios/epac/Model/Fetch.swift` (Hansard sitting fetch methods); `ios/epac/Views/Calendar/SittingCalendarViewModel.swift`
+**iOS runtime path after EPAC-1939:** `ios/epac/Model/Fetch.swift` Hansard sitting fetch methods continue to parse authoritative Parliament XML into SwiftData. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -434,7 +436,7 @@ on-this-day/v1/all.json    # full ranked historical index, filtered by Lambda
 
 **Proposed JSON schema:** `{ "items": [...] }`, where each item matches `#/components/schemas/OnThisDayItem`. The Lambda wraps filtered items in `OnThisDayResponse`.
 
-**iOS consumer service:** Removed from Home in EPAC-1933; the backend endpoint and publisher remain until separately retired.
+**iOS runtime path after EPAC-1939:** None; Home usage was removed in EPAC-1933. The backend endpoint and publisher remain until separately retired.
 
 ---
 
@@ -473,7 +475,7 @@ bills/v1/current.json                                 # symlink-equivalent: late
 
 **Proposed JSON schema:** Matches `#/components/schemas/BillsResponse`. No structural changes needed.
 
-**iOS consumer service:** `ios/epac/Util/BillsService.swift`
+**iOS runtime path after EPAC-1939:** `ios/epac/Util/BillsService.swift` reads the authoritative LEGISinfo JSON endpoint directly. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -503,7 +505,7 @@ config/v1/app.json    # generated on deploy or feature-flag changes
 **Update frequency:** Manual (on release or feature-flag change)  
 **Update trigger:** `publish-artifacts` workflow
 
-**iOS consumer service:** `ios/epac/Util/BackendConfig.swift` (no dedicated config service today — needs new `AppConfigService.swift`)
+**iOS runtime path after EPAC-1939:** `ios/epac/Util/BackendConfig.swift` reads backend base URL configuration only. Do not reintroduce an app-side artifact host config path.
 
 ---
 
@@ -541,7 +543,7 @@ ridings/v1/boundary/{slug}.json           # simplified boundary per riding (~20-
 
 **Proposed JSON schema:** Matches `#/components/schemas/RidingBoundary` in OpenAPI. No structural changes. Pre-built `source_note`, `representation_order`, `extent`, and `centroid` are computed at publish time rather than at Lambda runtime.
 
-**iOS consumer service:** `ios/epac/Util/RidingBoundaryService.swift`
+**iOS runtime path after EPAC-1939:** None; the MP-profile riding-boundary map surface and `RidingBoundaryService.swift` were retired in EPAC-1935. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -601,7 +603,7 @@ estimates/v1/by-org/{org_id}.json     # all years for one org
 
 **Proposed JSON schema:** Matches `#/components/schemas/EstimatesResponse`. The Lambda filters `all.json` by fiscal year and reads `by-org/{org_id}.json` for organization detail.
 
-**iOS consumer service:** None today (Estimates UI not yet shipped). Will need a new `EstimatesService.swift`.
+**iOS runtime path after EPAC-1939:** None today (Estimates UI not yet shipped). Any future iOS service must use a backend/source-specific path, not direct S3/CloudFront artifact reads.
 
 ---
 
@@ -625,7 +627,7 @@ calendar/v1/house-{year}.ics    # year-specific archive (e.g. calendar/v1/house-
 
 **Proposed schema:** RFC 5545 iCalendar format; no structural change from current response. CloudFront serves with `Content-Type: text/calendar`.
 
-**iOS consumer service:** `ios/epac/Util/CalendarExportService.swift`
+**iOS runtime path after EPAC-1939:** `ios/epac/Util/CalendarExportService.swift` uses the backend API calendar URL. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
@@ -654,7 +656,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Monthly (~3 weeks after reference month)  
 **Update trigger:** Cron (monthly); manual re-run on data revision  
 **Implemented S3 key layout:** `statistics/v1/cpi-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
-**iOS consumer service:** None today (statistics UI not yet shipped). Will need a `CPIStatisticsService.swift`.
+**iOS runtime path after EPAC-1939:** None today (statistics UI not yet shipped). Any future iOS service must use a backend/source-specific path, not direct S3/CloudFront artifact reads.
 
 ### 12b. `fiscal-monitor`
 
@@ -664,7 +666,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Monthly  
 **Update trigger:** Cron (monthly after Finance Canada publishes)  
 **Implemented S3 key layout:** `statistics/v1/fiscal-monitor/all.json`
-**iOS consumer service:** `ios/epac/Util/FiscalMonitorService.swift`
+**iOS runtime path after EPAC-1939:** `ios/epac/Util/FiscalMonitorService.swift`; do not add a direct iOS S3/CloudFront artifact reader.
 
 ### 12c. `cpp-oas-statistics`
 
@@ -673,7 +675,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly)  
 **Implemented S3 key layout:** `statistics/v1/cpp-oas-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ### 12d. `ei-statistics`
 
@@ -683,7 +685,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly
 **Update trigger:** Cron (quarterly)
 **Implemented S3 key layout:** `statistics/v1/ei-statistics/all.json` and `province-<code>.json` slice artifacts.
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ### 12e. `vac-statistics`
 
@@ -692,7 +694,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly)  
 **Implemented S3 key layout:** `statistics/v1/vac-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ### 12f. `student-finance-statistics`
 
@@ -701,7 +703,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly
 **Update trigger:** Cron (quarterly / manual)
 **Implemented S3 key layout:** `statistics/v1/student-finance-statistics/all.json` and `province-<code>.json` slice artifacts.
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ### 12g. `corrections-statistics`
 
@@ -710,7 +712,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly
 **Update trigger:** Cron (quarterly / manual)
 **Implemented S3 key layout:** `statistics/v1/corrections-statistics/all.json`
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ### 12h. `transport-safety-statistics`
 
@@ -719,7 +721,7 @@ All eight pipelines share a common pattern:
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly / manual)  
 **Implemented S3 key layout:** `statistics/v1/transport-safety-statistics/all.json`, `road-national.json`, and `road-province-<code>.json` slice artifacts.
-**iOS consumer service:** None today.
+**iOS runtime path after EPAC-1939:** None today.
 
 ---
 
