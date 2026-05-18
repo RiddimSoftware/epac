@@ -9,19 +9,16 @@ private let onThisDayDateFormatter: DateFormatter = {
     return formatter
 }()
 
-private let onThisDayArtifactDateFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.calendar = Calendar(identifier: .gregorian)
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.timeZone = TimeZone(identifier: "America/Toronto")
-    formatter.dateFormat = "MM-dd"
-    return formatter
+private let onThisDayCalendar: Calendar = {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+    return calendar
 }()
 
 // OnThisDayKind and OnThisDayItem live in Domain/Entities/OnThisDayItem.swift
 
 struct OnThisDayResponse: Decodable {
-    let date: String
+    let date: String?
     let items: [OnThisDayItem]
 }
 
@@ -42,13 +39,14 @@ struct OnThisDayService {
         #if DEBUG
         if let fixture = Self.debugFixtureJSON(),
            let data = fixture.data(using: .utf8) {
-            return try JSONDecoder().decode(OnThisDayResponse.self, from: data).items
+            let response = try JSONDecoder().decode(OnThisDayResponse.self, from: data)
+            return Self.filter(response.items, for: date, limit: limit)
         }
         #endif
 
         do {
             let response = try await artifacts.fetch(artifactKey(date: date), as: OnThisDayResponse.self)
-            return Array(response.items.prefix(max(0, limit)))
+            return Self.filter(response.items, for: date, limit: limit)
         } catch let error as DecodingError {
             throw OnThisDayServiceError.decodeError(error)
         } catch {
@@ -57,7 +55,26 @@ struct OnThisDayService {
     }
 
     func artifactKey(date: Date = Date()) -> ArtifactKey {
-        .onThisDay(monthDay: onThisDayArtifactDateFormatter.string(from: date))
+        .onThisDayAll
+    }
+
+    private static func filter(_ items: [OnThisDayItem], for date: Date, limit: Int) -> [OnThisDayItem] {
+        let boundedLimit = min(max(0, limit), 20)
+        guard boundedLimit > 0 else { return [] }
+
+        let targetDate = onThisDayCalendar.startOfDay(for: date)
+        let targetComponents = onThisDayCalendar.dateComponents([.month, .day], from: targetDate)
+        return Array(items.lazy.compactMap { item -> OnThisDayItem? in
+            guard let itemDate = item.parsedDate else { return nil }
+            let itemDay = onThisDayCalendar.startOfDay(for: itemDate)
+            let itemComponents = onThisDayCalendar.dateComponents([.month, .day], from: itemDay)
+            guard itemComponents.month == targetComponents.month,
+                  itemComponents.day == targetComponents.day,
+                  itemDay < targetDate else {
+                return nil
+            }
+            return item
+        }.prefix(boundedLimit))
     }
 
     #if DEBUG

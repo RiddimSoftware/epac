@@ -52,7 +52,7 @@ struct RidingBoundaryTests {
 		  }
 		}
 		"""
-		let key = ArtifactKey("ridings/v1/by-slug/spadina-harbourfront.json")
+		let key = ArtifactKey("ridings/v1/boundary/spadina-harbourfront.json")
 		let artifacts = MockArtifactFetcher([key: json])
 
 		let boundary = try await RidingBoundaryService(artifacts: artifacts).boundary(for: "Spadina-Harbourfront")
