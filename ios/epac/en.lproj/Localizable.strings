@@ -375,9 +375,8 @@
 "lobbying.subject.unspecified" = "Subject not specified";
 
 /* Home feed */
-"home.parliament.sitting" = "Parliament is sitting today";
-"home.parliament.notSitting" = "Parliament is not sitting today";
-"home.parliament.adjourned" = "Parliament has adjourned for today";
+"home.debates.title" = "Past debates";
+"home.debates.subtitle" = "Browse previous sittings";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
 "home.followedBills" = "Bills You Follow";
@@ -387,16 +386,11 @@
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
 "home.seeAllDebates" = "Open Parliament tab →";
-"home.today.adjournedDetail" = "Hansard cached for %@";
-"home.today.nextSitting" = "Next sitting: %@";
-"home.today.noCalendar" = "Sitting calendar not cached yet";
-"home.today.offline" = "Offline — showing cached Parliament data";
-"home.today.offlineCache" = "Offline — showing cached data from %@";
 "home.refresh.offlineError" = "Unable to refresh — you're offline";
 "home.today.latestVote" = "Latest recorded vote";
-"home.today.latestSpeech" = "Your MP today";
-"home.today.noSpeech" = "No cached speech from your MP yet";
-"home.today.cachedOnly" = "Pull to refresh when you are back online";
+"home.today.latestSpeech" = "Recent speech from your MP";
+"home.today.noSpeech" = "No recent speech from your MP";
+"home.today.cachedOnly" = "Follow debates from the Parliament tab";
 "home.today.more" = "More from today";
 "home.today.myMPBallot" = "Your MP: %@";
 
