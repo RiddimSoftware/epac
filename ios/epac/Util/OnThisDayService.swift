@@ -9,10 +9,16 @@ private let onThisDayDateFormatter: DateFormatter = {
     return formatter
 }()
 
+private let onThisDayCalendar: Calendar = {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+    return calendar
+}()
+
 // OnThisDayKind and OnThisDayItem live in Domain/Entities/OnThisDayItem.swift
 
 struct OnThisDayResponse: Decodable {
-    let date: String
+    let date: String?
     let items: [OnThisDayItem]
 }
 
@@ -23,44 +29,52 @@ enum OnThisDayServiceError: Error {
 }
 
 struct OnThisDayService {
+    private let artifacts: any ArtifactFetching
+
+    init(artifacts: any ArtifactFetching = ArtifactService.shared) {
+        self.artifacts = artifacts
+    }
+
     func fetch(date: Date = Date(), limit: Int = 5) async throws -> [OnThisDayItem] {
         #if DEBUG
         if let fixture = Self.debugFixtureJSON(),
            let data = fixture.data(using: .utf8) {
-            return try JSONDecoder().decode(OnThisDayResponse.self, from: data).items
+            let response = try JSONDecoder().decode(OnThisDayResponse.self, from: data)
+            return Self.filter(response.items, for: date, limit: limit)
         }
         #endif
 
-        let url = try url(date: date, limit: limit)
-
-        let data: Data
         do {
-            (data, _) = try await NetworkService.shared.data(from: url)
+            let response = try await artifacts.fetch(artifactKey(date: date), as: OnThisDayResponse.self)
+            return Self.filter(response.items, for: date, limit: limit)
+        } catch let error as DecodingError {
+            throw OnThisDayServiceError.decodeError(error)
         } catch {
             throw OnThisDayServiceError.networkError(error)
         }
-
-        do {
-            return try JSONDecoder().decode(OnThisDayResponse.self, from: data).items
-        } catch {
-            throw OnThisDayServiceError.decodeError(error)
-        }
     }
 
-    func url(date: Date = Date(), limit: Int = 5) throws -> URL {
-        let endpoint = BackendConfig.shared.baseURL
-            .appendingPathComponent("api")
-            .appendingPathComponent("v1")
-            .appendingPathComponent("on-this-day")
-        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.queryItems = [
-            URLQueryItem(name: "date", value: onThisDayDateFormatter.string(from: date)),
-            URLQueryItem(name: "limit", value: String(limit))
-        ]
-        guard let url = components?.url else {
-            throw OnThisDayServiceError.badURL
-        }
-        return url
+    func artifactKey(date: Date = Date()) -> ArtifactKey {
+        .onThisDayAll
+    }
+
+    private static func filter(_ items: [OnThisDayItem], for date: Date, limit: Int) -> [OnThisDayItem] {
+        let boundedLimit = min(max(0, limit), 20)
+        guard boundedLimit > 0 else { return [] }
+
+        let targetDate = onThisDayCalendar.startOfDay(for: date)
+        let targetComponents = onThisDayCalendar.dateComponents([.month, .day], from: targetDate)
+        return Array(items.lazy.compactMap { item -> OnThisDayItem? in
+            guard let itemDate = item.parsedDate else { return nil }
+            let itemDay = onThisDayCalendar.startOfDay(for: itemDate)
+            let itemComponents = onThisDayCalendar.dateComponents([.month, .day], from: itemDay)
+            guard itemComponents.month == targetComponents.month,
+                  itemComponents.day == targetComponents.day,
+                  itemDay < targetDate else {
+                return nil
+            }
+            return item
+        }.prefix(boundedLimit))
     }
 
     #if DEBUG

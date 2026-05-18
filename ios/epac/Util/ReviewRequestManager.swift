@@ -157,6 +157,7 @@ final class ReviewRequestManager {
             return
         }
 
+        // Remote config stays on the backend until the planned config/v1 app-config artifact is published.
         let url = BackendConfig.shared.baseURL
             .appendingPathComponent("api")
             .appendingPathComponent("v1")

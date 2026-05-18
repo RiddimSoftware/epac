@@ -70,7 +70,7 @@ Inputs: Selected date (defaults to today), calendar window (visible month range)
 Outputs: List of sittings with subjects, sitting status (scheduled / cancelled / in-progress).
 Entities / values: Hansard, SubjectOfBusiness, LiveParliamentStatus.
 Ports: HansardRepository, LiveParliamentStatusFetching, Clock.
-Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (calendar XML download from ourcommons.ca), LiveParliamentService.
+Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (S3 sitting artifacts via ArtifactService), LiveParliamentService.
 Current implementation:
   ios/epac/Views/Calendar/SittingCalendarViewModel.swift
   ios/epac/Views/Calendar/SittingCalendarView.swift
@@ -78,6 +78,7 @@ Current implementation:
   ios/epac/Views/Calendar/SittingViewModel.swift
   ios/epac/Util/LiveParliamentService.swift
   ios/epac/Model/Fetch.swift (downloadCalendar)
+  ios/epac/Util/ArtifactService.swift
 ```
 
 ---
@@ -158,13 +159,13 @@ Inputs: Province filter, party filter.
 Outputs: MembersResponse with ParliamentMember records.
 Entities / values: ParliamentMember.
 Ports: MemberRepository.
-Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts.
+Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts, iOS Fetch + ArtifactService.
 Current implementation:
   backend/members/main.go
   backend/members-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. The publisher remains the only Postgres reader for this use case.
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. EPAC-1918 moves iOS member-list refresh to the same artifact via `ArtifactService` and `ArtifactIngestActor`. The publisher remains the only Postgres reader for this use case.
 
 ---
 
@@ -177,13 +178,13 @@ Inputs: Page, per-page, optional from_date and to_date filters.
 Outputs: SittingsResponse with Sitting records.
 Entities / values: Sitting.
 Ports: SittingRepository.
-Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts.
+Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS Fetch + ArtifactService.
 Current implementation:
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `sittings/v1/all.json` in S3. The publisher remains the only Postgres reader for the sitting index.
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `sittings/v1/all.json` in S3. EPAC-1918 moves iOS sitting-calendar refresh to the same artifact via `ArtifactService` and `ArtifactIngestActor`. The publisher remains the only Postgres reader for the sitting index.
 
 ---
 
@@ -196,13 +197,13 @@ Inputs: Sitting date, page, per-page.
 Outputs: SpeechesResponse with source-derived intervention IDs and speech content.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, Sitting.
 Ports: HansardRepository, SittingRepository.
-Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts.
+Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS Fetch + ArtifactService.
 Current implementation:
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 returns HTTP 404 when the date artifact is missing and does not fall back to Postgres.
+> **Adapter note:** EPAC-1914 returns HTTP 404 when the date artifact is missing and does not fall back to Postgres. EPAC-1918 moves iOS Hansard loading to `sittings/v1/by-date/{date}.json` through `ArtifactService` and persists a grouped SwiftData thread via `ArtifactIngestActor`.
 
 ---
 
@@ -215,13 +216,13 @@ Inputs: Status filter, Parliament number.
 Outputs: BillsResponse with Bill records.
 Entities / values: Bill.
 Ports: BillRepository.
-Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts.
+Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS BillsService + ArtifactService.
 Current implementation:
   backend/bills/main.go
   backend/bills-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. The current repo has no bills table, so the publisher uses the authoritative LEGISinfo JSON feed until a canonical backend bills table exists.
+> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. EPAC-1918 moves iOS bill-list reads to the same artifact. The current repo has no bills table, so the publisher uses the authoritative LEGISinfo JSON feed until a canonical backend bills table exists.
 
 ---
 
@@ -399,11 +400,12 @@ Inputs: Member ID, page number, optional topic filter.
 Outputs: Paginated list of SpeechMessages with stats (total speeches, average word count, top topic).
 Entities / values: SpeechMessage, ParliamentMember, ParliamentaryTopic.
 Ports: MemberContentRepository.
-Primary adapters: MemberSpeechFeedViewModel, MemberSpeechFeedView, MemberSpeechService, member-speeches Lambda (GET /api/v1/members/{id}/speeches), S3ArtifactMemberContentRepository, member-speeches-publisher.
+Primary adapters: MemberSpeechFeedViewModel, MemberSpeechFeedView, MemberSpeechService (S3 member-content artifacts via ArtifactService), member-speeches Lambda (GET /api/v1/members/{id}/speeches), S3ArtifactMemberContentRepository, member-speeches-publisher.
 Current implementation:
   ios/epac/Views/Members/MemberSpeechFeedViewModel.swift
   ios/epac/Views/Members/MemberSpeechFeedView.swift
   ios/epac/Util/MemberSpeechService.swift
+  ios/epac/Util/ArtifactService.swift
   backend/member-speeches/internal/usecase/usecase.go
   backend/member-speeches/internal/adapter/artifact/artifact.go
   backend/member-speeches/main.go

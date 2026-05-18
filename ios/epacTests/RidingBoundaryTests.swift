@@ -33,4 +33,31 @@ struct RidingBoundaryTests {
 		#expect(RidingBoundaryService.slug(for: "Scarborough Centre—Don Valley East") == "scarborough-centre-don-valley-east")
 		#expect(RidingBoundaryService.slug(for: "Longueuil—Saint‑Hubert") == "longueuil-saint-hubert")
 	}
+
+	@Test func boundaryReadsBySlugArtifact() async throws {
+		let json = """
+		{
+		  "slug": "spadina-harbourfront",
+		  "name": "Spadina-Harbourfront",
+		  "external_id": "35100",
+		  "representation_order": "2023",
+		  "source": "Elections Canada",
+		  "source_url": "https://www.elections.ca/",
+		  "source_note": "Boundary geometry source note.",
+		  "extent": [-79.41, 43.62, -79.36, 43.66],
+		  "centroid": [-79.39, 43.64],
+		  "geometry": {
+		    "type": "Polygon",
+		    "coordinates": [[[-79.41,43.62],[-79.40,43.63],[-79.36,43.66],[-79.41,43.62]]]
+		  }
+		}
+		"""
+		let key = ArtifactKey("ridings/v1/boundary/spadina-harbourfront.json")
+		let artifacts = MockArtifactFetcher([key: json])
+
+		let boundary = try await RidingBoundaryService(artifacts: artifacts).boundary(for: "Spadina-Harbourfront")
+
+		#expect(boundary.slug == "spadina-harbourfront")
+		#expect(artifacts.requestedKeys == [key])
+	}
 }

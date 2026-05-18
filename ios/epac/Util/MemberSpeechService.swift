@@ -64,6 +64,18 @@ struct MemberSpeechesPage: Decodable {
     }
 }
 
+private struct MemberSpeechesArtifact: Decodable {
+    let memberId: String
+    let stats: MemberStats
+    let speeches: [MemberSpeechEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+        case stats
+        case speeches
+    }
+}
+
 // Lightweight topic model built client-side from the fetched speeches.
 struct SpeechTopicChip: Identifiable {
     let id: String   // subject_title
@@ -77,31 +89,70 @@ enum MemberSpeechServiceError: Error {
 }
 
 struct MemberSpeechService {
-    static func fetchPage(memberId: Int, page: Int, perPage: Int = 20, topic: String? = nil) async throws -> MemberSpeechesPage {
-        let base = BackendConfig.shared.baseURL.absoluteString
-        var components = URLComponents(string: "\(base)/members/\(memberId)/speeches")!
-        var queryItems = [
-            URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)")
-        ]
-        if let topic {
-            queryItems.append(URLQueryItem(name: "topic", value: topic))
-        }
-        components.queryItems = queryItems
+    static func fetchPage(
+        memberId: Int,
+        page: Int,
+        perPage: Int = 20,
+        topic: String? = nil,
+        artifacts: any ArtifactFetching = ArtifactService.shared
+    ) async throws -> MemberSpeechesPage {
+        let page = max(1, page)
+        let perPage = min(max(1, perPage), 100)
 
-        guard let url = components.url else { throw MemberSpeechServiceError.badURL }
-
-        let (data, _): (Data, URLResponse)
+        let artifact: MemberSpeechesArtifact
         do {
-            (data, _) = try await NetworkService.shared.data(from: url)
+            artifact = try await artifacts.fetch(.memberSpeeches(memberID: memberId), as: MemberSpeechesArtifact.self)
+        } catch let error as DecodingError {
+            throw MemberSpeechServiceError.decodeError(error)
         } catch {
             throw MemberSpeechServiceError.networkError(error)
         }
 
-        do {
-            return try JSONDecoder().decode(MemberSpeechesPage.self, from: data)
-        } catch {
-            throw MemberSpeechServiceError.decodeError(error)
+        let filtered = artifact.speeches
+            .filter { entry in
+                guard let topic, !topic.isEmpty else { return true }
+                return entry.subjectTitle?.localizedCaseInsensitiveContains(topic) == true
+            }
+            .sorted(by: Self.speechAfter)
+        let total = filtered.count
+        let start = min((page - 1) * perPage, total)
+        let end = min(start + perPage, total)
+
+        return MemberSpeechesPage(
+            memberId: artifact.memberId,
+            page: page,
+            perPage: perPage,
+            total: total,
+            pages: total == 0 ? 0 : Int(ceil(Double(total) / Double(perPage))),
+            stats: Self.stats(from: artifact),
+            speeches: Array(filtered[start..<end])
+        )
+    }
+
+    private static func stats(from artifact: MemberSpeechesArtifact) -> MemberStats {
+        guard artifact.stats.totalSpeeches == 0, !artifact.speeches.isEmpty else {
+            return artifact.stats
+        }
+        let wordCounts = artifact.speeches.compactMap(\.wordCount)
+        let topicCounts = Dictionary(grouping: artifact.speeches.compactMap(\.subjectTitle), by: { $0 })
+        let topTopic = topicCounts.max { lhs, rhs in lhs.value.count < rhs.value.count }?.key ?? ""
+        return MemberStats(
+            totalSpeeches: artifact.speeches.count,
+            avgWordCount: wordCounts.isEmpty ? 0 : wordCounts.reduce(0, +) / wordCounts.count,
+            topTopic: topTopic
+        )
+    }
+
+    private static func speechAfter(_ lhs: MemberSpeechEntry, _ rhs: MemberSpeechEntry) -> Bool {
+        switch (lhs.parsedDate, rhs.parsedDate) {
+        case let (left?, right?) where left != right:
+            return left > right
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        default:
+            return lhs.id < rhs.id
         }
     }
 }

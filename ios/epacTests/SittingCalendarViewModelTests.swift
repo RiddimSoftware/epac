@@ -20,6 +20,11 @@ struct SittingCalendarViewModelTests {
         Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
+    private func containsYMD(_ components: Set<DateComponents>, year: Int, month: Int, day: Int) -> Bool {
+        let expected = dateComponents(year: year, month: month, day: day)
+        return components.contains { $0.sameYMD(as: expected) }
+    }
+
     private func makeContext() throws -> ModelContext {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
@@ -87,8 +92,8 @@ struct SittingCalendarViewModelTests {
         await secondRefresh.value
 
         #expect(fetcher.downloadCallCount == 2)
-        #expect(vm.futureDates.contains(dateComponents(year: year, month: 12, day: 2)))
-        #expect(!vm.futureDates.contains(dateComponents(year: year, month: 12, day: 1)))
+        #expect(containsYMD(vm.futureDates, year: year, month: 12, day: 2))
+        #expect(!containsYMD(vm.futureDates, year: year, month: 12, day: 1))
         #expect(!vm.loadFailed)
     }
 
@@ -111,7 +116,7 @@ struct SittingCalendarViewModelTests {
         #expect(vm.dates.contains(dateComponents(year: previousYear, month: 6, day: 10)))
         #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 1, day: 1)))
         #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
-        #expect(vm.futureDates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
+        #expect(containsYMD(vm.futureDates, year: currentYear, month: 12, day: 1))
         #expect(fetcher.downloadCalls == 1)
         #expect(!vm.loadFailed)
     }

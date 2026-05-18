@@ -57,8 +57,8 @@ final class CalendarExportService {
 		return addedCount
 	}
 
-	static func subscriptionURL(baseURL: URL = BackendConfig.shared.baseURL) -> URL {
-		baseURL.appendingPathComponent("calendar/house.ics")
+	static func subscriptionURL(baseURL: URL = ArtifactConfig.shared.baseURL) -> URL {
+		ArtifactKey.calendarHouse.url(relativeTo: baseURL)
 	}
 
 	static func deepLinkURL(for date: Date, calendar: Calendar = .current) -> URL? {
