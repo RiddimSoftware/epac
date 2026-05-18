@@ -56,12 +56,6 @@ jobs:
           bundle config set path vendor/bundle
           bundle install --jobs 4 --retry 3
 
-      - name: Clear runner AWS profile overrides
-        if: ${{ !inputs.dry_run }}
-        run: |
-          echo "AWS_PROFILE=" >> "$GITHUB_ENV"
-          echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
-
       - name: Configure AWS credentials via OIDC
         if: ${{ !inputs.dry_run }}
         uses: aws-actions/configure-aws-credentials@v4
