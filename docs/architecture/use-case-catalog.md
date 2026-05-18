@@ -28,8 +28,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `RidingBoundary` | A simplified federal electoral district boundary with source metadata and GeoJSON geometry. |
 | `CalendarEntry` | A House sitting day represented in the public RFC 5545 calendar feed. |
 | `AppConfig` | Backend-provided app version and feature-flag settings. |
-| `ArtifactKey` | A relative S3/CDN artifact key such as `members/v1/all.json`. |
-| `ArtifactManifest` | The iOS-decoded manifest.json document used to compare artifact ETags before fetching payloads. |
+| `ArtifactKey` | A published object key used by backend artifact publishers, such as `members/v1/all.json`. |
 | `Manifest` | The root manifest.json document: schema version, generation timestamp, and sorted artifact entries. |
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 
@@ -48,9 +47,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `NotificationDelivering` | outbound | Send push notifications to subscribed devices via APNs. |
 | `SubjectsRepository` | outbound | Read Hansard subject records for artifact generation. |
 | `Clock` | outbound | Provide the current timestamp for scheduling and cache-freshness checks. |
-| `ArtifactFetching` | inbound | Consumer-facing iOS port for fetching decoded CDN artifacts and manifest.json without exposing HTTP or disk details. |
-| `ManifestFetching` | outbound | Fetch manifest.json over HTTPS with conditional ETag requests. |
-| `ArtifactStore` | outbound | Backend: list artifact keys and metadata from object storage; write manifest.json back. iOS: read/write cached artifact payloads and ETags on disk. |
+| `ArtifactStore` | outbound | Backend publishers and Lambdas list artifact keys, read object data, and write manifest.json back to object storage. |
 | `StatisticsSink` | outbound | Backend statistics pipelines write deterministic JSON dataset artifacts without coupling parser logic to stdout, local files, Postgres, or S3 SDK details. |
 | `EstimatesReader` | outbound | Fetch published Main Estimates rows by fiscal year, organization, or full artifact export. |
 | `RidingBoundaryRepository` | outbound | Read federal riding boundary artifacts by slug. |
@@ -70,7 +67,7 @@ Inputs: Selected date (defaults to today), calendar window (visible month range)
 Outputs: List of sittings with subjects, sitting status (scheduled / cancelled / in-progress).
 Entities / values: Hansard, SubjectOfBusiness, LiveParliamentStatus.
 Ports: HansardRepository, LiveParliamentStatusFetching, Clock.
-Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (S3 sitting artifacts via ArtifactService), LiveParliamentService.
+Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing), LiveParliamentService.
 Current implementation:
   ios/epac/Views/Calendar/SittingCalendarViewModel.swift
   ios/epac/Views/Calendar/SittingCalendarView.swift
@@ -78,7 +75,6 @@ Current implementation:
   ios/epac/Views/Calendar/SittingViewModel.swift
   ios/epac/Util/LiveParliamentService.swift
   ios/epac/Model/Fetch.swift (downloadCalendar)
-  ios/epac/Util/ArtifactService.swift
 ```
 
 ---
@@ -159,13 +155,13 @@ Inputs: Province filter, party filter.
 Outputs: MembersResponse with ParliamentMember records.
 Entities / values: ParliamentMember.
 Ports: MemberRepository.
-Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts, iOS Fetch + ArtifactService.
+Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts, iOS Fetch (ourcommons.ca member XML parsing).
 Current implementation:
   backend/members/main.go
   backend/members-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. EPAC-1918 moves iOS member-list refresh to the same artifact via `ArtifactService` and `ArtifactIngestActor`. The publisher remains the only Postgres reader for this use case.
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. iOS member-list refresh remains on the authoritative Parliament XML source. The publisher remains the only Postgres reader for this use case.
 
 ---
 
@@ -178,13 +174,13 @@ Inputs: Page, per-page, optional from_date and to_date filters.
 Outputs: SittingsResponse with Sitting records.
 Entities / values: Sitting.
 Ports: SittingRepository.
-Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS Fetch + ArtifactService.
+Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS Fetch (ourcommons.ca sitting calendar parsing).
 Current implementation:
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `sittings/v1/all.json` in S3. EPAC-1918 moves iOS sitting-calendar refresh to the same artifact via `ArtifactService` and `ArtifactIngestActor`. The publisher remains the only Postgres reader for the sitting index.
+> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `sittings/v1/all.json` in S3. iOS sitting-calendar refresh remains on the authoritative Parliament calendar page. The publisher remains the only Postgres reader for the sitting index.
 
 ---
 
@@ -197,13 +193,13 @@ Inputs: Sitting date, page, per-page.
 Outputs: SpeechesResponse with source-derived intervention IDs and speech content.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, Sitting.
 Ports: HansardRepository, SittingRepository.
-Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS Fetch + ArtifactService.
+Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS Fetch (ourcommons.ca Hansard XML parsing).
 Current implementation:
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 returns HTTP 404 when the date artifact is missing and does not fall back to Postgres. EPAC-1918 moves iOS Hansard loading to `sittings/v1/by-date/{date}.json` through `ArtifactService` and persists a grouped SwiftData thread via `ArtifactIngestActor`.
+> **Adapter note:** EPAC-1914 returns HTTP 404 when the date artifact is missing and does not fall back to Postgres. iOS Hansard loading remains on the authoritative Parliament XML export and persists parsed SwiftData records locally.
 
 ---
 
@@ -216,13 +212,13 @@ Inputs: Status filter, Parliament number.
 Outputs: BillsResponse with Bill records.
 Entities / values: Bill.
 Ports: BillRepository.
-Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS BillsService + ArtifactService.
+Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS BillsService (LEGISinfo JSON).
 Current implementation:
   backend/bills/main.go
   backend/bills-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. EPAC-1918 moves iOS bill-list reads to the same artifact. The current repo has no bills table, so the publisher uses the authoritative LEGISinfo JSON feed until a canonical backend bills table exists.
+> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. iOS bill-list reads use the authoritative LEGISinfo JSON feed directly. The current repo has no bills table, so the publisher uses the same source until a canonical backend bills table exists.
 
 ---
 
@@ -445,24 +441,6 @@ Current implementation:
 
 ---
 
-### IngestArtifact
-
-```
-Actor: System (iOS artifact refresh coordinator)
-Goal: Persist decoded artifact snapshots into the local SwiftData store without blocking the main thread.
-Inputs: MembersArtifact, SittingsArtifact, BillsArtifact, HansardSubjectsArtifact.
-Outputs: IngestResult with inserted / updated / deleted counts and duration.
-Entities / values: ParliamentMember, SittingCalendar, Bill, Hansard, SubjectOfBusiness, SpeechMessage.
-Ports: Artifact ingest methods.
-Primary adapters: ArtifactIngestActor, SwiftData ModelContainer / ModelContext.
-Current implementation:
-  ios/epac/Util/ArtifactIngestActor.swift
-```
-
-> Boundary note: `ArtifactIngestActor` is the off-main-thread SwiftData write adapter. The refresh coordinator that triggers these methods lands in a separate issue; views continue reading through `@Query` / main-context fetches.
-
----
-
 ### IngestHansard
 
 ```
@@ -512,7 +490,7 @@ Current implementation:
 
 ```
 Actor: CI pipeline (GitHub Actions, post-artifact-publish step)
-Goal: Produce a deterministic manifest.json listing every artifact in the S3 bucket so the iOS app can diff against it and download only changed files.
+Goal: Produce a deterministic manifest.json listing every artifact in the S3 bucket for publisher and backend operational validation.
 Inputs: S3 bucket name.
 Outputs: manifest.json written to s3://<bucket>/manifest.json with Cache-Control: public, max-age=60; fails if any artifact is missing required x-amz-meta-content-hash-sha256 metadata.
 Entities / values: Manifest, ManifestEntry.
@@ -525,7 +503,7 @@ Current implementation:
   backend/manifest/cmd/generate-manifest/main.go
 ```
 
-> **Schema contract:** `backend/manifest/README.md` is the only shared contract between the publisher (CI) and the consumer (iOS app). Bumping `schema_version` requires coordinated changes to both sides.
+> **Schema contract:** `backend/manifest/README.md` is the backend artifact publishing contract. Bumping `schema_version` requires coordinated changes to backend publishers and manifest validation.
 
 ---
 
@@ -553,24 +531,6 @@ Current implementation:
 ```
 
 > Boundary rule: pipeline parsers own authoritative-source fetching and JSON composition; `statistics_artifacts.py` owns S3 keys, uploads, cache headers, and content-hash metadata. CloudFront invalidation and manifest generation remain in the workflow.
-
----
-
-### FetchArtifact
-
-```
-Actor: iOS service or ViewModel consuming a CDN-published artifact
-Goal: Fetch the latest decoded artifact payload with ETag revalidation, on-disk cache reuse, and stale-cache offline fallback.
-Inputs: ArtifactKey, expected Decodable payload type.
-Outputs: Decoded payload, fresh manifest metadata, stale-cache warning, or typed ArtifactError.
-Entities / values: ArtifactKey, ArtifactManifest, ManifestEntry.
-Ports: ArtifactFetching, ArtifactStore, ManifestFetching.
-Primary adapters: ArtifactService, URLSessionArtifactStore, FileManagerArtifactStore, Info.plist ArtifactsBaseURL.
-Current implementation:
-  ios/epac/Util/ArtifactService.swift
-```
-
-> Boundary rule: consumers depend on `ArtifactFetching`; `URLSession`, `FileManager`, HTTP status handling, and cache paths stay inside `ArtifactService` adapters.
 
 ---
 
