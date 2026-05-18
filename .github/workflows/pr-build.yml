@@ -60,6 +60,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.ios == 'true'
     runs-on: ["self-hosted","macOS"]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -75,6 +76,7 @@ jobs:
 
       - name: Build
         working-directory: ios
+        timeout-minutes: 40
         run: |
           build_jobs="$(sysctl -n hw.logicalcpu)"
           if [ "$build_jobs" -gt 6 ]; then
