@@ -20,20 +20,10 @@ enum AppEnvironment {
 
     static var isEvidenceCaptureMode: Bool {
         ProcessInfo.processInfo.arguments.contains("--evidence-mode") ||
-        ProcessInfo.processInfo.environment["EPAC_EVIDENCE_MODE"] == "1" ||
-        debugOnThisDayFixtureIsPresent
+        ProcessInfo.processInfo.environment["EPAC_EVIDENCE_MODE"] == "1"
     }
 
     static var isMarketingCaptureMode: Bool {
         isAppStoreScreenshotMode || isAppPreviewMode || isEvidenceCaptureMode
-    }
-
-    private static var debugOnThisDayFixtureIsPresent: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("--on-this-day-fixture-json") ||
-        ProcessInfo.processInfo.environment["EPAC_DEBUG_ON_THIS_DAY_FIXTURE_JSON"] != nil
-        #else
-        false
-        #endif
     }
 }

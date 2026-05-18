@@ -12,12 +12,10 @@ final class LoadHomeFeedTests: XCTestCase {
     func testLoadHomeFeedEmptyState() async throws {
         let clock = MockClock(date: Date())
         let repository = MockHomeFeedRepository()
-        let onThisDay = MockOnThisDayFetching()
         let followPrefs = MockFollowPreferenceReading()
 
         let useCase = LoadHomeFeed(
             repository: repository,
-            onThisDayFetching: onThisDay,
             followPreferenceReading: followPrefs,
             clock: clock
         )
@@ -28,7 +26,6 @@ final class LoadHomeFeedTests: XCTestCase {
         XCTAssertNil(snapshot.followedMember)
         XCTAssertEqual(snapshot.myMPActivityCount, 0)
         XCTAssertTrue(snapshot.recentSubjectTitles.isEmpty)
-        XCTAssertTrue(snapshot.onThisDayItems.isEmpty)
         XCTAssertEqual(snapshot.civicContext.followedBills, [])
         XCTAssertEqual(snapshot.civicContext.followedTopics, [])
         XCTAssertEqual(snapshot.civicContext.mySenators.count, 0)
@@ -39,7 +36,6 @@ final class LoadHomeFeedTests: XCTestCase {
     func testLoadHomeFeedWithFollowedMPContext() async throws {
         let clock = MockClock(date: Date())
         let repository = MockHomeFeedRepository()
-        let onThisDay = MockOnThisDayFetching()
         let followPrefs = MockFollowPreferenceReading(
             savedMemberName: "Jane Smith",
             followedBills: ["C-101"],
@@ -66,7 +62,6 @@ final class LoadHomeFeedTests: XCTestCase {
 
         let useCase = LoadHomeFeed(
             repository: repository,
-            onThisDayFetching: onThisDay,
             followPreferenceReading: followPrefs,
             clock: clock
         )
@@ -83,32 +78,6 @@ final class LoadHomeFeedTests: XCTestCase {
         XCTAssertNotNil(snapshot.latestSpeechHighlight)
         XCTAssertEqual(snapshot.latestSpeechHighlight?.memberName, "Jane Smith")
         XCTAssertEqual(snapshot.latestSpeechHighlight?.subjectTitle, "Budget Debate")
-    }
-
-    func testOnThisDayPreservedOnFailure() async throws {
-        let clock = MockClock(date: Date())
-        let repository = MockHomeFeedRepository()
-        let onThisDay = MockOnThisDayFetching(shouldThrow: true)
-        let followPrefs = MockFollowPreferenceReading()
-
-        let useCase = LoadHomeFeed(
-            repository: repository,
-            onThisDayFetching: onThisDay,
-            followPreferenceReading: followPrefs,
-            clock: clock
-        )
-
-        let existingItem = OnThisDayItem(
-            id: "item-1", kind: .speech, year: 2024, date: "2024-01-15",
-            title: "Budget speech 1924", excerpt: "The Minister moved...",
-            speakerName: nil, memberID: nil, subjectTitle: nil,
-            interventionID: nil, voteID: nil, billNumber: nil, sourceURL: nil
-        )
-
-        let snapshot = await useCase.execute(preservingOnThisDayItems: [existingItem])
-
-        XCTAssertEqual(snapshot.onThisDayItems.count, 1)
-        XCTAssertEqual(snapshot.onThisDayItems.first?.id, "item-1")
     }
 }
 
@@ -137,15 +106,6 @@ class MockHomeFeedRepository: HomeFeedRepository {
     func fetchSenators(for provinceAbbrev: String) async throws -> [Senator] { [] }
 }
 
-class MockOnThisDayFetching: OnThisDayFetching {
-    private let shouldThrow: Bool
-    init(shouldThrow: Bool = false) { self.shouldThrow = shouldThrow }
-    func fetch(date: Date, limit: Int) async throws -> [OnThisDayItem] {
-        if shouldThrow { throw URLError(.notConnectedToInternet) }
-        return []
-    }
-}
-
 @MainActor
 class MockFollowPreferenceReading: FollowPreferenceReading {
     private let _savedMemberName: String?
@@ -162,6 +122,4 @@ class MockFollowPreferenceReading: FollowPreferenceReading {
     func followedTopicIDs() -> [String] { _followedTopics }
     func followedMemberIDs() -> [Int] { [] }
     func savedMemberName() -> String? { _savedMemberName }
-    func dismissedOnThisDayDate() -> String? { nil }
-    func dismissOnThisDay(dateString: String) {}
 }

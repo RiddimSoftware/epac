@@ -668,10 +668,6 @@
 "toronto.votes.empty.description" = "Toronto City Council vote records will appear here.";
 "toronto.votes.sourceLink" = "Source: Open Data Toronto";
 
-/* On This Day (EPAC-470) */
-"home.onThisDay.title" = "On this day in past Parliaments";
-"home.onThisDay.dismiss" = "Hide On This Day";
-
 /* Onboarding v2 (EPAC-621) */
 "onboarding.welcome.oneLineValueProp" = "Canada's parliament, in your pocket";
 "onboarding.mp.confirm.title" = "Your MP is %@";

@@ -35,20 +35,11 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
-    @State private var onThisDayItems: [OnThisDayItem] = []
-    @State private var onThisDayDismissedDate = UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate") ?? ""
-    @State private var didRecordOnThisDayImpression = false
-    @State private var selectedOnThisDaySpeech: OnThisDaySpeechSelection?
-
-    private let onThisDayService = OnThisDayService()
 
     var body: some View {
         NavigationStack {
             List {
                 todaySection
-                if shouldShowOnThisDaySection {
-                    onThisDaySection
-                }
                 electionCountdownSection
                 myMPSection
                 if !billStore.followedNumbers.isEmpty {
@@ -131,9 +122,6 @@ struct HomeFeedView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
-            }
-            .navigationDestination(item: $selectedOnThisDaySpeech) { selection in
-                SpeechView(hansard: selection.hansard, subject: selection.subject)
             }
         }
     }
@@ -287,49 +275,6 @@ struct HomeFeedView: View {
             Spacer()
         }
         .contentShape(Rectangle())
-    }
-
-    // MARK: - On this day
-
-    private var shouldShowOnThisDaySection: Bool {
-        !onThisDayItems.isEmpty && onThisDayDismissedDate != ottawaTodayString
-    }
-
-    private var onThisDaySection: some View {
-        Section {
-            ForEach(onThisDayItems.prefix(5)) { item in
-                Button {
-                    Task { await openOnThisDayItem(item) }
-                } label: {
-                    todayMetricRow(
-                        icon: item.kind == .vote ? "checkmark.ballot.fill" : "quote.bubble.fill",
-                        title: item.detailText,
-                        headline: item.title,
-                        detail: item.excerpt,
-                        detailLineLimit: 1
-                    )
-                    .padding(.vertical, EpacSpacing.xs)
-                }
-                .buttonStyle(.plain)
-            }
-        } header: {
-            HStack {
-                Text(NSLocalizedString("home.onThisDay.title", comment: ""))
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                Button {
-                    dismissOnThisDay()
-                } label: {
-                    Image(systemName: "xmark.circle")
-                }
-                .accessibilityLabel(NSLocalizedString("home.onThisDay.dismiss", comment: ""))
-            }
-        }
-        .onAppear {
-            guard !didRecordOnThisDayImpression else { return }
-            didRecordOnThisDayImpression = true
-            OnThisDayTelemetry.record(.impression)
-        }
     }
 
     // MARK: - Section 2: Your MP's activity
@@ -775,10 +720,9 @@ struct HomeFeedView: View {
     private func loadFeed() async {
         let useCase = LoadHomeFeed(
             repository: HomeFeedSwiftDataRepository(modelContext: modelContext),
-            onThisDayFetching: onThisDayService,
             followPreferenceReading: FollowPreferenceAdapter()
         )
-        let snapshot = await useCase.execute(preservingOnThisDayItems: onThisDayItems)
+        let snapshot = await useCase.execute()
 
         self.latestVote = snapshot.latestVote
         self.latestMemberVote = snapshot.latestMemberVote
@@ -787,27 +731,8 @@ struct HomeFeedView: View {
         self.recentSubjectTitles = snapshot.recentSubjectTitles
         self.latestHansardDate = snapshot.latestHansardDate
 
-        if self.onThisDayItems != snapshot.onThisDayItems {
-            self.didRecordOnThisDayImpression = false
-        }
-        self.onThisDayItems = snapshot.onThisDayItems
-
         self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
         self.mySenators = snapshot.civicContext.mySenators
-    }
-
-    // Returns today's date string (YYYY-MM-DD) in Ottawa local time.
-    private var ottawaTodayString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "America/Toronto")
-        return formatter.string(from: Date())
-    }
-
-    private func dismissOnThisDay() {
-        onThisDayDismissedDate = ottawaTodayString
-        UserDefaults.standard.set(onThisDayDismissedDate, forKey: "epac.onThisDay.dismissedDate")
-        OnThisDayTelemetry.record(.dismiss)
     }
 
     private var hasPersonalizedContext: Bool {
@@ -846,91 +771,6 @@ struct HomeFeedView: View {
         return try? modelContext.fetch(descriptor).first
     }
 
-    private func openOnThisDayItem(_ item: OnThisDayItem) async {
-        OnThisDayTelemetry.record(.tap, itemID: item.id)
-        switch item.kind {
-        case .speech:
-            await openOnThisDaySpeech(item)
-        case .vote:
-            if let billNumber = item.billNumber, !billNumber.isEmpty {
-                router.pendingSearchQuery = billNumber
-            } else {
-                router.pendingSearchQuery = item.title
-            }
-            router.selectedTab = .search
-        }
-    }
-
-    private func openOnThisDaySpeech(_ item: OnThisDayItem) async {
-        guard let date = item.parsedDate else {
-            router.pendingSearchQuery = item.subjectTitle ?? item.title
-            router.selectedTab = .search
-            return
-        }
-
-        do {
-            if resolveHansard(on: date) == nil {
-                try await fetch.downloadHansard(date)
-            }
-            guard let hansard = resolveHansard(on: date),
-                  let subject = resolveSubject(for: item, in: hansard) else {
-                router.pendingSearchQuery = item.subjectTitle ?? item.title
-                router.selectedTab = .search
-                return
-            }
-            prepareOnThisDaySpeechResume(item, subject: subject)
-            selectedOnThisDaySpeech = OnThisDaySpeechSelection(hansard: hansard, subject: subject)
-        } catch {
-            Log.error("HomeFeedView on-this-day speech open failed: \(error.localizedDescription)")
-            router.pendingSearchQuery = item.subjectTitle ?? item.title
-            router.selectedTab = .search
-        }
-    }
-
-    private func resolveHansard(on date: Date) -> Hansard? {
-        let start = Calendar.current.startOfDay(for: date)
-        guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return nil }
-        let descriptor = FetchDescriptor<Hansard>(
-            predicate: #Predicate { $0.date >= start && $0.date < end }
-        )
-        return (try? modelContext.fetch(descriptor))?.first
-    }
-
-    private func resolveSubject(for item: OnThisDayItem, in hansard: Hansard) -> SubjectOfBusiness? {
-        let subjects = hansard.orders.flatMap(\.subjects)
-        if let interventionID = item.interventionID,
-           let exact = subjects.first(where: { subject in
-               subject.speeches.contains { $0.hansardID == interventionID }
-           }) {
-            return exact
-        }
-        if let subjectTitle = item.subjectTitle,
-           let titleMatch = subjects.first(where: { $0.title.localizedCaseInsensitiveCompare(subjectTitle) == .orderedSame }) {
-            return titleMatch
-        }
-        return subjects.first
-    }
-
-    private func prepareOnThisDaySpeechResume(_ item: OnThisDayItem, subject: SubjectOfBusiness) {
-        guard let interventionID = item.interventionID,
-              let speech = subject.speeches.first(where: { $0.hansardID == interventionID }) else {
-            return
-        }
-        subject.currentSpeech = speech
-        subject.currentSpeechID = speech.hansardID
-        speech.currentMessage = nil
-        speech.currentMessageID = nil
-    }
-
-    private static func trimmedExcerpt(_ text: String) -> String {
-        let cleaned = text
-            .replacingOccurrences(of: "\n", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard cleaned.count > 140 else { return cleaned }
-        let end = cleaned.index(cleaned.startIndex, offsetBy: 140)
-        return String(cleaned[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
-    }
-
     private func yearOverYearLabel(_ value: Double) -> String {
         if value > 0 {
             return "+\(value.formatted(.number.precision(.fractionLength(1))))%"
@@ -944,19 +784,5 @@ struct HomeFeedView: View {
 
     private func trackTodayCardTap(_ target: String) {
         Log.info("home.today.tap target=\(target)")
-    }
-}
-
-private struct OnThisDaySpeechSelection: Hashable, Identifiable {
-    let id = UUID()
-    let hansard: Hansard
-    let subject: SubjectOfBusiness
-
-    static func == (lhs: OnThisDaySpeechSelection, rhs: OnThisDaySpeechSelection) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
     }
 }

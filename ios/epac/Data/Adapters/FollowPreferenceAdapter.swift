@@ -22,12 +22,4 @@ struct FollowPreferenceAdapter: FollowPreferenceReading {
     func savedMemberName() -> String? {
         PostalCodeStore.shared.savedMemberName
     }
-    
-    func dismissedOnThisDayDate() -> String? {
-        UserDefaults.standard.string(forKey: "epac.onThisDay.dismissedDate")
-    }
-    
-    func dismissOnThisDay(dateString: String) {
-        UserDefaults.standard.set(dateString, forKey: "epac.onThisDay.dismissedDate")
-    }
 }

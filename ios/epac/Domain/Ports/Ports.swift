@@ -17,18 +17,12 @@ protocol HomeFeedRepository: Sendable {
     func fetchSenators(for provinceAbbrev: String) async throws -> [Senator]
 }
 
-protocol OnThisDayFetching: Sendable {
-    func fetch(date: Date, limit: Int) async throws -> [OnThisDayItem]
-}
-
 @MainActor
 protocol FollowPreferenceReading: Sendable {
     func followedBillNumbers() -> [String]
     func followedTopicIDs() -> [String]
     func followedMemberIDs() -> [Int]
     func savedMemberName() -> String?
-    func dismissedOnThisDayDate() -> String?
-    func dismissOnThisDay(dateString: String)
 }
 
 protocol Clock: Sendable {
