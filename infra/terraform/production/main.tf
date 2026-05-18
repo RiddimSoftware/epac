@@ -100,7 +100,7 @@ resource "aws_lambda_function" "production" {
 
   lifecycle {
     # filename/source_code_hash: managed by the backend deploy workflow.
-    # environment: DATABASE_URL and service secrets are injected outside Terraform.
+    # environment: managed by the deploy workflow.
     ignore_changes = [filename, source_code_hash, environment]
   }
 
