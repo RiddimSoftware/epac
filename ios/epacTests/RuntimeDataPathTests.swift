@@ -73,56 +73,6 @@ struct RuntimeDataPathTests {
         #expect(members.first?.riding == "Ottawa Centre")
     }
 
-    @Test func memberSpeechServiceUsesBackendAPIAndPaginatesResponse() async throws {
-        let harness = try makeNetworkHarness()
-        defer { harness.cleanup() }
-        defer { MockURLProtocol.requestHandler = nil }
-
-        MockURLProtocol.requestHandler = { request in
-            let url = try #require(request.url)
-            #expect(url.path == "/api/v1/members/278707/speeches")
-            #expect(url.query?.contains("page=2") == true)
-            #expect(url.query?.contains("per_page=10") == true)
-            #expect(url.query?.contains("topic=housing") == true)
-            let json = """
-            {
-              "member_id": "278707",
-              "page": 2,
-              "per_page": 10,
-              "total": 1,
-              "pages": 1,
-              "stats": { "total_speeches": 1, "avg_word_count": 20, "top_topic": "Housing" },
-              "speeches": [
-                {
-                  "id": "speech-1",
-                  "sitting_date": "2026-04-29",
-                  "subject_title": "Housing",
-                  "preview": "Housing affordability matters.",
-                  "word_count": 20,
-                  "filename": "HAN001-E.XML"
-                }
-              ]
-            }
-            """
-            return (
-                HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
-                Data(json.utf8)
-            )
-        }
-
-        let page = try await MemberSpeechService.fetchPage(
-            memberId: 278707,
-            page: 2,
-            perPage: 10,
-            topic: "housing",
-            baseURL: URL(string: "https://api.example.test")!,
-            network: harness.service
-        )
-
-        #expect(page.memberId == "278707")
-        #expect(page.speeches.map(\.id) == ["speech-1"])
-    }
-
     @Test func ridingBoundaryServiceUsesBackendAPI() async throws {
         let harness = try makeNetworkHarness()
         defer { harness.cleanup() }

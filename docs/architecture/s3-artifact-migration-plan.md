@@ -137,12 +137,12 @@ SELECT subject_title FROM speeches WHERE member_id = $1 ... GROUP BY subject_tit
 
 **Per-member vs combined tradeoff:**
 
-| Option | Artifact size | iOS download | Notes |
+| Option | Artifact size | Backend/API read pattern | Notes |
 |---|---|---|---|
-| Per-member file (`by-member/{id}.json`) | ~200 KB uncompressed / ~40 KB gzipped per MP | Fetch only needed member | 338 files × 40 KB = ~13 MB total |
-| Single combined (`all-speeches.json`) | ~100 MB uncompressed / ~15 MB gzipped | Must download full corpus | Impractical for mobile |
+| Per-member file (`by-member/{id}.json`) | ~200 KB uncompressed / ~40 KB gzipped per MP | Read only the requested member | 338 files × 40 KB = ~13 MB total |
+| Single combined (`all-speeches.json`) | ~100 MB uncompressed / ~15 MB gzipped | Must read full corpus | Impractical for request-scoped API reads |
 
-**Decision: per-member files.** One artifact per member containing all speeches (unpaginated) plus embedded stats. The backend API can read one member artifact on demand while iOS continues to call `/api/v1/members/{id}/speeches`. The current pagination structure exists only to manage Lambda/DB query cost; S3 removes that constraint for the backend serving path.
+**Decision: per-member files.** One artifact per member containing all speeches (unpaginated) plus embedded stats. The backend API can read one member artifact on demand. The iOS member speech feed was retired in EPAC-1934, so there is no app-side consumer to redirect. The current pagination structure exists only to manage Lambda/DB query cost; S3 removes that constraint for the backend serving path.
 
 **Estimated corpus size:** ~13 MB gzipped across 338 files  
 **Max single artifact:** ~40 KB gzipped (active MPs with long Hansard histories)
@@ -181,7 +181,7 @@ speeches/v1/member-index.json            # lightweight index: member_id → tota
 ```
 Matches `#/components/schemas/MemberStats` for the `stats` field and `#/components/schemas/MemberSpeech` for each array entry. Pagination fields (`page`, `per_page`, `pages`, `total`) are absent — the artifact is always the complete speech history.
 
-**iOS runtime path after EPAC-1939:** `ios/epac/Util/MemberSpeechService.swift` calls the backend API. Do not add a direct iOS S3/CloudFront artifact reader.
+**iOS runtime path after EPAC-1939:** None; the member speech feed and `MemberSpeechService.swift` were retired in EPAC-1934. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
