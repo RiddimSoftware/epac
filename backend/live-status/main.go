@@ -3,94 +3,40 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"html"
 	"io"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
 	"epac/observability"
+	"live-status/internal/adapter/postgres"
+	"live-status/internal/usecase"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/jackc/pgx/v5"
 )
 
 const (
-	pipelineName      = "live-status"
-	sourceURL         = "https://www.ourcommons.ca/en"
-	defaultUserAgent  = "epac/1.0 (mailto:epac@riddimsoftware.com)"
-	defaultBusiness   = "Adjourned"
-	defaultCacheValue = "max-age=90"
-	calendarCacheTTL  = 24 * time.Hour
-	calendarEventName = "House of Commons — Sitting Day"
+	sourceURL         = usecase.SourceURL
+	defaultUserAgent  = usecase.DefaultUserAgent
+	defaultBusiness   = usecase.DefaultBusiness
+	defaultCacheValue = usecase.DefaultCacheValue
+	calendarCacheTTL  = usecase.CalendarCacheTTL
+	calendarEventName = usecase.CalendarEventName
 )
 
-var (
-	isMeetingRe        = regexp.MustCompile(`(?is)<input[^>]+id=["']isMeetingInProgress["'][^>]+value=["']([^"']+)["']`)
-	syncViewRe         = regexp.MustCompile(`(?is)<span[^>]+class=["'][^"']*\bsync-view\b[^"']*["'][^>]*>(.*?)</span>`)
-	titleRe            = regexp.MustCompile(`(?is)<span[^>]+class=["'][^"']*\bnow-in-the-house-title\b[^"']*["'][^>]*>(.*?)</span>`)
-	billNumberRe       = regexp.MustCompile(`\b[CS]-\d+\b`)
-	calendarDayRe      = regexp.MustCompile(`(?is)class=["'][^"']*\b([0-9]{4}-[0-9]{2}-[0-9]{2})\b[^"']*\bchamber-meeting\b`)
-	tagsRe             = regexp.MustCompile(`(?is)<[^>]+>`)
-	spaceRe            = regexp.MustCompile(`\s+`)
-	sittingCalendarRe  = regexp.MustCompile(`(?is)data-analytics-eventlabel=["']([0-9]{4}-[0-9]{2}-[0-9]{2}) 12:00:00 a\.m\.["'][^>]*>.*?House Sitting Day`)
-	currentSpeakerRe   = regexp.MustCompile(`(?is)Current Member Speaking.*?<span[^>]+class=["'][^"']*\bprofile-name\b[^"']*["'][^>]*>\s*<a[^>]*>(.*?)</a>`)
-	liveDivisionTextRe = regexp.MustCompile(`(?i)\b(division|vote|deferred recorded division)\b`)
-)
+type liveStatus = usecase.LiveStatus
+type sourceSnapshot = usecase.SourceSnapshot
+type liveResponse = usecase.LiveResponse
+type pollResponse = usecase.PollResponse
+type calendarEvent = usecase.CalendarEvent
 
-type liveStatus struct {
-	IsSitting          bool            `json:"is_sitting"`
-	BusinessType       string          `json:"business_type"`
-	CurrentItemTitle   *string         `json:"current_item_title,omitempty"`
-	CurrentBillNumber  *string         `json:"current_bill_number,omitempty"`
-	CurrentSpeakerName *string         `json:"current_speaker_name,omitempty"`
-	DivisionInProgress bool            `json:"division_in_progress"`
-	SourceURL          string          `json:"source_url"`
-	SourceSnapshot     sourceSnapshot  `json:"source_snapshot"`
-	LastPolledAt       *time.Time      `json:"last_polled_at,omitempty"`
-	LastChangedAt      *time.Time      `json:"last_changed_at,omitempty"`
-	SittingDate        *string         `json:"sitting_date,omitempty"`
-	RawStatusText      string          `json:"-"`
-	SittingDays        map[string]bool `json:"-"`
-	CheckedAt          time.Time       `json:"-"`
-}
+type systemClock struct{}
 
-type sourceSnapshot struct {
-	RawStatusText string    `json:"raw_status_text,omitempty"`
-	ParsedAt      time.Time `json:"parsed_at"`
-}
-
-type liveResponse struct {
-	Status             string     `json:"status"`
-	IsSitting          bool       `json:"is_sitting"`
-	BusinessType       string     `json:"business_type"`
-	CurrentItemTitle   *string    `json:"current_item_title,omitempty"`
-	CurrentBillNumber  *string    `json:"current_bill_number,omitempty"`
-	CurrentSpeakerName *string    `json:"current_speaker_name,omitempty"`
-	DivisionInProgress bool       `json:"division_in_progress"`
-	CheckedAt          time.Time  `json:"checked_at"`
-	LastChangedAt      *time.Time `json:"last_changed_at,omitempty"`
-	SittingDate        *string    `json:"sitting_date,omitempty"`
-	SourceURL          string     `json:"source_url"`
-}
-
-type pollResponse struct {
-	Status       string    `json:"status"`
-	Polled       bool      `json:"polled"`
-	Reason       string    `json:"reason,omitempty"`
-	IsSitting    bool      `json:"is_sitting"`
-	BusinessType string    `json:"business_type"`
-	RecordedAt   time.Time `json:"recorded_at"`
-	SourceURL    string    `json:"source_url"`
-}
-
-type calendarEvent struct {
-	Date      time.Time
-	SourceURL string
+func (systemClock) Now() time.Time {
+	return time.Now()
 }
 
 type apiProbe struct {
@@ -122,23 +68,24 @@ func handleAPI(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.
 		return limitedResp, nil
 	}
 
-	conn, err := connectDB(ctx)
+	conn, err := postgres.Connect(ctx)
 	if err != nil {
 		return apiError(http.StatusServiceUnavailable, err.Error()), nil
 	}
 	defer conn.Close(ctx)
+	repo := postgres.NewLiveParliamentStatusFetching(conn)
 
 	switch normalizedPath(req) {
 	case "/calendar/house.ics", "/api/v1/calendar/house.ics":
-		return handleHouseCalendar(ctx, conn, time.Now().UTC())
+		return handleHouseCalendar(ctx, repo, time.Now().UTC())
 	}
 
-	status, err := readLiveStatus(ctx, conn, time.Now().UTC())
+	resp, err := usecase.New(repo, systemClock{}).CurrentStatus(ctx)
 	if err != nil {
 		return apiError(http.StatusServiceUnavailable, fmt.Sprintf("query live status: %v", err)), nil
 	}
 
-	body, _ := json.Marshal(toResponse(status))
+	body, _ := json.Marshal(resp)
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusOK,
 		Headers: map[string]string{
@@ -162,8 +109,8 @@ func normalizedPath(req events.APIGatewayV2HTTPRequest) string {
 	return path
 }
 
-func handleHouseCalendar(ctx context.Context, conn *pgx.Conn, now time.Time) (events.APIGatewayV2HTTPResponse, error) {
-	calendarEvents, err := readHouseCalendar(ctx, conn, now)
+func handleHouseCalendar(ctx context.Context, repo usecase.LiveParliamentStatusFetching, now time.Time) (events.APIGatewayV2HTTPResponse, error) {
+	calendarEvents, err := readHouseCalendar(ctx, repo, now)
 	if err != nil {
 		return apiError(http.StatusServiceUnavailable, fmt.Sprintf("query sitting calendar: %v", err)), nil
 	}
@@ -178,21 +125,22 @@ func handleHouseCalendar(ctx context.Context, conn *pgx.Conn, now time.Time) (ev
 }
 
 func handlePoll(ctx context.Context, now func() time.Time) (pollResponse, error) {
-	conn, err := connectDB(ctx)
+	conn, err := postgres.Connect(ctx)
 	if err != nil {
 		return pollResponse{}, err
 	}
 	defer conn.Close(ctx)
+	repo := postgres.NewLiveParliamentStatusFetching(conn)
 
 	runAt := now().UTC()
 	local := runAt.In(ottawaLocation())
 	if !isWithinSittingWindow(local) {
 		status := defaultLiveStatus(runAt)
-		if err := upsertLiveStatus(ctx, conn, status); err != nil {
-			recordHealth(ctx, conn, 0, err)
+		if err := repo.UpsertLiveStatus(ctx, status); err != nil {
+			repo.RecordHealth(ctx, 0, err, time.Now().UTC())
 			return pollResponse{}, err
 		}
-		recordHealth(ctx, conn, 1, nil)
+		repo.RecordHealth(ctx, 1, nil, time.Now().UTC())
 		return pollResponse{
 			Status:       "ok",
 			Polled:       false,
@@ -204,19 +152,19 @@ func handlePoll(ctx context.Context, now func() time.Time) (pollResponse, error)
 		}, nil
 	}
 
-	sittingDay, err := confirmedSittingDay(ctx, conn, http.DefaultClient, local, runAt)
+	sittingDay, err := confirmedSittingDay(ctx, repo, http.DefaultClient, local, runAt)
 	if err != nil {
-		recordHealth(ctx, conn, 0, err)
+		repo.RecordHealth(ctx, 0, err, time.Now().UTC())
 		return pollResponse{}, err
 	}
 	if !sittingDay {
 		status := defaultLiveStatus(runAt)
 		status.SourceSnapshot.RawStatusText = "current date not marked as a House Sitting Day"
-		if err := upsertLiveStatus(ctx, conn, status); err != nil {
-			recordHealth(ctx, conn, 0, err)
+		if err := repo.UpsertLiveStatus(ctx, status); err != nil {
+			repo.RecordHealth(ctx, 0, err, time.Now().UTC())
 			return pollResponse{}, err
 		}
-		recordHealth(ctx, conn, 1, nil)
+		repo.RecordHealth(ctx, 1, nil, time.Now().UTC())
 		return pollResponse{
 			Status:       "ok",
 			Polled:       false,
@@ -230,18 +178,18 @@ func handlePoll(ctx context.Context, now func() time.Time) (pollResponse, error)
 
 	status, err := fetchLiveStatus(ctx, http.DefaultClient, runAt)
 	if err != nil {
-		recordHealth(ctx, conn, 0, err)
+		repo.RecordHealth(ctx, 0, err, time.Now().UTC())
 		return pollResponse{}, err
 	}
 	if len(status.SittingDays) > 0 && !status.SittingDays[local.Format("2006-01-02")] {
 		status = defaultLiveStatus(runAt)
 		status.SourceSnapshot.RawStatusText = "current date not marked as a House Sitting Day"
 	}
-	if err := upsertLiveStatus(ctx, conn, status); err != nil {
-		recordHealth(ctx, conn, 0, err)
+	if err := repo.UpsertLiveStatus(ctx, status); err != nil {
+		repo.RecordHealth(ctx, 0, err, time.Now().UTC())
 		return pollResponse{}, err
 	}
-	recordHealth(ctx, conn, 1, nil)
+	repo.RecordHealth(ctx, 1, nil, time.Now().UTC())
 
 	return pollResponse{
 		Status:       "ok",
@@ -253,34 +201,20 @@ func handlePoll(ctx context.Context, now func() time.Time) (pollResponse, error)
 	}, nil
 }
 
-func connectDB(ctx context.Context) (*pgx.Conn, error) {
-	connStr := strings.TrimSpace(os.Getenv("DATABASE_URL"))
-	if connStr == "" {
-		return nil, errors.New("DATABASE_URL environment variable is not set")
-	}
-	return pgx.Connect(ctx, connStr)
-}
-
-func confirmedSittingDay(ctx context.Context, conn *pgx.Conn, client *http.Client, local time.Time, now time.Time) (bool, error) {
+func confirmedSittingDay(ctx context.Context, repo usecase.LiveParliamentStatusFetching, client *http.Client, local time.Time, now time.Time) (bool, error) {
 	date := local.Format("2006-01-02")
-	var isSitting bool
-	var fetchedAt time.Time
-	err := conn.QueryRow(ctx, `
-		SELECT is_sitting, fetched_at
-		FROM live_sitting_day
-		WHERE sitting_date = $1
-	`, date).Scan(&isSitting, &fetchedAt)
-	if err == nil && now.Sub(fetchedAt) < calendarCacheTTL {
-		return isSitting, nil
-	}
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	isSitting, fresh, err := repo.CachedSittingDay(ctx, date, now)
+	if err != nil {
 		return false, err
+	}
+	if fresh {
+		return isSitting, nil
 	}
 	days, calendarURL, err := fetchAnnualSittingCalendar(ctx, client, local.Year())
 	if err != nil {
 		return false, err
 	}
-	if err := upsertAnnualSittingCalendar(ctx, conn, local.Year(), days, calendarURL, now); err != nil {
+	if err := repo.UpsertAnnualSittingCalendar(ctx, local.Year(), days, calendarURL, now); err != nil {
 		return false, err
 	}
 	return days[date], nil
@@ -312,154 +246,49 @@ func fetchAnnualSittingCalendar(ctx context.Context, client *http.Client, year i
 }
 
 func parseAnnualSittingCalendar(markup string) map[string]bool {
-	days := map[string]bool{}
-	for _, match := range calendarDayRe.FindAllStringSubmatch(markup, -1) {
-		if len(match) == 2 {
-			days[match[1]] = true
-		}
-	}
-	return days
+	return usecase.ParseAnnualSittingCalendar(markup)
 }
 
-func upsertAnnualSittingCalendar(ctx context.Context, conn *pgx.Conn, year int, sittingDays map[string]bool, source string, fetchedAt time.Time) error {
-	jan1 := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-	nextYear := jan1.AddDate(1, 0, 0)
-	batch := &pgx.Batch{}
-	for day := jan1; day.Before(nextYear); day = day.AddDate(0, 0, 1) {
-		date := day.Format("2006-01-02")
-		batch.Queue(`
-			INSERT INTO live_sitting_day (sitting_date, is_sitting, source_url, fetched_at)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (sitting_date) DO UPDATE SET
-				is_sitting = EXCLUDED.is_sitting,
-				source_url = EXCLUDED.source_url,
-				fetched_at = EXCLUDED.fetched_at
-		`, date, sittingDays[date], source, fetchedAt.UTC())
-	}
-	results := conn.SendBatch(ctx, batch)
-	defer results.Close()
-	for range 365 + leapDay(year) {
-		if _, err := results.Exec(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func readHouseCalendar(ctx context.Context, conn *pgx.Conn, now time.Time) ([]calendarEvent, error) {
+func readHouseCalendar(ctx context.Context, repo usecase.LiveParliamentStatusFetching, now time.Time) ([]calendarEvent, error) {
 	local := now.In(ottawaLocation())
-	if err := ensureAnnualSittingCalendar(ctx, conn, http.DefaultClient, local.Year(), now); err != nil {
+	if err := ensureAnnualSittingCalendar(ctx, repo, http.DefaultClient, local.Year(), now); err != nil {
 		return nil, err
 	}
 
 	start := time.Date(local.Year(), time.January, 1, 0, 0, 0, 0, time.UTC)
 	end := start.AddDate(1, 0, 0)
-	rows, err := conn.Query(ctx, `
-		SELECT sitting_date, source_url
-		FROM live_sitting_day
-		WHERE is_sitting = TRUE
-		  AND sitting_date >= $1
-		  AND sitting_date < $2
-		ORDER BY sitting_date
-	`, start, end)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var events []calendarEvent
-	for rows.Next() {
-		var event calendarEvent
-		if err := rows.Scan(&event.Date, &event.SourceURL); err != nil {
-			return nil, err
-		}
-		events = append(events, event)
-	}
-	return events, rows.Err()
+	return repo.ReadHouseCalendar(ctx, start, end)
 }
 
-func ensureAnnualSittingCalendar(ctx context.Context, conn *pgx.Conn, client *http.Client, year int, now time.Time) error {
-	var fetchedAt time.Time
-	err := conn.QueryRow(ctx, `
-		SELECT fetched_at
-		FROM live_sitting_day
-		WHERE sitting_date >= $1 AND sitting_date < $2
-		ORDER BY fetched_at DESC
-		LIMIT 1
-	`, time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC), time.Date(year+1, time.January, 1, 0, 0, 0, 0, time.UTC)).Scan(&fetchedAt)
-	if err == nil && now.Sub(fetchedAt) < calendarCacheTTL {
-		return nil
-	}
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+func ensureAnnualSittingCalendar(ctx context.Context, repo usecase.LiveParliamentStatusFetching, client *http.Client, year int, now time.Time) error {
+	fetchedAt, found, err := repo.LatestCalendarFetchedAt(ctx, year)
+	if err != nil {
 		return err
+	}
+	if found && now.Sub(fetchedAt) < calendarCacheTTL {
+		return nil
 	}
 	days, calendarURL, err := fetchAnnualSittingCalendar(ctx, client, year)
 	if err != nil {
 		return err
 	}
-	return upsertAnnualSittingCalendar(ctx, conn, year, days, calendarURL, now)
+	return repo.UpsertAnnualSittingCalendar(ctx, year, days, calendarURL, now)
 }
 
 func buildHouseCalendarICS(events []calendarEvent, generatedAt time.Time) string {
-	var b strings.Builder
-	dtstamp := generatedAt.UTC().Format("20060102T150405Z")
-	writeICSLine(&b, "BEGIN", "VCALENDAR")
-	writeICSLine(&b, "VERSION", "2.0")
-	writeICSLine(&b, "PRODID", "-//Riddim Software//epac Parliament Calendar//EN")
-	writeICSLine(&b, "CALSCALE", "GREGORIAN")
-	writeICSLine(&b, "METHOD", "PUBLISH")
-	writeICSLine(&b, "X-WR-CALNAME", "House of Commons Sitting Days")
-	writeICSLine(&b, "X-WR-TIMEZONE", "America/Toronto")
-	for _, event := range events {
-		start := event.Date.UTC()
-		end := start.AddDate(0, 0, 1)
-		dateString := start.Format("2006-01-02")
-		writeICSLine(&b, "BEGIN", "VEVENT")
-		writeICSLine(&b, "UID", "house-sitting-"+dateString+"@epac.riddimsoftware.com")
-		writeICSLine(&b, "DTSTAMP", dtstamp)
-		writeICSLine(&b, "DTSTART;VALUE=DATE", start.Format("20060102"))
-		writeICSLine(&b, "DTEND;VALUE=DATE", end.Format("20060102"))
-		writeICSLine(&b, "SUMMARY", calendarEventName)
-		writeICSLine(&b, "DESCRIPTION", icsEscape("House of Commons sitting day. Source: "+event.SourceURL))
-		writeICSLine(&b, "URL", "https://epac.riddimsoftware.com/sitting/"+dateString)
-		writeICSLine(&b, "END", "VEVENT")
-	}
-	writeICSLine(&b, "END", "VCALENDAR")
-	return b.String()
+	return usecase.BuildHouseCalendarICS(events, generatedAt)
 }
 
 func writeICSLine(b *strings.Builder, name string, value string) {
-	b.WriteString(foldICSLine(name + ":" + value))
-	b.WriteString("\r\n")
+	usecase.WriteICSLine(b, name, value)
 }
 
 func foldICSLine(line string) string {
-	const maxLineBytes = 75
-	if len(line) <= maxLineBytes {
-		return line
-	}
-	var b strings.Builder
-	lineBytes := 0
-	for _, r := range line {
-		chunk := string(r)
-		if lineBytes > 0 && lineBytes+len(chunk) > maxLineBytes {
-			b.WriteString("\r\n ")
-			lineBytes = 1
-		}
-		b.WriteString(chunk)
-		lineBytes += len(chunk)
-	}
-	return b.String()
+	return usecase.FoldICSLine(line)
 }
 
 func icsEscape(value string) string {
-	value = strings.ReplaceAll(value, `\`, `\\`)
-	value = strings.ReplaceAll(value, "\r\n", `\n`)
-	value = strings.ReplaceAll(value, "\n", `\n`)
-	value = strings.ReplaceAll(value, "\r", `\n`)
-	value = strings.ReplaceAll(value, ";", `\;`)
-	value = strings.ReplaceAll(value, ",", `\,`)
-	return value
+	return usecase.ICSEscape(value)
 }
 
 func fetchLiveStatus(ctx context.Context, client *http.Client, now time.Time) (liveStatus, error) {
@@ -493,208 +322,43 @@ func fetchLiveStatusFromURL(ctx context.Context, client *http.Client, url string
 }
 
 func parseHomepage(markup string, now time.Time) liveStatus {
-	status := defaultLiveStatus(now)
-	status.SittingDays = parseSittingDays(markup)
-
-	if match := isMeetingRe.FindStringSubmatch(markup); len(match) == 2 {
-		status.IsSitting = strings.EqualFold(strings.TrimSpace(match[1]), "true")
-	}
-	if match := syncViewRe.FindStringSubmatch(markup); len(match) == 2 {
-		status.RawStatusText = cleanText(match[1])
-		status.SourceSnapshot.RawStatusText = status.RawStatusText
-		if strings.Contains(strings.ToLower(status.RawStatusText), "currently sitting") {
-			status.IsSitting = true
-		}
-	}
-	if title := firstTitle(markup); title != "" {
-		status.BusinessType = title
-		status.CurrentItemTitle = stringPtr(title)
-		if bill := billNumberRe.FindString(title); bill != "" {
-			status.CurrentBillNumber = stringPtr(bill)
-		}
-	} else if status.IsSitting {
-		status.BusinessType = "Sitting"
-	}
-	if speaker := firstCurrentSpeaker(markup); speaker != "" {
-		status.CurrentSpeakerName = stringPtr(speaker)
-	}
-	status.DivisionInProgress = liveDivisionTextRe.MatchString(status.BusinessType)
-	if status.IsSitting {
-		date := now.In(ottawaLocation()).Format("2006-01-02")
-		status.SittingDate = &date
-	}
-	return status
+	return usecase.ParseHomepage(markup, now)
 }
 
 func defaultLiveStatus(now time.Time) liveStatus {
-	return liveStatus{
-		IsSitting:      false,
-		BusinessType:   defaultBusiness,
-		SourceURL:      sourceURL,
-		SourceSnapshot: sourceSnapshot{ParsedAt: now.UTC()},
-		CheckedAt:      now.UTC(),
-	}
+	return usecase.DefaultLiveStatus(now)
 }
 
 func firstTitle(markup string) string {
-	for _, match := range titleRe.FindAllStringSubmatch(markup, -1) {
-		if len(match) != 2 {
-			continue
-		}
-		title := cleanText(match[1])
-		if title != "" {
-			return title
-		}
-	}
-	return ""
+	return usecase.FirstTitle(markup)
 }
 
 func firstCurrentSpeaker(markup string) string {
-	match := currentSpeakerRe.FindStringSubmatch(markup)
-	if len(match) != 2 {
-		return ""
-	}
-	return cleanText(match[1])
+	return usecase.FirstCurrentSpeaker(markup)
 }
 
 func parseSittingDays(markup string) map[string]bool {
-	days := map[string]bool{}
-	for _, match := range sittingCalendarRe.FindAllStringSubmatch(markup, -1) {
-		if len(match) == 2 {
-			days[match[1]] = true
-		}
-	}
-	return days
+	return usecase.ParseSittingDays(markup)
 }
 
 func cleanText(value string) string {
-	value = tagsRe.ReplaceAllString(value, " ")
-	value = html.UnescapeString(value)
-	return strings.TrimSpace(spaceRe.ReplaceAllString(value, " "))
+	return usecase.CleanText(value)
 }
 
 func isWithinSittingWindow(t time.Time) bool {
-	minutes := t.Hour()*60 + t.Minute()
-	switch t.Weekday() {
-	case time.Monday:
-		return minutes >= 10*60+30 && minutes < 19*60
-	case time.Tuesday, time.Wednesday, time.Thursday:
-		return minutes >= 9*60+30 && minutes < 19*60
-	case time.Friday:
-		return minutes >= 9*60+30 && minutes < 15*60
-	default:
-		return false
-	}
+	return usecase.IsWithinSittingWindow(t)
 }
 
 func ottawaLocation() *time.Location {
-	loc, err := time.LoadLocation("America/Toronto")
-	if err != nil {
-		return time.FixedZone("ET", -5*60*60)
-	}
-	return loc
+	return usecase.OttawaLocation()
 }
 
 func leapDay(year int) int {
-	if year%400 == 0 || (year%4 == 0 && year%100 != 0) {
-		return 1
-	}
-	return 0
-}
-
-func upsertLiveStatus(ctx context.Context, conn *pgx.Conn, status liveStatus) error {
-	snapshot, err := json.Marshal(status.SourceSnapshot)
-	if err != nil {
-		return err
-	}
-	now := status.CheckedAt.UTC()
-	_, err = conn.Exec(ctx, `
-		INSERT INTO live_session (
-			id, is_sitting, business_type, current_item_title, current_bill_number,
-			current_speaker_name, division_in_progress, source_url, source_snapshot,
-			last_polled_at, last_changed_at, sitting_date
-		)
-		VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $9, $10)
-		ON CONFLICT (id) DO UPDATE SET
-			is_sitting           = EXCLUDED.is_sitting,
-			business_type        = EXCLUDED.business_type,
-			current_item_title   = EXCLUDED.current_item_title,
-			current_bill_number  = EXCLUDED.current_bill_number,
-			current_speaker_name = EXCLUDED.current_speaker_name,
-			division_in_progress = EXCLUDED.division_in_progress,
-			source_url           = EXCLUDED.source_url,
-			source_snapshot      = EXCLUDED.source_snapshot,
-			last_polled_at       = EXCLUDED.last_polled_at,
-			-- Preserve the most recent sitting_date when a non-sitting poll lands.
-			sitting_date         = COALESCE(EXCLUDED.sitting_date, live_session.sitting_date),
-			last_changed_at      = CASE
-				WHEN live_session.is_sitting IS DISTINCT FROM EXCLUDED.is_sitting
-				  OR live_session.business_type IS DISTINCT FROM EXCLUDED.business_type
-				  OR live_session.current_item_title IS DISTINCT FROM EXCLUDED.current_item_title
-				  OR live_session.current_bill_number IS DISTINCT FROM EXCLUDED.current_bill_number
-				  OR live_session.current_speaker_name IS DISTINCT FROM EXCLUDED.current_speaker_name
-				  OR live_session.division_in_progress IS DISTINCT FROM EXCLUDED.division_in_progress
-				THEN EXCLUDED.last_changed_at
-				ELSE live_session.last_changed_at
-			END
-	`, status.IsSitting, status.BusinessType, status.CurrentItemTitle, status.CurrentBillNumber,
-		status.CurrentSpeakerName, status.DivisionInProgress, status.SourceURL, string(snapshot), now, status.SittingDate)
-	return err
-}
-
-func readLiveStatus(ctx context.Context, conn *pgx.Conn, fallback time.Time) (liveStatus, error) {
-	var status liveStatus
-	var snapshotBytes []byte
-	var sittingDate *time.Time
-	err := conn.QueryRow(ctx, `
-		SELECT is_sitting, business_type, current_item_title, current_bill_number,
-		       current_speaker_name, division_in_progress, source_url, source_snapshot,
-		       last_polled_at, last_changed_at, sitting_date
-		FROM live_session
-		WHERE id = TRUE
-	`).Scan(&status.IsSitting, &status.BusinessType, &status.CurrentItemTitle, &status.CurrentBillNumber,
-		&status.CurrentSpeakerName, &status.DivisionInProgress, &status.SourceURL, &snapshotBytes,
-		&status.LastPolledAt, &status.LastChangedAt, &sittingDate)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return defaultLiveStatus(fallback), nil
-	}
-	if err != nil {
-		return liveStatus{}, err
-	}
-	if len(snapshotBytes) > 0 {
-		_ = json.Unmarshal(snapshotBytes, &status.SourceSnapshot)
-	}
-	if sittingDate != nil {
-		formatted := sittingDate.Format("2006-01-02")
-		status.SittingDate = &formatted
-	}
-	return status, nil
+	return usecase.LeapDay(year)
 }
 
 func toResponse(status liveStatus) liveResponse {
-	checkedAt := time.Now().UTC()
-	if status.LastPolledAt != nil {
-		checkedAt = status.LastPolledAt.UTC()
-	}
-	state := "adjourned"
-	if status.IsSitting {
-		state = "sitting"
-	} else if status.LastPolledAt == nil {
-		state = "unknown"
-	}
-	return liveResponse{
-		Status:             state,
-		IsSitting:          status.IsSitting,
-		BusinessType:       status.BusinessType,
-		CurrentItemTitle:   status.CurrentItemTitle,
-		CurrentBillNumber:  status.CurrentBillNumber,
-		CurrentSpeakerName: status.CurrentSpeakerName,
-		DivisionInProgress: status.DivisionInProgress,
-		CheckedAt:          checkedAt,
-		LastChangedAt:      status.LastChangedAt,
-		SittingDate:        status.SittingDate,
-		SourceURL:          status.SourceURL,
-	}
+	return usecase.ToResponseAt(status, time.Now().UTC())
 }
 
 func apiError(code int, msg string) events.APIGatewayV2HTTPResponse {
@@ -706,29 +370,6 @@ func apiError(code int, msg string) events.APIGatewayV2HTTPResponse {
 	}
 }
 
-func recordHealth(ctx context.Context, conn *pgx.Conn, count int, runErr error) {
-	now := time.Now().UTC()
-	var errMsg *string
-	var successAt *time.Time
-	var recordCount *int
-	if runErr == nil {
-		successAt = &now
-		recordCount = &count
-	} else {
-		s := runErr.Error()
-		errMsg = &s
-	}
-	_, _ = conn.Exec(ctx, `
-		INSERT INTO pipeline_health (name, last_run_at, last_success_at, last_error, record_count, expected_interval_hours)
-		VALUES ($1, $2, $3, $4, $5, 1)
-		ON CONFLICT (name) DO UPDATE SET
-			last_run_at     = EXCLUDED.last_run_at,
-			last_success_at = COALESCE(EXCLUDED.last_success_at, pipeline_health.last_success_at),
-			last_error      = EXCLUDED.last_error,
-			record_count    = COALESCE(EXCLUDED.record_count, pipeline_health.record_count)
-	`, pipelineName, now, successAt, errMsg, recordCount)
-}
-
 func userAgent() string {
 	if value := strings.TrimSpace(os.Getenv("PARLIAMENT_USER_AGENT")); value != "" {
 		return value
@@ -737,10 +378,7 @@ func userAgent() string {
 }
 
 func stringPtr(value string) *string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-	return &value
+	return usecase.StringPtr(value)
 }
 
 func main() {

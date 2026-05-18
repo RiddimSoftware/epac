@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"epac/_testdb"
+	"epac/on-this-day/internal/adapter/postgres"
+	"epac/on-this-day/internal/usecase"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/jackc/pgx/v5"
 )
@@ -40,15 +43,17 @@ func mustParseDate(t *testing.T, s string) time.Time {
 	return d
 }
 
-// callOnThisDaySQL calls queryOnThisDay directly against the test DB connection,
-// bypassing the package-level dbConn and DATABASE_URL resolution.
-func callOnThisDaySQL(t *testing.T, conn *pgx.Conn, dateStr string, limit int) ([]OnThisDayItem, error) {
+// callOnThisDaySQL wires the postgres adapter to the use case directly against
+// the test DB connection, bypassing the package-level dbConn and DATABASE_URL.
+func callOnThisDaySQL(t *testing.T, conn *pgx.Conn, dateStr string, limit int) ([]usecase.OnThisDayItem, error) {
 	t.Helper()
 	date, err := parseDate(dateStr)
 	if err != nil {
 		return nil, fmt.Errorf("parse date: %w", err)
 	}
-	return queryOnThisDay(context.Background(), conn, date, limit)
+	repo := postgres.NewHansardRepository(conn)
+	uc := usecase.New(repo)
+	return uc.Execute(context.Background(), date, limit)
 }
 
 // callHandlerHTTP sends an APIGateway request through HandleRequest and returns the response.
@@ -173,7 +178,7 @@ func TestOnThisDayNoMatchingDate_ReturnsEmptyShape(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("got status %d, want 200", resp.StatusCode)
 	}
-	var body OnThisDayResponse
+	var body usecase.OnThisDayResponse
 	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
 		t.Fatalf("parse response: %v (body=%s)", err, resp.Body)
 	}
@@ -189,7 +194,7 @@ func TestOnThisDayNoMatchingDate_ReturnsEmptyShape(t *testing.T) {
 }
 
 // TestOnThisDayLimitBound verifies that limit=1 returns exactly 1 item and that
-// limit=999 is clamped to the handler's declared maxLimit (20).
+// limit=999 is clamped to the handler's declared MaxLimit (20).
 func TestOnThisDayLimitBound(t *testing.T) {
 	conn := _testdb.Connect(t)
 	resetOnThisDaySpeeches(t, conn)
@@ -208,19 +213,19 @@ func TestOnThisDayLimitBound(t *testing.T) {
 		t.Fatalf("limit=1: got %d items, want 1", len(items))
 	}
 
-	// parseLimit("999") must clamp to maxLimit before any SQL executes.
+	// parseLimit("999") must clamp to MaxLimit before any SQL executes.
 	clamped := parseLimit("999")
-	if clamped != maxLimit {
-		t.Fatalf("parseLimit(999) = %d, want %d (maxLimit)", clamped, maxLimit)
+	if clamped != usecase.MaxLimit {
+		t.Fatalf("parseLimit(999) = %d, want %d (MaxLimit)", clamped, usecase.MaxLimit)
 	}
 
-	// Confirm the clamped limit is enforced end-to-end: 50 seeded rows, limit=maxLimit → maxLimit items.
-	items, err = callOnThisDaySQL(t, conn, "2026-06-01", maxLimit)
+	// Confirm the clamped limit is enforced end-to-end: 50 seeded rows, limit=MaxLimit → MaxLimit items.
+	items, err = callOnThisDaySQL(t, conn, "2026-06-01", usecase.MaxLimit)
 	if err != nil {
-		t.Fatalf("limit=maxLimit query failed: %v", err)
+		t.Fatalf("limit=MaxLimit query failed: %v", err)
 	}
-	if len(items) != maxLimit {
-		t.Fatalf("limit=maxLimit: got %d items with 50 seeded rows, want %d", len(items), maxLimit)
+	if len(items) != usecase.MaxLimit {
+		t.Fatalf("limit=MaxLimit: got %d items with 50 seeded rows, want %d", len(items), usecase.MaxLimit)
 	}
 }
 
@@ -229,10 +234,10 @@ func TestOnThisDayLimitBound(t *testing.T) {
 // These cases fail parseDate before getDBConn is called, so no DB access occurs.
 func TestOnThisDayInvalidDateFormat_Returns400(t *testing.T) {
 	cases := []string{
-		"not-a-date",  // length 10, time.Parse fails
-		"2026/06/01",  // length 10, wrong separator
-		"20260601",    // length 8, fails length check
-		"2026-6-1",    // length 8, fails length check
+		"not-a-date", // length 10, time.Parse fails
+		"2026/06/01", // length 10, wrong separator
+		"20260601",   // length 8, fails length check
+		"2026-6-1",   // length 8, fails length check
 	}
 	for _, dateStr := range cases {
 		t.Run(dateStr, func(t *testing.T) {
