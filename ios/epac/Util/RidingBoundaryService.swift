@@ -12,32 +12,24 @@ enum RidingBoundaryServiceError: Error {
 }
 
 struct RidingBoundaryService {
-	private let baseURL: URL
-	private let network: NetworkService
+	private let artifacts: any ArtifactFetching
 
-	init(baseURL: URL = BackendConfig.shared.baseURL, network: NetworkService = .shared) {
-		self.baseURL = baseURL
-		self.network = network
+	init(artifacts: any ArtifactFetching = ArtifactService.shared) {
+		self.artifacts = artifacts
 	}
 
 	func boundary(for ridingName: String) async throws -> RidingBoundary {
 		let slug = Self.slug(for: ridingName)
 		guard !slug.isEmpty else { throw RidingBoundaryServiceError.invalidURL }
-		let url = baseURL
-			.appendingPathComponent("api/v1/ridings")
-			.appendingPathComponent(slug)
-			.appendingPathComponent("boundary")
-		let (data, response) = try await network.data(from: url)
-		guard let httpResponse = response as? HTTPURLResponse else {
-			throw RidingBoundaryServiceError.invalidResponse
-		}
-		if httpResponse.statusCode == 404 {
+		do {
+			return try await artifacts.fetch(.ridingBoundary(slug: slug), as: RidingBoundary.self)
+		} catch ArtifactError.artifactNotFound {
 			throw RidingBoundaryServiceError.notFound
-		}
-		guard (200..<300).contains(httpResponse.statusCode) else {
+		} catch ArtifactError.httpStatus(404, _) {
+			throw RidingBoundaryServiceError.notFound
+		} catch {
 			throw RidingBoundaryServiceError.invalidResponse
 		}
-		return try JSONDecoder().decode(RidingBoundary.self, from: data)
 	}
 
 	static func slug(for ridingName: String) -> String {

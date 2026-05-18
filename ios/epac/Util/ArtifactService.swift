@@ -6,7 +6,7 @@
 import Foundation
 import Observation
 
-protocol ArtifactFetching {
+protocol ArtifactFetching: Sendable {
     func fetch<T: Decodable>(_ artifact: ArtifactKey, as: T.Type) async throws -> T
     func fetchManifest() async throws -> ArtifactManifest
 }

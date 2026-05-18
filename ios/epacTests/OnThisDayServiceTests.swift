@@ -54,12 +54,46 @@ final class OnThisDayServiceTests: XCTestCase {
         XCTAssertEqual(item.detailText, "2009")
     }
 
-    func testBuildsVersionedBackendURL() throws {
-        let url = try OnThisDayService().url(date: onThisDayTestDate(2026, 4, 29)!, limit: 7)
+    func testBuildsArtifactKey() throws {
+        let key = OnThisDayService().artifactKey(date: onThisDayTestDate(2026, 4, 29)!)
 
-        XCTAssertTrue(url.path.hasSuffix("/api/v1/on-this-day"))
-        XCTAssertTrue(url.absoluteString.contains("date=2026-04-29"))
-        XCTAssertTrue(url.absoluteString.contains("limit=7"))
+        XCTAssertEqual(key, ArtifactKey("on-this-day/v1/04-29.json"))
+    }
+
+    func testFetchReadsArtifactAndAppliesLimit() async throws {
+        let payload = """
+        {
+          "date": "2026-04-29",
+          "items": [
+            {
+              "id": "speech:1",
+              "kind": "speech",
+              "year": 2021,
+              "date": "2021-04-29",
+              "title": "Housing",
+              "excerpt": "One",
+              "speaker_name": "Jane Example"
+            },
+            {
+              "id": "speech:2",
+              "kind": "speech",
+              "year": 2020,
+              "date": "2020-04-29",
+              "title": "Health",
+              "excerpt": "Two"
+            }
+          ]
+        }
+        """
+        let artifacts = MockArtifactFetcher([ArtifactKey("on-this-day/v1/04-29.json"): payload])
+
+        let items = try await OnThisDayService(artifacts: artifacts).fetch(
+            date: onThisDayTestDate(2026, 4, 29)!,
+            limit: 1
+        )
+
+        XCTAssertEqual(items.map(\.id), ["speech:1"])
+        XCTAssertEqual(artifacts.requestedKeys, [ArtifactKey("on-this-day/v1/04-29.json")])
     }
 
     private func onThisDayTestDate(_ year: Int, _ month: Int, _ day: Int) -> Date? {
