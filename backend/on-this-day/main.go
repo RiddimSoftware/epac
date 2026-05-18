@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -19,27 +18,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/jackc/pgx/v5"
 )
-
-var dbConn *pgx.Conn
-
-func getDBConn(ctx context.Context) (*pgx.Conn, error) {
-	if dbConn != nil {
-		if err := dbConn.Ping(ctx); err == nil {
-			return dbConn, nil
-		}
-		dbConn.Close(ctx)
-		dbConn = nil
-	}
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		return nil, fmt.Errorf("DATABASE_URL not set")
-	}
-	var err error
-	dbConn, err = pgx.Connect(ctx, connStr)
-	return dbConn, err
-}
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	date, err := parseDate(req.QueryStringParameters["date"])
@@ -48,7 +27,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 	}
 	limit := parseLimit(req.QueryStringParameters["limit"])
 
-	conn, err := getDBConn(ctx)
+	conn, err := postgres.GetDBConn(ctx)
 	if err != nil {
 		return jsonError(http.StatusInternalServerError, err.Error()), nil
 	}

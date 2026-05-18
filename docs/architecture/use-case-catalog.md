@@ -110,6 +110,8 @@ Current implementation:
   ios/epac/Views/Search/SearchViewModel.swift
   ios/epac/Views/Search/SearchView.swift
   ios/epac/Util/NetworkService.swift
+  backend/search/internal/usecase/usecase.go
+  backend/search/internal/adapter/postgres/postgres.go
   backend/search/main.go
 ```
 
@@ -292,6 +294,8 @@ Current implementation:
   ios/epac/Views/Members/MemberSpeechFeedViewModel.swift
   ios/epac/Views/Members/MemberSpeechFeedView.swift
   ios/epac/Util/MemberSpeechService.swift
+  backend/member-speeches/internal/usecase/usecase.go
+  backend/member-speeches/internal/adapter/postgres/postgres.go
   backend/member-speeches/main.go
   backend/member-content/content.go
   backend/member-speeches-publisher/main.go
@@ -330,6 +334,8 @@ Entities / values: LiveParliamentStatus.
 Ports: Clock.
 Primary adapters: live-status Lambda (EventBridge ingest + GET /api/v1/live), PostgreSQL live_session table (singleton).
 Current implementation:
+  backend/live-status/internal/usecase/usecase.go
+  backend/live-status/internal/adapter/postgres/postgres.go
   backend/live-status/main.go
 ```
 
@@ -367,6 +373,8 @@ Entities / values: Hansard, SubjectOfBusiness, SpeechMessage.
 Ports: HansardRepository, Clock.
 Primary adapters: daily-fetch Lambda, loader Lambda, PostgreSQL speeches table (intervention_id PK), hansard-backfill Lambda (historical).
 Current implementation:
+  backend/daily-fetch/internal/usecase/usecase.go
+  backend/daily-fetch/internal/adapter/postgres/postgres.go
   backend/daily-fetch/main.go
   backend/loader/main.go
   backend/hansard-backfill/main.go (historical ingestion)

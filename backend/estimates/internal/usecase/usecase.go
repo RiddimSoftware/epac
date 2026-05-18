@@ -1,12 +1,13 @@
 // Package usecase implements the application policy for the estimates Lambda:
 // reading Main Estimates rows for the API and persisting parsed CSV rows for
 // the daily ingest job. It depends only on the EstimatesRepository port and
-// must not import framework packages (pgx, aws-lambda-go, aws-sdk-go-v2).
+// must not import database driver, Lambda runtime, or cloud SDK packages.
 package usecase
 
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 type Estimate struct {
@@ -85,11 +86,15 @@ type IngestInput struct {
 
 func (u *IngestEstimates) Execute(ctx context.Context, in IngestInput) (int, error) {
 	for _, org := range in.Organizations {
-		_ = u.repo.UpsertOrganization(ctx, org)
+		if err := u.repo.UpsertOrganization(ctx, org); err != nil {
+			fmt.Printf("Warning: failed to insert organization %d: %v\n", org.ID, err)
+		}
 	}
 	inserted := 0
 	for _, est := range in.Estimates {
-		if err := u.repo.UpsertEstimate(ctx, est); err == nil {
+		if err := u.repo.UpsertEstimate(ctx, est); err != nil {
+			fmt.Printf("Warning: failed to insert estimate: %v\n", err)
+		} else {
 			inserted++
 		}
 	}

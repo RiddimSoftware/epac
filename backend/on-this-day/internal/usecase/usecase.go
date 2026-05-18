@@ -1,7 +1,7 @@
 // Package usecase implements the BrowseOnThisDay application policy.
 //
 // The package depends only on a HansardRepository port; it must not
-// import framework packages (pgx, aws-lambda-go, aws-sdk-go-v2).
+// import database driver, Lambda runtime, or cloud SDK packages.
 package usecase
 
 import (

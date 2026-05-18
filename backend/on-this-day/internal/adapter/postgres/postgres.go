@@ -7,6 +7,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -15,6 +16,32 @@ import (
 
 	"github.com/jackc/pgx/v5"
 )
+
+var dbConn *pgx.Conn
+
+func GetDBConn(ctx context.Context) (*pgx.Conn, error) {
+	if dbConn != nil {
+		if err := dbConn.Ping(ctx); err == nil {
+			return dbConn, nil
+		}
+		dbConn.Close(ctx)
+		dbConn = nil
+	}
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		return nil, fmt.Errorf("DATABASE_URL not set")
+	}
+	var err error
+	dbConn, err = pgx.Connect(ctx, connStr)
+	return dbConn, err
+}
+
+func ResetDBConnForTest(ctx context.Context) {
+	if dbConn != nil {
+		dbConn.Close(ctx)
+		dbConn = nil
+	}
+}
 
 type HansardRepository struct {
 	conn *pgx.Conn
