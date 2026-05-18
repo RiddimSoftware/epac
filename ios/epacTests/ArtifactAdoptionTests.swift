@@ -5,48 +5,6 @@ import Testing
 
 @MainActor
 struct ArtifactAdoptionTests {
-    @Test func memberSpeechServiceReadsMemberContentArtifactAndPaginates() async throws {
-        let key = ArtifactKey("members/v1/by-id/278707/speeches.json")
-        let artifacts = MockArtifactFetcher([key: """
-        {
-          "member_id": "278707",
-          "stats": { "total_speeches": 0, "avg_word_count": 0, "top_topic": "" },
-          "speeches": [
-            {
-              "id": "speech-1",
-              "sitting_date": "2026-04-29",
-              "subject_title": "Housing",
-              "preview": "Housing affordability matters.",
-              "word_count": 20,
-              "filename": "HAN001-E.XML"
-            },
-            {
-              "id": "speech-2",
-              "sitting_date": "2026-04-28",
-              "subject_title": "Health",
-              "preview": "Health care matters.",
-              "word_count": 10,
-              "filename": "HAN002-E.XML"
-            }
-          ]
-        }
-        """])
-
-        let page = try await MemberSpeechService.fetchPage(
-            memberId: 278707,
-            page: 1,
-            perPage: 20,
-            topic: "housing",
-            artifacts: artifacts
-        )
-
-        #expect(page.speeches.map(\.id) == ["speech-1"])
-        #expect(page.total == 1)
-        #expect(page.stats.totalSpeeches == 2)
-        #expect(page.stats.avgWordCount == 15)
-        #expect(artifacts.requestedKeys == [key])
-    }
-
     @Test func billsServiceReadsBillsArtifact() async throws {
         let artifacts = MockArtifactFetcher([.billsAll: """
         {

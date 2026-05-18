@@ -175,20 +175,6 @@ struct MemberProfileView: View {
 				}
 				.foregroundStyle(.primary)
 
-				NavigationLink(destination: MemberSpeechFeedView(member: member)) {
-					HStack {
-						Label("Speeches", systemImage: "text.bubble.fill")
-						Spacer()
-						Image(systemName: "chevron.right")
-							.font(.caption)
-							.foregroundStyle(.tertiary)
-					}
-					.padding()
-					.background(Color(.secondarySystemBackground))
-					.cornerRadius(12)
-				}
-				.foregroundStyle(.primary)
-
 				NavigationLink(destination: RidingElectionHistoryView(member: member)) {
 					HStack {
 						Label("Riding History", systemImage: "chart.bar.xaxis.ascending")
@@ -445,34 +431,20 @@ struct MemberProfileView: View {
 	}
 }
 
-// MARK: - Member highlights (total votes, speeches, score)
+// MARK: - Member highlights
 
 struct MemberHighlightsCard: View {
     let member: ParliamentMember
     @Query private var memberVotes: [MemberVote]
-    @Query private var speeches: [SpeechMessage]
 
     init(member: ParliamentMember) {
         self.member = member
         let mid = member.memberID
         _memberVotes = Query(FetchDescriptor<MemberVote>(predicate: #Predicate { $0.memberID == mid }))
-        let last = member.lastName
-        _speeches = Query(FetchDescriptor<SpeechMessage>(predicate: #Predicate { $0.lastName == last }))
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 0) {
-                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
-                Divider().frame(height: 40)
-                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
-            }
-            VStack(spacing: 8) {
-                statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
-                Divider()
-                statCell(icon: "bubble.left.fill", value: "\(speeches.count)", label: "Speeches")
-            }
-        }
+        statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
         .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)

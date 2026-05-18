@@ -314,7 +314,7 @@ Current implementation:
 ### GetAppConfig
 
 ```
-Actor: User (iOS app launch/config refresh) / Backend API caller
+Actor: Backend API caller
 Goal: Fetch backend-provided minimum supported app version and feature flags.
 Inputs: None.
 Outputs: AppConfig.
@@ -397,25 +397,10 @@ Current implementation:
 
 ### ViewMemberSpeechFeed
 
-```
-Actor: User (iOS app, Members tab → member profile)
-Goal: Browse a member's paginated speech history, optionally filtered by topic.
-Inputs: Member ID, page number, optional topic filter.
-Outputs: Paginated list of SpeechMessages with stats (total speeches, average word count, top topic).
-Entities / values: SpeechMessage, ParliamentMember, ParliamentaryTopic.
-Ports: MemberContentRepository.
-Primary adapters: MemberSpeechFeedViewModel, MemberSpeechFeedView, MemberSpeechService (S3 member-content artifacts via ArtifactService), member-speeches Lambda (GET /api/v1/members/{id}/speeches), S3ArtifactMemberContentRepository, member-speeches-publisher.
-Current implementation:
-  ios/epac/Views/Members/MemberSpeechFeedViewModel.swift
-  ios/epac/Views/Members/MemberSpeechFeedView.swift
-  ios/epac/Util/MemberSpeechService.swift
-  ios/epac/Util/ArtifactService.swift
-  backend/member-speeches/internal/usecase/usecase.go
-  backend/member-speeches/internal/adapter/artifact/artifact.go
-  backend/member-speeches/main.go
-  backend/member-content/content.go
-  backend/member-speeches-publisher/main.go
-```
+> Retired in EPAC-1934. The iOS member profile no longer exposes a per-member
+> speech feed, topic chips, or backend-loaded speech stats. Backend
+> member-speeches artifacts and Lambdas remain only as legacy teardown surface
+> until a separate backend cleanup ticket removes them.
 
 ---
 

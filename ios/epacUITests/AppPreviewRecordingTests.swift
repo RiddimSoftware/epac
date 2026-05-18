@@ -64,8 +64,8 @@ final class AppPreviewRecordingTests: XCTestCase {
                 "home-feed-today-card",
                 "home-feed-my-mp-link",
                 "mp-profile-scroll",
-                "mp-profile-speech-list",
-                "mp-profile-speech-row-0",
+                "mp-profile-civic-list",
+                "mp-profile-vote-row-0",
                 "speech-view-scroll",
                 "parliament-sitting-row-0",
                 "lobbying-list-scroll",
@@ -83,7 +83,7 @@ final class AppPreviewRecordingTests: XCTestCase {
         // Recording path: deterministic headline-tap advancement with short wait chunks.
         // Manual sequencing avoids the flaky XCTest runner timing in EPAC-537.
         try holdAndAdvance(headline: "Your MP. Everything they do.", timeout: 10)
-        try holdAndAdvance(headline: "Every word. Every vote.", timeout: 5)
+        try holdAndAdvance(headline: "Every vote. Every detail.", timeout: 5)
         try holdAndAdvance(headline: "Hansard. Finally readable.", timeout: 5)
         try holdAndAdvance(headline: "Who's influencing them?", timeout: 5)
         try holdAndAdvance(headline: "They said it. Then voted against it.", timeout: 5)
