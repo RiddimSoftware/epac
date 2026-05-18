@@ -41,10 +41,13 @@ if aws s3 cp "${S3_BUCKET_PREFIX}/latest.json" "${PREV_MANIFEST_FILE}" 2>/dev/nu
   PREV_SHA="$(jq -r '.git_sha // empty' "${PREV_MANIFEST_FILE}" 2>/dev/null || true)"
 fi
 
-# Derive PR numbers from squash-merge commit subjects between previous and current SHA.
+# Derive PR numbers from merge-commit subjects between previous and current SHA.
 PR_NUMBERS="[]"
 if [[ -n "${PREV_SHA}" && "${PREV_SHA}" != "${GIT_SHA}" ]]; then
-  PR_NUMBERS="$(git log --format="%s" "${PREV_SHA}..${GIT_SHA}" | grep -oE '\(#[0-9]+\)' | sed 's/(#//;s/)//' | sort -u -n | jq -R -s -c 'split("\n")[:-1] | map(tonumber) // []')"
+  PR_NUMBERS="$(git log --merges --pretty=%s "${PREV_SHA}..${GIT_SHA}" \
+    | awk '/^Merge pull request #[0-9]+/ { if (match($0, /Merge pull request #([0-9]+)/, m)) print m[1] }' \
+    | sort -u -n \
+    | jq -R -s -c 'split("\n") | map(select(length > 0)) | map(tonumber)')"
 fi
 
 jq -n \

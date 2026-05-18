@@ -29,6 +29,8 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Select Xcode
         if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
