@@ -1,7 +1,16 @@
+import hashlib
 import json
 import unittest
 
 import vac_statistics
+
+
+class FakeS3Client:
+    def __init__(self):
+        self.calls = []
+
+    def put_object(self, **kwargs):
+        self.calls.append(kwargs)
 
 
 class VACStatisticsTests(unittest.TestCase):
@@ -30,6 +39,23 @@ class VACStatisticsTests(unittest.TestCase):
                 with open(output, encoding="utf-8") as handle:
                     payload = json.load(handle)
                 self.assertTrue(payload["source"]["title"].startswith("Veterans Affairs Canada"))
+
+    def test_publish_payload_writes_s3_artifacts_with_content_hash(self):
+        payload = vac_statistics.build_payload()
+        s3_client = FakeS3Client()
+
+        published = vac_statistics.publish_payload(payload, bucket="artifact-bucket", s3_client=s3_client)
+
+        keys = [call["Key"] for call in s3_client.calls]
+        self.assertEqual(published[0].key, "statistics/v1/vac-statistics/all.json")
+        self.assertIn("statistics/v1/vac-statistics/national.json", keys)
+        self.assertIn("statistics/v1/vac-statistics/province-on.json", keys)
+        call = s3_client.calls[0]
+        self.assertEqual(json.loads(call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":

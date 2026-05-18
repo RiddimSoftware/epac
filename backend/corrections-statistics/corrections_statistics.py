@@ -8,14 +8,20 @@ from datetime import datetime, timezone
 import argparse
 import json
 import logging
+from pathlib import Path
 import sys
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
 
 
 CSC_DRR_2023_2024_URL = "https://www.canada.ca/en/correctional-service/corporate/transparency/reporting/departmental-results-reports/2023-2024.html"
 CSC_ICAF_2023_2024_URL = "https://www.canada.ca/en/correctional-service/corporate/library/offenders/indigenous/indigenous-accountability-report/accountability-report-2023-2024.html"
 OCI_ANNUAL_REPORT_2024_2025_URL = "https://oci-bec.gc.ca/en/content/office-correctional-investigator-annual-report-2024-25"
 STATCAN_CENSUS_PROFILE_URL = "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/page.cfm?DGUIDlist=2021A000011124&GENDERlist=1&HEADERlist=30%2C19&LANG=E&STATISTIClist=1%2C4&SearchText=Canada"
+
+PIPELINE_NAME = "corrections-statistics"
 
 
 @dataclass(frozen=True)
@@ -195,28 +201,56 @@ def _oci_highlights() -> list[OCIHighlight]:
     ]
 
 
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", required=True, help="Path to write JSON snapshot.")
+    parser.add_argument("--output", help="Path to write JSON snapshot.")
     parser.add_argument("--dry-run", action="store_true", help="Write JSON to stdout instead of output path.")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
     args = parser.parse_args(argv)
 
     logger = configure_logging()
     started = time.monotonic()
-    logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
+    output_target = "s3" if args.s3_publish else "stdout" if args.dry_run or not args.output else args.output
+    logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": output_target})
     try:
         snapshot = build_statistics()
     except Exception as exc:
         logger.error("snapshot build failed", extra={"error": f"{type(exc).__name__}: {exc}"})
         raise
     payload = json.dumps(snapshot, indent=2, sort_keys=True) + "\n"
-    if args.dry_run:
+    if args.s3_publish:
+        published = publish_payload(snapshot, bucket=args.s3_bucket)
+    elif args.dry_run or not args.output:
         sys.stdout.write(payload)
+        published = []
     else:
         with open(args.output, "w", encoding="utf-8") as output:
             output.write(payload)
+        published = []
     elapsed_ms = int((time.monotonic() - started) * 1000)
-    logger.info("pipeline finished", extra={"records_processed": len(snapshot["annual_statistics"]), "duration_ms": elapsed_ms})
+    logger.info(
+        "pipeline finished",
+        extra={
+            "records_processed": len(snapshot["annual_statistics"]),
+            "s3_objects": [artifact.key for artifact in published],
+            "duration_ms": elapsed_ms,
+        },
+    )
     return 0
 
 

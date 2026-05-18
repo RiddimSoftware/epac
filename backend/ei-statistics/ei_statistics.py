@@ -19,16 +19,21 @@ import csv
 import io
 import json
 import logging
+from pathlib import Path
 import ssl
 import sys
 import time
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
+
 
 STATCAN_TABLE_BASE_URL = "https://www150.statcan.gc.ca/n1/tbl/csv"
 ESDC_SOURCE_URL = "https://www.canada.ca/en/employment-social-development/programs/ei/statistics.html"
 
+PIPELINE_NAME = "ei-statistics"
 BENEFICIARIES_TABLE_ID = "14100011"
 CLAIMS_TABLE_ID = "14100005"
 BENEFITS_TABLE_ID = "14100008"
@@ -306,14 +311,31 @@ def _percent_change(current: int, previous: int | None) -> float | None:
     return round(((current - previous) / previous) * 100, 1)
 
 
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Fetch province-level EI statistics")
     parser.add_argument("--output", help="Write JSON to a file instead of stdout")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
     args = parser.parse_args(argv)
 
     logger = configure_logging()
     start = time.monotonic()
-    logger.info("pipeline started", extra={"output": args.output or "stdout"})
+    output_target = "s3" if args.s3_publish else args.output or "stdout"
+    logger.info("pipeline started", extra={"output": output_target})
     try:
         payload = build_statistics(
             beneficiary_rows=fetch_table(BENEFICIARIES_TABLE_ID),
@@ -333,13 +355,17 @@ def main(argv: list[str] | None = None) -> int:
         raise
 
     body = json.dumps(payload, indent=2, sort_keys=True)
-    if args.output:
+    if args.s3_publish:
+        published = publish_payload(payload, bucket=args.s3_bucket)
+    elif args.output:
         with open(args.output, "w", encoding="utf-8") as output:
             output.write(body)
             output.write("\n")
+        published = []
     else:
         sys.stdout.write(body)
         sys.stdout.write("\n")
+        published = []
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(
@@ -347,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
         extra={
             "records_processed": len(payload["provinces"]),
             "reference_month": payload["reference_month"],
+            "s3_objects": [artifact.key for artifact in published],
             "duration_ms": duration_ms,
         },
     )

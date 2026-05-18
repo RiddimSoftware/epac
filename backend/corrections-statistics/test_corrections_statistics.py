@@ -1,6 +1,16 @@
+import hashlib
+import json
 import unittest
 
 import corrections_statistics
+
+
+class FakeS3Client:
+    def __init__(self):
+        self.calls = []
+
+    def put_object(self, **kwargs):
+        self.calls.append(kwargs)
 
 
 class CorrectionsStatisticsTests(unittest.TestCase):
@@ -27,6 +37,26 @@ class CorrectionsStatisticsTests(unittest.TestCase):
         self.assertTrue(any("Statistics Canada" in title for title in titles))
         self.assertEqual(5.0, snapshot["indigenous_population_share"]["percent_of_canada"])
         self.assertGreaterEqual(len(snapshot["oci_highlights"]), 3)
+
+    def test_publish_payload_writes_s3_artifact_with_content_hash(self):
+        payload = corrections_statistics.build_statistics()
+        s3_client = FakeS3Client()
+
+        published = corrections_statistics.publish_payload(
+            payload,
+            bucket="artifact-bucket",
+            s3_client=s3_client,
+        )
+
+        self.assertEqual(published[0].key, "statistics/v1/corrections-statistics/all.json")
+        call = s3_client.calls[0]
+        self.assertEqual(call["Bucket"], "artifact-bucket")
+        self.assertEqual(call["Key"], "statistics/v1/corrections-statistics/all.json")
+        self.assertEqual(json.loads(call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":

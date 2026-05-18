@@ -667,7 +667,7 @@ All eight pipelines share a common pattern:
 **Estimated size:** ~50 KB uncompressed; **~8 KB gzipped**  
 **Update frequency:** Monthly (~3 weeks after reference month)  
 **Update trigger:** Cron (monthly); manual re-run on data revision  
-**Proposed S3 key:** `statistics/v1/cpi.json`  
+**Implemented S3 key layout:** `statistics/v1/cpi-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
 **iOS consumer service:** None today (statistics UI not yet shipped). Will need a `CPIStatisticsService.swift`.
 
 ### 12b. `fiscal-monitor`
@@ -677,7 +677,7 @@ All eight pipelines share a common pattern:
 **Estimated size:** ~20 KB uncompressed; **~4 KB gzipped**  
 **Update frequency:** Monthly  
 **Update trigger:** Cron (monthly after Finance Canada publishes)  
-**Proposed S3 key:** `statistics/v1/fiscal-monitor.json`  
+**Implemented S3 key layout:** `statistics/v1/fiscal-monitor/all.json`
 **iOS consumer service:** `ios/epac/Util/FiscalMonitorService.swift`
 
 ### 12c. `cpp-oas-statistics`
@@ -686,7 +686,7 @@ All eight pipelines share a common pattern:
 **Estimated size:** ~30 KB uncompressed; **~5 KB gzipped**  
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly)  
-**Proposed S3 key:** `statistics/v1/cpp-oas.json`  
+**Implemented S3 key layout:** `statistics/v1/cpp-oas-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
 **iOS consumer service:** None today.
 
 ### 12d. `ei-statistics`
@@ -694,9 +694,9 @@ All eight pipelines share a common pattern:
 **Source:** Employment Insurance statistics (Statistics Canada / ESDC)  
 **Output shape:** Province-level EI benefit statistics with monthly history  
 **Estimated size:** ~40 KB uncompressed; **~6 KB gzipped**  
-**Update frequency:** Monthly  
-**Update trigger:** Cron (monthly)  
-**Proposed S3 key:** `statistics/v1/ei.json`  
+**Update frequency:** Quarterly
+**Update trigger:** Cron (quarterly)
+**Implemented S3 key layout:** `statistics/v1/ei-statistics/all.json` and `province-<code>.json` slice artifacts.
 **iOS consumer service:** None today.
 
 ### 12e. `vac-statistics`
@@ -705,25 +705,25 @@ All eight pipelines share a common pattern:
 **Estimated size:** ~20 KB uncompressed; **~4 KB gzipped**  
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly)  
-**Proposed S3 key:** `statistics/v1/vac.json`  
+**Implemented S3 key layout:** `statistics/v1/vac-statistics/all.json`, `national.json`, and `province-<code>.json` slice artifacts.
 **iOS consumer service:** None today.
 
 ### 12f. `student-finance-statistics`
 
 **Source:** Canadian student financing data  
 **Estimated size:** ~20 KB uncompressed; **~4 KB gzipped**  
-**Update frequency:** Annual  
-**Update trigger:** Cron (annual / manual)  
-**Proposed S3 key:** `statistics/v1/student-finance.json`  
+**Update frequency:** Quarterly
+**Update trigger:** Cron (quarterly / manual)
+**Implemented S3 key layout:** `statistics/v1/student-finance-statistics/all.json` and `province-<code>.json` slice artifacts.
 **iOS consumer service:** None today.
 
 ### 12g. `corrections-statistics`
 
 **Source:** Corrections Canada statistics  
 **Estimated size:** ~20 KB uncompressed; **~4 KB gzipped**  
-**Update frequency:** Annual  
-**Update trigger:** Cron (annual / manual)  
-**Proposed S3 key:** `statistics/v1/corrections.json`  
+**Update frequency:** Quarterly
+**Update trigger:** Cron (quarterly / manual)
+**Implemented S3 key layout:** `statistics/v1/corrections-statistics/all.json`
 **iOS consumer service:** None today.
 
 ### 12h. `transport-safety-statistics`
@@ -732,7 +732,7 @@ All eight pipelines share a common pattern:
 **Estimated size:** ~20 KB uncompressed; **~4 KB gzipped**  
 **Update frequency:** Quarterly  
 **Update trigger:** Cron (quarterly / manual)  
-**Proposed S3 key:** `statistics/v1/transport-safety.json`  
+**Implemented S3 key layout:** `statistics/v1/transport-safety-statistics/all.json`, `road-national.json`, and `road-province-<code>.json` slice artifacts.
 **iOS consumer service:** None today.
 
 ---
@@ -753,7 +753,7 @@ All eight pipelines share a common pattern:
 | Estimates (`by-fiscal-year/`) | ~5 | 1 MB |
 | Estimates (`by-org/`) | ~300 | 800 KB |
 | Calendar ICS | 1 | 15 KB |
-| Statistics pipelines (8) | 8 | 45 KB |
+| Statistics pipelines (8) | ~70 including province slices | 45 KB |
 | **Total** | | **~100 MB** |
 
 ---

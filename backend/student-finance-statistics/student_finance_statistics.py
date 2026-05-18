@@ -10,11 +10,15 @@ import csv
 import io
 import json
 import logging
+from pathlib import Path
 import ssl
 import sys
 import time
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
 
 
 STATCAN_TABLE_BASE_URL = "https://www150.statcan.gc.ca/n1/tbl/csv"
@@ -22,6 +26,8 @@ TUITION_TABLE_ID = "37100120"
 TUITION_TABLE_URL = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3710012001"
 CSFA_STATISTICAL_REVIEW_URL = "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/student-financial-assistance-statistics-2023-2024.html"
 CSFA_ANNUAL_REPORT_URL = "https://www.canada.ca/en/employment-social-development/programs/canada-student-loans-grants/reports/csfa-annual-2023-2024.html"
+
+PIPELINE_NAME = "student-finance-statistics"
 
 PROVINCES = {
     "Newfoundland and Labrador": "NL",
@@ -314,15 +320,32 @@ def _previous_academic_year(ref_date: str) -> str:
     return f"{int(start) - 1}/{int(end) - 1}"
 
 
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="../../ios/epac/student-finance-statistics.json")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
     args = parser.parse_args(argv)
 
     logger = configure_logging()
     start = time.monotonic()
-    logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": args.output})
+    output_target = "s3" if args.s3_publish else "stdout" if args.dry_run else args.output
+    logger.info("pipeline started", extra={"dry_run": args.dry_run, "output": output_target})
 
     try:
         tuition_rows = fetch_table(TUITION_TABLE_ID)
@@ -333,14 +356,25 @@ def main(argv: list[str] | None = None) -> int:
         raise
 
     payload = json.dumps(snapshot, indent=2, sort_keys=True) + "\n"
-    if args.dry_run:
-        print(payload, end="")
+    if args.s3_publish:
+        published = publish_payload(snapshot, bucket=args.s3_bucket)
+    elif args.dry_run:
+        sys.stdout.write(payload)
+        published = []
     else:
         with open(args.output, "w", encoding="utf-8") as output:
             output.write(payload)
+        published = []
 
     duration_ms = int((time.monotonic() - start) * 1000)
-    logger.info("pipeline finished", extra={"records_processed": len(snapshot["provinces"]), "duration_ms": duration_ms})
+    logger.info(
+        "pipeline finished",
+        extra={
+            "records_processed": len(snapshot["provinces"]),
+            "s3_objects": [artifact.key for artifact in published],
+            "duration_ms": duration_ms,
+        },
+    )
     return 0
 
 

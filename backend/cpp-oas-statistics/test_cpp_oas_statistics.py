@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import hashlib
 import json
 import os
 import sys
@@ -13,6 +14,14 @@ from unittest.mock import patch
 import cpp_oas_statistics
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+class FakeS3Client:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def put_object(self, **kwargs) -> None:
+        self.calls.append(kwargs)
 
 
 def _load_fixture(name: str) -> bytes:
@@ -103,6 +112,27 @@ class CppOasStatisticsTests(unittest.TestCase):
         self.assertIn("records_processed", finished)
         self.assertIn("duration_ms", finished)
         self.assertEqual(finished["pipeline"], "cpp-oas-statistics")
+
+    def test_publish_payload_writes_s3_artifacts_with_content_hash(self) -> None:
+        payload = cpp_oas_statistics.build_payload(self.cpp_csv, self.oas_csv)
+        s3_client = FakeS3Client()
+
+        published = cpp_oas_statistics.publish_payload(
+            payload,
+            bucket="artifact-bucket",
+            s3_client=s3_client,
+        )
+
+        keys = [call["Key"] for call in s3_client.calls]
+        self.assertEqual(published[0].key, "statistics/v1/cpp-oas-statistics/all.json")
+        self.assertIn("statistics/v1/cpp-oas-statistics/national.json", keys)
+        self.assertIn("statistics/v1/cpp-oas-statistics/province-on.json", keys)
+        call = s3_client.calls[0]
+        self.assertEqual(json.loads(call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":
