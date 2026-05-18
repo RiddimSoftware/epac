@@ -23,13 +23,9 @@ GIT_SHA="${GIT_SHA:?}"
 WORKFLOW_RUN_ID="${WORKFLOW_RUN_ID:?}"
 S3_BUCKET_PREFIX="${S3_BUCKET_PREFIX:?}"
 
-clean_aws_profiles() {
-  if [[ -z "${AWS_PROFILE//[[:space:]]/}" ]]; then
-    unset AWS_PROFILE
-  fi
-  if [[ -z "${AWS_DEFAULT_PROFILE//[[:space:]]/}" ]]; then
-    unset AWS_DEFAULT_PROFILE
-  fi
+aws_without_profile() {
+  unset AWS_PROFILE AWS_DEFAULT_PROFILE
+  aws "$@"
 }
 
 UPLOADED_AT="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
@@ -37,17 +33,16 @@ MANIFEST_FILE="release-manifest.json"
 PREV_MANIFEST_FILE="previous-manifest.json"
 
 # Idempotency: if a manifest already exists for this SHA, reuse it.
-clean_aws_profiles
-if aws s3 cp "${S3_BUCKET_PREFIX}/${GIT_SHA}.json" "${MANIFEST_FILE}" 2>/dev/null; then
+if aws_without_profile s3 cp "${S3_BUCKET_PREFIX}/${GIT_SHA}.json" "${MANIFEST_FILE}" 2>/dev/null; then
   echo "Manifest already exists for SHA ${GIT_SHA}. Re-uploading (idempotent)."
-  aws s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
-  aws s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
+  aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
+  aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
   exit 0
 fi
 
 # Discover previous successful TestFlight build SHA from the latest manifest.
 PREV_SHA=""
-if aws s3 cp "${S3_BUCKET_PREFIX}/latest.json" "${PREV_MANIFEST_FILE}" 2>/dev/null; then
+if aws_without_profile s3 cp "${S3_BUCKET_PREFIX}/latest.json" "${PREV_MANIFEST_FILE}" 2>/dev/null; then
   PREV_SHA="$(jq -r '.git_sha // empty' "${PREV_MANIFEST_FILE}" 2>/dev/null || true)"
 fi
 
@@ -77,7 +72,7 @@ jq -n \
 echo "Generated ${MANIFEST_FILE}:"
 cat "${MANIFEST_FILE}"
 
-aws s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
-aws s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
+aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
+aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
 
 echo "Uploaded manifest to ${S3_BUCKET_PREFIX}/${GIT_SHA}.json and ${S3_BUCKET_PREFIX}/latest.json"
