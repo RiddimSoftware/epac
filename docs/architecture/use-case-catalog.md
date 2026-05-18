@@ -23,6 +23,11 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
+| `OnThisDayItem` | A source-derived historical Parliament moment shown for the same calendar day in prior years. |
+| `EstimateOrg` | A GC InfoBase organization identifier and display name used to group Main Estimates rows. |
+| `RidingBoundary` | A simplified federal electoral district boundary with source metadata and GeoJSON geometry. |
+| `CalendarEntry` | A House sitting day represented in the public RFC 5545 calendar feed. |
+| `AppConfig` | Backend-provided app version and feature-flag settings. |
 | `ArtifactKey` | A relative S3/CDN artifact key such as `members/v1/all.json`. |
 | `ArtifactManifest` | The iOS-decoded manifest.json document used to compare artifact ETags before fetching payloads. |
 | `Manifest` | The root manifest.json document: schema version, generation timestamp, and sorted artifact entries. |
@@ -47,6 +52,10 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ManifestFetching` | outbound | Fetch manifest.json over HTTPS with conditional ETag requests. |
 | `ArtifactStore` | outbound | Backend: list artifact keys and metadata from object storage; write manifest.json back. iOS: read/write cached artifact payloads and ETags on disk. |
 | `StatisticsSink` | outbound | Backend statistics pipelines write deterministic JSON dataset artifacts without coupling parser logic to stdout, local files, Postgres, or S3 SDK details. |
+| `EstimatesReader` | outbound | Fetch published Main Estimates rows by fiscal year, organization, or full artifact export. |
+| `RidingBoundaryRepository` | outbound | Read federal riding boundary artifacts by slug. |
+| `CalendarArtifactRepository` | outbound | Read the published House sitting calendar ICS artifact. |
+| `AppConfigRepository` | outbound | Read backend-provided app configuration artifacts. |
 
 ---
 
@@ -213,6 +222,106 @@ Current implementation:
 ```
 
 > **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. The current repo has no bills table, so the publisher uses the authoritative LEGISinfo JSON feed until a canonical backend bills table exists.
+
+---
+
+### GetOnThisDay
+
+```
+Actor: User (iOS app, Home launch) / Backend API caller
+Goal: Browse prior-year Parliament moments for the same calendar day.
+Inputs: Reference date, item limit.
+Outputs: OnThisDayResponse with ranked OnThisDayItem records.
+Entities / values: OnThisDayItem, SpeechMessage.
+Ports: HansardRepository.
+Primary adapters: on-this-day Lambda (GET /api/v1/on-this-day), on-this-day publisher, S3 on-this-day/v1/all.json artifact.
+Current implementation:
+  backend/on-this-day/main.go
+  backend/on-this-day/internal/usecase/usecase.go
+  backend/on-this-day/internal/adapter/artifacts/artifacts.go
+  backend/on-this-day/cmd/publisher/main.go
+```
+
+> **Adapter note:** EPAC-1916 moves API reads to `on-this-day/v1/all.json`. The publisher remains the only Postgres reader and computes the current-MP / bill / vote ranking order at publish time.
+
+---
+
+### GetEstimates
+
+```
+Actor: Backend API caller
+Goal: Read Main Estimates rows by fiscal year or organization.
+Inputs: Fiscal year, optional organization id.
+Outputs: EstimatesResponse with GC InfoBase-derived Estimate rows.
+Entities / values: EstimateOrg.
+Ports: EstimatesReader.
+Primary adapters: estimates Lambda (GET /api/v1/estimates, GET /api/v1/estimates/{org_id}), estimates publisher, S3 estimates/v1 artifacts.
+Current implementation:
+  backend/estimates/main.go
+  backend/estimates/internal/usecase/usecase.go
+  backend/estimates/internal/adapter/artifacts/artifacts.go
+  backend/estimates/cmd/publisher/main.go
+```
+
+> **Adapter note:** EPAC-1916 moves API reads to `estimates/v1/all.json` and `estimates/v1/by-org/{org-id}.json`. The publisher remains the only Postgres reader for the Main Estimates table.
+
+---
+
+### GetRidingBoundary
+
+```
+Actor: User (iOS app, riding map surface) / Backend API caller
+Goal: Read a simplified federal riding boundary by slug.
+Inputs: Riding slug.
+Outputs: RidingBoundary GeoJSON payload with source metadata.
+Entities / values: RidingBoundary.
+Ports: RidingBoundaryRepository.
+Primary adapters: riding-boundary Lambda (GET /api/v1/ridings/{slug}/boundary), riding-boundary publisher, S3 ridings/v1 artifacts.
+Current implementation:
+  backend/riding-boundary/main.go
+  backend/riding-boundary/cmd/publisher/main.go
+```
+
+> **Adapter note:** EPAC-1916 moves provider fetch and Douglas-Peucker simplification to the publisher. The Lambda reads `ridings/v1/boundary/{slug}.json`; `ridings/v1/index.json` lists all published slugs.
+
+---
+
+### GetHouseCalendar
+
+```
+Actor: User (calendar subscription client) / Backend API caller
+Goal: Subscribe to House of Commons sitting days as an RFC 5545 calendar.
+Inputs: None.
+Outputs: Raw text/calendar response.
+Entities / values: CalendarEntry.
+Ports: CalendarArtifactRepository.
+Primary adapters: calendar Lambda (GET /api/v1/calendar/house.ics), calendar publisher, S3 calendar/v1/house.ics artifact.
+Current implementation:
+  backend/calendar/main.go
+  backend/live-status/cmd/calendar-publisher/main.go
+  backend/live-status/internal/usecase/usecase.go
+```
+
+> **Adapter note:** EPAC-1916 routes the calendar subscription endpoint to a static artifact reader. The publisher reuses the live-status calendar parser and ICS writer; no request-time database read is needed.
+
+---
+
+### GetAppConfig
+
+```
+Actor: User (iOS app launch/config refresh) / Backend API caller
+Goal: Fetch backend-provided minimum supported app version and feature flags.
+Inputs: None.
+Outputs: AppConfig.
+Entities / values: AppConfig.
+Ports: AppConfigRepository.
+Primary adapters: config Lambda (GET /api/v1/config), config publisher, S3 config/v1/app.json artifact.
+Current implementation:
+  backend/config/main.go
+  backend/config/cmd/publisher/main.go
+```
+
+> **Adapter note:** EPAC-1916 introduces the config artifact as `config/v1/app.json`. Environment-specific config should be isolated by the deployment's artifact bucket or prefix rather than by changing the API response shape.
 
 ---
 

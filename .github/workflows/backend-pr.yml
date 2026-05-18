@@ -29,10 +29,13 @@ jobs:
           - member-votes
           - member-votes-publisher
           - on-this-day
+          - estimates
           - live-status
           - device-register
           - health
           - riding-boundary
+          - calendar
+          - config
           - hansard-subjects-index
           - openapi
           - members-publisher
