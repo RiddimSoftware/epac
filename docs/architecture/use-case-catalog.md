@@ -23,7 +23,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
-| `OnThisDayItem` | A source-derived historical Parliament moment shown for the same calendar day in prior years. |
+| `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
 | `EstimateOrg` | A GC InfoBase organization identifier and display name used to group Main Estimates rows. |
 | `RidingBoundary` | A simplified federal electoral district boundary with source metadata and GeoJSON geometry. |
 | `CalendarEntry` | A House sitting day represented in the public RFC 5545 calendar feed. |
@@ -229,8 +229,8 @@ Current implementation:
 ### GetOnThisDay
 
 ```
-Actor: User (iOS app, Home launch) / Backend API caller
-Goal: Browse prior-year Parliament moments for the same calendar day.
+Actor: Backend API caller
+Goal: Serve prior-year Parliament moments for the same calendar day while backend teardown work is pending.
 Inputs: Reference date, item limit.
 Outputs: OnThisDayResponse with ranked OnThisDayItem records.
 Entities / values: OnThisDayItem, SpeechMessage.
@@ -242,6 +242,9 @@ Current implementation:
   backend/on-this-day/internal/adapter/artifacts/artifacts.go
   backend/on-this-day/cmd/publisher/main.go
 ```
+
+> **iOS note:** EPAC-1933 removes the Home feed presentation and iOS runtime dependency for this data.
+> The backend endpoint and artifact publisher remain listed because their removal is tracked outside this app change.
 
 > **Adapter note:** EPAC-1916 moves API reads to `on-this-day/v1/all.json`. The publisher remains the only Postgres reader and computes the current-MP / bill / vote ranking order at publish time.
 

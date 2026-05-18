@@ -44,6 +44,4 @@ struct HomeFeedSnapshot {
 
     let latestVote: HomeVoteRecord?
     let latestMemberVote: HomeMemberVoteRecord?
-
-    let onThisDayItems: [OnThisDayItem]
 }

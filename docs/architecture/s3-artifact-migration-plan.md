@@ -434,7 +434,7 @@ on-this-day/v1/all.json    # full ranked historical index, filtered by Lambda
 
 **Proposed JSON schema:** `{ "items": [...] }`, where each item matches `#/components/schemas/OnThisDayItem`. The Lambda wraps filtered items in `OnThisDayResponse`.
 
-**iOS consumer service:** `ios/epac/Util/OnThisDayService.swift`
+**iOS consumer service:** Removed from Home in EPAC-1933; the backend endpoint and publisher remain until separately retired.
 
 ---
 

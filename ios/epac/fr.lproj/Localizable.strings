@@ -670,10 +670,6 @@
 "toronto.votes.empty.description" = "Les votes du conseil municipal de Toronto apparaîtront ici.";
 "toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";
 
-/* On This Day (EPAC-470) */
-"home.onThisDay.title" = "À cette date dans les législatures passées";
-"home.onThisDay.dismiss" = "Masquer À cette date";
-
 /* Onboarding v2 (EPAC-621) */
 "onboarding.welcome.oneLineValueProp" = "Le Parlement du Canada dans votre poche";
 "onboarding.mp.confirm.title" = "Votre député est %@";

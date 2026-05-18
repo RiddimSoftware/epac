@@ -8,25 +8,20 @@ import Foundation
 @MainActor
 struct LoadHomeFeed {
     private let repository: HomeFeedRepository
-    private let onThisDayFetching: OnThisDayFetching
     private let followPreferenceReading: FollowPreferenceReading
     private let clock: Clock
 
     init(
         repository: HomeFeedRepository,
-        onThisDayFetching: OnThisDayFetching,
         followPreferenceReading: FollowPreferenceReading,
         clock: Clock = SystemClock()
     ) {
         self.repository = repository
-        self.onThisDayFetching = onThisDayFetching
         self.followPreferenceReading = followPreferenceReading
         self.clock = clock
     }
 
-    // preservingOnThisDayItems: returned unchanged when the network fetch fails so
-    // an offline pull-to-refresh doesn't erase the last successful snapshot.
-    func execute(preservingOnThisDayItems existing: [OnThisDayItem] = []) async -> HomeFeedSnapshot {
+    func execute() async -> HomeFeedSnapshot {
         let today = Calendar.current.startOfDay(for: clock.now)
 
         let sittingDates = (try? await repository.fetchSittingDates()) ?? []
@@ -73,8 +68,6 @@ struct LoadHomeFeed {
             latestMemberVote = try? await repository.fetchMemberVote(memberID: memberID, voteID: voteID)
         }
 
-        let onThisDayItems = (try? await onThisDayFetching.fetch(date: clock.now, limit: 5)) ?? existing
-
         let civicContext = FollowedCivicContext(
             followedBills: followPreferenceReading.followedBillNumbers(),
             followedTopics: followPreferenceReading.followedTopicIDs(),
@@ -100,8 +93,7 @@ struct LoadHomeFeed {
             latestHansardDate: latestHansard?.date,
             latestSpeechHighlight: latestSpeechHighlight,
             latestVote: latestVote,
-            latestMemberVote: latestMemberVote,
-            onThisDayItems: onThisDayItems
+            latestMemberVote: latestMemberVote
         )
     }
 
