@@ -290,8 +290,8 @@ Current implementation:
 ### GetHouseCalendar
 
 ```
-Actor: User (calendar subscription client) / Backend API caller
-Goal: Subscribe to House of Commons sitting days as an RFC 5545 calendar.
+Actor: Legacy backend API caller
+Goal: Serve the existing RFC 5545 House sitting calendar artifact until the Aurora retirement removes this backend route.
 Inputs: None.
 Outputs: Raw text/calendar response.
 Entities / values: CalendarEntry.
@@ -303,7 +303,7 @@ Current implementation:
   backend/live-status/internal/usecase/usecase.go
 ```
 
-> **Adapter note:** EPAC-1916 routes the calendar subscription endpoint to a static artifact reader. The publisher reuses the live-status calendar parser and ICS writer; no request-time database read is needed.
+> **Adapter note:** The iOS app no longer exposes this hosted calendar feed as of EPAC-1937. The backend route remains cataloged only as a legacy adapter pending EPAC-1922 teardown.
 
 ---
 

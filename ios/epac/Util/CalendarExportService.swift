@@ -57,10 +57,6 @@ final class CalendarExportService {
 		return addedCount
 	}
 
-	static func subscriptionURL(baseURL: URL = BackendConfig.shared.baseURL) -> URL {
-		baseURL.appendingPathComponent("api/v1/calendar/house.ics")
-	}
-
 	static func deepLinkURL(for date: Date, calendar: Calendar = .current) -> URL? {
 		let components = calendar.dateComponents([.year, .month, .day], from: date)
 		guard let year = components.year,
