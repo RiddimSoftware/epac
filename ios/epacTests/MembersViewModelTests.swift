@@ -211,4 +211,19 @@ struct MembersViewModelTests {
 		vm.selectedCabinet = .cabinetOnly
 		#expect(vm.isAnyFilterActive)
 	}
+
+	@Test func activeFilterCountIncludesEveryNonDefaultFilter() {
+		let vm = MembersViewModel()
+		vm.selectedParty = .liberal
+		vm.selectedProvince = Province.Ontario
+		vm.selectedStatus = .all
+		vm.selectedCabinet = .cabinetOnly
+
+		#expect(vm.activeFilterCount == 4)
+	}
+
+	@Test func activeFilterCountIsZeroByDefault() {
+		let vm = MembersViewModel()
+		#expect(vm.activeFilterCount == 0)
+	}
 }

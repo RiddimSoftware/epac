@@ -28,6 +28,15 @@ class MembersViewModel {
         selectedParty != nil || selectedProvince != nil || selectedStatus != .current || selectedCabinet != .all
     }
 
+    var activeFilterCount: Int {
+        [
+            selectedParty != nil,
+            selectedProvince != nil,
+            selectedStatus != .current,
+            selectedCabinet != .all
+        ].filter { $0 }.count
+    }
+
     // Memoized filtered list — recomputed only when filter inputs change, not on every render.
     private var cachedResult: [ParliamentMember] = []
     private var cachedSource: [ParliamentMember] = []

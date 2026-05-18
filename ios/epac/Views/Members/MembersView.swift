@@ -45,58 +45,45 @@ struct MembersView: View {
 		.toolbar {
 			ToolbarItemGroup(placement: .topBarTrailing) {
 				Menu {
-					Picker("Party", selection: $viewModel.selectedParty) {
-						Text("All Parties").tag(Party?.none)
-						ForEach(Party.allCases) { party in
-							Text(party.shortName).tag(Party?.some(party))
+					Section("Filters") {
+						Picker("Party", selection: $viewModel.selectedParty) {
+							Text("All Parties").tag(Party?.none)
+							ForEach(Party.allCases) { party in
+								Text(party.shortName).tag(Party?.some(party))
+							}
 						}
-					}
-				} label: {
-					Image(systemName: viewModel.selectedParty == nil ? "flag" : "flag.fill")
-						.foregroundStyle(viewModel.selectedParty.map { Color($0.colour) } ?? .primary)
-				}
 
-				Menu {
-					Picker("Province", selection: $viewModel.selectedProvince) {
-						Text("All Provinces").tag(Province?.none)
-						ForEach(Province.allCases) { province in
-							Text(province.rawValue).tag(Province?.some(province))
+						Picker("Province", selection: $viewModel.selectedProvince) {
+							Text("All Provinces").tag(Province?.none)
+							ForEach(Province.allCases) { province in
+								Text(province.rawValue).tag(Province?.some(province))
+							}
 						}
-					}
-				} label: {
-					if let selectedProvince = viewModel.selectedProvince {
-						Text(selectedProvince.shortCode)
-							.font(.caption)
-							.fontWeight(.bold)
-							.padding(5)
-							.background(Color.accentColor.opacity(0.2))
-							.cornerRadius(5)
-					} else {
-						Image(systemName: "map")
-					}
-				}
 
-				Menu {
-					Picker("Status", selection: $viewModel.selectedStatus) {
-						ForEach(MembersViewModel.MemberStatus.allCases, id: \.self) { status in
-							Text(LocalizedStringKey(status.rawValue)).tag(status)
+						Picker("Status", selection: $viewModel.selectedStatus) {
+							ForEach(MembersViewModel.MemberStatus.allCases, id: \.self) { status in
+								Text(LocalizedStringKey(status.rawValue)).tag(status)
+							}
 						}
-					}
-				} label: {
-					Image(systemName: viewModel.selectedStatus == .all ? "person.2" : "person.fill")
-				}
 
-				Menu {
-					Picker("Cabinet", selection: $viewModel.selectedCabinet) {
-						ForEach(MembersViewModel.CabinetFilter.allCases, id: \.self) { filter in
-							Text(LocalizedStringKey(filter.rawValue)).tag(filter)
+						Picker("Cabinet", selection: $viewModel.selectedCabinet) {
+							ForEach(MembersViewModel.CabinetFilter.allCases, id: \.self) { filter in
+								Text(LocalizedStringKey(filter.rawValue)).tag(filter)
+							}
+						}
+						.disabled(cabinetPositions.isEmpty)
+					}
+
+					if viewModel.isAnyFilterActive {
+						Button(action: viewModel.clearAllFilters) {
+							Label("Clear filters", systemImage: "xmark.circle.fill")
 						}
 					}
 				} label: {
-					Image(systemName: viewModel.selectedCabinet == .cabinetOnly ? "building.columns.fill" : "building.columns")
+					filterToolbarLabel
 				}
-				.accessibilityIdentifier("members-cabinet-filter")
-				.disabled(cabinetPositions.isEmpty)
+				.accessibilityLabel(filterAccessibilityLabel)
+				.accessibilityIdentifier("members-filter-menu")
 
 				Menu {
 					ForEach(Party.allCases) { party in
@@ -106,14 +93,6 @@ struct MembersView: View {
 					Image(systemName: "flag.checkered")
 				}
 				.accessibilityIdentifier("members-parties-menu")
-
-				if viewModel.isAnyFilterActive {
-					Button(action: viewModel.clearAllFilters) {
-						Image(systemName: "xmark.circle.fill")
-					}
-					.accessibilityLabel("Clear filters")
-					.accessibilityIdentifier("members-clear-filters")
-				}
 			}
 		}
 		.safeAreaInset(edge: .bottom) {
@@ -127,6 +106,28 @@ struct MembersView: View {
 		.navigationTitle("Members")
 		.navigationBarTitleDisplayMode(.large)
 		.animation(reduceMotion ? nil : .default, value: filteredMembers)
+	}
+
+	private var filterToolbarLabel: some View {
+		ZStack(alignment: .topTrailing) {
+			Image(systemName: viewModel.isAnyFilterActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+			if viewModel.activeFilterCount > 0 {
+				Text(verbatim: "\(viewModel.activeFilterCount)")
+					.font(.caption2.weight(.bold))
+					.foregroundStyle(.white)
+					.frame(minWidth: 16, minHeight: 16)
+					.background(Circle().fill(Color.appDestructive))
+					.offset(x: 7, y: -7)
+					.accessibilityHidden(true)
+			}
+		}
+	}
+
+	private var filterAccessibilityLabel: String {
+		if viewModel.activeFilterCount == 0 {
+			return "Filters"
+		}
+		return "Filters, \(viewModel.activeFilterCount) active"
 	}
 
 	private var loadingView: some View {
