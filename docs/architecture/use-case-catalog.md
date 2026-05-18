@@ -313,7 +313,7 @@ Current implementation:
 ### GetAppConfig
 
 ```
-Actor: User (iOS app launch/config refresh) / Backend API caller
+Actor: Backend API caller
 Goal: Fetch backend-provided minimum supported app version and feature flags.
 Inputs: None.
 Outputs: AppConfig.

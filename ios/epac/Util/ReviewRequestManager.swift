@@ -2,7 +2,7 @@
 //  ReviewRequestManager.swift
 //  epac
 //
-//  Remote-config-gated in-app review prompting. Prompts only at earned moments:
+//  Local-only in-app review prompting. Prompts only at earned moments:
 //  - after the user reads several debate threads in one app session
 //  - after the user views a followed MP's profile multiple times
 //
@@ -11,14 +11,6 @@ import Foundation
 import Sentry
 import StoreKit
 import UIKit
-
-struct ReviewPromptRemoteConfig: Equatable {
-    var isEnabled: Bool = false
-}
-
-private struct AppConfigResponse: Decodable {
-    let features: [String: Bool]
-}
 
 @MainActor
 final class ReviewRequestManager {
@@ -35,29 +27,21 @@ final class ReviewRequestManager {
     private let sessionNumberKey = "epac.review.sessionNumber"
     private let sessionThreadsKey = "epac.review.sessionThreads"
     private let memberProfileViewsKey = "epac.review.memberProfileViews"
-    private let remoteConfigEnabledKey = "epac.review.remoteConfig.enabled"
-    private let remoteConfigFetchedAtKey = "epac.review.remoteConfig.fetchedAt"
 
     private let minDaysInstalled = 7
     private let minOpenCount = 5
     private let minDaysSincePrompt = 90
     private let minDebateThreadsPerSession = 3
     private let minFollowedMPProfileViews = 2
-    private let remoteConfigTTL: TimeInterval = 60 * 60 * 12
 
     private let defaults: UserDefaults
     private let now: () -> Date
-    private let fetchConfigData: @Sendable (URL) async throws -> Data
     private let requestReview: () -> Bool
     private let telemetryRecorder: (String, [String: String]) -> Void
 
     init(
         defaults: UserDefaults = .standard,
         now: @escaping () -> Date = Date.init,
-        fetchConfigData: @escaping @Sendable (URL) async throws -> Data = { url in
-            let (data, _) = try await NetworkService.shared.data(from: url)
-            return data
-        },
         requestReview: @escaping () -> Bool = {
             guard let scene = UIApplication.shared.connectedScenes
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
@@ -74,7 +58,6 @@ final class ReviewRequestManager {
     ) {
         self.defaults = defaults
         self.now = now
-        self.fetchConfigData = fetchConfigData
         self.requestReview = requestReview
         self.telemetryRecorder = telemetryRecorder
     }
@@ -88,8 +71,6 @@ final class ReviewRequestManager {
         defaults.set(defaults.integer(forKey: sessionNumberKey) + 1, forKey: sessionNumberKey)
         defaults.set([], forKey: sessionThreadsKey)
         defaults.removeObject(forKey: memberProfileViewsKey)
-
-        Task { await refreshRemoteConfigIfNeeded() }
     }
 
     func recordDebateThreadRead(hansardID: String, subjectTitle: String) {
@@ -113,7 +94,6 @@ final class ReviewRequestManager {
     }
 
     private func requestReviewIfEligible(trigger: TriggerSource) {
-        guard remoteConfig().isEnabled else { return }
         guard meetsGateCriteria() else { return }
         guard requestReview() else { return }
         defaults.set(now(), forKey: lastPromptKey)
@@ -143,34 +123,6 @@ final class ReviewRequestManager {
         }
 
         return true
-    }
-
-    private func remoteConfig() -> ReviewPromptRemoteConfig {
-        ReviewPromptRemoteConfig(
-            isEnabled: defaults.bool(forKey: remoteConfigEnabledKey)
-        )
-    }
-
-    func refreshRemoteConfigIfNeeded() async {
-        if let fetchedAt = defaults.object(forKey: remoteConfigFetchedAtKey) as? Date,
-           now().timeIntervalSince(fetchedAt) < remoteConfigTTL {
-            return
-        }
-
-        // Remote config stays on the backend until the planned config/v1 app-config artifact is published.
-        let url = BackendConfig.shared.baseURL
-            .appendingPathComponent("api")
-            .appendingPathComponent("v1")
-            .appendingPathComponent("config")
-
-        do {
-            let data = try await fetchConfigData(url)
-            let response = try JSONDecoder().decode(AppConfigResponse.self, from: data)
-            defaults.set(response.features["review_prompt"] ?? false, forKey: remoteConfigEnabledKey)
-            defaults.set(now(), forKey: remoteConfigFetchedAtKey)
-        } catch {
-            Log.warning("review.remoteConfig.fetchFailed error=\(error.localizedDescription)")
-        }
     }
 
     private nonisolated static func defaultTelemetryRecorder(_ event: String, _ payload: [String: String]) {
