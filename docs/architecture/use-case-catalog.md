@@ -295,7 +295,7 @@ Current implementation:
   ios/epac/Views/Members/MemberSpeechFeedView.swift
   ios/epac/Util/MemberSpeechService.swift
   backend/member-speeches/internal/usecase/usecase.go
-  backend/member-speeches/internal/adapter/postgres/postgres.go
+  backend/member-speeches/internal/adapter/artifact/artifact.go
   backend/member-speeches/main.go
   backend/member-content/content.go
   backend/member-speeches-publisher/main.go
