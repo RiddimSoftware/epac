@@ -5,6 +5,8 @@ use (
 	./_testdb
 	./bills
 	./bills-publisher
+	./calendar
+	./config
 	./daily-fetch
 	./device-register
 	./estimates

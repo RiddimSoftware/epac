@@ -1,1 +1,2 @@
 BACKEND_BASE_URL = https:/$()/api.epac.riddimsoftware.com
+ARTIFACTS_BASE_URL = https:/$()/epac-assets.riddimsoftware.com

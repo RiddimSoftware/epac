@@ -9,7 +9,10 @@ locals {
     "member-speeches",
     "member-votes",
     "on-this-day",
+    "estimates",
     "riding-boundary",
+    "calendar",
+    "config",
     "health",
     "device-register",
     "openapi",
@@ -30,7 +33,10 @@ locals {
     "member-speeches" = "1.0"
     "member-votes"    = "1.0"
     "on-this-day"     = "1.0"
+    "estimates"       = "2.0"
     "riding-boundary" = "1.0"
+    "calendar"        = "2.0"
+    "config"          = "2.0"
     "live-status"     = "2.0"
     "device-register" = "1.0"
     "openapi"         = "2.0"
@@ -191,10 +197,34 @@ resource "aws_apigatewayv2_route" "on_this_day" {
   target    = "integrations/${aws_apigatewayv2_integration.staging["on-this-day"].id}"
 }
 
+resource "aws_apigatewayv2_route" "estimates" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/estimates"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["estimates"].id}"
+}
+
+resource "aws_apigatewayv2_route" "organization_estimates" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/estimates/{org_id}"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["estimates"].id}"
+}
+
 resource "aws_apigatewayv2_route" "riding_boundary" {
   api_id    = var.apigw_api_id
   route_key = "GET /api/v1/ridings/{slug}/boundary"
   target    = "integrations/${aws_apigatewayv2_integration.staging["riding-boundary"].id}"
+}
+
+resource "aws_apigatewayv2_route" "house_calendar" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/calendar/house.ics"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["calendar"].id}"
+}
+
+resource "aws_apigatewayv2_route" "config" {
+  api_id    = var.apigw_api_id
+  route_key = "GET /api/v1/config"
+  target    = "integrations/${aws_apigatewayv2_integration.staging["config"].id}"
 }
 
 resource "aws_apigatewayv2_route" "live_status" {

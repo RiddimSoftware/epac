@@ -8,17 +8,25 @@ https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
+import argparse
 import json
+import logging
+from pathlib import Path
 import re
 import ssl
 import sys
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
+
 
 BASE_URL = "https://www.canada.ca"
+PIPELINE_NAME = "fiscal-monitor"
 
 
 @dataclass(frozen=True)
@@ -46,6 +54,54 @@ class TextExtractor(HTMLParser):
 
     def text(self) -> str:
         return re.sub(r"\s+", " ", " ".join(self.parts)).strip()
+
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "level": record.levelname,
+            "pipeline": PIPELINE_NAME,
+            "message": record.getMessage(),
+        }
+        for key, value in record.__dict__.items():
+            if key not in {
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "taskName",
+                "processName",
+                "process",
+                "message",
+            }:
+                payload[key] = value
+        return json.dumps(payload, sort_keys=True)
+
+
+def configure_logging() -> logging.Logger:
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(JSONFormatter())
+    logger = logging.getLogger(PIPELINE_NAME)
+    logger.handlers.clear()
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    return logger
 
 
 def current_fiscal_year_issue_urls(today: date | None = None) -> list[str]:
@@ -185,10 +241,68 @@ def _month_number(month_name: str) -> int:
     return months.index(month_name) + 1
 
 
-def main() -> int:
-    entries = fetch_current_fiscal_year()
-    json.dump([asdict(entry) for entry in entries], sys.stdout, indent=2)
-    sys.stdout.write("\n")
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Fetch Finance Canada Fiscal Monitor statistics")
+    parser.add_argument("--output", help="Write JSON to a file instead of stdout")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
+    args = parser.parse_args(argv)
+
+    logger = configure_logging()
+    start = time.monotonic()
+    output_target = "s3" if args.s3_publish else args.output or "stdout"
+    logger.info("pipeline started", extra={"output": output_target})
+    try:
+        entries = fetch_current_fiscal_year()
+    except Exception as exc:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        logger.error(
+            "fetch failed from Finance Canada",
+            extra={
+                "error": f"{type(exc).__name__}: {exc}",
+                "url": f"{BASE_URL}/en/department-finance/services/publications/fiscal-monitor.html",
+                "duration_ms": duration_ms,
+            },
+        )
+        raise
+
+    payload = [asdict(entry) for entry in entries]
+    body = json.dumps(payload, indent=2, sort_keys=True)
+    if args.s3_publish:
+        published = publish_payload(payload, bucket=args.s3_bucket)
+    elif args.output:
+        with open(args.output, "w", encoding="utf-8") as output:
+            output.write(body)
+            output.write("\n")
+        published = []
+    else:
+        sys.stdout.write(body)
+        sys.stdout.write("\n")
+        published = []
+
+    duration_ms = int((time.monotonic() - start) * 1000)
+    logger.info(
+        "pipeline finished",
+        extra={
+            "records_processed": len(entries),
+            "s3_objects": [artifact.key for artifact in published],
+            "duration_ms": duration_ms,
+        },
+    )
     return 0
 
 

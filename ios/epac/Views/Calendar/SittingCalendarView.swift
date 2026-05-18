@@ -230,7 +230,7 @@ struct SittingCalendarView: View {
 			ToolbarItem(placement: .topBarTrailing) {
 				if isRefreshing {
 					ProgressView()
-						.accessibilityLabel("Refreshing sitting calendar")
+						.accessibilityLabel("Refreshing parliamentary calendar")
 				} else {
 					Button {
 						Task {
@@ -241,7 +241,7 @@ struct SittingCalendarView: View {
 					} label: {
 						Image(systemName: "arrow.clockwise")
 					}
-					.accessibilityLabel("Refresh sitting calendar")
+					.accessibilityLabel("Refresh parliamentary calendar")
 				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {

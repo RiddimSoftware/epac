@@ -13,8 +13,12 @@ from datetime import datetime, timezone
 import argparse
 import json
 import logging
+from pathlib import Path
 import sys
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
 
 
 FACTS_AND_FIGURES_URL = "https://www.veterans.gc.ca/en/news-and-media/facts-and-figures"
@@ -30,6 +34,8 @@ DRR_2025_URL = (
     "https://www.veterans.gc.ca/en/about-vac/reports-policies-and-legislation/"
     "departmental-reports/departmental-results-reports/departmental-results-report-2024-2025"
 )
+
+PIPELINE_NAME = "vac-statistics"
 
 
 @dataclass(frozen=True)
@@ -137,28 +143,50 @@ def build_payload() -> dict[str, object]:
     }
 
 
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build VAC statistics snapshot")
     parser.add_argument("--output", help="Write JSON to a file instead of stdout")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
     args = parser.parse_args(argv)
 
     logger = configure_logging()
     start = time.monotonic()
-    logger.info("pipeline started", extra={"output": args.output or "stdout"})
+    output_target = "s3" if args.s3_publish else args.output or "stdout"
+    logger.info("pipeline started", extra={"output": output_target})
     payload = build_payload()
     body = json.dumps(payload, indent=2, sort_keys=True)
-    if args.output:
+    if args.s3_publish:
+        published = publish_payload(payload, bucket=args.s3_bucket)
+    elif args.output:
         with open(args.output, "w", encoding="utf-8") as output:
             output.write(body)
             output.write("\n")
+        published = []
     else:
         sys.stdout.write(body)
         sys.stdout.write("\n")
+        published = []
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(
         "pipeline finished",
         extra={
             "records_processed": len(payload["annual"]) + len(payload["provinces"]),
+            "s3_objects": [artifact.key for artifact in published],
             "duration_ms": duration_ms,
         },
     )

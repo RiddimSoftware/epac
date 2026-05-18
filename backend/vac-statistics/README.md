@@ -12,4 +12,15 @@ Run:
 
 ```bash
 python3 backend/vac-statistics/vac_statistics.py --output ios/epac/vac-statistics.json
+ARTIFACTS_BUCKET=epac-artifacts python3 backend/vac-statistics/vac_statistics.py --s3-publish
 ```
+
+## S3 artifacts
+
+`--s3-publish` writes `statistics/v1/vac-statistics/all.json`,
+`national.json`, and one `province-<code>.json` object per available province
+with `x-amz-meta-content-hash-sha256` metadata.
+
+The `Publish Artifacts` workflow runs this pipeline quarterly on day 22 at
+00:00 UTC in January, April, July, and October, and on every manual
+`workflow_dispatch`.

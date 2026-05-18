@@ -4,11 +4,11 @@
 //
 //  Personalized Home feed (EPAC-50).
 //  Replaces the raw MyMPView in the Home tab with 5 graceful sections:
-//  1. Today in Parliament (sitting day check)
+//  1. Past debates entry point
 //  2. Your MP's activity (postal-code-based, or setup prompt)
 //  3. Followed bills (up to 3 + see-all link)
 //  4. Followed topics (chip row + manage link)
-//  5. Today's most recent debates (from latest Hansard in SwiftData)
+//  5. Most recent debates (from latest Hansard in SwiftData)
 //
 
 import SwiftData
@@ -21,9 +21,6 @@ struct HomeFeedView: View {
     @Environment(NavigationRouter.self) private var router
     @Environment(NetworkMonitor.self) private var networkMonitor
     @Environment(\.scenePhase) private var scenePhase
-    @State private var isSittingToday = false
-    @State private var parliamentDayStatus: HomeParliamentDayStatus = .notSitting
-    @State private var nextSittingDate: Date?
     @State private var latestVote: HomeVoteRecord?
     @State private var latestMemberVote: HomeMemberVoteRecord?
     @State private var latestSpeechHighlight: HomeSpeechHighlight?
@@ -141,19 +138,12 @@ struct HomeFeedView: View {
         }
     }
 
-    // MARK: - Section 1: Today in Parliament
+    // MARK: - Section 1: Past debates
 
     private var todaySection: some View {
         Section {
             VStack(alignment: .leading, spacing: EpacSpacing.m) {
                 todayHeader
-
-                if !networkMonitor.isConnected {
-                    Label(offlineCacheText, systemImage: "wifi.slash")
-                        .font(.epacCaption)
-                        .foregroundStyle(Color.epacStatus.warning)
-                        .accessibilityIdentifier("homeTodayOfflineState")
-                }
 
                 Divider()
 
@@ -197,7 +187,7 @@ struct HomeFeedView: View {
                 .buttonStyle(.plain)
             }
             .padding(.vertical, EpacSpacing.s)
-            .accessibilityLabel(parliamentStatusTitle)
+            .accessibilityLabel(NSLocalizedString("home.debates.title", comment: ""))
             .accessibilityHint("Opens Parliament tab")
             .accessibilityIdentifier("home-feed-today-card")
         }
@@ -209,15 +199,15 @@ struct HomeFeedView: View {
             router.selectedTab = .parliament
         } label: {
             HStack(alignment: .top, spacing: EpacSpacing.s) {
-                Image(systemName: parliamentStatusIcon)
-                    .foregroundStyle(parliamentStatusColor)
+                Image(systemName: "text.bubble.fill")
+                    .foregroundStyle(Color.epacBrand.accent)
                     .font(.title3)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                    Text(parliamentStatusTitle)
+                    Text(NSLocalizedString("home.debates.title", comment: ""))
                         .font(.epacHeadline)
-                        .foregroundStyle(parliamentStatusColor)
-                    Text(todayStatusDetail)
+                        .foregroundStyle(Color.epacBrand.accent)
+                    Text(NSLocalizedString("home.debates.subtitle", comment: ""))
                         .font(.epacCaption)
                         .foregroundStyle(Color.epacText.secondary)
                 }
@@ -790,9 +780,6 @@ struct HomeFeedView: View {
         )
         let snapshot = await useCase.execute(preservingOnThisDayItems: onThisDayItems)
 
-        self.isSittingToday = snapshot.isSittingToday
-        self.parliamentDayStatus = snapshot.parliamentDayStatus
-        self.nextSittingDate = snapshot.nextSittingDate
         self.latestVote = snapshot.latestVote
         self.latestMemberVote = snapshot.latestMemberVote
         self.latestSpeechHighlight = snapshot.latestSpeechHighlight
@@ -823,73 +810,8 @@ struct HomeFeedView: View {
         OnThisDayTelemetry.record(.dismiss)
     }
 
-    private var todayStatusDetail: String {
-        if parliamentDayStatus == .sitting {
-            return Date().formatted(date: .abbreviated, time: .omitted)
-        }
-        if parliamentDayStatus == .adjourned, let latestHansardDate {
-            return String(
-                format: NSLocalizedString("home.today.adjournedDetail", comment: ""),
-                latestHansardDate.formatted(date: .abbreviated, time: .omitted)
-            )
-        }
-        if let nextSittingDate {
-            return String(
-                format: NSLocalizedString("home.today.nextSitting", comment: ""),
-                nextSittingDate.formatted(date: .abbreviated, time: .omitted)
-            )
-        }
-        return NSLocalizedString("home.today.noCalendar", comment: "")
-    }
-
-    private var parliamentStatusTitle: String {
-        switch parliamentDayStatus {
-        case .sitting:
-            return NSLocalizedString("home.parliament.sitting", comment: "")
-        case .adjourned:
-            return NSLocalizedString("home.parliament.adjourned", comment: "")
-        case .notSitting:
-            return NSLocalizedString("home.parliament.notSitting", comment: "")
-        }
-    }
-
-    private var parliamentStatusIcon: String {
-        switch parliamentDayStatus {
-        case .sitting, .adjourned:
-            return "building.columns.fill"
-        case .notSitting:
-            return "building.columns"
-        }
-    }
-
-    private var parliamentStatusColor: Color {
-        switch parliamentDayStatus {
-        case .sitting:
-            return Color.epacBrand.accent
-        case .adjourned:
-            return Color.epacStatus.warning
-        case .notSitting:
-            return Color.epacText.secondary
-        }
-    }
-
     private var hasPersonalizedContext: Bool {
         postalCodeStore.savedMemberName != nil || !MemberFollowStore.shared.followedIDs.isEmpty
-    }
-
-    private var offlineCacheText: String {
-        let syncDates = [
-            UserDefaults.standard.object(forKey: "epac.sync.hansard") as? Date,
-            UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
-            latestHansardDate
-        ].compactMap { $0 }
-        guard let lastSync = syncDates.max() else {
-            return NSLocalizedString("home.today.offline", comment: "")
-        }
-        return String(
-            format: NSLocalizedString("home.today.offlineCache", comment: ""),
-            lastSync.formatted(date: .abbreviated, time: .shortened)
-        )
     }
 
     private func voteSummary(_ vote: HomeVoteRecord, memberVote: HomeMemberVoteRecord?) -> String {

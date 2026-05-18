@@ -91,7 +91,11 @@ ROUTES=(
   "GET /api/v1/members/{id}/speeches|GET|member-speeches|1.0"
   "GET /api/v1/members/{id}/votes|GET|member-votes|1.0"
   "GET /api/v1/on-this-day|GET|on-this-day|1.0"
+  "GET /api/v1/estimates|GET|estimates|2.0"
+  "GET /api/v1/estimates/{org_id}|GET|estimates|2.0"
   "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
+  "GET /api/v1/calendar/house.ics|GET|calendar|2.0"
+  "GET /api/v1/config|GET|config|2.0"
   "GET /api/v1/live|GET|live-status|2.0"
   "POST /api/v1/device/register|POST|device-register|1.0"
 )
@@ -140,6 +144,7 @@ for route_def in "${ROUTES[@]}"; do
 
   SOURCE_PATH="${ROUTE_KEY#* }"
   SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
+  SOURCE_PATH="${SOURCE_PATH//\{org_id\}/*}"
   SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
   SOURCE_PATH="${SOURCE_PATH//\{date\}/*}"
   STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"

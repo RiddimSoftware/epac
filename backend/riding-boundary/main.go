@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"epac/observability"
+	"epac/shared/artifacts"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"golang.org/x/text/unicode/norm"
@@ -30,6 +31,8 @@ var (
 	representBaseURL = "https://represent.opennorth.ca"
 	httpClient       = &http.Client{Timeout: 8 * time.Second}
 )
+
+var newArtifactStore = artifacts.NewFromEnv
 
 type boundaryListResponse struct {
 	Objects []boundaryListObject `json:"objects"`
@@ -92,45 +95,13 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		return jsonError(http.StatusBadRequest, "missing riding slug"), nil
 	}
 
-	match, err := resolveBoundary(ctx, slug)
+	body, err := readBoundary(ctx, slug)
 	if err != nil {
-		return jsonError(http.StatusBadGateway, err.Error()), nil
-	}
-	if match.ExternalID == "" {
-		return jsonError(http.StatusNotFound, "riding boundary not found"), nil
-	}
-
-	detail, err := fetchBoundaryDetail(ctx, match.ExternalID)
-	if err != nil {
-		return jsonError(http.StatusBadGateway, err.Error()), nil
-	}
-	geometry, err := fetchBoundaryGeometry(ctx, match.ExternalID)
-	if err != nil {
-		return jsonError(http.StatusBadGateway, err.Error()), nil
-	}
-	simplified, err := simplifyGeometry(geometry, defaultTolerance)
-	if err != nil {
-		return jsonError(http.StatusBadGateway, err.Error()), nil
-	}
-
-	name := detail.Name
-	if name == "" {
-		name = match.Name
-	}
-	body, err := json.Marshal(boundaryResponse{
-		Slug:                slugify(name),
-		Name:                name,
-		ExternalID:          match.ExternalID,
-		RepresentationOrder: firstNonEmpty(detail.Metadata.RepresentationOrder, "2023"),
-		Source:              sourceTitle,
-		SourceURL:           sourceURL,
-		SourceNote:          "Boundary geometry is resolved through Open North Represent's 2023 federal electoral district set, which mirrors the official Elections Canada 45th general election vector boundary files.",
-		Extent:              detail.Extent,
-		Centroid:            detail.Centroid.Coordinates,
-		Geometry:            simplified,
-	})
-	if err != nil {
-		return jsonError(http.StatusInternalServerError, "marshal error"), nil
+		status := http.StatusInternalServerError
+		if artifacts.IsNotFound(err) {
+			status = http.StatusNotFound
+		}
+		return jsonError(status, err.Error()), nil
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -141,6 +112,14 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		},
 		Body: string(body),
 	}, nil
+}
+
+func readBoundary(ctx context.Context, slug string) ([]byte, error) {
+	store, err := newArtifactStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return store.Get(ctx, fmt.Sprintf("ridings/v1/boundary/%s.json", slugify(slug)))
 }
 
 func resolveBoundary(ctx context.Context, slug string) (boundaryListObject, error) {

@@ -6,122 +6,66 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"daily-fetch/internal/adapter/postgres"
+	"daily-fetch/internal/usecase"
 	"epac/observability"
+
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/jackc/pgx/v5"
 )
 
-type Intervention struct {
-	Id              string
-	MemberId        string
-	Speaker         string
-	SubjectID       string
-	SubjectTitle    string
-	InterventionSeq int
-	Content         string
-	Language        string
-	WordCount       int
-	SittingDate     time.Time
-	ParliamentNum   int
-	SessionNum      int
-	Filename        string
+type Intervention = usecase.Intervention
+
+type systemClock struct{}
+
+func (systemClock) Now() time.Time {
+	return time.Now()
 }
 
 func main() {
 	lambda.Start(observability.WrapNoEvent("daily-fetch", HandleRequest))
 }
 
-const pipelineName = "hansard-daily-fetch"
-
-func recordHealth(ctx context.Context, conn *pgx.Conn, count int, runErr error) {
-	now := time.Now().UTC()
-	var errMsg *string
-	var successAt *time.Time
-	var recordCount *int
-	if runErr == nil {
-		successAt = &now
-		recordCount = &count
-	} else {
-		s := runErr.Error()
-		errMsg = &s
-	}
-	_, _ = conn.Exec(ctx, `
-		INSERT INTO pipeline_health (name, last_run_at, last_success_at, last_error, record_count, expected_interval_hours)
-		VALUES ($1, $2, $3, $4, $5, 24)
-		ON CONFLICT (name) DO UPDATE SET
-			last_run_at     = EXCLUDED.last_run_at,
-			last_success_at = COALESCE(EXCLUDED.last_success_at, pipeline_health.last_success_at),
-			last_error      = EXCLUDED.last_error,
-			record_count    = COALESCE(EXCLUDED.record_count, pipeline_health.record_count)
-	`, pipelineName, now, successAt, errMsg, recordCount)
-}
-
 func HandleRequest(ctx context.Context) error {
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		return fmt.Errorf("DATABASE_URL environment variable is not set")
-	}
-
-	conn, err := pgx.Connect(ctx, connStr)
+	conn, err := postgres.Connect(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %w", err)
 	}
 	defer conn.Close(ctx)
 
-	// Current Parliament and Session
-	parl := "44"
-	sess := "1"
-	sessionCode := parl + sess
-
-	// Derive the last sitting number from the filename column.
-	// WHERE filters to parliament 44 session 1 when those columns are populated;
-	// rows from before the schema migration have NULL values and are excluded by
-	// the IS NOT DISTINCT FROM guard. COALESCE returns 0 for an empty table.
-	var lastSitting int
-	err = conn.QueryRow(ctx, `
-		SELECT COALESCE(MAX(CAST(substring(filename FROM 'HAN([0-9]+)-E.XML') AS INTEGER)), 0)
-		FROM speeches
-		WHERE (parliament_num IS NULL OR (parliament_num = 44 AND session_num = 1))`,
-	).Scan(&lastSitting)
+	repo := postgres.NewHansardRepository(conn)
+	ingest := usecase.New(repo, systemClock{})
+	next, err := ingest.Next(ctx)
 	if err != nil {
-		lastSitting = 0
+		return err
 	}
 
-	nextSitting := lastSitting + 1
-	sittingPadded := fmt.Sprintf("%03d", nextSitting)
-	url := fmt.Sprintf("https://www.ourcommons.ca/Content/House/%s/Debates/%s/HAN%s-E.XML", sessionCode, sittingPadded, sittingPadded)
-	filename := fmt.Sprintf("44-1-HAN%s-E.XML", sittingPadded)
-
-	fmt.Printf("Attempting to download sitting %d from %s\n", nextSitting, url)
+	fmt.Printf("Attempting to download sitting %d from %s\n", next.Sitting, next.URL)
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	interventions, err := downloadAndParse(httpClient, url, filename)
+	interventions, err := downloadAndParse(httpClient, next.URL, next.Filename)
 	if err != nil {
 		fetchErr := fmt.Errorf("failed to download or parse Hansard: %w", err)
-		recordHealth(ctx, conn, 0, fetchErr)
+		ingest.RecordHealth(ctx, 0, fetchErr)
 		return fetchErr
 	}
 
 	if len(interventions) == 0 {
-		fmt.Printf("No interventions found for sitting %d. Not available yet.\n", nextSitting)
-		recordHealth(ctx, conn, 0, nil)
+		fmt.Printf("No interventions found for sitting %d. Not available yet.\n", next.Sitting)
+		ingest.RecordHealth(ctx, 0, nil)
 		return nil
 	}
 
-	n, err := upsertSpeeches(ctx, conn, interventions)
+	n, err := ingest.Execute(ctx, interventions)
 	if err != nil {
 		insertErr := fmt.Errorf("failed to upsert speeches: %w", err)
-		recordHealth(ctx, conn, 0, insertErr)
 		return insertErr
 	}
 
-	recordHealth(ctx, conn, n, nil)
-	fmt.Printf("Successfully upserted %d entries from sitting %d\n", n, nextSitting)
+	fmt.Printf("Successfully upserted %d entries from sitting %d\n", n, next.Sitting)
 	return nil
 }
 
@@ -327,16 +271,7 @@ func floorLanguage(se xml.StartElement) string {
 }
 
 func normalizeLanguage(language string) string {
-	switch strings.ToLower(strings.TrimSpace(language)) {
-	case "en", "eng", "english":
-		return "en"
-	case "fr", "fra", "fre", "french":
-		return "fr"
-	case "mixed":
-		return "mixed"
-	default:
-		return "und"
-	}
+	return usecase.NormalizeLanguage(language)
 }
 
 func mergeLanguage(existing, next string) string {
@@ -369,64 +304,4 @@ func parseHansardDate(s string) time.Time {
 
 func wordCount(s string) int {
 	return len(strings.Fields(s))
-}
-
-func upsertSpeeches(ctx context.Context, conn *pgx.Conn, interventions []Intervention) (int, error) {
-	batch := &pgx.Batch{}
-	valid := 0
-	for _, inv := range interventions {
-		if inv.Id == "" || inv.Content == "" {
-			continue
-		}
-		var memberId *string
-		if inv.MemberId != "" {
-			memberId = &inv.MemberId
-		}
-		var date *time.Time
-		if !inv.SittingDate.IsZero() {
-			date = &inv.SittingDate
-		}
-		var parlNum, sessNum *int
-		if inv.ParliamentNum > 0 {
-			parlNum = &inv.ParliamentNum
-		}
-		if inv.SessionNum > 0 {
-			sessNum = &inv.SessionNum
-		}
-		batch.Queue(`
-			INSERT INTO speeches (
-				intervention_id, filename, speaker_name, content,
-				sitting_date, parliament_num, session_num, member_id,
-				subject_id, subject_title, intervention_seq, word_count, language
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			ON CONFLICT (intervention_id) DO UPDATE SET
-				speaker_name     = EXCLUDED.speaker_name,
-				content          = EXCLUDED.content,
-				sitting_date     = EXCLUDED.sitting_date,
-				parliament_num   = EXCLUDED.parliament_num,
-				session_num      = EXCLUDED.session_num,
-				member_id        = EXCLUDED.member_id,
-				subject_id       = EXCLUDED.subject_id,
-				subject_title    = EXCLUDED.subject_title,
-				intervention_seq = EXCLUDED.intervention_seq,
-				word_count       = EXCLUDED.word_count,
-				language         = EXCLUDED.language`,
-			inv.Id, inv.Filename, inv.Speaker, inv.Content,
-			date, parlNum, sessNum, memberId,
-			inv.SubjectID, inv.SubjectTitle, inv.InterventionSeq, inv.WordCount, normalizeLanguage(inv.Language),
-		)
-		valid++
-	}
-
-	br := conn.SendBatch(ctx, batch)
-	defer br.Close()
-
-	inserted := 0
-	for i := 0; i < valid; i++ {
-		if _, err := br.Exec(); err != nil {
-			return inserted, err
-		}
-		inserted++
-	}
-	return inserted, nil
 }

@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"epac/on-this-day/internal/usecase"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -24,20 +27,11 @@ func TestHandleRequest_InvalidDate(t *testing.T) {
 	}
 }
 
-func TestHandleRequest_MissingDatabaseURL(t *testing.T) {
-	// Close and nil the cached connection so getDBConn is forced to re-read
-	// DATABASE_URL rather than reusing a warm connection from a prior test.
-	if dbConn != nil {
-		dbConn.Close(context.Background())
-		dbConn = nil
-	}
-	orig := os.Getenv("DATABASE_URL")
-	os.Unsetenv("DATABASE_URL")
-	t.Cleanup(func() {
-		if orig != "" {
-			os.Setenv("DATABASE_URL", orig)
-		}
-	})
+func TestHandleRequest_MissingArtifactConfig(t *testing.T) {
+	t.Setenv("ARTIFACTS_DIR", "")
+	t.Setenv("EPAC_ARTIFACTS_DIR", "")
+	t.Setenv("ARTIFACT_BUCKET", "")
+	t.Setenv("EPAC_ARTIFACT_BUCKET", "")
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		QueryStringParameters: map[string]string{"date": "2026-04-29"},
@@ -50,6 +44,69 @@ func TestHandleRequest_MissingDatabaseURL(t *testing.T) {
 	}
 }
 
+func TestHandleRequest_ReadsArtifactAndFiltersDate(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "on-this-day/v1/all.json", `{
+		"items": [
+			{"id":"speech:new","kind":"speech","year":2026,"date":"2026-04-29","title":"Future","excerpt":"ignored"},
+			{"id":"speech:old-1","kind":"speech","year":2024,"date":"2024-04-29","title":"Housing","excerpt":"first"},
+			{"id":"speech:wrong-day","kind":"speech","year":2023,"date":"2023-04-28","title":"Budget","excerpt":"ignored"},
+			{"id":"speech:old-2","kind":"speech","year":2022,"date":"2022-04-29","title":"Health","excerpt":"second"}
+		]
+	}`)
+	t.Setenv("ARTIFACTS_DIR", dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		QueryStringParameters: map[string]string{"date": "2026-04-29", "limit": "1"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got status %d body %s, want 200", resp.StatusCode, resp.Body)
+	}
+	if !strings.Contains(resp.Body, `"date":"2026-04-29"`) || !strings.Contains(resp.Body, `"id":"speech:old-1"`) {
+		t.Fatalf("unexpected body: %s", resp.Body)
+	}
+	if strings.Contains(resp.Body, "wrong-day") || strings.Contains(resp.Body, "old-2") {
+		t.Fatalf("body was not filtered/limited: %s", resp.Body)
+	}
+}
+
+func TestHandleRequest_DefaultDateExcludesCurrentDayArtifact(t *testing.T) {
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	prior := time.Date(now.Year()-1, now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if prior.Month() != now.Month() || prior.Day() != now.Day() {
+		prior = time.Date(now.Year()-4, now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	dir := t.TempDir()
+	writeFixture(t, dir, "on-this-day/v1/all.json", fmt.Sprintf(`{
+		"items": [
+			{"id":"speech:today","kind":"speech","year":%d,"date":%q,"title":"Today","excerpt":"ignored"},
+			{"id":"speech:prior","kind":"speech","year":%d,"date":%q,"title":"Prior","excerpt":"included"}
+		]
+	}`, today.Year(), today.Format("2006-01-02"), prior.Year(), prior.Format("2006-01-02")))
+	t.Setenv("ARTIFACTS_DIR", dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		QueryStringParameters: map[string]string{"limit": "10"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got status %d body %s, want 200", resp.StatusCode, resp.Body)
+	}
+	if strings.Contains(resp.Body, "speech:today") {
+		t.Fatalf("default date included current-day artifact row: %s", resp.Body)
+	}
+	if !strings.Contains(resp.Body, "speech:prior") {
+		t.Fatalf("default date omitted prior-year matching row: %s", resp.Body)
+	}
+}
+
 func TestParseLimit(t *testing.T) {
 	cases := []struct {
 		value string
@@ -59,7 +116,7 @@ func TestParseLimit(t *testing.T) {
 		{"3", 3},
 		{"0", 5},
 		{"not-number", 5},
-		{"200", 20},
+		{"200", usecase.MaxLimit},
 	}
 	for _, tc := range cases {
 		if got := parseLimit(tc.value); got != tc.want {
@@ -68,102 +125,13 @@ func TestParseLimit(t *testing.T) {
 	}
 }
 
-func TestOneLineExcerpt(t *testing.T) {
-	got := oneLineExcerpt("Madam Speaker,\n\nthis is   a longer statement about Parliament.", 26)
-	if got != "Madam Speaker, this is a..." {
-		t.Fatalf("excerpt = %q", got)
+func writeFixture(t *testing.T, root, key, body string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(key))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir fixture: %v", err)
 	}
-}
-
-func TestIsOptionalRankingSchemaError(t *testing.T) {
-	cases := []struct {
-		name string
-		err  error
-		want bool
-	}{
-		{
-			name: "missing members table",
-			err:  errString(`ERROR: relation "members" does not exist (SQLSTATE 42P01)`),
-			want: true,
-		},
-		{
-			name: "missing related bill column",
-			err:  errString(`ERROR: column s.related_bill_ids does not exist (SQLSTATE 42703)`),
-			want: true,
-		},
-		{
-			name: "unrelated query failure",
-			err:  errString(`ERROR: relation "speeches" does not exist (SQLSTATE 42P01)`),
-			want: false,
-		},
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := isOptionalRankingSchemaError(tc.err); got != tc.want {
-				t.Fatalf("isOptionalRankingSchemaError() = %v, want %v", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestScanSpeechItem(t *testing.T) {
-	row := fakeSpeechRow{
-		values: []any{
-			"12345",
-			2021,
-			time.Date(2021, 4, 29, 0, 0, 0, 0, time.UTC),
-			"Jane Example",
-			"Housing",
-			"Madam Speaker, housing affordability matters.",
-			stringPtr("278707"),
-			stringPtr("https://www.ourcommons.ca/documentviewer/en/44-1/house/sitting-1/hansard"),
-		},
-	}
-	item, err := scanSpeechItem(row)
-	if err != nil {
-		t.Fatalf("scanSpeechItem error: %v", err)
-	}
-	if item.ID != "speech:12345" || item.Kind != "speech" || item.Year != 2021 {
-		t.Fatalf("unexpected item identity: %+v", item)
-	}
-	if item.Date != "2021-04-29" || item.Title != "Housing" {
-		t.Fatalf("unexpected item fields: %+v", item)
-	}
-	body, err := json.Marshal(OnThisDayResponse{Date: "2026-04-29", Items: []OnThisDayItem{item}})
-	if err != nil {
-		t.Fatalf("marshal response: %v", err)
-	}
-	if !strings.Contains(string(body), `"kind":"speech"`) {
-		t.Fatalf("response missing speech kind: %s", body)
-	}
-}
-
-type fakeSpeechRow struct {
-	values []any
-}
-
-func (f fakeSpeechRow) Scan(dest ...any) error {
-	for idx, value := range f.values {
-		switch out := dest[idx].(type) {
-		case *string:
-			*out = value.(string)
-		case *int:
-			*out = value.(int)
-		case *time.Time:
-			*out = value.(time.Time)
-		case **string:
-			*out = value.(*string)
-		}
-	}
-	return nil
-}
-
-func stringPtr(value string) *string {
-	return &value
-}
-
-type errString string
-
-func (e errString) Error() string {
-	return string(e)
 }

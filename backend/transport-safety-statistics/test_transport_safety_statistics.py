@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 
 from pathlib import Path
@@ -9,7 +11,16 @@ from transport_safety_statistics import (
     build_payload,
     parse_mode_year,
     parse_road_year,
+    publish_payload,
 )
+
+
+class FakeS3Client:
+    def __init__(self):
+        self.calls = []
+
+    def put_object(self, **kwargs):
+        self.calls.append(kwargs)
 
 
 class TransportSafetyStatisticsTests(unittest.TestCase):
@@ -107,6 +118,30 @@ class TransportSafetyStatisticsTests(unittest.TestCase):
         self.assertEqual(payload["history_years"]["road"], [2019, 2020, 2021, 2022, 2023])
         self.assertEqual(len(payload["modes"]["air"]), 5)
         self.assertEqual(len(payload["road"]["provinces"]), 13)
+
+    def test_publish_payload_writes_s3_artifacts_with_content_hash(self):
+        payload = {
+            "generated_at": "2026-05-01T00:00:00Z",
+            "history_years": {"road": [2023]},
+            "road": {
+                "national": [{"year": 2023, "fatalities": 1964}],
+                "provinces": [{"province": "Ontario", "province_code": "ON", "reference_year": 2023}],
+            },
+        }
+        s3_client = FakeS3Client()
+
+        published = publish_payload(payload, bucket="artifact-bucket", s3_client=s3_client)
+
+        keys = [call["Key"] for call in s3_client.calls]
+        self.assertEqual(published[0].key, "statistics/v1/transport-safety-statistics/all.json")
+        self.assertIn("statistics/v1/transport-safety-statistics/road-national.json", keys)
+        self.assertIn("statistics/v1/transport-safety-statistics/road-province-on.json", keys)
+        call = s3_client.calls[0]
+        self.assertEqual(json.loads(call["Body"].decode("utf-8")), payload)
+        self.assertEqual(
+            call["Metadata"]["content-hash-sha256"],
+            hashlib.sha256(call["Body"]).hexdigest(),
+        )
 
 
 if __name__ == "__main__":

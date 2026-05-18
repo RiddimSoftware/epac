@@ -9,7 +9,7 @@
 
 import Foundation
 
-struct ParliamentMemberDTO: Identifiable, Codable, Hashable {
+struct ParliamentMemberDTO: Identifiable, Codable, Hashable, Sendable {
 	let name: String
 	let memberID: Int
 	let lastName: String
@@ -31,7 +31,7 @@ struct ParliamentMemberDTO: Identifiable, Codable, Hashable {
 	var id: String { name }
 }
 
-struct ConstituencyDTO: Identifiable, Codable, Hashable {
+struct ConstituencyDTO: Identifiable, Codable, Hashable, Sendable {
 	let name: String
 	let province: Province
 	let currentMemberFirstName: String
@@ -41,7 +41,7 @@ struct ConstituencyDTO: Identifiable, Codable, Hashable {
 	var id: String { name }
 }
 
-struct SpeechMessageDTO: Identifiable, Codable, Hashable {
+struct SpeechMessageDTO: Identifiable, Codable, Hashable, Sendable {
 	let firstName: String
 	let lastName: String
 	let partyAbbreviation: String
@@ -53,7 +53,7 @@ struct SpeechMessageDTO: Identifiable, Codable, Hashable {
 	var id: String { hansardID }
 }
 
-struct SpeechDTO: Identifiable, Codable, Hashable {
+struct SpeechDTO: Identifiable, Codable, Hashable, Sendable {
 	let messages: [SpeechMessageDTO]
 	let hansardID: String
 	let currentMessageID: String?
@@ -64,7 +64,7 @@ struct SpeechDTO: Identifiable, Codable, Hashable {
 	var id: String { hansardID }
 }
 
-struct SubjectOfBusinessDTO: Identifiable, Codable, Hashable {
+struct SubjectOfBusinessDTO: Identifiable, Codable, Hashable, Sendable {
 	let title: String
 	let hansardID: String
 	let speeches: [SpeechDTO]
@@ -73,7 +73,7 @@ struct SubjectOfBusinessDTO: Identifiable, Codable, Hashable {
 	var id: String { hansardID }
 }
 
-struct OrderOfBusinessDTO: Identifiable, Codable, Hashable {
+struct OrderOfBusinessDTO: Identifiable, Codable, Hashable, Sendable {
 	let hansardID: String
 	let catchline: String
 	let subjects: [SubjectOfBusinessDTO]
@@ -81,7 +81,7 @@ struct OrderOfBusinessDTO: Identifiable, Codable, Hashable {
 	var id: String { hansardID }
 }
 
-struct HansardDTO: Identifiable, Codable, Hashable {
+struct HansardDTO: Identifiable, Codable, Hashable, Sendable {
 	let date: Date
 	let hansardID: String
 	let parliamentNumber: Int

@@ -14,16 +14,21 @@ from html.parser import HTMLParser
 import argparse
 import json
 import logging
+from pathlib import Path
 import re
 import ssl
 import sys
 import time
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from statistics_artifacts import PublishedArtifact, publish_statistics_payload
+
 
 LATEST_TSB_YEAR = 2024
 LATEST_ROAD_YEAR = 2023
 HISTORY_YEARS = 5
+PIPELINE_NAME = "transport-safety-statistics"
 
 TSB_MODE_URLS = {
     "air": "https://www.tsb.gc.ca/eng/stats/aviation/{year}/ssea-ssao-{year}.html",
@@ -386,14 +391,31 @@ def build_payload(fetcher=fetch_text) -> dict[str, object]:
     }
 
 
+def publish_payload(
+    payload: object,
+    *,
+    bucket: str | None = None,
+    s3_client: object | None = None,
+) -> list[PublishedArtifact]:
+    return publish_statistics_payload(
+        PIPELINE_NAME,
+        payload,
+        bucket=bucket,
+        s3_client=s3_client,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Fetch transportation safety statistics")
     parser.add_argument("--output", help="Write JSON to a file instead of stdout")
+    parser.add_argument("--s3-publish", action="store_true", help="Publish JSON artifacts to S3")
+    parser.add_argument("--s3-bucket", help="S3 bucket for --s3-publish; defaults to ARTIFACTS_BUCKET")
     args = parser.parse_args(argv)
 
     logger = configure_logging()
     start = time.monotonic()
-    logger.info("pipeline started", extra={"output": args.output or "stdout"})
+    output_target = "s3" if args.s3_publish else args.output or "stdout"
+    logger.info("pipeline started", extra={"output": output_target})
     try:
         payload = build_payload()
     except Exception as exc:
@@ -409,13 +431,17 @@ def main(argv: list[str] | None = None) -> int:
         raise
 
     body = json.dumps(payload, indent=2, sort_keys=True)
-    if args.output:
+    if args.s3_publish:
+        published = publish_payload(payload, bucket=args.s3_bucket)
+    elif args.output:
         with open(args.output, "w", encoding="utf-8") as output:
             output.write(body)
             output.write("\n")
+        published = []
     else:
         sys.stdout.write(body)
         sys.stdout.write("\n")
+        published = []
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(
@@ -423,6 +449,7 @@ def main(argv: list[str] | None = None) -> int:
         extra={
             "records_processed": len(payload["road"]["provinces"]),
             "history_years": payload["history_years"],
+            "s3_objects": [artifact.key for artifact in published],
             "duration_ms": duration_ms,
         },
     )
