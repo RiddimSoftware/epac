@@ -509,7 +509,7 @@
 
 "onboarding.what.title" = "Canada's Parliament App";
 "onboarding.what.subtitle" = "Built on the official government record.";
-"onboarding.what.point1" = "Every speech your MP makes — from the Hansard verbatim transcript";
+"onboarding.what.point1" = "Your MP's profile, riding, and contact details — from official House records";
 "onboarding.what.point2" = "Every vote they cast — from Parliament.ca's official voting API";
 "onboarding.what.point3" = "Who's lobbying them — from the Commissioner of Lobbying Registry";
 "onboarding.what.trust" = "All from official government sources. Nothing generated or editorialized.";
@@ -520,7 +520,7 @@
 
 "onboarding.promise.title" = "You're set up";
 "onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
-"onboarding.promise.point1" = "Your MP's votes and speeches, as they happen";
+"onboarding.promise.point1" = "Your MP's votes and accountability updates, as they happen";
 "onboarding.promise.point2" = "A Home feed shaped by your %d topic(s)";
 "onboarding.promise.point3" = "No account required. No data sold. No ads.";
 "onboarding.promise.start" = "Start Exploring →";
@@ -681,13 +681,13 @@
 "appStore.screenshot.page2.headline" = "See how your MP votes";
 "appStore.screenshot.page2.subtitle" = "Every recorded division, grouped by Yea, Nay, paired, and absent.";
 "appStore.screenshot.page3.headline" = "Your MP. Everything they do.";
-"appStore.screenshot.page3.subtitle" = "Speeches, votes, expenses, and contact details in one sourced profile.";
+"appStore.screenshot.page3.subtitle" = "Votes, expenses, lobbying, and contact details in one sourced profile.";
 "appStore.screenshot.page4.headline" = "Track a bill start to finish";
 "appStore.screenshot.page4.subtitle" = "See each stage from first reading to committee, votes, and Royal Assent.";
 "appStore.screenshot.page5.headline" = "Know who's influencing your MP";
 "appStore.screenshot.page5.subtitle" = "Lobbying communications stay linked to the public registry source.";
 "appStore.screenshot.page6.headline" = "Contact them in one tap";
-"appStore.screenshot.page6.subtitle" = "Start from a real vote or debate and keep the official context attached.";
+"appStore.screenshot.page6.subtitle" = "Start from a real vote and keep the official context attached.";
 "appStore.screenshot.overview.header" = "Today in Parliament";
 "appStore.screenshot.overview.metric1.label" = "Bills";
 "appStore.screenshot.overview.metric1.detail" = "Second reading";
@@ -714,12 +714,12 @@
 "appStore.screenshot.votes.source" = "Source: Parliament of Canada recorded divisions";
 "appStore.screenshot.myMP.header" = "My MP";
 "appStore.screenshot.myMP.party" = "Liberal";
-"appStore.screenshot.myMP.row1.title" = "Speech";
-"appStore.screenshot.myMP.row1.detail" = "Food price transparency second reading";
-"appStore.screenshot.myMP.row2.title" = "Question";
-"appStore.screenshot.myMP.row2.detail" = "Transparency in grocery pricing";
+"appStore.screenshot.myMP.row1.title" = "Vote";
+"appStore.screenshot.myMP.row1.detail" = "Division No. 926 — recorded Yea";
+"appStore.screenshot.myMP.row2.title" = "Expenses";
+"appStore.screenshot.myMP.row2.detail" = "Quarterly House disclosures";
 "appStore.screenshot.myMP.row3.title" = "Follow";
-"appStore.screenshot.myMP.row3.detail" = "Keep vote and debate activity close";
+"appStore.screenshot.myMP.row3.detail" = "Keep official activity close";
 "appStore.screenshot.bill.header" = "Bill C-226";
 "appStore.screenshot.bill.title" = "National Framework for Food Price Transparency Act";
 "appStore.screenshot.bill.stage1" = "First reading";
