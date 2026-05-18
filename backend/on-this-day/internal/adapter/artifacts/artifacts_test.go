@@ -29,7 +29,7 @@ func TestHansardRepositoryFiltersArtifactByMonthDayAndPastDate(t *testing.T) {
 	}
 
 	repo := NewHansardRepository(sharedartifacts.NewLocalStore(dir))
-	items, err := repo.OnThisDay(context.Background(), time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC), 10)
+	items, err := repo.OnThisDay(context.Background(), time.Date(2026, 5, 18, 12, 0, 0, 0, time.UTC), 10)
 	if err != nil {
 		t.Fatalf("OnThisDay returned error: %v", err)
 	}

@@ -171,9 +171,11 @@ func TestOnThisDayNoMatchingDate_ReturnsEmptyShape(t *testing.T) {
 		t.Fatalf("got %d items, want 0", len(items))
 	}
 
-	// Verify the HTTP response shape via the full handler path.
-	// DATABASE_URL is set in the integration-test environment; the handler connects
-	// to the same DB that has no Jan-1 speeches after the DELETE above.
+	// Verify the HTTP response shape via the full handler path against the
+	// artifact fixture used by the migrated Lambda.
+	artifactDir := t.TempDir()
+	writeFixture(t, artifactDir, "on-this-day/v1/all.json", `{"items":[]}`)
+	t.Setenv("ARTIFACTS_DIR", artifactDir)
 	resp := callHandlerHTTP(t, map[string]string{"date": "1999-01-01"})
 	if resp.StatusCode != 200 {
 		t.Fatalf("got status %d, want 200", resp.StatusCode)

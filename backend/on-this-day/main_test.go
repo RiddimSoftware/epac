@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"epac/on-this-day/internal/usecase"
 
@@ -68,6 +70,40 @@ func TestHandleRequest_ReadsArtifactAndFiltersDate(t *testing.T) {
 	}
 	if strings.Contains(resp.Body, "wrong-day") || strings.Contains(resp.Body, "old-2") {
 		t.Fatalf("body was not filtered/limited: %s", resp.Body)
+	}
+}
+
+func TestHandleRequest_DefaultDateExcludesCurrentDayArtifact(t *testing.T) {
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	prior := time.Date(now.Year()-1, now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if prior.Month() != now.Month() || prior.Day() != now.Day() {
+		prior = time.Date(now.Year()-4, now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	dir := t.TempDir()
+	writeFixture(t, dir, "on-this-day/v1/all.json", fmt.Sprintf(`{
+		"items": [
+			{"id":"speech:today","kind":"speech","year":%d,"date":%q,"title":"Today","excerpt":"ignored"},
+			{"id":"speech:prior","kind":"speech","year":%d,"date":%q,"title":"Prior","excerpt":"included"}
+		]
+	}`, today.Year(), today.Format("2006-01-02"), prior.Year(), prior.Format("2006-01-02")))
+	t.Setenv("ARTIFACTS_DIR", dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		QueryStringParameters: map[string]string{"limit": "10"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got status %d body %s, want 200", resp.StatusCode, resp.Body)
+	}
+	if strings.Contains(resp.Body, "speech:today") {
+		t.Fatalf("default date included current-day artifact row: %s", resp.Body)
+	}
+	if !strings.Contains(resp.Body, "speech:prior") {
+		t.Fatalf("default date omitted prior-year matching row: %s", resp.Body)
 	}
 }
 

@@ -34,16 +34,17 @@ func (r *HansardRepository) OnThisDay(ctx context.Context, date time.Time, limit
 	if err := json.Unmarshal(data, &all); err != nil {
 		return nil, err
 	}
+	targetDate := dateOnlyUTC(date)
 	items := make([]usecase.OnThisDayItem, 0, limit)
 	for _, item := range all.Items {
 		itemDate, err := time.Parse("2006-01-02", item.Date)
 		if err != nil {
 			continue
 		}
-		if itemDate.Month() != date.Month() || itemDate.Day() != date.Day() {
+		if itemDate.Month() != targetDate.Month() || itemDate.Day() != targetDate.Day() {
 			continue
 		}
-		if !itemDate.Before(date) {
+		if !itemDate.Before(targetDate) {
 			continue
 		}
 		items = append(items, item)
@@ -52,4 +53,9 @@ func (r *HansardRepository) OnThisDay(ctx context.Context, date time.Time, limit
 		}
 	}
 	return items, nil
+}
+
+func dateOnlyUTC(date time.Time) time.Time {
+	date = date.UTC()
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }

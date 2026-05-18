@@ -97,6 +97,7 @@ jobs:
           find ../../build/artifacts -type f -name '*.metadata.json' -delete
 
       - name: Build hot parliamentary artifacts
+        working-directory: backend
         env:
           DATABASE_URL_SECRET_ID: epac/database-url
         run: |
@@ -112,14 +113,14 @@ jobs:
             exit 1
           fi
 
-          DATABASE_URL="$database_url" go run ./backend/members-publisher --output ./build/artifacts/members
-          DATABASE_URL="$database_url" go run ./backend/sittings-publisher --output ./build/artifacts/sittings
-          DATABASE_URL="$database_url" go run ./backend/on-this-day/cmd/publisher --output ./build/artifacts/on-this-day
-          DATABASE_URL="$database_url" go run ./backend/estimates/cmd/publisher --output ./build/artifacts/estimates
-          go run ./backend/bills-publisher --output ./build/artifacts/bills
-          go run ./backend/riding-boundary/cmd/publisher --output ./build/artifacts/ridings
-          go run ./backend/live-status/cmd/calendar-publisher --output ./build/artifacts/calendar
-          go run ./backend/config/cmd/publisher --output ./build/artifacts/config
+          DATABASE_URL="$database_url" go run ./members-publisher --output ../build/artifacts/members
+          DATABASE_URL="$database_url" go run ./sittings-publisher --output ../build/artifacts/sittings
+          DATABASE_URL="$database_url" go run ./on-this-day/cmd/publisher --output ../build/artifacts/on-this-day
+          DATABASE_URL="$database_url" go run ./estimates/cmd/publisher --output ../build/artifacts/estimates
+          go run ./bills-publisher --output ../build/artifacts/bills
+          go run ./riding-boundary/cmd/publisher --output ../build/artifacts/ridings
+          go run ./live-status/cmd/calendar-publisher --output ../build/artifacts/calendar
+          go run ./config/cmd/publisher --output ../build/artifacts/config
 
       - name: Build member speech artifacts
         working-directory: backend/member-speeches-publisher
