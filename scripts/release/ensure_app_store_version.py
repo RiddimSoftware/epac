@@ -44,7 +44,7 @@ def find_app_store_version(app_id: str, version: str, token: str) -> dict | None
         "limit": 50,
         "fields[appStoreVersions]": "versionString,platform,appStoreState",
     }
-    resp = request("GET", "/appStoreVersions", token, params=params)
+    resp = request("GET", f"/apps/{app_id}/appStoreVersions", token, params=params)
     for item in resp.json().get("data", []):
         attrs = item.get("attributes", {})
         if attrs.get("versionString") == version and attrs.get("platform") == "IOS":
