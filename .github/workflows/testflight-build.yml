@@ -167,25 +167,6 @@ jobs:
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
             extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
 
-      # ------------------------------------------------------------------
-      # Emit release-manifest.json for chain-of-custody receipt generation.
-      #
-      # Consumed by software-factory's chain-of-custody receipt generation;
-      # do not remove without coordinating with FAC team.
-      #
-      # Produces a deterministic build_number ↔ git_sha ↔ pr_numbers mapping
-      # that the factory receipt generator reads to populate
-      # release.built_from_sha. See EPAC-1929.
-      # ------------------------------------------------------------------
-      - name: Emit release manifest
-        if: ${{ !inputs.dry_run }}
-        env:
-          BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
-          GIT_SHA: ${{ steps.source.outputs.sha }}
-          WORKFLOW_RUN_ID: ${{ github.run_id }}
-          S3_BUCKET_PREFIX: s3://riddimsoftware-factory-transcripts/release-manifests
-        run: bash .workflow-source/scripts/ci/emit_release_manifest.sh
-
       - name: Tag TestFlight build provenance
         if: ${{ !inputs.dry_run }}
         shell: bash
