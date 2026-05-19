@@ -7,23 +7,7 @@ on:
         description: 'Backend service to deploy, or all'
         required: true
         default: all
-        type: choice
-        options:
-          - all
-          - daily-fetch
-          - loader
-          - members
-          - sittings
-          - bills
-          - member-speeches
-          - member-votes
-          - on-this-day
-          - estimates
-          - riding-boundary
-          - calendar
-          - config
-          - health
-          - openapi
+        type: string
 
 concurrency:
   group: backend-production-deploy
@@ -34,13 +18,66 @@ permissions:
   id-token: write
 
 jobs:
+  prepare:
+    name: Resolve backend service manifest
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.resolve.outputs.services }}
+      database_services: ${{ steps.resolve.outputs.database_services }}
+      artifact_services: ${{ steps.resolve.outputs.artifact_services }}
+      service_is_valid: ${{ steps.validate.outputs.service_is_valid }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: resolve
+        run: |
+          SERVICES=$(jq -c '[.services[] | select(.deploy.production == true) | .name]' backend/manifest/deployment-services.json)
+          DATABASE_SERVICES=$(jq -c '[.services[] | select(.sync.production.database == true) | .name]' backend/manifest/deployment-services.json)
+          ARTIFACT_SERVICES=$(jq -c '[.services[] | select(.sync.production.artifact == true) | .name]' backend/manifest/deployment-services.json)
+
+          if [ "$SERVICES" = "[]" ]; then
+            echo "No production services found in manifest" >&2
+            exit 1
+          fi
+
+          {
+            echo "services=$SERVICES"
+            echo "database_services=$DATABASE_SERVICES"
+            echo "artifact_services=$ARTIFACT_SERVICES"
+          } >> "$GITHUB_OUTPUT"
+
+      - id: validate
+        run: |
+          SERVICE='${{ inputs.service }}'
+          if [ -z "$SERVICE" ]; then
+            SERVICE=all
+          fi
+          if [ "$SERVICE" = "all" ]; then
+            {
+              echo "service_is_valid=true"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if echo '${{ steps.resolve.outputs.services }}' | jq -e --arg service "$SERVICE" 'index($service)' >/dev/null; then
+            echo "service_is_valid=true" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "service_is_valid=false"
+            } >> "$GITHUB_OUTPUT"
+            echo "Service $SERVICE is not in manifest deploy.production" >&2
+            exit 1
+          fi
+
   deploy:
     name: Deploy ${{ matrix.service }} to production
+    needs: prepare
+    if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, members, sittings, bills, member-speeches, member-votes, on-this-day, estimates, riding-boundary, calendar, config, health, openapi]
+        service: ${{ fromJson(needs.prepare.outputs.services) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,12 +110,7 @@ jobs:
           if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
           fi
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            if [[ " members sittings bills estimates calendar config " == *" $SERVICE "* ]]; then
-              echo "$CANONICAL_FUNCTION_NAME does not exist yet; apply infra/terraform/production before deploying this new artifact-backed Lambda."
-              exit 0
-            fi
-          fi
+
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
@@ -86,7 +118,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync production DATABASE_URL from Secrets Manager
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["daily-fetch","loader","health"]'), matrix.service) }}
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
@@ -130,7 +162,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync production artifact environment
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJSON('["members","sittings","bills","member-speeches","member-votes","on-this-day","estimates","riding-boundary","calendar","config"]'), matrix.service) }}
+        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJson(needs.prepare.outputs.artifact_services), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
@@ -144,11 +176,6 @@ jobs:
           if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
           fi
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            echo "$CANONICAL_FUNCTION_NAME does not exist yet; skipping artifact environment sync until Terraform creates it."
-            exit 0
-          fi
-
           if [ -z "$ARTIFACT_BUCKET" ]; then
             echo "EPAC_ARTIFACT_BUCKET_PRODUCTION, EPAC_ARTIFACT_BUCKET, or ARTIFACTS_BUCKET variable is required"
             exit 1

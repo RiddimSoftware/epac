@@ -1,39 +1,33 @@
 locals {
+  manifest = jsondecode(file("${path.module}/../../backend/manifest/deployment-services.json"))
+
   services = [
-    "daily-fetch",
-    "loader",
-    "members",
-    "sittings",
-    "bills",
-    "member-speeches",
-    "member-votes",
-    "on-this-day",
-    "estimates",
-    "riding-boundary",
-    "calendar",
-    "config",
-    "health",
-    "openapi",
+    for svc in local.manifest.services : svc.name
+    if try(svc.deploy.staging, false)
   ]
 
   account_id = "227530433709"
 
-  # HTTP-capable services mapped to their Lambda payload format version.
-  # daily-fetch uses WrapNoEvent (scheduled job) and loader is a CLI tool —
-  # neither handles HTTP events, so they are excluded from API Gateway wiring.
+  # HTTP-capable services mapped to the Lambda payload format version.
+  # daily-fetch uses WrapNoEvent (scheduled job) and loader is a CLI tool.
+  # Both are deploy-only and excluded from API Gateway wiring.
   http_services = {
-    "health"          = "2.0"
-    "members"         = "1.0"
-    "sittings"        = "1.0"
-    "bills"           = "1.0"
-    "member-speeches" = "1.0"
-    "member-votes"    = "1.0"
-    "on-this-day"     = "1.0"
-    "estimates"       = "2.0"
-    "riding-boundary" = "1.0"
-    "calendar"        = "2.0"
-    "config"          = "2.0"
-    "openapi"         = "2.0"
+    for svc in local.manifest.services : svc.name => svc.http.payload_format_version
+    if try(svc.http != null, false) && try(svc.deploy.staging, false)
+  }
+
+  staging_api_routes = flatten([
+    for svc in local.manifest.services : [
+      for route in try(svc.http.routes.staging, []) : {
+        service   = svc.name
+        route_key = "${route.method} ${route.path}"
+      }
+    ] if try(svc.http != null, false) && try(svc.deploy.staging, false)
+  ])
+
+  staging_api_routes_by_key = {
+    for route in local.staging_api_routes :
+    "${route.service}::${route.route_key}" => route
   }
 }
 
@@ -136,95 +130,13 @@ resource "aws_apigatewayv2_integration" "staging" {
   payload_format_version = each.value
 }
 
-# Routes — derived from smoke test paths and service handler comments.
-resource "aws_apigatewayv2_route" "health" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /health"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["health"].id}"
-}
+# Routes — derived from the backend manifest.
+resource "aws_apigatewayv2_route" "staging" {
+  for_each = local.staging_api_routes_by_key
 
-resource "aws_apigatewayv2_route" "members" {
   api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/members"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["members"].id}"
-}
-
-resource "aws_apigatewayv2_route" "sittings" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/sittings"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["sittings"].id}"
-}
-
-resource "aws_apigatewayv2_route" "sitting_speeches" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/sittings/{date}/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["sittings"].id}"
-}
-
-resource "aws_apigatewayv2_route" "bills" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/bills"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["bills"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_speeches" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/members/{id}/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["member-speeches"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_votes" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/members/{id}/votes"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["member-votes"].id}"
-}
-
-resource "aws_apigatewayv2_route" "on_this_day" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/on-this-day"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["on-this-day"].id}"
-}
-
-resource "aws_apigatewayv2_route" "estimates" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/estimates"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["estimates"].id}"
-}
-
-resource "aws_apigatewayv2_route" "organization_estimates" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/estimates/{org_id}"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["estimates"].id}"
-}
-
-resource "aws_apigatewayv2_route" "riding_boundary" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/ridings/{slug}/boundary"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["riding-boundary"].id}"
-}
-
-resource "aws_apigatewayv2_route" "house_calendar" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/calendar/house.ics"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["calendar"].id}"
-}
-
-resource "aws_apigatewayv2_route" "config" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/config"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["config"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_json" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /openapi.json"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["openapi"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_docs" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /docs"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["openapi"].id}"
+  route_key = each.value.route_key
+  target    = "integrations/${aws_apigatewayv2_integration.staging[each.value.service].id}"
 }
 
 # Lambda invoke permissions — one per HTTP-capable Lambda, scoped to the staging API.

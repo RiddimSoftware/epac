@@ -1,19 +1,9 @@
 locals {
+  manifest = jsondecode(file("${path.module}/../../backend/manifest/deployment-services.json"))
+
   services = [
-    "daily-fetch",
-    "loader",
-    "members",
-    "sittings",
-    "bills",
-    "member-speeches",
-    "member-votes",
-    "on-this-day",
-    "estimates",
-    "riding-boundary",
-    "calendar",
-    "config",
-    "health",
-    "openapi",
+    for svc in local.manifest.services : svc.name
+    if try(svc.deploy.production, false)
   ]
 
   account_id = "227530433709"
@@ -21,25 +11,29 @@ locals {
   # HTTP-capable services mapped to the Lambda event shape their handlers accept.
   # daily-fetch uses WrapNoEvent (scheduled job) and loader is a CLI tool.
   http_services = {
-    "health"          = "2.0"
-    "members"         = "1.0"
-    "sittings"        = "1.0"
-    "bills"           = "1.0"
-    "member-speeches" = "1.0"
-    "member-votes"    = "1.0"
-    "on-this-day"     = "1.0"
-    "estimates"       = "2.0"
-    "riding-boundary" = "1.0"
-    "calendar"        = "2.0"
-    "config"          = "2.0"
-    "openapi"         = "2.0"
+    for svc in local.manifest.services : svc.name => svc.http.payload_format_version
+    if try(svc.http != null, false) && try(svc.deploy.production, false)
   }
 
-  # Existing Lambda policies already contain apigw-production-* statements for
-  # an older API. Use a distinct Sid prefix for this API to avoid AddPermission
-  # conflicts when Terraform creates the production invoke permissions.
+  production_api_routes = flatten([
+    for svc in local.manifest.services : [
+      for route in try(svc.http.routes.production, []) : {
+        service   = svc.name
+        route_key = "${route.method} ${route.path}"
+      }
+    ] if try(svc.http != null, false) && try(svc.deploy.production, false)
+  ])
+
+  production_api_routes_by_key = {
+    for route in local.production_api_routes :
+    "${route.service}::${route.route_key}" => route
+  }
+
+  # Existing Lambda policies contain apigw-production-* statements for
+  # an older API. Use a distinct Sid prefix for this API to avoid
+  # AddPermission conflicts when Terraform creates the production invoke permissions.
   api_permission_statement_ids = {
-    for service in keys(local.http_services) :
+    for service in local.http_services :
     service => "apigw-epac-api-${service}"
   }
 }
@@ -77,7 +71,7 @@ resource "aws_apigatewayv2_stage" "production" {
   }
 }
 
-# Lambda functions are existing imports where already present.
+# Lambda functions: search, member-speeches, and daily-fetch are existing imports.
 # The remaining production functions are created from a placeholder zip, with code
 # and environment managed later by the production backend deployment workflow.
 resource "aws_lambda_function" "production" {
@@ -106,7 +100,7 @@ resource "aws_lambda_function" "production" {
   }
 }
 
-# ACM certificate for the production custom domain (already issued; imported into state).
+# ACM certificate for the production domain (already issued; imported into state).
 resource "aws_acm_certificate" "production_api" {
   domain_name       = var.production_domain
   validation_method = "DNS"
@@ -176,125 +170,13 @@ resource "aws_apigatewayv2_integration" "production" {
   timeout_milliseconds   = 30000
 }
 
-# Routes — compatibility routes cover current iOS clients and documented /api/v1 paths.
-resource "aws_apigatewayv2_route" "health" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /health"
-  target    = "integrations/${aws_apigatewayv2_integration.production["health"].id}"
-}
+# Routes — derived from the backend manifest.
+resource "aws_apigatewayv2_route" "production" {
+  for_each = local.production_api_routes_by_key
 
-resource "aws_apigatewayv2_route" "members" {
   api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/members"
-  target    = "integrations/${aws_apigatewayv2_integration.production["members"].id}"
-}
-
-resource "aws_apigatewayv2_route" "sittings" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/sittings"
-  target    = "integrations/${aws_apigatewayv2_integration.production["sittings"].id}"
-}
-
-resource "aws_apigatewayv2_route" "sitting_speeches" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/sittings/{date}/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.production["sittings"].id}"
-}
-
-resource "aws_apigatewayv2_route" "bills" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/bills"
-  target    = "integrations/${aws_apigatewayv2_integration.production["bills"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_speeches_legacy" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /members/{memberId}/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.production["member-speeches"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_speeches" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/members/{id}/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.production["member-speeches"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_votes_legacy" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /members/{memberId}/votes"
-  target    = "integrations/${aws_apigatewayv2_integration.production["member-votes"].id}"
-}
-
-resource "aws_apigatewayv2_route" "member_votes" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/members/{id}/votes"
-  target    = "integrations/${aws_apigatewayv2_integration.production["member-votes"].id}"
-}
-
-resource "aws_apigatewayv2_route" "on_this_day" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/on-this-day"
-  target    = "integrations/${aws_apigatewayv2_integration.production["on-this-day"].id}"
-}
-
-resource "aws_apigatewayv2_route" "estimates" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/estimates"
-  target    = "integrations/${aws_apigatewayv2_integration.production["estimates"].id}"
-}
-
-resource "aws_apigatewayv2_route" "organization_estimates" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/estimates/{org_id}"
-  target    = "integrations/${aws_apigatewayv2_integration.production["estimates"].id}"
-}
-
-resource "aws_apigatewayv2_route" "riding_boundary" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/ridings/{slug}/boundary"
-  target    = "integrations/${aws_apigatewayv2_integration.production["riding-boundary"].id}"
-}
-
-resource "aws_apigatewayv2_route" "house_calendar_legacy" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /calendar/house.ics"
-  target    = "integrations/${aws_apigatewayv2_integration.production["calendar"].id}"
-}
-
-resource "aws_apigatewayv2_route" "house_calendar" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/calendar/house.ics"
-  target    = "integrations/${aws_apigatewayv2_integration.production["calendar"].id}"
-}
-
-resource "aws_apigatewayv2_route" "config" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/config"
-  target    = "integrations/${aws_apigatewayv2_integration.production["config"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_json" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /openapi.json"
-  target    = "integrations/${aws_apigatewayv2_integration.production["openapi"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_docs" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /docs"
-  target    = "integrations/${aws_apigatewayv2_integration.production["openapi"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_json_v1" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/openapi.json"
-  target    = "integrations/${aws_apigatewayv2_integration.production["openapi"].id}"
-}
-
-resource "aws_apigatewayv2_route" "openapi_docs_v1" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/docs"
-  target    = "integrations/${aws_apigatewayv2_integration.production["openapi"].id}"
+  route_key = each.value.route_key
+  target    = "integrations/${aws_apigatewayv2_integration.production[each.value.service].id}"
 }
 
 # Lambda invoke permissions — one per HTTP-capable Lambda, scoped to the production API.
