@@ -4,6 +4,7 @@
 import argparse
 import os
 import time
+from pathlib import Path
 
 import jwt
 import requests
@@ -83,6 +84,62 @@ def attach_build(version_id: str, build_id: str, token: str) -> None:
     request("PATCH", f"/appStoreVersions/{version_id}/relationships/build", token, json=payload)
 
 
+def release_notes_by_locale(metadata_path: Path) -> dict[str, str]:
+    notes: dict[str, str] = {}
+    if not metadata_path.exists():
+        return notes
+
+    for path in metadata_path.glob("*/release_notes.txt"):
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8").strip()
+        if text:
+            notes[path.parent.name] = text
+    return notes
+
+
+def update_whats_new(version_id: str, notes: dict[str, str], token: str) -> None:
+    if not notes:
+        print("No release notes found; skipping whatsNew update")
+        return
+
+    params = {
+        "limit": 200,
+        "fields[appStoreVersionLocalizations]": "locale,whatsNew",
+    }
+    resp = request(
+        "GET",
+        f"/appStoreVersions/{version_id}/appStoreVersionLocalizations",
+        token,
+        params=params,
+    )
+    updated = 0
+    for item in resp.json().get("data", []):
+        locale = item.get("attributes", {}).get("locale")
+        whats_new = notes.get(locale or "")
+        if not whats_new:
+            continue
+
+        payload = {
+            "data": {
+                "type": "appStoreVersionLocalizations",
+                "id": item["id"],
+                "attributes": {
+                    "whatsNew": whats_new,
+                },
+            }
+        }
+        request("PATCH", f"/appStoreVersionLocalizations/{item['id']}", token, json=payload)
+        updated += 1
+        print(f"Updated whatsNew for {locale}")
+
+    if updated == 0:
+        raise SystemExit(
+            "No App Store version localizations matched release_notes.txt locales: "
+            + ", ".join(sorted(notes))
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--key-id", required=True)
@@ -91,6 +148,7 @@ def main() -> None:
     parser.add_argument("--app-id", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--build-id", required=True)
+    parser.add_argument("--metadata-path", default="")
     args = parser.parse_args()
 
     token = get_asc_token(args.key_id, args.issuer_id, args.private_key_path)
@@ -106,6 +164,13 @@ def main() -> None:
 
     attach_build(version["id"], args.build_id, token)
     print(f"Attached build {args.build_id} to App Store version {args.version}")
+
+    if args.metadata_path:
+        update_whats_new(
+            version["id"],
+            release_notes_by_locale(Path(args.metadata_path)),
+            token,
+        )
 
 
 if __name__ == "__main__":

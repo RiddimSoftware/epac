@@ -256,7 +256,8 @@ jobs:
             --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
             --app-id "${{ vars.APPLE_APP_ID }}" \
             --version "$VERSION" \
-            --build-id "$BUILD_ID"
+            --build-id "$BUILD_ID" \
+            --metadata-path "${{ vars.IOS_WORKDIR || 'ios' }}/fastlane/metadata"
 
       - name: Submit build for App Store review
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
