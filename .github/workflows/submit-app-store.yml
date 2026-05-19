@@ -71,9 +71,13 @@ jobs:
           VERSION: ${{ steps.resolve-tag.outputs.version }}
         run: |
           set -euo pipefail
+          tag_prefix="testflight/${VERSION}/build-"
           mapfile -t build_tags < <(
             git tag --points-at "$SOURCE_SHA" "testflight/${VERSION}/build-*" \
-              | sed -E "s#^testflight/${VERSION}/build-([0-9]+)$#\1 & #" \
+              | while read -r tag; do
+                  build_number="${tag#"$tag_prefix"}"
+                  printf '%s %s\n' "$build_number" "$tag"
+                done \
               | sort -n \
               | awk '{print $2}'
           )
@@ -85,9 +89,9 @@ jobs:
 
           {
             printf 'build_numbers='
-            printf '%s\n' "${build_tags[@]}" \
-              | sed -E "s#^testflight/${VERSION}/build-##" \
-              | paste -sd, -
+            for tag in "${build_tags[@]}"; do
+              printf '%s\n' "${tag#"$tag_prefix"}"
+            done | paste -sd, -
           } >> "$GITHUB_OUTPUT"
 
       - name: Write App Store Connect credentials
