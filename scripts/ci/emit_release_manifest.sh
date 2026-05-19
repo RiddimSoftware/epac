@@ -22,10 +22,21 @@ BUILD_NUMBER="${BUILD_NUMBER:?}"
 GIT_SHA="${GIT_SHA:?}"
 WORKFLOW_RUN_ID="${WORKFLOW_RUN_ID:?}"
 S3_BUCKET_PREFIX="${S3_BUCKET_PREFIX:?}"
+UPLOAD_FAILED=0
 
 aws_without_profile() {
   unset AWS_PROFILE AWS_DEFAULT_PROFILE
   aws "$@"
+}
+
+upload_manifest() {
+  local source_file="$1"
+  local destination="$2"
+
+  if ! aws_without_profile s3 cp "${source_file}" "${destination}"; then
+    echo "::warning::Failed to upload release manifest to ${destination}. Continuing to keep workflow green; chain-of-custody evidence may be incomplete."
+    UPLOAD_FAILED=1
+  fi
 }
 
 UPLOADED_AT="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
@@ -35,8 +46,11 @@ PREV_MANIFEST_FILE="previous-manifest.json"
 # Idempotency: if a manifest already exists for this SHA, reuse it.
 if aws_without_profile s3 cp "${S3_BUCKET_PREFIX}/${GIT_SHA}.json" "${MANIFEST_FILE}" 2>/dev/null; then
   echo "Manifest already exists for SHA ${GIT_SHA}. Re-uploading (idempotent)."
-  aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
-  aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
+  upload_manifest "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
+  upload_manifest "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
+  if [[ "${UPLOAD_FAILED}" -eq 0 ]]; then
+    echo "Uploaded manifest to ${S3_BUCKET_PREFIX}/${GIT_SHA}.json and ${S3_BUCKET_PREFIX}/latest.json"
+  fi
   exit 0
 fi
 
@@ -72,7 +86,11 @@ jq -n \
 echo "Generated ${MANIFEST_FILE}:"
 cat "${MANIFEST_FILE}"
 
-aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
-aws_without_profile s3 cp "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
+upload_manifest "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/${GIT_SHA}.json"
+upload_manifest "${MANIFEST_FILE}" "${S3_BUCKET_PREFIX}/latest.json"
 
-echo "Uploaded manifest to ${S3_BUCKET_PREFIX}/${GIT_SHA}.json and ${S3_BUCKET_PREFIX}/latest.json"
+if [[ "${UPLOAD_FAILED}" -eq 0 ]]; then
+  echo "Uploaded manifest to ${S3_BUCKET_PREFIX}/${GIT_SHA}.json and ${S3_BUCKET_PREFIX}/latest.json"
+else
+  echo "Release manifest generation succeeded but upload to S3 was blocked."
+fi
