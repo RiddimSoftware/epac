@@ -1,10 +1,7 @@
 Nouveautés dans epac :
 
-• Fil d'actualité — l'activité de votre député, les projets de loi et sujets suivis, rassemblés en un seul endroit
-• Notifications par sujet — recevez une alerte quand un sujet que vous suivez est débattu à la Chambre
-• Suivi des projets de loi — voyez les nouveaux projets de loi déposés depuis votre dernière visite, signalés par un point rouge
-• Conseils municipaux — votes du conseil municipal de Toronto et de Vancouver, aux côtés du Parlement fédéral
-• Résilience hors connexion — débats et votes s'affichent même avec une connexion lente ou interrompue
-• Complication Apple Watch — statut de séance du Parlement sur votre poignet
+• Améliorations de fiabilité pour l'activité parlementaire, les projets de loi, les votes et les notifications
+• Mises à jour de maintenance pour garder le chargement des données gouvernementales officielles fluide
+• Petites corrections et améliorations dans l'application
 
 epac n'affiche que des données vérifiées provenant de sources gouvernementales officielles. Rien n'est généré ni éditorialisé.
