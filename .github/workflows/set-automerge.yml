@@ -1,4 +1,5 @@
-# Enable auto-merge (squash) on every newly opened PR.
+# Enable auto-merge (squash) for bot-authored PRs that are labeled for the
+# autonomous merge flow.
 #
 # Self-contained inlined version. The same file is replicated across all
 # active RiddimSoftware repos so each repo enables auto-merge independently
@@ -24,7 +25,7 @@ jobs:
     name: Set auto-merge
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ !github.event.pull_request.draft }}
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.user.type == 'Bot' && contains(github.event.pull_request.labels.*.name, 'autonomous') }}
     steps:
       - name: Generate developer-bot token
         id: dev-token
