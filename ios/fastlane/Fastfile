@@ -148,6 +148,7 @@ platform :ios do
       configuration:    "Release",
       export_method:    "app-store",
       xcargs:           extra_xcargs,
+      cloned_source_packages_path: ENV["SPM_CLONED_SOURCE_PACKAGES_PATH"],
       output_directory: "build",
       output_name:      "epac.ipa",
       clean:            false

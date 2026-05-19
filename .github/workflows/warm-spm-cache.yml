@@ -1,0 +1,71 @@
+name: Warm Swift Package Cache
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/epac.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
+      - '.github/workflows/warm-spm-cache.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warm-spm-cache
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    name: Warm Swift package cache
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Resolve Xcode cache key
+        id: xcode-cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcode_key="$(xcodebuild -version | tr '\n' '-' | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/-$//')"
+          echo "version=$xcode_key" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Swift package cache
+        id: spm-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ios/SourcePackages
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode-cache.outputs.version }}-${{ hashFiles('ios/epac.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Resolve Swift packages
+        if: ${{ steps.spm-cache.outputs.cache-hit != 'true' }}
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/epac.xcodeproj \
+            -scheme epac \
+            -configuration Release \
+            -clonedSourcePackagesDirPath ios/SourcePackages
+
+      - name: Save Swift package cache
+        if: ${{ steps.spm-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ios/SourcePackages
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode-cache.outputs.version }}-${{ hashFiles('ios/epac.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Summary
+        run: |
+          {
+            echo "## Swift package cache"
+            echo ""
+            echo "- Xcode key: ${{ steps.xcode-cache.outputs.version }}"
+            echo "- Cache hit: ${{ steps.spm-cache.outputs.cache-hit || 'false' }}"
+            echo "- Path: ios/SourcePackages"
+          } >> "$GITHUB_STEP_SUMMARY"

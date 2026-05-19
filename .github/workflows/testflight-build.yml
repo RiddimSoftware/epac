@@ -62,6 +62,22 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Resolve Xcode cache key
+        id: xcode-cache
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcode_key="$(xcodebuild -version | tr '\n' '-' | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/-$//')"
+          echo "version=$xcode_key" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Swift package cache
+        if: ${{ !inputs.dry_run }}
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ vars.IOS_WORKDIR || 'ios' }}/SourcePackages
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode-cache.outputs.version }}-${{ hashFiles('ios/epac.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
       - name: Set up Ruby and Bundler
         if: ${{ !inputs.dry_run }}
         uses: ruby/setup-ruby@v1
@@ -159,6 +175,7 @@ jobs:
           NEW_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          SPM_CLONED_SOURCE_PACKAGES_PATH: SourcePackages
         run: |
           bundle exec fastlane deploy \
             scheme:${{ vars.SCHEME }} \
