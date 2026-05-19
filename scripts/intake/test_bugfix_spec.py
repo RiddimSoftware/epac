@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -60,6 +61,55 @@ class BugfixSpecCLITests(unittest.TestCase):
             validate = self.run_cli("validate", str(output))
             self.assertEqual(validate.returncode, 0, validate.stderr)
             self.assertIn("valid bugfix SPEC", validate.stdout)
+            receipt = output.with_name("receipt.json")
+            self.assertTrue(receipt.exists())
+            data = json.loads(receipt.read_text())
+            self.assertEqual(data["schemaVersion"], 1)
+            self.assertEqual(data["kind"], "bugfix_spec_created")
+            self.assertEqual(data["terminalState"], "spec_valid")
+            self.assertEqual(data["repo"], "RiddimSoftware/epac")
+            self.assertEqual(data["specPath"], str(output))
+            self.assertTrue(data["traceId"].startswith("BUGFIX-"))
+            self.assertEqual(data["reporter"], "demo-reporter")
+            self.assertEqual(data["source"], "llm-session")
+            self.assertEqual(data["affectedSurface"], "Home status card")
+
+    def test_new_receipt_includes_session_and_source_tool_when_supplied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "SPEC.md"
+
+            result = self.run_cli(
+                "new",
+                "--title",
+                "Home screen implies live debate data",
+                "--reporter",
+                "demo-reporter",
+                "--source",
+                "llm-session",
+                "--surface",
+                "Home status card",
+                "--observed",
+                "The card says cached live data even when only archived debates are available.",
+                "--expected",
+                "The card explains that epac currently shows past debates and archival data.",
+                "--step",
+                "Launch epac.",
+                "--evidence",
+                "before/after screenshot of the Home status card",
+                "--validation",
+                "Reporter confirms the TestFlight build no longer implies live data.",
+                "--source-tool",
+                "claude",
+                "--session-id",
+                "sess-demo",
+                "--out",
+                str(output),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(output.with_name("receipt.json").read_text())
+            self.assertEqual(data["sourceTool"], "claude")
+            self.assertEqual(data["sessionId"], "sess-demo")
 
     def test_validate_rejects_incomplete_spec(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -57,6 +59,8 @@ class BugfixSpecInput:
     non_goals: str
     trace_id: str
     created_at: str
+    source_tool: str
+    session_id: str
 
 
 def slugify(value: str) -> str:
@@ -136,6 +140,8 @@ def build_input(args: argparse.Namespace) -> BugfixSpecInput:
     trace_id = args.trace_id or f"BUGFIX-{now.strftime('%Y%m%d-%H%M%S')}-{uuid4().hex[:8]}"
     original_prompt = args.original_prompt.strip() if args.original_prompt else observed
     non_goals = args.non_goals.strip() if args.non_goals else "Do not implement unrelated UI, backend, or release changes."
+    source_tool = (args.source_tool or os.environ.get("BUGFIX_SOURCE_TOOL") or "").strip()
+    session_id = (args.session_id or os.environ.get("BUGFIX_SESSION_ID") or "").strip()
 
     return BugfixSpecInput(
         title=title,
@@ -151,6 +157,8 @@ def build_input(args: argparse.Namespace) -> BugfixSpecInput:
         non_goals=non_goals,
         trace_id=trace_id,
         created_at=now.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        source_tool=source_tool,
+        session_id=session_id,
     )
 
 
@@ -226,6 +234,28 @@ def default_output_path(title: str) -> Path:
     return DEFAULT_OUT_DIR / f"{stamp}-{slugify(title)}" / "SPEC.md"
 
 
+def write_receipt(spec: BugfixSpecInput, spec_path: Path) -> Path:
+    receipt = {
+        "schemaVersion": 1,
+        "kind": "bugfix_spec_created",
+        "traceId": spec.trace_id,
+        "repo": TARGET_REPO,
+        "specPath": str(spec_path),
+        "createdAt": spec.created_at,
+        "reporter": spec.reporter,
+        "source": spec.source,
+        "affectedSurface": spec.surface,
+        "terminalState": "spec_valid",
+    }
+    if spec.source_tool:
+        receipt["sourceTool"] = spec.source_tool
+    if spec.session_id:
+        receipt["sessionId"] = spec.session_id
+    receipt_path = spec_path.with_name("receipt.json")
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return receipt_path
+
+
 def write_spec(args: argparse.Namespace) -> int:
     try:
         spec = build_input(args)
@@ -245,6 +275,8 @@ def write_spec(args: argparse.Namespace) -> int:
         for error in validation_errors:
             print(error, file=sys.stderr)
         return 1
+    receipt = write_receipt(spec, out)
+    print(f"Wrote bugfix intake receipt: {receipt}")
     print(f"valid bugfix SPEC: {out}")
     return 0
 
@@ -383,6 +415,8 @@ def build_parser() -> argparse.ArgumentParser:
     new.add_argument("--original-prompt")
     new.add_argument("--non-goals")
     new.add_argument("--trace-id")
+    new.add_argument("--source-tool")
+    new.add_argument("--session-id")
     new.add_argument("--out")
     new.add_argument("--force", action="store_true")
     new.set_defaults(func=write_spec)
