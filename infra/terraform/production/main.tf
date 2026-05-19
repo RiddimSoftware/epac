@@ -5,7 +5,6 @@ locals {
     "members",
     "sittings",
     "bills",
-    "search",
     "member-speeches",
     "member-votes",
     "on-this-day",
@@ -14,9 +13,7 @@ locals {
     "calendar",
     "config",
     "health",
-    "device-register",
     "openapi",
-    "live-status",
   ]
 
   account_id = "227530433709"
@@ -25,7 +22,6 @@ locals {
   # daily-fetch uses WrapNoEvent (scheduled job) and loader is a CLI tool.
   http_services = {
     "health"          = "2.0"
-    "search"          = "1.0"
     "members"         = "1.0"
     "sittings"        = "1.0"
     "bills"           = "1.0"
@@ -36,8 +32,6 @@ locals {
     "riding-boundary" = "1.0"
     "calendar"        = "2.0"
     "config"          = "2.0"
-    "live-status"     = "2.0"
-    "device-register" = "1.0"
     "openapi"         = "2.0"
   }
 
@@ -83,7 +77,7 @@ resource "aws_apigatewayv2_stage" "production" {
   }
 }
 
-# Lambda functions: search, member-speeches, and daily-fetch are existing imports.
+# Lambda functions are existing imports where already present.
 # The remaining production functions are created from a placeholder zip, with code
 # and environment managed later by the production backend deployment workflow.
 resource "aws_lambda_function" "production" {
@@ -189,18 +183,6 @@ resource "aws_apigatewayv2_route" "health" {
   target    = "integrations/${aws_apigatewayv2_integration.production["health"].id}"
 }
 
-resource "aws_apigatewayv2_route" "search_legacy" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "ANY /search"
-  target    = "integrations/${aws_apigatewayv2_integration.production["search"].id}"
-}
-
-resource "aws_apigatewayv2_route" "search_speeches" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /search/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.production["search"].id}"
-}
-
 resource "aws_apigatewayv2_route" "members" {
   api_id    = aws_apigatewayv2_api.production.id
   route_key = "GET /api/v1/members"
@@ -273,12 +255,6 @@ resource "aws_apigatewayv2_route" "riding_boundary" {
   target    = "integrations/${aws_apigatewayv2_integration.production["riding-boundary"].id}"
 }
 
-resource "aws_apigatewayv2_route" "live_status" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "GET /api/v1/live"
-  target    = "integrations/${aws_apigatewayv2_integration.production["live-status"].id}"
-}
-
 resource "aws_apigatewayv2_route" "house_calendar_legacy" {
   api_id    = aws_apigatewayv2_api.production.id
   route_key = "GET /calendar/house.ics"
@@ -295,18 +271,6 @@ resource "aws_apigatewayv2_route" "config" {
   api_id    = aws_apigatewayv2_api.production.id
   route_key = "GET /api/v1/config"
   target    = "integrations/${aws_apigatewayv2_integration.production["config"].id}"
-}
-
-resource "aws_apigatewayv2_route" "device_register_legacy" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "POST /device/register"
-  target    = "integrations/${aws_apigatewayv2_integration.production["device-register"].id}"
-}
-
-resource "aws_apigatewayv2_route" "device_register" {
-  api_id    = aws_apigatewayv2_api.production.id
-  route_key = "POST /api/v1/device/register"
-  target    = "integrations/${aws_apigatewayv2_integration.production["device-register"].id}"
 }
 
 resource "aws_apigatewayv2_route" "openapi_json" {

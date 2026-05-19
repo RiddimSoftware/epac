@@ -33,7 +33,6 @@ jobs:
         service:
           - _shared
           - member-content
-          - search
           - members
           - sittings
           - bills
@@ -43,8 +42,6 @@ jobs:
           - member-votes-publisher
           - on-this-day
           - estimates
-          - live-status
-          - device-register
           - health
           - riding-boundary
           - calendar

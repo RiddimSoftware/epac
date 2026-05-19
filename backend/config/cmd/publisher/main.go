@@ -18,7 +18,7 @@ type appConfig struct {
 func main() {
 	output := flag.String("output", "../../../build/artifacts/config", "artifact output directory")
 	minimumVersion := flag.String("minimum-supported-version", envOrDefault("MINIMUM_SUPPORTED_VERSION", "1.0.0"), "minimum supported app version")
-	features := flag.String("features", envOrDefault("APP_CONFIG_FEATURES", "search=true,topic_notifications=true"), "comma-separated feature=true|false pairs")
+	features := flag.String("features", envOrDefault("APP_CONFIG_FEATURES", "search=false,topic_notifications=false"), "comma-separated feature=true|false pairs")
 	flag.Parse()
 
 	cfg, err := buildConfig(*minimumVersion, *features)

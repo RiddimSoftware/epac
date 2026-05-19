@@ -13,7 +13,7 @@ import (
 
 func TestHandleRequestReadsConfigArtifact(t *testing.T) {
 	dir := t.TempDir()
-	writeFixture(t, dir, appConfigArtifactKey, `{"minimum_supported_version":"1.0.0","features":{"search":true}}`)
+	writeFixture(t, dir, appConfigArtifactKey, `{"minimum_supported_version":"1.0.0","features":{"search":false}}`)
 	t.Setenv("ARTIFACTS_DIR", dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{})
@@ -23,7 +23,7 @@ func TestHandleRequestReadsConfigArtifact(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body = %s, want 200", resp.StatusCode, resp.Body)
 	}
-	if !strings.Contains(resp.Body, `"minimum_supported_version":"1.0.0"`) || !strings.Contains(resp.Body, `"search":true`) {
+	if !strings.Contains(resp.Body, `"minimum_supported_version":"1.0.0"`) || !strings.Contains(resp.Body, `"search":false`) {
 		t.Fatalf("unexpected body: %s", resp.Body)
 	}
 }

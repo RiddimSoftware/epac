@@ -1,5 +1,7 @@
 # EPAC-165 Live Status Backend
 
+> Retired by EPAC-1921. The `live-status` Lambda and `/api/v1/live` route have been removed from desired infrastructure state; this document remains as historical architecture context.
+
 ## Upstream Research
 
 The House of Commons home page (`https://www.ourcommons.ca/en`) renders the "In the House" widget server-side before its SignalR client attaches. On April 28, 2026, a request with `User-Agent: epac/1.0 (mailto:sunny@riddimsoftware.com)` returned:

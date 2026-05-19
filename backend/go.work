@@ -8,12 +8,10 @@ use (
 	./calendar
 	./config
 	./daily-fetch
-	./device-register
 	./estimates
 	./hansard-backfill
 	./hansard-subjects-index
 	./health
-	./live-status
 	./loader
 	./manifest
 	./member-content
@@ -27,10 +25,8 @@ use (
 	./on-this-day
 	./openapi
 	./riding-boundary
-	./search
 	./sittings
 	./sittings-publisher
-	./topic-notifier
 	./toronto-council
 	./unloader
 	./vancouver-council

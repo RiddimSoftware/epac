@@ -47,12 +47,6 @@ var (
 			Match:  func(path string) bool { return path == "/api/v1/calendar/house.ics" },
 		},
 		{
-			Name:   "live-status",
-			Limit:  2,
-			Window: time.Minute,
-			Match:  func(path string) bool { return path == "/api/v1/live" },
-		},
-		{
 			Name:   "members",
 			Limit:  10,
 			Window: time.Minute,

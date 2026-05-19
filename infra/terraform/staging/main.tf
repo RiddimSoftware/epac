@@ -5,7 +5,6 @@ locals {
     "members",
     "sittings",
     "bills",
-    "search",
     "member-speeches",
     "member-votes",
     "on-this-day",
@@ -14,9 +13,7 @@ locals {
     "calendar",
     "config",
     "health",
-    "device-register",
     "openapi",
-    "live-status",
   ]
 
   account_id = "227530433709"
@@ -26,7 +23,6 @@ locals {
   # neither handles HTTP events, so they are excluded from API Gateway wiring.
   http_services = {
     "health"          = "2.0"
-    "search"          = "1.0"
     "members"         = "1.0"
     "sittings"        = "1.0"
     "bills"           = "1.0"
@@ -37,8 +33,6 @@ locals {
     "riding-boundary" = "1.0"
     "calendar"        = "2.0"
     "config"          = "2.0"
-    "live-status"     = "2.0"
-    "device-register" = "1.0"
     "openapi"         = "2.0"
   }
 }
@@ -149,12 +143,6 @@ resource "aws_apigatewayv2_route" "health" {
   target    = "integrations/${aws_apigatewayv2_integration.staging["health"].id}"
 }
 
-resource "aws_apigatewayv2_route" "search_speeches" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /search/speeches"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["search"].id}"
-}
-
 resource "aws_apigatewayv2_route" "members" {
   api_id    = var.apigw_api_id
   route_key = "GET /api/v1/members"
@@ -225,18 +213,6 @@ resource "aws_apigatewayv2_route" "config" {
   api_id    = var.apigw_api_id
   route_key = "GET /api/v1/config"
   target    = "integrations/${aws_apigatewayv2_integration.staging["config"].id}"
-}
-
-resource "aws_apigatewayv2_route" "live_status" {
-  api_id    = var.apigw_api_id
-  route_key = "GET /api/v1/live"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["live-status"].id}"
-}
-
-resource "aws_apigatewayv2_route" "device_register" {
-  api_id    = var.apigw_api_id
-  route_key = "POST /api/v1/device/register"
-  target    = "integrations/${aws_apigatewayv2_integration.staging["device-register"].id}"
 }
 
 resource "aws_apigatewayv2_route" "openapi_json" {
