@@ -37,12 +37,9 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 		"/api/v1/members/{id}/votes",
 		"/api/v1/ridings/{slug}/boundary",
 		"/api/v1/bills",
-		"/api/v1/live",
 		"/api/v1/calendar/house.ics",
 		"/api/v1/config",
 		"/api/v1/on-this-day",
-		"/search",
-		"/search/speeches",
 		"/health",
 	}
 	for _, path := range requiredPaths {
@@ -62,12 +59,9 @@ func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
 		"/api/v1/members/{id}/votes",
 		"/api/v1/ridings/{slug}/boundary",
 		"/api/v1/bills",
-		"/api/v1/live",
 		"/api/v1/calendar/house.ics",
 		"/api/v1/config",
 		"/api/v1/on-this-day",
-		"/search",
-		"/search/speeches",
 		"/health",
 	}
 
@@ -84,6 +78,23 @@ func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
 		t.Fatal("/docs missing GET operation")
 	}
 	assertDocumentedOperation(t, "/docs", docsOperation)
+}
+
+func TestRetiredLambdaPathsAreAbsent(t *testing.T) {
+	spec := readEmbeddedSpec(t)
+
+	retiredPaths := []string{
+		"/api/v1/live",
+		"/device/register",
+		"/api/v1/device/register",
+		"/search",
+		"/search/speeches",
+	}
+	for _, path := range retiredPaths {
+		if _, ok := spec.Paths[path]; ok {
+			t.Fatalf("retired path %s is still documented", path)
+		}
+	}
 }
 
 func TestVersionedSpecEndpoint(t *testing.T) {

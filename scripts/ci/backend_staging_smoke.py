@@ -79,12 +79,6 @@ def validate_health(status: int, payload: Any) -> None:
         raise SmokeFailure("health: 503 error body indicates storage or Lambda failure")
 
 
-def validate_search(_: int, payload: Any) -> None:
-    body = require_dict(payload, "search")
-    require_keys(body, "search", {"query", "language_hint", "results"})
-    require_list(body, "search", "results")
-
-
 def validate_member_speeches(_: int, payload: Any) -> None:
     body = require_dict(payload, "member speeches")
     require_keys(body, "member speeches", {"member_id", "page", "per_page", "total", "pages", "stats", "speeches"})
@@ -114,13 +108,6 @@ def validate_riding_boundary(_: int, payload: Any) -> None:
     require_keys(geometry, "riding boundary geometry", {"type", "coordinates"})
 
 
-def validate_live_status(_: int, payload: Any) -> None:
-    body = require_dict(payload, "live status")
-    require_keys(body, "live status", {"status", "is_sitting", "business_type", "checked_at", "source_url"})
-    if not isinstance(body["is_sitting"], bool):
-        raise SmokeFailure("live status: is_sitting must be a boolean")
-
-
 def validate_estimates(_: int, payload: Any) -> None:
     body = require_dict(payload, "estimates")
     require_keys(body, "estimates", {"estimates"})
@@ -132,25 +119,6 @@ def validate_config(_: int, payload: Any) -> None:
     require_keys(body, "config", {"minimum_supported_version", "features"})
     if not isinstance(body["features"], dict):
         raise SmokeFailure("config: features must be an object")
-
-
-def validate_device_register(status: int, payload: Any) -> None:
-    body = require_dict(payload, "device registration")
-    require_keys(body, "device registration", {"error"})
-    if "token" not in str(body["error"]).lower():
-        raise SmokeFailure("device registration: safe invalid request must reject missing token")
-    if status != 400:
-        raise SmokeFailure("device registration: safe invalid request must return HTTP 400")
-
-
-def validate_search_min_args(status: int, payload: Any) -> None:
-    """Anti-regression validator for the 2026-05-14 production failure (no date filters)."""
-    if status != 200:
-        raise SmokeFailure(f"search:min-args: expected HTTP 200, got {status}")
-    body = require_dict(payload, "search:min-args")
-    if "error" in body:
-        raise SmokeFailure(f"search:min-args: unexpected error key: {body['error']}")
-    require_list(body, "search:min-args", "results")
 
 
 def validate_error_body(endpoint: str, fragment: str) -> Callable[[int, Any], None]:
@@ -222,47 +190,6 @@ CHECKS = [
         validator=validate_health,
         deterministic_note="Contract check accepts ok/degraded HealthResponse and catches DB/Lambda error bodies.",
         fixture_note="Pipeline freshness can make this degraded until staging data jobs are seeded and scheduled.",
-    ),
-    # --- search ---
-    SmokeCheck(
-        name="search:min-args",
-        method="GET",
-        path="/search/speeches",
-        query={"q": "budget"},
-        expected_statuses={200},
-        validator=validate_search_min_args,
-        deterministic_note="Primary anti-regression check for the 2026-05-14 production failure. No date filters exercises the filter-free SQL path.",
-        fixture_note="Result count is data-dependent; empty list is acceptable.",
-    ),
-    SmokeCheck(
-        name="search:all-args",
-        method="GET",
-        path="/search/speeches",
-        query={"q": "housing", "from_date": "2020-01-01", "to_date": "2035-12-31", "user_id": "smoke-test"},
-        expected_statuses={200},
-        validator=validate_search,
-        deterministic_note="Contract check verifies ranked search responds with the expected JSON envelope.",
-        fixture_note="Result count is data-dependent; seeded speeches would allow non-empty assertions.",
-    ),
-    SmokeCheck(
-        name="search:empty-query",
-        method="GET",
-        path="/search/speeches",
-        query={"q": ""},
-        expected_statuses={400},
-        validator=validate_error_body("search:empty-query", "missing 'q'"),
-        deterministic_note="Negative check — empty q param must return HTTP 400 with a message referencing 'q'.",
-        fixture_note="No fixture required; validates input validation gate.",
-    ),
-    SmokeCheck(
-        name="search:malformed-date",
-        method="GET",
-        path="/search/speeches",
-        query={"q": "health", "from_date": "not-a-date"},
-        expected_statuses={400},
-        validator=validate_error_body("search:malformed-date", "from_date"),
-        deterministic_note="Negative check — invalid from_date must return HTTP 400 with a message referencing 'from_date'.",
-        fixture_note="No fixture required; validates date parsing guard.",
     ),
     # --- member speeches ---
     SmokeCheck(
@@ -400,42 +327,6 @@ CHECKS = [
         deterministic_note="Contract check verifies the app config artifact response shape.",
         fixture_note="Feature flag values are release-config dependent and not asserted.",
     ),
-    # --- live status ---
-    SmokeCheck(
-        name="live-status:default",
-        method="GET",
-        path="/api/v1/live",
-        query={},
-        expected_statuses={200},
-        validator=validate_live_status,
-        deterministic_note="Contract check validates the cached live-status response shape.",
-        fixture_note="The exact sitting state is time/data-dependent and is not asserted.",
-    ),
-    # --- device registration ---
-    SmokeCheck(
-        name="device-register:missing-token",
-        method="POST",
-        path="/api/v1/device/register",
-        query={},
-        body=b"{}",
-        headers={"Content-Type": "application/json"},
-        expected_statuses={400},
-        validator=validate_device_register,
-        deterministic_note="Safe negative contract check confirms invalid registration is rejected before writing data.",
-        fixture_note="A successful 200 registration requires a test APNs token fixture and cleanup policy.",
-    ),
-    SmokeCheck(
-        name="device-register:malformed-json",
-        method="POST",
-        path="/api/v1/device/register",
-        query={},
-        body=b"not-json",
-        headers={"Content-Type": "application/json"},
-        expected_statuses={400},
-        validator=validate_error_body("device-register:malformed-json", ""),
-        deterministic_note="Negative check — malformed JSON body must return HTTP 400 with an error key.",
-        fixture_note="No fixture required; validates request parsing guard.",
-    ),
     # --- openapi ---
     SmokeCheck(
         name="openapi-json",
@@ -446,17 +337,6 @@ CHECKS = [
         validator=validate_openapi,
         deterministic_note="Contract check verifies the OpenAPI spec endpoint returns valid JSON with a paths key.",
         fixture_note="No fixture required; catches OpenAPI generation regressions.",
-    ),
-    # --- additional edge cases to complete the ≥21 matrix ---
-    SmokeCheck(
-        name="search:future-only",
-        method="GET",
-        path="/search/speeches",
-        query={"q": "senate", "from_date": "2040-01-01"},
-        expected_statuses={200},
-        validator=validate_search_min_args,
-        deterministic_note="Edge case: from_date only (no to_date) with a far-future date. Should return empty results without error.",
-        fixture_note="No fixture required; future date guarantees empty results without staging data dependency.",
     ),
     SmokeCheck(
         name="member-speeches:unknown-member",

@@ -74,8 +74,7 @@ fi
 # ── Backend application packages ──────────────────────────────────────────────
 header "Backend application packages (backend/*/application/*.go)"
 
-# device-register/application is the only backend application package today.
-# Additional packages are added by EPAC-1743.
+# Backend application packages are added incrementally by EPAC-1743.
 
 BACKEND_APP_DIRS=()
 while IFS= read -r d; do
@@ -108,13 +107,10 @@ else
       pass "No pgx imports in $relative"
     fi
 
-    # Check: must not import APNs clients directly
-    # Catch both the third-party apns2 client and the repo-local topic-notifier
-    # module, which is where APNs delivery currently lives in this repo.
+    # Check: must not import APNs clients directly.
     APNS_IMPORTS=$(
       {
         grep -rn '"github.com/sideshow/apns2' "$dir"
-        grep -rn '"epac/topic-notifier' "$dir"
       } 2>/dev/null || true
     )
     if [[ -n "$APNS_IMPORTS" ]]; then
@@ -139,10 +135,7 @@ fi
 header "Backend use-case coverage (EPAC-1743)"
 
 EXPECTED_BACKENDS=(
-  "backend/live-status"
-  "backend/search"
   "backend/member-speeches"
-  "backend/topic-notifier"
   "backend/daily-fetch"
 )
 

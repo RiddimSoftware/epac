@@ -83,7 +83,6 @@ fi
 # Route Key | Method | Function suffix | Payload version
 ROUTES=(
   "GET /health|GET|health|2.0"
-  "GET /search/speeches|GET|search|1.0"
   "GET /api/v1/members|GET|members|1.0"
   "GET /api/v1/sittings|GET|sittings|1.0"
   "GET /api/v1/sittings/{date}/speeches|GET|sittings|1.0"
@@ -96,8 +95,6 @@ ROUTES=(
   "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
   "GET /api/v1/calendar/house.ics|GET|calendar|2.0"
   "GET /api/v1/config|GET|config|2.0"
-  "GET /api/v1/live|GET|live-status|2.0"
-  "POST /api/v1/device/register|POST|device-register|1.0"
 )
 
 for route_def in "${ROUTES[@]}"; do

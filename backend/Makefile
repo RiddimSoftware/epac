@@ -6,26 +6,26 @@
 ROLE_ARN ?= arn:aws:iam::227530433709:role/epac-lambda-role
 
 # Run tests for a service
-# Usage: make test SERVICE=search
+# Usage: make test SERVICE=health
 test:
-	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make test SERVICE=search"; exit 1; fi
+	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make test SERVICE=health"; exit 1; fi
 	cd $(SERVICE) && go test ./...
 
 # Build the Lambda binary for Linux ARM64 (recommended for AL2023)
-# Usage: make build SERVICE=search
+# Usage: make build SERVICE=health
 build:
-	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make build SERVICE=search"; exit 1; fi
+	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make build SERVICE=health"; exit 1; fi
 	@echo "Building binary for $(SERVICE)..."
 	cd $(SERVICE) && GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap .
 
 # Package the binary into a zip file
-# Usage: make package SERVICE=search
+# Usage: make package SERVICE=health
 package: build
 	@echo "Packaging $(SERVICE)..."
 	cd $(SERVICE) && zip -q function.zip bootstrap
 
 # Create a new Lambda function on AWS
-# Usage: make create-lambda SERVICE=search ROLE_ARN=arn:aws:iam::...
+# Usage: make create-lambda SERVICE=health ROLE_ARN=arn:aws:iam::...
 create-lambda: package
 	@if [ -z "$(ROLE_ARN)" ]; then echo "Error: ROLE_ARN is not set. Provide it as ROLE_ARN=... or set AWS_ROLE_ARN environment variable"; exit 1; fi
 	@echo "Creating Lambda function $(SERVICE)..."
@@ -38,7 +38,7 @@ create-lambda: package
 		--zip-file fileb://$(SERVICE)/function.zip
 
 # Update an existing Lambda function's code
-# Usage: make update-lambda SERVICE=search
+# Usage: make update-lambda SERVICE=health
 update-lambda: package
 	@echo "Updating Lambda function $(SERVICE)..."
 	aws lambda update-function-code \
@@ -46,7 +46,7 @@ update-lambda: package
 		--zip-file fileb://$(SERVICE)/function.zip
 
 # Create an HTTP API Gateway for the Lambda function
-# Usage: make create-api SERVICE=search
+# Usage: make create-api SERVICE=health
 create-api:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required."; exit 1; fi
 	@echo "Creating API Gateway for $(SERVICE)..."
@@ -62,7 +62,7 @@ create-api:
 	echo "Production URL: https://$$API_ID.execute-api.$$REGION.amazonaws.com/production"
 
 # Add an endpoint to the API Gateway that calls a Lambda function
-# Usage: make add-endpoint ENDPOINT_NAME=search LAMBDA_ARN=arn:aws:lambda:... [SERVICE=search] [API_ID=...]
+# Usage: make add-endpoint ENDPOINT_NAME=health LAMBDA_ARN=arn:aws:lambda:... [SERVICE=health] [API_ID=...]
 add-endpoint:
 	@if [ -z "$(ENDPOINT_NAME)" ]; then echo "Error: ENDPOINT_NAME is required."; exit 1; fi
 	@if [ -z "$(LAMBDA_ARN)" ]; then echo "Error: LAMBDA_ARN is required."; exit 1; fi
@@ -95,7 +95,7 @@ add-endpoint:
 	echo "Endpoint /$(ENDPOINT_NAME) added successfully."
 
 # Delete the HTTP API Gateway for the Lambda function
-# Usage: make delete-api SERVICE=search
+# Usage: make delete-api SERVICE=health
 delete-api:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required."; exit 1; fi
 	@echo "Deleting API Gateway for $(SERVICE)..."
@@ -110,7 +110,7 @@ delete-api:
 	@aws lambda remove-permission --function-name $(SERVICE) --statement-id apigateway-$(SERVICE) 2>/dev/null || echo "Permission not found or already removed."
 
 # Clean up build artifacts
-# Usage: make clean SERVICE=search
+# Usage: make clean SERVICE=health
 clean:
 	@if [ -n "$(SERVICE)" ]; then \
 		rm -f $(SERVICE)/bootstrap $(SERVICE)/$(SERVICE).zip; \
@@ -146,7 +146,7 @@ schedule-lambda:
 	echo "Successfully scheduled $(SERVICE)."
 
 # Schedule a Lambda function at an EventBridge rate expression
-# Usage: make schedule-rate-lambda SERVICE=live-status FUNCTION_NAME=epac-live-status-staging RATE="rate(2 minutes)"
+# Usage: make schedule-rate-lambda SERVICE=health FUNCTION_NAME=epac-health-staging RATE="rate(5 minutes)"
 schedule-rate-lambda:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required."; exit 1; fi
 	@if [ -z "$(RATE)" ]; then echo "Error: RATE parameter is required (e.g., rate(2 minutes))."; exit 1; fi

@@ -65,7 +65,7 @@ func TestAPIGatewayV2RateLimitUsesEndpointSpecificRules(t *testing.T) {
 	defer func() { defaultRateLimiter = previous }()
 
 	req := events.APIGatewayV2HTTPRequest{
-		RawPath: "/api/v1/live",
+		RawPath: "/api/v1/calendar/house.ics",
 		RequestContext: events.APIGatewayV2HTTPRequestContext{
 			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
 				SourceIP: "203.0.113.10",
@@ -74,14 +74,11 @@ func TestAPIGatewayV2RateLimitUsesEndpointSpecificRules(t *testing.T) {
 	}
 
 	if _, limited := CheckAPIGatewayV2RateLimit(req); limited {
-		t.Fatal("first live request was unexpectedly blocked")
-	}
-	if _, limited := CheckAPIGatewayV2RateLimit(req); limited {
-		t.Fatal("second live request was unexpectedly blocked")
+		t.Fatal("first calendar request was unexpectedly blocked")
 	}
 	resp, limited := CheckAPIGatewayV2RateLimit(req)
 	if !limited {
-		t.Fatal("third live request was allowed, want 429")
+		t.Fatal("second calendar request was allowed, want 429")
 	}
 	if resp.StatusCode != 429 {
 		t.Fatalf("status = %d, want 429", resp.StatusCode)

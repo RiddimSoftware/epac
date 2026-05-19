@@ -49,5 +49,5 @@ The production workflow expects:
 Before marking a staging deploy healthy:
 
 1. Confirm `/health` returns `200` from the staging API.
-2. Confirm `member-speeches`, `search`, and `device-register` functions are using the staging database connection string.
+2. Confirm `member-speeches` and other database-backed functions are using the staging database connection string.
 3. Build a TestFlight candidate with `BACKEND_BASE_URL` set to the staging URL and verify staging Lambda logs show traffic from that build.

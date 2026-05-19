@@ -12,11 +12,9 @@
     }
   ],
   "tags": [
-    { "name": "Parliament", "description": "Sittings, speeches, live status, and Hansard-derived records." },
+    { "name": "Parliament", "description": "Sittings, speeches, calendar, and Hansard-derived records." },
     { "name": "Members", "description": "MP metadata, votes, and speech feeds." },
     { "name": "Bills", "description": "Bill list and status metadata." },
-    { "name": "Search", "description": "Postgres full-text search across Hansard speech records." },
-    { "name": "Devices", "description": "Device registration for followed-topic notifications." },
     { "name": "Fiscal", "description": "Government spending, estimates, and budgetary records." },
     { "name": "Operations", "description": "Health and API documentation endpoints." }
   ],
@@ -409,52 +407,6 @@
         }
       }
     },
-    "/api/v1/live": {
-      "get": {
-        "tags": ["Parliament"],
-        "summary": "Return current House sitting status",
-        "description": "Returns the cached live House status from the backend poller. The endpoint does not call parliament.ca during app requests.",
-        "operationId": "getLiveStatus",
-        "responses": {
-          "200": {
-            "description": "Live sitting status",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/LiveStatus" },
-                "examples": {
-                  "sitting": {
-                    "value": {
-                      "status": "sitting",
-                      "is_sitting": true,
-                      "business_type": "Oral Questions",
-                      "current_item_title": "Oral Questions",
-                      "current_speaker_name": "Steven MacKinnon",
-                      "division_in_progress": false,
-                      "checked_at": "2026-04-28T14:00:00Z",
-                      "last_changed_at": "2026-04-28T13:59:00Z",
-                      "sitting_date": "2026-04-28",
-                      "source_url": "https://www.ourcommons.ca/en"
-                    }
-                  },
-                  "adjourned": {
-                    "value": {
-                      "status": "adjourned",
-                      "is_sitting": false,
-                      "business_type": "Adjourned",
-                      "division_in_progress": false,
-                      "checked_at": "2026-04-28T23:00:00Z",
-                      "sitting_date": "2026-04-28",
-                      "source_url": "https://www.ourcommons.ca/en"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": { "$ref": "#/components/responses/RateLimit" }
-        }
-      }
-    },
     "/api/v1/calendar/house.ics": {
       "get": {
         "tags": ["Parliament"],
@@ -495,8 +447,8 @@
                     "value": {
                       "minimum_supported_version": "1.0.0",
                       "features": {
-                        "search": true,
-                        "topic_notifications": true
+                        "search": false,
+                        "topic_notifications": false
                       }
                     }
                   }
@@ -566,45 +518,6 @@
         }
       }
     },
-    "/api/v1/device/register": {
-      "post": {
-        "tags": ["Devices"],
-        "summary": "Register a device for followed-topic notifications",
-        "operationId": "registerDevice",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterDeviceRequest" },
-              "examples": {
-                "register": {
-                    "value": {
-                      "token": "abcdef012345",
-                      "topic_ids": ["housing", "climate"],
-                      "bill_ids": ["C-5", "S-2"],
-                      "granularity": { "housing": "everyDebate", "climate": "onlyMyMP" },
-                      "my_mp_member_id": "278707"
-                    }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Registration accepted",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/StatusResponse" },
-                "examples": { "ok": { "value": { "status": "ok" } } }
-              }
-            }
-          },
-          "429": { "$ref": "#/components/responses/RateLimit" },
-          "400": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
     "/api/v1/estimates": {
       "get": {
         "tags": ["Fiscal"],
@@ -664,117 +577,6 @@
           },
           "404": { "$ref": "#/components/responses/Error" },
           "429": { "$ref": "#/components/responses/RateLimit" }
-        }
-      }
-    },
-    "/search": {
-      "get": {
-        "tags": ["Search"],
-        "summary": "Search Hansard speeches (legacy route)",
-        "description": "Compatibility route for clients still calling /search?query=. New clients should use /search/speeches?q= with the same ranked PostgreSQL full-text search behavior.",
-        "operationId": "searchSpeechesLegacy",
-        "parameters": [
-          {
-            "name": "query",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string", "minLength": 1, "example": "housing affordability" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Search results",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SearchResponse" },
-                "examples": {
-                  "results": {
-                    "value": {
-                      "query": "housing",
-                      "language_hint": "en",
-                      "results": [
-                        {
-                          "id": "12345678",
-                          "title": "Example MP",
-                          "snippet": "housing affordability...",
-                          "sitting_date": "2026-04-27",
-                          "subject": "Housing",
-                          "member_id": "278707"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "500": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/search/speeches": {
-      "get": {
-        "tags": ["Search"],
-        "summary": "Search Hansard speeches",
-        "description": "Uses PostgreSQL full-text search over English and French tsvector columns, then blends text rank, recency decay, and explicit follow relevance. Personalization only applies when user_id matches a stored device subscription with user-controlled follows.",
-        "operationId": "searchSpeeches",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string", "minLength": 1, "example": "housing affordability" }
-          },
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": false,
-            "description": "Anonymous device subscription token used only to load explicit follows for ranking boosts.",
-            "schema": { "type": "string", "example": "device-123" }
-          },
-          {
-            "name": "from_date",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "string", "format": "date", "example": "2026-01-01" }
-          },
-          {
-            "name": "to_date",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "string", "format": "date", "example": "2026-04-29" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Search results",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SearchResponse" },
-                "examples": {
-                  "results": {
-                    "value": {
-                      "query": "housing",
-                      "language_hint": "en",
-                      "results": [
-                        {
-                          "id": "12345678",
-                          "title": "Example MP",
-                          "snippet": "housing affordability...",
-                          "sitting_date": "2026-04-27",
-                          "subject": "Housing",
-                          "member_id": "278707"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "500": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -917,7 +719,7 @@
                   "error": "rate limit exceeded",
                   "limit": 2,
                   "window_seconds": 60,
-                  "scope": "live-status"
+                  "scope": "api"
                 }
               }
             }
@@ -938,7 +740,7 @@
           "error": { "type": "string", "example": "rate limit exceeded" },
           "limit": { "type": "integer", "example": 2 },
           "window_seconds": { "type": "integer", "example": 60 },
-          "scope": { "type": "string", "example": "live-status" }
+          "scope": { "type": "string", "example": "api" }
         }
       },
       "StatusResponse": {
@@ -1153,28 +955,6 @@
           "source_url": { "type": "string", "format": "uri" }
         }
       },
-      "LiveStatus": {
-        "type": "object",
-        "required": ["status", "is_sitting", "business_type", "division_in_progress", "checked_at", "source_url"],
-        "properties": {
-          "status": { "type": "string", "enum": ["sitting", "adjourned", "unknown"] },
-          "is_sitting": { "type": "boolean" },
-          "business_type": { "type": "string", "example": "Oral Questions" },
-          "current_item_title": { "type": "string", "example": "Oral Questions" },
-          "current_bill_number": { "type": "string", "example": "C-12" },
-          "current_speaker_name": { "type": "string", "example": "Steven MacKinnon" },
-          "division_in_progress": { "type": "boolean" },
-          "checked_at": { "type": "string", "format": "date-time" },
-          "last_changed_at": { "type": "string", "format": "date-time" },
-          "sitting_date": {
-            "type": "string",
-            "format": "date",
-            "example": "2026-04-28",
-            "description": "Calendar date (Ottawa local) of the current or most-recent sitting. Preserved across the post-sitting window so iOS can transition the Home card from LIVE to TODAY IN PARLIAMENT once Hansard publishes for the same date."
-          },
-          "source_url": { "type": "string", "format": "uri" }
-        }
-      },
       "AppConfig": {
         "type": "object",
         "required": ["minimum_supported_version", "features"],
@@ -1184,41 +964,6 @@
             "type": "object",
             "additionalProperties": { "type": "boolean" }
           }
-        }
-      },
-      "RegisterDeviceRequest": {
-        "type": "object",
-        "required": ["token"],
-        "properties": {
-          "token": { "type": "string" },
-          "topic_ids": { "type": "array", "items": { "type": "string" } },
-          "bill_ids": { "type": "array", "items": { "type": "string" } },
-          "granularity": {
-            "type": "object",
-            "additionalProperties": { "type": "string", "enum": ["everyDebate", "onlyMyMP"] }
-          },
-          "my_mp_member_id": { "type": "string" }
-        }
-      },
-      "SearchResponse": {
-        "type": "object",
-        "required": ["query", "language_hint", "results"],
-        "properties": {
-          "query": { "type": "string" },
-          "language_hint": { "type": "string", "enum": ["en", "fr"] },
-          "results": { "type": "array", "items": { "$ref": "#/components/schemas/SearchResult" } }
-        }
-      },
-      "SearchResult": {
-        "type": "object",
-        "required": ["id", "title", "snippet"],
-        "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "snippet": { "type": "string" },
-          "sitting_date": { "type": "string", "format": "date" },
-          "subject": { "type": "string" },
-          "member_id": { "type": "string" }
         }
       },
       "HealthResponse": {

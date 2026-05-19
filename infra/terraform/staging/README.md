@@ -1,6 +1,6 @@
 # epac staging infrastructure
 
-Terraform module for the epac staging backend: 13 Lambda functions, API Gateway v2 custom domain, ACM certificate, and Route53 DNS records.
+Terraform module for the epac staging backend: 10 Lambda functions, API Gateway v2 custom domain, ACM certificate, and Route53 DNS records.
 
 ## Prerequisites
 
@@ -31,14 +31,11 @@ terraform import 'aws_lambda_function.staging["loader"]'          epac-loader-st
 terraform import 'aws_lambda_function.staging["members"]'         epac-members-staging
 terraform import 'aws_lambda_function.staging["sittings"]'        epac-sittings-staging
 terraform import 'aws_lambda_function.staging["bills"]'           epac-bills-staging
-terraform import 'aws_lambda_function.staging["search"]'          epac-search-staging
 terraform import 'aws_lambda_function.staging["member-speeches"]' epac-member-speeches-staging
 terraform import 'aws_lambda_function.staging["on-this-day"]'     epac-on-this-day-staging
 terraform import 'aws_lambda_function.staging["riding-boundary"]' epac-riding-boundary-staging
 terraform import 'aws_lambda_function.staging["health"]'          epac-health-staging
-terraform import 'aws_lambda_function.staging["device-register"]' epac-device-register-staging
 terraform import 'aws_lambda_function.staging["openapi"]'         epac-openapi-staging
-terraform import 'aws_lambda_function.staging["live-status"]'     epac-live-status-staging
 
 # ACM certificate (aws_acm_certificate_validation does not support import; cert is already issued)
 terraform import aws_acm_certificate.staging_api \

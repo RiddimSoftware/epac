@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, search, members, sittings, bills, member-speeches, member-votes, on-this-day, estimates, riding-boundary, calendar, config, health, device-register, openapi, live-status]
+        service: [daily-fetch, loader, members, sittings, bills, member-speeches, member-votes, on-this-day, estimates, riding-boundary, calendar, config, health, openapi]
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +64,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging DATABASE_URL from Secrets Manager
-        if: ${{ contains(fromJSON('["search","health","device-register","live-status"]'), matrix.service) }}
+        if: ${{ contains(fromJSON('["health"]'), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           DATABASE_URL_SECRET_ID: epac/database-url
