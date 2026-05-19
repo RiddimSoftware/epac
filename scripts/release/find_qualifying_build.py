@@ -41,7 +41,14 @@ def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     return jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
 
 
-def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, override: str | None, version: str | None = None) -> dict:
+def find_qualifying_build(
+    app_id: str,
+    cutoff_dt: datetime | None,
+    token: str,
+    override: str | None,
+    version: str | None = None,
+    candidates: list[str] | None = None,
+) -> dict:
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.appstoreconnect.apple.com/v1/builds"
     params = {
@@ -69,6 +76,8 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, o
 
         if override and build_number != str(override):
             continue
+        if candidates and build_number not in candidates:
+            continue
 
         uploaded_raw = attrs["uploadedDate"]
         uploaded = datetime.fromisoformat(uploaded_raw.replace("Z", "+00:00"))
@@ -85,6 +94,7 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, o
             continue
 
         return {
+            "build_id": build["id"],
             "build_number": build_number,
             "build_version": build_version,
             "upload_time": uploaded_raw,
@@ -94,6 +104,7 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, o
     raise SystemExit(
         f"No qualifying build found{cutoff_msg}"
         + (f" (override={override})" if override else "")
+        + (f" (candidates={','.join(candidates)})" if candidates else "")
     )
 
 
@@ -106,6 +117,7 @@ def main() -> None:
     parser.add_argument("--latest", action="store_true", help="Return the most recent valid build (no cutoff)")
     parser.add_argument("--cutoff-hour", type=int, default=14, help="Hour (24h) in Eastern Time; ignored when --latest is set")
     parser.add_argument("--override", default="", help="Force a specific build number")
+    parser.add_argument("--candidates", default="", help="Comma-separated candidate build numbers")
     parser.add_argument("--version", default="", help="Filter by marketing version string (CFBundleShortVersionString)")
     parser.add_argument(
         "--output-format",
@@ -122,11 +134,20 @@ def main() -> None:
         cutoff_dt = datetime(today.year, today.month, today.day, args.cutoff_hour, 0, 0, tzinfo=et).astimezone(timezone.utc)
 
     token = get_asc_token(args.key_id, args.issuer_id, args.private_key_path)
-    result = find_qualifying_build(args.app_id, cutoff_dt, token, args.override or None, args.version or None)
+    candidates = [item for item in args.candidates.split(",") if item]
+    result = find_qualifying_build(
+        args.app_id,
+        cutoff_dt,
+        token,
+        args.override or None,
+        args.version or None,
+        candidates or None,
+    )
 
     if args.output_format == "github-output":
         output_file = os.environ.get("GITHUB_OUTPUT", "/dev/stdout")
         with open(output_file, "a") as f:
+            f.write(f"build_id={result['build_id']}\n")
             f.write(f"build_number={result['build_number']}\n")
             f.write(f"build_version={result['build_version']}\n")
             f.write(f"upload_time={result['upload_time']}\n")
