@@ -68,6 +68,7 @@ jobs:
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.resolve-source.outputs.source_sha }}
+          VERSION: ${{ steps.resolve-tag.outputs.version }}
         run: |
           set -euo pipefail
           mapfile -t build_tags < <(
