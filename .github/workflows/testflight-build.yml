@@ -20,12 +20,12 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
-  group: testflight-build
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'push' && 'testflight-main-latest' || format('testflight-manual-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 env:
   FASTLANE_SKIP_UPDATE_CHECK: "1"
@@ -157,6 +157,36 @@ jobs:
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           S3_BUCKET_PREFIX: s3://riddimsoftware-factory-transcripts/release-manifests
         run: bash .workflow-source/scripts/ci/emit_release_manifest.sh
+
+      - name: Tag TestFlight build provenance
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        env:
+          BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
+        run: |
+          set -euo pipefail
+          tag="testflight/build-${BUILD_NUMBER}"
+
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            existing_sha="$(git rev-list -n 1 "${tag}")"
+            if [ "$existing_sha" != "$SOURCE_SHA" ]; then
+              echo "::error::${tag} already points at ${existing_sha}, not ${SOURCE_SHA}."
+              exit 1
+            fi
+            echo "${tag} already points at ${SOURCE_SHA}."
+            exit 0
+          fi
+
+          git config user.name "riddim-developer-bot"
+          git config user.email "developer-bot@riddimsoftware.com"
+          git tag -a "${tag}" "${SOURCE_SHA}" \
+            -m "TestFlight build ${BUILD_NUMBER}" \
+            -m "version=${VERSION}" \
+            -m "workflow_run_id=${GITHUB_RUN_ID}" \
+            -m "source_sha=${SOURCE_SHA}"
+          git push origin "refs/tags/${tag}"
 
       - name: Delete ephemeral keychain
         if: ${{ always() && !inputs.dry_run }}

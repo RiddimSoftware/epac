@@ -28,13 +28,18 @@ jobs:
     name: Find matching TestFlight build
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
     outputs:
+      build_id: ${{ steps.find.outputs.build_id }}
       build_number: ${{ steps.find.outputs.build_number }}
       build_version: ${{ steps.find.outputs.build_version }}
       upload_time: ${{ steps.find.outputs.upload_time }}
       tag: ${{ steps.resolve-tag.outputs.tag }}
       version: ${{ steps.resolve-tag.outputs.version }}
+      source_sha: ${{ steps.resolve-source.outputs.source_sha }}
+      build_tag: ${{ steps.resolve-build-tag.outputs.build_tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve tag and version
         id: resolve-tag
@@ -47,6 +52,40 @@ jobs:
           VERSION="${VERSION%%-rc.*}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release source commit
+        id: resolve-source
+        shell: bash
+        env:
+          TAG: ${{ steps.resolve-tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-list -n 1 "$TAG")"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve TestFlight build tag
+        id: resolve-build-tag
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.resolve-source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          mapfile -t build_tags < <(
+            git tag --points-at "$SOURCE_SHA" 'testflight/build-*' \
+              | sed -E 's#^testflight/build-([0-9]+)$#\1 & #' \
+              | sort -n \
+              | awk '{print $2}'
+          )
+
+          if [ "${#build_tags[@]}" -eq 0 ]; then
+            echo "::error::No testflight/build-* tag points at release source ${SOURCE_SHA}."
+            exit 1
+          fi
+
+          build_tag="${build_tags[-1]}"
+          build_number="${build_tag#testflight/build-}"
+          echo "build_tag=$build_tag" >> "$GITHUB_OUTPUT"
+          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
 
       - name: Write App Store Connect credentials
         shell: bash
@@ -93,6 +132,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ steps.resolve-tag.outputs.version }}
+          BUILD_NUMBER: ${{ steps.resolve-build-tag.outputs.build_number }}
         run: |
           set +e
           .venv-release/bin/python scripts/release/find_qualifying_build.py \
@@ -102,6 +142,7 @@ jobs:
             --app-id "${{ vars.APPLE_APP_ID }}" \
             --latest \
             --version "$VERSION" \
+            --override "$BUILD_NUMBER" \
             --output-format github-output 2> /tmp/find-build.err
           status=$?
           set -e
@@ -126,6 +167,8 @@ jobs:
             echo "- Version: ${{ needs.find-build.outputs.build_version }}"
             echo "- Build: #${{ needs.find-build.outputs.build_number }}"
             echo "- Tag: ${{ needs.find-build.outputs.tag }}"
+            echo "- Source commit: ${{ needs.find-build.outputs.source_sha }}"
+            echo "- Build tag: ${{ needs.find-build.outputs.build_tag }}"
             echo "- Uploaded: ${{ needs.find-build.outputs.upload_time }}"
             echo "- Dry run: ${{ inputs.dry_run }}"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -152,6 +195,11 @@ jobs:
           : "${ASC_ISSUER_ID:?ASC_ISSUER_ID secret is required}"
           : "${ASC_PRIVATE_KEY:?ASC_PRIVATE_KEY secret is required}"
 
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          p8_path="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$p8_path"
+          chmod 600 "$p8_path"
+
           jq -n \
             --arg key_id "$ASC_KEY_ID" \
             --arg issuer_id "$ASC_ISSUER_ID" \
@@ -163,6 +211,11 @@ jobs:
               in_house: false
             }' > /tmp/asc_api_key.json
           chmod 600 /tmp/asc_api_key.json
+
+          {
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
 
       - name: Set up Ruby and Bundler
         if: ${{ !contains(fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]'), 'self-hosted') }}
@@ -181,6 +234,26 @@ jobs:
           bundle config set path vendor/bundle
           bundle install --jobs 4 --retry 3
 
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv .venv-release
+          .venv-release/bin/python -m pip install --upgrade pip --quiet
+          .venv-release/bin/python -m pip install PyJWT requests cryptography --quiet
+
+      - name: Ensure App Store version and attach build
+        shell: bash
+        env:
+          VERSION: ${{ needs.find-build.outputs.version }}
+          BUILD_ID: ${{ needs.find-build.outputs.build_id }}
+        run: |
+          .venv-release/bin/python scripts/release/ensure_app_store_version.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            --app-id "${{ vars.APPLE_APP_ID }}" \
+            --version "$VERSION" \
+            --build-id "$BUILD_ID"
+
       - name: Submit build for App Store review
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         run: |
@@ -193,6 +266,7 @@ jobs:
             api_key_path:/tmp/asc_api_key.json \
             app_identifier:${{ vars.BUNDLE_ID }} \
             team_id:${{ vars.TEAM_ID }} \
+            app_version:"${{ needs.find-build.outputs.version }}" \
             skip_binary_upload:true \
             skip_screenshots:true \
             skip_metadata:true \

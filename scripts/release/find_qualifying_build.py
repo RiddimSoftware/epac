@@ -85,6 +85,7 @@ def find_qualifying_build(app_id: str, cutoff_dt: datetime | None, token: str, o
             continue
 
         return {
+            "build_id": build["id"],
             "build_number": build_number,
             "build_version": build_version,
             "upload_time": uploaded_raw,
@@ -127,6 +128,7 @@ def main() -> None:
     if args.output_format == "github-output":
         output_file = os.environ.get("GITHUB_OUTPUT", "/dev/stdout")
         with open(output_file, "a") as f:
+            f.write(f"build_id={result['build_id']}\n")
             f.write(f"build_number={result['build_number']}\n")
             f.write(f"build_version={result['build_version']}\n")
             f.write(f"upload_time={result['upload_time']}\n")
