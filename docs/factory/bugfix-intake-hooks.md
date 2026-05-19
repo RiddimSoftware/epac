@@ -38,9 +38,15 @@ Hook events are appended as JSON Lines:
 
 The hook supports these subcommands:
 
+- `session-start`
 - `user-prompt-submit`
 - `post-tool-use`
 - `stop`
+
+`session-start` prints a bug report intake menu. Bug report mode is the default
+for demo sessions, but the user can choose option 2 to exit into normal
+development mode. Set `EPAC_BUG_INTAKE_SESSION_START=0` to keep capture hooks
+enabled while suppressing the start-of-session menu.
 
 On `stop`, the hook writes:
 

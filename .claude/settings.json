@@ -1,5 +1,46 @@
 {
-  "disabledMcpjsonServers" : [
-
-  ]
+  "disabledMcpjsonServers": [],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/intake/bugfix_session_hook.py session-start"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/intake/bugfix_session_hook.py user-prompt-submit"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/intake/bugfix_session_hook.py post-tool-use"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/intake/bugfix_session_hook.py stop"
+          }
+        ]
+      }
+    ]
+  }
 }

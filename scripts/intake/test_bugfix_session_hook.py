@@ -78,6 +78,28 @@ class BugfixSessionHookTests(unittest.TestCase):
             self.assertIn("command", events[1]["toolInputSummary"])
             self.assertIn("output", events[1]["toolResponseSummary"])
 
+    def test_session_start_prints_default_bug_report_menu(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            start = self.run_hook(
+                root,
+                "session-start",
+                {
+                    "session_id": "sess-start",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                },
+            )
+
+            self.assertEqual(start.returncode, 0, start.stderr)
+            self.assertIn("Bug report mode is the default", start.stdout)
+            self.assertIn("1. File a bug report", start.stdout)
+            self.assertIn("2. Exit bug-report mode", start.stdout)
+            self.assertIn("python3 scripts/intake/bugfix_spec.py new", start.stdout)
+            events = self.read_events(root, "sess-start")
+            self.assertEqual(events[0]["hookEvent"], "session-start")
+
     def test_stop_writes_spec_valid_summary_when_receipt_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -123,10 +145,12 @@ class BugfixSessionHookTests(unittest.TestCase):
     def test_claude_settings_example_uses_expected_hook_commands(self) -> None:
         settings = json.loads(SETTINGS.read_text())
         hooks = settings["hooks"]
+        self.assertIn("SessionStart", hooks)
         self.assertIn("UserPromptSubmit", hooks)
         self.assertIn("PostToolUse", hooks)
         self.assertIn("Stop", hooks)
         commands = json.dumps(settings)
+        self.assertIn("bugfix_session_hook.py session-start", commands)
         self.assertIn("bugfix_session_hook.py user-prompt-submit", commands)
         self.assertIn("bugfix_session_hook.py post-tool-use", commands)
         self.assertIn("bugfix_session_hook.py stop", commands)

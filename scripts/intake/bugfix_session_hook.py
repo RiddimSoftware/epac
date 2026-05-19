@@ -255,10 +255,41 @@ def write_summary(stop_event: dict) -> Path:
     return summary_path
 
 
+def session_start_message() -> str:
+    return """# epac bug report intake
+
+Bug report mode is the default for this session.
+
+Assistant: immediately ask the user to choose:
+
+1. File a bug report
+2. Exit bug-report mode and use normal development mode
+
+If the user chooses 1 or describes a bug, collect only missing fields:
+- title
+- reporter GitHub username or email, if they want follow-up
+- affected screen or feature
+- observed behavior
+- expected behavior
+- reproduction steps
+- evidence that would prove the fix
+- reporter/TestFlight validation plan
+
+Do not implement code during intake. When enough detail exists, run:
+
+python3 scripts/intake/bugfix_spec.py new
+python3 scripts/intake/bugfix_spec.py validate .factory/intake/<generated>/SPEC.md
+
+Then report the SPEC.md path, trace ID, summary, evidence plan, and whether it is ready to become a GitHub Issue.
+"""
+
+
 def run(args: argparse.Namespace) -> int:
     payload = load_payload()
     event = build_event(args.hook_event, payload)
     append_event(event)
+    if args.hook_event == "session-start" and os.environ.get("EPAC_BUG_INTAKE_SESSION_START") != "0":
+        sys.stdout.write(session_start_message())
     if args.hook_event == "stop":
         write_summary(event)
     return 0
@@ -266,7 +297,7 @@ def run(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Capture optional bugfix intake session hook events.")
-    parser.add_argument("hook_event", choices=["user-prompt-submit", "post-tool-use", "stop"])
+    parser.add_argument("hook_event", choices=["session-start", "user-prompt-submit", "post-tool-use", "stop"])
     parser.set_defaults(func=run)
     return parser
 
