@@ -1,0 +1,100 @@
+name: Release App Store Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish
+        required: true
+        type: string
+      dry_run:
+        description: Validate release readiness without publishing or deleting tags
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: app-store-version-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release approved App Store version
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_LINUX || '["ubuntu-latest"]') }}
+    environment: ${{ vars.APPROVAL_ENVIRONMENT || 'app-store-release' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag and version
+        id: resolve-tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#app/v}"
+          VERSION="${VERSION#v}"
+          VERSION="${VERSION%%-rc.*}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Write App Store Connect credentials
+        shell: bash
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${ASC_KEY_ID:?ASC_KEY_ID secret is required}"
+          : "${ASC_ISSUER_ID:?ASC_ISSUER_ID secret is required}"
+          : "${ASC_PRIVATE_KEY:?ASC_PRIVATE_KEY secret is required}"
+
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          p8_path="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$p8_path"
+          chmod 600 "$p8_path"
+
+          {
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv .venv-release
+          .venv-release/bin/python -m pip install --upgrade pip --quiet
+          .venv-release/bin/python -m pip install PyJWT requests cryptography --quiet
+
+      - name: Release App Store version
+        shell: bash
+        env:
+          VERSION: ${{ steps.resolve-tag.outputs.version }}
+        run: |
+          args=()
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+
+          .venv-release/bin/python scripts/release/release_app_store_version.py \
+            --key-id "$ASC_KEY_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            --app-id "${{ vars.APPLE_APP_ID }}" \
+            --version "$VERSION" \
+            "${args[@]}"
+
+      - name: Summary
+        run: |
+          {
+            echo "## App Store release workflow complete"
+            echo ""
+            echo "- Tag: ${{ steps.resolve-tag.outputs.tag }}"
+            echo "- Version: ${{ steps.resolve-tag.outputs.version }}"
+            echo "- Dry run: ${{ inputs.dry_run }}"
+            echo "- Cleanup scope: testflight/${{ steps.resolve-tag.outputs.version }}/build-*"
+          } >> "$GITHUB_STEP_SUMMARY"

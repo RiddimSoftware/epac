@@ -71,21 +71,21 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t build_tags < <(
-            git tag --points-at "$SOURCE_SHA" 'testflight/build-*' \
-              | sed -E 's#^testflight/build-([0-9]+)$#\1 & #' \
+            git tag --points-at "$SOURCE_SHA" "testflight/${VERSION}/build-*" \
+              | sed -E "s#^testflight/${VERSION}/build-([0-9]+)$#\1 & #" \
               | sort -n \
               | awk '{print $2}'
           )
 
           if [ "${#build_tags[@]}" -eq 0 ]; then
-            echo "::error::No testflight/build-* tag points at release source ${SOURCE_SHA}."
+            echo "::error::No testflight/${VERSION}/build-* tag points at release source ${SOURCE_SHA}."
             exit 1
           fi
 
           {
             printf 'build_numbers='
             printf '%s\n' "${build_tags[@]}" \
-              | sed -E 's#^testflight/build-##' \
+              | sed -E "s#^testflight/${VERSION}/build-##" \
               | paste -sd, -
           } >> "$GITHUB_OUTPUT"
 
@@ -155,7 +155,7 @@ jobs:
             exit "$status"
           fi
 
-          echo "build_tag=testflight/build-$(grep '^build_number=' "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "build_tag=testflight/${VERSION}/build-$(grep '^build_number=' "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
   approve-release:
     name: Approve App Store submission

@@ -176,7 +176,7 @@ jobs:
           VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
         run: |
           set -euo pipefail
-          tag="testflight/build-${BUILD_NUMBER}"
+          tag="testflight/${VERSION}/build-${BUILD_NUMBER}"
 
           if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
             existing_sha="$(git rev-list -n 1 "${tag}")"

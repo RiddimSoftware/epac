@@ -40,7 +40,6 @@ def request(method: str, path: str, token: str, **kwargs) -> requests.Response:
 
 def find_app_store_version(app_id: str, version: str, token: str) -> dict | None:
     params = {
-        "filter[app]": app_id,
         "filter[platform]": "IOS",
         "limit": 50,
         "fields[appStoreVersions]": "versionString,platform,appStoreState",
