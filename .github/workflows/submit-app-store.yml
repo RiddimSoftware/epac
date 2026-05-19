@@ -157,18 +157,18 @@ jobs:
       - name: Submit build for App Store review
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         run: |
-          tmp_fastlane_dir="$(mktemp -d)"
-          trap 'rm -rf "$tmp_fastlane_dir"' EXIT
+          if [ -f fastlane/Deliverfile ]; then
+            mv -f fastlane/Deliverfile fastlane/Deliverfile.release
+            trap 'mv -f fastlane/Deliverfile.release fastlane/Deliverfile' EXIT
+          fi
 
           bundle exec fastlane run deliver \
             api_key_path:/tmp/asc_api_key.json \
             app_identifier:${{ vars.BUNDLE_ID }} \
+            team_id:${{ vars.TEAM_ID }} \
             skip_binary_upload:true \
             skip_screenshots:true \
             skip_metadata:true \
-            metadata_path:"$tmp_fastlane_dir/metadata" \
-            screenshots_path:"$tmp_fastlane_dir/screenshots" \
-            app_previews_path:"$tmp_fastlane_dir/app-previews" \
             submit_for_review:true \
             run_precheck_before_submit:false \
             precheck_include_in_app_purchases:false \
