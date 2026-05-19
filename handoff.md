@@ -1,22 +1,22 @@
 ## Implementation notes
-- EPAC-1921 was re-checked in Linear and remains active: status `In Progress`, status type `started`, estimate `8 Points`, `archivedAt: null`, `completedAt: null`, `canceledAt: null`.
+- EPAC-1921 was re-checked in Linear and remains active: status `In Progress`, status type `started`, estimate `8 Points`, `archivedAt: null`, `completedAt: null`, `canceledAt: null`, `updatedAt: 2026-05-19T01:23:02.376Z`.
 - No new source implementation changes were made in this pass because the ticket's explicit pre-PR CloudWatch gate still fails.
-- Current branch is `symphony/epac-1921-backend-delete-unused-lambdas-search-live-status`; the worktree has 1 commit ahead of `origin/main`. `handoff.md` is currently modified only to record the blocker state.
-- Important branch state: the existing ahead commit is `03297471 [EPAC-1921]: WIP — recovered from parent_killed`. Its diff is broad: 90 files changed across GitHub workflows, backend services, infrastructure, iOS, docs, scripts, and `handoff.md`. That scope appears wider than EPAC-1921 and should be reconciled before any PR is opened. I did not revert or rewrite it.
+- Current branch is `symphony/epac-1921-backend-delete-unused-lambdas-search-live-status`; the worktree currently only has this `handoff.md` update pending and has 2 commits ahead of `origin/main`.
+- Important branch state: the existing ahead commits are `fd728ce4 [EPAC-1921]: WIP — recovered from parent_killed` and `03297471 [EPAC-1921]: WIP — recovered from parent_killed`. Prior diff inspection showed broad changes across GitHub workflows, backend services, infrastructure, iOS, docs, scripts, and `handoff.md`. That scope appears wider than EPAC-1921 and should be reconciled before any PR is opened. I did not revert or rewrite it.
 - Previous inspection found the EPAC-1921 deletion is not limited to the four Lambda directories: it also affects `backend/go.work`, OpenAPI, API Gateway/IAM/log group infrastructure, smoke checks, and tests.
 - Previous inspection found `backend/live-status` also serves `/calendar/house.ics` and `/api/v1/calendar/house.ics`; Terraform routes `house_calendar` and `house_calendar_legacy` point at that function.
 
 ## Verification evidence
-- Linear issue fetch on 2026-05-18 confirmed EPAC-1921 remains active: `status: In Progress`, `statusType: started`, `archivedAt: null`, `completedAt: null`, `canceledAt: null`.
+- Linear issue check on 2026-05-19 confirmed EPAC-1921 remains active: `status: In Progress`, `statusType: started`, `archivedAt: null`, `completedAt: null`, `canceledAt: null`, `updatedAt: 2026-05-19T01:23:02.376Z`. The active-state check was completed through Linear GraphQL using the project API credential from AWS Secrets Manager.
 - Local branch evidence from this pass:
-  - `git status --porcelain` showed `M handoff.md`.
-  - `git rev-list --count origin/main..HEAD` returned `1`.
-  - `git log --oneline --decorate -3` showed `03297471 (HEAD -> symphony/epac-1921-backend-delete-unused-lambdas-search-live-status, origin/symphony/epac-1921-backend-delete-unused-lambdas-search-live-status-wip) [EPAC-1921]: WIP — recovered from parent_killed`.
+  - `git status --porcelain` returned `M handoff.md`.
+  - `git rev-list --count origin/main..HEAD` returned `2`.
+  - Current branch is `symphony/epac-1921-backend-delete-unused-lambdas-search-live-status`.
 - CloudWatch command run with `AWS_PROFILE=riddim-agent`, region `us-east-1`, namespace `AWS/Lambda`, metric `Invocations`, dimensions `FunctionName=<name>`, period `86400`, statistics `Sum`.
-- CloudWatch window checked: `2026-05-11T16:00:37Z` to `2026-05-18T16:00:37Z`.
+- CloudWatch window checked: `2026-05-12T01:35:32Z` to `2026-05-19T01:35:32Z`.
 - CloudWatch results:
-  - `search`: `2026-05-13T16:00:00+00:00 7.0`, `2026-05-14T16:00:00+00:00 5.0`.
-  - `live-status`: `2026-05-13T16:00:00+00:00 8.0`, `2026-05-14T16:00:00+00:00 5.0`, `2026-05-16T16:00:00+00:00 2.0`.
+  - `search`: `2026-05-13T01:35:00+00:00 7.0`, `2026-05-14T01:35:00+00:00 5.0`.
+  - `live-status`: `2026-05-14T01:35:00+00:00 12.0`, `2026-05-15T01:35:00+00:00 1.0`, `2026-05-17T01:35:00+00:00 2.0`.
   - `device-register`: no datapoints returned.
   - `topic-notifier`: no datapoints returned.
 - Result: the required "zero invocations for >= 7 days before this PR is opened" gate fails for `search` and `live-status`.
