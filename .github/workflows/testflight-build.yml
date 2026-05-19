@@ -10,6 +10,14 @@ on:
         required: true
         type: boolean
         default: false
+      source_ref:
+        description: Git ref/SHA to build instead of the workflow ref
+        required: false
+        type: string
+      version_override:
+        description: Marketing version to upload instead of auto-computed train
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -30,7 +38,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || github.ref }}
           fetch-depth: 0
+
+      - name: Resolve checked-out source
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "ref=${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || github.ref }}" >> "$GITHUB_OUTPUT"
 
       - name: Select Xcode
         if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
@@ -74,7 +91,7 @@ jobs:
         run: scripts/runner/fetch_asc_secret.sh
 
       - name: Install release helper dependencies
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && (github.event_name != 'workflow_dispatch' || inputs.version_override == '') }}
         run: |
           python3 -m venv .venv-release
           .venv-release/bin/python -m pip install --upgrade pip --quiet
@@ -82,7 +99,7 @@ jobs:
 
       - name: Compute TestFlight version train
         id: version
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && (github.event_name != 'workflow_dispatch' || inputs.version_override == '') }}
         run: |
           .venv-release/bin/python scripts/release/compute_next_version.py \
             --key-id "$ASC_KEY_ID" \
@@ -113,7 +130,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
         env:
-          NEW_VERSION: ${{ steps.version.outputs.next_version }}
+          NEW_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
           bundle exec fastlane deploy \
@@ -137,7 +154,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         env:
           BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
-          GIT_SHA: ${{ github.sha }}
+          GIT_SHA: ${{ steps.source.outputs.sha }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           S3_BUCKET_PREFIX: s3://riddimsoftware-factory-transcripts/release-manifests
         run: scripts/ci/emit_release_manifest.sh
@@ -153,9 +170,11 @@ jobs:
             echo "## TestFlight build uploaded"
             echo ""
             echo "- Workflow source: ${{ github.event_name }}"
-            echo "- Commit: ${{ github.sha }}"
-            echo "- Version: ${{ steps.version.outputs.next_version }}"
-            echo "- Version source: ${{ steps.version.outputs.version_source }}"
+            echo "- Workflow commit: ${{ github.sha }}"
+            echo "- Built source ref: ${{ steps.source.outputs.ref }}"
+            echo "- Built source commit: ${{ steps.source.outputs.sha }}"
+            echo "- Version: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}"
+            echo "- Version source: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override && 'manual override' || steps.version.outputs.version_source }}"
             echo "- Build: #${{ steps.build-number.outputs.build_number }}"
             echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
           } >> "$GITHUB_STEP_SUMMARY"

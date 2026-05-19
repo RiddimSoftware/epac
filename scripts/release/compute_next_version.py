@@ -35,6 +35,18 @@ class AppStoreVersion:
     state: str
 
 
+REUSABLE_TRAIN_STATES = {
+    "PREPARE_FOR_SUBMISSION",
+    "READY_FOR_REVIEW",
+    "WAITING_FOR_REVIEW",
+    "WAITING_FOR_EXPORT_COMPLIANCE",
+    "DEVELOPER_REJECTED",
+    "REJECTED",
+    "METADATA_REJECTED",
+    "INVALID_BINARY",
+}
+
+
 def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     with open(os.path.expanduser(private_key_path)) as f:
         private_key = f.read()
@@ -112,7 +124,7 @@ def choose_existing_train(versions: list[AppStoreVersion], current: str) -> str 
     candidates = [
         app_version.version
         for app_version in versions
-        if app_version.state != "READY_FOR_SALE"
+        if app_version.state in REUSABLE_TRAIN_STATES
         and is_greater_version(app_version.version, current)
     ]
     if not candidates:
