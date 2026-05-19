@@ -1,4 +1,4 @@
-# Enable auto-merge (squash) on every newly opened PR.
+# Enable auto-merge (squash) for every newly opened PR to main.
 #
 # Self-contained inlined version. The same file is replicated across all
 # active RiddimSoftware repos so each repo enables auto-merge independently
