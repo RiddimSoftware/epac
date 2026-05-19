@@ -7,6 +7,14 @@ ENV_NAME="${ENV_NAME:-staging}"
 STAGE_NAME="${STAGE_NAME:-staging}"
 REGION="${AWS_REGION:-us-east-1}"
 API_ID="${API_ID:-}"
+REPOSITORY_ROOT="${REPOSITORY_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+MANIFEST_PATH="${MANIFEST_PATH:-${REPOSITORY_ROOT}/backend/manifest/deployment-services.json}"
+
+target_env="${ENV_NAME}"
+if [ "$target_env" != "staging" ] && [ "$target_env" != "production" ]; then
+  echo "Unsupported ENV_NAME=${target_env}; expected staging or production." >&2
+  exit 1
+fi
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
@@ -63,11 +71,6 @@ if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
     API_ID=$(aws apigatewayv2 get-apis \
       --query "Items[?Name=='${API_NAME}'].ApiId | [0]" \
       --output text)
-    if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
-      API_ID=$(aws apigatewayv2 get-apis \
-        --query "Items[?Name=='epac-api-api'].ApiId | [0]" \
-        --output text)
-    fi
   fi
 fi
 
@@ -80,26 +83,20 @@ if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
   exit 1
 fi
 
-# Route Key | Method | Function suffix | Payload version
-ROUTES=(
-  "GET /health|GET|health|2.0"
-  "GET /api/v1/members|GET|members|1.0"
-  "GET /api/v1/sittings|GET|sittings|1.0"
-  "GET /api/v1/sittings/{date}/speeches|GET|sittings|1.0"
-  "GET /api/v1/bills|GET|bills|1.0"
-  "GET /api/v1/members/{id}/speeches|GET|member-speeches|1.0"
-  "GET /api/v1/members/{id}/votes|GET|member-votes|1.0"
-  "GET /api/v1/on-this-day|GET|on-this-day|1.0"
-  "GET /api/v1/estimates|GET|estimates|2.0"
-  "GET /api/v1/estimates/{org_id}|GET|estimates|2.0"
-  "GET /api/v1/ridings/{slug}/boundary|GET|riding-boundary|1.0"
-  "GET /api/v1/calendar/house.ics|GET|calendar|2.0"
-  "GET /api/v1/config|GET|config|2.0"
-)
+if [ ! -f "${MANIFEST_PATH}" ]; then
+  echo "Manifest file not found: ${MANIFEST_PATH}" >&2
+  exit 1
+fi
 
-for route_def in "${ROUTES[@]}"; do
-  IFS='|' read -r ROUTE_KEY METHOD SERVICE PAYLOAD_VERSION <<<"${route_def}"
+while IFS='|' read -r SERVICE METHOD ROUTE_KEY PAYLOAD_VERSION; do
+  [ -z "${SERVICE}" ] && continue
   FUNCTION_NAME="epac-${SERVICE}-${ENV_NAME}"
+
+  if [ "${target_env}" = "production" ]; then
+    if ! aws lambda get-function --function-name "${FUNCTION_NAME}" >/dev/null 2>&1; then
+      FUNCTION_NAME="${SERVICE}"
+    fi
+  fi
 
   LAMBDA_ARN=$(aws lambda get-function --function-name "${FUNCTION_NAME}" --query 'Configuration.FunctionArn' --output text)
   if [ -z "${LAMBDA_ARN}" ] || [ "${LAMBDA_ARN}" = "None" ]; then
@@ -107,19 +104,38 @@ for route_def in "${ROUTES[@]}"; do
     continue
   fi
 
-  INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
-    --api-id "${API_ID}" \
-    --query "Items[?IntegrationUri=='${LAMBDA_ARN}'].IntegrationId | [0]" \
-    --output text)
+  if [ "${METHOD}" = "ANY" ]; then
+    INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
+      --api-id "${API_ID}" \
+      --query "Items[?IntegrationUri=='${LAMBDA_ARN}' && IntegrationMethod=='ANY'].IntegrationId | [0]" \
+      --output text)
+  else
+    INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
+      --api-id "${API_ID}" \
+      --query "Items[?IntegrationUri=='${LAMBDA_ARN}'].IntegrationId | [0]" \
+      --output text)
+  fi
 
   if [ -z "${INTEGRATION_ID}" ] || [ "${INTEGRATION_ID}" = "None" ]; then
-    INTEGRATION_ID=$(aws apigatewayv2 create-integration \
-      --api-id "${API_ID}" \
-      --integration-type AWS_PROXY \
-      --integration-uri "${LAMBDA_ARN}" \
-      --payload-format-version "${PAYLOAD_VERSION}" \
-      --query 'IntegrationId' \
-      --output text)
+    PAYLOAD_VERSION="${PAYLOAD_VERSION:-2.0}"
+    if [ "${METHOD}" = "ANY" ]; then
+      INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+        --api-id "${API_ID}" \
+        --integration-type AWS_PROXY \
+        --integration-uri "${LAMBDA_ARN}" \
+        --integration-method ANY \
+        --payload-format-version "${PAYLOAD_VERSION}" \
+        --query 'IntegrationId' \
+        --output text)
+    else
+      INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+        --api-id "${API_ID}" \
+        --integration-type AWS_PROXY \
+        --integration-uri "${LAMBDA_ARN}" \
+        --payload-format-version "${PAYLOAD_VERSION}" \
+        --query 'IntegrationId' \
+        --output text)
+    fi
   fi
 
   ROUTE_ID=$(aws apigatewayv2 get-routes \
@@ -139,14 +155,21 @@ for route_def in "${ROUTES[@]}"; do
       --target "integrations/${INTEGRATION_ID}" >/dev/null
   fi
 
-  SOURCE_PATH="${ROUTE_KEY#* }"
-  SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
-  SOURCE_PATH="${SOURCE_PATH//\{org_id\}/*}"
-  SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
-  SOURCE_PATH="${SOURCE_PATH//\{date\}/*}"
-  STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
-  STATEMENT_PREFIX="apigateway-${SERVICE}-${ENV_NAME}"
-  SOURCE_ARN="arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}"
+  if [ "${target_env}" = "staging" ]; then
+    SOURCE_PATH="${ROUTE_KEY#* }"
+    SOURCE_PATH="${SOURCE_PATH//\{id\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{org_id\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{date\}/*}"
+
+    STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
+    STATEMENT_PREFIX="apigateway-${SERVICE}-${ENV_NAME}"
+    SOURCE_ARN="arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/${METHOD}${SOURCE_PATH}"
+  else
+    STATEMENT_ID="apigw-epac-api-${SERVICE}"
+    STATEMENT_PREFIX="apigw-epac-api-"
+    SOURCE_ARN="arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/*"
+  fi
 
   remove_permission_statement "${FUNCTION_NAME}" "${STATEMENT_ID}"
   remove_matching_invoke_permissions "${FUNCTION_NAME}" "${STATEMENT_PREFIX}"
@@ -159,29 +182,15 @@ for route_def in "${ROUTES[@]}"; do
       --principal apigateway.amazonaws.com \
       --source-arn "${SOURCE_ARN}" \
       >/dev/null 2>&1; then
-    if aws lambda add-permission \
+    aws lambda add-permission \
       --region "${REGION}" \
       --function-name "${FUNCTION_NAME}" \
       --statement-id "${STATEMENT_ID}" \
       --action lambda:InvokeFunction \
-      --principal apigateway.amazonaws.com \
-      --source-arn "${SOURCE_ARN}" \
-      >/dev/null 2>&1; then
-      :
-    else
-      remove_permission_statement "${FUNCTION_NAME}" "${STATEMENT_ID}"
-      remove_matching_invoke_permissions "${FUNCTION_NAME}" "${STATEMENT_PREFIX}"
-      aws lambda add-permission \
-        --region "${REGION}" \
-        --function-name "${FUNCTION_NAME}" \
-        --statement-id "${STATEMENT_ID}" \
-        --action lambda:InvokeFunction \
-        --principal apigateway.amazonaws.com \
-        --source-arn "${SOURCE_ARN}"
-    fi
+      --principal apigateway.amazonaws.com >/dev/null || true
   fi
 
-done
+done < <(jq -r --arg env "$target_env" '.services[] | select(.http != null and .deploy[$env] == true) | .name as $service | .http.routes[$env][] | "\($service)|\(.method)|\(.method + " " + .path)|\(.payload_format_version // "2.0")"' "$MANIFEST_PATH")
 
 if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${STAGE_NAME}" --output json >/dev/null 2>&1; then
   AUTO_DEPLOY=$(aws apigatewayv2 get-stage \
@@ -215,4 +224,4 @@ else
     --deployment-id "${DEPLOYMENT_ID}" >/dev/null
 fi
 
-echo "Staging API route sync complete for ${API_ID} at stage ${STAGE_NAME}."
+echo "API route sync complete for ${API_ID} at stage ${STAGE_NAME}."

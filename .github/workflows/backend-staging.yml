@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
+      - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
 
 concurrency:
@@ -18,13 +19,41 @@ permissions:
   id-token: write
 
 jobs:
+  prepare:
+    name: Resolve backend service manifest
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.resolve.outputs.services }}
+      database_services: ${{ steps.resolve.outputs.database_services }}
+      artifact_services: ${{ steps.resolve.outputs.artifact_services }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: resolve
+        run: |
+          SERVICES=$(jq -c '[.services[] | select(.deploy.staging == true) | .name]' backend/manifest/deployment-services.json)
+          DATABASE_SERVICES=$(jq -c '[.services[] | select(.sync.staging.database == true) | .name]' backend/manifest/deployment-services.json)
+          ARTIFACT_SERVICES=$(jq -c '[.services[] | select(.sync.staging.artifact == true) | .name]' backend/manifest/deployment-services.json)
+
+          if [ "$SERVICES" = "[]" ]; then
+            echo "No staging services found in manifest" >&2
+            exit 1
+          fi
+
+          {
+            echo "services=$SERVICES"
+            echo "database_services=$DATABASE_SERVICES"
+            echo "artifact_services=$ARTIFACT_SERVICES"
+          } >> "$GITHUB_OUTPUT"
+
   deploy:
     name: Deploy ${{ matrix.service }} to staging
+    needs: prepare
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service: [daily-fetch, loader, members, sittings, bills, member-speeches, member-votes, on-this-day, estimates, riding-boundary, calendar, config, health, openapi]
+        service: ${{ fromJson(needs.prepare.outputs.services) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -50,13 +79,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            if [[ " members sittings bills estimates calendar config " == *" $SERVICE "* ]]; then
-              echo "$FUNCTION_NAME does not exist yet; apply infra/terraform/staging before deploying this new artifact-backed Lambda."
-              exit 0
-            fi
-          fi
-
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://function.zip
@@ -64,7 +86,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging DATABASE_URL from Secrets Manager
-        if: ${{ contains(fromJSON('["health"]'), matrix.service) }}
+        if: ${{ contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           DATABASE_URL_SECRET_ID: epac/database-url
@@ -102,7 +124,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging artifact environment
-        if: ${{ contains(fromJSON('["members","sittings","bills","member-speeches","member-votes","on-this-day","estimates","riding-boundary","calendar","config"]'), matrix.service) }}
+        if: ${{ contains(fromJson(needs.prepare.outputs.artifact_services), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
@@ -110,11 +132,6 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN_STAGING }}
         run: |
           set -euo pipefail
-
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            echo "$FUNCTION_NAME does not exist yet; skipping artifact environment sync until Terraform creates it."
-            exit 0
-          fi
 
           if [ -z "$ARTIFACT_BUCKET" ]; then
             echo "EPAC_ARTIFACT_BUCKET_STAGING, EPAC_ARTIFACT_BUCKET, or ARTIFACTS_BUCKET variable is required"
