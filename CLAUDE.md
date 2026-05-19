@@ -84,6 +84,30 @@ Limit hits return `HTTP 429 Too Many Requests` with a JSON error body and `Retry
 
 ---
 
+## Bugfix intake harness
+
+Bug fixes start with a validated `SPEC.md`. If a user, contributor, or LLM
+session asks for a bug fix and no valid bugfix SPEC exists yet, do not edit app,
+backend, website, workflow, or release code. Run the repo-local intake harness
+first:
+
+```bash
+python3 scripts/intake/bugfix_spec.py new
+python3 scripts/intake/bugfix_spec.py validate .factory/intake/<generated>/SPEC.md
+```
+
+The LLM-facing prompt is `.factory/prompts/bugfix-intake.md`; the human guide is
+`docs/factory/bugfix-intake.md`; the markdown template is
+`.factory/templates/bugfix-SPEC.md`. The SPEC must include observed behavior,
+expected behavior, reproduction steps, acceptance criteria, evidence plan,
+validation plan, non-goals, and provenance metadata.
+
+After the SPEC validates, attach it to the GitHub or Linear issue and link the
+implementation PR back to it. The intake step stops at the work contract; it does
+not dispatch the developer bot or implement the fix.
+
+---
+
 ## Architecture
 
 ### iOS: MVVM with `@Observable`
@@ -438,4 +462,3 @@ Adopt a 5-tab structure that groups features thematically and positions the pers
 ### Why not destructive migration
 
 The previous fallback — delete the SQLite files on schema incompatibility — silently destroyed all locally cached Hansard data, votes, and expenditures on every schema update. For a civic app users rely on during active political moments, losing the local cache is a bad experience. Proper migrations preserve data across updates.
-

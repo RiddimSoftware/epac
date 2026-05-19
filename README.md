@@ -111,6 +111,16 @@ The iOS app is the main product surface; the backend services and scripts exist 
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING](CONTRIBUTING.md), then read the [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
 
+Bug fixes can be prepared with the repo-local intake harness:
+
+```bash
+python3 scripts/intake/bugfix_spec.py new
+```
+
+This creates a validated `SPEC.md` that captures the observed behavior, expected
+behavior, evidence plan, and reporter validation path before implementation
+starts. See [docs/factory/bugfix-intake.md](docs/factory/bugfix-intake.md).
+
 PRs may receive an automated first-pass review; humans review and merge.
 
 ## License

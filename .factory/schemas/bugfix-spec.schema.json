@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://riddimsoftwarefactory.com/schemas/bugfix-spec.schema.json",
+  "title": "Bugfix SPEC",
+  "description": "Structured contract for turning an epac bug report into a factory-ready work item.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "traceId",
+    "reporter",
+    "source",
+    "targetRepo",
+    "affectedSurface",
+    "observedBehavior",
+    "expectedBehavior",
+    "reproductionSteps",
+    "acceptanceCriteria",
+    "evidencePlan",
+    "validationPlan",
+    "nonGoals",
+    "provenance"
+  ],
+  "properties": {
+    "title": { "type": "string", "minLength": 8 },
+    "traceId": { "type": "string", "pattern": "^BUGFIX-[0-9]{8}-[0-9]{6}-[a-f0-9]{8}$" },
+    "reporter": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "targetRepo": { "const": "RiddimSoftware/epac" },
+    "affectedSurface": { "type": "string", "minLength": 1 },
+    "observedBehavior": { "type": "string", "minLength": 20 },
+    "expectedBehavior": { "type": "string", "minLength": 20 },
+    "reproductionSteps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 3 }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "string", "pattern": "^Given .+ When .+ Then .+$" }
+    },
+    "evidencePlan": { "type": "string", "minLength": 20 },
+    "validationPlan": { "type": "string", "minLength": 20 },
+    "nonGoals": { "type": "string", "minLength": 10 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intakeKind", "traceId", "reporter", "source", "createdAt", "targetRepo"],
+      "properties": {
+        "intakeKind": { "const": "bugfix" },
+        "traceId": { "type": "string" },
+        "reporter": { "type": "string" },
+        "source": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "targetRepo": { "const": "RiddimSoftware/epac" }
+      }
+    }
+  }
+}
+
