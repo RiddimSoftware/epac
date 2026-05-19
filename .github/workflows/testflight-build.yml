@@ -34,7 +34,7 @@ env:
 jobs:
   build-upload:
     name: Archive and upload to TestFlight
-    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]') }}
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,27 +58,18 @@ jobs:
           fetch-depth: 1
 
       - name: Select Xcode
-        if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
+        if: ${{ !inputs.dry_run }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
       - name: Set up Ruby and Bundler
-        if: ${{ !inputs.dry_run && !contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
+        if: ${{ !inputs.dry_run }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
           bundler-cache: true
           working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
-
-      - name: Install Ruby bundle
-        if: ${{ !inputs.dry_run && contains(fromJSON(vars.RUNNER_LABELS_MAC || '["macos-15"]'), 'self-hosted') }}
-        working-directory: ${{ vars.IOS_WORKDIR || 'ios' }}
-        run: |
-          export BUNDLE_VERSION=system
-          echo "BUNDLE_VERSION=system" >> "$GITHUB_ENV"
-          bundle config set path vendor/bundle
-          bundle install --jobs 4 --retry 3
 
       - name: Clear runner AWS profile selectors
         if: ${{ !inputs.dry_run }}
