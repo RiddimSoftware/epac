@@ -88,6 +88,53 @@ class TestBumpVersion(unittest.TestCase):
             "2.0",
         )
 
+    def test_choose_existing_train_reuses_review_ready_and_export_compliance_states(self):
+        reusable_states = [
+            "READY_FOR_REVIEW",
+            "WAITING_FOR_REVIEW",
+            "WAITING_FOR_EXPORT_COMPLIANCE",
+            "DEVELOPER_REJECTED",
+            "REJECTED",
+            "METADATA_REJECTED",
+            "INVALID_BINARY",
+        ]
+
+        for state in reusable_states:
+            with self.subTest(state=state):
+                versions = [
+                    self.__class__.cnv.AppStoreVersion("1.10", state),
+                ]
+                self.assertEqual(
+                    self.__class__.cnv.choose_existing_train(versions, "1.9"),
+                    "1.10",
+                )
+
+    def test_choose_existing_train_blocks_committed_and_unknown_states(self):
+        blocking_states = [
+            "IN_REVIEW",
+            "ACCEPTED",
+            "PENDING_DEVELOPER_RELEASE",
+            "PENDING_APPLE_RELEASE",
+            "PROCESSING_FOR_APP_STORE",
+            "READY_FOR_SALE",
+            "PREORDER_READY_FOR_SALE",
+            "PENDING_CONTRACT",
+            "DEVELOPER_REMOVED_FROM_SALE",
+            "REMOVED_FROM_SALE",
+            "REPLACED_WITH_NEW_VERSION",
+            "NOT_APPLICABLE",
+            "SOME_FUTURE_APPLE_STATE",
+        ]
+
+        for state in blocking_states:
+            with self.subTest(state=state):
+                versions = [
+                    self.__class__.cnv.AppStoreVersion("1.10", state),
+                ]
+                self.assertIsNone(
+                    self.__class__.cnv.choose_existing_train(versions, "1.9"),
+                )
+
     def test_choose_existing_train_ignores_live_and_lower_versions(self):
         versions = [
             self.__class__.cnv.AppStoreVersion("1.8", "PREPARE_FOR_SUBMISSION"),
