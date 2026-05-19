@@ -163,6 +163,7 @@ jobs:
             skip_binary_upload:true \
             skip_screenshots:true \
             skip_metadata:true \
+            app_previews_path:"" \
             submit_for_review:true \
             run_precheck_before_submit:false \
             precheck_include_in_app_purchases:false \
