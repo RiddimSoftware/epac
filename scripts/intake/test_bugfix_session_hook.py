@@ -100,6 +100,37 @@ class BugfixSessionHookTests(unittest.TestCase):
             events = self.read_events(root, "sess-start")
             self.assertEqual(events[0]["hookEvent"], "session-start")
 
+    def test_first_user_prompt_prints_bug_report_context_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            first = self.run_hook(
+                root,
+                "user-prompt-submit",
+                {
+                    "session_id": "sess-first-prompt",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                    "prompt": "start",
+                },
+            )
+            second = self.run_hook(
+                root,
+                "user-prompt-submit",
+                {
+                    "session_id": "sess-first-prompt",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                    "prompt": "the affected screen is Settings",
+                },
+            )
+
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertIn("Bug report mode is the default", first.stdout)
+            self.assertIn("Do not implement code during intake", first.stdout)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertEqual(second.stdout, "")
+
     def test_stop_writes_spec_valid_summary_when_receipt_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

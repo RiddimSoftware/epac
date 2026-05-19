@@ -7,6 +7,13 @@ python3 scripts/intake/bugfix_spec.py new
 python3 scripts/intake/bugfix_spec.py validate .factory/intake/<generated>/SPEC.md
 ```
 
+For the demo path that should open with a visible first assistant turn, launch
+Claude with the intake prompt already submitted:
+
+```bash
+scripts/intake/start_bugfix_intake.sh
+```
+
 Hooks are an optional trusted capture layer for local LLM sessions. They record
 coarse intake-session provenance so an abandoned bugfix conversation still
 leaves a follow-up signal.
@@ -43,10 +50,13 @@ The hook supports these subcommands:
 - `post-tool-use`
 - `stop`
 
-`session-start` prints a bug report intake menu. Bug report mode is the default
-for demo sessions, but the user can choose option 2 to exit into normal
-development mode. Set `EPAC_BUG_INTAKE_SESSION_START=0` to keep capture hooks
-enabled while suppressing the start-of-session menu.
+`session-start` records the session and sends bug-report intake context to
+Claude. Claude Code does not render `SessionStart` output as a visible assistant
+turn before the first user prompt; it is hidden context for the first model
+request. The `user-prompt-submit` hook repeats that context on the first prompt
+so typing `start` in a plain `claude` session enters bug-report mode. Set
+`EPAC_BUG_INTAKE_SESSION_START=0` to keep capture hooks enabled while
+suppressing the bug-report nudge.
 
 On `stop`, the hook writes:
 

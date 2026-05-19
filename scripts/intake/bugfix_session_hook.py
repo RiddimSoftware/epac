@@ -284,11 +284,23 @@ Then report the SPEC.md path, trace ID, summary, evidence plan, and whether it i
 """
 
 
+def should_emit_first_prompt_context(event: dict) -> bool:
+    if event.get("hookEvent") != "user-prompt-submit":
+        return False
+    if os.environ.get("EPAC_BUG_INTAKE_SESSION_START") == "0":
+        return False
+    events = load_events(str(event["session_id"]))
+    prompt_events = [item for item in events if item.get("hookEvent") == "user-prompt-submit"]
+    return len(prompt_events) == 1
+
+
 def run(args: argparse.Namespace) -> int:
     payload = load_payload()
     event = build_event(args.hook_event, payload)
     append_event(event)
     if args.hook_event == "session-start" and os.environ.get("EPAC_BUG_INTAKE_SESSION_START") != "0":
+        sys.stdout.write(session_start_message())
+    if should_emit_first_prompt_context(event):
         sys.stdout.write(session_start_message())
     if args.hook_event == "stop":
         write_summary(event)
