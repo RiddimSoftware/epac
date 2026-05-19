@@ -158,11 +158,12 @@ jobs:
         env:
           NEW_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: |
           bundle exec fastlane deploy \
             scheme:${{ vars.SCHEME }} \
             bundle_id:${{ vars.BUNDLE_ID }} \
-            team_id:${{ vars.TEAM_ID }} \
+            team_id:${{ vars.APPLE_TEAM_ID }} \
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
             extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
 

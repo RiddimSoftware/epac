@@ -269,7 +269,7 @@ jobs:
           bundle exec fastlane run deliver \
             api_key_path:/tmp/asc_api_key.json \
             app_identifier:${{ vars.BUNDLE_ID }} \
-            team_id:${{ vars.TEAM_ID }} \
+            team_id:${{ vars.APPLE_TEAM_ID }} \
             app_version:"${{ needs.find-build.outputs.version }}" \
             skip_binary_upload:true \
             skip_screenshots:true \
