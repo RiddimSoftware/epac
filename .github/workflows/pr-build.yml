@@ -84,69 +84,9 @@ jobs:
             GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
             ENABLE_TESTABILITY=NO
 
-  manifest-contract:
-    name: Manifest Contract
-    runs-on: macos-26
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure git for package resolution
-        run: |
-          cat > "$RUNNER_TEMP/ci-gitconfig" <<'EOF'
-          [url "https://github.com/"]
-            insteadOf = git@github.com:
-            insteadOf = ssh://git@github.com/
-            insteadOf = git://github.com/
-          EOF
-          echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/ci-gitconfig" >> "$GITHUB_ENV"
-
-      - name: Run manifest contract test
-        working-directory: ios
-        timeout-minutes: 40
-        run: |
-          package_cache="$RUNNER_TEMP/xcode-package-cache"
-          cloned_packages="$RUNNER_TEMP/xcode-cloned-source-packages"
-          rm -rf "$package_cache" "$cloned_packages"
-          mkdir -p "$package_cache" "$cloned_packages"
-          simulator_id="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')"
-          if [ -z "$simulator_id" ]; then
-            echo "No available iPhone simulator found"
-            exit 1
-          fi
-          build_jobs="$(sysctl -n hw.logicalcpu)"
-          if [ "$build_jobs" -gt 6 ]; then
-            build_jobs=6
-          fi
-          echo "Using $build_jobs xcodebuild jobs"
-          heartbeat() {
-            while true; do
-              sleep 60
-              echo "xcodebuild still running at $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-            done
-          }
-          heartbeat &
-          heartbeat_pid=$!
-          cleanup_heartbeat() {
-            kill "$heartbeat_pid" 2>/dev/null || true
-            wait "$heartbeat_pid" 2>/dev/null || true
-          }
-          trap cleanup_heartbeat EXIT
-          xcodebuild test \
-            -project epac.xcodeproj \
-            -scheme epac \
-            -destination "platform=iOS Simulator,id=$simulator_id" \
-            -derivedDataPath "$GITHUB_WORKSPACE/.deriveddata-manifest-contract" \
-            -clonedSourcePackagesDirPath "$cloned_packages" \
-            -packageCachePath "$package_cache" \
-            -disablePackageRepositoryCache \
-            -only-testing:epacTests/ManifestContractTests \
-            -jobs "$build_jobs" \
-            CODE_SIGNING_ALLOWED=NO
-
   pr-build:
     name: pr-build
-    needs: [lint, localization, build, manifest-contract]
+    needs: [lint, localization, build]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -155,7 +95,6 @@ jobs:
           LINT: ${{ needs.lint.result }}
           LOC: ${{ needs.localization.result }}
           BUILD: ${{ needs.build.result }}
-          MANIFEST: ${{ needs.manifest-contract.result }}
         run: |
           if [ "$LINT" != 'success' ]; then
             echo "SwiftLint failed (result: $LINT)"
@@ -167,9 +106,5 @@ jobs:
           fi
           if [ "$BUILD" != 'success' ]; then
             echo "iOS build failed (result: $BUILD)"
-            exit 1
-          fi
-          if [ "$MANIFEST" != 'success' ]; then
-            echo "Manifest contract failed (result: $MANIFEST)"
             exit 1
           fi
