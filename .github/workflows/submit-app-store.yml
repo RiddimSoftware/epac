@@ -35,7 +35,7 @@ jobs:
       tag: ${{ steps.resolve-tag.outputs.tag }}
       version: ${{ steps.resolve-tag.outputs.version }}
       source_sha: ${{ steps.resolve-source.outputs.source_sha }}
-      build_tag: ${{ steps.resolve-build-tag.outputs.build_tag }}
+      build_tag: ${{ steps.find.outputs.build_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,7 +63,7 @@ jobs:
           source_sha="$(git rev-list -n 1 "$TAG")"
           echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve TestFlight build tag
+      - name: Resolve TestFlight build tag candidates
         id: resolve-build-tag
         shell: bash
         env:
@@ -82,10 +82,12 @@ jobs:
             exit 1
           fi
 
-          build_tag="${build_tags[-1]}"
-          build_number="${build_tag#testflight/build-}"
-          echo "build_tag=$build_tag" >> "$GITHUB_OUTPUT"
-          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
+          {
+            printf 'build_numbers='
+            printf '%s\n' "${build_tags[@]}" \
+              | sed -E 's#^testflight/build-##' \
+              | paste -sd, -
+          } >> "$GITHUB_OUTPUT"
 
       - name: Write App Store Connect credentials
         shell: bash
@@ -132,7 +134,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ steps.resolve-tag.outputs.version }}
-          BUILD_NUMBER: ${{ steps.resolve-build-tag.outputs.build_number }}
+          BUILD_NUMBERS: ${{ steps.resolve-build-tag.outputs.build_numbers }}
         run: |
           set +e
           .venv-release/bin/python scripts/release/find_qualifying_build.py \
@@ -142,7 +144,7 @@ jobs:
             --app-id "${{ vars.APPLE_APP_ID }}" \
             --latest \
             --version "$VERSION" \
-            --override "$BUILD_NUMBER" \
+            --candidates "$BUILD_NUMBERS" \
             --output-format github-output 2> /tmp/find-build.err
           status=$?
           set -e
@@ -152,6 +154,8 @@ jobs:
             cat /tmp/find-build.err
             exit "$status"
           fi
+
+          echo "build_tag=testflight/build-$(grep '^build_number=' "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
   approve-release:
     name: Approve App Store submission
