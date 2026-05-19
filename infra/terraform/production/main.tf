@@ -1,5 +1,5 @@
 locals {
-  manifest = jsondecode(file("${path.module}/../../backend/manifest/deployment-services.json"))
+  manifest = jsondecode(file("${path.module}/../../../backend/manifest/deployment-services.json"))
 
   services = [
     for svc in local.manifest.services : svc.name
@@ -33,7 +33,7 @@ locals {
   # an older API. Use a distinct Sid prefix for this API to avoid
   # AddPermission conflicts when Terraform creates the production invoke permissions.
   api_permission_statement_ids = {
-    for service in local.http_services :
+    for service in keys(local.http_services) :
     service => "apigw-epac-api-${service}"
   }
 }

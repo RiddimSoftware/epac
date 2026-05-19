@@ -1,5 +1,5 @@
 locals {
-  manifest = jsondecode(file("${path.module}/../../backend/manifest/deployment-services.json"))
+  manifest = jsondecode(file("${path.module}/../../../backend/manifest/deployment-services.json"))
 
   services = [
     for svc in local.manifest.services : svc.name
