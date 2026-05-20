@@ -9,4 +9,3 @@ python3 scripts/context/context_map.py build --out .factory/context/repo-map.jso
 The map is reproducible from tracked repository files and should be regenerated
 when the codebase changes. Do not hand-edit generated map output; update
 `scripts/context/context_map.py` or the source files it scans instead.
-

@@ -34,4 +34,3 @@ python3 scripts/context/context_map.py search \
 Use the top matches to decide which files to inspect manually. The search output
 should point the session toward likely views, services, tests, docs, or workflow
 files; it should not be pasted wholesale into the bugfix prompt.
-
