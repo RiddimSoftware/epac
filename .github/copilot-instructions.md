@@ -12,4 +12,3 @@ python3 scripts/intake/bugfix_spec.py validate .factory/intake/<generated>/SPEC.
 Use `.factory/prompts/bugfix-intake.md` to guide the intake session. The SPEC must capture observed behavior, expected behavior, reproduction steps, acceptance criteria, evidence plan, validation plan, non-goals, and provenance metadata.
 
 After the SPEC validates, link it from the GitHub or Linear issue and from the implementation PR.
-

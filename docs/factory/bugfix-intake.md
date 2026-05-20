@@ -72,4 +72,3 @@ Bugfix intake stops at a validated SPEC. It does not:
 - dispatch the developer bot
 
 Those steps belong to the downstream factory.
-

@@ -73,4 +73,3 @@ When the SPEC validates, stop intake and report:
 - one-sentence summary
 - evidence plan
 - whether the bug is ready to become a GitHub or Linear issue
-

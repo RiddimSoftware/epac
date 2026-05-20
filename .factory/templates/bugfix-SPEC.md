@@ -57,4 +57,3 @@ Minimum artifact requirements:
 - Attach this SPEC to the GitHub or Linear issue.
 - Link the implementation PR back to this SPEC.
 - Generate evidence before release promotion.
-
