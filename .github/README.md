@@ -1,10 +1,20 @@
-# GitHub Actions configuration
+# GitHub Configuration
 
-## Artifact manifest refresh
+This directory contains GitHub Actions, issue templates, pull request templates,
+and GitHub-specific contributor guidance for
+[RiddimSoftware/epac](https://github.com/RiddimSoftware/epac).
 
-The `Refresh Artifact Manifest` workflow (`.github/workflows/publish-artifacts.yml`) requires these repository-level Actions variables:
+For the project overview, App Store link, and local development commands, read
+the repository [README](../README.md).
 
-- `ARTIFACTS_BUCKET`: S3 bucket name that stores published artifact files and `manifest.json`.
-- `ARTIFACTS_DISTRIBUTION_ID`: CloudFront distribution ID for the artifact edge cache. The workflow invalidates `/manifest.json` after each refresh.
+## Artifact Manifest Refresh
 
-The workflow also expects `AWS_ARTIFACTS_PUBLISHER_ROLE_ARN` as a repository or organization Actions secret. GitHub Actions assumes this role through OIDC before regenerating `manifest.json` from the existing S3 objects and invalidating CloudFront.
+The `Refresh Artifact Manifest` workflow
+(`.github/workflows/publish-artifacts.yml`) expects:
+
+- `ARTIFACTS_BUCKET` repository variable.
+- `ARTIFACTS_DISTRIBUTION_ID` repository variable.
+- `AWS_ARTIFACTS_PUBLISHER_ROLE_ARN` repository or organization secret.
+
+GitHub Actions assumes that role through OIDC, regenerates `manifest.json` from
+existing S3 objects, and invalidates `/manifest.json` in CloudFront.

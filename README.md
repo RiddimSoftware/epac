@@ -1,52 +1,76 @@
 # epac
 
-epac is built through agent-assisted specs.
+`epac` is an iPhone app for following Canada's House of Commons from official
+public records: Hansard debates, MPs, bills, votes, expenses, lobbying activity,
+and related civic data.
 
-The canonical way to contribute is not to set up the app locally, pick a programming language, or send a feature patch. Clone the repo, open it in your coding agent, and use the repository context to turn an idea into a `SPEC.md`.
+It started as a simple idea: make Hansard feel like a group chat. Instead of
+reading parliamentary debate as long transcript pages, epac presents speeches as
+a phone-native conversation that is easier to scan while staying grounded in the
+source record.
 
-The spec is the contribution. The [Riddim Software](https://riddimsoftware.com/) Factory takes over from there: it reviews accepted specs, turns them into implementation work, produces something testable, iterates when needed, and can ship the result to TestFlight and the App Store.
+- App Store: [epac on the App Store](https://apps.apple.com/ca/app/epac/id1224459142)
+- Website: [epac.riddimsoftware.com](https://epac.riddimsoftware.com/)
 
-## How It Works
+## What This Repo Contains
 
-1. Clone this repository.
-2. Open the repo in your preferred coding agent.
-3. Discuss the feature, bug, or release improvement with the agent.
-4. Let the agent read the repo context and shape the proposal.
-5. Open a spec-only pull request that adds:
+This is a small public app with a disproportionately large codebase because it
+owns most of its data path:
+
+- `ios/` — SwiftUI iPhone app, app clip, widgets, Watch surfaces, UI tests, and
+  release assets.
+- `backend/` — Go services and workers for parliamentary data APIs, ingestion,
+  search, and publishing.
+- `scripts/` — data, localization, release, and agent-intake utilities.
+- `website/` — public website, support pages, and topic/riding pages.
+- `docs/` — architecture notes, product specs, evidence, design, release, and
+  operational documentation.
+
+The product is non-partisan. App-visible claims should trace back to official
+government, parliamentary, or open-data sources.
+
+## Local Development
+
+Open the iOS app in Xcode:
+
+```sh
+open ios/epac.xcodeproj
+```
+
+Build from the command line:
+
+```sh
+cd ios
+make build
+```
+
+Run backend checks for a service:
+
+```sh
+cd backend/member-speeches
+go test ./...
+```
+
+Some backend services expect local AWS, data, or staging configuration. The iOS
+app is the main product surface; backend tools exist to ingest, normalize, and
+publish the public records it uses.
+
+## Contributing
+
+The preferred public contribution path is a spec, not a drive-by patch. Clone
+the repo, open it in your coding agent, and turn the idea or bug report into:
 
 ```text
 proposals/<short-slug>/SPEC.md
 ```
 
-The PR should not include product-code changes unless a maintainer explicitly asks for them. Local edits are fine as scratch work while your agent explores the idea, but they are evidence for the spec, not the artifact we review.
+A useful spec explains the problem, the source data involved, expected product
+behavior, validation evidence, and open questions. Maintainers can then route
+accepted specs into the Riddim Software Factory for implementation, review,
+evidence generation, and release.
 
-## What Goes In The Spec
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the current contribution rules.
 
-A useful `SPEC.md` is a short design document. It should explain:
+## License
 
-- the problem
-- the goals and non-goals
-- the user jobs or use cases
-- the official government or open-data sources involved
-- how app-visible claims trace back to those sources
-- the proposed product behavior
-- privacy, safety, and civic-neutrality risks
-- validation evidence from the discussion or local exploration
-- open questions and alternatives considered
-- whether the work looks like one issue, a project, or an initiative
-
-The most important epac rule: product behavior must be grounded in authoritative public sources. If the data source is unclear, write a source-discovery spec instead of a feature spec.
-
-## What Happens Next
-
-Maintainers review the spec PR. If the spec needs more detail, the reviewer asks for changes and you can continue the discussion with your coding agent. If the spec is accepted, it can be routed into the Riddim Software Factory.
-
-The factory does a strong job of implementation, but software still needs feedback. Some specs produce a testable result on the first pass. Some need an iteration after testing. The contribution loop is designed for that: spec, implement, test, refine, release.
-
-Future intake service work may add a tracker that follows an accepted spec into Linear, implementation, PR review, TestFlight, and App Store release. For now, the spec PR is the source of truth.
-
-## Repo Context
-
-This repo contains the source, data tooling, release scripts, and agent-readable project context that a coding agent needs to reason about epac. You do not need to run the app locally to contribute a spec.
-
-For the current contribution rules, read [CONTRIBUTING.md](CONTRIBUTING.md).
+MIT. See [LICENSE](LICENSE).
