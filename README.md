@@ -1,118 +1,52 @@
 # epac
 
-**Canada's Parliament, in your pocket — an iPhone app for tracking MPs, bills, votes, debates, expenses, and lobbying activity from official Canadian government sources.**
+epac is built through agent-assisted specs.
 
-<p align="center">
-  <a href="https://epac.riddimsoftware.com/">
-    <img src="website/ss-1-light.png" alt="epac iPhone screenshot showing the app's parliamentary tracking interface" width="320">
-  </a>
-</p>
+The canonical way to contribute is not to set up the app locally, pick a programming language, or send a feature patch. Clone the repo, open it in your coding agent, and use the repository context to turn an idea into a `SPEC.md`.
 
-<p align="center">
-  <a href="https://apps.apple.com/ca/app/epac/id1224459142">
-    <img src="website/app-store.svg" alt="Download on the App Store" height="52">
-  </a>
-</p>
+The spec is the contribution. The [Riddim Software](https://riddimsoftware.com/) Factory takes over from there: it reviews accepted specs, turns them into implementation work, produces something testable, iterates when needed, and can ship the result to TestFlight and the App Store.
 
-<p align="center">
-  <a href="https://epac.riddimsoftware.com/">Homepage</a>
-  ·
-  <a href="https://apps.apple.com/ca/app/epac/id1224459142">App Store</a>
-</p>
+## How It Works
 
-## What it does and why
+1. Clone this repository.
+2. Open the repo in your preferred coding agent.
+3. Discuss the feature, bug, or release improvement with the agent.
+4. Let the agent read the repo context and shape the proposal.
+5. Open a spec-only pull request that adds:
 
-`epac` turns the House of Commons record into something more readable than a feed of PDFs, XML, and committee pages. The app lets Canadians follow what MPs actually do between elections: how they vote, what bills they sponsor, what gets said in debate, and which topics are active in Parliament.
-
-One of its core ideas is **Hansard as chat**. Instead of treating parliamentary debate as a wall of transcript text, epac presents speeches in a conversational format that is faster to scan on a phone while still staying grounded in the official record. The goal is not commentary or partisanship; it is a civic tool that makes primary-source parliamentary data easier to browse, search, and verify.
-
-## Architecture
-
-This repository is intentionally polyglot because each part of the product does a different job:
-
-- **SwiftUI + SwiftData (`ios/`)** — the iPhone app, widgets, app clip, local persistence, and product UI.
-- **Go services (`backend/`)** — API endpoints, ingestion workers, and backend jobs that fetch, normalize, and serve parliamentary data.
-- **Python tools (`backend/` and `scripts/`)** — focused ingestion utilities, release helpers, localization checks, and marketing tooling.
-- **HTML/CSS/JS (`website/`)** — the public website, landing pages, topic pages, and App Store support web surfaces.
-- **Data snapshots (`data/` and bundled app assets)** — source-derived files that help feed the app experience.
-
-Together, those layers support the same product loop: gather authoritative public data, structure it, and deliver it in a mobile experience that makes Parliament easier to follow.
-
-## Build and run
-
-### iOS app
-
-Requirements:
-
-- Xcode with iOS 17+ simulator support
-- macOS
-
-Open the project in Xcode:
-
-```bash
-open ios/epac.xcodeproj
+```text
+proposals/<short-slug>/SPEC.md
 ```
 
-Then select the `epac` scheme and run it in the simulator.
+The PR should not include product-code changes unless a maintainer explicitly asks for them. Local edits are fine as scratch work while your agent explores the idea, but they are evidence for the spec, not the artifact we review.
 
-Alternatively, build from the command line using the provided `ios/Makefile`. This path is recommended for first-time contributors as it automatically finds an available simulator.
+## What Goes In The Spec
 
-First, install [xcbeautify](https://github.com/cpisciotta/xcbeautify):
+A useful `SPEC.md` is a short design document. It should explain:
 
-```bash
-brew install xcbeautify
-```
+- the problem
+- the goals and non-goals
+- the user jobs or use cases
+- the official government or open-data sources involved
+- how app-visible claims trace back to those sources
+- the proposed product behavior
+- privacy, safety, and civic-neutrality risks
+- validation evidence from the discussion or local exploration
+- open questions and alternatives considered
+- whether the work looks like one issue, a project, or an initiative
 
-Then build and run:
+The most important epac rule: product behavior must be grounded in authoritative public sources. If the data source is unclear, write a source-discovery spec instead of a feature spec.
 
-```bash
-cd ios
-make build      # Build the app
-make simulator  # Build and deploy to an available simulator
-```
+## What Happens Next
 
-`make simulator` automatically targets an available iPhone simulator. To target a specific one, you can override `SIM_NAME`:
+Maintainers review the spec PR. If the spec needs more detail, the reviewer asks for changes and you can continue the discussion with your coding agent. If the spec is accepted, it can be routed into the Riddim Software Factory.
 
-```bash
-cd ios && make simulator SIM_NAME='iPhone 16'
-```
+The factory does a strong job of implementation, but software still needs feedback. Some specs produce a testable result on the first pass. Some need an iteration after testing. The contribution loop is designed for that: spec, implement, test, refine, release.
 
-If you prefer to use `xcodebuild` directly, you can list available simulators with `xcrun simctl list devices available` and then specify one:
+Future intake service work may add a tracker that follows an accepted spec into Linear, implementation, PR review, TestFlight, and App Store release. For now, the spec PR is the source of truth.
 
-```bash
-cd ios
-xcodebuild -project epac.xcodeproj -scheme epac -destination 'platform=iOS Simulator,name=YOUR_SIMULATOR_NAME' build
-```
+## Repo Context
 
-### Backend and tooling prerequisites
+This repo contains the source, data tooling, release scripts, and agent-readable project context that a coding agent needs to reason about epac. You do not need to run the app locally to contribute a spec.
 
-Requirements:
-
-- Go 1.24+
-- Python 3
-
-Install the repo's Python dev dependency:
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-Useful local checks:
-
-```bash
-cd backend/search && go test ./...
-cd backend/hansard-backfill && go test ./...
-python3 backend/cabinet/cabinet_ingest.py --dry-run
-```
-
-The iOS app is the main product surface; the backend services and scripts exist to ingest, shape, and publish the public parliamentary data that the app depends on.
-
-## Contribute
-
-Issues and pull requests are welcome. Start with [CONTRIBUTING](CONTRIBUTING.md), then read the [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
-
-PRs may receive an automated first-pass review; humans review and merge.
-
-## License
-
-Distributed under the [MIT License](LICENSE).
+For the current contribution rules, read [CONTRIBUTING.md](CONTRIBUTING.md).
