@@ -100,7 +100,7 @@ class BugfixSessionHookTests(unittest.TestCase):
             events = self.read_events(root, "sess-start")
             self.assertEqual(events[0]["hookEvent"], "session-start")
 
-    def test_first_user_prompt_prints_bug_report_context_once(self) -> None:
+    def test_first_bugfix_prompt_prints_bug_report_context_once(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
 
@@ -111,7 +111,7 @@ class BugfixSessionHookTests(unittest.TestCase):
                     "session_id": "sess-first-prompt",
                     "cwd": str(root),
                     "transcript_path": "/tmp/claude-session.jsonl",
-                    "prompt": "start",
+                    "prompt": "bugfix",
                 },
             )
             second = self.run_hook(
@@ -130,6 +130,24 @@ class BugfixSessionHookTests(unittest.TestCase):
             self.assertIn("Do not implement code during intake", first.stdout)
             self.assertEqual(second.returncode, 0, second.stderr)
             self.assertEqual(second.stdout, "")
+
+    def test_first_non_bugfix_prompt_does_not_print_bug_report_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            first = self.run_hook(
+                root,
+                "user-prompt-submit",
+                {
+                    "session_id": "sess-normal-prompt",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                    "prompt": "awefawe",
+                },
+            )
+
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(first.stdout, "")
 
     def test_stop_writes_spec_valid_summary_when_receipt_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

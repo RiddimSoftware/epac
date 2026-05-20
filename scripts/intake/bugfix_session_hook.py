@@ -284,10 +284,17 @@ Then report the SPEC.md path, trace ID, summary, evidence plan, and whether it i
 """
 
 
+def prompt_requests_bugfix_mode(event: dict) -> bool:
+    prompt = str(event.get("promptSummary", "")).strip().lower()
+    return prompt in {"bugfix", "/bugfix"}
+
+
 def should_emit_first_prompt_context(event: dict) -> bool:
     if event.get("hookEvent") != "user-prompt-submit":
         return False
     if os.environ.get("EPAC_BUG_INTAKE_SESSION_START") == "0":
+        return False
+    if not prompt_requests_bugfix_mode(event):
         return False
     events = load_events(str(event["session_id"]))
     prompt_events = [item for item in events if item.get("hookEvent") == "user-prompt-submit"]
