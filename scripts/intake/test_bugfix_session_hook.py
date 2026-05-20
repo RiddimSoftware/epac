@@ -78,7 +78,7 @@ class BugfixSessionHookTests(unittest.TestCase):
             self.assertIn("command", events[1]["toolInputSummary"])
             self.assertIn("output", events[1]["toolResponseSummary"])
 
-    def test_session_start_prints_default_bug_report_menu(self) -> None:
+    def test_session_start_records_event_without_bug_report_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
 
@@ -93,12 +93,38 @@ class BugfixSessionHookTests(unittest.TestCase):
             )
 
             self.assertEqual(start.returncode, 0, start.stderr)
-            self.assertIn("Bug report mode is the default", start.stdout)
-            self.assertIn("1. File a bug report", start.stdout)
-            self.assertIn("2. Exit bug-report mode", start.stdout)
-            self.assertIn("python3 scripts/intake/bugfix_spec.py new", start.stdout)
+            self.assertEqual(start.stdout, "")
             events = self.read_events(root, "sess-start")
             self.assertEqual(events[0]["hookEvent"], "session-start")
+
+    def test_session_start_then_non_bugfix_prompt_does_not_print_bug_report_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            start = self.run_hook(
+                root,
+                "session-start",
+                {
+                    "session_id": "sess-start-normal",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                },
+            )
+            first = self.run_hook(
+                root,
+                "user-prompt-submit",
+                {
+                    "session_id": "sess-start-normal",
+                    "cwd": str(root),
+                    "transcript_path": "/tmp/claude-session.jsonl",
+                    "prompt": "awefawef",
+                },
+            )
+
+            self.assertEqual(start.returncode, 0, start.stderr)
+            self.assertEqual(start.stdout, "")
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(first.stdout, "")
 
     def test_first_bugfix_prompt_prints_bug_report_context_once(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

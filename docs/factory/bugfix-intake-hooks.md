@@ -50,13 +50,12 @@ The hook supports these subcommands:
 - `post-tool-use`
 - `stop`
 
-`session-start` records the session and sends bug-report intake context to
-Claude. Claude Code does not render `SessionStart` output as a visible assistant
-turn before the first user prompt; it is hidden context for the first model
-request. The `user-prompt-submit` hook enters bug-report intake only when the
-first prompt is exactly `bugfix` or `/bugfix`. A plain `claude` session, or a
-session started with any other prompt, remains normal development mode. Set
-`EPAC_BUG_INTAKE_SESSION_START=0` to keep capture hooks enabled while
+`session-start` records the session only. It does not emit bug-report context,
+because Claude Code treats `SessionStart` stdout as hidden context for the
+first model request. The `user-prompt-submit` hook enters bug-report intake only
+when the first prompt is exactly `bugfix` or `/bugfix`. A plain `claude`
+session, or a session started with any other prompt, remains normal development
+mode. Set `EPAC_BUG_INTAKE_SESSION_START=0` to keep capture hooks enabled while
 suppressing the bug-report trigger.
 
 On `stop`, the hook writes:
