@@ -16,6 +16,17 @@ For a bug report, open an issue with:
 - reproducible steps (if applicable)
 - logs or screenshots when helpful
 
+For bug fixes that should be ready for an LLM or autonomous developer session,
+create a bugfix SPEC first:
+
+```bash
+python3 scripts/intake/bugfix_spec.py new
+python3 scripts/intake/bugfix_spec.py validate .factory/intake/<generated>/SPEC.md
+```
+
+The guide lives at [`docs/factory/bugfix-intake.md`](docs/factory/bugfix-intake.md).
+Attach the validated `SPEC.md` contents or rendered issue body to the issue.
+
 If this is a question or clarification request, reach out via email at [sunny@riddimsoftware.com](mailto:sunny@riddimsoftware.com).
 
 ## How to propose a feature

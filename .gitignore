@@ -2,6 +2,8 @@
 .specify/
 .DS_Store
 .codex/
+.factory/intake/
+.factory/context/repo-map.json
 gpt2_*/
 /model*/
 .env/
