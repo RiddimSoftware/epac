@@ -48,20 +48,31 @@ def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     return jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
 
 
+_RELEASED_STATES = {"READY_FOR_SALE", "PENDING_DEVELOPER_RELEASE", "APPROVED"}
+
+
 def get_live_version(app_id: str, token: str) -> str | None:
-    """Return the current READY_FOR_SALE marketing version, or None if no live version."""
+    """Return the highest version in a released state, or None if none exists.
+
+    Treats READY_FOR_SALE, PENDING_DEVELOPER_RELEASE, and APPROVED as
+    "released enough" to bump from — so builds don't land in the current
+    train when it is awaiting developer or phased release.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     url = f"https://api.appstoreconnect.apple.com/v1/apps/{app_id}/appStoreVersions"
     params = {
         "filter[platform]": "IOS",
-        "filter[appStoreState]": "READY_FOR_SALE",
-        "fields[appStoreVersions]": "versionString",
-        "limit": 1,
+        "fields[appStoreVersions]": "versionString,appStoreState",
+        "limit": 200,
     }
     resp = requests.get(url, headers=headers, params=params, timeout=30)
     resp.raise_for_status()
-    data = resp.json().get("data", [])
-    return data[0]["attributes"]["versionString"] if data else None
+    candidates = [
+        item["attributes"]["versionString"]
+        for item in resp.json().get("data", [])
+        if item.get("attributes", {}).get("appStoreState") in _RELEASED_STATES
+    ]
+    return max(candidates, key=version_key) if candidates else None
 
 
 def get_app_store_versions(app_id: str, token: str) -> list[AppStoreVersion]:
@@ -112,7 +123,7 @@ def choose_existing_train(versions: list[AppStoreVersion], current: str) -> str 
     candidates = [
         app_version.version
         for app_version in versions
-        if app_version.state != "READY_FOR_SALE"
+        if app_version.state not in _RELEASED_STATES
         and is_greater_version(app_version.version, current)
     ]
     if not candidates:

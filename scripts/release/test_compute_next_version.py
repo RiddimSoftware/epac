@@ -95,6 +95,19 @@ class TestBumpVersion(unittest.TestCase):
         ]
         self.assertIsNone(self.__class__.cnv.choose_existing_train(versions, "1.9"))
 
+    def test_choose_existing_train_ignores_pending_developer_release(self):
+        # 1.11 is awaiting developer release — should not be reused as a train
+        versions = [
+            self.__class__.cnv.AppStoreVersion("1.11", "PENDING_DEVELOPER_RELEASE"),
+        ]
+        self.assertIsNone(self.__class__.cnv.choose_existing_train(versions, "1.11"))
+
+    def test_choose_existing_train_ignores_approved(self):
+        versions = [
+            self.__class__.cnv.AppStoreVersion("1.11", "APPROVED"),
+        ]
+        self.assertIsNone(self.__class__.cnv.choose_existing_train(versions, "1.11"))
+
 
 class TestJwtShape(unittest.TestCase):
     """Verify the token we'd send is structurally valid (no network)."""
