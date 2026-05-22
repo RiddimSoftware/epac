@@ -1,0 +1,269 @@
+name: Intake -> Opus enrichment
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  enrich:
+    name: Enrich intake issue
+    if: ${{ github.event.label.name == 'intake/needs-enrichment' }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    concurrency:
+      group: intake-enrich-${{ github.event.issue.number }}
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Mint developer-bot token
+        id: dev-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DEV_BOT_APP_ID }}
+          private-key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Configure GitHub CLI token
+        env:
+          GH_APP_TOKEN: ${{ steps.dev-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$GH_APP_TOKEN"
+          {
+            echo "GH_TOKEN=$GH_APP_TOKEN"
+            echo "GITHUB_TOKEN=$GH_APP_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Configure Anthropic credentials
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          AWS_PROFILE: riddim-agent
+          AWS_REGION: us-east-1
+        run: ./scripts/factory/configure_anthropic_for_runner.sh
+
+      - name: Read intake markers
+        id: intake
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("scripts/factory").resolve()))
+          from verify_enrichment import parse_intake_markers, spec_path_for_session
+
+          issue_number = os.environ["GH_ISSUE"]
+          repo = os.environ["GH_REPO"]
+          raw = subprocess.check_output(
+              ["gh", "issue", "view", issue_number, "--repo", repo, "--json", "body"],
+              text=True,
+          )
+          body = json.loads(raw)["body"] or ""
+          markers = parse_intake_markers(body)
+          session_id = markers.get("Intake-Session", "")
+          if not re.fullmatch(r"[A-Za-z0-9._-]+", session_id):
+              raise SystemExit(f"Invalid Intake-Session marker: {session_id!r}")
+          mode = markers.get("Mode", "")
+          branch = f"intake/enrich-{session_id}"
+          spec_path = spec_path_for_session(Path.cwd(), session_id).relative_to(Path.cwd()).as_posix()
+          should_run = "false" if mode == "fact-check" else "true"
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          with output.open("a", encoding="utf-8") as handle:
+              handle.write(f"session_id={session_id}\n")
+              handle.write(f"mode={mode}\n")
+              handle.write(f"branch={branch}\n")
+              handle.write(f"spec_path={spec_path}\n")
+              handle.write(f"should_run={should_run}\n")
+          PY
+
+      - name: Skip fact-check intake
+        if: ${{ steps.intake.outputs.should_run == 'false' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$GH_ISSUE" \
+            --repo "$GH_REPO" \
+            --body "Opus enrichment skipped: fact-check intake is handled by the original intake workflow."
+
+      - name: Prepare enrichment branch
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          BRANCH: ${{ steps.intake.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git checkout -B "$BRANCH"
+
+      - name: Run enrichment
+        id: opus
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          if not any(
+              subprocess.run(["/usr/bin/which", candidate], check=False, stdout=subprocess.DEVNULL).returncode == 0
+              for candidate in ["claude"]
+          ):
+              with output.open("a", encoding="utf-8") as handle:
+                  handle.write("exit_status=127\n")
+              raise SystemExit(0)
+
+          prompt = Path(".factory/prompts/intake-enrichment.md").read_text(encoding="utf-8")
+          issue_number = os.environ["GH_ISSUE"]
+          command = [
+              "claude",
+              "--append-system-prompt",
+              prompt,
+              f"Enrich GH issue #{issue_number} per the prompt.",
+          ]
+          try:
+              result = subprocess.run(command, check=False, timeout=28 * 60)
+              status = result.returncode
+          except subprocess.TimeoutExpired:
+              status = 124
+
+          with output.open("a", encoding="utf-8") as handle:
+              handle.write(f"exit_status={status}\n")
+          PY
+
+      - name: Report enrichment timeout
+        if: ${{ steps.intake.outputs.should_run == 'true' && steps.opus.outputs.exit_status == '124' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/factory/report_enrichment_stuck.py \
+            --gh-issue "$GH_ISSUE" \
+            --reason timeout \
+            --run-url "$RUN_URL"
+          exit 1
+
+      - name: Report enrichment failure
+        if: ${{ steps.intake.outputs.should_run == 'true' && steps.opus.outputs.exit_status != '0' && steps.opus.outputs.exit_status != '124' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/factory/report_enrichment_stuck.py \
+            --gh-issue "$GH_ISSUE" \
+            --reason failed \
+            --run-url "$RUN_URL"
+          exit 1
+
+      - name: Commit enrichment artifact
+        id: commit
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          BRANCH: ${{ steps.intake.outputs.branch }}
+          SESSION_ID: ${{ steps.intake.outputs.session_id }}
+          SPEC_PATH: ${{ steps.intake.outputs.spec_path }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$SPEC_PATH" ]]; then
+            echo "::error::SPEC was not created at $SPEC_PATH"
+            exit 1
+          fi
+          git config user.name "riddim-developer-bot[bot]"
+          git config user.email "riddim-developer-bot[bot]@users.noreply.github.com"
+          git add ".factory/intake/$SESSION_ID"
+          if ! git diff --cached --quiet; then
+            git commit -m "Add intake enrichment SPEC for issue #${{ github.event.issue.number }}"
+          fi
+          if [[ "$(git rev-list --count "origin/main..HEAD")" -lt 1 ]]; then
+            echo "::error::No enrichment commit exists on $BRANCH"
+            exit 1
+          fi
+          git push --force-with-lease origin "HEAD:$BRANCH"
+          commit_sha="$(git rev-parse HEAD)"
+          echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Verify enrichment completed
+        id: verify
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.dev-token.outputs.token }}
+        run: python3 scripts/factory/verify_enrichment.py --gh-issue ${{ github.event.issue.number }}
+
+      - name: Record first-run operator review gate
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/factory/report_enrichment_stuck.py \
+            --gh-issue "$GH_ISSUE" \
+            --reason failed \
+            --run-url "$RUN_URL" \
+            --skip-gh-comment \
+            --checklist-item "- [ ] First Opus enrichment run reviewed by operator for quality"
+
+      - name: Comment with enrichment result
+        if: ${{ steps.intake.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_ISSUE: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+          LINEAR_URL: ${{ steps.verify.outputs.linear_url }}
+          SPEC_PATH: ${{ steps.verify.outputs.spec_path }}
+          COMMIT_SHA: ${{ steps.commit.outputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          spec_url="https://github.com/$GH_REPO/blob/$COMMIT_SHA/$SPEC_PATH"
+          gh issue comment "$GH_ISSUE" \
+            --repo "$GH_REPO" \
+            --body "Enrichment complete. Linear ticket: $LINEAR_URL. SPEC: $spec_url."
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Intake enrichment"
+            echo ""
+            echo "- GH Issue: #${{ github.event.issue.number }}"
+            echo "- Mode: ${{ steps.intake.outputs.mode || '(unknown)' }}"
+            echo "- Intake session: ${{ steps.intake.outputs.session_id || '(unknown)' }}"
+            echo "- Opus exit status: ${{ steps.opus.outputs.exit_status || '(not run)' }}"
+            echo "- SPEC: ${{ steps.verify.outputs.spec_path || steps.intake.outputs.spec_path || '(not created)' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
