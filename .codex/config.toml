@@ -1,0 +1,40 @@
+# Intake provenance hooks for codex sessions.
+# Mirrors the SessionStart / UserPromptSubmit / PostToolUse / Stop hooks in .claude/settings.json.
+#
+# Codex merges this file with ~/.codex/config.toml when the session cwd is inside this repo.
+# Requires features.hooks = true in ~/.codex/config.toml (enabled by default since 0.130.0).
+#
+# Depends on: scripts/intake/intake_session_hook.py
+# (see EPAC-1950 for the rename from bugfix_session_hook.py)
+#
+# See .codex/README.md for investigation notes, payload schemas, and behavioural differences
+# from the Claude Code hook structure in .claude/settings.json.
+
+[[hooks.SessionStart]]
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "python3 scripts/intake/intake_session_hook.py session-start"
+timeout = 30
+
+[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "python3 scripts/intake/intake_session_hook.py user-prompt-submit"
+timeout = 30
+
+[[hooks.PostToolUse]]
+matcher = "*"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = "python3 scripts/intake/intake_session_hook.py post-tool-use"
+timeout = 30
+
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = "python3 scripts/intake/intake_session_hook.py stop"
+timeout = 30

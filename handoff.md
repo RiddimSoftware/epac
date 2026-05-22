@@ -1,49 +1,47 @@
-# EPAC-1947 Handoff: ASC API Key Write Scope Verification
-
 ## Implementation notes
 
-Implemented `scripts/release/verify_asc_write_scope.py` to verify write access to ASC API endpoints needed for SF Science Fair automation plan:
-- `POST /v1/betaTesters` — create/manage external testers for TestFlight
-- `POST /v1/betaAppReviewSubmissions` — submit builds for Beta App Review
+Added codex-side intake provenance hooks to mirror the Claude Code hook structure in `.claude/settings.json`.
 
-Script workflow:
-1. Fetches ASC API credentials from AWS Secrets Manager (`appstore/connect-api`, `us-east-1`)
-2. Generates JWT token for API authentication
-3. Sanity check: lists existing beta groups (verifies read scope)
-4. Tests betaTesters endpoint by creating test tester with unique email, attaching to latest valid build, and immediately deleting
-5. Tests betaAppReviewSubmissions endpoint by attempting to submit latest valid build for review
-6. Outputs JSON report with endpoint status ("ok", "denied", "other")
+Three new files:
+- `.codex/config.toml`: TOML hook config read automatically by codex when the session cwd is inside the repo. Registers all four lifecycle events (SessionStart, UserPromptSubmit, PostToolUse with matcher `*`, Stop), each invoking `scripts/intake/intake_session_hook.py <subcommand>`. The handler rename (EPAC-1950) is a dependency — config references the post-rename name but the smoke test falls back to `bugfix_session_hook.py` while pending.
+- `.codex/README.md`: investigation notes documenting hook discovery order (4 locations merged), supported events, payload schema (JSON on stdin), and a diff table vs Claude Code.
+- `scripts/intake/test_codex_hooks.sh`: smoke test that drives the handler with synthetic payloads for all four events. Validates `events.jsonl` and `summary.json` without a live codex session.
 
-Key implementation details:
-- betaTesters requires either betaGroups or builds relationship; script uses builds relationship with latest valid build
-- betaAppReviewSubmissions returns 422 (missing beta app description) when endpoint is reachable but build metadata incomplete; treated as write access verification
-- No real testers or builds are permanently created/modified
-- Test tester deleted immediately after successful creation
+`.gitignore` was updated to replace the blanket `.codex/` ignore with `.codex/sessions/` and `.codex/cache/` so the config and README are tracked.
+
+The WIP commit from the previous attempt included a `.claude/settings.json` reformat (same content, different whitespace) — that stays in the branch as it's already committed.
 
 ## Verification evidence
 
-Script executed against current ASC key from AWS Secrets Manager:
+```
+bash scripts/intake/test_codex_hooks.sh
 
-```json
-{
-  "betaTesters": "ok",
-  "betaAppReviewSubmissions": "ok"
-}
+handler: bugfix_session_hook.py (rename to intake_session_hook.py pending EPAC-1950)
+session: test-codex-hooks-1779484506
+
+--- session-start ---
+PASS  session-start writes to events.jsonl
+--- user-prompt-submit ---
+PASS  user-prompt-submit appends to events.jsonl
+--- post-tool-use ---
+PASS  post-tool-use appends to events.jsonl
+--- stop ---
+PASS  stop writes summary.json with 4 events
+
+All smoke tests passed.
+events.jsonl: 4 lines
+summary.json: unfinished_intake
 ```
 
-Both endpoints confirmed accessible and reachable with write scope. ASC key is ready for downstream automation work.
-
-Run command: `AWS_PROFILE=riddim-agent python3 scripts/release/verify_asc_write_scope.py`
+PR: https://github.com/RiddimSoftware/epac/pull/521
 
 ## Tradeoffs
 
-- Script uses latest valid build for betaTesters test; this is safe because the test tester is deleted immediately but ensures the payload is valid and doesn't require a separate beta group lookup
-- 422 status on betaAppReviewSubmissions is treated as write access confirmation (endpoint accepted request enough to validate build metadata); a true 403 would indicate missing write scope
+- TOML format over JSON (`hooks.json`) per issue title; avoids duplicate-source warning if a future contributor adds `.codex/hooks.json`.
+- PostToolUse matcher `*` (all tools) to match the Claude Code hook's `*` matcher. The handler already filters internally.
+- Smoke test invokes handler directly (not a live codex session) for speed and CI suitability.
 
 ## Blockers / follow-ups
 
-None. Both endpoints verified accessible with write scope. Downstream issues for tester-invitation and beta-submission automation are now unblocked:
-- [Write invite_external_tester.py](https://linear.app/riddimsoftware/issue/EPAC-1948)
-- [Write submit_beta_app_review.py](https://linear.app/riddimsoftware/issue/EPAC-1949)
-
-PR: https://github.com/RiddimSoftware/epac/pull/518
+- EPAC-1950 (rename `bugfix_session_hook.py` → `intake_session_hook.py`) must land before codex sessions invoke the correct handler path. Config is already forward-compatible.
+- Acceptance criteria mention `session.json`, `transcript.md`, and `issues.jsonl` as output files; the current handler writes `events.jsonl` and `summary.json`. Those specific output files are a handler concern (out of scope per issue spec — "Modifying the intake_session_hook.py handler itself is a separate issue").
