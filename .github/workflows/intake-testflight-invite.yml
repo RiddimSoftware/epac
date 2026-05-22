@@ -1,0 +1,119 @@
+name: Intake → TestFlight invite
+
+on:
+  workflow_run:
+    workflows: ["TestFlight Build"]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  invite-reporters:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find PRs merged since previous successful TF build
+        id: prs
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.event.workflow_run.id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/release/find_prs_since_previous_tf_build.py
+
+      - name: Extract reporter emails
+        id: reporters
+        if: steps.prs.outputs.pr_numbers != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/release/extract_reporter_emails.py --prs '${{ steps.prs.outputs.pr_numbers }}'
+
+      - name: Set up Python for invite script
+        if: steps.reporters.outputs.emails != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install invite script dependencies
+        if: steps.reporters.outputs.emails != ''
+        run: |
+          python3 -m venv .venv-invite
+          .venv-invite/bin/python -m pip install --upgrade pip --quiet
+          .venv-invite/bin/python -m pip install PyJWT requests cryptography --quiet
+
+      - name: Write App Store Connect credentials
+        if: steps.reporters.outputs.emails != ''
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          p8_path="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$p8_path"
+          chmod 600 "$p8_path"
+          {
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Invite each reporter to TestFlight
+        if: steps.reporters.outputs.emails != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          failed_entries='[]'
+          success_count=0
+          total_count=0
+
+          while IFS= read -r entry; do
+            email="$(echo "$entry" | python3 -c 'import sys,json; print(json.load(sys.stdin)["email"])')"
+            issue="$(echo "$entry" | python3 -c 'import sys,json; print(json.load(sys.stdin)["issue"])')"
+            total_count=$((total_count + 1))
+
+            if .venv-invite/bin/python scripts/release/invite_external_tester.py \
+                --email "$email" \
+                --group-name PublicTesting \
+                --gh-issue "$issue" \
+                --key-id "$ASC_KEY_ID" \
+                --issuer-id "$ASC_ISSUER_ID" \
+                --private-key-path "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"; then
+              success_count=$((success_count + 1))
+            else
+              echo "::warning::Failed to invite $email (PR #$issue)"
+              failed_entries="$(echo "$failed_entries" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          data.append({'email': '$email', 'issue': '$issue'})
+          print(json.dumps(data))
+          ")"
+              gh issue comment "$issue" \
+                --repo "${{ github.repository }}" \
+                --body "TestFlight invitation to \`$email\` failed during the automated invite step. Please invite manually via App Store Connect." \
+                2>/dev/null || true
+            fi
+          done < <(echo '${{ steps.reporters.outputs.entries }}' | python3 -c 'import sys,json; [print(json.dumps(e)) for e in json.load(sys.stdin)]')
+
+          echo "Invited $success_count of $total_count reporter(s)."
+
+          if [ "$success_count" -eq 0 ] && [ "$total_count" -gt 0 ]; then
+            echo "::error::All $total_count invitation(s) failed."
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Intake TestFlight invite"
+            echo ""
+            echo "- Workflow run: ${{ github.event.workflow_run.id }}"
+            echo "- PRs scanned: ${{ steps.prs.outputs.pr_numbers || '(none)' }}"
+            echo "- Reporters found: ${{ steps.reporters.outputs.emails || '(none)' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
