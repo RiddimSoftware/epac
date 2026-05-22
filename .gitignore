@@ -1,7 +1,8 @@
 .worktrees/
 .specify/
 .DS_Store
-.codex/
+.codex/sessions/
+.codex/cache/
 .factory/intake/
 .factory/context/repo-map.json
 gpt2_*/

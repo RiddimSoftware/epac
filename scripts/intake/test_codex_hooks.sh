@@ -80,9 +80,13 @@ printf '{"session_id":"%s","hook_event_name":"Stop","cwd":"%s","model":"gpt-5.3-
     "$SESSION_ID" "$REPO_ROOT" \
     | BUGFIX_INTAKE_ROOT="$WORK_DIR" python3 "$HOOK" stop
 [ -f "$SESSION_DIR/summary.json" ] || fail "summary.json not created after stop"
-grep -q '"kind":"bugfix_session_summary"' "$SESSION_DIR/summary.json" || fail "summary.json missing expected kind field"
-EVENT_COUNT="$(python3 -c "import json; d=json.load(open('$SESSION_DIR/summary.json')); print(d['eventCount'])")"
-[ "$EVENT_COUNT" -ge 4 ] || fail "expected at least 4 events in summary, got $EVENT_COUNT"
+python3 -c "
+import json
+d = json.load(open('$SESSION_DIR/summary.json'))
+assert d.get('kind') == 'bugfix_session_summary', 'wrong kind: ' + str(d.get('kind'))
+assert d.get('eventCount', 0) >= 4, 'expected >= 4 events, got ' + str(d.get('eventCount'))
+" || fail "summary.json missing expected fields"
+EVENT_COUNT="$(python3 -c "import json; print(json.load(open('$SESSION_DIR/summary.json'))['eventCount'])")"
 pass "stop writes summary.json with $EVENT_COUNT events"
 
 echo ""
