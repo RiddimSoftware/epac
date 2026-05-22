@@ -1,0 +1,52 @@
+name: Intake → Linear sync
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  sync-to-linear:
+    if: contains(github.event.issue.labels.*.name, 'intake/needs-enrichment')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Parse markers
+        id: parse
+        env:
+          GH_ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          BODY_FILE=$(mktemp)
+          printf '%s' "$GH_ISSUE_BODY" > "$BODY_FILE"
+          python3 scripts/factory/parse_intake_markers.py --body-file "$BODY_FILE"
+
+      - name: Resolve linked Linear issue
+        id: linear-issue
+        if: steps.parse.outputs.should_sync == 'true'
+        run: |
+          python3 scripts/factory/find_linear_issue_for_gh_issue.py \
+            --gh-repo RiddimSoftware/epac \
+            --gh-issue "${{ github.event.issue.number }}"
+
+      - name: Set Linear estimate + priority
+        if: steps.parse.outputs.should_sync == 'true'
+        run: |
+          python3 scripts/factory/set_linear_fields.py \
+            --linear-issue "${{ steps.linear-issue.outputs.issue_id }}" \
+            --estimate "${{ steps.parse.outputs.estimate_linear }}" \
+            --priority "${{ steps.parse.outputs.priority }}"
