@@ -1,43 +1,45 @@
 {
-  "disabledMcpjsonServers": [],
-  "hooks": {
-    "SessionStart": [
+  "disabledMcpjsonServers" : [
+
+  ],
+  "hooks" : {
+    "PostToolUse" : [
       {
-        "hooks": [
+        "hooks" : [
           {
-            "type": "command",
-            "command": "python3 scripts/intake/bugfix_session_hook.py session-start"
+            "command" : "python3 scripts\/intake\/bugfix_session_hook.py post-tool-use",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "*"
+      }
+    ],
+    "SessionStart" : [
+      {
+        "hooks" : [
+          {
+            "command" : "python3 scripts\/intake\/bugfix_session_hook.py session-start",
+            "type" : "command"
           }
         ]
       }
     ],
-    "UserPromptSubmit": [
+    "Stop" : [
       {
-        "hooks": [
+        "hooks" : [
           {
-            "type": "command",
-            "command": "python3 scripts/intake/bugfix_session_hook.py user-prompt-submit"
+            "command" : "python3 scripts\/intake\/bugfix_session_hook.py stop",
+            "type" : "command"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "UserPromptSubmit" : [
       {
-        "matcher": "*",
-        "hooks": [
+        "hooks" : [
           {
-            "type": "command",
-            "command": "python3 scripts/intake/bugfix_session_hook.py post-tool-use"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 scripts/intake/bugfix_session_hook.py stop"
+            "command" : "python3 scripts\/intake\/bugfix_session_hook.py user-prompt-submit",
+            "type" : "command"
           }
         ]
       }

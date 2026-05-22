@@ -53,21 +53,6 @@ def get_asc_token(key_id: str, issuer_id: str, private_key: str) -> str:
     return jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
 
 
-def get_beta_groups(app_id: str, token: str) -> tuple[int, dict, list[str]]:
-    """List existing beta groups (read-scope sanity check). Returns status, response, and group IDs."""
-    headers = {"Authorization": f"Bearer {token}"}
-    url = "https://api.appstoreconnect.apple.com/v1/betaGroups"
-    params = {"filter[app]": app_id}
-
-    try:
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-        data = resp.json() if resp.text else {}
-        group_ids = [g["id"] for g in data.get("data", [])]
-        return resp.status_code, data, group_ids
-    except requests.RequestException as e:
-        return 0, {"error": str(e)}, []
-
-
 def get_latest_valid_build(app_id: str, token: str) -> tuple[str | None, dict]:
     """Fetch the most recent VALID build for the app."""
     headers = {"Authorization": f"Bearer {token}"}
@@ -90,18 +75,17 @@ def get_latest_valid_build(app_id: str, token: str) -> tuple[str | None, dict]:
         return None, {"error": str(e)}
 
 
-def test_beta_tester_endpoint(
-    app_id: str, token: str, beta_group_id: str | None, build_id: str | None
-) -> tuple[str, int, dict]:
+def test_beta_tester_endpoint(app_id: str, token: str) -> tuple[str, int, dict]:
     """
     Test POST /v1/betaTesters by creating and deleting a test tester.
+    Creates tester with no relationships per acceptance criteria.
 
     Returns: (status_desc, http_status, response_data)
     """
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.appstoreconnect.apple.com/v1/betaTesters"
 
-    # Create test tester with unique email
+    # Create test tester with unique email, no relationships
     test_uuid = uuid.uuid4().hex[:8]
     test_date = datetime.now().strftime("%Y%m%d")
     test_email = f"asc-write-scope-test+{test_uuid}@riddimsoftware.com"
@@ -117,54 +101,44 @@ def test_beta_tester_endpoint(
         }
     }
 
-    # Add relationship (prefer builds over betaGroups if available)
-    if build_id:
-        payload["data"]["relationships"] = {
-            "builds": {
-                "data": [{"type": "builds", "id": build_id}]
-            }
-        }
-    elif beta_group_id:
-        payload["data"]["relationships"] = {
-            "betaGroups": {
-                "data": [{"type": "betaGroups", "id": beta_group_id}]
-            }
-        }
-
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=30)
 
         if resp.status_code == 201:
-            # Successfully created; now delete it
+            # Successfully created; now delete it with retry
             tester_id = resp.json()["data"]["id"]
             delete_url = f"{url}/{tester_id}"
 
-            try:
-                del_resp = requests.delete(delete_url, headers=headers, timeout=30)
-                if 200 <= del_resp.status_code < 300:
-                    return "ok", resp.status_code, {"message": "Created and deleted test tester"}
-                else:
-                    return "other", resp.status_code, {
-                        "message": f"Created tester but deletion failed: {del_resp.status_code}",
-                        "tester_id": tester_id,
-                    }
-            except requests.RequestException as e:
-                return "other", resp.status_code, {
-                    "message": f"Created tester but deletion error: {str(e)}",
-                    "tester_id": tester_id,
-                }
+            # Enforce cleanup with retry
+            for attempt in range(2):
+                try:
+                    del_resp = requests.delete(delete_url, headers=headers, timeout=30)
+                    if 200 <= del_resp.status_code < 300:
+                        return "ok", resp.status_code, {"message": "Created and deleted test tester"}
+                except requests.RequestException:
+                    if attempt == 0:
+                        continue
+                    # Fall through to error on final retry failure
+
+            # Cleanup failed after retries — unrecoverable state
+            return f"other:{del_resp.status_code}", resp.status_code, {
+                "message": f"Created tester but cleanup failed: {del_resp.status_code}",
+                "tester_id": tester_id,
+                "detail": "Tester remains in ASC account; manual deletion required",
+            }
         elif resp.status_code == 403:
             return "denied", resp.status_code, resp.json() if resp.text else {}
         else:
-            return "other", resp.status_code, resp.json() if resp.text else {}
+            return f"other:{resp.status_code}", resp.status_code, resp.json() if resp.text else {}
 
     except requests.RequestException as e:
-        return "other", 0, {"error": str(e)}
+        return "other:0", 0, {"error": str(e)}
 
 
 def test_beta_app_review_endpoint(app_id: str, build_id: str, token: str) -> tuple[str, int, dict]:
     """
     Test POST /v1/betaAppReviewSubmissions by attempting to submit a build.
+    Per spec, endpoint is reachable on 200/201/409 only.
 
     Returns: (status_desc, http_status, response_data)
     """
@@ -190,17 +164,13 @@ def test_beta_app_review_endpoint(app_id: str, build_id: str, token: str) -> tup
         elif resp.status_code == 409:
             # Build already submitted or other conflict — endpoint is reachable
             return "ok", resp.status_code, resp.json() if resp.text else {}
-        elif resp.status_code == 422:
-            # Unprocessable entity — endpoint is reachable and accepting writes,
-            # but the build metadata is incomplete. This indicates write scope.
-            return "ok", resp.status_code, resp.json() if resp.text else {}
         elif resp.status_code == 403:
             return "denied", resp.status_code, resp.json() if resp.text else {}
         else:
-            return "other", resp.status_code, resp.json() if resp.text else {}
+            return f"other:{resp.status_code}", resp.status_code, resp.json() if resp.text else {}
 
     except requests.RequestException as e:
-        return "other", 0, {"error": str(e)}
+        return "other:0", 0, {"error": str(e)}
 
 
 def main() -> None:
@@ -223,27 +193,13 @@ def main() -> None:
 
     token = get_asc_token(key_id, issuer_id, private_key)
 
-    # Sanity check: list existing beta groups (read scope)
-    status_code, response, beta_group_ids = get_beta_groups(app_id, token)
-    if status_code != 200:
-        print(
-            json.dumps({
-                "betaTesters": "other:sanity-check",
-                "betaAppReviewSubmissions": "other:sanity-check",
-                "error": f"Beta groups list returned {status_code}",
-                "response": response,
-            })
-        )
-        sys.exit(1)
-
-    # Get the latest valid build for both tests
-    build_id, build_fetch_response = get_latest_valid_build(app_id, token)
-
-    # Test betaTesters endpoint
-    beta_group_id = beta_group_ids[0] if beta_group_ids else None
+    # Test betaTesters endpoint first (no relationships, per spec)
     beta_testers_status, beta_testers_code, beta_testers_response = test_beta_tester_endpoint(
-        app_id, token, beta_group_id, build_id
+        app_id, token
     )
+
+    # Get the latest valid build for betaAppReviewSubmissions test
+    build_id, build_fetch_response = get_latest_valid_build(app_id, token)
 
     if build_id:
         beta_app_review_status, beta_app_review_code, beta_app_review_response = (
