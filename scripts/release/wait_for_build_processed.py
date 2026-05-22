@@ -149,15 +149,6 @@ def wait_for_build_processed(
                 "wait_seconds": int(elapsed),
             }
 
-            elapsed = current_time() - start
-            return 7, {
-                "build_id": build_id,
-                "expired": True,
-                "processing_state": state,
-                "wait_seconds": int(elapsed),
-                "expiration_date": attrs.get("expirationDate"),
-            }
-
         if state == "INVALID":
             elapsed = current_time() - start
             return 6, {
