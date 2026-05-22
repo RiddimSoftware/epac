@@ -47,6 +47,7 @@ Use `.factory/prompts/intake-issue-body.md` to format the GH Issue body:
 When the feature spec is validated and the GH Issue filed, report:
 
 - GitHub Issue URL
+- Live factory feed URL: `https://riddimsoftwarefactory.com/live`
 - Estimate (in hours)
 - Size classification
 - Whether the feature fits this meetup (warn if Large)
