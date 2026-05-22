@@ -108,7 +108,16 @@ Cost-Estimate-USD: pending
 ## Validation plan
 
 Reporter confirms via TestFlight.
+
+## Screenshot
+
+<!-- include only when a screenshot was collected in Step 1 -->
+<absolute path from ~/Pictures/Screenshots/ or omit this section entirely>
 ```
+
+When a screenshot was collected in Step 1, include the `## Screenshot` section
+with the absolute path. When no screenshot was mentioned, omit the section
+entirely — do not add a placeholder line.
 
 Acceptance criteria are intentionally minimal — Stage 2 (Opus enrichment)
 elaborates them. Write one behavioural criterion and one TestFlight
@@ -141,7 +150,8 @@ and stop.
 Create the GitHub Issue in `RiddimSoftware/epac` with:
 - **Title:** Short, present-tense description of the bug
   (e.g. "Home tab shows stale sitting date after sitting ends")
-- **Body:** constructed in Step 4
+- **Body:** constructed in Step 4, including the `## Screenshot` section
+  when a path was collected in Step 1
 - **Labels:** from Step 5
 
 ---
