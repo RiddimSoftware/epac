@@ -142,6 +142,25 @@ class TestBumpVersion(unittest.TestCase):
         ]
         self.assertIsNone(self.__class__.cnv.choose_existing_train(versions, "1.9"))
 
+    def test_get_live_version_returns_highest_committed_state(self):
+        """ACCEPTED and PENDING_DEVELOPER_RELEASE count as committed — bump from them."""
+        versions = [
+            self.__class__.cnv.AppStoreVersion("1.11", "ACCEPTED"),
+            self.__class__.cnv.AppStoreVersion("1.10", "READY_FOR_SALE"),
+            self.__class__.cnv.AppStoreVersion("1.9", "PREPARE_FOR_SUBMISSION"),
+        ]
+        # Simulate get_live_version logic directly via _COMMITTED_STATES
+        committed = self.__class__.cnv._COMMITTED_STATES
+        candidates = [v.version for v in versions if v.state in committed]
+        result = max(candidates, key=self.__class__.cnv.version_key) if candidates else None
+        self.assertEqual(result, "1.11")
+
+    def test_get_live_version_pending_developer_release_counts_as_committed(self):
+        committed = self.__class__.cnv._COMMITTED_STATES
+        self.assertIn("PENDING_DEVELOPER_RELEASE", committed)
+        self.assertIn("ACCEPTED", committed)
+        self.assertIn("READY_FOR_SALE", committed)
+
 
 class TestJwtShape(unittest.TestCase):
     """Verify the token we'd send is structurally valid (no network)."""

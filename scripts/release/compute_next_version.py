@@ -46,6 +46,13 @@ REUSABLE_TRAIN_STATES = {
     "INVALID_BINARY",
 }
 
+# States where a version is committed to release — bump to a new train rather than reusing.
+_COMMITTED_STATES = {
+    "READY_FOR_SALE",
+    "ACCEPTED",
+    "PENDING_DEVELOPER_RELEASE",
+}
+
 
 def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
     with open(os.path.expanduser(private_key_path)) as f:
@@ -61,19 +68,26 @@ def get_asc_token(key_id: str, issuer_id: str, private_key_path: str) -> str:
 
 
 def get_live_version(app_id: str, token: str) -> str | None:
-    """Return the current READY_FOR_SALE marketing version, or None if no live version."""
+    """Return the highest version in a committed state, or None if none exists.
+
+    Treats READY_FOR_SALE, ACCEPTED, and PENDING_DEVELOPER_RELEASE as
+    committed — builds should not land in these trains.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     url = f"https://api.appstoreconnect.apple.com/v1/apps/{app_id}/appStoreVersions"
     params = {
         "filter[platform]": "IOS",
-        "filter[appStoreState]": "READY_FOR_SALE",
-        "fields[appStoreVersions]": "versionString",
-        "limit": 1,
+        "fields[appStoreVersions]": "versionString,appStoreState",
+        "limit": 200,
     }
     resp = requests.get(url, headers=headers, params=params, timeout=30)
     resp.raise_for_status()
-    data = resp.json().get("data", [])
-    return data[0]["attributes"]["versionString"] if data else None
+    candidates = [
+        item["attributes"]["versionString"]
+        for item in resp.json().get("data", [])
+        if item.get("attributes", {}).get("appStoreState") in _COMMITTED_STATES
+    ]
+    return max(candidates, key=version_key) if candidates else None
 
 
 def get_app_store_versions(app_id: str, token: str) -> list[AppStoreVersion]:
