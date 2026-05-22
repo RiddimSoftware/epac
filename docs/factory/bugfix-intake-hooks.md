@@ -1,4 +1,4 @@
-# Optional Bugfix Intake Session Hooks
+# Optional Intake Session Hooks
 
 The bugfix intake harness works from a fresh clone without hooks:
 
@@ -15,8 +15,9 @@ claude bugfix
 ```
 
 Hooks are an optional trusted capture layer for local LLM sessions. They record
-coarse intake-session provenance so an abandoned bugfix conversation still
-leaves a follow-up signal.
+coarse intake-session provenance so an abandoned intake conversation still
+leaves a follow-up signal. The same hook script supports bug, feature,
+fact-check, and open-data intake modes.
 
 ## Trust Boundary
 
@@ -43,6 +44,28 @@ Hook events are appended as JSON Lines:
 .factory/intake/sessions/<session-id>/events.jsonl
 ```
 
+The generic session envelope is recorded in:
+
+```text
+.factory/intake/sessions/<session-id>/session.json
+```
+
+`session-start` writes `started_at`, `mode`, `agent`, and `session_id`.
+`mode` comes from `EPAC_INTAKE_MODE` and defaults to `unspecified`; `agent`
+comes from `EPAC_INTAKE_AGENT` when present.
+
+`user-prompt-submit` appends redacted user messages to:
+
+```text
+.factory/intake/sessions/<session-id>/transcript.md
+```
+
+`post-tool-use` records issue URLs from captured `gh issue create` Bash calls in:
+
+```text
+.factory/intake/sessions/<session-id>/issues.jsonl
+```
+
 The hook supports these subcommands:
 
 - `session-start`
@@ -63,6 +86,10 @@ On `stop`, the hook writes:
 ```text
 .factory/intake/sessions/<session-id>/summary.json
 ```
+
+It also finalizes `session.json` with `ended_at` and `duration_seconds`, then
+appends a rollup record to `.factory/intake/index.jsonl`. The index schema is
+documented in `.factory/intake/README.md`.
 
 If the session produced a valid bugfix SPEC receipt, the summary records
 `terminalState=spec_valid`. If no valid receipt is found, the hook writes

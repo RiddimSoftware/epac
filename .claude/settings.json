@@ -7,7 +7,7 @@
       {
         "hooks" : [
           {
-            "command" : "python3 scripts\/intake\/bugfix_session_hook.py post-tool-use",
+            "command" : "python3 scripts\/intake\/intake_session_hook.py post-tool-use",
             "type" : "command"
           }
         ],
@@ -18,7 +18,7 @@
       {
         "hooks" : [
           {
-            "command" : "python3 scripts\/intake\/bugfix_session_hook.py session-start",
+            "command" : "python3 scripts\/intake\/intake_session_hook.py session-start",
             "type" : "command"
           }
         ]
@@ -28,7 +28,7 @@
       {
         "hooks" : [
           {
-            "command" : "python3 scripts\/intake\/bugfix_session_hook.py stop",
+            "command" : "python3 scripts\/intake\/intake_session_hook.py stop",
             "type" : "command"
           }
         ]
@@ -38,7 +38,7 @@
       {
         "hooks" : [
           {
-            "command" : "python3 scripts\/intake\/bugfix_session_hook.py user-prompt-submit",
+            "command" : "python3 scripts\/intake\/intake_session_hook.py user-prompt-submit",
             "type" : "command"
           }
         ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture optional trusted bugfix-intake hook events."""
+"""Capture optional trusted intake hook events."""
 
 from __future__ import annotations
 
@@ -13,7 +13,11 @@ from pathlib import Path
 from uuid import uuid4
 
 
-ROOT = Path(os.environ.get("BUGFIX_INTAKE_ROOT", Path(__file__).resolve().parents[2]))
+ROOT = Path(
+    os.environ.get("EPAC_INTAKE_ROOT")
+    or os.environ.get("BUGFIX_INTAKE_ROOT")
+    or Path(__file__).resolve().parents[2]
+)
 INTAKE_DIR = ROOT / ".factory" / "intake"
 SESSIONS_DIR = INTAKE_DIR / "sessions"
 MAX_SUMMARY_CHARS = 600
@@ -25,6 +29,8 @@ ASSIGNMENT_SECRET_RE = re.compile(
 )
 BEARER_RE = re.compile(r"Bearer\s+[A-Za-z0-9._~+/=-]{16,}", re.IGNORECASE)
 LONG_TOKEN_RE = re.compile(r"\b(?=[A-Za-z0-9._~+/=-]*[A-Za-z])(?=[A-Za-z0-9._~+/=-]*\d)[A-Za-z0-9._~+/=-]{32,}\b")
+GH_ISSUE_CREATE_RE = re.compile(r"\bgh\s+issue\s+create\b")
+GITHUB_ISSUE_URL_RE = re.compile(r"https://github\.com/[^\s/]+/[^\s/]+/issues/\d+")
 
 
 def utc_now() -> str:
@@ -78,14 +84,22 @@ def first_string(payload: dict, *keys: str) -> str:
 
 
 def session_id_for(payload: dict) -> str:
-    return first_string(payload, "session_id", "sessionId", "sessionID") or os.environ.get("BUGFIX_SESSION_ID", "").strip() or f"manual-{uuid4().hex[:12]}"
+    return (
+        first_string(payload, "session_id", "sessionId", "sessionID")
+        or os.environ.get("EPAC_INTAKE_SESSION_ID", "").strip()
+        or os.environ.get("BUGFIX_SESSION_ID", "").strip()
+        or f"manual-{uuid4().hex[:12]}"
+    )
 
 
 def infer_source_tool(payload: dict) -> str:
     explicit = first_string(payload, "sourceTool", "source_tool", "tool")
     if explicit:
         return explicit
-    env_value = os.environ.get("BUGFIX_SOURCE_TOOL", "").strip()
+    env_value = (
+        os.environ.get("EPAC_INTAKE_AGENT", "").strip()
+        or os.environ.get("BUGFIX_SOURCE_TOOL", "").strip()
+    )
     if env_value:
         return env_value
     transcript = first_string(payload, "transcript_path", "transcriptPath", "transcript")
@@ -150,6 +164,192 @@ def build_event(hook_event: str, payload: dict) -> dict:
 
 def session_dir(session_id: str) -> Path:
     return SESSIONS_DIR / session_id
+
+
+def session_path(session_id: str) -> Path:
+    return session_dir(session_id) / "session.json"
+
+
+def read_json_object(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def write_json_object(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def intake_mode() -> str:
+    return os.environ.get("EPAC_INTAKE_MODE", "").strip() or "unspecified"
+
+
+def intake_agent(payload: dict, event: dict) -> str:
+    return os.environ.get("EPAC_INTAKE_AGENT", "").strip() or str(
+        event.get("sourceTool") or infer_source_tool(payload)
+    )
+
+
+def update_session_start(event: dict, payload: dict) -> None:
+    path = session_path(str(event["session_id"]))
+    current = read_json_object(path)
+    session = {
+        "session_id": str(event["session_id"]),
+        "started_at": current.get("started_at") or event["timestamp"],
+        "mode": intake_mode()
+        if intake_mode() != "unspecified"
+        else current.get("mode", "unspecified"),
+        "agent": intake_agent(payload, event),
+    }
+    if current.get("ended_at"):
+        session["ended_at"] = current["ended_at"]
+    if current.get("duration_seconds") is not None:
+        session["duration_seconds"] = current["duration_seconds"]
+    write_json_object(path, session)
+
+
+def prompt_text(payload: dict) -> str:
+    return first_string(payload, "prompt", "user_prompt", "userPrompt")
+
+
+def append_transcript(event: dict, payload: dict) -> None:
+    prompt = prompt_text(payload)
+    if not prompt:
+        return
+    path = session_dir(str(event["session_id"])) / "transcript.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"## {event['timestamp']}\n\n```text\n{redact_string(prompt)}\n```\n\n")
+
+
+def value_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        preferred: list[str] = []
+        for key in ("stdout", "output", "text", "content", "result"):
+            child = value.get(key)
+            if isinstance(child, str):
+                preferred.append(child)
+        if preferred:
+            return "\n".join(preferred)
+    return json.dumps(value, sort_keys=True) if value is not None else ""
+
+
+def tool_command(payload: dict) -> str:
+    tool_input = payload.get("tool_input", payload.get("toolInput"))
+    if isinstance(tool_input, dict):
+        return first_string(tool_input, "command", "cmd", "script")
+    if isinstance(tool_input, str):
+        return tool_input
+    return ""
+
+
+def tool_response_text(payload: dict) -> str:
+    return value_text(payload.get("tool_response", payload.get("toolResponse")))
+
+
+def append_issue_links(event: dict, payload: dict) -> None:
+    if str(event.get("toolName", "")).lower() != "bash":
+        return
+    if not GH_ISSUE_CREATE_RE.search(tool_command(payload)):
+        return
+    urls = GITHUB_ISSUE_URL_RE.findall(tool_response_text(payload))
+    if not urls:
+        return
+    path = session_dir(str(event["session_id"])) / "issues.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        for url in urls:
+            record = {
+                "timestamp": event["timestamp"],
+                "session_id": str(event["session_id"]),
+                "toolName": event.get("toolName", "Bash"),
+                "issue_url": url,
+            }
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def parse_utc(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def first_event_timestamp(session_id: str, fallback: str) -> str:
+    events = load_events(session_id)
+    for event in events:
+        timestamp = event.get("timestamp")
+        if isinstance(timestamp, str):
+            return timestamp
+    return fallback
+
+
+def duration_seconds(started_at: str, ended_at: str) -> int:
+    started = parse_utc(started_at)
+    ended = parse_utc(ended_at)
+    if not started or not ended:
+        return 0
+    return max(0, int((ended - started).total_seconds()))
+
+
+def issue_urls_for(session_id: str) -> list[str]:
+    path = session_dir(session_id) / "issues.jsonl"
+    if not path.exists():
+        return []
+    urls: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("issue_url"), str):
+            urls.append(data["issue_url"])
+    return urls
+
+
+def finalize_session(stop_event: dict, payload: dict) -> dict:
+    session_id = str(stop_event["session_id"])
+    path = session_path(session_id)
+    current = read_json_object(path)
+    started_at = str(
+        current.get("started_at")
+        or first_event_timestamp(session_id, str(stop_event["timestamp"]))
+    )
+    ended_at = str(stop_event["timestamp"])
+    session = {
+        "session_id": session_id,
+        "started_at": started_at,
+        "ended_at": ended_at,
+        "mode": current.get("mode") or intake_mode(),
+        "agent": current.get("agent") or intake_agent(payload, stop_event),
+        "duration_seconds": duration_seconds(started_at, ended_at),
+    }
+    write_json_object(path, session)
+    return session
+
+
+def append_index_rollup(session: dict) -> Path:
+    index_path = INTAKE_DIR / "index.jsonl"
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "session_id": session["session_id"],
+        "started_at": session["started_at"],
+        "ended_at": session["ended_at"],
+        "mode": session.get("mode", "unspecified"),
+        "agent": session.get("agent", "manual"),
+        "issue_urls": issue_urls_for(str(session["session_id"])),
+        "duration_seconds": session.get("duration_seconds", 0),
+    }
+    with index_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    return index_path
 
 
 def append_event(event: dict) -> Path:
@@ -305,15 +505,23 @@ def run(args: argparse.Namespace) -> int:
     payload = load_payload()
     event = build_event(args.hook_event, payload)
     append_event(event)
+    if args.hook_event == "session-start":
+        update_session_start(event, payload)
+    if args.hook_event == "user-prompt-submit":
+        append_transcript(event, payload)
+    if args.hook_event == "post-tool-use":
+        append_issue_links(event, payload)
     if should_emit_first_prompt_context(event):
         sys.stdout.write(session_start_message())
     if args.hook_event == "stop":
+        session = finalize_session(event, payload)
+        append_index_rollup(session)
         write_summary(event)
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Capture optional bugfix intake session hook events.")
+    parser = argparse.ArgumentParser(description="Capture optional intake session hook events.")
     parser.add_argument("hook_event", choices=["session-start", "user-prompt-submit", "post-tool-use", "stop"])
     parser.set_defaults(func=run)
     return parser
