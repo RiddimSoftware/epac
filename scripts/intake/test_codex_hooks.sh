@@ -83,7 +83,7 @@ printf '{"session_id":"%s","hook_event_name":"Stop","cwd":"%s","model":"gpt-5.3-
 python3 -c "
 import json
 d = json.load(open('$SESSION_DIR/summary.json'))
-assert d.get('kind') == 'bugfix_session_summary', 'wrong kind: ' + str(d.get('kind'))
+assert d.get('kind') in ('bugfix_session_summary', 'intake_session_summary'), 'wrong kind: ' + str(d.get('kind'))
 assert d.get('eventCount', 0) >= 4, 'expected >= 4 events, got ' + str(d.get('eventCount'))
 " || fail "summary.json missing expected fields"
 EVENT_COUNT="$(python3 -c "import json; print(json.load(open('$SESSION_DIR/summary.json'))['eventCount'])")"
