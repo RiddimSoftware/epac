@@ -15,9 +15,17 @@ import requests
 
 
 BASE_URL = "https://api.appstoreconnect.apple.com/v1"
+CANONICAL_BUNDLE_ID = "net.dinglebox.cabinetdoor"
 DEFAULT_GROUP_NAME = "PublicTesting"
 DEFAULT_WHATS_NEW = "Tonight's build from AI Tinkerers Toronto Science Fair"
 REVIEW_STATES = {"WAITING_FOR_REVIEW", "IN_REVIEW", "APPROVED", "REJECTED"}
+STALE_BUNDLE_ALIASES = {"ca.riddimsoftware.epac": CANONICAL_BUNDLE_ID}
+REVIEW_CONTACT_FIELDS = {
+    "contactFirstName": ("review_contact_first_name", "ASC_BETA_REVIEW_CONTACT_FIRST_NAME"),
+    "contactLastName": ("review_contact_last_name", "ASC_BETA_REVIEW_CONTACT_LAST_NAME"),
+    "contactPhone": ("review_contact_phone", "ASC_BETA_REVIEW_CONTACT_PHONE"),
+    "contactEmail": ("review_contact_email", "ASC_BETA_REVIEW_CONTACT_EMAIL"),
+}
 
 
 class ASCAPIError(Exception):
@@ -137,20 +145,34 @@ def load_credentials_from_aws() -> tuple[str, str, str]:
 
 
 def find_app(client: Any, bundle_id: str) -> dict[str, Any]:
+    response = list_apps_for_bundle_id(client, bundle_id)
+    apps = response.get("data", [])
+    if apps:
+        return apps[0]
+
+    alias = STALE_BUNDLE_ALIASES.get(bundle_id)
+    if alias:
+        alias_response = list_apps_for_bundle_id(client, alias)
+        alias_apps = alias_response.get("data", [])
+        if alias_apps:
+            return alias_apps[0]
+        response = alias_response
+
+    raise SetupError(
+        step="find_app",
+        message=f"No App Store Connect app found for bundle id {bundle_id}",
+        response=response,
+    )
+
+
+def list_apps_for_bundle_id(client: Any, bundle_id: str) -> dict[str, Any]:
     response = client.request(
         "GET",
         "/apps",
         "list_apps",
         params={"filter[bundleId]": bundle_id, "limit": 1, "fields[apps]": "bundleId,name"},
     )
-    apps = response.get("data", [])
-    if not apps:
-        raise SetupError(
-            step="find_app",
-            message=f"No App Store Connect app found for bundle id {bundle_id}",
-            response=response,
-        )
-    return apps[0]
+    return response
 
 
 def find_or_create_group(client: Any, app_id: str, group_name: str) -> dict[str, Any]:
@@ -225,6 +247,76 @@ def latest_valid_build(client: Any, app_id: str) -> dict[str, Any]:
     return build
 
 
+def ensure_beta_app_review_details(
+    client: Any,
+    app_id: str,
+    review_details: dict[str, Any],
+) -> None:
+    response = client.request(
+        "GET",
+        f"/apps/{app_id}/betaAppReviewDetail",
+        "get_beta_app_review_detail",
+        params={
+            "fields[betaAppReviewDetails]": (
+                "contactFirstName,contactLastName,contactPhone,contactEmail,"
+                "demoAccountRequired,notes"
+            )
+        },
+    )
+    detail = response.get("data")
+    if not isinstance(detail, dict):
+        raise SetupError(
+            step="ensure_beta_app_review_details",
+            message="No betaAppReviewDetail resource found for app",
+            response=response,
+        )
+
+    attrs = detail.get("attributes", {})
+    patch_attrs: dict[str, Any] = {}
+    missing_inputs: list[str] = []
+    for asc_field, (config_key, env_name) in REVIEW_CONTACT_FIELDS.items():
+        if attrs.get(asc_field):
+            continue
+        value = review_details.get(config_key) or review_details.get(asc_field)
+        if value:
+            patch_attrs[asc_field] = value
+        else:
+            missing_inputs.append(f"{asc_field} ({env_name})")
+
+    if missing_inputs:
+        raise SetupError(
+            step="ensure_beta_app_review_details",
+            message=(
+                "Missing beta app review contact details. Set "
+                + ", ".join(missing_inputs)
+                + " or populate Beta App Review Details in App Store Connect."
+            ),
+            response=response,
+        )
+
+    if attrs.get("demoAccountRequired") is not False:
+        patch_attrs["demoAccountRequired"] = False
+    if not attrs.get("notes"):
+        patch_attrs["notes"] = review_details.get("review_notes") or review_details.get("notes") or DEFAULT_WHATS_NEW
+
+    if not patch_attrs:
+        return
+
+    payload = {
+        "data": {
+            "type": "betaAppReviewDetails",
+            "id": detail["id"],
+            "attributes": patch_attrs,
+        }
+    }
+    client.request(
+        "PATCH",
+        f"/betaAppReviewDetails/{detail['id']}",
+        "update_beta_app_review_detail",
+        json=payload,
+    )
+
+
 def ensure_beta_app_localizations(client: Any, app_id: str) -> None:
     response = client.request(
         "GET",
@@ -281,8 +373,27 @@ def ensure_beta_build_localization(client: Any, build_id: str) -> None:
         params={"limit": 200, "fields[betaBuildLocalizations]": "locale,whatsNew"},
     )
     for localization in response.get("data", []):
-        if localization.get("attributes", {}).get("locale") == "en-US":
+        attrs = localization.get("attributes", {})
+        if attrs.get("locale") != "en-US":
+            continue
+        if attrs.get("whatsNew"):
             return
+        payload = {
+            "data": {
+                "type": "betaBuildLocalizations",
+                "id": localization["id"],
+                "attributes": {
+                    "whatsNew": DEFAULT_WHATS_NEW,
+                },
+            }
+        }
+        client.request(
+            "PATCH",
+            f"/betaBuildLocalizations/{localization['id']}",
+            "update_beta_build_localization",
+            json=payload,
+        )
+        return
 
     payload = {
         "data": {
@@ -354,6 +465,7 @@ def ensure_public_testing_group(
     bundle_id: str,
     group_name: str,
     dry_run: bool,
+    review_details: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     if dry_run:
         return dry_run_summary(group_name)
@@ -363,6 +475,7 @@ def ensure_public_testing_group(
     build = latest_valid_build(client, app["id"])
     build_id = build["id"]
 
+    ensure_beta_app_review_details(client, app["id"], review_details or {})
     ensure_beta_app_localizations(client, app["id"])
     ensure_beta_build_localization(client, build_id)
     attach_build_to_group(client, group["id"], build_id)
@@ -387,6 +500,8 @@ def dry_run_summary(group_name: str) -> dict[str, Any]:
             "GET /v1/apps/<app-id>/betaGroups; select name=" + group_name,
             "POST /v1/betaGroups if the group is missing",
             "GET /v1/builds?filter[processingState]=VALID&sort=-uploadedDate",
+            "GET /v1/apps/<app-id>/betaAppReviewDetail",
+            "PATCH /v1/betaAppReviewDetails/<id> if required details are missing",
             "GET /v1/apps/<app-id>/betaAppLocalizations",
             "PATCH /v1/betaAppLocalizations/<id> if description is missing",
             "GET /v1/builds/<build-id>/betaBuildLocalizations",
@@ -433,7 +548,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--key-id", default="")
     parser.add_argument("--issuer-id", default="")
     parser.add_argument("--private-key-path", default="")
+    parser.add_argument(
+        "--review-contact-first-name",
+        default=os.environ.get("ASC_BETA_REVIEW_CONTACT_FIRST_NAME", ""),
+    )
+    parser.add_argument(
+        "--review-contact-last-name",
+        default=os.environ.get("ASC_BETA_REVIEW_CONTACT_LAST_NAME", ""),
+    )
+    parser.add_argument(
+        "--review-contact-phone",
+        default=os.environ.get("ASC_BETA_REVIEW_CONTACT_PHONE", ""),
+    )
+    parser.add_argument(
+        "--review-contact-email",
+        default=os.environ.get("ASC_BETA_REVIEW_CONTACT_EMAIL", ""),
+    )
+    parser.add_argument(
+        "--review-notes",
+        default=os.environ.get("ASC_BETA_REVIEW_NOTES", DEFAULT_WHATS_NEW),
+    )
     return parser.parse_args()
+
+
+def review_details_from_args(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "review_contact_first_name": args.review_contact_first_name,
+        "review_contact_last_name": args.review_contact_last_name,
+        "review_contact_phone": args.review_contact_phone,
+        "review_contact_email": args.review_contact_email,
+        "review_notes": args.review_notes,
+    }
 
 
 def main() -> int:
@@ -445,6 +590,7 @@ def main() -> int:
                 bundle_id=args.bundle_id,
                 group_name=args.group_name,
                 dry_run=True,
+                review_details=review_details_from_args(args),
             )
         else:
             key_id = args.key_id
@@ -458,6 +604,7 @@ def main() -> int:
                 bundle_id=args.bundle_id,
                 group_name=args.group_name,
                 dry_run=False,
+                review_details=review_details_from_args(args),
             )
         print(json.dumps(summary, sort_keys=True))
         return 0

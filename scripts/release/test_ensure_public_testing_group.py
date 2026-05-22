@@ -7,6 +7,23 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).parent / "ensure_public_testing_group.py"
+ACTUAL_BUNDLE_ID = "net.dinglebox.cabinetdoor"
+
+
+def complete_beta_review_detail():
+    return {
+        "data": {
+            "id": "review-detail-1",
+            "attributes": {
+                "contactFirstName": "Release",
+                "contactLastName": "Owner",
+                "contactPhone": "+14165550123",
+                "contactEmail": "release@example.com",
+                "demoAccountRequired": False,
+                "notes": "Review notes",
+            },
+        }
+    }
 
 
 def load_module():
@@ -46,7 +63,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
     def test_existing_group_attaches_latest_valid_build_and_submits_review(self):
         client = FakeASCClient(
             [
-                {"data": [{"id": "app-1", "attributes": {"bundleId": "ca.riddimsoftware.epac"}}]},
+                {"data": [{"id": "app-1", "attributes": {"bundleId": ACTUAL_BUNDLE_ID}}]},
                 {"data": [{"id": "group-1", "attributes": {"name": "PublicTesting"}}]},
                 {
                     "data": [
@@ -72,6 +89,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
                         {"type": "preReleaseVersions", "id": "prv-2", "attributes": {"version": "1.3"}},
                     ],
                 },
+                complete_beta_review_detail(),
                 {
                     "data": [
                         {
@@ -96,7 +114,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
 
         summary = self.module.ensure_public_testing_group(
             client,
-            bundle_id="ca.riddimsoftware.epac",
+            bundle_id=ACTUAL_BUNDLE_ID,
             group_name="PublicTesting",
             dry_run=False,
         )
@@ -117,6 +135,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
                 "/apps",
                 "/apps/app-1/betaGroups",
                 "/builds",
+                "/apps/app-1/betaAppReviewDetail",
                 "/apps/app-1/betaAppLocalizations",
                 "/betaAppLocalizations/beta-loc-1",
                 "/builds/build-latest/betaBuildLocalizations",
@@ -129,11 +148,11 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
         self.assertNotIn("filter[name]", client.calls[1]["params"])
         self.assertEqual(client.calls[2]["params"]["sort"], "-uploadedDate")
         self.assertEqual(
-            client.calls[7]["json"],
+            client.calls[8]["json"],
             {"data": [{"type": "builds", "id": "build-latest"}]},
         )
         self.assertEqual(
-            client.calls[9]["json"],
+            client.calls[10]["json"],
             {
                 "data": {
                     "type": "betaAppReviewSubmissions",
@@ -147,7 +166,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
     def test_creates_group_with_public_link_disabled_when_missing(self):
         client = FakeASCClient(
             [
-                {"data": [{"id": "app-1", "attributes": {"bundleId": "ca.riddimsoftware.epac"}}]},
+                {"data": [{"id": "app-1", "attributes": {"bundleId": ACTUAL_BUNDLE_ID}}]},
                 {"data": []},
                 {"data": {"id": "group-2", "attributes": {"name": "PublicTesting"}}},
                 {
@@ -163,6 +182,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
                     ],
                     "included": [{"type": "preReleaseVersions", "id": "prv-1", "attributes": {"version": "1.3"}}],
                 },
+                complete_beta_review_detail(),
                 {
                     "data": [
                         {
@@ -188,7 +208,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
 
         summary = self.module.ensure_public_testing_group(
             client,
-            bundle_id="ca.riddimsoftware.epac",
+            bundle_id=ACTUAL_BUNDLE_ID,
             group_name="PublicTesting",
             dry_run=False,
         )
@@ -210,7 +230,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
     def test_existing_beta_review_submission_is_idempotent(self):
         client = FakeASCClient(
             [
-                {"data": [{"id": "app-1", "attributes": {"bundleId": "ca.riddimsoftware.epac"}}]},
+                {"data": [{"id": "app-1", "attributes": {"bundleId": ACTUAL_BUNDLE_ID}}]},
                 {"data": [{"id": "group-1", "attributes": {"name": "PublicTesting"}}]},
                 {
                     "data": [
@@ -225,6 +245,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
                     ],
                     "included": [{"type": "preReleaseVersions", "id": "prv-1", "attributes": {"version": "1.3"}}],
                 },
+                complete_beta_review_detail(),
                 {
                     "data": [
                         {
@@ -236,7 +257,7 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
                         }
                     ]
                 },
-                {"data": [{"id": "loc-1", "attributes": {"locale": "en-US"}}]},
+                {"data": [{"id": "loc-1", "attributes": {"locale": "en-US", "whatsNew": "Ready"}}]},
                 {},
                 {
                     "data": {
@@ -249,13 +270,116 @@ class EnsurePublicTestingGroupTests(unittest.TestCase):
 
         summary = self.module.ensure_public_testing_group(
             client,
-            bundle_id="ca.riddimsoftware.epac",
+            bundle_id=ACTUAL_BUNDLE_ID,
             group_name="PublicTesting",
             dry_run=False,
         )
 
         self.assertEqual(summary["review_status"], "IN_REVIEW")
         self.assertNotIn("/betaAppReviewSubmissions", [call["path"] for call in client.calls])
+
+    def test_stale_linear_bundle_id_is_mapped_to_actual_epac_bundle(self):
+        client = FakeASCClient(
+            [
+                {"data": []},
+                {"data": [{"id": "app-1", "attributes": {"bundleId": ACTUAL_BUNDLE_ID}}]},
+            ]
+        )
+
+        app = self.module.find_app(client, "ca.riddimsoftware.epac")
+
+        self.assertEqual(app["id"], "app-1")
+        self.assertEqual(client.calls[0]["params"]["filter[bundleId]"], "ca.riddimsoftware.epac")
+        self.assertEqual(client.calls[1]["params"]["filter[bundleId]"], ACTUAL_BUNDLE_ID)
+
+    def test_missing_beta_app_review_contact_details_fails_actionably(self):
+        client = FakeASCClient(
+            [
+                {
+                    "data": {
+                        "id": "review-detail-1",
+                        "attributes": {
+                            "contactFirstName": None,
+                            "contactLastName": "",
+                            "contactPhone": None,
+                            "contactEmail": "",
+                            "demoAccountRequired": None,
+                            "notes": "",
+                        },
+                    }
+                }
+            ]
+        )
+
+        with self.assertRaises(self.module.SetupError) as raised:
+            self.module.ensure_beta_app_review_details(client, "app-1", {})
+
+        self.assertEqual(raised.exception.step, "ensure_beta_app_review_details")
+        self.assertIn("ASC_BETA_REVIEW_CONTACT_FIRST_NAME", str(raised.exception))
+        self.assertEqual([call["path"] for call in client.calls], ["/apps/app-1/betaAppReviewDetail"])
+
+    def test_beta_app_review_details_are_patched_from_config_when_missing(self):
+        client = FakeASCClient(
+            [
+                {
+                    "data": {
+                        "id": "review-detail-1",
+                        "attributes": {
+                            "contactFirstName": None,
+                            "contactLastName": None,
+                            "contactPhone": None,
+                            "contactEmail": None,
+                            "demoAccountRequired": None,
+                            "notes": None,
+                        },
+                    }
+                },
+                {"data": {"id": "review-detail-1"}},
+            ]
+        )
+
+        self.module.ensure_beta_app_review_details(
+            client,
+            "app-1",
+            {
+                "contactFirstName": "Release",
+                "contactLastName": "Owner",
+                "contactPhone": "+14165550123",
+                "contactEmail": "release@example.com",
+                "notes": "Review notes",
+            },
+        )
+
+        self.assertEqual(client.calls[1]["method"], "PATCH")
+        self.assertEqual(client.calls[1]["path"], "/betaAppReviewDetails/review-detail-1")
+        self.assertEqual(
+            client.calls[1]["json"]["data"]["attributes"],
+            {
+                "contactFirstName": "Release",
+                "contactLastName": "Owner",
+                "contactPhone": "+14165550123",
+                "contactEmail": "release@example.com",
+                "demoAccountRequired": False,
+                "notes": "Review notes",
+            },
+        )
+
+    def test_empty_beta_build_whats_new_is_patched(self):
+        client = FakeASCClient(
+            [
+                {"data": [{"id": "loc-1", "attributes": {"locale": "en-US", "whatsNew": ""}}]},
+                {"data": {"id": "loc-1"}},
+            ]
+        )
+
+        self.module.ensure_beta_build_localization(client, "build-1")
+
+        self.assertEqual(client.calls[1]["method"], "PATCH")
+        self.assertEqual(client.calls[1]["path"], "/betaBuildLocalizations/loc-1")
+        self.assertEqual(
+            client.calls[1]["json"]["data"]["attributes"],
+            {"whatsNew": self.module.DEFAULT_WHATS_NEW},
+        )
 
     def test_api_error_prints_structured_json_to_stderr(self):
         error = self.module.ASCAPIError(
