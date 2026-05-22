@@ -63,8 +63,10 @@ Open `backend/openapi/openapi.json` and find the endpoint the iOS service calls.
 
 **Citation format:**
 ```
-backend/openapi/openapi.json — GET /api/v1/live → `status`, `sitting_date`, `hansard_url`
+backend/openapi/openapi.json:NN — paths./api/v1/live.get → response 200 fields: `status`, `sitting_date`, `hansard_url`
 ```
+
+Where `:NN` is the line number of the path entry in the JSON file. OpenAPI JSON is line-addressable; cite the line of the path key you read.
 
 ### 3e. Upstream data source — trace to the public record
 
@@ -98,7 +100,7 @@ Present the full trace in a single, readable summary:
 **UI:** ios/epac/Views/.../SomeView.swift:NN — renders `.liveStatus.statusText`
 **View model:** ios/epac/Views/.../SomeViewModel.swift:NN — `var liveStatus: LiveStatus?`
 **Service:** ios/epac/Util/LiveStatusService.swift:NN–NN — fetches from `/api/v1/live`
-**Backend:** GET /api/v1/live (backend/openapi/openapi.json) — returns `status`, `sitting_date`
+**Backend:** GET /api/v1/live (backend/openapi/openapi.json:NN) — returns `status`, `sitting_date`
 **Source:** Parliament Hansard feed via backend/hansard/hansard_ingest.py:NN
 **Public record:** https://www.ourcommons.ca/...
 ```
