@@ -3,7 +3,7 @@
 Added codex-side intake provenance hooks to mirror the Claude Code hook structure in `.claude/settings.json`.
 
 Three new files:
-- `.codex/config.toml`: TOML hook config read automatically by codex when the session cwd is inside the repo. Registers all four lifecycle events (SessionStart, UserPromptSubmit, PostToolUse with matcher `*`, Stop), each invoking `scripts/intake/intake_session_hook.py <subcommand>`. The handler rename (EPAC-1950) is a dependency — config references the post-rename name but the smoke test falls back to `bugfix_session_hook.py` while pending.
+- `.codex/config.toml`: TOML hook config read automatically by codex when the session cwd is inside the repo. Registers all four lifecycle events (SessionStart, UserPromptSubmit, PostToolUse with matcher `*`, Stop), each invoking `scripts/intake/intake_session_hook.py <subcommand>`.
 - `.codex/README.md`: investigation notes documenting hook discovery order (4 locations merged), supported events, payload schema (JSON on stdin), and a diff table vs Claude Code.
 - `scripts/intake/test_codex_hooks.sh`: smoke test that drives the handler with synthetic payloads for all four events. Validates `events.jsonl` and `summary.json` without a live codex session.
 
@@ -16,7 +16,7 @@ The WIP commit from the previous attempt included a `.claude/settings.json` refo
 ```
 bash scripts/intake/test_codex_hooks.sh
 
-handler: bugfix_session_hook.py (rename to intake_session_hook.py pending EPAC-1950)
+handler: intake_session_hook.py
 session: test-codex-hooks-1779484506
 
 --- session-start ---
@@ -43,5 +43,5 @@ PR: https://github.com/RiddimSoftware/epac/pull/521
 
 ## Blockers / follow-ups
 
-- EPAC-1950 (rename `bugfix_session_hook.py` → `intake_session_hook.py`) must land before codex sessions invoke the correct handler path. Config is already forward-compatible.
+- The handler rename is now handled by EPAC-1949, so codex sessions invoke `intake_session_hook.py` directly.
 - Acceptance criteria mention `session.json`, `transcript.md`, and `issues.jsonl` as output files; the current handler writes `events.jsonl` and `summary.json`. Those specific output files are a handler concern (out of scope per issue spec — "Modifying the intake_session_hook.py handler itself is a separate issue").

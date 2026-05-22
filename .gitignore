@@ -3,7 +3,9 @@
 .DS_Store
 .codex/sessions/
 .codex/cache/
-.factory/intake/
+.factory/intake/*
+!.factory/intake/
+!.factory/intake/README.md
 .factory/context/repo-map.json
 gpt2_*/
 /model*/
