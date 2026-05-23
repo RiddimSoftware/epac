@@ -12,6 +12,8 @@ repositories:
 
 server:
   port: 4781
+reviewer:
+  enabled: false
 ---
 # epac Symphony Workflow
 
@@ -149,6 +151,16 @@ Additional rules beyond the standard repository rules above:
 After verification passes, read `git diff origin/main...HEAD` in full. For each acceptance criterion in the issue, confirm there is corresponding code. Flag and fix anything that looks like a missed edge case, incorrect assumption, or incomplete implementation. Use your existing context — do not re-read files speculatively.
 
 Open the PR only after this pass is clean.
+<!-- /symphony-workflow:local-section -->
+
+<!-- symphony-workflow:local-section id=pr_submission -->
+## PR Submission
+
+There is no separate reviewer step. Once the self-review pass is clean and verification passes, open the PR and stop. CI gates the merge: `pr-build` is the required status check. `set-automerge.yml` arms squash automerge on PR open — GitHub merges automatically when `pr-build` passes.
+
+- Open the PR with `gh pr create` (no `--label autonomous` required).
+- Do not wait for CI, review, or merge confirmation inside the model session.
+- Write `handoff.md` and stop after the PR is open.
 <!-- /symphony-workflow:local-section -->
 
 Verification expectations:
