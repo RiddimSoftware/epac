@@ -35,7 +35,6 @@ disabled_rules:
   - convenience_type           # Style preference (caseless enum vs static struct); the codebase mixes both deliberately.
   - large_tuple                # SwiftUI gradient/coordinate tuples are inherently > 3 elements.
   - switch_case_alignment      # Existing files use 1-tab indentation that conflicts with the default check; our diff style is fine.
-  - cyclomatic_complexity      # Deep-link routers and migration code are inherently branchy; we flag specific cases in review.
   - identifier_name            # The codebase uses domain-meaningful suffixes (DateUtils `_en`/`_fr`, JSON-key locals like `LongTitleEn`) that don't fit the default rules; we rely on review to catch genuinely bad names.
   - line_length                # Long lines are dominated by SwiftUI modifier chains, NSLocalizedString keys, and URL strings — wrapping every one of those hurts readability more than the long line.
   - for_where                  # Several existing for-loops do work *and* short-circuit on a condition, where `for-where` would obscure intent.
@@ -49,6 +48,10 @@ disabled_rules:
   - type_name                               # The codebase has a few `_LeadingUnderscore` private helpers and a handful of intentional `lowercase_snake_case` local types from JSON decoding shims.
   - trailing_newline                        # Snapshot test PNGs and a few Swift files violate the missing/extra newline rule; not blocking for the baseline.
   - void_function_in_ternary                # One legacy site; rewriting now would touch unrelated code.
+
+cyclomatic_complexity:
+  warning: 5
+  error: 50
 
 opt_in_rules:
   - force_cast                  # Real bug-in-waiting; should be Result-returning APIs instead.
