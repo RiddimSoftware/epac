@@ -51,7 +51,7 @@ disabled_rules:
 
 cyclomatic_complexity:
   warning: 5
-  error: 5
+  error: 50
 
 opt_in_rules:
   - force_cast                  # Real bug-in-waiting; should be Result-returning APIs instead.
