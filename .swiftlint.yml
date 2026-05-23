@@ -49,6 +49,10 @@ disabled_rules:
   - trailing_newline                        # Snapshot test PNGs and a few Swift files violate the missing/extra newline rule; not blocking for the baseline.
   - void_function_in_ternary                # One legacy site; rewriting now would touch unrelated code.
 
+cyclomatic_complexity:
+  warning: 5
+  error: 5
+
 opt_in_rules:
   - force_cast                  # Real bug-in-waiting; should be Result-returning APIs instead.
   - force_try                   # Same — surface failures explicitly.
