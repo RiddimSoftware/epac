@@ -143,6 +143,14 @@ Additional rules beyond the standard repository rules above:
   screenshot/evidence flow and include the resulting assets or links in the PR.
 <!-- /symphony-workflow:local-section -->
 
+<!-- symphony-workflow:local-section id=self_review -->
+## Self-Review
+
+After verification passes, read `git diff origin/main...HEAD` in full. For each acceptance criterion in the issue, confirm there is corresponding code. Flag and fix anything that looks like a missed edge case, incorrect assumption, or incomplete implementation. Use your existing context — do not re-read files speculatively.
+
+Open the PR only after this pass is clean.
+<!-- /symphony-workflow:local-section -->
+
 Verification expectations:
 - Run `cd ios && make build`. See the Verification Expectations section for area-specific commands.
 - Report any verification that could not run with the exact command and reason.
