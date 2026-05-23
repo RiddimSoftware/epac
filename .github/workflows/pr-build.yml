@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/realm/swiftlint:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Run SwiftLint
