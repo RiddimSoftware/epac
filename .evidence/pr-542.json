@@ -1,0 +1,107 @@
+{
+  "_doc": "Regression evidence plan for PR #542 (EPAC-1985: reduce ContentView deep-link complexity). See docs/architecture/deep-link-routes.md for the route catalog. The 18 openURL steps below cover every route in that catalog. The regression assertion is: for every route ID, the before-revision and after-revision screenshots are pixel-identical (modulo dynamic content masked by EPAC_EVIDENCE_MODE).",
+  "repo": "RiddimSoftware/epac",
+  "pr": 542,
+  "platform": "ios",
+  "runner": "simctl",
+  "ios": {
+    "project": "ios/epac.xcodeproj",
+    "scheme": "epac",
+    "bundle_id": "net.dinglebox.cabinetdoor",
+    "configuration": "Debug",
+    "simulator": "iPhone 17 Pro Max",
+    "simulator_udid": "1B4F22DF-E851-4A3B-AFFE-0EA338BD5D48",
+    "destination": "platform=iOS Simulator,name=iPhone 17 Pro Max"
+  },
+  "launch": {
+    "arguments": [
+      "--evidence-mode",
+      "-UIAnimationsDisabled",
+      "YES"
+    ],
+    "environment": {
+      "EPAC_EVIDENCE_MODE": "1"
+    }
+  },
+  "output_directory": "docs/build-evidence/pr-542",
+  "video": {
+    "enabled": false
+  },
+  "steps": [
+    { "name": "launch app", "kind": "launch" },
+    { "name": "settle after launch", "kind": "wait", "seconds": 2.0 },
+    { "name": "baseline launch state", "kind": "screenshot", "path": "00-launch-baseline.png" },
+
+    { "name": "open ul-unknown-fallback", "kind": "openURL", "url": "https://epac.riddimsoftware.com/notarealroute" },
+    { "name": "settle ul-unknown-fallback", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-unknown-fallback", "kind": "screenshot", "path": "ul-unknown-fallback.png" },
+
+    { "name": "open cs-unrecognized", "kind": "openURL", "url": "cabinetdoor://nothing/123" },
+    { "name": "settle cs-unrecognized", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture cs-unrecognized", "kind": "screenshot", "path": "cs-unrecognized.png" },
+
+    { "name": "open ul-app-legacy", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?date=2024-09-16&subjectID=1" },
+    { "name": "settle ul-app-legacy", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-app-legacy", "kind": "screenshot", "path": "ul-app-legacy.png" },
+
+    { "name": "open ul-app-encoded-path", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?path=%2Fbill%2FC-1" },
+    { "name": "settle ul-app-encoded-path", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-app-encoded-path", "kind": "screenshot", "path": "ul-app-encoded-path.png" },
+
+    { "name": "open cs-sitting", "kind": "openURL", "url": "cabinetdoor://sitting/2024-09-16" },
+    { "name": "settle cs-sitting", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture cs-sitting", "kind": "screenshot", "path": "cs-sitting.png" },
+
+    { "name": "open cs-event", "kind": "openURL", "url": "cabinetdoor://event/2024-09-16" },
+    { "name": "settle cs-event", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture cs-event", "kind": "screenshot", "path": "cs-event.png" },
+
+    { "name": "open ul-sitting", "kind": "openURL", "url": "https://epac.riddimsoftware.com/sitting/2024-09-16" },
+    { "name": "settle ul-sitting", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-sitting", "kind": "screenshot", "path": "ul-sitting.png" },
+
+    { "name": "open ul-speech", "kind": "openURL", "url": "https://epac.riddimsoftware.com/speech/12345" },
+    { "name": "settle ul-speech", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-speech", "kind": "screenshot", "path": "ul-speech.png" },
+
+    { "name": "open cs-vote", "kind": "openURL", "url": "cabinetdoor://vote/44-1/1" },
+    { "name": "settle cs-vote", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture cs-vote", "kind": "screenshot", "path": "cs-vote.png" },
+
+    { "name": "open ul-vote", "kind": "openURL", "url": "https://epac.riddimsoftware.com/vote/44-1/1" },
+    { "name": "settle ul-vote", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-vote", "kind": "screenshot", "path": "ul-vote.png" },
+
+    { "name": "open ul-bill", "kind": "openURL", "url": "https://epac.riddimsoftware.com/bill/C-1" },
+    { "name": "settle ul-bill", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-bill", "kind": "screenshot", "path": "ul-bill.png" },
+
+    { "name": "open ul-topic", "kind": "openURL", "url": "https://epac.riddimsoftware.com/topic/housing" },
+    { "name": "settle ul-topic", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-topic", "kind": "screenshot", "path": "ul-topic.png" },
+
+    { "name": "open ul-topics", "kind": "openURL", "url": "https://epac.riddimsoftware.com/topics/housing" },
+    { "name": "settle ul-topics", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-topics", "kind": "screenshot", "path": "ul-topics.png" },
+
+    { "name": "open ul-riding", "kind": "openURL", "url": "https://epac.riddimsoftware.com/riding/ottawa-centre" },
+    { "name": "settle ul-riding", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-riding", "kind": "screenshot", "path": "ul-riding.png" },
+
+    { "name": "open ul-ridings", "kind": "openURL", "url": "https://epac.riddimsoftware.com/ridings/ottawa-centre" },
+    { "name": "settle ul-ridings", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-ridings", "kind": "screenshot", "path": "ul-ridings.png" },
+
+    { "name": "open cs-member", "kind": "openURL", "url": "cabinetdoor://member/71414" },
+    { "name": "settle cs-member", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture cs-member", "kind": "screenshot", "path": "cs-member.png" },
+
+    { "name": "open ul-member", "kind": "openURL", "url": "https://epac.riddimsoftware.com/member/71414" },
+    { "name": "settle ul-member", "kind": "wait", "seconds": 1.5 },
+    { "name": "capture ul-member", "kind": "screenshot", "path": "ul-member.png" },
+
+    { "name": "open ul-setup-postal-code", "kind": "openURL", "url": "https://epac.riddimsoftware.com/setup/postal-code" },
+    { "name": "settle ul-setup-postal-code", "kind": "wait", "seconds": 2.0 },
+    { "name": "capture ul-setup-postal-code", "kind": "screenshot", "path": "ul-setup-postal-code.png" }
+  ]
+}
