@@ -114,35 +114,9 @@ class SearchViewModel {
         }
 
         var out = SearchResults()
-
-        // Members: match name, riding, party full name
-        for member in cachedMembers {
-            if member.name.localizedCaseInsensitiveContains(trimmedQuery)
-                || member.riding.localizedCaseInsensitiveContains(trimmedQuery)
-                || member.party.fullName.localizedCaseInsensitiveContains(trimmedQuery) {
-                out.members.append(MemberResult(id: member.memberID, member: member))
-                if out.members.count >= Self.maxPerSection { break }
-            }
-        }
-
-        // Votes: match description, bill number
-        for vote in cachedVotes {
-            if vote.descriptionEn.localizedCaseInsensitiveContains(trimmedQuery)
-                || vote.billNumberCode.localizedCaseInsensitiveContains(trimmedQuery) {
-                out.votes.append(VoteResult(id: vote.voteID, vote: vote))
-                if out.votes.count >= Self.maxPerSection { break }
-            }
-        }
-
-        // Bills: match bill number or title
-        for bill in cachedBills {
-            if bill.number.localizedCaseInsensitiveContains(trimmedQuery)
-                || bill.title.localizedCaseInsensitiveContains(trimmedQuery) {
-                out.bills.append(BillResult(id: bill.number, bill: bill))
-                if out.bills.count >= 10 { break }
-            }
-        }
-
+        out.members = filterMembers(query: trimmedQuery)
+        out.votes = filterVotes(query: trimmedQuery)
+        out.bills = filterBills(query: trimmedQuery)
         out.debates = searchHansard.execute(query: trimmedQuery).map { match in
             DebateResult(
                 id: match.id,
@@ -153,5 +127,39 @@ class SearchViewModel {
         }
 
         searchResults = out
+    }
+
+    private func filterMembers(query: String) -> [MemberResult] {
+        var results: [MemberResult] = []
+        for member in cachedMembers {
+            guard member.name.localizedCaseInsensitiveContains(query)
+                || member.riding.localizedCaseInsensitiveContains(query)
+                || member.party.fullName.localizedCaseInsensitiveContains(query) else { continue }
+            results.append(MemberResult(id: member.memberID, member: member))
+            if results.count >= Self.maxPerSection { break }
+        }
+        return results
+    }
+
+    private func filterVotes(query: String) -> [VoteResult] {
+        var results: [VoteResult] = []
+        for vote in cachedVotes {
+            guard vote.descriptionEn.localizedCaseInsensitiveContains(query)
+                || vote.billNumberCode.localizedCaseInsensitiveContains(query) else { continue }
+            results.append(VoteResult(id: vote.voteID, vote: vote))
+            if results.count >= Self.maxPerSection { break }
+        }
+        return results
+    }
+
+    private func filterBills(query: String) -> [BillResult] {
+        var results: [BillResult] = []
+        for bill in cachedBills {
+            guard bill.number.localizedCaseInsensitiveContains(query)
+                || bill.title.localizedCaseInsensitiveContains(query) else { continue }
+            results.append(BillResult(id: bill.number, bill: bill))
+            if results.count >= 10 { break }
+        }
+        return results
     }
 }
