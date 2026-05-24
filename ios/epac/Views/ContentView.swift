@@ -15,6 +15,9 @@ import UIKit
 #endif
 
 struct ContentView: View {
+	private typealias CustomSchemeHandler = (URL) -> Void
+	private typealias UniversalLinkHandler = ([String], URL) -> Void
+
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
@@ -311,81 +314,130 @@ struct ContentView: View {
 		// cabinetdoor://vote/[voteID]  → switches to accountability tab
 		// cabinetdoor://sitting/[yyyy-MM-dd]  → Parliament tab, first sitting day
 		let host = url.host?.lowercased() ?? ""
-		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
-		switch host {
-		case "member":
-			if let id = pathID { navigateToMember(memberID: id) }
-		case "vote":
-			router.selectedTab = .accountability
-		case "sitting", "event":
-			// Rebuild as a path-based URL so ContentViewModel's sitting parser can consume it.
-			let dateStr = url.pathComponents.dropFirst().first ?? ""
-			if let rebuilt = URL(string: "cabinetdoor:///\(host)/\(dateStr)") {
-				viewModel.onOpenURL(rebuilt, modelContext: modelContext, fetch: fetch)
-			}
-			router.selectedTab = .parliament
-		default:
-			break
-		}
+		customSchemeHandlers[host]?(url)
 	}
 
 	/// Handles Universal Links from epac.riddimsoftware.com.
 	/// Each path pattern maps to a specific in-app destination; unrecognised paths fall back to Home.
 	private func handleUniversalLink(_ url: URL) {
 		let segments = url.pathComponents.filter { $0 != "/" }
+		let route = segments.first ?? "app"
 
-		switch segments.first {
-		case "member":
-			// /member/[member-id] → MP profile
-			if let idStr = segments.dropFirst().first, let id = Int(idStr) {
-				navigateToMember(memberID: id)
-			}
-		case "vote":
-			// /vote/[parliament]-[session]/[number] → Search tab pre-filled
-			let voteRef = segments.dropFirst().joined(separator: "/")
-			if !voteRef.isEmpty { router.pendingSearchQuery = voteRef }
-			router.selectedTab = .search
-		case "bill":
-			// /bill/[bill-number] e.g. /bill/C-50 → Search tab pre-filled
-			if let billNumber = segments.dropFirst().first {
-				router.pendingSearchQuery = billNumber
-			}
-			router.selectedTab = .search
-		case "sitting":
-			// /sitting/[date] → Parliament tab (date routing in ContentViewModel)
-			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
-			router.selectedTab = .parliament
-		case "speech":
-			// Generic speech web share pages land on Parliament; specific speech
-			// deep-links remain handled by ContentViewModel's legacy /app format.
-			router.selectedTab = .parliament
-		case "topic", "topics":
-			// /topic/[topic-slug] and website /topics/[topic-slug].html → Search tab pre-filled
-			if let slug = segments.dropFirst().first {
-				router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
-				router.selectedTab = .search
-			}
-		case "riding", "ridings":
-			// /riding/[riding-slug] and website /ridings/[riding-slug].html → Search tab pre-filled
-			if let slug = segments.dropFirst().first {
-				router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
-				router.selectedTab = .search
-			}
-		case "setup":
-			// /setup/postal-code → postal code setup sheet on Home tab
-			router.pendingShowPostalCodeSetup = true
+		guard let handler = universalLinkHandlers[route] else {
 			router.selectedTab = .home
-		case "app", nil:
-			if let (pathURL, _) = encodedPathUniversalLink(from: url) {
-				handleUniversalLink(pathURL)
-				return
-			}
-			// Legacy query-parameter format: /app?date=...&subjectID=...
-			viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
-		default:
-			// Home fallback for unrecognised paths — never crashes
-			router.selectedTab = .home
+			return
 		}
+
+		handler(segments, url)
+	}
+
+	private var customSchemeHandlers: [String: CustomSchemeHandler] {
+		[
+			"member": handleMemberCustomScheme,
+			"vote": handleVoteCustomScheme,
+			"sitting": handleSittingCustomScheme,
+			"event": handleSittingCustomScheme
+		]
+	}
+
+	private var universalLinkHandlers: [String: UniversalLinkHandler] {
+		[
+			"member": handleMemberUniversalLink,
+			"vote": handleVoteUniversalLink,
+			"bill": handleBillUniversalLink,
+			"sitting": handleSittingUniversalLink,
+			"speech": handleSpeechUniversalLink,
+			"topic": handleTopicUniversalLink,
+			"topics": handleTopicUniversalLink,
+			"riding": handleRidingUniversalLink,
+			"ridings": handleRidingUniversalLink,
+			"setup": handleSetupUniversalLink,
+			"app": handleAppUniversalLink
+		]
+	}
+
+	private func handleMemberCustomScheme(_ url: URL) {
+		let pathID = url.pathComponents.dropFirst().first.flatMap { Int($0) }
+		if let id = pathID { navigateToMember(memberID: id) }
+	}
+
+	private func handleVoteCustomScheme(_ _: URL) {
+		router.selectedTab = .accountability
+	}
+
+	private func handleSittingCustomScheme(_ url: URL) {
+		// Rebuild as a path-based URL so ContentViewModel's sitting parser can consume it.
+		let host = url.host?.lowercased() ?? ""
+		let dateStr = url.pathComponents.dropFirst().first ?? ""
+		if let rebuilt = URL(string: "cabinetdoor:///\(host)/\(dateStr)") {
+			viewModel.onOpenURL(rebuilt, modelContext: modelContext, fetch: fetch)
+		}
+		router.selectedTab = .parliament
+	}
+
+	private func handleMemberUniversalLink(segments: [String], url _: URL) {
+		// /member/[member-id] → MP profile
+		if let idStr = segments.dropFirst().first, let id = Int(idStr) {
+			navigateToMember(memberID: id)
+		}
+	}
+
+	private func handleVoteUniversalLink(segments: [String], url _: URL) {
+		// /vote/[parliament]-[session]/[number] → Search tab pre-filled
+		let voteRef = segments.dropFirst().joined(separator: "/")
+		if !voteRef.isEmpty { router.pendingSearchQuery = voteRef }
+		router.selectedTab = .search
+	}
+
+	private func handleBillUniversalLink(segments: [String], url _: URL) {
+		// /bill/[bill-number] e.g. /bill/C-50 → Search tab pre-filled
+		if let billNumber = segments.dropFirst().first {
+			router.pendingSearchQuery = billNumber
+		}
+		router.selectedTab = .search
+	}
+
+	private func handleSittingUniversalLink(segments: [String], url: URL) {
+		// /sitting/[date] → Parliament tab (date routing in ContentViewModel)
+		viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
+		router.selectedTab = .parliament
+	}
+
+	private func handleSpeechUniversalLink(segments _: [String], url _: URL) {
+		// Generic speech web share pages land on Parliament; specific speech
+		// deep-links remain handled by ContentViewModel's legacy /app format.
+		router.selectedTab = .parliament
+	}
+
+	private func handleTopicUniversalLink(segments: [String], url _: URL) {
+		// /topic/[topic-slug] and website /topics/[topic-slug].html → Search tab pre-filled
+		if let slug = segments.dropFirst().first {
+			router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
+			router.selectedTab = .search
+		}
+	}
+
+	private func handleRidingUniversalLink(segments: [String], url _: URL) {
+		// /riding/[riding-slug] and website /ridings/[riding-slug].html → Search tab pre-filled
+		if let slug = segments.dropFirst().first {
+			router.pendingSearchQuery = searchQuery(fromWebSlug: slug)
+			router.selectedTab = .search
+		}
+	}
+
+	private func handleSetupUniversalLink(segments _: [String], url _: URL) {
+		// /setup/postal-code → postal code setup sheet on Home tab
+		router.pendingShowPostalCodeSetup = true
+		router.selectedTab = .home
+	}
+
+	private func handleAppUniversalLink(segments _: [String], url: URL) {
+		if let (pathURL, _) = encodedPathUniversalLink(from: url) {
+			handleUniversalLink(pathURL)
+			return
+		}
+		// Legacy query-parameter format: /app?date=...&subjectID=...
+		viewModel.onOpenURL(url, modelContext: modelContext, fetch: fetch)
 	}
 
 	private func encodedPathUniversalLink(from url: URL) -> (url: URL, path: String)? {
