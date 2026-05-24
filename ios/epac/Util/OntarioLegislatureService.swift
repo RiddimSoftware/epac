@@ -13,7 +13,27 @@ import Foundation
 struct OntarioLegislatureService {
     private static let cacheKey = "epac.ontario.mpps"
     private static let cacheTimestampKey = "epac.ontario.mpps.ts"
-    private static let cacheTTL: TimeInterval = 7 * 86_400 // 1 week
+    private enum Constants {
+        static let cacheDays: TimeInterval = 7
+        static let secondsPerDay: TimeInterval = 86_400
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+        static let debateDateCaptureGroup = 2
+        static let currentParliament = 43
+        static let currentSession = 1
+        static let recentDebateLimit = 20
+        static let ridingCaptureGroup = 2
+        static let partyCaptureGroup = 3
+        static let profilePathCaptureGroup = 4
+
+        static var cacheTTL: TimeInterval {
+            cacheDays * secondsPerDay
+        }
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
     // Known-good fallback URL: literal is always valid, forced unwrap is intentional.
     // swiftlint:disable:next force_unwrapping
     private static let olaFallbackURL: URL = URL(string: "https://www.ola.org/en/members/current")!
@@ -49,7 +69,7 @@ struct OntarioLegislatureService {
         guard let url = URL(string: "https://www.ola.org/en/legislative-business/house-documents/parliament-43/session-1/hansard") else { return [] }
         guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else { return [] }
 
         var debates: [OntarioDebateDay] = []
@@ -64,7 +84,7 @@ struct OntarioLegislatureService {
         re.enumerateMatches(in: html, range: range) { match, _, _ in
             guard let match,
                   let pathRange = Range(match.range(at: 1), in: html),
-                  let dateRange = Range(match.range(at: 2), in: html) else { return }
+                  let dateRange = Range(match.range(at: Constants.debateDateCaptureGroup), in: html) else { return }
             let path = String(html[pathRange])
             let dateStr = String(html[dateRange])
             let date = isoParser.date(from: dateStr)
@@ -75,12 +95,12 @@ struct OntarioLegislatureService {
                 id: id,
                 date: date,
                 title: "Debates and Proceedings",
-                parliament: 43,
-                session: 1,
+                parliament: Constants.currentParliament,
+                session: Constants.currentSession,
                 publicationURL: url
             ))
         }
-        return Array(debates.prefix(20))
+        return Array(debates.prefix(Constants.recentDebateLimit))
     }
 
     // MARK: - Ontario Open Data (primary)
@@ -90,7 +110,7 @@ struct OntarioLegislatureService {
         guard let url = URL(string: urlStr),
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [String: Any],
               let records = result["records"] as? [[String: Any]] else { return nil }
@@ -143,9 +163,9 @@ struct OntarioLegislatureService {
                 return String(html[r]).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             let fullName = extract(1)
-            let riding = extract(2)
-            let party = extract(3)
-            let path = extract(4)
+            let riding = extract(Constants.ridingCaptureGroup)
+            let party = extract(Constants.partyCaptureGroup)
+            let path = extract(Constants.profilePathCaptureGroup)
             guard !fullName.isEmpty else { return }
             let parts = fullName.components(separatedBy: " ")
             let fn = parts.dropLast().joined(separator: " ")
@@ -173,7 +193,7 @@ struct OntarioLegislatureService {
         guard
             let data = UserDefaults.standard.data(forKey: cacheKey),
             let ts   = UserDefaults.standard.object(forKey: cacheTimestampKey) as? Date,
-            Date().timeIntervalSince(ts) < cacheTTL,
+            Date().timeIntervalSince(ts) < Constants.cacheTTL,
             let mpps = try? JSONDecoder().decode([OntarioMPP].self, from: data)
         else { return nil }
         return mpps

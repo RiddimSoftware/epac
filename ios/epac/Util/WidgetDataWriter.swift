@@ -14,6 +14,9 @@ import WidgetKit
 //   Group: group.net.dinglebox.cabinetdoor
 enum WidgetDataWriter {
 	static let appGroupID = "group.net.dinglebox.cabinetdoor"
+	private enum Constants {
+		static let recentSubjectsLimit = 3
+	}
 
 	private static var defaults: UserDefaults? {
 		UserDefaults(suiteName: appGroupID)
@@ -43,7 +46,7 @@ enum WidgetDataWriter {
 
 	/// Write up to 3 recent subject titles for the medium widget.
 	static func writeRecentSubjects(_ titles: [String]) {
-		defaults?.set(Array(titles.prefix(3)), forKey: recentSubjectsKey)
+		defaults?.set(Array(titles.prefix(Constants.recentSubjectsLimit)), forKey: recentSubjectsKey)
 	}
 
 	/// Write the compact state used by watchOS complications.

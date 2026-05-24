@@ -10,6 +10,22 @@ import Foundation
 struct NetworkService: @unchecked Sendable {
     static let shared = NetworkService()
 
+    fileprivate enum Constants {
+        static let tooManyRequestsStatusCode = 429
+        static let notModifiedStatusCode = 304
+        static let okStatusCode = 200
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+        static let backoffBase = 2.0
+        static let fnvOffsetBasis: UInt64 = 14_695_981_039_346_656_037
+        static let fnvPrime: UInt64 = 1_099_511_628_211
+        static let hexRadix = 16
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
+
     private let session: URLSession
     private let cacheStore: HTTPResponseCacheStore
     private let sleep: @Sendable (Double) async throws -> Void
@@ -44,7 +60,7 @@ struct NetworkService: @unchecked Sendable {
             do {
                 let (data, response) = try await session.data(for: cachedRequest.request)
                 if let httpResponse = response as? HTTPURLResponse,
-                   httpResponse.statusCode == 429,
+                   httpResponse.statusCode == Constants.tooManyRequestsStatusCode,
                    attempt < maxAttempts - 1 {
                     pendingDelay = retryDelay(from: httpResponse) ?? backoffDelay(for: attempt)
                     continue
@@ -79,7 +95,7 @@ struct NetworkService: @unchecked Sendable {
     }
 
     private func backoffDelay(for attempt: Int) -> Double {
-        pow(2.0, Double(attempt)) // 1s, 2s, 4s
+        pow(Constants.backoffBase, Double(attempt)) // 1s, 2s, 4s
     }
 
     private func attachRateLimitDeviceIDIfNeeded(to request: inout URLRequest) {
@@ -212,14 +228,14 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
             return (data, response)
         }
 
-        if httpResponse.statusCode == 304,
+        if httpResponse.statusCode == NetworkService.Constants.notModifiedStatusCode,
            cachedRequest.mayServeStoredResponse,
            let cachedData = cachedData(for: url) {
             refreshValidators(from: httpResponse, for: url)
             return (cachedData, revalidatedResponse(from: httpResponse, url: url))
         }
 
-        guard (200..<300).contains(httpResponse.statusCode) else {
+        guard NetworkService.Constants.successStatusCodes.contains(httpResponse.statusCode) else {
             return (data, response)
         }
 
@@ -292,7 +308,7 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
     private func revalidatedResponse(from response: HTTPURLResponse, url: URL) -> HTTPURLResponse {
         HTTPURLResponse(
             url: response.url ?? url,
-            statusCode: 200,
+            statusCode: NetworkService.Constants.okStatusCode,
             httpVersion: "HTTP/1.1",
             headerFields: stringHeaders(from: response)
         ) ?? response
@@ -339,11 +355,11 @@ final class HTTPResponseCacheStore: @unchecked Sendable {
     }
 
     private func cacheKey(for url: URL) -> String {
-        var hash = UInt64(14_695_981_039_346_656_037)
+        var hash = NetworkService.Constants.fnvOffsetBasis
         for byte in url.absoluteString.utf8 {
             hash ^= UInt64(byte)
-            hash &*= 1_099_511_628_211
+            hash &*= NetworkService.Constants.fnvPrime
         }
-        return String(hash, radix: 16)
+        return String(hash, radix: NetworkService.Constants.hexRadix)
     }
 }

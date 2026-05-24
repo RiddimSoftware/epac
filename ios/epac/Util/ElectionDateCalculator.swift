@@ -14,6 +14,18 @@ import Foundation
 // Pure functions — caller passes in dependencies (last election date, "now")
 // so the same code is testable for any year boundary without freezing time.
 enum ElectionDateCalculator {
+	private enum Constants {
+		static let lastGeneralElectionYear = 2025
+		static let lastGeneralElectionMonth = 4
+		static let lastGeneralElectionDay = 28
+		static let dateConstructionNoonHour = 12
+		static let fixedElectionYearOffset = 4
+		static let octoberMonth = 10
+		static let morningDateConstructionHour = 9
+		static let weekdayModulo = 7
+		static let mondayOffsetBasis = 9
+		static let thirdMondayWeekOffsetDays = 14
+	}
 
 	// 45th Canadian general election was held 2025-04-28. Source:
 	// Elections Canada (https://www.elections.ca/content.aspx?section=ele).
@@ -22,10 +34,10 @@ enum ElectionDateCalculator {
 	// without touching call sites.
 	static let last45thGeneralElection: Date = {
 		var components = DateComponents()
-		components.year = 2025
-		components.month = 4
-		components.day = 28
-		components.hour = 12
+		components.year = Constants.lastGeneralElectionYear
+		components.month = Constants.lastGeneralElectionMonth
+		components.day = Constants.lastGeneralElectionDay
+		components.hour = Constants.dateConstructionNoonHour
 		components.timeZone = TimeZone(identifier: "America/Toronto")
 		return Calendar(identifier: .gregorian).date(from: components)!
 	}()
@@ -38,7 +50,7 @@ enum ElectionDateCalculator {
 		var calendar = Calendar(identifier: .gregorian)
 		calendar.timeZone = TimeZone(identifier: "America/Toronto")!
 		let previousYear = calendar.component(.year, from: previousElection)
-		let targetYear = previousYear + 4
+		let targetYear = previousYear + Constants.fixedElectionYearOffset
 		return thirdMondayOfOctober(year: targetYear, calendar: calendar)
 	}
 
@@ -59,17 +71,17 @@ enum ElectionDateCalculator {
 	static func thirdMondayOfOctober(year: Int, calendar: Calendar = Calendar(identifier: .gregorian)) -> Date {
 		var components = DateComponents()
 		components.year = year
-		components.month = 10
+		components.month = Constants.octoberMonth
 		components.day = 1
-		components.hour = 9
+		components.hour = Constants.morningDateConstructionHour
 		components.timeZone = calendar.timeZone
 		guard let october1 = calendar.date(from: components) else {
 			fatalError("Could not construct October 1 for year \(year)")
 		}
 		let weekday = calendar.component(.weekday, from: october1) // Sunday=1, Monday=2
-		let daysUntilFirstMonday = (9 - weekday) % 7 // 0 if Oct 1 is Mon, else days to next Mon
+		let daysUntilFirstMonday = (Constants.mondayOffsetBasis - weekday) % Constants.weekdayModulo // 0 if Oct 1 is Mon, else days to next Mon
 		guard let firstMonday = calendar.date(byAdding: .day, value: daysUntilFirstMonday, to: october1),
-		      let thirdMonday = calendar.date(byAdding: .day, value: 14, to: firstMonday) else {
+		      let thirdMonday = calendar.date(byAdding: .day, value: Constants.thirdMondayWeekOffsetDays, to: firstMonday) else {
 			fatalError("Could not derive third Monday of October \(year)")
 		}
 		return thirdMonday

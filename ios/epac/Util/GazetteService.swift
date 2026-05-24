@@ -5,6 +5,15 @@ import Foundation
 // No AI-generated content.
 
 struct GazetteService {
+    private enum Constants {
+        static let requestTimeout: TimeInterval = 20
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     private static let partIURL  = URL(string: "https://gazette.gc.ca/rss/p1-eng.xml")!
     private static let partIIURL = URL(string: "https://gazette.gc.ca/rss/p2-eng.xml")!
@@ -26,10 +35,10 @@ struct GazetteService {
     // MARK: - Private
 
     private static func fetch(url: URL, part: GazettePart) async throws -> [GazetteEntry] {
-        var request = URLRequest(url: url, timeoutInterval: 20)
+        var request = URLRequest(url: url, timeoutInterval: Constants.requestTimeout)
         request.setValue("application/rss+xml, application/xml, text/xml", forHTTPHeaderField: "Accept")
         let (data, response) = try await NetworkService.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, Constants.successStatusCodes.contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
         return GazetteRSSParser.parse(data: data, part: part)

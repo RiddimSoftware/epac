@@ -6,6 +6,16 @@ import Foundation
 // No AI-generated content.
 
 struct ContractsService {
+    private enum Constants {
+        static let defaultFetchLimit = 100
+        static let requestTimeout: TimeInterval = 30
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     // CKAN datastore resource ID for "Proactive Disclosure - Contracts" (all departments).
     // This ID is stable and published by Treasury Board Secretariat.
@@ -16,7 +26,7 @@ struct ContractsService {
     // MARK: - Public
 
     /// Fetches the most recent high-value contracts, sorted descending by contract value.
-    static func fetchTopContracts(limit: Int = 100, query: String? = nil, department: String? = nil) async throws -> [GovernmentContract] {
+    static func fetchTopContracts(limit: Int = Constants.defaultFetchLimit, query: String? = nil, department: String? = nil) async throws -> [GovernmentContract] {
         var components = URLComponents(url: apiBase, resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = [
             URLQueryItem(name: "resource_id", value: resourceID),
@@ -32,10 +42,10 @@ struct ContractsService {
         components.queryItems = items
         guard let url = components.url else { throw URLError(.badURL) }
 
-        var request = URLRequest(url: url, timeoutInterval: 30)
+        var request = URLRequest(url: url, timeoutInterval: Constants.requestTimeout)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let (data, response) = try await NetworkService.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, Constants.successStatusCodes.contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
         return try parseContracts(from: data)

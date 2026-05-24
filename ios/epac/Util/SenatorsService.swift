@@ -14,7 +14,21 @@ import Foundation
 struct SenatorsService {
     private static let cacheKey      = "epac.senators.cache"
     private static let cacheTimestampKey = "epac.senators.cache.ts"
-    private static let cacheTTL: TimeInterval = 7 * 86_400 // 1 week
+    private enum Constants {
+        static let cacheDays: TimeInterval = 7
+        static let secondsPerDay: TimeInterval = 86_400
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+        static let provinceAbbreviationLength = 2
+
+        static var cacheTTL: TimeInterval {
+            cacheDays * secondsPerDay
+        }
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     // MARK: - Public API
 
@@ -49,7 +63,7 @@ struct SenatorsService {
 
         guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [[String: Any]] else { return nil }
 
@@ -180,7 +194,7 @@ struct SenatorsService {
             "Nunavut": "NU",
             "Yukon": "YT"
         ]
-        return map[full] ?? (full.count == 2 ? full.uppercased() : "")
+        return map[full] ?? (full.count == Constants.provinceAbbreviationLength ? full.uppercased() : "")
     }
 
     // MARK: - Cache
@@ -189,7 +203,7 @@ struct SenatorsService {
         guard
             let data = UserDefaults.standard.data(forKey: cacheKey),
             let ts   = UserDefaults.standard.object(forKey: cacheTimestampKey) as? Date,
-            Date().timeIntervalSince(ts) < cacheTTL,
+            Date().timeIntervalSince(ts) < Constants.cacheTTL,
             let senators = try? JSONDecoder().decode([Senator].self, from: data)
         else { return nil }
         return senators

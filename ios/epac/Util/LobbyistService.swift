@@ -31,6 +31,67 @@ import zlib
 struct LobbyistService {
 
     // MARK: - Constants
+    private enum Constants {
+        static let requestTimeout: TimeInterval = 60
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+        static let zipLocalFileHeaderLength = 30
+        static let localFileSignatureLength = 4
+        static let localFileSignatureFirstByte: UInt8 = 0x50
+        static let localFileSignatureSecondByte: UInt8 = 0x4B
+        static let localFileSignatureThirdByte: UInt8 = 0x03
+        static let localFileSignatureFourthByte: UInt8 = 0x04
+        static let zipMethodOffset = 8
+        static let zipMethodHighByteOffset = 9
+        static let compressedSizeOffset = 18
+        static let uncompressedSizeOffset = 22
+        static let fileNameLengthOffset = 26
+        static let fileNameLengthHighByteOffset = 27
+        static let extraLengthOffset = 28
+        static let extraLengthHighByteOffset = 29
+        static let byteShift = 8
+        static let littleEndianSecondByteOffset = 1
+        static let littleEndianThirdByteOffset = 2
+        static let littleEndianFourthByteOffset = 3
+        static let shortShift = 16
+        static let int24Shift = 24
+        static let zipCompressionMethodStored: UInt16 = 0
+        static let zipCompressionMethodDeflate: UInt16 = 8
+        static let rawDeflateWindowBits: Int32 = -15
+        static let dpohRequiredColumnCount = 7
+        static let dpohIDColumn = 0
+        static let dpohLastNameColumn = 1
+        static let dpohFirstNameColumn = 2
+        static let dpohInstitutionColumn = 6
+        static let primaryRequiredColumnCount = 9
+        static let primaryIDColumn = 0
+        static let primaryEnglishOrgColumn = 2
+        static let primaryFrenchOrgColumn = 3
+        static let primaryRegistrantLastNameColumn = 5
+        static let primaryRegistrantFirstNameColumn = 6
+        static let primaryDateColumn = 7
+        static let primaryRegistrantTypeColumn = 8
+        static let subjectRequiredColumnCount = 2
+        static let subjectIDColumn = 0
+        static let subjectCodeColumn = 1
+        static let smtRequiredColumnCount = 2
+        static let smtCodeColumn = 0
+        static let smtEnglishDescriptionColumn = 1
+        static let communicationLimit = 50
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+
+        static var localFileHeaderSignature: [UInt8] {
+            [
+                localFileSignatureFirstByte,
+                localFileSignatureSecondByte,
+                localFileSignatureThirdByte,
+                localFileSignatureFourthByte
+            ]
+        }
+    }
 
     private static let zipURL = URL(string: "https://lobbycanada.gc.ca/media/mqbbmaqk/communications_ocl_cal.zip")!
 
@@ -149,10 +210,10 @@ struct LobbyistService {
     }
 
     private static func downloadAndParse() async throws {
-        var request = URLRequest(url: zipURL, timeoutInterval: 60)
+        var request = URLRequest(url: zipURL, timeoutInterval: Constants.requestTimeout)
         request.cachePolicy = .returnCacheDataElseLoad
         let (data, response) = try await NetworkService.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, Constants.successStatusCodes.contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
 
@@ -195,7 +256,7 @@ struct LobbyistService {
         let nameBytes = Array(name.utf8)
         var offset = 0
 
-        while offset + 30 <= zipData.count {
+        while offset + Constants.zipLocalFileHeaderLength <= zipData.count {
             guard isLocalFileHeader(in: zipData, at: offset) else {
                 // Not a local file header — scan forward looking for next signature.
                 // (End of central directory or other record.)
@@ -203,7 +264,7 @@ struct LobbyistService {
             }
 
             let header = zipHeader(in: zipData, at: offset)
-            let dataStart = offset + 30 + header.fileNameLength + header.extraLength
+            let dataStart = offset + Constants.zipLocalFileHeaderLength + header.fileNameLength + header.extraLength
 
             // Check filename match.
             if entryNameBytes(in: zipData, offset: offset, length: header.fileNameLength) == nameBytes {
@@ -219,29 +280,38 @@ struct LobbyistService {
 
     private static func isLocalFileHeader(in zipData: Data, at offset: Int) -> Bool {
         // Local file header signature: PK\x03\x04
-        let sig = zipData[offset..<offset+4]
-        return sig.elementsEqual([0x50, 0x4B, 0x03, 0x04])
+        let sig = zipData[offset..<offset + Constants.localFileSignatureLength]
+        return sig.elementsEqual(Constants.localFileHeaderSignature)
     }
 
     private static func zipHeader(in zipData: Data, at offset: Int) -> ZipHeader {
         ZipHeader(
-            method: UInt16(zipData[offset + 8]) | (UInt16(zipData[offset + 9]) << 8),
-            compressedSize: littleEndianInt32(in: zipData, at: offset + 18),
-            uncompressedSize: littleEndianInt32(in: zipData, at: offset + 22),
-            fileNameLength: Int(UInt16(zipData[offset + 26]) | (UInt16(zipData[offset + 27]) << 8)),
-            extraLength: Int(UInt16(zipData[offset + 28]) | (UInt16(zipData[offset + 29]) << 8))
+            method: UInt16(zipData[offset + Constants.zipMethodOffset])
+                | (UInt16(zipData[offset + Constants.zipMethodHighByteOffset]) << Constants.byteShift),
+            compressedSize: littleEndianInt32(in: zipData, at: offset + Constants.compressedSizeOffset),
+            uncompressedSize: littleEndianInt32(in: zipData, at: offset + Constants.uncompressedSizeOffset),
+            fileNameLength: Int(
+                UInt16(zipData[offset + Constants.fileNameLengthOffset])
+                    | (UInt16(zipData[offset + Constants.fileNameLengthHighByteOffset]) << Constants.byteShift)
+            ),
+            extraLength: Int(
+                UInt16(zipData[offset + Constants.extraLengthOffset])
+                    | (UInt16(zipData[offset + Constants.extraLengthHighByteOffset]) << Constants.byteShift)
+            )
         )
     }
 
     private static func littleEndianInt32(in data: Data, at offset: Int) -> Int {
         Int(UInt32(data[offset]) |
-            (UInt32(data[offset + 1]) << 8) |
-            (UInt32(data[offset + 2]) << 16) |
-            (UInt32(data[offset + 3]) << 24))
+            (UInt32(data[offset + Constants.littleEndianSecondByteOffset]) << Constants.byteShift) |
+            (UInt32(data[offset + Constants.littleEndianThirdByteOffset]) << Constants.shortShift) |
+            (UInt32(data[offset + Constants.littleEndianFourthByteOffset]) << Constants.int24Shift))
     }
 
     private static func entryNameBytes(in zipData: Data, offset: Int, length: Int) -> [UInt8] {
-        Array(zipData[(offset + 30)..<(offset + 30 + length)])
+        Array(zipData[
+            (offset + Constants.zipLocalFileHeaderLength)..<(offset + Constants.zipLocalFileHeaderLength + length)
+        ])
     }
 
     private static func decodedZipEntry(from zipData: Data, dataStart: Int, header: ZipHeader) throws -> String {
@@ -264,10 +334,10 @@ struct LobbyistService {
 
     private static func zipEntryData(method: UInt16, compressed: Data, uncompressedSize: Int) throws -> Data {
         switch method {
-        case 0:
+        case Constants.zipCompressionMethodStored:
             // Stored — no compression.
             return compressed
-        case 8:
+        case Constants.zipCompressionMethodDeflate:
             // Deflate — decompress.
             return try inflate(compressed, uncompressedSize: uncompressedSize)
         default:
@@ -294,7 +364,7 @@ struct LobbyistService {
                 var stream = z_stream()
                 // windowBits = -15 → raw DEFLATE (no zlib header/trailer)
                 guard inflateInit2_(&stream,
-                                    -15,
+                                    Constants.rawDeflateWindowBits,
                                     ZLIB_VERSION,
                                     Int32(MemoryLayout<z_stream>.size)) == Z_OK else {
                     throw URLError(.cannotParseResponse)
@@ -326,11 +396,11 @@ struct LobbyistService {
         //         BRANCH_UNIT_DIRECTION_SERVICE, OTHER_INSTITUTION_AUTRE, INSTITUTION
         var result: [String: [(lastName: String, firstName: String, institution: String)]] = [:]
         parseCSVRows(csv, skipHeader: true) { row in
-            guard row.count >= 7 else { return }
-            let id   = row[0]
-            let last = row[1]
-            let first = row[2]
-            let inst = row[6]
+            guard row.count >= Constants.dpohRequiredColumnCount else { return }
+            let id   = row[Constants.dpohIDColumn]
+            let last = row[Constants.dpohLastNameColumn]
+            let first = row[Constants.dpohFirstNameColumn]
+            let inst = row[Constants.dpohInstitutionColumn]
             result[id, default: []].append((lastName: last, firstName: first, institution: inst))
         }
         return result
@@ -342,13 +412,15 @@ struct LobbyistService {
         //         COMM_DATE, REG_TYPE_ENR, ...
         var result: [String: PrimaryRecord] = [:]
         parseCSVRows(csv, skipHeader: true) { row in
-            guard row.count >= 9 else { return }
-            let id      = row[0]
-            let orgName = row[2].isEmpty ? row[3] : row[2]   // prefer English
-            let regLast = row[5]
-            let regFirst = row[6]
-            let dateStr  = row[7]
-            let regType  = registrantTypeName(row[8])
+            guard row.count >= Constants.primaryRequiredColumnCount else { return }
+            let id      = row[Constants.primaryIDColumn]
+            let orgName = row[Constants.primaryEnglishOrgColumn].isEmpty
+                ? row[Constants.primaryFrenchOrgColumn]
+                : row[Constants.primaryEnglishOrgColumn]
+            let regLast = row[Constants.primaryRegistrantLastNameColumn]
+            let regFirst = row[Constants.primaryRegistrantFirstNameColumn]
+            let dateStr  = row[Constants.primaryDateColumn]
+            let regType  = registrantTypeName(row[Constants.primaryRegistrantTypeColumn])
             result[id] = PrimaryRecord(
                 organizationName: orgName,
                 registrantName: "\(regFirst) \(regLast)".trimmingCharacters(in: .whitespaces),
@@ -363,8 +435,8 @@ struct LobbyistService {
         // Header: COMLOG_ID, SUBJECT_CODE_OBJET, CUSTOM_SUBJ_OBJET_PERSO
         var result: [String: [String]] = [:]
         parseCSVRows(csv, skipHeader: true) { row in
-            guard row.count >= 2 else { return }
-            result[row[0], default: []].append(row[1])
+            guard row.count >= Constants.subjectRequiredColumnCount else { return }
+            result[row[Constants.subjectIDColumn], default: []].append(row[Constants.subjectCodeColumn])
         }
         return result
     }
@@ -373,8 +445,8 @@ struct LobbyistService {
         // Header: SUBJECT_CODE_OBJET, SMT_EN_DESC, SMT_FR_DESC
         var result: [String: String] = [:]
         parseCSVRows(csv, skipHeader: true) { row in
-            guard row.count >= 2 else { return }
-            result[row[0]] = row[1]
+            guard row.count >= Constants.smtRequiredColumnCount else { return }
+            result[row[Constants.smtCodeColumn]] = row[Constants.smtEnglishDescriptionColumn]
         }
         return result
     }
@@ -545,7 +617,7 @@ struct LobbyistService {
         // Sort descending by date; nil dates go last.
         communications.sort(by: sortsByMostRecentCommunication)
 
-        return Array(communications.prefix(50))
+        return Array(communications.prefix(Constants.communicationLimit))
     }
 
     private static func matchesDPOH(

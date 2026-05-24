@@ -22,6 +22,16 @@
 import Foundation
 
 struct PBOService {
+    private enum Constants {
+        static let firstLegListingPage = 1
+        static let lastLegListingPage = 5
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     // The PBO website is a Vue SPA; the REST base URL lives in the page's `data-apiroot` attribute.
     // The subdomain hex "393962616e6b" decodes to "99bank" — a stable internal label, not a version
@@ -72,7 +82,7 @@ struct PBOService {
         var results: [PBOReport] = []
 
         // Scan up to 5 pages of recent LEG notes (15 per page = 75 publications — sufficient for current session)
-        for page in 1...5 {
+        for page in Constants.firstLegListingPage...Constants.lastLegListingPage {
             guard let items = await legListingItems(page: page) else { break }
 
             if items.isEmpty { break }
@@ -114,7 +124,7 @@ struct PBOService {
     private static func fetchData(from url: URL) async -> Data? {
         guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode) else { return nil }
+              Constants.successStatusCodes.contains(http.statusCode) else { return nil }
 
         return data
     }

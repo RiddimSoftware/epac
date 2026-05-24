@@ -16,10 +16,21 @@ import UIKit
 // safe to leave running indefinitely.
 final class MemberImageCache: @unchecked Sendable {
 	static let shared = MemberImageCache()
+	private enum Constants {
+		static let countLimit = 500
+		static let totalCostLimitMegabytes = 50
+		static let bytesPerMegabyte = 1_024
+		static let bytesPerPixel = 4
+
+		static var totalCostLimit: Int {
+			totalCostLimitMegabytes * bytesPerMegabyte * bytesPerMegabyte
+		}
+	}
+
 	private init() {
 		cache.name = "net.dinglebox.cabinetdoor.memberImages"
-		cache.countLimit = 500        // up to 500 photos in memory
-		cache.totalCostLimit = 50 * 1024 * 1024  // 50 MB cap
+		cache.countLimit = Constants.countLimit
+		cache.totalCostLimit = Constants.totalCostLimit
 	}
 
 	private let cache = NSCache<NSString, UIImage>()
@@ -30,7 +41,7 @@ final class MemberImageCache: @unchecked Sendable {
 
 	func store(_ image: UIImage, for url: URL) {
 		// Cost approximation: width × height × 4 bytes (RGBA)
-		let cost = Int(image.size.width * image.size.height * 4)
+		let cost = Int(image.size.width * image.size.height * CGFloat(Constants.bytesPerPixel))
 		cache.setObject(image, forKey: url.absoluteString as NSString, cost: cost)
 	}
 
