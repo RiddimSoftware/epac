@@ -16,6 +16,8 @@ class SearchViewModel {
     var searchResults = SearchResults()
 
     private static let maxPerSection = 50
+    private static let maxBillsPerSection = 10
+    private static let minQueryLength = 2
     private var searchHansard: any SearchHansardUseCase = SearchHansard.empty()
     private var cachedMembers: [ParliamentMember] = []
     private var cachedVotes: [RecordedVote] = []
@@ -56,7 +58,7 @@ class SearchViewModel {
     }
 
     var isQueryTooShort: Bool {
-        searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).count < Self.minQueryLength
     }
 
     func configure(searchHansard: any SearchHansardUseCase) {
@@ -108,7 +110,7 @@ class SearchViewModel {
     private func rebuildResults() {
         let query = lastQuery.isEmpty ? searchText : lastQuery
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmedQuery.count >= 2 else {
+        guard trimmedQuery.count >= Self.minQueryLength else {
             searchResults = SearchResults()
             return
         }
@@ -158,7 +160,7 @@ class SearchViewModel {
             guard bill.number.localizedCaseInsensitiveContains(query)
                 || bill.title.localizedCaseInsensitiveContains(query) else { continue }
             results.append(BillResult(id: bill.number, bill: bill))
-            if results.count >= 10 { break }
+            if results.count >= Self.maxBillsPerSection { break }
         }
         return results
     }
