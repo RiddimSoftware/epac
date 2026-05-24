@@ -8,6 +8,13 @@
 import SwiftData
 import SwiftUI
 
+private enum MyMPViewConstants {
+    static let monthsPerQuarter = 3
+    static let activityIconWidth: CGFloat = 28
+    static let activityTitleLineLimit = 2
+    static let firstNameMatchPrefixLength = 3
+}
+
 // MARK: - Activity model
 
 private enum MPActivity: Identifiable {
@@ -30,7 +37,9 @@ private enum MPActivity: Identifiable {
         case .vote(_, let rv):
             return rv?.date ?? .distantPast
         case .expenditure(let e):
-            return Calendar.current.date(from: DateComponents(year: e.year, month: e.quarter * 3)) ?? .distantPast
+            return Calendar.current.date(
+                from: DateComponents(year: e.year, month: e.quarter * MyMPViewConstants.monthsPerQuarter)
+            ) ?? .distantPast
         }
     }
 
@@ -77,12 +86,12 @@ private struct ActivityRow: View {
         HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: activity.systemImage)
                 .foregroundStyle(activity.color)
-                .frame(width: 28)
+                .frame(width: MyMPViewConstants.activityIconWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                 Text(activity.title)
                     .font(.epacSubheadline)
-                    .lineLimit(2)
+                    .lineLimit(MyMPViewConstants.activityTitleLineLimit)
                 if activity.date > Date.distantPast {
                     Text(activity.date, style: .date)
                         .font(.epacCaption)
@@ -284,43 +293,7 @@ struct MyMPView: View {
                 memberName.localizedCaseInsensitiveContains($0.lastName)
             })
         }
-        // Load senators for the primary MP's province
-        if let mp = primaryMP {
-            let provinceAbbrev = mp.province.shortCode
-            if !provinceAbbrev.isEmpty {
-                let allSenators = await SenatorsService.fetchSenators()
-                senators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
-                senatorsLoaded = true
-
-                // Load Ontario MPP when the federal riding is in Ontario
-                if provinceAbbrev == "ON" {
-                    let allMPPs = await OntarioLegislatureService.fetchMPPs()
-                    // Federal and provincial ridings don't align perfectly; match on
-                    // the first significant word of each riding name as a heuristic.
-                    if let savedRiding = postalCodeStore.savedRidingName,
-                       let firstWord = savedRiding.components(separatedBy: " ").first,
-                       !firstWord.isEmpty {
-                        ontarioMPP = allMPPs.first { mpp in
-                            mpp.riding.localizedCaseInsensitiveContains(firstWord) ||
-                            firstWord.localizedCaseInsensitiveContains(mpp.riding.components(separatedBy: " ").first ?? "")
-                        }
-                    }
-                }
-
-                // Load Vancouver City Council when the federal riding is in Vancouver
-                if let savedRiding = postalCodeStore.savedRidingName,
-                   VancouverCouncilService.isVancouverRiding(savedRiding) {
-                    vancouverCouncillors = await VancouverCouncilService.fetchCouncillors()
-                }
-
-                // Load Toronto City Council when the federal riding is in Toronto.
-                if let savedRiding = postalCodeStore.savedRidingName,
-                   TorontoCouncilService.isTorontoRiding(savedRiding) {
-                    let councillors = await TorontoCouncilService.fetchCouncillors()
-                    torontoCouncillors = TorontoCouncilService.councillors(for: savedRiding, in: councillors)
-                }
-            }
-        }
+        await loadLocalRepresentatives(for: primaryMP)
 
         // Build the union of members to load: saved MP + all followed MPs
         var memberIDsToShow: Set<Int> = []
@@ -343,6 +316,45 @@ struct MyMPView: View {
         activities = all.sorted { $0.date > $1.date }
     }
 
+    @MainActor
+    private func loadLocalRepresentatives(for primaryMP: ParliamentMember?) async {
+        guard let mp = primaryMP else { return }
+        let provinceAbbrev = mp.province.shortCode
+        guard !provinceAbbrev.isEmpty else { return }
+
+        let allSenators = await SenatorsService.fetchSenators()
+        senators = SenatorsService.senators(for: provinceAbbrev, from: allSenators)
+        senatorsLoaded = true
+
+        if provinceAbbrev == "ON" {
+            await loadOntarioMPP()
+        }
+        if let savedRiding = postalCodeStore.savedRidingName,
+           VancouverCouncilService.isVancouverRiding(savedRiding) {
+            vancouverCouncillors = await VancouverCouncilService.fetchCouncillors()
+        }
+        if let savedRiding = postalCodeStore.savedRidingName,
+           TorontoCouncilService.isTorontoRiding(savedRiding) {
+            let councillors = await TorontoCouncilService.fetchCouncillors()
+            torontoCouncillors = TorontoCouncilService.councillors(for: savedRiding, in: councillors)
+        }
+    }
+
+    @MainActor
+    private func loadOntarioMPP() async {
+        let allMPPs = await OntarioLegislatureService.fetchMPPs()
+        // Federal and provincial ridings don't align perfectly; match on
+        // the first significant word of each riding name as a heuristic.
+        if let savedRiding = postalCodeStore.savedRidingName,
+           let firstWord = savedRiding.components(separatedBy: " ").first,
+           !firstWord.isEmpty {
+            ontarioMPP = allMPPs.first { mpp in
+                mpp.riding.localizedCaseInsensitiveContains(firstWord) ||
+                firstWord.localizedCaseInsensitiveContains(mpp.riding.components(separatedBy: " ").first ?? "")
+            }
+        }
+    }
+
     /// Collects MPActivity items for a single member from pre-fetched speech and expenditure arrays.
     @MainActor
     private func activitiesFor(
@@ -357,7 +369,7 @@ struct MyMPView: View {
         // every speech's messages relationship, which would be O(speeches × messages).
         let mpFirstName = mp.firstName
         let mpLastName = mp.lastName
-        let firstThreeFirst = String(mpFirstName.prefix(3))
+        let firstThreeFirst = String(mpFirstName.prefix(MyMPViewConstants.firstNameMatchPrefixLength))
 
         let matchingMessages = (try? modelContext.fetch(
             FetchDescriptor<SpeechMessage>(predicate: #Predicate {
