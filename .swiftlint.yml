@@ -61,6 +61,14 @@ opt_in_rules:
   - explicit_init               # Catches accidental `.init(...)` calls that hide the type.
   - redundant_nil_coalescing    # Catches `?? nil` no-ops.
   - closure_end_indentation     # Auto-fixable; keeps trailing closures aligned.
+  # Architectural rules
+  - swiftui_state_private       # @State must be private; leaking view state breaks encapsulation.
+  - implicitly_unwrapped_optional # var x: T! is an init-order hack; use proper DI or lazy var instead.
+  - private_over_fileprivate    # fileprivate leaks to the whole file; private is tighter.
+  - superfluous_disable_command # Catches stale swiftlint:disable comments after violations are fixed.
+  - discouraged_optional_boolean # Bool? is a tristate smell; use an explicit enum instead.
+  - unowned_variable_capture    # [unowned self] crashes on dealloc; [weak self] is always safer.
+  - no_magic_numbers            # Inline numeric literals should be named constants.
 
 custom_rules:
   application_layer_framework_imports:
