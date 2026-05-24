@@ -39,10 +39,24 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           set -euo pipefail
-          already="$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')"
-          if [[ "$already" == "true" ]]; then
-            echo "Auto-merge already enabled for ${PR_URL}."
-            exit 0
-          fi
-          echo "Enabling auto-merge for ${PR_URL}."
-          gh pr merge --auto --squash "$PR_URL"
+          # Retry loop: GitHub returns "unstable status" if required checks haven't
+          # registered yet when the PR is first opened. Retrying after a short sleep
+          # reliably closes that race condition.
+          for attempt in 1 2 3 4 5; do
+            already="$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+            if [[ "$already" == "true" ]]; then
+              echo "Auto-merge already enabled for ${PR_URL}."
+              exit 0
+            fi
+            echo "Enabling auto-merge for ${PR_URL} (attempt ${attempt}/5)."
+            if gh pr merge --auto --squash "$PR_URL"; then
+              echo "Auto-merge enabled."
+              exit 0
+            fi
+            if [[ "${attempt}" -lt 5 ]]; then
+              echo "Attempt ${attempt} failed, retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "Failed to enable auto-merge after 5 attempts."
+          exit 1
