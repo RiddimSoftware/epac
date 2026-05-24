@@ -36,7 +36,10 @@ final class CalendarExportService {
 		guard let targetCalendar = eventStore.defaultCalendarForNewEvents else {
 			throw CalendarExportError.noDefaultCalendar
 		}
+		return try saveSittingEvents(dates: dates, to: targetCalendar, calendar: calendar)
+	}
 
+	private func saveSittingEvents(dates: [Date], to targetCalendar: EKCalendar, calendar: Calendar) throws -> Int {
 		var addedCount = 0
 		for date in dates {
 			let start = calendar.startOfDay(for: date)
@@ -68,40 +71,35 @@ final class CalendarExportService {
 	}
 
 	private func requestCalendarAccess() async throws -> Bool {
+		let status = EKEventStore.authorizationStatus(for: .event)
+		guard status == .notDetermined else {
+			return authorizationResult(for: status)
+		}
 		if #available(iOS 17.0, *) {
-			switch EKEventStore.authorizationStatus(for: .event) {
-			case .fullAccess:
-				return true
-			case .denied, .restricted, .writeOnly:
-				return false
-			case .notDetermined:
-				return try await eventStore.requestFullAccessToEvents()
-			@unknown default:
-				return false
-			}
+			return try await eventStore.requestFullAccessToEvents()
 		} else {
-			switch EKEventStore.authorizationStatus(for: .event) {
-			case .fullAccess:
-				return true
-			case .authorized:
-				return true
-			case .writeOnly:
-				return false
-			case .denied, .restricted:
-				return false
-			case .notDetermined:
-				return try await withCheckedThrowingContinuation { continuation in
-					eventStore.requestAccess(to: .event) { granted, error in
-						if let error {
-							continuation.resume(throwing: error)
-						} else {
-							continuation.resume(returning: granted)
-						}
+			return try await withCheckedThrowingContinuation { continuation in
+				eventStore.requestAccess(to: .event) { granted, error in
+					if let error {
+						continuation.resume(throwing: error)
+					} else {
+						continuation.resume(returning: granted)
 					}
 				}
-			@unknown default:
-				return false
 			}
+		}
+	}
+
+	private func authorizationResult(for status: EKAuthorizationStatus) -> Bool {
+		switch status {
+		case .fullAccess, .authorized:
+			return true
+		case .denied, .restricted, .writeOnly:
+			return false
+		case .notDetermined:
+			return false
+		@unknown default:
+			return false
 		}
 	}
 
