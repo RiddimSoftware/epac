@@ -59,31 +59,11 @@ struct PBOService {
     // MARK: - Strategy 1: search endpoint
 
     private static func fetchViaSearch(billNumber: String) async -> [PBOReport]? {
-        guard var components = URLComponents(url: restBase.appendingPathComponent("search"), resolvingAgainstBaseURL: false) else { return nil }
-        components.queryItems = [
-            URLQueryItem(name: "query", value: billNumber),
-            URLQueryItem(name: "types", value: "Publication")
-        ]
-        guard let url = components.url else { return nil }
+        guard let url = searchURL(for: billNumber),
+              let data = await fetchData(from: url),
+              let payloads = searchPayloads(from: data) else { return nil }
 
-        guard let (data, response) = try? await NetworkService.shared.data(from: url),
-              let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode) else { return nil }
-
-        // Search response is a dict keyed by integer string, each value has .payload
-        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return nil
-        }
-
-        var results: [PBOReport] = []
-        for (_, value) in root {
-            guard let entry = value as? [String: Any],
-                  let payload = entry["payload"] as? [String: Any] else { continue }
-            if let report = extractReport(from: payload, matching: billNumber) {
-                results.append(report)
-            }
-        }
-        return results.sorted { ($0.reportDate ?? .distantPast) > ($1.reportDate ?? .distantPast) }
+        return sortedReports(from: payloads, matching: billNumber)
     }
 
     // MARK: - Strategy 2: LEG publications listing
@@ -93,28 +73,67 @@ struct PBOService {
 
         // Scan up to 5 pages of recent LEG notes (15 per page = 75 publications — sufficient for current session)
         for page in 1...5 {
-            guard var components = URLComponents(url: restBase.appendingPathComponent("publications"), resolvingAgainstBaseURL: false) else { break }
-            components.queryItems = [
-                URLQueryItem(name: "types", value: "LEG"),
-                URLQueryItem(name: "sort", value: "latest"),
-                URLQueryItem(name: "page", value: "\(page)")
-            ]
-            guard let url = components.url,
-                  let (data, response) = try? await NetworkService.shared.data(from: url),
-                  let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode),
-                  let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let items = root["data"] as? [[String: Any]] else { break }
+            guard let items = await legListingItems(page: page) else { break }
 
             if items.isEmpty { break }
 
-            for item in items {
-                if let report = extractReport(from: item, matching: billNumber) {
-                    results.append(report)
-                }
-            }
+            results.append(contentsOf: sortedReports(from: items, matching: billNumber))
         }
         return results.sorted { ($0.reportDate ?? .distantPast) > ($1.reportDate ?? .distantPast) }
+    }
+
+    private static func searchURL(for billNumber: String) -> URL? {
+        guard var components = URLComponents(
+            url: restBase.appendingPathComponent("search"),
+            resolvingAgainstBaseURL: false
+        ) else { return nil }
+        components.queryItems = [
+            URLQueryItem(name: "query", value: billNumber),
+            URLQueryItem(name: "types", value: "Publication")
+        ]
+        return components.url
+    }
+
+    private static func legListingItems(page: Int) async -> [[String: Any]]? {
+        guard var components = URLComponents(
+            url: restBase.appendingPathComponent("publications"),
+            resolvingAgainstBaseURL: false
+        ) else { return nil }
+        components.queryItems = [
+            URLQueryItem(name: "types", value: "LEG"),
+            URLQueryItem(name: "sort", value: "latest"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ]
+        guard let url = components.url,
+              let data = await fetchData(from: url),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+
+        return root["data"] as? [[String: Any]]
+    }
+
+    private static func fetchData(from url: URL) async -> Data? {
+        guard let (data, response) = try? await NetworkService.shared.data(from: url),
+              let http = response as? HTTPURLResponse,
+              (200..<300).contains(http.statusCode) else { return nil }
+
+        return data
+    }
+
+    private static func searchPayloads(from data: Data) -> [[String: Any]]? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+
+        return root.values.compactMap { value in
+            guard let entry = value as? [String: Any] else { return nil }
+            return entry["payload"] as? [String: Any]
+        }
+    }
+
+    private static func sortedReports(from items: [[String: Any]], matching billNumber: String) -> [PBOReport] {
+        items
+            .compactMap { extractReport(from: $0, matching: billNumber) }
+            .sorted { ($0.reportDate ?? .distantPast) > ($1.reportDate ?? .distantPast) }
     }
 
     // MARK: - Extraction

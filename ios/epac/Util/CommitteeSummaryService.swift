@@ -64,35 +64,12 @@ actor CommitteeSummaryService {
 
 		var digests: [CommitteeWitnessDigest] = []
 		for group in witnessGroups {
-			var interventionSummaries: [String] = []
-			for intervention in group.interventions {
-				let prompt = Self.interventionPrompt(meeting: meeting, intervention: intervention)
-				let summary = try await generator.summarize(prompt: prompt)
-				let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-				if !trimmed.isEmpty {
-					interventionSummaries.append(trimmed)
-				}
-			}
-
-			guard !interventionSummaries.isEmpty else { continue }
-			let witnessPrompt = Self.witnessPrompt(
+			if let digest = try await Self.witnessDigest(
+				for: group,
 				meeting: meeting,
-				witnessName: group.name,
-				affiliation: group.affiliation,
-				interventionSummaries: interventionSummaries
-			)
-			let witnessSummary = try await generator.summarize(prompt: witnessPrompt)
-				.trimmingCharacters(in: .whitespacesAndNewlines)
-			if !witnessSummary.isEmpty {
-				digests.append(
-					CommitteeWitnessDigest(
-						id: group.id,
-						witnessName: group.name,
-						affiliation: group.affiliation,
-						interventionCount: group.interventions.count,
-						summary: witnessSummary
-					)
-				)
+				generator: generator
+			) {
+				digests.append(digest)
 			}
 		}
 
@@ -104,6 +81,54 @@ actor CommitteeSummaryService {
 			overview: existingOverview
 		)
 		return digests
+	}
+
+	private static func witnessDigest(
+		for group: WitnessGroup,
+		meeting: CommitteeMeeting,
+		generator: any CommitteeSummaryGenerating
+	) async throws -> CommitteeWitnessDigest? {
+		let interventionSummaries = try await interventionSummaries(
+			for: group.interventions,
+			meeting: meeting,
+			generator: generator
+		)
+		guard !interventionSummaries.isEmpty else { return nil }
+
+		let witnessPrompt = witnessPrompt(
+			meeting: meeting,
+			witnessName: group.name,
+			affiliation: group.affiliation,
+			interventionSummaries: interventionSummaries
+		)
+		let witnessSummary = try await generator.summarize(prompt: witnessPrompt)
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !witnessSummary.isEmpty else { return nil }
+
+		return CommitteeWitnessDigest(
+			id: group.id,
+			witnessName: group.name,
+			affiliation: group.affiliation,
+			interventionCount: group.interventions.count,
+			summary: witnessSummary
+		)
+	}
+
+	private static func interventionSummaries(
+		for interventions: [CommitteeIntervention],
+		meeting: CommitteeMeeting,
+		generator: any CommitteeSummaryGenerating
+	) async throws -> [String] {
+		var summaries: [String] = []
+		for intervention in interventions {
+			let prompt = interventionPrompt(meeting: meeting, intervention: intervention)
+			let summary = try await generator.summarize(prompt: prompt)
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			if !summary.isEmpty {
+				summaries.append(summary)
+			}
+		}
+		return summaries
 	}
 
 	func hearingOverview(
