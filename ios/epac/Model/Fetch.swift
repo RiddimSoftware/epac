@@ -125,26 +125,32 @@ actor Fetch: ObservableObject {
 		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
 		do {
 			let xml = try await downloadXML(forDate: date)
-			let incoming = XMLBro(xml: xml).parseXML().hansard()
-			let existing = try modelContext.fetch(FetchDescriptor<Hansard>(
-				predicate: #Predicate { $0.date == incoming.date }
-			))
-			if existing.count == 1, existing.first?.domainDTO == incoming {
-				UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
-				transaction.finish(status: .ok)
-				return
-			}
-			for hansard in existing {
-				deleteHansardAggregate(hansard)
-			}
-			modelContext.insert(Hansard(domain: incoming))
-			try modelContext.save()
+			try ingestHansard(xml: xml)
 			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
 			transaction.finish(status: .ok)
 		} catch {
 			transaction.finish(status: .internalError)
 			throw error
 		}
+	}
+
+	/// Parses a Hansard XML string and persists it into the model context, deduping
+	/// against any existing Hansard with the same date. Extracted from `downloadHansard`
+	/// so non-network callers (e.g. evidence-mode fixture seeding) can drive the same
+	/// parse-and-persist code path without going through the live ourcommons.ca fetch.
+	func ingestHansard(xml: String) throws {
+		let incoming = XMLBro(xml: xml).parseXML().hansard()
+		let existing = try modelContext.fetch(FetchDescriptor<Hansard>(
+			predicate: #Predicate { $0.date == incoming.date }
+		))
+		if existing.count == 1, existing.first?.domainDTO == incoming {
+			return
+		}
+		for hansard in existing {
+			deleteHansardAggregate(hansard)
+		}
+		modelContext.insert(Hansard(domain: incoming))
+		try modelContext.save()
 	}
 
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {

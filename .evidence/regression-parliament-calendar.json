@@ -19,7 +19,8 @@
       "YES"
     ],
     "environment": {
-      "EPAC_EVIDENCE_MODE": "1"
+      "EPAC_EVIDENCE_MODE": "1",
+      "EPAC_EVIDENCE_FIXTURE": "45-1-HAN050-E"
     }
   },
   "output_directory": "docs/build-evidence/regression-parliament-calendar",
@@ -29,27 +30,27 @@
     { "name": "settle after launch", "kind": "wait", "seconds": 2.0 },
     { "name": "baseline launch state", "kind": "screenshot", "path": "00-launch-baseline.png" },
 
-    { "name": "open cs-sitting", "kind": "openURL", "url": "cabinetdoor://sitting/2024-09-16" },
+    { "name": "open cs-sitting", "kind": "openURL", "url": "cabinetdoor://sitting/2025-11-04" },
     { "name": "settle cs-sitting", "kind": "wait", "seconds": 2.0 },
     { "name": "capture cs-sitting", "kind": "screenshot", "path": "cs-sitting.png" },
 
-    { "name": "open cs-event", "kind": "openURL", "url": "cabinetdoor://event/2024-09-16" },
+    { "name": "open cs-event", "kind": "openURL", "url": "cabinetdoor://event/2025-11-04" },
     { "name": "settle cs-event", "kind": "wait", "seconds": 2.0 },
     { "name": "capture cs-event", "kind": "screenshot", "path": "cs-event.png" },
 
-    { "name": "open ul-sitting", "kind": "openURL", "url": "https://epac.riddimsoftware.com/sitting/2024-09-16" },
+    { "name": "open ul-sitting", "kind": "openURL", "url": "https://epac.riddimsoftware.com/sitting/2025-11-04" },
     { "name": "settle ul-sitting", "kind": "wait", "seconds": 2.0 },
     { "name": "capture ul-sitting", "kind": "screenshot", "path": "ul-sitting.png" },
 
-    { "name": "open ul-speech", "kind": "openURL", "url": "https://epac.riddimsoftware.com/speech/12345" },
+    { "name": "open ul-speech", "kind": "openURL", "url": "https://epac.riddimsoftware.com/speech/13220089" },
     { "name": "settle ul-speech", "kind": "wait", "seconds": 2.0 },
     { "name": "capture ul-speech", "kind": "screenshot", "path": "ul-speech.png" },
 
-    { "name": "open ul-app-legacy", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?date=2024-09-16&subjectID=1" },
+    { "name": "open ul-app-legacy", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?date=2025-11-04&subjectID=1" },
     { "name": "settle ul-app-legacy", "kind": "wait", "seconds": 2.0 },
     { "name": "capture ul-app-legacy", "kind": "screenshot", "path": "ul-app-legacy.png" },
 
-    { "name": "open ul-app-encoded-sitting", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?path=%2Fsitting%2F2024-09-16" },
+    { "name": "open ul-app-encoded-sitting", "kind": "openURL", "url": "https://epac.riddimsoftware.com/app?path=%2Fsitting%2F2025-11-04" },
     { "name": "settle ul-app-encoded-sitting", "kind": "wait", "seconds": 2.0 },
     { "name": "capture ul-app-encoded-sitting", "kind": "screenshot", "path": "ul-app-encoded-sitting.png" },
 

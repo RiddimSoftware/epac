@@ -36,6 +36,8 @@ docs/build-evidence/*/logs/
 !**/*/fixtures/*.xml
 !website/*.xml
 !ios/fastlane/metadata/**/*.txt
+# Hansard XML fixtures bundled with the app for EPAC_EVIDENCE_MODE seeding.
+!ios/epac/Resources/EvidenceFixtures/*.XML
 
 # Xcode
 #

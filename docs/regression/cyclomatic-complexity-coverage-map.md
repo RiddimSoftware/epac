@@ -78,14 +78,22 @@ For the plan's deep-links to land on real (non-empty) surfaces, the in-memory Sw
 | `SpeechMessage` | ≥ 5 across at least one subject | speaker name, party, text content; tied to a `SubjectOfBusiness` |
 | `ParliamentMember` | ≥ 3 | so speech bubbles show speakers; chosen IDs must be the ones the plan deep-links to (`/member/{id}`) — but member routes are out of pilot scope, so this is only for speech-attribution rendering |
 
-**Concrete fixture set** for `regression-parliament-calendar.json` to reference:
+**Concrete fixture set** for `regression-parliament-calendar.json` to reference (real Hansard data, downloaded from `ourcommons.ca`, bundled in the app under `ios/epac/Resources/EvidenceFixtures/`):
 
-- Sitting date: **`2024-09-16`** (used in `cs-sitting`, `cs-event`, `ul-sitting`, `ul-app-legacy`)
-- Subject ID: **`1`** (used in `ul-app-legacy` query parameter)
-- Speech intervention ID: **`12345`** (used in `ul-speech`)
-- Speaker members: arbitrary, e.g. member IDs `1001`, `1002`, `1003`
+| Fixture name | Sitting date | Source URL | File size |
+|---|---|---|---|
+| `45-1-HAN020-E` | Friday, June 20, 2025 | `https://www.ourcommons.ca/Content/House/451/Debates/020/HAN020-E.XML` | 811 KB |
+| `45-1-HAN050-E` (**default**) | Tuesday, November 4, 2025 | `https://www.ourcommons.ca/Content/House/451/Debates/050/HAN050-E.XML` | 543 KB |
+| `45-1-HAN100-E` | Thursday, March 26, 2026 | `https://www.ourcommons.ca/Content/House/451/Debates/100/HAN100-E.XML` | 556 KB |
 
-The fixture-seed Linear issue (to be created later, per the playbook) must populate the in-memory store with exactly these entities by these identifiers so the plan's deep-links resolve consistently across before/after captures.
+Three fixtures provide redundancy: if one XML's content trips an `XMLBro` edge case, the others can be selected via the `EPAC_EVIDENCE_FIXTURE` env var (set in the plan's `launch.environment` block). Within a single capture-pr run, the same value is passed to both phase launches so the seeded state matches across before/after. Between runs, the value can rotate.
+
+`EvidenceFixtureSeed` (`ios/epac/Util/EvidenceFixtureSeed.swift`) reads the env var, loads the named bundle XML, and calls `Fetch.ingestHansard(xml:)` — the same parse-and-persist code path `Fetch.downloadHansard` uses after its URLSession download. This means the seed itself exercises `XMLBro.parseXML`, `HansardSpeakerParser`, and the `Hansard` SwiftData mapping: a regression in any of those manifests as a seed failure (empty Parliament tab) before the evidence plan's deep links fire.
+
+For the cyclomatic pilot, `regression-parliament-calendar.json` pins `EPAC_EVIDENCE_FIXTURE = 45-1-HAN050-E` (Nov 4, 2025), and its URL payloads use:
+- Sitting date: `2025-11-04` (used in `cs-sitting`, `cs-event`, `ul-sitting`, `ul-app-legacy`, `ul-app-encoded-sitting`)
+- Subject ID: `1` (used in `ul-app-legacy` query parameter — the first `OrderOfBusiness` in any Hansard XML)
+- Speech intervention ID: `13220089` (the Hansard root element's `id` attribute in `45-1-HAN050-E.XML`)
 
 ## Plan structure (for `regression-parliament-calendar.json`)
 
