@@ -78,6 +78,11 @@ struct CPPOASSnapshot: Decodable {
 enum CPPOASStatisticsDatabase {
     private static let resourceName = "cpp-oas-statistics"
     private static let mainSnapshot = loadSnapshot(bundle: .main)
+    private enum DateParsing {
+        static let componentCount = 2
+        static let validMonthRange = 1...12
+        static let monthSymbolIndexOffset = 1
+    }
 
     static let fallbackSource = CPPOASSource(
         title: "Employment and Social Development Canada — CPP/OAS Statistical Bulletin",
@@ -117,15 +122,15 @@ enum CPPOASStatisticsDatabase {
     // "2026-04" → "April 2026"
     static func periodLabel(_ refPeriod: String) -> String {
         let parts = refPeriod.split(separator: "-")
-        guard parts.count == 2,
+        guard parts.count == DateParsing.componentCount,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              (1...12).contains(month) else {
+              DateParsing.validMonthRange.contains(month) else {
             return refPeriod
         }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_CA")
-        let monthName = formatter.monthSymbols[month - 1]
+        let monthName = formatter.monthSymbols[month - DateParsing.monthSymbolIndexOffset]
         return "\(monthName) \(year)"
     }
 }

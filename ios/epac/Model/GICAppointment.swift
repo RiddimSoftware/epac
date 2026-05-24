@@ -121,11 +121,16 @@ struct GICAppointment: Decodable, Identifiable {
 		case orderInCouncil = "order_in_council"
 	}
 
+	private enum DisplayNameParsing {
+		static let surnameGivenNameSplitLimit = 1
+		static let expectedPartCount = 2
+	}
+
 	var displayName: String {
-		let parts = name.split(separator: ",", maxSplits: 1).map {
+		let parts = name.split(separator: ",", maxSplits: DisplayNameParsing.surnameGivenNameSplitLimit).map {
 			$0.trimmingCharacters(in: .whitespacesAndNewlines)
 		}
-		guard parts.count == 2 else { return name }
+		guard parts.count == DisplayNameParsing.expectedPartCount else { return name }
 		return "\(parts[1]) \(parts[0])"
 	}
 

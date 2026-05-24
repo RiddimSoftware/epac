@@ -75,8 +75,15 @@ struct VancouverCouncilService {
     private static let councillorsTSKey     = "epac.vancouver.councillors.ts"
     private static let votesCacheKey        = "epac.vancouver.votes"
     private static let votesTSKey           = "epac.vancouver.votes.ts"
-    private static let councillorsTTL: TimeInterval = 7 * 86_400   // 1 week
-    private static let votesTTL: TimeInterval       = 86_400        // 1 day
+    private enum Constants {
+        static let secondsPerDay: TimeInterval = 86_400
+        static let councillorsCacheDurationDays: TimeInterval = 7
+        static let councillorSeedVoteLimit = 500
+        static let successfulHTTPStatusCodes = 200..<300
+    }
+
+    private static let councillorsTTL: TimeInterval = Constants.councillorsCacheDurationDays * Constants.secondsPerDay
+    private static let votesTTL: TimeInterval = Constants.secondsPerDay
 
     // MARK: - Public API
 
@@ -103,7 +110,7 @@ struct VancouverCouncilService {
 
     private static func fetchCouncillorsFromOpenData() async -> [VancouverCouncillor]? {
         // Extract unique councillors from recent vote records — most reliable source.
-        let votes = (await fetchVotesFromOpenData(limit: 500)) ?? []
+        let votes = (await fetchVotesFromOpenData(limit: Constants.councillorSeedVoteLimit)) ?? []
         guard !votes.isEmpty else { return nil }
 
         var seen = Set<String>()
@@ -134,7 +141,7 @@ struct VancouverCouncilService {
         guard let url = URL(string: urlStr),
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successfulHTTPStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let results = json["results"] as? [[String: Any]] else { return nil }
 

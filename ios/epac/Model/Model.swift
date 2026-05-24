@@ -8,6 +8,21 @@
 import Foundation
 import SwiftData
 
+private enum SchemaVersionComponent {
+	static let initialMinor = 0
+	static let initialPatch = 0
+	static let v3Major = 3
+	static let v4Major = 4
+	static let v5Major = 5
+	static let v6Major = 6
+	static let v7Major = 7
+	static let v8Major = 8
+}
+
+private enum WrittenQuestionConstants {
+	static let overdueDayThreshold = 45
+}
+
 typealias SittingCalendar = SchemaV5.SittingCalendar
 typealias Hansard = SchemaV5.Hansard
 typealias OrderOfBusiness = SchemaV5.OrderOfBusiness
@@ -28,7 +43,9 @@ typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 typealias CabinetPosition = SchemaV8.CabinetPosition
 
 enum SchemaV3: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v3Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		[
 			SittingCalendar.self,
@@ -345,7 +362,9 @@ enum SchemaV3: VersionedSchema {
 }
 
 enum SchemaV4: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(4, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v4Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		[
 			SittingCalendar.self,
@@ -674,7 +693,9 @@ enum SchemaV4: VersionedSchema {
 }
 
 enum SchemaV5: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(5, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v5Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		[
 			SittingCalendar.self,
@@ -1044,7 +1065,9 @@ enum SchemaV5: VersionedSchema {
 // MARK: - SchemaV6
 
 enum SchemaV6: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(6, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v6Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		// All V5 models unchanged + WrittenQuestion
 		SchemaV5.models + [WrittenQuestion.self]
@@ -1065,7 +1088,7 @@ enum SchemaV6: VersionedSchema {
 		var responseTextEn: String?
 		var daysElapsed: Int
 
-		var isOverdue: Bool { responseTextEn == nil && daysElapsed > 45 }
+		var isOverdue: Bool { responseTextEn == nil && daysElapsed > WrittenQuestionConstants.overdueDayThreshold }
 
 		init(questionID: Int, memberID: Int, parliament: Int, session: Int, number: Int,
 			 dateSubmitted: Date, subject: String, questionTextEn: String,
@@ -1089,7 +1112,9 @@ enum SchemaV6: VersionedSchema {
 // MARK: - SchemaV7
 
 enum SchemaV7: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(7, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v7Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		// All V6 models unchanged + FiscalMonitorEntry.
 		SchemaV6.models + [FiscalMonitorEntry.self]
@@ -1153,7 +1178,9 @@ enum SchemaV7: VersionedSchema {
 // MARK: - SchemaV8
 
 enum SchemaV8: VersionedSchema {
-	static var versionIdentifier: Schema.Version { .init(8, 0, 0) }
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v8Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
 	static var models: [any PersistentModel.Type] {
 		// All V7 models unchanged + CabinetPosition.
 		SchemaV7.models + [CabinetPosition.self]
