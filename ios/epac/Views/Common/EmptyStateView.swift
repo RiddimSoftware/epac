@@ -8,14 +8,18 @@ struct EmptyStateView: View {
     let message: String
     var action: EmptyStateAction?
 
+    private enum Layout {
+        static let textSpacing: CGFloat = 6
+    }
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: EpacSpacing.m) {
             Image(systemName: icon)
-                .font(.system(size: 48, weight: .thin))
+                .font(.system(size: EpacIconSize.xl, weight: .thin))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
-            VStack(spacing: 6) {
+            VStack(spacing: Layout.textSpacing) {
                 Text(title)
                     .font(.headline)
                     .multilineTextAlignment(.center)
@@ -33,7 +37,7 @@ struct EmptyStateView: View {
                     .disabled(!action.isEnabled)
             }
         }
-        .padding(32)
+        .padding(EpacSpacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

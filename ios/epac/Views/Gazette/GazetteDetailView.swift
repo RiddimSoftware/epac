@@ -3,11 +3,15 @@ import SwiftUI
 struct GazetteDetailView: View {
     let entry: GazetteEntry
 
+    private enum Layout {
+        static let metadataSpacing: CGFloat = 6
+    }
+
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                    HStack(spacing: Layout.metadataSpacing) {
                         Text(entry.part.localizedName)
                             .font(.caption.bold())
                             .foregroundStyle(.tint)
@@ -24,7 +28,7 @@ struct GazetteDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, EpacSpacing.xs)
             }
 
             if !entry.summary.isEmpty {

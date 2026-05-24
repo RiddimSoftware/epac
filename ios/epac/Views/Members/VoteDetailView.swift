@@ -8,6 +8,12 @@
 import SwiftData
 import SwiftUI
 
+private enum Layout {
+    static let debateRowTextSpacing: CGFloat = 3
+    static let debateTitleLineLimit = 2
+    static let hansardFetchLimit = 500
+}
+
 private struct DebateSelection: Identifiable, Hashable {
     let id = UUID()
     let subject: SubjectOfBusiness
@@ -38,10 +44,10 @@ struct VoteDetailView: View {
                             selectedDebate = DebateSelection(subject: pair.subject, hansard: pair.hansard)
                         } label: {
                             HStack {
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: Layout.debateRowTextSpacing) {
                                     Text(pair.subject.title)
                                         .font(.subheadline)
-                                        .lineLimit(2)
+                                        .lineLimit(Layout.debateTitleLineLimit)
                                     Text(pair.hansard.date, style: .date)
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
@@ -97,7 +103,7 @@ struct VoteDetailView: View {
         guard !matched.isEmpty else { return }
 
         var hansDescriptor = FetchDescriptor<Hansard>(sortBy: [SortDescriptor(\.date, order: .reverse)])
-        hansDescriptor.fetchLimit = 500
+        hansDescriptor.fetchLimit = Layout.hansardFetchLimit
         let allHansards = (try? modelContext.fetch(hansDescriptor)) ?? []
         var results: [(subject: SubjectOfBusiness, hansard: Hansard)] = []
         for subject in matched {

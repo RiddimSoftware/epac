@@ -13,6 +13,12 @@ struct ShimmerModifier: ViewModifier {
     @State private var phase: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private enum Layout {
+        static let animationDuration = 1.2
+        static let highlightOpacity = 0.6
+        static let sweepWidthMultiplier: CGFloat = 2
+    }
+
     func body(content: Content) -> some View {
         content
             .redacted(reason: isActive ? .placeholder : [])
@@ -20,7 +26,7 @@ struct ShimmerModifier: ViewModifier {
                 isActive && !reduceMotion ? shimmerOverlay : nil
             )
             .animation(
-                isActive && !reduceMotion ? .linear(duration: 1.2).repeatForever(autoreverses: false) : .default,
+                isActive && !reduceMotion ? .linear(duration: Layout.animationDuration).repeatForever(autoreverses: false) : .default,
                 value: phase
             )
             .onAppear {
@@ -33,14 +39,14 @@ struct ShimmerModifier: ViewModifier {
             LinearGradient(
                 colors: [
                     .clear,
-                    Color(UIColor.systemBackground).opacity(0.6),
+                    Color(UIColor.systemBackground).opacity(Layout.highlightOpacity),
                     .clear
                 ],
                 startPoint: .leading,
                 endPoint: .trailing
             )
-            .frame(width: geo.size.width * 2)
-            .offset(x: phase * geo.size.width * 2 - geo.size.width)
+            .frame(width: geo.size.width * Layout.sweepWidthMultiplier)
+            .offset(x: phase * geo.size.width * Layout.sweepWidthMultiplier - geo.size.width)
         }
         .clipped()
         .allowsHitTesting(false)

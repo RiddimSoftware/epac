@@ -9,6 +9,10 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let rowTextSpacing: CGFloat = 3
+}
+
 struct OntarioDebatesView: View {
     @State private var debates: [OntarioDebateDay] = []
     @State private var isLoading = false
@@ -27,7 +31,7 @@ struct OntarioDebatesView: View {
                 List(debates) { day in
                     Link(destination: day.publicationURL) {
                         HStack {
-                            VStack(alignment: .leading, spacing: 3) {
+                            VStack(alignment: .leading, spacing: Layout.rowTextSpacing) {
                                 Text(NSLocalizedString("ontario.debates.title", comment: ""))
                                     .font(.subheadline.weight(.semibold))
                                 if let date = day.date {

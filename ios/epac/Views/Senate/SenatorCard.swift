@@ -9,17 +9,22 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let rowSpacing: CGFloat = 12
+    static let caucusDotSize: CGFloat = 10
+}
+
 struct SenatorCard: View {
     let senator: Senator
 
     var body: some View {
         Link(destination: senator.senateURL) {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.rowSpacing) {
                 Circle()
                     .fill(senator.caucusColor)
-                    .frame(width: 10, height: 10)
+                    .frame(width: Layout.caucusDotSize, height: Layout.caucusDotSize)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                     Text(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
                         .font(.subheadline.weight(.semibold))
                     Text(senator.caucusFullName)
@@ -32,7 +37,7 @@ struct SenatorCard: View {
                     .font(.caption)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, EpacSpacing.xxs)
         }
         .foregroundStyle(.primary)
         .accessibilityLabel(

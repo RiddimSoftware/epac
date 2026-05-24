@@ -9,6 +9,11 @@
 import SwiftUI
 import UIKit
 
+private enum Layout {
+    static let rowSpacing: CGFloat = 12
+    static let partyDotSize: CGFloat = 10
+}
+
 struct VancouverCouncillorCard: View {
     let councillor: VancouverCouncillor
 
@@ -22,12 +27,12 @@ struct VancouverCouncillorCard: View {
 
     var body: some View {
         Link(destination: councillor.profileURL) {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.rowSpacing) {
                 Circle()
                     .fill(partyColor)
-                    .frame(width: 10, height: 10)
+                    .frame(width: Layout.partyDotSize, height: Layout.partyDotSize)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                     Text(String(format: NSLocalizedString("vancouver.councillor.nameLabel", comment: ""), councillor.role, councillor.name))
                         .font(.subheadline.weight(.semibold))
                     Text(councillor.party)
@@ -40,7 +45,7 @@ struct VancouverCouncillorCard: View {
                     .font(.caption)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, EpacSpacing.xxs)
         }
         .foregroundStyle(.primary)
         .accessibilityLabel("\(councillor.role) \(councillor.name), \(councillor.party), City of Vancouver")

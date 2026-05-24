@@ -5,6 +5,11 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let rowSpacing: CGFloat = 12
+    static let iconWidth: CGFloat = 28
+}
+
 struct ElectionResourcesView: View {
     @Environment(\.openURL) private var openURL
 
@@ -74,12 +79,12 @@ struct ElectionResourcesView: View {
         Button {
             if let u = URL(string: url) { openURL(u) }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.rowSpacing) {
                 Image(systemName: icon)
                     .foregroundStyle(color)
-                    .frame(width: 28)
+                    .frame(width: Layout.iconWidth)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                     Text(title).font(.subheadline).foregroundStyle(.primary)
                     Text(subtitle).font(.caption).foregroundStyle(.secondary)
                 }

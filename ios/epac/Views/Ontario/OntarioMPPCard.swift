@@ -9,6 +9,11 @@
 import SwiftUI
 import UIKit
 
+private enum Layout {
+    static let rowSpacing: CGFloat = 12
+    static let partyDotSize: CGFloat = 10
+}
+
 struct OntarioMPPCard: View {
     let mpp: OntarioMPP
 
@@ -23,12 +28,12 @@ struct OntarioMPPCard: View {
 
     var body: some View {
         Link(destination: mpp.profileURL) {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.rowSpacing) {
                 Circle()
                     .fill(partyColor)
-                    .frame(width: 10, height: 10)
+                    .frame(width: Layout.partyDotSize, height: Layout.partyDotSize)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                     Text(String(format: NSLocalizedString("ontario.mpp.name", comment: ""), mpp.name))
                         .font(.subheadline.weight(.semibold))
                     Text(mpp.riding)
@@ -44,7 +49,7 @@ struct OntarioMPPCard: View {
                     .font(.caption)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, EpacSpacing.xxs)
         }
         .foregroundStyle(.primary)
         .accessibilityLabel("\(mpp.name), MPP \(NSLocalizedString("ontario.mpp.for", comment: "")) \(mpp.riding), \(mpp.party)")

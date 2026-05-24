@@ -6,7 +6,7 @@ struct FederalContractDetailView: View {
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: EpacSpacing.s) {
                     HStack {
                         Text(contract.formattedValue)
                             .font(.title2.bold())
@@ -24,7 +24,7 @@ struct FederalContractDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, EpacSpacing.xs)
             }
 
             Section(NSLocalizedString("contracts.detail.info", comment: "")) {

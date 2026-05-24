@@ -5,6 +5,13 @@
 
 import SwiftUI
 
+private enum Layout {
+	static let rowSpacing: CGFloat = 12
+	static let partyDotSize: CGFloat = 14
+	static let currentSeatTextSpacing: CGFloat = 3
+	static let linkIconWidth: CGFloat = 28
+}
+
 // Shows past and present electoral context for a riding.
 // Data sources:
 //   - Local: ParliamentMember.riding, province, party (current holder)
@@ -54,12 +61,12 @@ struct RidingElectionHistoryView: View {
 	// MARK: - Sub-views
 
 	private var currentSeatRow: some View {
-		HStack(spacing: 12) {
+		HStack(spacing: Layout.rowSpacing) {
 			Circle()
 				.fill(Color.party(member.party))
-				.frame(width: 14, height: 14)
+				.frame(width: Layout.partyDotSize, height: Layout.partyDotSize)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: Layout.currentSeatTextSpacing) {
 				Text(member.name)
 					.font(.headline)
 				Text(member.party.fullName)
@@ -70,7 +77,7 @@ struct RidingElectionHistoryView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, EpacSpacing.xs)
 	}
 
 	private func externalLinkRow(
@@ -83,12 +90,12 @@ struct RidingElectionHistoryView: View {
 		Button {
 			openURL(url)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: systemImage)
 					.foregroundStyle(color)
-					.frame(width: 28)
+					.frame(width: Layout.linkIconWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
 					Text(title)
 						.font(.subheadline)
 						.foregroundStyle(.primary)

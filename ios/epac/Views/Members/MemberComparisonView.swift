@@ -6,6 +6,13 @@
 import SwiftData
 import SwiftUI
 
+private enum Layout {
+	static let contentSpacing: CGFloat = 20
+	static let avatarSize: CGFloat = 72
+	static let sectionTitleBottomPadding: CGFloat = 12
+	static let rowVerticalPadding: CGFloat = 6
+}
+
 struct MemberComparisonView: View {
 	let memberA: ParliamentMember
 	let memberB: ParliamentMember
@@ -26,7 +33,7 @@ struct MemberComparisonView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(spacing: 20) {
+			VStack(spacing: Layout.contentSpacing) {
 				memberHeaderCard
 				expenditureSection
 			}
@@ -43,13 +50,13 @@ struct MemberComparisonView: View {
 			memberColumn(memberB)
 		}
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(EpacCornerRadius.m)
 	}
 
 	private func memberColumn(_ member: ParliamentMember) -> some View {
-		VStack(spacing: 8) {
+		VStack(spacing: EpacSpacing.s) {
 			MemberAvatar(member: member)
-				.frame(width: 72, height: 72)
+				.frame(width: Layout.avatarSize, height: Layout.avatarSize)
 			Text(member.name)
 				.font(.headline)
 				.multilineTextAlignment(.center)
@@ -77,7 +84,7 @@ struct MemberComparisonView: View {
 		return VStack(alignment: .leading, spacing: 0) {
 			Text("Expenditures (all periods)")
 				.font(.headline)
-				.padding(.bottom, 12)
+				.padding(.bottom, Layout.sectionTitleBottomPadding)
 
 			ComparisonRow(label: "Travel", valueA: a.travel, valueB: b.travel)
 			Divider()
@@ -89,7 +96,7 @@ struct MemberComparisonView: View {
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(EpacCornerRadius.m)
 	}
 }
 
@@ -121,6 +128,6 @@ private struct ComparisonRow: View {
 				.foregroundStyle(bStyle)
 		}
 		.font(bold ? .headline : .subheadline)
-		.padding(.vertical, 6)
+		.padding(.vertical, Layout.rowVerticalPadding)
 	}
 }

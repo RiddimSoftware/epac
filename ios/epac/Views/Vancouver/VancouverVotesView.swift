@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let groupTitleSpacing: CGFloat = 3
+    static let titleLineLimit = 2
+    static let badgeHorizontalPadding: CGFloat = 6
+}
+
 struct VancouverVotesView: View {
     @State private var votes: [VancouverCouncilVote] = []
     @State private var selectedCategory: VancouverCouncilVote.VoteCategory?
@@ -115,15 +121,15 @@ private struct VoteGroupRow: View {
                         .foregroundStyle(voteColor(vote.voteDetail))
                         .fontWeight(.medium)
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, EpacSpacing.xxs)
                 .accessibilityLabel("\(vote.councillorName): \(vote.voteDetail)")
             }
         } label: {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Layout.groupTitleSpacing) {
                 Text(firstVote?.motionTitle ?? voteNumber)
                     .font(.subheadline)
-                    .lineLimit(2)
-                HStack(spacing: 8) {
+                    .lineLimit(Layout.titleLineLimit)
+                HStack(spacing: EpacSpacing.s) {
                     if let date = firstVote?.date, date > Date.distantPast {
                         Text(date, style: .date)
                             .font(.caption2)
@@ -133,14 +139,14 @@ private struct VoteGroupRow: View {
                         Text(cat.rawValue)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.12))
+                            .padding(.horizontal, Layout.badgeHorizontalPadding)
+                            .padding(.vertical, EpacSpacing.xxs)
+                            .background(Color.secondary.opacity(EpacOpacity.tint))
                             .clipShape(Capsule())
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, EpacSpacing.xs)
         }
     }
 

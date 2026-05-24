@@ -11,6 +11,13 @@ import SwiftUI
 @MainActor
 @Observable
 class ExpenditureDetailViewModel {
+	private enum SharingLayout {
+		static let summaryWidth: CGFloat = 350
+		static let sectionPreviewLimit = 5
+		static let sectionWidth: CGFloat = 400
+		static let cellWidth: CGFloat = 350
+	}
+
 	enum SortOption: String, CaseIterable, Identifiable {
 		case date = "Date"
 		case amount = "Amount"
@@ -80,12 +87,12 @@ class ExpenditureDetailViewModel {
 	@MainActor
 	func shareSummary(expenditure: SummaryExpenditure) -> ActivityItem? {
 		let title = "\(expenditure.firstName) \(expenditure.lastName) (\(String(expenditure.year)) Q\(expenditure.quarter))"
-		let view = VStack(alignment: .leading, spacing: 16) {
+		let view = VStack(alignment: .leading, spacing: EpacSpacing.m) {
 			Text(title)
 				.font(.headline)
 				.foregroundColor(.black)
 
-			VStack(alignment: .leading, spacing: 8) {
+			VStack(alignment: .leading, spacing: EpacSpacing.s) {
 				SummarySection(title: "Travel", total: expenditure.travel)
 				SummarySection(title: "Hospitality", total: expenditure.hospitality)
 				SummarySection(title: "Contracts", total: expenditure.contracts)
@@ -102,7 +109,7 @@ class ExpenditureDetailViewModel {
 			.foregroundColor(.black)
 		}
 		.padding()
-		.frame(width: 350)
+		.frame(width: SharingLayout.summaryWidth)
 		.background(Color.white)
 		.environment(\.colorScheme, .light)
 
@@ -112,11 +119,11 @@ class ExpenditureDetailViewModel {
 	@MainActor
 	func shareSection<T: Identifiable, V: View>(expenditure: SummaryExpenditure, category: String, total: Double, items: [T], @ViewBuilder rowBuilder: @escaping (T) -> V) -> ActivityItem? {
 		let title = "\(expenditure.firstName) \(expenditure.lastName) (\(String(expenditure.year)) Q\(expenditure.quarter))"
-		let shareItems = Array(items.prefix(5))
+		let shareItems = Array(items.prefix(SharingLayout.sectionPreviewLimit))
 		let moreCount = items.count - shareItems.count
 
 		let view = VStack(alignment: .leading, spacing: 0) {
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: EpacSpacing.xs) {
 				Text(title).font(.headline).foregroundColor(.black)
 				HStack {
 					Text(category).font(.title3).fontWeight(.bold).foregroundColor(.black)
@@ -131,7 +138,7 @@ class ExpenditureDetailViewModel {
 				ForEach(shareItems) { item in
 					rowBuilder(item)
 						.padding(.horizontal)
-						.padding(.vertical, 8)
+						.padding(.vertical, EpacSpacing.s)
 						.background(Color.white)
 					Divider()
 				}
@@ -145,7 +152,7 @@ class ExpenditureDetailViewModel {
 				}
 			}
 		}
-		.frame(width: 400)
+		.frame(width: SharingLayout.sectionWidth)
 		.background(Color.white)
 		.environment(\.colorScheme, .light)
 
@@ -156,7 +163,7 @@ class ExpenditureDetailViewModel {
 	func shareCell<V: View>(_ view: V) -> ActivityItem? {
 		let renderedView = view
 			.padding()
-			.frame(width: 350)
+			.frame(width: SharingLayout.cellWidth)
 			.background(Color.white)
 			.environment(\.colorScheme, .light)
 		return renderAndShare(renderedView, title: "Expenditure Detail")
