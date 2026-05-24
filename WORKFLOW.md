@@ -39,56 +39,18 @@ existing PR fix.
 Repository rules:
 - Symphony starts you in an issue-specific git worktree. Do not edit the root checkout or create another worktree unless the issue explicitly requires it.
 - Keep the root checkout on main if you inspect it.
-- Keep each change scoped to one Linear issue and one pull request.
-- Treat the handoff context's routing decision as binding when present.
 - Use the current branch from the handoff context.
-- Symphony has already transitioned {{ issue.identifier }} to In Progress before dispatch. Assume In Progress is set; no Linear verification is needed.
-- If the routing decision points at another repository, or if you can prove the routing evidence is wrong, stop and document the blocker in `handoff.md`; Symphony will relay it to Linear.
 - If the handoff mode is `fix_existing_pr` or `resumed`: push fixes to the existing PR branch. Do not open a new PR under any circumstances.
-- If the issue estimate is missing in this prompt, treat it as the standard 8 complexity tier and mention the missing estimate in the PR body and in `handoff.md`.
-
-PR ownership lifecycle:
-Your responsibility is to own the PR from creation until one of these terminal
-conditions:
-- Symphony reviewer mode only acts on PRs labeled `autonomous`: it posts review
-  comments as `riddim-reviewer-bot[bot]` and, on approval, arms GitHub's native
-  auto-merge.
-- GitHub automerge completes the merge — write a final `handoff.md` and stop; Symphony will relay it to Linear.
-- A reviewer blocks the PR with requested changes — push fixes and update `handoff.md` with the latest status.
-- A human-gated check requires manual intervention — document the exact action needed in `handoff.md` and stop; Symphony will relay it to Linear.
-
-Do not manually merge the PR. GitHub automerge owns all merges. Your role is to
-push a shippable branch and keep the PR unblocked.
 
 PR handoff contract:
 - Create at least one commit for the issue before handoff.
 - Confirm the branch is clean with `git status --porcelain`.
 - Refresh the repo root with `git fetch origin main` and rebase the worktree branch onto `origin/main`.
 - Push the branch to origin before opening the PR.
-- Use plain `gh`; Symphony has already injected a short-lived developer bot token into `GH_TOKEN` / `GITHUB_TOKEN`, set `GH_PROMPT_DISABLED=1`, and verified `gh api user --jq .login`, so `gh pr create` opens as `riddim-developer-bot[bot]`.
 - Fresh run: open exactly one PR with `gh pr create --label autonomous`.
-- Fresh run: include `Reviewer-Boundary: review-only` in the PR body so the legacy developer-fix workflow skips this PR and Symphony's WakeDeveloperForPRAction owns fix cycles.
 - Resumed or fix_existing_pr run: push to the existing branch. Do not create a new PR.
 - Use the PR title format `[{{ issue.identifier }}]: <short description>`.
 - Include verification evidence and any skipped checks with reasons in the PR body.
-
-Durable state for resume:
-After opening or updating the PR, write `handoff.md` in the workspace root.
-Use an atomic write: write to `handoff.md.tmp`, then rename it to `handoff.md`.
-Symphony reads that file after the agent exits and posts it to Linear on the
-agent's behalf.
-
-Structure `handoff.md` in this order:
-- `## Implementation notes`
-- `## Verification evidence`
-- `## Tradeoffs`
-- `## Blockers / follow-ups`
-
-Keep the handoff self-contained so a fresh agent session can rebuild context
-from the relayed Linear comment plus live Linear/GitHub/workspace evidence.
-
-After writing `handoff.md`, stop. Do not wait for review, CI, automerge,
-or human confirmation.
 
 <!-- symphony-workflow:local-section id=purpose -->
 ## Purpose
@@ -101,9 +63,6 @@ Hansard civic-engagement experience.
 Symphony work here should produce product changes, backend changes, website
 changes, App Store metadata/assets, release-support changes, or repo
 maintenance that belongs in `RiddimSoftware/epac`.
-
-If the issue requires changes outside `RiddimSoftware/epac`, stop and leave a
-Linear comment asking for the ticket to be split or rerouted.
 <!-- /symphony-workflow:local-section -->
 
 <!-- symphony-workflow:local-section id=epac_repository_rules -->
@@ -137,12 +96,6 @@ Additional rules beyond the standard repository rules above:
 - For Swift or localization changes, run `swiftlint --strict` and
   `python3 scripts/localization/check_localizations.py --github-warnings` when
   those tools are available.
-- For backend Go service changes, run
-  `cd backend/<service> && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out`.
-- For backend API changes, update `backend/openapi/openapi.json` and run the
-  affected service tests, including `backend/openapi` when the contract changes.
-- For UI, App Store screenshot, or marketing asset changes, run the documented
-  screenshot/evidence flow and include the resulting assets or links in the PR.
 <!-- /symphony-workflow:local-section -->
 
 <!-- symphony-workflow:local-section id=self_review -->
@@ -158,11 +111,7 @@ Open the PR only after this pass is clean.
 
 There is no separate reviewer step. Once the self-review pass is clean and verification passes, open the PR and stop. CI gates the merge: `pr-build` is the required status check. `set-automerge.yml` arms squash automerge on PR open — GitHub merges automatically when `pr-build` passes.
 
-- Open the PR with `gh pr create` (no `--label autonomous` required).
+- Open the PR with `gh pr create`
 - Do not wait for CI, review, or merge confirmation inside the model session.
-- Write `handoff.md` and stop after the PR is open.
+- Stop the session after opening the PR
 <!-- /symphony-workflow:local-section -->
-
-Verification expectations:
-- Run `cd ios && make build`. See the Verification Expectations section for area-specific commands.
-- Report any verification that could not run with the exact command and reason.
