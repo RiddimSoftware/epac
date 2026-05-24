@@ -196,57 +196,83 @@ struct LobbyistService {
         var offset = 0
 
         while offset + 30 <= zipData.count {
-            // Local file header signature: PK\x03\x04
-            let sig = zipData[offset..<offset+4]
-            guard sig.elementsEqual([0x50, 0x4B, 0x03, 0x04]) else {
+            guard isLocalFileHeader(in: zipData, at: offset) else {
                 // Not a local file header — scan forward looking for next signature.
                 // (End of central directory or other record.)
                 break
             }
 
-            let method       = UInt16(zipData[offset + 8]) | (UInt16(zipData[offset + 9]) << 8)
-            let compressedSz = Int(UInt32(zipData[offset + 18]) |
-                                   (UInt32(zipData[offset + 19]) << 8) |
-                                   (UInt32(zipData[offset + 20]) << 16) |
-                                   (UInt32(zipData[offset + 21]) << 24))
-            let uncompressedSz = Int(UInt32(zipData[offset + 22]) |
-                                     (UInt32(zipData[offset + 23]) << 8) |
-                                     (UInt32(zipData[offset + 24]) << 16) |
-                                     (UInt32(zipData[offset + 25]) << 24))
-            let fnLen  = Int(UInt16(zipData[offset + 26]) | (UInt16(zipData[offset + 27]) << 8))
-            let extLen = Int(UInt16(zipData[offset + 28]) | (UInt16(zipData[offset + 29]) << 8))
-
-            let dataStart = offset + 30 + fnLen + extLen
+            let header = zipHeader(in: zipData, at: offset)
+            let dataStart = offset + 30 + header.fileNameLength + header.extraLength
 
             // Check filename match.
-            let fnBytes = Array(zipData[(offset + 30)..<(offset + 30 + fnLen)])
-            if fnBytes == nameBytes {
-                guard dataStart + compressedSz <= zipData.count else {
-                    throw URLError(.cannotParseResponse)
-                }
-                let compressedSlice = zipData[dataStart..<(dataStart + compressedSz)]
-                let raw: Data
-                switch method {
-                case 0:
-                    // Stored — no compression.
-                    raw = Data(compressedSlice)
-                case 8:
-                    // Deflate — decompress.
-                    raw = try inflate(Data(compressedSlice), uncompressedSize: uncompressedSz)
-                default:
-                    throw URLError(.cannotParseResponse)
-                }
-                // The OCL CSVs use Windows Latin-1 (ISO 8859-1 compatible) encoding.
-                return String(data: raw, encoding: .isoLatin1)
-                    ?? String(data: raw, encoding: .utf8)
-                    ?? ""
+            if entryNameBytes(in: zipData, offset: offset, length: header.fileNameLength) == nameBytes {
+                return try decodedZipEntry(from: zipData, dataStart: dataStart, header: header)
             }
 
             // Advance past this entry.
-            offset = dataStart + compressedSz
+            offset = dataStart + header.compressedSize
         }
 
         throw URLError(.cannotParseResponse)
+    }
+
+    private static func isLocalFileHeader(in zipData: Data, at offset: Int) -> Bool {
+        // Local file header signature: PK\x03\x04
+        let sig = zipData[offset..<offset+4]
+        return sig.elementsEqual([0x50, 0x4B, 0x03, 0x04])
+    }
+
+    private static func zipHeader(in zipData: Data, at offset: Int) -> ZipHeader {
+        ZipHeader(
+            method: UInt16(zipData[offset + 8]) | (UInt16(zipData[offset + 9]) << 8),
+            compressedSize: littleEndianInt32(in: zipData, at: offset + 18),
+            uncompressedSize: littleEndianInt32(in: zipData, at: offset + 22),
+            fileNameLength: Int(UInt16(zipData[offset + 26]) | (UInt16(zipData[offset + 27]) << 8)),
+            extraLength: Int(UInt16(zipData[offset + 28]) | (UInt16(zipData[offset + 29]) << 8))
+        )
+    }
+
+    private static func littleEndianInt32(in data: Data, at offset: Int) -> Int {
+        Int(UInt32(data[offset]) |
+            (UInt32(data[offset + 1]) << 8) |
+            (UInt32(data[offset + 2]) << 16) |
+            (UInt32(data[offset + 3]) << 24))
+    }
+
+    private static func entryNameBytes(in zipData: Data, offset: Int, length: Int) -> [UInt8] {
+        Array(zipData[(offset + 30)..<(offset + 30 + length)])
+    }
+
+    private static func decodedZipEntry(from zipData: Data, dataStart: Int, header: ZipHeader) throws -> String {
+        guard dataStart + header.compressedSize <= zipData.count else {
+            throw URLError(.cannotParseResponse)
+        }
+
+        let compressedSlice = zipData[dataStart..<(dataStart + header.compressedSize)]
+        let raw = try zipEntryData(
+            method: header.method,
+            compressed: Data(compressedSlice),
+            uncompressedSize: header.uncompressedSize
+        )
+
+        // The OCL CSVs use Windows Latin-1 (ISO 8859-1 compatible) encoding.
+        return String(data: raw, encoding: .isoLatin1)
+            ?? String(data: raw, encoding: .utf8)
+            ?? ""
+    }
+
+    private static func zipEntryData(method: UInt16, compressed: Data, uncompressedSize: Int) throws -> Data {
+        switch method {
+        case 0:
+            // Stored — no compression.
+            return compressed
+        case 8:
+            // Deflate — decompress.
+            return try inflate(compressed, uncompressedSize: uncompressedSize)
+        default:
+            throw URLError(.cannotParseResponse)
+        }
     }
 
     /// Decompresses raw DEFLATE-compressed bytes (ZIP compression method 8) using libz.
@@ -356,64 +382,136 @@ struct LobbyistService {
     // MARK: - RFC 4180-compatible CSV Row Parser
 
     private static func parseCSVRows(_ csv: String, skipHeader: Bool, handler: ([String]) -> Void) {
-        var currentRow: [String] = []
-        var currentField = ""
-        var inQuotes     = false
-        var isFirstRow   = true
+        var state = CSVParserState()
 
         var idx = csv.startIndex
         while idx < csv.endIndex {
             let ch   = csv[idx]
             let next = csv.index(after: idx)
+            let advancedIndex = processCSVCharacter(
+                ch,
+                next: next,
+                csv: csv,
+                state: &state,
+                skipHeader: skipHeader,
+                handler: handler
+            )
+            idx = advancedIndex ?? next
+        }
 
-            if inQuotes {
-                if ch == "\"" {
-                    if next < csv.endIndex && csv[next] == "\"" {
-                        currentField.append("\"")
-                        idx = csv.index(after: next)
-                        continue
-                    } else {
-                        inQuotes = false
-                    }
-                } else {
-                    currentField.append(ch)
-                }
-            } else {
-                switch ch {
-                case "\"":
-                    inQuotes = true
-                case ",":
-                    currentRow.append(currentField)
-                    currentField = ""
-                case "\r", "\n":
-                    if ch == "\r", next < csv.endIndex, csv[next] == "\n" {
-                        idx = next
-                    }
-                    currentRow.append(currentField)
-                    currentField = ""
-                    let isBlank = currentRow.count == 1 && currentRow[0].isEmpty
-                    if !isBlank {
-                        if isFirstRow && skipHeader {
-                            isFirstRow = false
-                        } else {
-                            handler(currentRow)
-                        }
-                    }
-                    currentRow = []
-                default:
-                    currentField.append(ch)
-                }
-            }
-            idx = next
-        }
         // Handle final row (no trailing newline).
-        if !currentField.isEmpty || !currentRow.isEmpty {
-            currentRow.append(currentField)
-            let isBlank = currentRow.count == 1 && currentRow[0].isEmpty
-            if !isBlank && !(isFirstRow && skipHeader) {
-                handler(currentRow)
-            }
+        finishFinalCSVRow(state: &state, skipHeader: skipHeader, handler: handler)
+    }
+
+    #if DEBUG
+    static func parseCSVRowsForTesting(_ csv: String, skipHeader: Bool = false) -> [[String]] {
+        var rows: [[String]] = []
+        parseCSVRows(csv, skipHeader: skipHeader) { rows.append($0) }
+        return rows
+    }
+    #endif
+
+    private static func processCSVCharacter(
+        _ ch: Character,
+        next: String.Index,
+        csv: String,
+        state: inout CSVParserState,
+        skipHeader: Bool,
+        handler: ([String]) -> Void
+    ) -> String.Index? {
+        if state.inQuotes {
+            return processQuotedCSVCharacter(ch, next: next, csv: csv, state: &state)
         }
+
+        return processUnquotedCSVCharacter(ch, next: next, csv: csv, state: &state, skipHeader: skipHeader, handler: handler)
+    }
+
+    private static func processQuotedCSVCharacter(
+        _ ch: Character,
+        next: String.Index,
+        csv: String,
+        state: inout CSVParserState
+    ) -> String.Index? {
+        guard ch == "\"" else {
+            state.currentField.append(ch)
+            return nil
+        }
+        guard next < csv.endIndex && csv[next] == "\"" else {
+            state.inQuotes = false
+            return nil
+        }
+
+        state.currentField.append("\"")
+        return csv.index(after: next)
+    }
+
+    private static func processUnquotedCSVCharacter(
+        _ ch: Character,
+        next: String.Index,
+        csv: String,
+        state: inout CSVParserState,
+        skipHeader: Bool,
+        handler: ([String]) -> Void
+    ) -> String.Index? {
+        switch ch {
+        case "\"":
+            state.inQuotes = true
+        case ",":
+            appendCSVField(state: &state)
+        case "\r", "\n", "\r\n":
+            return finishCSVLine(ch, next: next, csv: csv, state: &state, skipHeader: skipHeader, handler: handler)
+        default:
+            state.currentField.append(ch)
+        }
+        return nil
+    }
+
+    private static func appendCSVField(state: inout CSVParserState) {
+        state.currentRow.append(state.currentField)
+        state.currentField = ""
+    }
+
+    private static func finishCSVLine(
+        _ ch: Character,
+        next: String.Index,
+        csv: String,
+        state: inout CSVParserState,
+        skipHeader: Bool,
+        handler: ([String]) -> Void
+    ) -> String.Index? {
+        appendCSVField(state: &state)
+        emitCSVRow(state: &state, skipHeader: skipHeader, handler: handler)
+        return shouldSkipNextLineFeed(after: ch, next: next, csv: csv) ? next : nil
+    }
+
+    private static func shouldSkipNextLineFeed(after ch: Character, next: String.Index, csv: String) -> Bool {
+        ch == "\r" && next < csv.endIndex && csv[next] == "\n"
+    }
+
+    private static func finishFinalCSVRow(
+        state: inout CSVParserState,
+        skipHeader: Bool,
+        handler: ([String]) -> Void
+    ) {
+        guard !state.currentField.isEmpty || !state.currentRow.isEmpty else { return }
+        appendCSVField(state: &state)
+        emitCSVRow(state: &state, skipHeader: skipHeader, handler: handler)
+    }
+
+    private static func emitCSVRow(state: inout CSVParserState, skipHeader: Bool, handler: ([String]) -> Void) {
+        guard !(state.currentRow.count == 1 && state.currentRow[0].isEmpty) else {
+            state.currentRow = []
+            return
+        }
+        guard !state.isFirstRow || !skipHeader else {
+            state.isFirstRow = false
+            state.currentRow = []
+            return
+        }
+
+        state.isFirstRow = false
+        handler(state.currentRow)
+        state.currentRow = []
     }
 
     // MARK: - Build LobbyistCommunication Records
@@ -430,40 +528,58 @@ struct LobbyistService {
         var communications: [LobbyistCommunication] = []
 
         for (comlogID, dpohs) in dpohTable {
-            let matched = dpohs.contains { dpoh in
-                dpoh.lastName.lowercased() == lastLower &&
-                dpoh.firstName.lowercased().contains(firstLower) &&
-                dpoh.institution.lowercased().contains("house of commons")
-            }
+            let matched = dpohs.contains { matchesDPOH($0, lastLower: lastLower, firstLower: firstLower) }
             guard matched, let primary = primaryTable[comlogID] else { continue }
-
-            let smtCodes    = subjectTable[comlogID] ?? []
-            let subjectText = smtCodes.compactMap { smtDescs[$0] }.joined(separator: ", ")
 
             communications.append(LobbyistCommunication(
                 id: comlogID,
                 lobbyistName: primary.registrantName,
                 organizationName: primary.organizationName,
                 communicationDate: parseDate(primary.communicationDateString),
-                subjectMatter: subjectText.isEmpty
-                    ? NSLocalizedString("lobbying.subject.unspecified", comment: "")
-                    : subjectText,
+                subjectMatter: subjectMatter(for: comlogID, subjectTable: subjectTable, smtDescs: smtDescs),
                 registrantType: primary.registrantType,
                 registryURL: openDataURL
             ))
         }
 
         // Sort descending by date; nil dates go last.
-        communications.sort {
-            switch ($0.communicationDate, $1.communicationDate) {
-            case let (a?, b?): return a > b
-            case (_?, nil):    return true
-            case (nil, _?):    return false
-            case (nil, nil):   return false
-            }
-        }
+        communications.sort(by: sortsByMostRecentCommunication)
 
         return Array(communications.prefix(50))
+    }
+
+    private static func matchesDPOH(
+        _ dpoh: (lastName: String, firstName: String, institution: String),
+        lastLower: String,
+        firstLower: String
+    ) -> Bool {
+        dpoh.lastName.lowercased() == lastLower &&
+        dpoh.firstName.lowercased().contains(firstLower) &&
+        dpoh.institution.lowercased().contains("house of commons")
+    }
+
+    private static func subjectMatter(
+        for comlogID: String,
+        subjectTable: [String: [String]],
+        smtDescs: [String: String]
+    ) -> String {
+        let smtCodes = subjectTable[comlogID] ?? []
+        let subjectText = smtCodes.compactMap { smtDescs[$0] }.joined(separator: ", ")
+        return subjectText.isEmpty
+            ? NSLocalizedString("lobbying.subject.unspecified", comment: "")
+            : subjectText
+    }
+
+    private static func sortsByMostRecentCommunication(
+        _ lhs: LobbyistCommunication,
+        _ rhs: LobbyistCommunication
+    ) -> Bool {
+        switch (lhs.communicationDate, rhs.communicationDate) {
+        case let (left?, right?): return left > right
+        case (_?, nil):          return true
+        case (nil, _?):          return false
+        case (nil, nil):         return false
+        }
     }
 
     // MARK: - Helpers
@@ -499,5 +615,20 @@ struct LobbyistService {
         let registrantName: String
         let communicationDateString: String
         let registrantType: String
+    }
+
+    private struct ZipHeader {
+        let method: UInt16
+        let compressedSize: Int
+        let uncompressedSize: Int
+        let fileNameLength: Int
+        let extraLength: Int
+    }
+
+    private struct CSVParserState {
+        var currentRow: [String] = []
+        var currentField = ""
+        var inQuotes = false
+        var isFirstRow = true
     }
 }
