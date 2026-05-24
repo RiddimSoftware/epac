@@ -214,42 +214,11 @@ actor Fetch: ObservableObject {
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 
-		guard let htmlstring = String(data: data, encoding: .utf8),
-			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
-			throw NSError(domain: "Fetch", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
-		}
-		
+		let doc = try parseExpendituresHTML(from: data)
 		let allLinks = doc.css("a")
 		Log.debug("Found \(allLinks.count) links on the page")
-		
-		var csvURL: URL?
-		
-		// Try finding by class first (common pattern in this site)
-		if let csvLinkElement = doc.css("a.btn-export-csv").first,
-		   let href = csvLinkElement["href"],
-		   let url = URL(string: href, relativeTo: hosturl) {
-			csvURL = url
-		}
-		
-		// Fallback to searching for .csv in href
-		if csvURL == nil {
-			if let csvLinkElement = allLinks.first(where: { $0["href"]?.lowercased().contains(".csv") == true }),
-			   let href = csvLinkElement["href"],
-			   let url = URL(string: href, relativeTo: hosturl) {
-				csvURL = url
-			}
-		}
-		
-		// Final fallback: search for "CSV" in text
-		if csvURL == nil {
-			if let csvLinkElement = allLinks.first(where: { $0.text?.contains("CSV") == true }),
-			   let href = csvLinkElement["href"],
-			   let url = URL(string: href, relativeTo: hosturl) {
-				csvURL = url
-			}
-		}
 
-		guard let csvURL else {
+		guard let csvURL = findCSVURL(in: doc, relativeTo: hosturl) else {
 			for link in allLinks.prefix(10) {
 				Log.debug("Link: text='\(link.text ?? "")', href='\(link["href"] ?? "")'")
 			}
@@ -262,67 +231,133 @@ actor Fetch: ObservableObject {
 		
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("expenditures-\(year)-Q\(quarter).csv")
 		try csvData.write(to: tempURL)
-		
-		let parser = CSVParser(file: tempURL)
-		let stream = SummaryExpenditure.fromCSV(parser, year: year, quarter: quarter)
-		
-		var expenditures: [SummaryExpenditure] = []
-		for await expenditure in stream {
-			expenditures.append(expenditure)
-		}
+		let expenditures = await parseSummaryExpenditures(from: tempURL, year: year, quarter: quarter)
 		
 		// Parse detailed links from HTML
 		let rows = doc.css("table tbody tr")
 		Log.debug("Found \(rows.count) rows in HTML table")
-		
 		let existingExpenditures = try modelContext.fetch(FetchDescriptor<SummaryExpenditure>(predicate: #Predicate { $0.year == year && $0.quarter == quarter }))
 		
 		if !expenditures.isEmpty && !existingExpenditures.isEmpty {
 			Log.debug("Summary data already exists for \(year) Q\(quarter), skipping insertion but updating links.")
 		}
-		
-		for (index, row) in rows.enumerated() {
-			let cells = row.css("td")
-			if cells.count < 7 { continue }
-			
-			let nameText = cells[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-			// The name in HTML is usually "LastName, FirstName"
-			
-			let targetExpenditures = expenditures.isEmpty ? existingExpenditures : expenditures
-			if let match = targetExpenditures.first(where: { 
-				let fullName = "\($0.lastName), \($0.firstName)"
-				return nameText.caseInsensitiveCompare(fullName) == .orderedSame || nameText.contains($0.lastName) && nameText.contains($0.firstName)
-			}) {
-				var foundLink = false
-				if let travelLink = cells[4].css("a").first?["href"] {
-					match.travelURL = URL(string: travelLink, relativeTo: hosturl)?.absoluteString
-					foundLink = true
-				}
-				if let hospitalityLink = cells[5].css("a").first?["href"] {
-					match.hospitalityURL = URL(string: hospitalityLink, relativeTo: hosturl)?.absoluteString
-					foundLink = true
-				}
-				if let contractsLink = cells[6].css("a").first?["href"] {
-					match.contractsURL = URL(string: contractsLink, relativeTo: hosturl)?.absoluteString
-					foundLink = true
-				}
-				if foundLink {
-					Log.debug("Associated links for \(match.lastName) (\(match.firstName))")
-				}
-			} else if index < 5 && !expenditures.isEmpty {
-				Log.debug("Could not match HTML row \(index): '\(nameText)'")
-			}
-		}
 
-		if !expenditures.isEmpty && existingExpenditures.isEmpty {
-			for expenditure in expenditures {
-				modelContext.insert(expenditure)
-			}
-			Log.debug("Inserted \(expenditures.count) new expenditures into database")
-		}
+		associateDetailLinks(from: rows, parsed: expenditures, existing: existingExpenditures)
+		insertNewSummaryExpenditures(expenditures, existing: existingExpenditures)
 		try modelContext.save()
 		UserDefaults.standard.set(Date(), forKey: "epac.sync.expenditures")
 		try? FileManager.default.removeItem(at: tempURL)
+	}
+
+	private func parseExpendituresHTML(from data: Data) throws -> HTMLDocument {
+		guard let htmlstring = String(data: data, encoding: .utf8),
+			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
+			throw NSError(domain: "Fetch", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
+		}
+		return doc
+	}
+
+	private func findCSVURL(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		return csvURLByExportButton(in: doc, relativeTo: baseURL)
+			?? csvURLByHref(in: doc, relativeTo: baseURL)
+			?? csvURLByText(in: doc, relativeTo: baseURL)
+	}
+
+	private func csvURLByExportButton(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		return doc.css("a.btn-export-csv").first.flatMap { csvURL(from: $0, relativeTo: baseURL) }
+	}
+
+	private func csvURLByHref(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		return doc.css("a")
+			.first(where: { $0["href"]?.lowercased().contains(".csv") == true })
+			.flatMap { csvURL(from: $0, relativeTo: baseURL) }
+	}
+
+	private func csvURLByText(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		return doc.css("a")
+			.first(where: { $0.text?.contains("CSV") == true })
+			.flatMap { csvURL(from: $0, relativeTo: baseURL) }
+	}
+
+	private func csvURL(from element: Kanna.XMLElement, relativeTo baseURL: URL) -> URL? {
+		guard let href = element["href"] else { return nil }
+		return URL(string: href, relativeTo: baseURL)
+	}
+
+	private func parseSummaryExpenditures(from tempURL: URL, year: Int, quarter: Int) async -> [SummaryExpenditure] {
+		let parser = CSVParser(file: tempURL)
+		let stream = SummaryExpenditure.fromCSV(parser, year: year, quarter: quarter)
+		var expenditures: [SummaryExpenditure] = []
+		for await expenditure in stream {
+			expenditures.append(expenditure)
+		}
+		return expenditures
+	}
+
+	private func associateDetailLinks(
+		from rows: XPathObject,
+		parsed expenditures: [SummaryExpenditure],
+		existing existingExpenditures: [SummaryExpenditure]
+	) {
+		let targetExpenditures = expenditures.isEmpty ? existingExpenditures : expenditures
+		for (index, row) in rows.enumerated() {
+			associateDetailLinks(from: row, index: index, targetExpenditures: targetExpenditures, hasParsedRows: !expenditures.isEmpty)
+		}
+	}
+
+	private func associateDetailLinks(
+		from row: Kanna.XMLElement,
+		index: Int,
+		targetExpenditures: [SummaryExpenditure],
+		hasParsedRows: Bool
+	) {
+		let cells = row.css("td")
+		guard cells.count >= 7 else { return }
+		let nameText = cells[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+		if let match = matchingSummaryExpenditure(for: nameText, in: targetExpenditures) {
+			updateDetailLinks(for: match, cells: cells)
+		} else if index < 5 && hasParsedRows {
+			Log.debug("Could not match HTML row \(index): '\(nameText)'")
+		}
+	}
+
+	private func matchingSummaryExpenditure(
+		for nameText: String,
+		in expenditures: [SummaryExpenditure]
+	) -> SummaryExpenditure? {
+		return expenditures.first { expenditure in
+			let fullName = "\(expenditure.lastName), \(expenditure.firstName)"
+			return nameText.caseInsensitiveCompare(fullName) == .orderedSame
+				|| nameText.contains(expenditure.lastName) && nameText.contains(expenditure.firstName)
+		}
+	}
+
+	private func updateDetailLinks(for expenditure: SummaryExpenditure, cells: XPathObject) {
+		var foundLink = false
+		foundLink = updateDetailLink(at: 4, in: cells, assign: { expenditure.travelURL = $0 }) || foundLink
+		foundLink = updateDetailLink(at: 5, in: cells, assign: { expenditure.hospitalityURL = $0 }) || foundLink
+		foundLink = updateDetailLink(at: 6, in: cells, assign: { expenditure.contractsURL = $0 }) || foundLink
+		if foundLink {
+			Log.debug("Associated links for \(expenditure.lastName) (\(expenditure.firstName))")
+		}
+	}
+
+	private func updateDetailLink(at index: Int, in cells: XPathObject, assign: (String?) -> Void) -> Bool {
+		guard let href = cells[index].css("a").first?["href"] else { return false }
+		assign(URL(string: href, relativeTo: hosturl)?.absoluteString)
+		return true
+	}
+
+	private func insertNewSummaryExpenditures(
+		_ expenditures: [SummaryExpenditure],
+		existing existingExpenditures: [SummaryExpenditure]
+	) {
+		guard !expenditures.isEmpty && existingExpenditures.isEmpty else { return }
+		for expenditure in expenditures {
+			modelContext.insert(expenditure)
+		}
+		Log.debug("Inserted \(expenditures.count) new expenditures into database")
 	}
 
 	func downloadDetailedExpenditures(identifier: PersistentIdentifier) async throws {
@@ -332,10 +367,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		// If URLs are missing, we might need to re-fetch the summary HTML to get them
-		if expenditure.travelURL == nil && expenditure.hospitalityURL == nil && expenditure.contractsURL == nil {
-			Log.debug("URLs missing for \(expenditure.lastName), attempting to re-fetch summary HTML")
-			try await downloadExpenditures(year: expenditure.year, quarter: expenditure.quarter)
-		}
+		try await refreshDetailLinksIfMissing(for: expenditure)
 		
 		// Re-fetch to get updated URLs if they were just downloaded
 		guard let updatedExpenditure = modelContext.model(for: identifier) as? SummaryExpenditure else {
@@ -343,16 +375,28 @@ actor Fetch: ObservableObject {
 		}
 
 		Log.debug("Fetch.downloadDetailedExpenditures for \(updatedExpenditure.lastName). TravelURL: \(updatedExpenditure.travelURL != nil), HospitalityURL: \(updatedExpenditure.hospitalityURL != nil), ContractsURL: \(updatedExpenditure.contractsURL != nil)")
-		
-		if let travelURL = updatedExpenditure.travelURL, let url = URL(string: travelURL) {
-			try await downloadDetail(url: url, type: .travel, member: updatedExpenditure)
-		}
-		if let hospitalityURL = updatedExpenditure.hospitalityURL, let url = URL(string: hospitalityURL) {
-			try await downloadDetail(url: url, type: .hospitality, member: updatedExpenditure)
-		}
-		if let contractsURL = updatedExpenditure.contractsURL, let url = URL(string: contractsURL) {
-			try await downloadDetail(url: url, type: .contracts, member: updatedExpenditure)
-		}
+		try await downloadDetailIfPresent(updatedExpenditure.travelURL, type: .travel, member: updatedExpenditure)
+		try await downloadDetailIfPresent(updatedExpenditure.hospitalityURL, type: .hospitality, member: updatedExpenditure)
+		try await downloadDetailIfPresent(updatedExpenditure.contractsURL, type: .contracts, member: updatedExpenditure)
+	}
+
+	private func refreshDetailLinksIfMissing(for expenditure: SummaryExpenditure) async throws {
+		guard !hasAnyDetailURL(expenditure) else { return }
+		Log.debug("URLs missing for \(expenditure.lastName), attempting to re-fetch summary HTML")
+		try await downloadExpenditures(year: expenditure.year, quarter: expenditure.quarter)
+	}
+
+	private func hasAnyDetailURL(_ expenditure: SummaryExpenditure) -> Bool {
+		return expenditure.travelURL != nil || expenditure.hospitalityURL != nil || expenditure.contractsURL != nil
+	}
+
+	private func downloadDetailIfPresent(
+		_ urlString: String?,
+		type: DetailType,
+		member: SummaryExpenditure
+	) async throws {
+		guard let urlString, let url = URL(string: urlString) else { return }
+		try await downloadDetail(url: url, type: type, member: member)
 	}
 
 	private enum DetailType {
@@ -369,27 +413,8 @@ actor Fetch: ObservableObject {
 			Log.error("Failed to parse detail HTML from \(url.absoluteString)")
 			return
 		}
-		
-		let csvSelectors = ["a.btn-export-csv", "a.csv-btn.view-report-link"]
-		var csvLinkElement: Kanna.XMLElement?
-		for selector in csvSelectors {
-			if let element = doc.css(selector).first {
-				csvLinkElement = element
-				Log.debug("Found CSV link using selector: \(selector)")
-				break
-			}
-		}
-		
-		if csvLinkElement == nil {
-			csvLinkElement = doc.css("a").first(where: { $0["href"]?.lowercased().contains(".csv") == true })
-			if csvLinkElement != nil {
-				Log.debug("Found CSV link by searching for .csv in href")
-			}
-		}
 
-		guard let csvLinkElement = csvLinkElement,
-			  let href = csvLinkElement["href"],
-			  let csvURL = URL(string: href, relativeTo: hosturl) else {
+		guard let csvURL = findDetailCSVURL(in: doc, relativeTo: hosturl) else {
 			Log.error("CSV link not found in detail page \(url.absoluteString)")
 			Log.debug("HTML content of failing page: \n\(htmlstring)")
 			return
@@ -401,127 +426,233 @@ actor Fetch: ObservableObject {
 		try csvData.write(to: tempURL)
 		
 		let parser = CSVParser(file: tempURL)
-		var count = 0
-		
-		switch type {
-		case .travel:
-			let stream = TravelClaim.fromCSV(parser)
-			for await claimData in stream {
-				let claim = TravelClaim(
-					claimID: claimData.claimID,
-					startDate: claimData.startDate,
-					endDate: claimData.endDate,
-					transportation: claimData.transportation,
-					accommodations: claimData.accommodations,
-					mealsAndIncidentals: claimData.mealsAndIncidentals,
-					total: claimData.total
-				)
-				claim.summary = member
-				for detailData in claimData.details {
-					let detail = TravelExpenditureDetail(
-						travellerName: detailData.travellerName,
-						travellerType: detailData.travellerType,
-						purposeOfTravel: detailData.purposeOfTravel,
-						date: detailData.date,
-						departure: detailData.departure,
-						destination: detailData.destination
-					)
-					detail.claim = claim
-					claim.details.append(detail)
-				}
-				modelContext.insert(claim)
-				count += 1
-			}
-		case .hospitality:
-			let stream = HospitalityExpenditure.fromCSV(parser)
-			for await itemData in stream { 
-				let item = HospitalityExpenditure(
-					date: itemData.date,
-					location: itemData.location,
-					totalOfAttendees: itemData.totalOfAttendees,
-					purposeOfHospitality: itemData.purposeOfHospitality,
-					total: itemData.total,
-					typeOfEvent: itemData.typeOfEvent,
-					claim: itemData.claim,
-					supplier: itemData.supplier,
-					memberID: 0,
-					year: member.year,
-					quarter: member.quarter
-				)
-				item.summary = member
-				modelContext.insert(item)
-				count += 1
-			}
-		case .contracts:
-			let stream = ContractExpenditure.fromCSV(parser)
-			for await itemData in stream { 
-				let item = ContractExpenditure(
-					supplier: itemData.supplier,
-					details: itemData.details,
-					date: itemData.date,
-					total: itemData.total,
-					memberID: 0,
-					year: member.year,
-					quarter: member.quarter
-				)
-				item.summary = member
-				modelContext.insert(item)
-				count += 1
-			}
-		}
+		let count = await insertDetailRows(type: type, parser: parser, member: member)
 		
 		Log.debug("Inserted \(count) detailed items for \(type)")
 		try modelContext.save()
 		try? FileManager.default.removeItem(at: tempURL)
 	}
 
+	private func findDetailCSVURL(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		if let element = detailCSVElementBySelector(in: doc) {
+			return csvURL(from: element, relativeTo: baseURL)
+		}
+		return detailCSVURLByHref(in: doc, relativeTo: baseURL)
+	}
+
+	private func detailCSVElementBySelector(in doc: HTMLDocument) -> Kanna.XMLElement? {
+		for selector in ["a.btn-export-csv", "a.csv-btn.view-report-link"] {
+			if let element = doc.css(selector).first {
+				Log.debug("Found CSV link using selector: \(selector)")
+				return element
+			}
+		}
+		return nil
+	}
+
+	private func detailCSVURLByHref(in doc: HTMLDocument, relativeTo baseURL: URL) -> URL? {
+		let url = csvURLByHref(in: doc, relativeTo: baseURL)
+		if url != nil {
+			Log.debug("Found CSV link by searching for .csv in href")
+		}
+		return url
+	}
+
+	private func insertDetailRows(
+		type: DetailType,
+		parser: CSVParser,
+		member: SummaryExpenditure
+	) async -> Int {
+		switch type {
+		case .travel:
+			return await insertTravelClaims(from: parser, member: member)
+		case .hospitality:
+			return await insertHospitalityExpenditures(from: parser, member: member)
+		case .contracts:
+			return await insertContractExpenditures(from: parser, member: member)
+		}
+	}
+
+	private func insertTravelClaims(from parser: CSVParser, member: SummaryExpenditure) async -> Int {
+		var count = 0
+		let stream = TravelClaim.fromCSV(parser)
+		for await claimData in stream {
+			let claim = makeTravelClaim(from: claimData, member: member)
+			modelContext.insert(claim)
+			count += 1
+		}
+		return count
+	}
+
+	private func makeTravelClaim(from claimData: TravelClaimData, member: SummaryExpenditure) -> TravelClaim {
+		let claim = TravelClaim(
+			claimID: claimData.claimID,
+			startDate: claimData.startDate,
+			endDate: claimData.endDate,
+			transportation: claimData.transportation,
+			accommodations: claimData.accommodations,
+			mealsAndIncidentals: claimData.mealsAndIncidentals,
+			total: claimData.total
+		)
+		claim.summary = member
+		for detailData in claimData.details {
+			claim.details.append(makeTravelExpenditureDetail(from: detailData, claim: claim))
+		}
+		return claim
+	}
+
+	private func makeTravelExpenditureDetail(
+		from detailData: TravelExpenditureDetailData,
+		claim: TravelClaim
+	) -> TravelExpenditureDetail {
+		let detail = TravelExpenditureDetail(
+			travellerName: detailData.travellerName,
+			travellerType: detailData.travellerType,
+			purposeOfTravel: detailData.purposeOfTravel,
+			date: detailData.date,
+			departure: detailData.departure,
+			destination: detailData.destination
+		)
+		detail.claim = claim
+		return detail
+	}
+
+	private func insertHospitalityExpenditures(from parser: CSVParser, member: SummaryExpenditure) async -> Int {
+		var count = 0
+		let stream = HospitalityExpenditure.fromCSV(parser)
+		for await itemData in stream {
+			let item = makeHospitalityExpenditure(from: itemData, member: member)
+			modelContext.insert(item)
+			count += 1
+		}
+		return count
+	}
+
+	private func makeHospitalityExpenditure(
+		from itemData: HospitalityExpenditureData,
+		member: SummaryExpenditure
+	) -> HospitalityExpenditure {
+		let item = HospitalityExpenditure(
+			date: itemData.date,
+			location: itemData.location,
+			totalOfAttendees: itemData.totalOfAttendees,
+			purposeOfHospitality: itemData.purposeOfHospitality,
+			total: itemData.total,
+			typeOfEvent: itemData.typeOfEvent,
+			claim: itemData.claim,
+			supplier: itemData.supplier,
+			memberID: 0,
+			year: member.year,
+			quarter: member.quarter
+		)
+		item.summary = member
+		return item
+	}
+
+	private func insertContractExpenditures(from parser: CSVParser, member: SummaryExpenditure) async -> Int {
+		var count = 0
+		let stream = ContractExpenditure.fromCSV(parser)
+		for await itemData in stream {
+			let item = makeContractExpenditure(from: itemData, member: member)
+			modelContext.insert(item)
+			count += 1
+		}
+		return count
+	}
+
+	private func makeContractExpenditure(
+		from itemData: ContractExpenditureData,
+		member: SummaryExpenditure
+	) -> ContractExpenditure {
+		let item = ContractExpenditure(
+			supplier: itemData.supplier,
+			details: itemData.details,
+			date: itemData.date,
+			total: itemData.total,
+			memberID: 0,
+			year: member.year,
+			quarter: member.quarter
+		)
+		item.summary = member
+		return item
+	}
+
 	func downloadXML(forDate date: Date) async throws -> String {
 		Log.debug("Fetch.downloadXML(date: \(date))")
 		let url = hosturl.appending(path: dailyPath).appending(path: DateUtils.getCSVStringFromDate(date))
-		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		var (data, _) = try await NetworkService.shared.data(for: request)
+		let publicationDoc = try await downloadHTMLDocument(from: url, cachePolicy: .reloadIgnoringLocalCacheData)
+		let publicationURL = try hansardPublicationURL(from: publicationDoc, relativeTo: hosturl)
+		let hansardDoc = try await downloadHTMLDocument(from: publicationURL)
+		let xmlURL = try xmlExportURL(from: hansardDoc, relativeTo: hosturl)
+		let request = URLRequest(url: xmlURL, cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await NetworkService.shared.data(for: request)
+		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
+			throw NSError(domain: "", code: 7)
+		}
+		return utfstringvalue
+	}
+
+	private func downloadHTMLDocument(
+		from url: URL,
+		cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
+	) async throws -> HTMLDocument {
+		let request = URLRequest(url: url, cachePolicy: cachePolicy)
+		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
-					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
+			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: 1)
 		}
+		return doc
+	}
+
+	private func hansardPublicationURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
+		let href = try hansardPublicationHref(from: doc)
+		guard let url = URL(string: href, relativeTo: baseURL) else {
+			throw NSError(domain: "", code: 6)
+		}
+		return url
+	}
+
+	private func hansardPublicationHref(from doc: HTMLDocument) throws -> String {
 		var href: String?
 		for debatelink in doc.css("a.active-publication-link") {
-			guard let text = debatelink.text?.lowercased() else {
-				throw NSError(domain: "", code: 2)
-			}
-			if text.contains("hansard") {
-				href = debatelink["href"]
-			} else if text.contains("projected") {
-				throw NSError(domain: "", code: 3)
-			}
+			let text = try activePublicationText(from: debatelink)
+			href = try updatedHansardHref(current: href, candidate: debatelink["href"], text: text)
 		}
 		guard let href else {
 			throw NSError(domain: "", code: 4)
 		}
-		guard let url = URL(string: href, relativeTo: hosturl) else {
-			throw NSError(domain: "", code: 6)
+		return href
+	}
+
+	private func activePublicationText(from link: Kanna.XMLElement) throws -> String {
+		guard let text = link.text?.lowercased() else {
+			throw NSError(domain: "", code: 2)
 		}
-		request = URLRequest(url: url)
-		(data, _) = try await NetworkService.shared.data(for: request)
-		guard let htmlstring = String(data: data, encoding: .utf8),
-					let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
-			throw NSError(domain: "", code: 1)
+		return text
+	}
+
+	private func updatedHansardHref(current: String?, candidate: String?, text: String) throws -> String? {
+		if text.contains("hansard") {
+			return candidate
 		}
+		if text.contains("projected") {
+			throw NSError(domain: "", code: 3)
+		}
+		return current
+	}
+
+	private func xmlExportURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
 		guard let xmllinkelement = doc.css("a.btn-export-xml").first else {
 			throw NSError(domain: "", code: 5)
 		}
 		guard let href = xmllinkelement["href"] else {
 			throw NSError(domain: "", code: 4)
 		}
-		guard let xmllink = URL(string: href, relativeTo: hosturl) else {
+		guard let xmllink = URL(string: href, relativeTo: baseURL) else {
 			throw NSError(domain: "", code: 6)
 		}
-		request = URLRequest(url: xmllink, cachePolicy: .reloadIgnoringLocalCacheData)
-		(data, _) = try await NetworkService.shared.data(for: request)
-		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			throw NSError(domain: "", code: 7)
-		}
-		return utfstringvalue
+		return xmllink
 	}
 
 	func downloadCalendar(year: Int) async throws -> [Date] {
@@ -824,50 +955,88 @@ actor Fetch: ObservableObject {
 		from source: VotingEndpoint,
 		isoFormatter: ISO8601DateFormatter
 	) async throws -> (votes: [RecordedVote], hasMore: Bool) {
-		let components: URLComponents = {
-			switch source {
-			case .openCommons:
-				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-				components.path = "/ocd/votes/"
-				components.queryItems = [
-					URLQueryItem(name: "parliament", value: String(parliament)),
-					URLQueryItem(name: "pageSize", value: String(votePageSize)),
-					URLQueryItem(name: "page", value: String(page)),
-					URLQueryItem(name: "format", value: "json")
-				]
-				return components
-			case .openParliament:
-				var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
-				components.path = "/votes/"
-				let offset = max(0, (page - 1) * votePageSize)
-				components.queryItems = [
-					URLQueryItem(name: "parliament", value: String(parliament)),
-					URLQueryItem(name: "limit", value: String(votePageSize)),
-					URLQueryItem(name: "offset", value: String(offset)),
-					URLQueryItem(name: "format", value: "json")
-				]
-				return components
-			}
-		}()
-
-		guard let url = components.url else { return ([], false) }
-		let (data, response) = try await NetworkService.shared.data(from: url)
-		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+		guard let url = votingPageURL(parliament: parliament, page: page, from: source),
+			  let json = try await fetchJSONDictionary(from: url) else {
 			return ([], false)
 		}
 
+		return parseVotingPage(json, parliament: parliament, from: source, isoFormatter: isoFormatter)
+	}
+
+	private func votingPageURL(parliament: Int, page: Int, from source: VotingEndpoint) -> URL? {
 		switch source {
 		case .openCommons:
-			guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
-			let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament, isoFormatter: isoFormatter) }
-			return (votes, !votes.isEmpty && votes.count == votePageSize)
-			case .openParliament:
-				guard let objects = json["objects"] as? [[String: Any]] else { return ([], false) }
-				let votes = objects.compactMap { parseOpenParliamentVote($0, isoFormatter: isoFormatter) }
-				let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
-				return (votes, nextURL?.isEmpty == false)
+			return openCommonsVotingPageURL(parliament: parliament, page: page)
+		case .openParliament:
+			return openParliamentVotingPageURL(parliament: parliament, page: page)
 		}
+	}
+
+	private func openCommonsVotingPageURL(parliament: Int, page: Int) -> URL? {
+		var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+		components.path = "/ocd/votes/"
+		components.queryItems = [
+			URLQueryItem(name: "parliament", value: String(parliament)),
+			URLQueryItem(name: "pageSize", value: String(votePageSize)),
+			URLQueryItem(name: "page", value: String(page)),
+			URLQueryItem(name: "format", value: "json")
+		]
+		return components.url
+	}
+
+	private func openParliamentVotingPageURL(parliament: Int, page: Int) -> URL? {
+		var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
+		components.path = "/votes/"
+		components.queryItems = [
+			URLQueryItem(name: "parliament", value: String(parliament)),
+			URLQueryItem(name: "limit", value: String(votePageSize)),
+			URLQueryItem(name: "offset", value: String(max(0, (page - 1) * votePageSize))),
+			URLQueryItem(name: "format", value: "json")
+		]
+		return components.url
+	}
+
+	private func fetchJSONDictionary(from url: URL) async throws -> [String: Any]? {
+		let (data, response) = try await NetworkService.shared.data(from: url)
+		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			return nil
+		}
+		return json
+	}
+
+	private func parseVotingPage(
+		_ json: [String: Any],
+		parliament: Int,
+		from source: VotingEndpoint,
+		isoFormatter: ISO8601DateFormatter
+	) -> (votes: [RecordedVote], hasMore: Bool) {
+		switch source {
+		case .openCommons:
+			return parseOpenCommonsVotingPage(json, parliament: parliament, isoFormatter: isoFormatter)
+		case .openParliament:
+			return parseOpenParliamentVotingPage(json, isoFormatter: isoFormatter)
+		}
+	}
+
+	private func parseOpenCommonsVotingPage(
+		_ json: [String: Any],
+		parliament: Int,
+		isoFormatter: ISO8601DateFormatter
+	) -> (votes: [RecordedVote], hasMore: Bool) {
+		guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
+		let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament, isoFormatter: isoFormatter) }
+		return (votes, !votes.isEmpty && votes.count == votePageSize)
+	}
+
+	private func parseOpenParliamentVotingPage(
+		_ json: [String: Any],
+		isoFormatter: ISO8601DateFormatter
+	) -> (votes: [RecordedVote], hasMore: Bool) {
+		guard let objects = json["objects"] as? [[String: Any]] else { return ([], false) }
+		let votes = objects.compactMap { parseOpenParliamentVote($0, isoFormatter: isoFormatter) }
+		let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
+		return (votes, nextURL?.isEmpty == false)
 	}
 
 	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int, isoFormatter: ISO8601DateFormatter) -> RecordedVote? {
@@ -924,67 +1093,88 @@ actor Fetch: ObservableObject {
 		page: Int,
 		from source: VotingEndpoint
 	) async throws -> (votes: [(voteID: Int, ballot: String)], hasMore: Bool) {
-		let politicianSlug: String?
-		if source == .openParliament {
-			politicianSlug = await openParliamentSlug(for: memberID)
-		} else {
-			politicianSlug = nil
-		}
-
-		let components: URLComponents = {
-			switch source {
-			case .openCommons:
-				var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-				components.path = "/ocd/members/\(memberID)/votes/"
-				components.queryItems = [
-					URLQueryItem(name: "pageSize", value: String(votePageSize)),
-					URLQueryItem(name: "page", value: String(page)),
-					URLQueryItem(name: "format", value: "json")
-				]
-				return components
-			case .openParliament:
-				var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
-				let offset = max(0, (page - 1) * votePageSize)
-				let slug = politicianSlug ?? ""
-				components.path = "/votes/ballots/"
-				components.queryItems = [
-					URLQueryItem(name: "politician", value: slug),
-					URLQueryItem(name: "limit", value: String(votePageSize)),
-					URLQueryItem(name: "offset", value: String(offset)),
-					URLQueryItem(name: "format", value: "json")
-				]
-				return components
-			}
-		}()
-
-		guard let url = components.url else { return ([], false) }
-		let (data, response) = try await NetworkService.shared.data(from: url)
-		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+		guard let url = await memberVotesURL(memberID: memberID, page: page, from: source),
+			  let json = try await fetchJSONDictionary(from: url) else {
 			return ([], false)
 		}
 
+		return parseMemberVotesPage(json, from: source)
+	}
+
+	private func memberVotesURL(memberID: Int, page: Int, from source: VotingEndpoint) async -> URL? {
 		switch source {
 		case .openCommons:
-			guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
-			let votes = items.compactMap { item -> (Int, String)? in
-				guard let voteID = item["voteId"] as? Int,
-					  let ballot = item["recordedVote"] as? String else { return nil }
-				return (voteID, ballot)
-			}
-			return (votes, !votes.isEmpty && votes.count == votePageSize)
+			return openCommonsMemberVotesURL(memberID: memberID, page: page)
 		case .openParliament:
-			guard let items = json["objects"] as? [[String: Any]] else { return ([], false) }
-			let votes = items.compactMap { item -> (Int, String)? in
-				guard let ballotRaw = item["ballot"] as? String,
-					  let vote = openParliamentBallotID(from: item["vote_url"] as? String ?? "") else {
-					return nil
-				}
-				return (vote, normalizedBallot(ballotRaw))
-			}
-			let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
-			return (votes, nextURL?.isEmpty == false)
+			let slug = await openParliamentSlug(for: memberID)
+			return openParliamentMemberVotesURL(slug: slug, page: page)
 		}
+	}
+
+	private func openCommonsMemberVotesURL(memberID: Int, page: Int) -> URL? {
+		var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+		components.path = "/ocd/members/\(memberID)/votes/"
+		components.queryItems = [
+			URLQueryItem(name: "pageSize", value: String(votePageSize)),
+			URLQueryItem(name: "page", value: String(page)),
+			URLQueryItem(name: "format", value: "json")
+		]
+		return components.url
+	}
+
+	private func openParliamentMemberVotesURL(slug: String, page: Int) -> URL? {
+		var components = URLComponents(url: openParliamentAPIURL, resolvingAgainstBaseURL: false)!
+		components.path = "/votes/ballots/"
+		components.queryItems = [
+			URLQueryItem(name: "politician", value: slug),
+			URLQueryItem(name: "limit", value: String(votePageSize)),
+			URLQueryItem(name: "offset", value: String(max(0, (page - 1) * votePageSize))),
+			URLQueryItem(name: "format", value: "json")
+		]
+		return components.url
+	}
+
+	private func parseMemberVotesPage(
+		_ json: [String: Any],
+		from source: VotingEndpoint
+	) -> (votes: [(voteID: Int, ballot: String)], hasMore: Bool) {
+		switch source {
+		case .openCommons:
+			return parseOpenCommonsMemberVotesPage(json)
+		case .openParliament:
+			return parseOpenParliamentMemberVotesPage(json)
+		}
+	}
+
+	private func parseOpenCommonsMemberVotesPage(
+		_ json: [String: Any]
+	) -> (votes: [(voteID: Int, ballot: String)], hasMore: Bool) {
+		guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
+		let votes = items.compactMap(openCommonsMemberVote(from:))
+		return (votes, !votes.isEmpty && votes.count == votePageSize)
+	}
+
+	private func openCommonsMemberVote(from item: [String: Any]) -> (voteID: Int, ballot: String)? {
+		guard let voteID = item["voteId"] as? Int,
+			  let ballot = item["recordedVote"] as? String else { return nil }
+		return (voteID, ballot)
+	}
+
+	private func parseOpenParliamentMemberVotesPage(
+		_ json: [String: Any]
+	) -> (votes: [(voteID: Int, ballot: String)], hasMore: Bool) {
+		guard let items = json["objects"] as? [[String: Any]] else { return ([], false) }
+		let votes = items.compactMap(openParliamentMemberVote(from:))
+		let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
+		return (votes, nextURL?.isEmpty == false)
+	}
+
+	private func openParliamentMemberVote(from item: [String: Any]) -> (voteID: Int, ballot: String)? {
+		guard let ballotRaw = item["ballot"] as? String,
+			  let vote = openParliamentBallotID(from: item["vote_url"] as? String ?? "") else {
+			return nil
+		}
+		return (vote, normalizedBallot(ballotRaw))
 	}
 
 	private func openParliamentSlug(for memberID: Int) async -> String {
@@ -1127,46 +1317,74 @@ actor Fetch: ObservableObject {
 		var page = 1
 		var hasMore = true
 		while hasMore {
-			var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
-			components.path = "/ocd/questions/"
-			components.queryItems = [
-				URLQueryItem(name: "parliament", value: String(parliament)),
-				URLQueryItem(name: "memberId", value: String(memberID)),
-				URLQueryItem(name: "pageSize", value: "100"),
-				URLQueryItem(name: "page", value: String(page)),
-				URLQueryItem(name: "format", value: "json")
-			]
-			guard let url = components.url else { break }
-			let (data, response) = try await NetworkService.shared.data(from: url)
-			guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-				  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-				  let items = json["items"] as? [[String: Any]] else { break }
+			guard let items = try await loadWrittenQuestionsPage(memberID: memberID, parliament: parliament, page: page) else { break }
 			hasMore = !items.isEmpty && items.count == 100
 			page += 1
-			for item in items {
-				guard let id = item["id"] as? Int else { continue }
-				let dateStr = item["dateSubmitted"] as? String ?? ""
-				let date = isoFormatter.date(from: dateStr) ?? Date()
-				let responseDateStr = item["responseDate"] as? String
-				let responseDate = responseDateStr.flatMap { isoFormatter.date(from: $0) }
-				let q = WrittenQuestion(
-					questionID: id,
-					memberID: memberID,
-					parliament: item["parliament"] as? Int ?? parliament,
-					session: item["session"] as? Int ?? 0,
-					number: item["questionNumber"] as? Int ?? 0,
-					dateSubmitted: date,
-					subject: item["subject"] as? String ?? "",
-					questionTextEn: item["textEn"] as? String ?? item["text"] as? String ?? "",
-					statusEn: item["statusEn"] as? String ?? item["status"] as? String ?? "Pending",
-					responseDate: responseDate,
-					responseTextEn: item["responseTextEn"] as? String ?? item["responseText"] as? String,
-					daysElapsed: item["daysElapsed"] as? Int ?? 0
-				)
-				modelContext.insert(q)
-			}
+			insertWrittenQuestions(items, memberID: memberID, parliament: parliament, isoFormatter: isoFormatter)
 			try modelContext.save()
 		}
+	}
+
+	private func loadWrittenQuestionsPage(memberID: Int, parliament: Int, page: Int) async throws -> [[String: Any]]? {
+		guard let url = writtenQuestionsURL(memberID: memberID, parliament: parliament, page: page),
+			  let json = try await fetchJSONDictionary(from: url) else {
+			return nil
+		}
+		return json["items"] as? [[String: Any]]
+	}
+
+	private func writtenQuestionsURL(memberID: Int, parliament: Int, page: Int) -> URL? {
+		var components = URLComponents(url: openAPIURL, resolvingAgainstBaseURL: false)!
+		components.path = "/ocd/questions/"
+		components.queryItems = [
+			URLQueryItem(name: "parliament", value: String(parliament)),
+			URLQueryItem(name: "memberId", value: String(memberID)),
+			URLQueryItem(name: "pageSize", value: "100"),
+			URLQueryItem(name: "page", value: String(page)),
+			URLQueryItem(name: "format", value: "json")
+		]
+		return components.url
+	}
+
+	private func insertWrittenQuestions(
+		_ items: [[String: Any]],
+		memberID: Int,
+		parliament: Int,
+		isoFormatter: ISO8601DateFormatter
+	) {
+		for item in items {
+			guard let question = writtenQuestion(from: item, memberID: memberID, parliament: parliament, isoFormatter: isoFormatter) else {
+				continue
+			}
+			modelContext.insert(question)
+		}
+	}
+
+	private func writtenQuestion(
+		from item: [String: Any],
+		memberID: Int,
+		parliament: Int,
+		isoFormatter: ISO8601DateFormatter
+	) -> WrittenQuestion? {
+		guard let id = item["id"] as? Int else { return nil }
+		let dateStr = item["dateSubmitted"] as? String ?? ""
+		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let responseDateStr = item["responseDate"] as? String
+		let responseDate = responseDateStr.flatMap { isoFormatter.date(from: $0) }
+		return WrittenQuestion(
+			questionID: id,
+			memberID: memberID,
+			parliament: item["parliament"] as? Int ?? parliament,
+			session: item["session"] as? Int ?? 0,
+			number: item["questionNumber"] as? Int ?? 0,
+			dateSubmitted: date,
+			subject: item["subject"] as? String ?? "",
+			questionTextEn: item["textEn"] as? String ?? item["text"] as? String ?? "",
+			statusEn: item["statusEn"] as? String ?? item["status"] as? String ?? "Pending",
+			responseDate: responseDate,
+			responseTextEn: item["responseTextEn"] as? String ?? item["responseText"] as? String,
+			daysElapsed: item["daysElapsed"] as? Int ?? 0
+		)
 	}
 
 	private func deleteHansardAggregate(_ hansard: Hansard) {
