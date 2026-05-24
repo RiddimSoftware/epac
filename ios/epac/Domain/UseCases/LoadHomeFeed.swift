@@ -7,6 +7,10 @@ import Foundation
 
 @MainActor
 struct LoadHomeFeed {
+    private static let latestHansardsLimit: Int = 10
+    private static let recentSubjectTitleCount: Int = 3
+    private static let excerptMaxLength: Int = 140
+
     private let repository: HomeFeedRepository
     private let followPreferenceReading: FollowPreferenceReading
     private let clock: Clock
@@ -51,13 +55,13 @@ struct LoadHomeFeed {
             mySenators = []
         }
 
-        let hansards = (try? await repository.fetchLatestHansards(limit: 10)) ?? []
+        let hansards = (try? await repository.fetchLatestHansards(limit: Self.latestHansardsLimit)) ?? []
         let latestHansard = hansards.first
 
         let parliamentDayStatus = resolveParliamentDayStatus(today: today, latestHansard: latestHansard, isSittingToday: isSittingToday)
 
         let recentSubjectTitles = Array(
-            (hansards.first?.subjectRecords.map(\.title) ?? []).prefix(3)
+            (hansards.first?.subjectRecords.map(\.title) ?? []).prefix(Self.recentSubjectTitleCount)
         )
         let latestSpeechHighlight = makeLatestSpeechHighlight(for: followedMember, in: hansards)
 
@@ -144,8 +148,8 @@ struct LoadHomeFeed {
         let cleaned = text
             .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard cleaned.count > 140 else { return cleaned }
-        let end = cleaned.index(cleaned.startIndex, offsetBy: 140)
+        guard cleaned.count > Self.excerptMaxLength else { return cleaned }
+        let end = cleaned.index(cleaned.startIndex, offsetBy: Self.excerptMaxLength)
         return String(cleaned[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 }

@@ -128,6 +128,8 @@ private final class DelayedCalendarFetcher: SittingCalendarFetching {
     private let staleDate: Date
     private let freshDate: Date
     private(set) var downloadCallCount = 0
+    private let firstCallDelayMs: Int64 = 80
+    private let subsequentCallDelayMs: Int64 = 10
 
     init(context: ModelContext, staleDate: Date, freshDate: Date) {
         self.context = context
@@ -142,10 +144,10 @@ private final class DelayedCalendarFetcher: SittingCalendarFetching {
         }
 
         if callNumber == 1 {
-            try await Task.sleep(for: .milliseconds(80))
+            try await Task.sleep(for: .milliseconds(firstCallDelayMs))
             await MainActor.run { upsertCalendar(year: year, sittings: [staleDate]) }
         } else {
-            try await Task.sleep(for: .milliseconds(10))
+            try await Task.sleep(for: .milliseconds(subsequentCallDelayMs))
             await MainActor.run { upsertCalendar(year: year, sittings: [freshDate]) }
         }
     }

@@ -59,6 +59,9 @@ struct ParliamentEntry: TimelineEntry {
 }
 
 struct ParliamentProvider: TimelineProvider {
+	private let placeholderYea: Int = 174
+	private let placeholderNay: Int = 149
+
 	func placeholder(in context: Context) -> ParliamentEntry {
 		ParliamentEntry(
 			date: .now,
@@ -68,8 +71,8 @@ struct ParliamentProvider: TimelineProvider {
 			lastVoteBill: "C-50",
 			lastVoteResult: "Passed",
 			lastVoteDate: .now,
-			lastVoteYea: 174,
-			lastVoteNay: 149
+			lastVoteYea: placeholderYea,
+			lastVoteNay: placeholderNay
 		)
 	}
 
@@ -133,11 +136,13 @@ struct ParliamentComplication: Widget {
 struct ParliamentComplicationView: View {
 	let entry: ParliamentEntry
 	@Environment(\.widgetFamily) private var family
+	private let complicationInnerSpacing: CGFloat = 2
+	private let rectangularLineLimit: Int = 2
 
 	var body: some View {
 		switch family {
 		case .accessoryCircular:
-			VStack(spacing: 2) {
+			VStack(spacing: complicationInnerSpacing) {
 				Image(systemName: "building.columns.fill")
 				Text(entry.isSittingToday ? "Sit" : "Off")
 					.font(.caption2)
@@ -152,12 +157,12 @@ struct ParliamentComplicationView: View {
 				}
 				.accessibilityLabel("House of Commons \(entry.statusText)")
 		case .accessoryRectangular:
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: complicationInnerSpacing) {
 				Label("House of Commons", systemImage: "building.columns.fill")
 					.font(.caption2)
 				Text(entry.rectangularText)
 					.font(.caption)
-					.lineLimit(2)
+					.lineLimit(rectangularLineLimit)
 			}
 			.accessibilityElement(children: .combine)
 		case .accessoryInline:
