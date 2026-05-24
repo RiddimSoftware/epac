@@ -106,13 +106,13 @@ class XMLBro {
 		else {
 			return nil
 		}
-		let parsed = parseAffiliationString(personspeaking)
-		guard let lastName = parsed.speakerNameParts.lastName else {
+		let parsed = HansardSpeakerParser.parse(personspeaking)
+		guard let lastName = parsed.lastName else {
 			return nil
 		}
 		let messages = speechMessages(
 			from: intervention["Content"]["ParaText"],
-			firstName: parsed.speakerNameParts.firstName,
+			firstName: parsed.firstName,
 			lastName: String(lastName),
 			partyAbbreviation: parsed.partyAbbreviation,
 			ridingName: parsed.ridingName
@@ -154,62 +154,7 @@ class XMLBro {
 		}
 	}
 
-	private func parseAffiliationString(_ affiliationString: String) -> (speakerNameParts: (firstName: String, lastName: String?), partyAbbreviation: String, ridingName: String) {
-		let trimmedString = affiliationString.replacingOccurrences(of: "Mme ", with: "Mme. ").trimmingCharacters(in: .whitespacesAndNewlines)
-		let details = affiliationDetails(from: trimmedString)
-		return (
-			speakerNameParts: speakerNameParts(from: details.speakerName),
-			partyAbbreviation: details.partyAbbreviation,
-			ridingName: details.ridingName
-		)
-	}
-
-	private func affiliationDetails(from string: String) -> (speakerName: String, partyAbbreviation: String, ridingName: String) {
-		guard let firstParenIndex = string.firstIndex(of: "(") else {
-			return (speakerName: string, partyAbbreviation: "", ridingName: "")
-		}
-		let speakerName = String(string[..<firstParenIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-		guard let details = parenthesizedDetails(in: string, after: firstParenIndex) else {
-			return (speakerName: speakerName, partyAbbreviation: "", ridingName: "")
-		}
-		guard let lastCommaIndex = details.lastIndex(of: ",") else {
-			return (speakerName: speakerName, partyAbbreviation: "", ridingName: details)
-		}
-		let partyAbbreviation = normalizedPartyAbbreviation(in: details, after: lastCommaIndex)
-		let ridingName = ridingName(in: String(details[..<lastCommaIndex]).trimmingCharacters(in: .whitespacesAndNewlines))
-		return (speakerName: speakerName, partyAbbreviation: partyAbbreviation, ridingName: ridingName)
-	}
-
-	private func parenthesizedDetails(in string: String, after firstParenIndex: String.Index) -> String? {
-		guard let lastParenIndex = string.lastIndex(of: ")") else {
-			return nil
-		}
-		let detailsStartIndex = string.index(after: firstParenIndex)
-		return String(string[detailsStartIndex..<lastParenIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-	}
-
-	private func normalizedPartyAbbreviation(in details: String, after commaIndex: String.Index) -> String {
-		var partyAbbreviation = String(details[details.index(after: commaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-		if partyAbbreviation.hasSuffix(".") {
-			partyAbbreviation.removeLast()
-		}
-		return partyAbbreviation
-	}
-
-	private func ridingName(in potentialRidingAndRole: String) -> String {
-		if let secondLastCommaIndex = potentialRidingAndRole.lastIndex(of: ",") {
-			return String(potentialRidingAndRole[potentialRidingAndRole.index(after: secondLastCommaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-		}
-		return potentialRidingAndRole.contains("(") ? "" : potentialRidingAndRole
-	}
-
-	private func speakerNameParts(from speakerName: String) -> (firstName: String, lastName: String?) {
-		let cleanNames = speakerName.split(separator: " ").filter { !Self.speakerTitleWords.contains(String($0)) }
-		return (firstName: cleanNames.dropLast().joined(separator: " "), lastName: cleanNames.last.map(String.init))
-	}
-
 	private static let defaultParliamentNumberForMemberPhotos = 45
-	private static let speakerTitleWords = ["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt", "Right"]
 
 	struct Paragraph {
 		var content: String
