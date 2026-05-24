@@ -8,6 +8,70 @@
 
 import SwiftUI
 
+private enum AppPreviewVideoSpec {
+    static let initialSceneIndex = 0
+    static let gradientStart: (red: Double, green: Double, blue: Double) = (0.06, 0.08, 0.10)
+    static let gradientMiddle: (red: Double, green: Double, blue: Double) = (0.10, 0.18, 0.20)
+    static let gradientEnd: (red: Double, green: Double, blue: Double) = (0.19, 0.17, 0.13)
+    static let rootSpacing: CGFloat = 18
+    static let titleSpacing: CGFloat = 8
+    static let appNameFontSize: CGFloat = 38
+    static let headlineFontSize: CGFloat = 27
+    static let headlineLineLimit = 2
+    static let headlineMinimumScaleFactor: CGFloat = 0.75
+    static let titleHorizontalPadding: CGFloat = 26
+    static let pageIndicatorSpacing: CGFloat = 7
+    static let pageIndicatorInactiveOpacity = 0.35
+    static let pageIndicatorBottomPadding: CGFloat = 8
+    static let rootTopPadding: CGFloat = 22
+    static let rootBottomPadding: CGFloat = 14
+    static let phoneContentSpacing: CGFloat = 18
+    static let phoneTitleFontSize: CGFloat = 20
+    static let phoneActionFontSize: CGFloat = 19
+    static let tabItemSpacing: CGFloat = 4
+    static let tabIconFontSize: CGFloat = 18
+    static let tabTitleFontSize: CGFloat = 10
+    static let tabBarTopPadding: CGFloat = 10
+    static let dividerHeight: CGFloat = 0.5
+    static let phoneContentPadding: CGFloat = 22
+    static let phoneBorderOpacity = 0.45
+    static let phoneShadowOpacity = 0.32
+    static let statusBarTimeFontSize: CGFloat = 13
+    static let statusBarFontSize: CGFloat = 12
+    static let statusBarHorizontalPadding: CGFloat = 28
+    static let statusBarTopPadding: CGFloat = 14
+    static let statusBarBottomPadding: CGFloat = 10
+    static let cardSpacing: CGFloat = 16
+    static let rowSpacing: CGFloat = 10
+    static let memberTextSpacing: CGFloat = 3
+    static let detailGroupSpacing: CGFloat = 12
+    static let debateLineLimit = 3
+    static let lobbyingSpacing: CGFloat = 14
+    static let fixtureSpacing: CGFloat = 13
+    static let contactButtonSpacing: CGFloat = 8
+    static let contactButtonVerticalPadding: CGFloat = 11
+    static let contactButtonCornerRadius: CGFloat = 10
+    static let activityIconWidth: CGFloat = 26
+    static let cardPadding: CGFloat = 16
+    static let cardCornerRadius: CGFloat = 14
+    static let sourceBadgeLineLimit = 2
+    static let speakerAvatarOpacity = 0.18
+    static let speakerAvatarSize: CGFloat = 38
+    static let speakerTextSpacing: CGFloat = 2
+    static let speechBubbleLineLimit = 4
+    static let speechBubblePadding: CGFloat = 12
+    static let speechBubbleOpacity = 0.10
+    static let speechBubbleCornerRadius: CGFloat = 12
+    static let votePillHorizontalPadding: CGFloat = 10
+    static let votePillVerticalPadding: CGFloat = 6
+    static let communicationSpacing: CGFloat = 4
+    static let communicationVerticalPadding: CGFloat = 5
+    static let fieldSpacing: CGFloat = 5
+    static let shortSceneDurationNanoseconds: UInt64 = 3_000_000_000
+    static let mediumSceneDurationNanoseconds: UInt64 = 4_000_000_000
+    static let standardSceneDurationNanoseconds: UInt64 = 5_000_000_000
+}
+
 struct AppPreviewVideoView: View {
     private let scenes = AppPreviewScene.scenes
     private let forcedSceneIndex: Int?
@@ -16,34 +80,46 @@ struct AppPreviewVideoView: View {
     init() {
         let forcedSceneIndex = AppPreviewScene.requestedSceneIndex
         self.forcedSceneIndex = forcedSceneIndex
-        self._selectedSceneIndex = State(initialValue: forcedSceneIndex ?? 0)
+        self._selectedSceneIndex = State(initialValue: forcedSceneIndex ?? AppPreviewVideoSpec.initialSceneIndex)
     }
 
     var body: some View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.06, green: 0.08, blue: 0.10),
-                    Color(red: 0.10, green: 0.18, blue: 0.20),
-                    Color(red: 0.19, green: 0.17, blue: 0.13)
+                    Color(
+                        red: AppPreviewVideoSpec.gradientStart.red,
+                        green: AppPreviewVideoSpec.gradientStart.green,
+                        blue: AppPreviewVideoSpec.gradientStart.blue
+                    ),
+                    Color(
+                        red: AppPreviewVideoSpec.gradientMiddle.red,
+                        green: AppPreviewVideoSpec.gradientMiddle.green,
+                        blue: AppPreviewVideoSpec.gradientMiddle.blue
+                    ),
+                    Color(
+                        red: AppPreviewVideoSpec.gradientEnd.red,
+                        green: AppPreviewVideoSpec.gradientEnd.green,
+                        blue: AppPreviewVideoSpec.gradientEnd.blue
+                    )
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 18) {
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(spacing: AppPreviewVideoSpec.rootSpacing) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.titleSpacing) {
                     Text("epac")
-                        .font(.system(size: 38, weight: .bold, design: .rounded))
+                        .font(.system(size: AppPreviewVideoSpec.appNameFontSize, weight: .bold, design: .rounded))
                     Text(scenes[selectedSceneIndex].headline)
-                        .font(.system(size: 27, weight: .semibold, design: .rounded))
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.75)
+                        .font(.system(size: AppPreviewVideoSpec.headlineFontSize, weight: .semibold, design: .rounded))
+                        .lineLimit(AppPreviewVideoSpec.headlineLineLimit)
+                        .minimumScaleFactor(AppPreviewVideoSpec.headlineMinimumScaleFactor)
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 26)
+                .padding(.horizontal, AppPreviewVideoSpec.titleHorizontalPadding)
 
                 AppPreviewPhoneFrame(scene: scenes[selectedSceneIndex])
                     .id(selectedSceneIndex)
@@ -53,30 +129,33 @@ struct AppPreviewVideoView: View {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
 
-                HStack(spacing: 7) {
+                HStack(spacing: AppPreviewVideoSpec.pageIndicatorSpacing) {
                     ForEach(scenes.indices, id: \.self) { index in
                         Capsule()
-                            .fill(index == selectedSceneIndex ? Color.white : Color.white.opacity(0.35))
-                            .frame(width: index == selectedSceneIndex ? 26 : 8, height: 8)
-                            .animation(.easeInOut(duration: 0.35), value: selectedSceneIndex)
+                            .fill(index == selectedSceneIndex ? Color.white : Color.white.opacity(AppPreviewVideoSpec.pageIndicatorInactiveOpacity))
+                            .frame(
+                                width: index == selectedSceneIndex ? EpacMedia.pageDotActiveWidth : EpacMedia.pageDotInactiveWidth,
+                                height: EpacMedia.pageDotHeight
+                            )
+                            .animation(.easeInOut(duration: EpacAnimation.pageIndicator), value: selectedSceneIndex)
                     }
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, AppPreviewVideoSpec.pageIndicatorBottomPadding)
             }
-            .padding(.top, 22)
-            .padding(.bottom, 14)
+            .padding(.top, AppPreviewVideoSpec.rootTopPadding)
+            .padding(.bottom, AppPreviewVideoSpec.rootBottomPadding)
 
             if AppPreviewScene.testProbesEnabled {
-                VStack(spacing: 1) {
+                VStack(spacing: EpacMedia.previewProbeSize) {
                     ForEach(AppPreviewScene.requiredAccessibilityIdentifiers, id: \.self) { identifier in
                         Text(identifier)
-                            .font(.system(size: 1))
-                            .frame(width: 1, height: 1)
+                            .font(.system(size: EpacMedia.previewProbeSize))
+                            .frame(width: EpacMedia.previewProbeSize, height: EpacMedia.previewProbeSize)
                             .accessibilityLabel(identifier)
                             .accessibilityIdentifier(identifier)
                     }
                 }
-                .frame(width: 1, height: 1)
+                .frame(width: EpacMedia.previewProbeSize, height: EpacMedia.previewProbeSize)
                 .clipped()
             }
         }
@@ -105,7 +184,7 @@ struct AppPreviewVideoView: View {
             selectedSceneIndex += 1
             return
         }
-        withAnimation(.easeInOut(duration: 0.65)) {
+        withAnimation(.easeInOut(duration: EpacAnimation.previewSceneTransition)) {
             selectedSceneIndex += 1
         }
     }
@@ -117,13 +196,13 @@ private struct AppPreviewPhoneFrame: View {
     var body: some View {
         VStack(spacing: 0) {
             phoneStatusBar
-            VStack(spacing: 18) {
+            VStack(spacing: AppPreviewVideoSpec.phoneContentSpacing) {
                 HStack {
                     Label(scene.tabTitle, systemImage: scene.systemImage)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: AppPreviewVideoSpec.phoneTitleFontSize, weight: .semibold))
                     Spacer()
                     Image(systemName: "star.circle")
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.system(size: AppPreviewVideoSpec.phoneActionFontSize, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                 }
 
@@ -133,43 +212,48 @@ private struct AppPreviewPhoneFrame: View {
 
                 HStack {
                     ForEach(AppPreviewTab.allCases) { tab in
-                        VStack(spacing: 4) {
+                        VStack(spacing: AppPreviewVideoSpec.tabItemSpacing) {
                             Image(systemName: tab.systemImage)
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: AppPreviewVideoSpec.tabIconFontSize, weight: .semibold))
                             Text(tab.title)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.system(size: AppPreviewVideoSpec.tabTitleFontSize, weight: .medium))
                         }
                         .foregroundStyle(tab.title == scene.tabTitle ? Color.accentColor : Color.secondary)
                         .frame(maxWidth: .infinity)
                     }
                 }
-                .padding(.top, 10)
-                .overlay(Rectangle().fill(Color.appDivider).frame(height: 0.5), alignment: .top)
+                .padding(.top, AppPreviewVideoSpec.tabBarTopPadding)
+                .overlay(Rectangle().fill(Color.appDivider).frame(height: AppPreviewVideoSpec.dividerHeight), alignment: .top)
             }
-            .padding(22)
+            .padding(AppPreviewVideoSpec.phoneContentPadding)
         }
-        .frame(width: 338, height: 650)
+        .frame(width: EpacMedia.previewPhoneWidth, height: EpacMedia.previewPhoneHeight)
         .background(Color.appBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: EpacMedia.previewPhoneCornerRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .stroke(Color.white.opacity(0.45), lineWidth: 3)
+            RoundedRectangle(cornerRadius: EpacMedia.previewPhoneCornerRadius, style: .continuous)
+                .stroke(Color.white.opacity(AppPreviewVideoSpec.phoneBorderOpacity), lineWidth: EpacMedia.previewPhoneBorderWidth)
         )
-        .shadow(color: .black.opacity(0.32), radius: 28, x: 0, y: 22)
+        .shadow(
+            color: .black.opacity(AppPreviewVideoSpec.phoneShadowOpacity),
+            radius: EpacMedia.previewPhoneShadowRadius,
+            x: 0,
+            y: EpacMedia.previewPhoneShadowYOffset
+        )
     }
 
     private var phoneStatusBar: some View {
         HStack {
             Text("9:41")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: AppPreviewVideoSpec.statusBarTimeFontSize, weight: .semibold))
             Spacer()
             Image(systemName: "wifi")
             Image(systemName: "battery.100")
         }
-        .font(.system(size: 12, weight: .semibold))
-        .padding(.horizontal, 28)
-        .padding(.top, 14)
-        .padding(.bottom, 10)
+        .font(.system(size: AppPreviewVideoSpec.statusBarFontSize, weight: .semibold))
+        .padding(.horizontal, AppPreviewVideoSpec.statusBarHorizontalPadding)
+        .padding(.top, AppPreviewVideoSpec.statusBarTopPadding)
+        .padding(.bottom, AppPreviewVideoSpec.statusBarBottomPadding)
     }
 
     @ViewBuilder
@@ -177,7 +261,7 @@ private struct AppPreviewPhoneFrame: View {
         switch scene.kind {
         case .homeFeed:
             previewCard {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.cardSpacing) {
                     sourceBadge("Today in Parliament")
                         .accessibilityIdentifier("home-feed-scroll")
                     Text("Your MP. Everything they do.")
@@ -197,14 +281,14 @@ private struct AppPreviewPhoneFrame: View {
             }
         case .mpProfile:
             previewCard {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.cardSpacing) {
                     sourceBadge("House of Commons member profile")
                         .accessibilityIdentifier("mp-profile-scroll")
-                    HStack(spacing: 10) {
+                    HStack(spacing: AppPreviewVideoSpec.rowSpacing) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.title2)
                             .foregroundStyle(Color.accentColor)
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: AppPreviewVideoSpec.memberTextSpacing) {
                             Text("Gurbux Saini")
                                 .font(.headline)
                             Text("Fleetwood-Port Kells - Lib.")
@@ -212,7 +296,7 @@ private struct AppPreviewPhoneFrame: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: AppPreviewVideoSpec.detailGroupSpacing) {
                         voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "mp-profile-vote-row-0")
                             .accessibilityElement(children: .combine)
                         activityRow(icon: "dollarsign.circle.fill", title: "Expenses", detail: "Quarterly House disclosures")
@@ -225,14 +309,14 @@ private struct AppPreviewPhoneFrame: View {
                 .accessibilityIdentifier("mp-profile-scroll")
             }
         case .debate:
-            VStack(spacing: 12) {
+            VStack(spacing: AppPreviewVideoSpec.detailGroupSpacing) {
                 previewCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: AppPreviewVideoSpec.detailGroupSpacing) {
                         sourceBadge("House of Commons Debates, January 27, 2026")
                             .accessibilityIdentifier("parliament-sitting-row-0")
                         Text("National Framework for Food Price Transparency Act")
                             .font(.headline)
-                            .lineLimit(3)
+                            .lineLimit(AppPreviewVideoSpec.debateLineLimit)
                             .accessibilityIdentifier("speech-view-scroll")
                         speakerRow(name: "Gurbux Saini", riding: "Fleetwood-Port Kells", party: "Lib.")
                         speechBubble("Bill C-226 would establish a national framework to improve food price transparency.")
@@ -246,7 +330,7 @@ private struct AppPreviewPhoneFrame: View {
             .accessibilityIdentifier("speech-view-scroll")
         case .lobbying:
             previewCard {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.lobbyingSpacing) {
                     sourceBadge("Office of the Commissioner of Lobbying")
                         .accessibilityIdentifier("lobbying-list-scroll")
                     Text("Who's influencing them?")
@@ -261,12 +345,12 @@ private struct AppPreviewPhoneFrame: View {
             }
         case .voteDetail:
             previewCard {
-                VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.fixtureSpacing) {
                     sourceBadge("House of Commons recorded divisions")
                         .accessibilityIdentifier("vote-detail-scroll")
                     Text("They said it. Then voted against it.")
                         .font(.headline)
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: AppPreviewVideoSpec.rowSpacing) {
                         voteRow(title: "Division No. 926", detail: "Motion negatived", vote: "Yea", color: .appPositive, accessibilityIdentifier: "vote-list-row-0")
                             .accessibilityElement(children: .combine)
                         voteRow(title: "Government", detail: "Most Liberal MPs", vote: "Nay", color: .appDestructive, accessibilityIdentifier: "vote-detail-mp-list")
@@ -281,7 +365,7 @@ private struct AppPreviewPhoneFrame: View {
             }
         case .contact:
             previewCard {
-                VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: AppPreviewVideoSpec.fixtureSpacing) {
                     sourceBadge("House of Commons member contact")
                         .accessibilityIdentifier("contact-sheet-scroll")
                     Text("Contact your MP")
@@ -289,16 +373,16 @@ private struct AppPreviewPhoneFrame: View {
                     field("Subject", value: "Bill C-226")
                     field("Message", value: "I am writing about the grocery price transparency debate.")
                         .accessibilityIdentifier("contact-message-field")
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppPreviewVideoSpec.contactButtonSpacing) {
                         Image(systemName: "envelope.fill")
                         Text("Open Mail")
                     }
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
+                        .padding(.vertical, AppPreviewVideoSpec.contactButtonVerticalPadding)
                         .background(Color.accentColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppPreviewVideoSpec.contactButtonCornerRadius, style: .continuous))
                         .accessibilityElement(children: .combine)
                         .accessibilityIdentifier("mp-profile-contact-button")
                 }
@@ -311,31 +395,31 @@ private struct AppPreviewPhoneFrame: View {
     private func previewCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(AppPreviewVideoSpec.cardPadding)
             .background(Color.appSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppPreviewVideoSpec.cardCornerRadius, style: .continuous))
     }
 
     private func sourceBadge(_ text: String) -> some View {
         Label(text, systemImage: "checkmark.seal.fill")
             .font(.caption2.weight(.semibold))
             .foregroundStyle(Color.accentColor)
-            .lineLimit(2)
+            .lineLimit(AppPreviewVideoSpec.sourceBadgeLineLimit)
     }
 
     private func speakerRow(name: String, riding: String, party: String) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: AppPreviewVideoSpec.rowSpacing) {
             Circle()
-                .fill(Color.accentColor.opacity(0.18))
-                .frame(width: 38, height: 38)
+                .fill(Color.accentColor.opacity(AppPreviewVideoSpec.speakerAvatarOpacity))
+                .frame(width: AppPreviewVideoSpec.speakerAvatarSize, height: AppPreviewVideoSpec.speakerAvatarSize)
                 .overlay(Text(String(name.prefix(1))).font(.headline).foregroundStyle(Color.accentColor))
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: AppPreviewVideoSpec.speakerTextSpacing) {
                 Text(name)
                     .font(.subheadline.weight(.semibold))
                 Text("\(riding) - \(party)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(AppPreviewVideoSpec.sourceBadgeLineLimit)
             }
         }
     }
@@ -343,16 +427,16 @@ private struct AppPreviewPhoneFrame: View {
     private func speechBubble(_ text: String) -> some View {
         Text(text)
             .font(.subheadline)
-            .lineLimit(4)
-            .padding(12)
+            .lineLimit(AppPreviewVideoSpec.speechBubbleLineLimit)
+            .padding(AppPreviewVideoSpec.speechBubblePadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.accentColor.opacity(0.10))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(Color.accentColor.opacity(AppPreviewVideoSpec.speechBubbleOpacity))
+            .clipShape(RoundedRectangle(cornerRadius: AppPreviewVideoSpec.speechBubbleCornerRadius, style: .continuous))
     }
 
     private func voteRow(title: String, detail: String, vote: String, color: Color, accessibilityIdentifier: String? = nil) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: AppPreviewVideoSpec.rowSpacing) {
+            VStack(alignment: .leading, spacing: AppPreviewVideoSpec.speakerTextSpacing) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                 Text(detail)
@@ -363,8 +447,8 @@ private struct AppPreviewPhoneFrame: View {
             Text(vote)
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, AppPreviewVideoSpec.votePillHorizontalPadding)
+                .padding(.vertical, AppPreviewVideoSpec.votePillVerticalPadding)
                 .background(color)
                 .clipShape(Capsule())
         }
@@ -384,11 +468,11 @@ private struct AppPreviewPhoneFrame: View {
     }
 
     private func activityRow(icon: String, title: String, detail: String, accessibilityIdentifier: String? = nil) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: AppPreviewVideoSpec.rowSpacing) {
             Image(systemName: icon)
                 .foregroundStyle(Color.accentColor)
-                .frame(width: 26)
-            VStack(alignment: .leading, spacing: 2) {
+                .frame(width: AppPreviewVideoSpec.activityIconWidth)
+            VStack(alignment: .leading, spacing: AppPreviewVideoSpec.speakerTextSpacing) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                 Text(detail)
@@ -402,7 +486,7 @@ private struct AppPreviewPhoneFrame: View {
     }
 
     private func communicationRow(org: String, topic: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: AppPreviewVideoSpec.communicationSpacing) {
             Text(org)
                 .font(.subheadline.weight(.semibold))
             Text(topic)
@@ -410,11 +494,11 @@ private struct AppPreviewPhoneFrame: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 5)
+        .padding(.vertical, AppPreviewVideoSpec.communicationVerticalPadding)
     }
 
     private func timelineStage(_ title: String, done: Bool) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: AppPreviewVideoSpec.rowSpacing) {
             Image(systemName: done ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(done ? Color.appPositive : Color.appNeutral)
             Text(title)
@@ -424,17 +508,17 @@ private struct AppPreviewPhoneFrame: View {
     }
 
     private func field(_ label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: AppPreviewVideoSpec.fieldSpacing) {
             Text(label)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(value)
                 .font(.subheadline)
-                .lineLimit(3)
+                .lineLimit(AppPreviewVideoSpec.debateLineLimit)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(10)
+                .padding(AppPreviewVideoSpec.rowSpacing)
                 .background(Color.appBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppPreviewVideoSpec.contactButtonCornerRadius, style: .continuous))
         }
         .accessibilityElement(children: .combine)
     }
@@ -473,42 +557,42 @@ private struct AppPreviewScene {
             tabTitle: "Home",
             systemImage: "house.fill",
             kind: .homeFeed,
-            durationNanoseconds: 3_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.shortSceneDurationNanoseconds
         ),
         AppPreviewScene(
             headline: "Every vote. Every detail.",
             tabTitle: "Members",
             systemImage: "person.2.fill",
             kind: .mpProfile,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.standardSceneDurationNanoseconds
         ),
         AppPreviewScene(
             headline: "Hansard. Finally readable.",
             tabTitle: "Parliament",
             systemImage: "building.columns.fill",
             kind: .debate,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.standardSceneDurationNanoseconds
         ),
         AppPreviewScene(
             headline: "Who's influencing them?",
             tabTitle: "Members",
             systemImage: "person.text.rectangle.fill",
             kind: .lobbying,
-            durationNanoseconds: 4_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.mediumSceneDurationNanoseconds
         ),
         AppPreviewScene(
             headline: "They said it. Then voted against it.",
             tabTitle: "Accountability",
             systemImage: "checklist.checked",
             kind: .voteDetail,
-            durationNanoseconds: 5_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.standardSceneDurationNanoseconds
         ),
         AppPreviewScene(
             headline: "Democracy. One tap.",
             tabTitle: "Members",
             systemImage: "envelope.fill",
             kind: .contact,
-            durationNanoseconds: 3_000_000_000
+            durationNanoseconds: AppPreviewVideoSpec.shortSceneDurationNanoseconds
         )
     ]
 

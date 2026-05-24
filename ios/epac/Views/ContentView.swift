@@ -18,6 +18,16 @@ struct ContentView: View {
 	private typealias CustomSchemeHandler = (URL) -> Void
 	private typealias UniversalLinkHandler = ([String], URL) -> Void
 
+	private enum AppPreviewDefaults {
+		static let followedMemberID = 1422
+	}
+
+	private enum Layout {
+		static let offlineBannerSpacing: CGFloat = 10
+		static let offlineBannerVerticalPadding: CGFloat = 10
+		static let sidebarSelectionOpacity = 0.16
+	}
+
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
@@ -44,7 +54,7 @@ struct ContentView: View {
 		defaults.set(AppEnvironment.appPreviewPostalCode, forKey: "epac.myMP.postalCode")
 		defaults.set("Fleetwood-Port Kells", forKey: "epac.myMP.ridingName")
 		defaults.set("Gurbux Saini", forKey: "epac.myMP.memberName")
-		if let followedMembers = try? JSONEncoder().encode([1422: FollowPreferences()]) {
+		if let followedMembers = try? JSONEncoder().encode([AppPreviewDefaults.followedMemberID: FollowPreferences()]) {
 			defaults.set(followedMembers, forKey: "epac.followedMembers")
 		}
 		let followedBill = BillFollowState(
@@ -152,7 +162,7 @@ struct ContentView: View {
 	@ViewBuilder
 	private var offlineBanner: some View {
 		if !networkMonitor.isConnected {
-			HStack(spacing: 10) {
+			HStack(spacing: Layout.offlineBannerSpacing) {
 				Image(systemName: "wifi.slash")
 				Text("You're offline. Showing cached content.")
 					.font(.footnote)
@@ -160,7 +170,7 @@ struct ContentView: View {
 			}
 			.foregroundStyle(.white)
 			.padding(.horizontal)
-			.padding(.vertical, 10)
+			.padding(.vertical, Layout.offlineBannerVerticalPadding)
 			.background(Color.appWarning)
 		}
 	}
@@ -206,7 +216,7 @@ struct ContentView: View {
 							.contentShape(Rectangle())
 					}
 					.buttonStyle(.plain)
-					.listRowBackground(router.selectedTab == tab ? Color.accentColor.opacity(0.16) : Color.clear)
+					.listRowBackground(router.selectedTab == tab ? Color.accentColor.opacity(Layout.sidebarSelectionOpacity) : Color.clear)
 					.accessibilityAddTraits(router.selectedTab == tab ? [.isSelected] : [])
 				}
 			}
@@ -549,6 +559,78 @@ struct ContentView: View {
 
 // MARK: - App Store screenshot mode
 
+private enum AppStoreScreenshotSpec {
+	static let firstPageIndex = 0
+	static let lastPageIndex = 5
+	static let overviewAccent: (red: Double, green: Double, blue: Double) = (0.0, 0.44, 0.89)
+	static let lobbyingAccent: (red: Double, green: Double, blue: Double) = (0.0, 0.64, 0.69)
+	static let backgroundAccentOpacity = 0.28
+	static let pageVerticalSpacing: CGFloat = 20
+	static let titleVerticalSpacing: CGFloat = 10
+	static let headlineFontSize: CGFloat = 31
+	static let headlineMinimumScaleFactor: CGFloat = 0.66
+	static let headlineLineLimit = 3
+	static let subtitleFontSize: CGFloat = 13
+	static let subtitleLineLimit = 3
+	static let titleHorizontalPadding: CGFloat = 28
+	static let showcaseHorizontalPadding: CGFloat = 20
+	static let bottomSpacerMinLength: CGFloat = 18
+	static let pageTopPadding: CGFloat = 42
+	static let phoneContentSpacing: CGFloat = 18
+	static let votePillRowSpacing: CGFloat = 14
+	static let voteMemberNameFontSize: CGFloat = 30
+	static let avatarOpacity = 0.18
+	static let avatarMonogramFontSize: CGFloat = 25
+	static let memberDetailSpacing: CGFloat = 6
+	static let memberNameFontSize: CGFloat = 23
+	static let memberRidingFontSize: CGFloat = 15
+	static let partyPillFontSize: CGFloat = 12
+	static let partyPillHorizontalPadding: CGFloat = 12
+	static let partyPillVerticalPadding: CGFloat = 6
+	static let partyPillOpacity = 0.16
+	static let billTitleFontSize: CGFloat = 21
+	static let billStageSpacing: CGFloat = 14
+	static let contactFieldFontSize: CGFloat = 16
+	static let contactSubjectFontSize: CGFloat = 19
+	static let contactBodyFontSize: CGFloat = 17
+	static let contactBodyLineSpacing: CGFloat = 5
+	static let contactButtonFontSize: CGFloat = 18
+	static let contactButtonVerticalPadding: CGFloat = 16
+	static let phoneContentPadding: CGFloat = 18
+	static let phoneShadowOpacity = 0.16
+	static let phoneShadowRadius: CGFloat = 16
+	static let phoneShadowYOffset: CGFloat = 10
+	static let helperSpacing: CGFloat = 12
+	static let headerIconFontSize: CGFloat = 18
+	static let headerFontSize: CGFloat = 19
+	static let compactMinimumScaleFactor: CGFloat = 0.72
+	static let detailMinimumScaleFactor: CGFloat = 0.75
+	static let metricRowSpacing: CGFloat = 10
+	static let metricLabelFontSize: CGFloat = 12
+	static let metricValueFontSize: CGFloat = 18
+	static let metricValueLineLimit = 2
+	static let metricValueMinimumScaleFactor: CGFloat = 0.7
+	static let detailLineLimit = 2
+	static let metricRowPadding: CGFloat = 12
+	static let metricRowCornerRadius: CGFloat = 14
+	static let activityAccentCornerRadius: CGFloat = 7
+	static let activityTextSpacing: CGFloat = 5
+	static let activityTitleFontSize: CGFloat = 17
+	static let activityDetailFontSize: CGFloat = 13
+	static let activityRowPadding: CGFloat = 12
+	static let activityRowCornerRadius: CGFloat = 18
+	static let votePillInnerSpacing: CGFloat = 6
+	static let voteCountFontSize: CGFloat = 22
+	static let votePillOpacity = 0.14
+	static let votePillCornerRadius: CGFloat = 16
+	static let stageCurrentFontSize: CGFloat = 14
+	static let stageCurrentHorizontalPadding: CGFloat = 10
+	static let stageCurrentVerticalPadding: CGFloat = 5
+	static let sourceBadgeFontSize: CGFloat = 11
+	static let sourceBadgeHorizontalPadding: CGFloat = 12
+	static let sourceBadgeVerticalPadding: CGFloat = 8
+}
+
 private struct AppStoreScreenshotShowcaseView: View {
 	@State private var selection = Self.initialSelection()
 
@@ -558,10 +640,10 @@ private struct AppStoreScreenshotShowcaseView: View {
 			  let valueIndex = arguments.index(index, offsetBy: 1, limitedBy: arguments.endIndex),
 			  valueIndex < arguments.endIndex,
 			  let page = Int(arguments[valueIndex]) else {
-			return 0
+			return AppStoreScreenshotSpec.firstPageIndex
 		}
 
-		return min(max(page, 0), 5)
+		return min(max(page, AppStoreScreenshotSpec.firstPageIndex), AppStoreScreenshotSpec.lastPageIndex)
 	}
 
 	private var pages: [AppStoreScreenshotPage] {
@@ -569,7 +651,11 @@ private struct AppStoreScreenshotShowcaseView: View {
 			.init(
 				headline: t("appStore.screenshot.page1.headline"),
 				subtitle: t("appStore.screenshot.page1.subtitle"),
-				accent: Color(red: 0.0, green: 0.44, blue: 0.89),
+				accent: Color(
+					red: AppStoreScreenshotSpec.overviewAccent.red,
+					green: AppStoreScreenshotSpec.overviewAccent.green,
+					blue: AppStoreScreenshotSpec.overviewAccent.blue
+				),
 				kind: .overview
 			),
 			.init(
@@ -593,7 +679,11 @@ private struct AppStoreScreenshotShowcaseView: View {
 			.init(
 				headline: t("appStore.screenshot.page5.headline"),
 				subtitle: t("appStore.screenshot.page5.subtitle"),
-				accent: Color(red: 0.0, green: 0.64, blue: 0.69),
+				accent: Color(
+					red: AppStoreScreenshotSpec.lobbyingAccent.red,
+					green: AppStoreScreenshotSpec.lobbyingAccent.green,
+					blue: AppStoreScreenshotSpec.lobbyingAccent.blue
+				),
 				kind: .lobbying
 			),
 			.init(
@@ -649,7 +739,7 @@ private struct AppStoreScreenshotPageView: View {
 		ZStack(alignment: .topLeading) {
 			LinearGradient(
 				colors: [
-					page.accent.opacity(0.28),
+					page.accent.opacity(AppStoreScreenshotSpec.backgroundAccentOpacity),
 					Color(UIColor.systemBackground),
 					Color(UIColor.secondarySystemBackground)
 				],
@@ -658,31 +748,31 @@ private struct AppStoreScreenshotPageView: View {
 			)
 			.ignoresSafeArea()
 
-			VStack(alignment: .leading, spacing: 20) {
-				VStack(alignment: .leading, spacing: 10) {
+			VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.pageVerticalSpacing) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.titleVerticalSpacing) {
 					Text(page.headline)
-						.font(.system(size: 31, weight: .heavy, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.headlineFontSize, weight: .heavy, design: .rounded))
 						.foregroundStyle(.primary)
-						.minimumScaleFactor(0.66)
-						.lineLimit(3)
+						.minimumScaleFactor(AppStoreScreenshotSpec.headlineMinimumScaleFactor)
+						.lineLimit(AppStoreScreenshotSpec.headlineLineLimit)
 						.fixedSize(horizontal: false, vertical: true)
 						.accessibilityIdentifier("appStoreScreenshotHeadline")
 
 					Text(page.subtitle)
-						.font(.system(size: 13, weight: .medium, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.subtitleFontSize, weight: .medium, design: .rounded))
 						.foregroundStyle(.secondary)
-						.lineLimit(3)
+						.lineLimit(AppStoreScreenshotSpec.subtitleLineLimit)
 						.fixedSize(horizontal: false, vertical: true)
 				}
-				.padding(.horizontal, 28)
+				.padding(.horizontal, AppStoreScreenshotSpec.titleHorizontalPadding)
 
 				showcaseContent
-					.padding(.horizontal, 20)
+					.padding(.horizontal, AppStoreScreenshotSpec.showcaseHorizontalPadding)
 
-				Spacer(minLength: 18)
+				Spacer(minLength: AppStoreScreenshotSpec.bottomSpacerMinLength)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-			.padding(.top, 42)
+			.padding(.top, AppStoreScreenshotSpec.pageTopPadding)
 		}
 	}
 
@@ -691,7 +781,7 @@ private struct AppStoreScreenshotPageView: View {
 		switch page.kind {
 		case .overview:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.overview.header"), systemImage: "building.columns.fill")
 					metricGrid([
 						(t("appStore.screenshot.overview.metric1.label"), "C-226", t("appStore.screenshot.overview.metric1.detail")),
@@ -705,14 +795,14 @@ private struct AppStoreScreenshotPageView: View {
 			}
 		case .votes:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.votes.header"), systemImage: "checklist.checked")
 					Text("Gurbux Saini")
-						.font(.system(size: 30, weight: .bold, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.voteMemberNameFontSize, weight: .bold, design: .rounded))
 					Text(t("appStore.screenshot.votes.memberDetail"))
-						.font(.system(size: 18, weight: .medium, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.metricValueFontSize, weight: .medium, design: .rounded))
 						.foregroundStyle(.secondary)
-					HStack(spacing: 14) {
+					HStack(spacing: AppStoreScreenshotSpec.votePillRowSpacing) {
 						votePill(t("appStore.screenshot.votes.yea"), count: "42", color: .appPositive)
 						votePill(t("appStore.screenshot.votes.nay"), count: "11", color: .appDestructive)
 						votePill(t("appStore.screenshot.votes.paired"), count: "2", color: .appWarning)
@@ -724,24 +814,24 @@ private struct AppStoreScreenshotPageView: View {
 			}
 		case .myMP:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.myMP.header"), systemImage: "person.crop.circle.fill")
-					HStack(spacing: 18) {
+					HStack(spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 						Circle()
-							.fill(Color.party(.liberal).opacity(0.18))
-							.frame(width: 72, height: 72)
-							.overlay(Text("GS").font(.system(size: 25, weight: .heavy, design: .rounded)).foregroundStyle(Color.party(.liberal)))
-						VStack(alignment: .leading, spacing: 6) {
+							.fill(Color.party(.liberal).opacity(AppStoreScreenshotSpec.avatarOpacity))
+							.frame(width: EpacMedia.screenshotAvatarSize, height: EpacMedia.screenshotAvatarSize)
+							.overlay(Text("GS").font(.system(size: AppStoreScreenshotSpec.avatarMonogramFontSize, weight: .heavy, design: .rounded)).foregroundStyle(Color.party(.liberal)))
+						VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.memberDetailSpacing) {
 							Text("Gurbux Saini")
-								.font(.system(size: 23, weight: .bold, design: .rounded))
+								.font(.system(size: AppStoreScreenshotSpec.memberNameFontSize, weight: .bold, design: .rounded))
 							Text("Fleetwood-Port Kells")
-								.font(.system(size: 15, weight: .medium, design: .rounded))
+								.font(.system(size: AppStoreScreenshotSpec.memberRidingFontSize, weight: .medium, design: .rounded))
 								.foregroundStyle(.secondary)
 							Text(t("appStore.screenshot.myMP.party"))
-								.font(.system(size: 12, weight: .semibold, design: .rounded))
-								.padding(.horizontal, 12)
-								.padding(.vertical, 6)
-								.background(Color.party(.liberal).opacity(0.16))
+								.font(.system(size: AppStoreScreenshotSpec.partyPillFontSize, weight: .semibold, design: .rounded))
+								.padding(.horizontal, AppStoreScreenshotSpec.partyPillHorizontalPadding)
+								.padding(.vertical, AppStoreScreenshotSpec.partyPillVerticalPadding)
+								.background(Color.party(.liberal).opacity(AppStoreScreenshotSpec.partyPillOpacity))
 								.clipShape(Capsule())
 						}
 					}
@@ -752,12 +842,12 @@ private struct AppStoreScreenshotPageView: View {
 			}
 		case .bill:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.bill.header"), systemImage: "doc.text.fill")
 					Text(t("appStore.screenshot.bill.title"))
-						.font(.system(size: 21, weight: .bold, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.billTitleFontSize, weight: .bold, design: .rounded))
 						.fixedSize(horizontal: false, vertical: true)
-					VStack(alignment: .leading, spacing: 14) {
+					VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.billStageSpacing) {
 						stage(t("appStore.screenshot.bill.stage1"), done: true)
 						stage(t("appStore.screenshot.bill.stage2"), done: true)
 						stage(t("appStore.screenshot.bill.stage3"), done: false, current: true)
@@ -769,10 +859,10 @@ private struct AppStoreScreenshotPageView: View {
 			}
 		case .lobbying:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.lobbying.header"), systemImage: "person.2.wave.2.fill")
 					Text(t("appStore.screenshot.lobbying.title"))
-						.font(.system(size: 21, weight: .bold, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.billTitleFontSize, weight: .bold, design: .rounded))
 					activityRow(title: t("appStore.screenshot.lobbying.row1.title"), detail: t("appStore.screenshot.lobbying.row1.detail"), color: Color.party(.liberal))
 					activityRow(title: t("appStore.screenshot.lobbying.row2.title"), detail: t("appStore.screenshot.lobbying.row2.detail"), color: page.accent)
 					activityRow(title: t("appStore.screenshot.lobbying.row3.title"), detail: t("appStore.screenshot.lobbying.row3.detail"), color: .appWarning)
@@ -781,26 +871,26 @@ private struct AppStoreScreenshotPageView: View {
 			}
 		case .contact:
 			phoneFrame {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.phoneContentSpacing) {
 					header(t("appStore.screenshot.contact.header"), systemImage: "envelope.fill")
-					VStack(alignment: .leading, spacing: 10) {
+					VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.titleVerticalSpacing) {
 						Text(t("appStore.screenshot.contact.subject"))
-							.font(.system(size: 16, weight: .semibold, design: .rounded))
+							.font(.system(size: AppStoreScreenshotSpec.contactFieldFontSize, weight: .semibold, design: .rounded))
 							.foregroundStyle(.secondary)
 						Text(t("appStore.screenshot.contact.subjectLine"))
-							.font(.system(size: 19, weight: .bold, design: .rounded))
+							.font(.system(size: AppStoreScreenshotSpec.contactSubjectFontSize, weight: .bold, design: .rounded))
 					}
 					Divider()
 					Text(t("appStore.screenshot.contact.body"))
-						.font(.system(size: 17, weight: .regular, design: .rounded))
-						.lineSpacing(5)
+						.font(.system(size: AppStoreScreenshotSpec.contactBodyFontSize, weight: .regular, design: .rounded))
+						.lineSpacing(AppStoreScreenshotSpec.contactBodyLineSpacing)
 					Text(t("appStore.screenshot.contact.send"))
-						.font(.system(size: 18, weight: .bold, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.contactButtonFontSize, weight: .bold, design: .rounded))
 						.frame(maxWidth: .infinity)
-						.padding(.vertical, 16)
+						.padding(.vertical, AppStoreScreenshotSpec.contactButtonVerticalPadding)
 						.background(page.accent)
 						.foregroundStyle(.white)
-						.clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+						.clipShape(RoundedRectangle(cornerRadius: AppStoreScreenshotSpec.activityRowCornerRadius, style: .continuous))
 				}
 			}
 		}
@@ -810,25 +900,29 @@ private struct AppStoreScreenshotPageView: View {
 		AnyView(
 			VStack(alignment: .leading, spacing: 0) {
 				content()
-					.padding(18)
+					.padding(AppStoreScreenshotSpec.phoneContentPadding)
 			}
-			.frame(maxWidth: .infinity, minHeight: 560, alignment: .topLeading)
+			.frame(maxWidth: .infinity, minHeight: EpacMedia.screenshotPhoneMinHeight, alignment: .topLeading)
 			.background(Color(UIColor.systemBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-			.shadow(color: .black.opacity(0.16), radius: 16, y: 10)
+			.clipShape(RoundedRectangle(cornerRadius: EpacMedia.screenshotPhoneCornerRadius, style: .continuous))
+			.shadow(
+				color: .black.opacity(AppStoreScreenshotSpec.phoneShadowOpacity),
+				radius: AppStoreScreenshotSpec.phoneShadowRadius,
+				y: AppStoreScreenshotSpec.phoneShadowYOffset
+			)
 		)
 	}
 
 	private func header(_ title: String, systemImage: String) -> AnyView {
 		AnyView(
-			HStack(spacing: 12) {
+			HStack(spacing: AppStoreScreenshotSpec.helperSpacing) {
 				Image(systemName: systemImage)
-					.font(.system(size: 18, weight: .bold))
+					.font(.system(size: AppStoreScreenshotSpec.headerIconFontSize, weight: .bold))
 					.foregroundStyle(page.accent)
 				Text(title)
-					.font(.system(size: 19, weight: .heavy, design: .rounded))
+					.font(.system(size: AppStoreScreenshotSpec.headerFontSize, weight: .heavy, design: .rounded))
 					.lineLimit(1)
-					.minimumScaleFactor(0.72)
+					.minimumScaleFactor(AppStoreScreenshotSpec.compactMinimumScaleFactor)
 				Spacer()
 			}
 		)
@@ -836,31 +930,31 @@ private struct AppStoreScreenshotPageView: View {
 
 	private func metricGrid(_ metrics: [(String, String, String)]) -> AnyView {
 		AnyView(
-			VStack(spacing: 10) {
+			VStack(spacing: AppStoreScreenshotSpec.metricRowSpacing) {
 				ForEach(metrics, id: \.0) { metric in
-					HStack(spacing: 10) {
+					HStack(spacing: AppStoreScreenshotSpec.metricRowSpacing) {
 						Text(metric.0)
-							.font(.system(size: 12, weight: .semibold, design: .rounded))
+							.font(.system(size: AppStoreScreenshotSpec.metricLabelFontSize, weight: .semibold, design: .rounded))
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
-							.minimumScaleFactor(0.72)
-							.frame(width: 82, alignment: .leading)
+							.minimumScaleFactor(AppStoreScreenshotSpec.compactMinimumScaleFactor)
+							.frame(width: EpacMedia.screenshotMetricLabelWidth, alignment: .leading)
 						Text(metric.1)
-							.font(.system(size: 18, weight: .heavy, design: .rounded))
-							.lineLimit(2)
-							.minimumScaleFactor(0.7)
-							.frame(width: 110, alignment: .leading)
+							.font(.system(size: AppStoreScreenshotSpec.metricValueFontSize, weight: .heavy, design: .rounded))
+							.lineLimit(AppStoreScreenshotSpec.metricValueLineLimit)
+							.minimumScaleFactor(AppStoreScreenshotSpec.metricValueMinimumScaleFactor)
+							.frame(width: EpacMedia.screenshotMetricValueWidth, alignment: .leading)
 						Text(metric.2)
-							.font(.system(size: 12, weight: .medium, design: .rounded))
+							.font(.system(size: AppStoreScreenshotSpec.metricLabelFontSize, weight: .medium, design: .rounded))
 							.foregroundStyle(.secondary)
-							.lineLimit(2)
-							.minimumScaleFactor(0.75)
+							.lineLimit(AppStoreScreenshotSpec.detailLineLimit)
+							.minimumScaleFactor(AppStoreScreenshotSpec.detailMinimumScaleFactor)
 							.frame(maxWidth: .infinity, alignment: .leading)
 					}
 					.frame(maxWidth: .infinity, alignment: .leading)
-					.padding(12)
+					.padding(AppStoreScreenshotSpec.metricRowPadding)
 					.background(Color(UIColor.secondarySystemBackground))
-					.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+					.clipShape(RoundedRectangle(cornerRadius: AppStoreScreenshotSpec.metricRowCornerRadius, style: .continuous))
 				}
 			}
 		)
@@ -868,63 +962,63 @@ private struct AppStoreScreenshotPageView: View {
 
 	private func activityRow(title: String, detail: String, color: Color) -> AnyView {
 		AnyView(
-			HStack(spacing: 14) {
-				RoundedRectangle(cornerRadius: 7, style: .continuous)
+			HStack(spacing: AppStoreScreenshotSpec.votePillRowSpacing) {
+				RoundedRectangle(cornerRadius: AppStoreScreenshotSpec.activityAccentCornerRadius, style: .continuous)
 					.fill(color)
-					.frame(width: 7, height: 40)
-				VStack(alignment: .leading, spacing: 5) {
+					.frame(width: EpacMedia.screenshotAccentBarWidth, height: EpacMedia.screenshotAccentBarHeight)
+				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.activityTextSpacing) {
 					Text(title)
-						.font(.system(size: 17, weight: .bold, design: .rounded))
-						.lineLimit(2)
-						.minimumScaleFactor(0.75)
+						.font(.system(size: AppStoreScreenshotSpec.activityTitleFontSize, weight: .bold, design: .rounded))
+						.lineLimit(AppStoreScreenshotSpec.detailLineLimit)
+						.minimumScaleFactor(AppStoreScreenshotSpec.detailMinimumScaleFactor)
 					Text(detail)
-						.font(.system(size: 13, weight: .medium, design: .rounded))
+						.font(.system(size: AppStoreScreenshotSpec.activityDetailFontSize, weight: .medium, design: .rounded))
 						.foregroundStyle(.secondary)
-						.lineLimit(2)
-						.minimumScaleFactor(0.75)
+						.lineLimit(AppStoreScreenshotSpec.detailLineLimit)
+						.minimumScaleFactor(AppStoreScreenshotSpec.detailMinimumScaleFactor)
 				}
 				Spacer()
 			}
-			.padding(12)
+			.padding(AppStoreScreenshotSpec.activityRowPadding)
 			.background(Color(UIColor.secondarySystemBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+			.clipShape(RoundedRectangle(cornerRadius: AppStoreScreenshotSpec.activityRowCornerRadius, style: .continuous))
 		)
 	}
 
 	private func votePill(_ label: String, count: String, color: Color) -> AnyView {
 		AnyView(
-			VStack(spacing: 6) {
+			VStack(spacing: AppStoreScreenshotSpec.votePillInnerSpacing) {
 				Text(count)
-					.font(.system(size: 22, weight: .heavy, design: .rounded))
+					.font(.system(size: AppStoreScreenshotSpec.voteCountFontSize, weight: .heavy, design: .rounded))
 				Text(label)
-					.font(.system(size: 12, weight: .bold, design: .rounded))
+					.font(.system(size: AppStoreScreenshotSpec.partyPillFontSize, weight: .bold, design: .rounded))
 					.lineLimit(1)
-					.minimumScaleFactor(0.72)
+					.minimumScaleFactor(AppStoreScreenshotSpec.compactMinimumScaleFactor)
 			}
 			.frame(maxWidth: .infinity)
-			.padding(.vertical, 16)
-			.background(color.opacity(0.14))
+			.padding(.vertical, AppStoreScreenshotSpec.contactButtonVerticalPadding)
+			.background(color.opacity(AppStoreScreenshotSpec.votePillOpacity))
 			.foregroundStyle(color)
-			.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+			.clipShape(RoundedRectangle(cornerRadius: AppStoreScreenshotSpec.votePillCornerRadius, style: .continuous))
 		)
 	}
 
 	private func stage(_ label: String, done: Bool, current: Bool = false) -> AnyView {
 		AnyView(
-			HStack(spacing: 12) {
+			HStack(spacing: AppStoreScreenshotSpec.helperSpacing) {
 				Image(systemName: done ? "checkmark.circle.fill" : current ? "circle.dotted" : "circle")
 					.foregroundStyle(done ? .appPositive : current ? page.accent : .secondary)
 				Text(label)
-					.font(.system(size: 17, weight: current ? .heavy : .semibold, design: .rounded))
+					.font(.system(size: AppStoreScreenshotSpec.activityTitleFontSize, weight: current ? .heavy : .semibold, design: .rounded))
 					.lineLimit(1)
-					.minimumScaleFactor(0.75)
+					.minimumScaleFactor(AppStoreScreenshotSpec.detailMinimumScaleFactor)
 				Spacer()
 				if current {
 					Text(t("appStore.screenshot.bill.current"))
-						.font(.system(size: 14, weight: .bold, design: .rounded))
-						.padding(.horizontal, 10)
-						.padding(.vertical, 5)
-						.background(page.accent.opacity(0.14))
+						.font(.system(size: AppStoreScreenshotSpec.stageCurrentFontSize, weight: .bold, design: .rounded))
+						.padding(.horizontal, AppStoreScreenshotSpec.stageCurrentHorizontalPadding)
+						.padding(.vertical, AppStoreScreenshotSpec.stageCurrentVerticalPadding)
+						.background(page.accent.opacity(AppStoreScreenshotSpec.votePillOpacity))
 						.foregroundStyle(page.accent)
 						.clipShape(Capsule())
 				}
@@ -935,12 +1029,12 @@ private struct AppStoreScreenshotPageView: View {
 	private func sourceBadge(_ text: String) -> AnyView {
 		AnyView(
 			Text(text)
-				.font(.system(size: 11, weight: .semibold, design: .rounded))
+				.font(.system(size: AppStoreScreenshotSpec.sourceBadgeFontSize, weight: .semibold, design: .rounded))
 				.foregroundStyle(.secondary)
-				.lineLimit(2)
+				.lineLimit(AppStoreScreenshotSpec.detailLineLimit)
 				.multilineTextAlignment(.center)
-				.padding(.horizontal, 12)
-				.padding(.vertical, 8)
+				.padding(.horizontal, AppStoreScreenshotSpec.sourceBadgeHorizontalPadding)
+				.padding(.vertical, AppStoreScreenshotSpec.sourceBadgeVerticalPadding)
 				.background(Color(UIColor.tertiarySystemBackground))
 				.clipShape(Capsule())
 		)
