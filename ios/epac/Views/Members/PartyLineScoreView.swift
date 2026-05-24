@@ -6,6 +6,10 @@
 import SwiftData
 import SwiftUI
 
+private enum Layout {
+    static let scoreCardSpacing: CGFloat = 10
+}
+
 struct PartyLineScoreView: View {
     let member: ParliamentMember
     @Environment(\.modelContext) private var modelContext
@@ -22,7 +26,7 @@ struct PartyLineScoreView: View {
     }
 
     private func scoreCard(_ result: PartyLineScoreResult) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Layout.scoreCardSpacing) {
             HStack {
                 Text(NSLocalizedString("partyLine.title", comment: ""))
                     .font(.caption).foregroundStyle(.secondary)
@@ -45,14 +49,14 @@ struct PartyLineScoreView: View {
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .cornerRadius(EpacCornerRadius.m)
         .sheet(isPresented: $showInfo) { infoSheet }
     }
 
     private var infoSheet: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: EpacSpacing.m) {
                     Text(NSLocalizedString("partyLine.info.body", comment: ""))
                         .font(.body)
                 }

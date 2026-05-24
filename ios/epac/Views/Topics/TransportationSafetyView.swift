@@ -5,6 +5,11 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let rowSpacing: CGFloat = 12
+    static let iconWidth: CGFloat = 28
+}
+
 struct TransportationSafetyView: View {
     private var snapshot: TransportSafetySnapshot? {
         TransportSafetyStatisticsDatabase.snapshot()
@@ -71,12 +76,12 @@ struct TransportationSafetyView: View {
     private func modeSection(title: String, systemImage: String, mode: String) -> some View {
         if let record = TransportSafetyStatisticsDatabase.latestModeYear(mode) {
             Section {
-                HStack(spacing: 12) {
+                HStack(spacing: Layout.rowSpacing) {
                     Image(systemName: systemImage)
                         .foregroundStyle(.blue)
-                        .frame(width: 28)
+                        .frame(width: Layout.iconWidth)
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                         Text("\(record.year) \(title.lowercased()) occurrences")
                             .font(.subheadline.weight(.semibold))
                         Text("\(record.accidents.formatted()) accidents · \(record.incidents.formatted()) incidents")
@@ -100,7 +105,7 @@ struct TransportationSafetyView: View {
         Section {
             ForEach(snapshot.road.provinces.sorted { $0.province < $1.province }) { province in
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                         Text(province.province)
                             .font(.subheadline)
                         Text("Fatalities per 100k population")

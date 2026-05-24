@@ -26,6 +26,13 @@ class SittingCalendarViewModel {
 	var loadFailed = false
 	private var loadGeneration = 0
 
+	private enum CalendarBoundary {
+		static let january = 1
+		static let firstDayOfMonth = 1
+		static let december = 12
+		static let lastDayOfDecember = 31
+	}
+
 	var sittingDayCount: Int {
 		dates.filter { $0.year == currentYear }.count + futureDates.filter { $0.year == currentYear }.count
 	}
@@ -110,9 +117,21 @@ class SittingCalendarViewModel {
 		}
 		if lowerYear != upperYear,
 			 let lower = Foundation.Calendar.current.date(from: visibleDayRange.lowerBound.components),
-			 let endOfYear = Foundation.Calendar.current.date(from: DateComponents(year: lowerYear, month: 12, day: 31)),
+			 let endOfYear = Foundation.Calendar.current.date(
+				from: DateComponents(
+					year: lowerYear,
+					month: CalendarBoundary.december,
+					day: CalendarBoundary.lastDayOfDecember
+				)
+			 ),
 			 let upper = Foundation.Calendar.current.date(from: visibleDayRange.upperBound.components),
-			 let startOfYear = Foundation.Calendar.current.date(from: DateComponents(year: upperYear, month: 1, day: 1)),
+			 let startOfYear = Foundation.Calendar.current.date(
+				from: DateComponents(
+					year: upperYear,
+					month: CalendarBoundary.january,
+					day: CalendarBoundary.firstDayOfMonth
+				)
+			 ),
 			 let lowerCount = Foundation.Calendar.current.dateComponents([.day], from: lower, to: endOfYear).day,
 			 let upperCount = Foundation.Calendar.current.dateComponents([.day], from: startOfYear, to: upper).day {
 

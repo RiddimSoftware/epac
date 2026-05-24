@@ -16,6 +16,12 @@ struct PBOCostCard: View {
     @State private var reports: [PBOReport] = []
     @State private var isLoading = false
 
+    private enum Layout {
+        static let reportPreviewLimit = 2
+        static let titleLineLimit = 2
+        static let summaryLineLimit = 3
+    }
+
     var body: some View {
         Group {
             if isLoading {
@@ -35,7 +41,7 @@ struct PBOCostCard: View {
         Section(
             header: Text(NSLocalizedString("pbo.sectionTitle", comment: "Section header for PBO cost analysis"))
         ) {
-            ForEach(reports.prefix(2)) { report in
+            ForEach(reports.prefix(Layout.reportPreviewLimit)) { report in
                 reportRow(report)
             }
         }
@@ -43,10 +49,10 @@ struct PBOCostCard: View {
 
     @ViewBuilder
     private func reportRow(_ report: PBOReport) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: EpacSpacing.s) {
             Text(report.title)
                 .font(.subheadline.weight(.semibold))
-                .lineLimit(2)
+                .lineLimit(Layout.titleLineLimit)
                 .accessibilityAddTraits(.isHeader)
 
             if let date = report.reportDate {
@@ -59,7 +65,7 @@ struct PBOCostCard: View {
                 Text(report.summary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
+                    .lineLimit(Layout.summaryLineLimit)
             }
 
             if let pbo = report.pboEstimate {

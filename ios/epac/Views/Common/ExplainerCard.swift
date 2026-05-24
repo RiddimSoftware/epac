@@ -55,9 +55,14 @@ final class ExplainerRepository: @unchecked Sendable {
 struct ExplainerCard: View {
     let explainer: Explainer
 
+    private enum Layout {
+        static let sectionSpacing: CGFloat = 20
+        static let sheetDetentFraction = 0.45
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: EpacSpacing.s) {
                 Text(explainer.term)
                     .font(.title2.bold())
                 Text(explainer.definition)
@@ -67,11 +72,11 @@ struct ExplainerCard: View {
 
             Divider()
 
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .top, spacing: EpacSpacing.s) {
                 Image(systemName: "building.columns")
                     .foregroundStyle(.secondary)
                     .imageScale(.small)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                     Text(explainer.sourceLabel)
                         .font(.footnote.bold())
                         .foregroundStyle(.secondary)
@@ -82,8 +87,8 @@ struct ExplainerCard: View {
 
             Spacer(minLength: 0)
         }
-        .padding(24)
-        .presentationDetents([.fraction(0.45)])
+        .padding(EpacSpacing.l)
+        .presentationDetents([.fraction(Layout.sheetDetentFraction)])
         .presentationDragIndicator(.visible)
     }
 }
@@ -104,7 +109,7 @@ struct ExplainerTipModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         if let explainer {
-            HStack(spacing: 4) {
+            HStack(spacing: EpacSpacing.xs) {
                 content
                 Button {
                     showExplainer = true

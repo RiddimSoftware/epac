@@ -29,7 +29,7 @@ struct ElectionCountdownCard: View {
 				.font(.title2)
 				.foregroundStyle(Color.epacBrand.accent)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
 				Text("Next federal election")
 					.font(.epacSubheadline.weight(.semibold))
 					.foregroundStyle(Color.epacText.primary)

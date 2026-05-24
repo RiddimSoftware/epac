@@ -1,6 +1,10 @@
 import SwiftData
 import SwiftUI
 
+private enum Layout {
+    static let followedItemLineLimit = 2
+}
+
 @MainActor
 struct FollowsSettingsView: View {
     @State private var billStore = BillFollowStore.shared
@@ -35,15 +39,15 @@ struct FollowsSettingsView: View {
                     billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt },
                     id: \.key
                 ) { number, state in
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                         Text(number)
                             .font(.subheadline.weight(.semibold))
                         Text(state.lastKnownStage)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            .lineLimit(Layout.followedItemLineLimit)
                     }
-                    .padding(.vertical, 2)
+                    .padding(.vertical, EpacSpacing.xxs)
                     .accessibilityElement(children: .combine)
                 }
                 .onDelete { indexSet in
@@ -63,14 +67,14 @@ struct FollowsSettingsView: View {
             if !followedMembers.isEmpty {
                 Section(NSLocalizedString("settings.followed.members", comment: "")) {
                     ForEach(followedMembers) { member in
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                             Text(member.name)
                                 .font(.subheadline.weight(.semibold))
                             Text(member.party.fullName)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.vertical, 2)
+                        .padding(.vertical, EpacSpacing.xxs)
                     }
                     .onDelete { indexSet in
                         let sorted = members
@@ -91,11 +95,11 @@ struct FollowsSettingsView: View {
                 .sorted { $0.localizedName < $1.localizedName }
             Section(NSLocalizedString("settings.followed.topics", comment: "")) {
                 ForEach(followedTopics) { topic in
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                         Text(topic.localizedName)
                             .font(.subheadline)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, EpacSpacing.xs)
                 }
                 .onDelete { indexSet in
                     let sorted = ParliamentaryTopic.all

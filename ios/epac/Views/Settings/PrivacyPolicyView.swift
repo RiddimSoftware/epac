@@ -1,9 +1,13 @@
 import SwiftUI
 
+private enum Layout {
+    static let policySectionSpacing: CGFloat = 20
+}
+
 struct PrivacyPolicyView: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: Layout.policySectionSpacing) {
                 Text("Last updated: April 27, 2026")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -83,7 +87,7 @@ private struct PolicySection<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: EpacSpacing.s) {
             Text(title)
                 .font(.headline)
             content()
@@ -97,9 +101,9 @@ private struct BulletList: View {
     let items: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: EpacSpacing.xs) {
             ForEach(items, id: \.self) { item in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.s) {
                     Text("\u{2022}")
                         .accessibilityHidden(true)
                     Text(item)

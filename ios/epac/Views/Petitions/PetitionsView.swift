@@ -7,6 +7,15 @@
 
 import SwiftUI
 
+private enum Layout {
+    static let minimumSearchCharacterCount = 2
+    static let retryDelaySeconds = 2
+    static let retryDelay: Duration = .seconds(retryDelaySeconds)
+    static let subjectLineLimit = 2
+    static let keywordPreviewLimit = 3
+    static let badgeHorizontalPadding: CGFloat = 6
+}
+
 @MainActor
 struct PetitionsView: View {
     @State private var petitions: [EPetition] = []
@@ -19,7 +28,7 @@ struct PetitionsView: View {
     private var filtered: [EPetition] {
         let statusFiltered = showOpenOnly ? petitions.filter { $0.status == .open } : petitions
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard q.count >= 2 else { return statusFiltered }
+        guard q.count >= Layout.minimumSearchCharacterCount else { return statusFiltered }
         return statusFiltered.filter {
             $0.subject.localizedCaseInsensitiveContains(q) ||
             $0.id.localizedCaseInsensitiveContains(q) ||
@@ -39,7 +48,7 @@ struct PetitionsView: View {
                     message: NSLocalizedString("petitions.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: Layout.retryDelay); isRetryDisabled = false }
                         Task { await load() }
                     })
                 )
@@ -133,7 +142,7 @@ private struct PetitionRow: View {
     let petition: EPetition
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: EpacSpacing.xs) {
             HStack(alignment: .firstTextBaseline) {
                 StatusBadge(status: petition.status)
                 Spacer()
@@ -153,10 +162,10 @@ private struct PetitionRow: View {
 
             Text(petition.subject)
                 .font(.subheadline)
-                .lineLimit(2)
+                .lineLimit(Layout.subjectLineLimit)
 
             if !petition.keywords.isEmpty {
-                Text(petition.keywords.prefix(3).joined(separator: " · "))
+                Text(petition.keywords.prefix(Layout.keywordPreviewLimit).joined(separator: " · "))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -176,7 +185,7 @@ private struct PetitionRow: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, EpacSpacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(petition.status.displayName): \(petition.subject)")
     }
@@ -191,8 +200,8 @@ struct StatusBadge: View {
         Text(status.displayName)
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, Layout.badgeHorizontalPadding)
+            .padding(.vertical, EpacSpacing.xxs)
             .background(status.color)
             .clipShape(Capsule())
     }

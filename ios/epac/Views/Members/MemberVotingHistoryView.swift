@@ -8,6 +8,17 @@
 import SwiftData
 import SwiftUI
 
+private enum Layout {
+    static let retryDelaySeconds = 2
+    static let retryDelay: Duration = .seconds(retryDelaySeconds)
+    static let rowSpacing: CGFloat = 12
+    static let rowTextSpacing: CGFloat = 3
+    static let rowLineLimit = 2
+    static let badgeHorizontalPadding: CGFloat = 6
+    static let badgeVerticalPadding: CGFloat = 3
+    static let badgeMinWidth: CGFloat = 44
+}
+
 private struct VoteSelection: Identifiable, Hashable {
     let id = UUID()
     let mv: MemberVote
@@ -42,7 +53,7 @@ struct MemberVotingHistoryView: View {
                     Button(NSLocalizedString("votes.error.retry", comment: "")) {
                         guard !isRetryDisabled else { return }
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: Layout.retryDelay); isRetryDisabled = false }
                         Task { await loadVotes() }
                     }
                     .buttonStyle(.borderedProminent)
@@ -121,21 +132,21 @@ private struct VoteRow: View {
     let rv: RecordedVote?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Layout.rowSpacing) {
             ballotBadge
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Layout.rowTextSpacing) {
                 if let bill = rv?.billNumberCode, !bill.isEmpty {
                     Text(bill).font(.caption).foregroundStyle(.secondary)
                 }
                 Text(rv?.descriptionEn ?? "Vote #\(mv.voteID)")
                     .font(.subheadline)
-                    .lineLimit(2)
+                    .lineLimit(Layout.rowLineLimit)
                 if let date = rv?.date {
                     Text(date, style: .date).font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, EpacSpacing.xs)
         .accessibilityElement(children: .combine)
     }
 
@@ -143,10 +154,10 @@ private struct VoteRow: View {
         Text(mv.recordedVote)
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 6).padding(.vertical, 3)
+            .padding(.horizontal, Layout.badgeHorizontalPadding).padding(.vertical, Layout.badgeVerticalPadding)
             .background(badgeColor)
             .clipShape(Capsule())
-            .frame(minWidth: 44)
+            .frame(minWidth: Layout.badgeMinWidth)
     }
 
     private var badgeColor: Color {

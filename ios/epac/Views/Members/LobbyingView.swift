@@ -70,18 +70,22 @@ struct LobbyingView: View {
 struct LobbyistRow: View {
     let comm: LobbyistCommunication
 
+    private enum Layout {
+        static let rowLineLimit = 2
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: EpacSpacing.xs) {
             Text(comm.organizationName)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .lineLimit(2)
+                .lineLimit(Layout.rowLineLimit)
 
             if !comm.subjectMatter.isEmpty {
                 Text(comm.subjectMatter)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(Layout.rowLineLimit)
             }
 
             HStack {
@@ -99,7 +103,7 @@ struct LobbyistRow: View {
             Link(NSLocalizedString("lobbying.viewRecord", comment: ""), destination: comm.registryURL)
                 .font(.caption2)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, EpacSpacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }

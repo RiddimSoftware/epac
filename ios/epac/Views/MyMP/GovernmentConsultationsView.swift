@@ -5,6 +5,12 @@
 
 import SwiftUI
 
+private enum Layout {
+	static let rowSpacing: CGFloat = 12
+	static let iconWidth: CGFloat = 28
+	static let headerTextSpacing: CGFloat = 3
+}
+
 // Surfaces open Government of Canada consultations where Canadians can
 // provide formal input on legislation, policy, and regulations.
 //
@@ -54,10 +60,10 @@ struct GovernmentConsultationsView: View {
 					Button {
 						openURL(Self.finderURL)
 					} label: {
-						HStack(spacing: 12) {
+						HStack(spacing: Layout.rowSpacing) {
 							Image(systemName: item.icon)
 								.foregroundStyle(item.color)
-								.frame(width: 28)
+								.frame(width: Layout.iconWidth)
 								.accessibilityHidden(true)
 							Text(item.label)
 								.font(.subheadline)
@@ -92,7 +98,7 @@ struct GovernmentConsultationsView: View {
 				Text(NSLocalizedString("consult.explanation", comment: ""))
 					.font(.caption)
 					.foregroundStyle(.secondary)
-					.padding(.vertical, 4)
+					.padding(.vertical, EpacSpacing.xs)
 			}
 		}
 		.listStyle(.insetGrouped)
@@ -103,12 +109,12 @@ struct GovernmentConsultationsView: View {
 	// MARK: - Sub-views
 
 	private var headerCard: some View {
-		HStack(spacing: 12) {
+		HStack(spacing: Layout.rowSpacing) {
 			Image(systemName: "bubble.left.and.text.bubble.right.fill")
 				.font(.title2)
 				.foregroundStyle(.teal)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: Layout.headerTextSpacing) {
 				Text(NSLocalizedString("consult.header.title", comment: ""))
 					.font(.headline)
 				Text(NSLocalizedString("consult.header.subtitle", comment: ""))
@@ -116,19 +122,19 @@ struct GovernmentConsultationsView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, EpacSpacing.xs)
 	}
 
 	private func linkRow(title: String, subtitle: String, icon: String, color: Color, url: URL) -> some View {
 		Button {
 			openURL(url)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: icon)
 					.foregroundStyle(color)
-					.frame(width: 28)
+					.frame(width: Layout.iconWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
 					Text(title)
 						.font(.subheadline)
 						.foregroundStyle(.primary)

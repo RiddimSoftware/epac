@@ -37,6 +37,10 @@ struct OralQuestion: Identifiable {
 class SittingViewModel {
 	var searchText: String = ""
 
+	private enum Layout {
+		static let firstLineCharacterLimit = 220
+	}
+
 	/// Subjects in `order` that have speeches and match the current search query.
 	/// Preserves the existing hansardID sort. When searchText is empty, all
 	/// non-empty subjects are returned (unchanged behaviour from before search).
@@ -141,6 +145,6 @@ class SittingViewModel {
 		let normalized = content
 			.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
 			.trimmingCharacters(in: .whitespacesAndNewlines)
-		return String(normalized.prefix(220))
+		return String(normalized.prefix(Layout.firstLineCharacterLimit))
 	}
 }
