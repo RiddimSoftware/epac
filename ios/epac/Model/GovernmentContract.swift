@@ -5,6 +5,8 @@ import Foundation
 // No AI-generated content.
 
 struct GovernmentContract: Identifiable, Codable {
+    private static let highValueThreshold: Double = 1_000_000
+
     let id: String
     let department: String
     let vendor: String
@@ -25,7 +27,7 @@ struct GovernmentContract: Identifiable, Codable {
         GovernmentContract.currencyFormatter.string(from: NSNumber(value: originalValue)) ?? "$\(Int(originalValue))"
     }
 
-    var isHighValue: Bool { value >= 1_000_000 }
+    var isHighValue: Bool { value >= GovernmentContract.highValueThreshold }
 
     private static let currencyFormatter: NumberFormatter = {
         let f = NumberFormatter()

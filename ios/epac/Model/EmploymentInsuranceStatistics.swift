@@ -68,6 +68,11 @@ struct EmploymentInsuranceSnapshot: Decodable {
 enum EmploymentInsuranceStatisticsDatabase {
     private static let resourceName = "ei-statistics"
     private static let mainSnapshot = loadSnapshot(bundle: .main)
+    private enum DateParsing {
+        static let componentCount = 2
+        static let validMonthRange = 1...12
+        static let monthSymbolIndexOffset = 1
+    }
 
     static let fallbackSource = EmploymentInsuranceSource(
         title: "Employment and Social Development Canada — EI Statistics",
@@ -102,15 +107,15 @@ enum EmploymentInsuranceStatisticsDatabase {
 
     static func monthLabel(_ refDate: String) -> String {
         let parts = refDate.split(separator: "-")
-        guard parts.count == 2,
+        guard parts.count == DateParsing.componentCount,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              (1...12).contains(month) else {
+              DateParsing.validMonthRange.contains(month) else {
             return refDate
         }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_CA")
-        let monthName = formatter.monthSymbols[month - 1]
+        let monthName = formatter.monthSymbols[month - DateParsing.monthSymbolIndexOffset]
         return "\(monthName) \(year)"
     }
 }

@@ -11,6 +11,14 @@
 import Foundation
 
 struct PBOReport: Identifiable {
+    private enum EstimateParsing {
+        static let trillionMultiplier: Double = 1_000_000_000_000
+        static let billionMultiplier: Double = 1_000_000_000
+        static let millionMultiplier: Double = 1_000_000
+        static let numericPrefixLength = 20
+        static let significantDisagreementThreshold = 0.10
+    }
+
     /// Unique PBO internal ID, e.g. "LEG-2526-009-S"
     let id: String
     let title: String
@@ -30,9 +38,9 @@ struct PBOReport: Identifiable {
     var estimatesDisagreeSignificantly: Bool {
         guard let pboStr = pboEstimate, let govStr = governmentEstimate else { return false }
         let multipliers: [String: Double] = [
-            "trillion": 1_000_000_000_000,
-            "billion": 1_000_000_000,
-            "million": 1_000_000
+            "trillion": EstimateParsing.trillionMultiplier,
+            "billion": EstimateParsing.billionMultiplier,
+            "million": EstimateParsing.millionMultiplier
         ]
         func parse(_ s: String) -> Double? {
             let lower = s.lowercased()
@@ -48,7 +56,7 @@ struct PBOReport: Identifiable {
                         .components(separatedBy: separators)
                         .first(where: { !$0.isEmpty }) ?? ""
                     let stripped = token.replacingOccurrences(of: ",", with: "")
-                    if let num = Double(stripped.prefix(20)) {
+                    if let num = Double(stripped.prefix(EstimateParsing.numericPrefixLength)) {
                         return num * mult
                     }
                 }
@@ -58,6 +66,6 @@ struct PBOReport: Identifiable {
         guard let pbo = parse(pboStr),
               let gov = parse(govStr),
               gov > 0 else { return false }
-        return abs(pbo - gov) / gov > 0.10
+        return abs(pbo - gov) / gov > EstimateParsing.significantDisagreementThreshold
     }
 }

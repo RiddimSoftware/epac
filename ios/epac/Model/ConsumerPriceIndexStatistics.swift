@@ -76,6 +76,12 @@ struct ConsumerPriceIndexSnapshot: Decodable {
 enum ConsumerPriceIndexStatisticsDatabase {
     private static let resourceName = "cpi-statistics"
     private static let mainSnapshot = loadSnapshot(bundle: .main)
+    private enum DateParsing {
+        static let componentCount = 2
+        static let validMonthRange = 1...12
+        static let firstDayOfMonth = 1
+        static let monthSymbolIndexOffset = 1
+    }
 
     static let fallbackSource = ConsumerPriceIndexSource(
         title: "Statistics Canada — Consumer Price Index",
@@ -110,26 +116,26 @@ enum ConsumerPriceIndexStatisticsDatabase {
 
     static func date(for refDate: String) -> Date? {
         let parts = refDate.split(separator: "-")
-        guard parts.count == 2,
+        guard parts.count == DateParsing.componentCount,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              (1...12).contains(month) else {
+              DateParsing.validMonthRange.contains(month) else {
             return nil
         }
-        return Calendar(identifier: .gregorian).date(from: DateComponents(year: year, month: month, day: 1))
+        return Calendar(identifier: .gregorian).date(from: DateComponents(year: year, month: month, day: DateParsing.firstDayOfMonth))
     }
 
     static func monthLabel(_ refDate: String) -> String {
         let parts = refDate.split(separator: "-")
-        guard parts.count == 2,
+        guard parts.count == DateParsing.componentCount,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              (1...12).contains(month) else {
+              DateParsing.validMonthRange.contains(month) else {
             return refDate
         }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_CA")
-        let monthName = formatter.monthSymbols[month - 1]
+        let monthName = formatter.monthSymbols[month - DateParsing.monthSymbolIndexOffset]
         return "\(monthName) \(year)"
     }
 }

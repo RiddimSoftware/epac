@@ -43,75 +43,116 @@ struct NHSProgressDatabase {
     static let progressReportURL = URL(string: "https://assets.cmhc-schl.gc.ca/sites/place-to-call-home/pdfs/progress/nhs-progress-quarterly-report-q1-2024-en.pdf")!
     static let dataSource = "CMHC — NHS Annual Progress Report 2023 / Q1 2024 Quarterly Report"
     static let reportingPeriod = "FY 2022-23 (as of March 31, 2023)"
+    private enum ProgramValues {
+        static let apartmentConstructionLoan = (
+            budgetBillions: 25.75,
+            targetUnits: 100_000,
+            committedUnits: 85_000
+        )
+        static let nationalCoInvestmentNew = (
+            budgetBillions: 5.8,
+            targetUnits: 60_000,
+            committedUnits: 54_000
+        )
+        static let nationalCoInvestmentRepair = (
+            budgetBillions: 7.4,
+            targetUnits: 240_000,
+            committedUnits: 196_000
+        )
+        static let rapidHousingInitiative = (
+            budgetBillions: 4.0,
+            targetUnits: 15_000,
+            committedUnits: 14_709
+        )
+        static let canadaHousingBenefit = (
+            budgetBillions: 2.5,
+            targetUnits: 300_000,
+            committedUnits: 270_000
+        )
+        static let housingAcceleratorFund = (
+            budgetBillions: 4.0,
+            targetUnits: 100_000,
+            committedUnits: 40_000
+        )
+        static let innovationFund = (
+            budgetBillions: 0.2,
+            targetUnits: 4_000,
+            committedUnits: 3_500
+        )
+
+        static let yearlyProgress2021 = (fiscalYearEnd: 2021, cumulativeHomesCommitted: 103_000)
+        static let yearlyProgress2022 = (fiscalYearEnd: 2022, cumulativeHomesCommitted: 194_000)
+        static let yearlyProgress2023 = (fiscalYearEnd: 2023, cumulativeHomesCommitted: 353_000)
+    }
 
     static let programs: [NHSProgram] = [
         NHSProgram(
             id: "aclp",
             name: "Apartment Construction Loan Program",
-            budgetBillions: 25.75,
+            budgetBillions: ProgramValues.apartmentConstructionLoan.budgetBillions,
             unitLabel: "rental units",
-            targetUnits: 100_000,
-            committedUnits: 85_000,
+            targetUnits: ProgramValues.apartmentConstructionLoan.targetUnits,
+            committedUnits: ProgramValues.apartmentConstructionLoan.committedUnits,
             category: .newConstruction,
             reportingPeriod: "FY 2022-23"
         ),
         NHSProgram(
             id: "ncif-new",
             name: "National Co-Investment Fund — New",
-            budgetBillions: 5.8,
+            budgetBillions: ProgramValues.nationalCoInvestmentNew.budgetBillions,
             unitLabel: "new homes",
-            targetUnits: 60_000,
-            committedUnits: 54_000,
+            targetUnits: ProgramValues.nationalCoInvestmentNew.targetUnits,
+            committedUnits: ProgramValues.nationalCoInvestmentNew.committedUnits,
             category: .newConstruction,
             reportingPeriod: "FY 2022-23"
         ),
         NHSProgram(
             id: "ncif-repair",
             name: "National Co-Investment Fund — Repair",
-            budgetBillions: 7.4,
+            budgetBillions: ProgramValues.nationalCoInvestmentRepair.budgetBillions,
             unitLabel: "repaired homes",
-            targetUnits: 240_000,
-            committedUnits: 196_000,
+            targetUnits: ProgramValues.nationalCoInvestmentRepair.targetUnits,
+            committedUnits: ProgramValues.nationalCoInvestmentRepair.committedUnits,
             category: .repair,
             reportingPeriod: "FY 2022-23"
         ),
         NHSProgram(
             id: "rhi",
             name: "Rapid Housing Initiative",
-            budgetBillions: 4.0,
+            budgetBillions: ProgramValues.rapidHousingInitiative.budgetBillions,
             unitLabel: "homes",
-            targetUnits: 15_000,
-            committedUnits: 14_709,
+            targetUnits: ProgramValues.rapidHousingInitiative.targetUnits,
+            committedUnits: ProgramValues.rapidHousingInitiative.committedUnits,
             category: .newConstruction,
             reportingPeriod: "All 3 phases, FY 2022-23"
         ),
         NHSProgram(
             id: "chb",
             name: "Canada Housing Benefit",
-            budgetBillions: 2.5,
+            budgetBillions: ProgramValues.canadaHousingBenefit.budgetBillions,
             unitLabel: "households",
-            targetUnits: 300_000,
-            committedUnits: 270_000,
+            targetUnits: ProgramValues.canadaHousingBenefit.targetUnits,
+            committedUnits: ProgramValues.canadaHousingBenefit.committedUnits,
             category: .directBenefit,
             reportingPeriod: "FY 2022-23"
         ),
         NHSProgram(
             id: "haf",
             name: "Housing Accelerator Fund",
-            budgetBillions: 4.0,
+            budgetBillions: ProgramValues.housingAcceleratorFund.budgetBillions,
             unitLabel: "homes enabled",
-            targetUnits: 100_000,
-            committedUnits: 40_000,
+            targetUnits: ProgramValues.housingAcceleratorFund.targetUnits,
+            committedUnits: ProgramValues.housingAcceleratorFund.committedUnits,
             category: .enabling,
             reportingPeriod: "Dec 2023 (179 municipal agreements)"
         ),
         NHSProgram(
             id: "innovation",
             name: "Affordable Housing Innovation Fund",
-            budgetBillions: 0.2,
+            budgetBillions: ProgramValues.innovationFund.budgetBillions,
             unitLabel: "new units",
-            targetUnits: 4_000,
-            committedUnits: 3_500,
+            targetUnits: ProgramValues.innovationFund.targetUnits,
+            committedUnits: ProgramValues.innovationFund.committedUnits,
             category: .newConstruction,
             reportingPeriod: "FY 2022-23"
         )
@@ -120,9 +161,18 @@ struct NHSProgressDatabase {
     // Cumulative homes committed under core NHS construction/repair programs
     // (ACLP + NCIF + RHI + Innovation), reported annually in NHS Annual Progress Reports.
     static let yearlyProgress: [NHSYearlyProgress] = [
-        NHSYearlyProgress(fiscalYearEnd: 2021, cumulativeHomesCommitted: 103_000),
-        NHSYearlyProgress(fiscalYearEnd: 2022, cumulativeHomesCommitted: 194_000),
-        NHSYearlyProgress(fiscalYearEnd: 2023, cumulativeHomesCommitted: 353_000)
+        NHSYearlyProgress(
+            fiscalYearEnd: ProgramValues.yearlyProgress2021.fiscalYearEnd,
+            cumulativeHomesCommitted: ProgramValues.yearlyProgress2021.cumulativeHomesCommitted
+        ),
+        NHSYearlyProgress(
+            fiscalYearEnd: ProgramValues.yearlyProgress2022.fiscalYearEnd,
+            cumulativeHomesCommitted: ProgramValues.yearlyProgress2022.cumulativeHomesCommitted
+        ),
+        NHSYearlyProgress(
+            fiscalYearEnd: ProgramValues.yearlyProgress2023.fiscalYearEnd,
+            cumulativeHomesCommitted: ProgramValues.yearlyProgress2023.cumulativeHomesCommitted
+        )
     ]
 
     // Sum of committed units across unit-producing programs (construction + repair)

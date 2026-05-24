@@ -80,8 +80,42 @@ struct TorontoCouncilService {
     private static let councillorsTSKey = "epac.toronto.councillors.ts"
     private static let votesCacheKey = "epac.toronto.votes"
     private static let votesTSKey = "epac.toronto.votes.ts"
-    private static let councillorsTTL: TimeInterval = 7 * 86_400
-    private static let votesTTL: TimeInterval = 86_400
+    private enum Constants {
+        static let secondsPerDay: TimeInterval = 86_400
+        static let councillorsCacheDurationDays: TimeInterval = 7
+        static let successfulHTTPStatusCodes = 200..<300
+    }
+
+    private enum WardNumber: Int {
+        case etobicokeNorth = 1
+        case etobicokeCentre = 2
+        case etobicokeLakeshore = 3
+        case parkdaleHighPark = 4
+        case yorkSouthWeston = 5
+        case yorkCentre = 6
+        case humberRiverBlackCreek = 7
+        case eglintonLawrence = 8
+        case davenport = 9
+        case spadinaFortYork = 10
+        case universityRosedale = 11
+        case torontoStPauls = 12
+        case torontoCentre = 13
+        case torontoDanforth = 14
+        case donValleyWest = 15
+        case donValleyEast = 16
+        case donValleyNorth = 17
+        case willowdale = 18
+        case beachesEastYork = 19
+        case scarboroughSouthwest = 20
+        case scarboroughCentre = 21
+        case scarboroughAgincourt = 22
+        case scarboroughNorth = 23
+        case scarboroughGuildwood = 24
+        case scarboroughRougePark = 25
+    }
+
+    private static let councillorsTTL: TimeInterval = Constants.councillorsCacheDurationDays * Constants.secondsPerDay
+    private static let votesTTL: TimeInterval = Constants.secondsPerDay
 
     private static let voteResourceID = "55ead013-2331-4686-9895-9e8145b94189"
     private static let openDataBase = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/datastore_search"
@@ -114,7 +148,7 @@ struct TorontoCouncilService {
             .filter { _, wardName, _, _ in
                 normalized.contains(normalize(wardName)) || normalize(wardName).contains(normalized)
             }
-            .map { $0.0 }
+            .map { $0.0.rawValue }
         guard !matchedWards.isEmpty else { return councillors }
         return councillors.filter { councillor in
             guard let ward = councillor.wardNumber else { return false }
@@ -134,7 +168,7 @@ struct TorontoCouncilService {
         guard let url = components?.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successfulHTTPStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [String: Any],
               let records = result["records"] as? [[String: Any]] else { return nil }
@@ -226,46 +260,47 @@ struct TorontoCouncilService {
             profileURL: councilURL
         )
         return [mayor] + wardCouncillors.map { ward, wardName, firstName, lastName in
-            TorontoCouncillor(
-                id: "ward-\(ward)-\(lastName.lowercased().replacingOccurrences(of: " ", with: "-"))",
+            let wardNumber = ward.rawValue
+            return TorontoCouncillor(
+                id: "ward-\(wardNumber)-\(lastName.lowercased().replacingOccurrences(of: " ", with: "-"))",
                 firstName: firstName,
                 lastName: lastName,
-                wardNumber: ward,
+                wardNumber: wardNumber,
                 wardName: wardName,
                 party: "Independent",
                 role: "Councillor",
                 email: nil,
-                profileURL: URL(string: "https://www.toronto.ca/city-government/council/members-of-council/councillor-ward-\(ward)/") ?? councilURL
+                profileURL: URL(string: "https://www.toronto.ca/city-government/council/members-of-council/councillor-ward-\(wardNumber)/") ?? councilURL
             )
         }
     }
 
-    private static let wardCouncillors: [(Int, String, String, String)] = [
-        (1, "Etobicoke North", "Vincent", "Crisanti"),
-        (2, "Etobicoke Centre", "Stephen", "Holyday"),
-        (3, "Etobicoke-Lakeshore", "Amber", "Morley"),
-        (4, "Parkdale-High Park", "Gord", "Perks"),
-        (5, "York South-Weston", "Frances", "Nunziata"),
-        (6, "York Centre", "James", "Pasternak"),
-        (7, "Humber River-Black Creek", "Anthony", "Perruzza"),
-        (8, "Eglinton-Lawrence", "Mike", "Colle"),
-        (9, "Davenport", "Alejandra", "Bravo"),
-        (10, "Spadina-Fort York", "Ausma", "Malik"),
-        (11, "University-Rosedale", "Dianne", "Saxe"),
-        (12, "Toronto-St. Paul's", "Josh", "Matlow"),
-        (13, "Toronto Centre", "Chris", "Moise"),
-        (14, "Toronto-Danforth", "Paula", "Fletcher"),
-        (15, "Don Valley West", "Rachel", "Chernos Lin"),
-        (16, "Don Valley East", "Jon", "Burnside"),
-        (17, "Don Valley North", "Shelley", "Carroll"),
-        (18, "Willowdale", "Lily", "Cheng"),
-        (19, "Beaches-East York", "Brad", "Bradford"),
-        (20, "Scarborough Southwest", "Parthi", "Kandavel"),
-        (21, "Scarborough Centre", "Michael", "Thompson"),
-        (22, "Scarborough-Agincourt", "Nick", "Mantas"),
-        (23, "Scarborough North", "Jamaal", "Myers"),
-        (24, "Scarborough-Guildwood", "Paul", "Ainslie"),
-        (25, "Scarborough-Rouge Park", "Neethan", "Shan")
+    private static let wardCouncillors: [(WardNumber, String, String, String)] = [
+        (.etobicokeNorth, "Etobicoke North", "Vincent", "Crisanti"),
+        (.etobicokeCentre, "Etobicoke Centre", "Stephen", "Holyday"),
+        (.etobicokeLakeshore, "Etobicoke-Lakeshore", "Amber", "Morley"),
+        (.parkdaleHighPark, "Parkdale-High Park", "Gord", "Perks"),
+        (.yorkSouthWeston, "York South-Weston", "Frances", "Nunziata"),
+        (.yorkCentre, "York Centre", "James", "Pasternak"),
+        (.humberRiverBlackCreek, "Humber River-Black Creek", "Anthony", "Perruzza"),
+        (.eglintonLawrence, "Eglinton-Lawrence", "Mike", "Colle"),
+        (.davenport, "Davenport", "Alejandra", "Bravo"),
+        (.spadinaFortYork, "Spadina-Fort York", "Ausma", "Malik"),
+        (.universityRosedale, "University-Rosedale", "Dianne", "Saxe"),
+        (.torontoStPauls, "Toronto-St. Paul's", "Josh", "Matlow"),
+        (.torontoCentre, "Toronto Centre", "Chris", "Moise"),
+        (.torontoDanforth, "Toronto-Danforth", "Paula", "Fletcher"),
+        (.donValleyWest, "Don Valley West", "Rachel", "Chernos Lin"),
+        (.donValleyEast, "Don Valley East", "Jon", "Burnside"),
+        (.donValleyNorth, "Don Valley North", "Shelley", "Carroll"),
+        (.willowdale, "Willowdale", "Lily", "Cheng"),
+        (.beachesEastYork, "Beaches-East York", "Brad", "Bradford"),
+        (.scarboroughSouthwest, "Scarborough Southwest", "Parthi", "Kandavel"),
+        (.scarboroughCentre, "Scarborough Centre", "Michael", "Thompson"),
+        (.scarboroughAgincourt, "Scarborough-Agincourt", "Nick", "Mantas"),
+        (.scarboroughNorth, "Scarborough North", "Jamaal", "Myers"),
+        (.scarboroughGuildwood, "Scarborough-Guildwood", "Paul", "Ainslie"),
+        (.scarboroughRougePark, "Scarborough-Rouge Park", "Neethan", "Shan")
     ]
 
     private static let torontoRidingHints = [

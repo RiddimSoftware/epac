@@ -43,6 +43,34 @@ actor Fetch: ObservableObject {
 	private let openParliamentAPIURL = URL(string: "https://api.openparliament.ca")!
 	private let votePageSize = 200
 
+	private enum Constants {
+		static let secondsPerMinute: TimeInterval = 60
+		static let minutesPerHour: TimeInterval = 60
+		static let hoursPerDay: TimeInterval = 24
+		static let fiscalMonitorRefreshInterval = secondsPerMinute * minutesPerHour * hoursPerDay
+		static let csvPreviewLinkLimit = 10
+		static let csvLinkNotFoundErrorCode = 2
+		static let parseExpendituresHTMLErrorCode = 1
+		static let expenditureTableColumnCount = 7
+		static let unmatchedRowLogLimit = 5
+		static let travelColumnIndex = 4
+		static let hospitalityColumnIndex = 5
+		static let contractsColumnIndex = 6
+		static let emptyMemberID = 0
+		static let invalidUTF8ErrorCode = 7
+		static let htmlParseErrorCode = 1
+		static let urlBuildErrorCode = 6
+		static let missingPublicationErrorCode = 4
+		static let activePublicationTextErrorCode = 2
+		static let projectedPublicationErrorCode = 3
+		static let missingXMLExportErrorCode = 5
+		static let successfulHTTPStatusCodes = 200..<300
+		static let stableVoteParliamentMultiplier = 1_000_000
+		static let stableVoteSessionMultiplier = 10_000
+		static let sessionComponentCount = 2
+		static let voteURLSegmentCount = 3
+	}
+
 	private enum VotingEndpoint {
 		case openCommons
 		case openParliament
@@ -204,7 +232,7 @@ actor Fetch: ObservableObject {
 		guard let lastSync = UserDefaults.standard.object(forKey: "epac.sync.fiscalMonitor") as? Date else {
 			return true
 		}
-		return Date().timeIntervalSince(lastSync) > 60 * 60 * 24
+		return Date().timeIntervalSince(lastSync) > Constants.fiscalMonitorRefreshInterval
 	}
 
 	func downloadExpenditures(year: Int, quarter: Int) async throws {
@@ -219,10 +247,10 @@ actor Fetch: ObservableObject {
 		Log.debug("Found \(allLinks.count) links on the page")
 
 		guard let csvURL = findCSVURL(in: doc, relativeTo: hosturl) else {
-			for link in allLinks.prefix(10) {
+			for link in allLinks.prefix(Constants.csvPreviewLinkLimit) {
 				Log.debug("Link: text='\(link.text ?? "")', href='\(link["href"] ?? "")'")
 			}
-			throw NSError(domain: "Fetch", code: 2, userInfo: [NSLocalizedDescriptionKey: "CSV link not found after checking \(allLinks.count) links"])
+			throw NSError(domain: "Fetch", code: Constants.csvLinkNotFoundErrorCode, userInfo: [NSLocalizedDescriptionKey: "CSV link not found after checking \(allLinks.count) links"])
 		}
 		
 		Log.debug("Found CSV URL: \(csvURL.absoluteString)")
@@ -252,7 +280,7 @@ actor Fetch: ObservableObject {
 	private func parseExpendituresHTML(from data: Data) throws -> HTMLDocument {
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
-			throw NSError(domain: "Fetch", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
+			throw NSError(domain: "Fetch", code: Constants.parseExpendituresHTMLErrorCode, userInfo: [NSLocalizedDescriptionKey: "Failed to parse HTML"])
 		}
 		return doc
 	}
@@ -312,12 +340,12 @@ actor Fetch: ObservableObject {
 		hasParsedRows: Bool
 	) {
 		let cells = row.css("td")
-		guard cells.count >= 7 else { return }
+		guard cells.count >= Constants.expenditureTableColumnCount else { return }
 		let nameText = cells[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
 		if let match = matchingSummaryExpenditure(for: nameText, in: targetExpenditures) {
 			updateDetailLinks(for: match, cells: cells)
-		} else if index < 5 && hasParsedRows {
+		} else if index < Constants.unmatchedRowLogLimit && hasParsedRows {
 			Log.debug("Could not match HTML row \(index): '\(nameText)'")
 		}
 	}
@@ -335,9 +363,9 @@ actor Fetch: ObservableObject {
 
 	private func updateDetailLinks(for expenditure: SummaryExpenditure, cells: XPathObject) {
 		var foundLink = false
-		foundLink = updateDetailLink(at: 4, in: cells, assign: { expenditure.travelURL = $0 }) || foundLink
-		foundLink = updateDetailLink(at: 5, in: cells, assign: { expenditure.hospitalityURL = $0 }) || foundLink
-		foundLink = updateDetailLink(at: 6, in: cells, assign: { expenditure.contractsURL = $0 }) || foundLink
+		foundLink = updateDetailLink(at: Constants.travelColumnIndex, in: cells, assign: { expenditure.travelURL = $0 }) || foundLink
+		foundLink = updateDetailLink(at: Constants.hospitalityColumnIndex, in: cells, assign: { expenditure.hospitalityURL = $0 }) || foundLink
+		foundLink = updateDetailLink(at: Constants.contractsColumnIndex, in: cells, assign: { expenditure.contractsURL = $0 }) || foundLink
 		if foundLink {
 			Log.debug("Associated links for \(expenditure.lastName) (\(expenditure.firstName))")
 		}
@@ -569,7 +597,7 @@ actor Fetch: ObservableObject {
 			details: itemData.details,
 			date: itemData.date,
 			total: itemData.total,
-			memberID: 0,
+			memberID: Constants.emptyMemberID,
 			year: member.year,
 			quarter: member.quarter
 		)
@@ -587,7 +615,7 @@ actor Fetch: ObservableObject {
 		let request = URLRequest(url: xmlURL, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			throw NSError(domain: "", code: 7)
+			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
 		}
 		return utfstringvalue
 	}
@@ -600,7 +628,7 @@ actor Fetch: ObservableObject {
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
-			throw NSError(domain: "", code: 1)
+			throw NSError(domain: "", code: Constants.htmlParseErrorCode)
 		}
 		return doc
 	}
@@ -608,7 +636,7 @@ actor Fetch: ObservableObject {
 	private func hansardPublicationURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
 		let href = try hansardPublicationHref(from: doc)
 		guard let url = URL(string: href, relativeTo: baseURL) else {
-			throw NSError(domain: "", code: 6)
+			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		return url
 	}
@@ -620,14 +648,14 @@ actor Fetch: ObservableObject {
 			href = try updatedHansardHref(current: href, candidate: debatelink["href"], text: text)
 		}
 		guard let href else {
-			throw NSError(domain: "", code: 4)
+			throw NSError(domain: "", code: Constants.missingPublicationErrorCode)
 		}
 		return href
 	}
 
 	private func activePublicationText(from link: Kanna.XMLElement) throws -> String {
 		guard let text = link.text?.lowercased() else {
-			throw NSError(domain: "", code: 2)
+			throw NSError(domain: "", code: Constants.activePublicationTextErrorCode)
 		}
 		return text
 	}
@@ -637,20 +665,20 @@ actor Fetch: ObservableObject {
 			return candidate
 		}
 		if text.contains("projected") {
-			throw NSError(domain: "", code: 3)
+			throw NSError(domain: "", code: Constants.projectedPublicationErrorCode)
 		}
 		return current
 	}
 
 	private func xmlExportURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
 		guard let xmllinkelement = doc.css("a.btn-export-xml").first else {
-			throw NSError(domain: "", code: 5)
+			throw NSError(domain: "", code: Constants.missingXMLExportErrorCode)
 		}
 		guard let href = xmllinkelement["href"] else {
-			throw NSError(domain: "", code: 4)
+			throw NSError(domain: "", code: Constants.missingPublicationErrorCode)
 		}
 		guard let xmllink = URL(string: href, relativeTo: baseURL) else {
-			throw NSError(domain: "", code: 6)
+			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		return xmllink
 	}
@@ -694,13 +722,13 @@ actor Fetch: ObservableObject {
 	func downloadMembers() async throws {
 		Log.debug("Fetch.downloadMembers()")
 		guard let url = URL(string: membersPath, relativeTo: hosturl) else {
-			throw NSError(domain: "", code: 6)
+			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("got data \(data.count)")
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			throw NSError(domain: "", code: 7)
+			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
 		}
 		Log.debug("Got XML string")
 		let memberDTOs = XMLBro.parseMembers(utfstringvalue)
@@ -719,78 +747,78 @@ actor Fetch: ObservableObject {
 		}
 		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}
-	                func downloadMember(_ firstName: String, _ lastName: String) async throws {
-	                        let identifier = "\(firstName) \(lastName)"
-	                        guard !downloadsInProgress.contains(identifier), !failedDownloads.contains(identifier) else {
-	                                return
-	                        }
-	                        downloadsInProgress.insert(identifier)
-	                        defer { downloadsInProgress.remove(identifier) }
-	        
-	                        Log.debug("Fetch.downloadMember(firstName: \(firstName), lastName: \(lastName))")
-	                        let url = hosturl.appending(path: membersSearchPath)
-	                        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-	                        request.httpMethod = "POST"
-	                        // [String: String] is always JSON-serializable; force-try here is safe by construction.
-	                        // swiftlint:disable:next force_try
-	                        request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
-	                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-	                        request.setValue("application/json", forHTTPHeaderField: "Accept")
-	                        let (data, _) = try await NetworkService.shared.data(for: request)
-	                        guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-	                                failedDownloads.insert(identifier)
-	                                throw NSError(domain: "", code: 7)
-	                        }
-	                        let pastMembers = responseBody["pastMembers"] as? [[String: Any]] ?? []
-	                        let currentMembers = responseBody["currentMembers"] as? [[String: Any]] ?? []
-	                        let allMembers = currentMembers + pastMembers
-	        
-	                        if let member = allMembers.first {
-	                                let name = "\(firstName) \(lastName)"
-	                                let personID = member["personId"] as? Int ?? 0
-	                                let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
-	                                if existing == nil {
-	                                        let dto = ParliamentMemberDTO(
-	                                                name: name,
-	                                                memberID: personID,
-	                                                lastName: lastName,
-	                                                firstName: firstName,
-	                                                // ourcommons.ca members search response shape is part of the API contract; a missing
-                                                // field here means the API broke and we want to fail loudly. Replace with guard-let
-                                                // when the upstream API stabilises around a typed schema.
-                                                // swiftlint:disable force_cast
-                                                photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
-	                                                riding: member["constituencyNameEn"] as! String,
-	                                                province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
-	                                                party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
-	                                                websiteURL: nil,
-	                                                imageData: nil,
-                                                // swiftlint:enable force_cast
-	                                                fromDateTime: nil,
-	                                                toDateTime: nil,
-	                                                email: nil,
-	                                                hillPhone: nil,
-	                                                constituencyPhone: nil,
-	                                                constituencyAddress: nil,
-	                                                contactFetched: false
-	                                        )
-	                                        modelContext.insert(ParliamentMember(domain: dto))
-	                                        try modelContext.save()
-	                                }
-	                        } else {
-	                                failedDownloads.insert(identifier)
-	                        }
-	                }
-	        
+	func downloadMember(_ firstName: String, _ lastName: String) async throws {
+		let identifier = "\(firstName) \(lastName)"
+		guard !downloadsInProgress.contains(identifier), !failedDownloads.contains(identifier) else {
+			return
+		}
+		downloadsInProgress.insert(identifier)
+		defer { downloadsInProgress.remove(identifier) }
+
+		Log.debug("Fetch.downloadMember(firstName: \(firstName), lastName: \(lastName))")
+		let url = hosturl.appending(path: membersSearchPath)
+		var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+		request.httpMethod = "POST"
+		// [String: String] is always JSON-serializable; force-try here is safe by construction.
+		// swiftlint:disable:next force_try
+		request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
+		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+		request.setValue("application/json", forHTTPHeaderField: "Accept")
+		let (data, _) = try await NetworkService.shared.data(for: request)
+		guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			failedDownloads.insert(identifier)
+			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
+		}
+		let pastMembers = responseBody["pastMembers"] as? [[String: Any]] ?? []
+		let currentMembers = responseBody["currentMembers"] as? [[String: Any]] ?? []
+		let allMembers = currentMembers + pastMembers
+
+		if let member = allMembers.first {
+			let name = "\(firstName) \(lastName)"
+			let personID = member["personId"] as? Int ?? 0
+			let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
+			if existing == nil {
+				let dto = ParliamentMemberDTO(
+					name: name,
+					memberID: personID,
+					lastName: lastName,
+					firstName: firstName,
+					// ourcommons.ca members search response shape is part of the API contract; a missing
+					// field here means the API broke and we want to fail loudly. Replace with guard-let
+					// when the upstream API stabilises around a typed schema.
+					// swiftlint:disable force_cast
+					photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
+					riding: member["constituencyNameEn"] as! String,
+					province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
+					party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
+					websiteURL: nil,
+					imageData: nil,
+					// swiftlint:enable force_cast
+					fromDateTime: nil,
+					toDateTime: nil,
+					email: nil,
+					hillPhone: nil,
+					constituencyPhone: nil,
+					constituencyAddress: nil,
+					contactFetched: false
+				)
+				modelContext.insert(ParliamentMember(domain: dto))
+				try modelContext.save()
+			}
+		} else {
+			failedDownloads.insert(identifier)
+		}
+	}
+
 	func downloadConstituencies() async throws {
 		Log.debug("Fetch.downloadConstituencies()")
 		guard let url = URL(string: constituenciesPath, relativeTo: hosturl) else {
-			throw NSError(domain: "", code: 6)
+			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			throw NSError(domain: "", code: 7)
+			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
 		}
 		let constituencyDTOs = XMLBro.parseConstituencies(utfstringvalue)
 		constituencyDTOs.map(Constituency.init(domain:)).forEach { modelContext.insert($0) }
@@ -810,7 +838,7 @@ actor Fetch: ObservableObject {
 		let path = String(format: memberPath, first, last, String(member.memberID))
 		guard let url = URL(string: path, relativeTo: hosturl) else { return }
 		let (data, response) = try await NetworkService.shared.data(from: url)
-		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+		guard let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let xmlString = String(data: data, encoding: .utf8) else { return }
 		let contact = XMLBro.parseMemberContact(xmlString)
 		member.email = contact.email
@@ -998,7 +1026,7 @@ actor Fetch: ObservableObject {
 
 	private func fetchJSONDictionary(from url: URL) async throws -> [String: Any]? {
 		let (data, response) = try await NetworkService.shared.data(from: url)
-		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+		guard let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return nil
 		}
@@ -1202,7 +1230,7 @@ actor Fetch: ObservableObject {
 		guard !slug.isEmpty else { return false }
 		guard let url = URL(string: "/politicians/\(slug)/?format=json", relativeTo: openParliamentAPIURL) else { return false }
 		guard let (data, response) = try? await NetworkService.shared.data(from: url),
-			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return false
 		}
@@ -1217,7 +1245,7 @@ actor Fetch: ObservableObject {
 			  let url = components.url else { return nil }
 
 		guard let (data, response) = try? await NetworkService.shared.data(from: url),
-			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+			  let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 			  let objects = json["objects"] as? [[String: Any]] else {
 			return nil
@@ -1272,12 +1300,12 @@ actor Fetch: ObservableObject {
 		let safeParliament = max(0, parliament)
 		let safeSession = max(0, session)
 		let safeNumber = max(0, number)
-		return (safeParliament * 1_000_000) + (safeSession * 10_000) + safeNumber
+		return (safeParliament * Constants.stableVoteParliamentMultiplier) + (safeSession * Constants.stableVoteSessionMultiplier) + safeNumber
 	}
 
 	private func parseSessionComponents(from session: String) -> (Int, Int) {
 		let parts = session.split(separator: "-")
-		guard parts.count >= 2,
+		guard parts.count >= Constants.sessionComponentCount,
 			  let parliament = Int(parts[0]),
 			  let sessionNum = Int(parts[1]) else {
 			return (0, 0)
@@ -1296,7 +1324,7 @@ actor Fetch: ObservableObject {
 	private func openParliamentBallotID(from voteURL: String) -> Int? {
 		let trimmed = voteURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 		let segments = trimmed.split(separator: "/")
-		guard segments.count >= 3,
+		guard segments.count >= Constants.voteURLSegmentCount,
 			  segments[0] == "votes",
 			  let vote = Int(segments.last ?? ""),
 			  let (parliament, session) = Optional(parseSessionComponents(from: String(segments[1]))) else {
