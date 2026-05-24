@@ -1,0 +1,128 @@
+name: Evidence regression
+
+# Captures before/after PR evidence for a given plan, posts the report
+# summary as a PR comment (when pr_number is provided), uploads the full
+# evidence bundle as a workflow artifact, and optionally posts the summary
+# as a Linear comment.
+#
+# Triggered manually via `gh workflow run evidence-regression.yml` with the
+# inputs documented below. There is no `pull_request` trigger yet — each
+# PR opts in by being dispatched explicitly with its plan path. As regression
+# coverage stabilizes, an auto-trigger can be added that selects a plan
+# based on changed paths.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch/tag/SHA to check out for the plan file (defaults to main)"
+        required: false
+        default: main
+      pr_number:
+        description: "PR number (enables PR-comment posting; default subdir name)"
+        required: false
+        default: ""
+      before_sha:
+        description: "Before-revision SHA — defaults to PR base / merge-commit parent if pr_number is set"
+        required: false
+        default: ""
+      after_sha:
+        description: "After-revision SHA — defaults to PR head / merge commit if pr_number is set"
+        required: false
+        default: ""
+      plan_path:
+        description: "Path to evidence plan JSON in the checkout (e.g. .evidence/pr-542.json)"
+        required: true
+      linear_issue_id:
+        description: "Linear issue identifier (e.g. EPAC-1985) — optional, posts evidence summary as a Linear comment"
+        required: false
+        default: ""
+      output_subdir:
+        description: "Override subdir under docs/build-evidence/ for outputs (defaults to pr-<N> or dispatch-<short-sha>)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  capture:
+    runs-on: macos-14
+    steps:
+      - name: Resolve output subdir
+        id: outdir
+        env:
+          OUTPUT_SUBDIR: ${{ inputs.output_subdir }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          BEFORE_SHA: ${{ inputs.before_sha }}
+          AFTER_SHA: ${{ inputs.after_sha }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$OUTPUT_SUBDIR" ]]; then
+            sub="$OUTPUT_SUBDIR"
+          elif [[ -n "$PR_NUMBER" ]]; then
+            sub="pr-$PR_NUMBER"
+          else
+            short_before=${BEFORE_SHA:0:7}
+            short_after=${AFTER_SHA:0:7}
+            sub="dispatch-${short_before}-${short_after}"
+          fi
+          echo "subdir=$sub" >> "$GITHUB_OUTPUT"
+          echo "path=docs/build-evidence/$sub" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout (with full history for worktree resolution)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Capture before/after PR evidence
+        id: capture
+        uses: RiddimSoftware/evidence@v0
+        with:
+          subcommand: capture-pr
+          plan: ${{ inputs.plan_path }}
+          pr: ${{ inputs.pr_number }}
+          before-ref: ${{ inputs.before_sha }}
+          after-ref: ${{ inputs.after_sha }}
+          output-dir: ${{ steps.outdir.outputs.path }}
+          comment-on-pr: ${{ inputs.pr_number != '' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload evidence bundle artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ steps.outdir.outputs.subdir }}
+          path: ${{ steps.outdir.outputs.path }}
+          if-no-files-found: warn
+
+      - name: Configure AWS credentials (for Linear comment)
+        if: inputs.linear_issue_id != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Set up Python (for Linear comment)
+        if: inputs.linear_issue_id != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Post evidence summary to Linear
+        if: inputs.linear_issue_id != ''
+        env:
+          LINEAR_ISSUE_ID: ${{ inputs.linear_issue_id }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          OUTPUT_DIR: ${{ steps.outdir.outputs.path }}
+        run: |
+          python3 scripts/ci/post_evidence_to_linear.py \
+            --linear-issue "$LINEAR_ISSUE_ID" \
+            --report "$OUTPUT_DIR/report.md" \
+            --run-url "$RUN_URL" \
+            --pr-number "$PR_NUMBER" \
+            --output-dir "$OUTPUT_DIR"

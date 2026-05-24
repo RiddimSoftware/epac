@@ -24,6 +24,13 @@ backend/daily-fetch/daily-fetch
 hansard/
 docs/marketing/preview/raw-capture-*.mp4
 
+# evidence capture-pr scratch directories — local builds, never committed.
+# The artifacts under docs/build-evidence/<run>/before/, /after/,
+# manifest.json, and report.md ARE committed.
+docs/build-evidence/*/worktrees/
+docs/build-evidence/*/derived-data/
+docs/build-evidence/*/logs/
+
 
 !**/*/fixtures/*.csv
 !**/*/fixtures/*.xml
