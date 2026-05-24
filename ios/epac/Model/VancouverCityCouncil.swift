@@ -75,6 +75,7 @@ struct VancouverCouncilService {
     private static let councillorsTSKey     = "epac.vancouver.councillors.ts"
     private static let votesCacheKey        = "epac.vancouver.votes"
     private static let votesTSKey           = "epac.vancouver.votes.ts"
+    // swiftlint:disable:next no_magic_numbers
     private static let councillorsTTL: TimeInterval = 7 * 86_400   // 1 week
     private static let votesTTL: TimeInterval       = 86_400        // 1 day
 
@@ -103,6 +104,7 @@ struct VancouverCouncilService {
 
     private static func fetchCouncillorsFromOpenData() async -> [VancouverCouncillor]? {
         // Extract unique councillors from recent vote records — most reliable source.
+        // swiftlint:disable:next no_magic_numbers
         let votes = (await fetchVotesFromOpenData(limit: 500)) ?? []
         guard !votes.isEmpty else { return nil }
 
@@ -134,6 +136,7 @@ struct VancouverCouncilService {
         guard let url = URL(string: urlStr),
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
+              // swiftlint:disable:next no_magic_numbers
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let results = json["results"] as? [[String: Any]] else { return nil }

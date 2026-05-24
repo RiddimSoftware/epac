@@ -125,6 +125,7 @@ struct GICAppointment: Decodable, Identifiable {
 		let parts = name.split(separator: ",", maxSplits: 1).map {
 			$0.trimmingCharacters(in: .whitespacesAndNewlines)
 		}
+		// swiftlint:disable:next no_magic_numbers
 		guard parts.count == 2 else { return name }
 		return "\(parts[1]) \(parts[0])"
 	}

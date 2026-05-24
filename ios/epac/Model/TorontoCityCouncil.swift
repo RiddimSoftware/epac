@@ -80,6 +80,7 @@ struct TorontoCouncilService {
     private static let councillorsTSKey = "epac.toronto.councillors.ts"
     private static let votesCacheKey = "epac.toronto.votes"
     private static let votesTSKey = "epac.toronto.votes.ts"
+    // swiftlint:disable:next no_magic_numbers
     private static let councillorsTTL: TimeInterval = 7 * 86_400
     private static let votesTTL: TimeInterval = 86_400
 
@@ -134,6 +135,7 @@ struct TorontoCouncilService {
         guard let url = components?.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
+              // swiftlint:disable:next no_magic_numbers
               (200..<300).contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [String: Any],
@@ -240,6 +242,7 @@ struct TorontoCouncilService {
         }
     }
 
+    // swiftlint:disable no_magic_numbers
     private static let wardCouncillors: [(Int, String, String, String)] = [
         (1, "Etobicoke North", "Vincent", "Crisanti"),
         (2, "Etobicoke Centre", "Stephen", "Holyday"),
@@ -267,6 +270,7 @@ struct TorontoCouncilService {
         (24, "Scarborough-Guildwood", "Paul", "Ainslie"),
         (25, "Scarborough-Rouge Park", "Neethan", "Shan")
     ]
+    // swiftlint:enable no_magic_numbers
 
     private static let torontoRidingHints = [
         "toronto", "etobicoke", "york", "humber river", "eglington", "eglinton",
