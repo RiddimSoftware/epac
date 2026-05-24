@@ -45,27 +45,31 @@ struct TorontoCouncilVote: Identifiable, Codable {
         case other = "Other"
 
         static func classify(_ title: String) -> VoteCategory {
-            let t = title.lowercased()
-            if t.contains("housing") || t.contains("rental") || t.contains("affordable") || t.contains("tenant") {
-                return .housing
-            }
-            if t.contains("zoning") || t.contains("rezoning") || t.contains("development") || t.contains("heritage") {
-                return .development
-            }
-            if t.contains("transit") || t.contains("transportation") || t.contains("bike") || t.contains("cycling") || t.contains("traffic") || t.contains("parking") {
-                return .transportation
-            }
-            if t.contains("environment") || t.contains("climate") || t.contains("tree") || t.contains("green") || t.contains("park") {
-                return .environment
-            }
-            if t.contains("budget") || t.contains("finance") || t.contains("tax") || t.contains("fee") || t.contains("grant") {
-                return .finance
-            }
-            if t.contains("homelessness") || t.contains("shelter") || t.contains("social") || t.contains("community") || t.contains("food") {
-                return .social
+            let title = title.lowercased()
+            return category(for: title)
+        }
+
+        private static func category(for title: String) -> VoteCategory {
+            for (category, keywords) in categoryKeywords {
+                if titleContainsAnyKeyword(title, keywords: keywords) {
+                    return category
+                }
             }
             return .other
         }
+
+        private static func titleContainsAnyKeyword(_ title: String, keywords: [String]) -> Bool {
+            keywords.contains { title.contains($0) }
+        }
+
+        private static let categoryKeywords: [(VoteCategory, [String])] = [
+            (.housing, ["housing", "rental", "affordable", "tenant"]),
+            (.development, ["zoning", "rezoning", "development", "heritage"]),
+            (.transportation, ["transit", "transportation", "bike", "cycling", "traffic", "parking"]),
+            (.environment, ["environment", "climate", "tree", "green", "park"]),
+            (.finance, ["budget", "finance", "tax", "fee", "grant"]),
+            (.social, ["homelessness", "shelter", "social", "community", "food"])
+        ]
     }
 }
 
