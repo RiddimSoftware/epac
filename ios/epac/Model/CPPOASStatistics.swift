@@ -117,11 +117,9 @@ enum CPPOASStatisticsDatabase {
     // "2026-04" → "April 2026"
     static func periodLabel(_ refPeriod: String) -> String {
         let parts = refPeriod.split(separator: "-")
-        // swiftlint:disable:next no_magic_numbers
         guard parts.count == 2,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              // swiftlint:disable:next no_magic_numbers
               (1...12).contains(month) else {
             return refPeriod
         }

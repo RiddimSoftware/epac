@@ -1,0 +1,40 @@
+version: 3
+workdir: .
+
+allow:
+  depOnAnyVendor: false
+  ignoreNotFoundComponents: true
+
+excludeFiles:
+  - "^.*_test\\.go$"
+
+vendors:
+  pgx:
+    in:
+      - github.com/jackc/pgx/v5
+      - github.com/jackc/pgx/v5/**
+  aws-lambda:
+    in:
+      - github.com/aws/aws-lambda-go
+      - github.com/aws/aws-lambda-go/**
+  aws-sdk-v2:
+    in:
+      - github.com/aws/aws-sdk-go-v2
+      - github.com/aws/aws-sdk-go-v2/**
+  net-http:
+    in:
+      - net/http
+
+components:
+  usecase:
+    in:
+      - "*/internal/usecase/**"
+  internal:
+    in:
+      - "*/internal/**"
+
+deps:
+  usecase:
+    mayDependOn:
+      - usecase
+      - internal

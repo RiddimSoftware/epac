@@ -110,11 +110,9 @@ enum ConsumerPriceIndexStatisticsDatabase {
 
     static func date(for refDate: String) -> Date? {
         let parts = refDate.split(separator: "-")
-        // swiftlint:disable:next no_magic_numbers
         guard parts.count == 2,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              // swiftlint:disable:next no_magic_numbers
               (1...12).contains(month) else {
             return nil
         }
@@ -123,11 +121,9 @@ enum ConsumerPriceIndexStatisticsDatabase {
 
     static func monthLabel(_ refDate: String) -> String {
         let parts = refDate.split(separator: "-")
-        // swiftlint:disable:next no_magic_numbers
         guard parts.count == 2,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
-              // swiftlint:disable:next no_magic_numbers
               (1...12).contains(month) else {
             return refDate
         }

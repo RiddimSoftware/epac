@@ -1,0 +1,60 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "IAM role for GitHub Actions daily App Store release pipeline (EPAC-333). Grants least-privilege read access to the appstore/connect-api secret via OIDC — no stored credentials.",
+  "Resources": {
+    "GitHubActionsReleaseRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "GitHubActions-epac-release",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:RiddimSoftware/epac:ref:refs/heads/main"
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ReadAppStoreConnectSecret",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": ["secretsmanager:GetSecretValue"],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:appstore/connect-api-*"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {"Key": "Project", "Value": "epac"},
+          {"Key": "ManagedBy", "Value": "CloudFormation"},
+          {"Key": "Ticket", "Value": "EPAC-333"}
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RoleArn": {
+      "Description": "ARN to set as AWS_RELEASE_ROLE_ARN in GitHub Actions secrets",
+      "Value": {"Fn::GetAtt": ["GitHubActionsReleaseRole", "Arn"]}
+    }
+  }
+}

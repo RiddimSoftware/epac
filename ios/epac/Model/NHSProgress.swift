@@ -44,7 +44,6 @@ struct NHSProgressDatabase {
     static let dataSource = "CMHC — NHS Annual Progress Report 2023 / Q1 2024 Quarterly Report"
     static let reportingPeriod = "FY 2022-23 (as of March 31, 2023)"
 
-    // swiftlint:disable no_magic_numbers
     static let programs: [NHSProgram] = [
         NHSProgram(
             id: "aclp",
@@ -117,17 +116,14 @@ struct NHSProgressDatabase {
             reportingPeriod: "FY 2022-23"
         )
     ]
-    // swiftlint:enable no_magic_numbers
 
     // Cumulative homes committed under core NHS construction/repair programs
     // (ACLP + NCIF + RHI + Innovation), reported annually in NHS Annual Progress Reports.
-    // swiftlint:disable no_magic_numbers
     static let yearlyProgress: [NHSYearlyProgress] = [
         NHSYearlyProgress(fiscalYearEnd: 2021, cumulativeHomesCommitted: 103_000),
         NHSYearlyProgress(fiscalYearEnd: 2022, cumulativeHomesCommitted: 194_000),
         NHSYearlyProgress(fiscalYearEnd: 2023, cumulativeHomesCommitted: 353_000)
     ]
-    // swiftlint:enable no_magic_numbers
 
     // Sum of committed units across unit-producing programs (construction + repair)
     static var totalCommitted: Int {

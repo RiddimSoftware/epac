@@ -10,7 +10,6 @@ extension Party {
 		UIImage(named: abbreviation)
 	}
 
-	// swiftlint:disable no_magic_numbers
 	var colour: UIColor {
 		switch self {
 		case .conservative: return UIColor(rgb: 0x1A4782)
@@ -21,5 +20,4 @@ extension Party {
 		case .independent: return UIColor.darkText
 		}
 	}
-	// swiftlint:enable no_magic_numbers
 }

@@ -29,13 +29,11 @@ struct PBOReport: Identifiable {
     /// Returns true when both estimates are parseable and differ by more than 10%.
     var estimatesDisagreeSignificantly: Bool {
         guard let pboStr = pboEstimate, let govStr = governmentEstimate else { return false }
-        // swiftlint:disable no_magic_numbers
         let multipliers: [String: Double] = [
             "trillion": 1_000_000_000_000,
             "billion": 1_000_000_000,
             "million": 1_000_000
         ]
-        // swiftlint:enable no_magic_numbers
         func parse(_ s: String) -> Double? {
             let lower = s.lowercased()
             for (word, mult) in multipliers {
@@ -50,7 +48,6 @@ struct PBOReport: Identifiable {
                         .components(separatedBy: separators)
                         .first(where: { !$0.isEmpty }) ?? ""
                     let stripped = token.replacingOccurrences(of: ",", with: "")
-                    // swiftlint:disable:next no_magic_numbers
                     if let num = Double(stripped.prefix(20)) {
                         return num * mult
                     }
@@ -61,7 +58,6 @@ struct PBOReport: Identifiable {
         guard let pbo = parse(pboStr),
               let gov = parse(govStr),
               gov > 0 else { return false }
-        // swiftlint:disable:next no_magic_numbers
         return abs(pbo - gov) / gov > 0.10
     }
 }

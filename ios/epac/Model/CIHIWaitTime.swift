@@ -32,7 +32,6 @@ struct CIHIWaitTimeDatabase {
     // 2023 data for hip replacement, knee replacement, cataract surgery, MRI, CT scan
     // Source: CIHI Wait Times 2023 — median and 90th percentile in weeks
     // Note: Territories (NT, NU, YT) have very small denominators; data not reported.
-    // swiftlint:disable no_magic_numbers
     static let all: [CIHIWaitTime] = [
         // Hip Replacement
         CIHIWaitTime(procedure: "Hip Replacement", medianWeeks: 20, p90Weeks: 52, province: "BC", dataYear: 2023),
@@ -90,5 +89,4 @@ struct CIHIWaitTimeDatabase {
         CIHIWaitTime(procedure: "CT Scan", medianWeeks: 3, p90Weeks: 7, province: "PE", dataYear: 2023),
         CIHIWaitTime(procedure: "CT Scan", medianWeeks: 3, p90Weeks: 8, province: "NL", dataYear: 2023)
     ]
-    // swiftlint:enable no_magic_numbers
 }

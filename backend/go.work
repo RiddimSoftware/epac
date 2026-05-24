@@ -1,0 +1,33 @@
+go 1.25.3
+
+use (
+	./_shared
+	./_testdb
+	./bills
+	./bills-publisher
+	./calendar
+	./config
+	./daily-fetch
+	./estimates
+	./hansard-backfill
+	./hansard-subjects-index
+	./health
+	./loader
+	./manifest
+	./member-content
+	./member-speeches
+	./member-speeches-publisher
+	./member-votes
+	./member-votes-publisher
+	./members
+	./members-publisher
+	./observability
+	./on-this-day
+	./openapi
+	./riding-boundary
+	./sittings
+	./sittings-publisher
+	./toronto-council
+	./unloader
+	./vancouver-council
+)

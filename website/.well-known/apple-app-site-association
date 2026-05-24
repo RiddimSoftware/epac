@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["ZG82TFXU3C.net.dinglebox.cabinetdoor"],
+        "components": [
+          { "/": "/member/*", "comment": "MP profile deep-links" },
+          { "/": "/riding/*", "comment": "Riding context deep-links" },
+          { "/": "/vote/*", "comment": "Shared vote deep-links" },
+          { "/": "/bill/*", "comment": "Bill tracker deep-links" },
+          { "/": "/sitting/*", "comment": "Hansard sitting and speech deep-links" },
+          { "/": "/topic/*", "comment": "Topic/keyword deep-links" },
+          { "/": "/setup/*", "comment": "Onboarding deep-links (e.g. postal code setup)" },
+          { "/": "/app/*", "comment": "Web-to-app gateway and fallback links" },
+          { "/": "/app", "comment": "Legacy query-parameter deep-links" },
+          { "/": "/", "comment": "Home feed" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["ZG82TFXU3C.net.dinglebox.cabinetdoor"]
+  }
+}

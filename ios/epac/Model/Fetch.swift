@@ -200,13 +200,11 @@ actor Fetch: ObservableObject {
 		UserDefaults.standard.set(Date(), forKey: "epac.sync.fiscalMonitor")
 	}
 
-	private static let fiscalMonitorRefreshInterval: TimeInterval = 86_400
-
 	private func shouldRefreshFiscalMonitor() -> Bool {
 		guard let lastSync = UserDefaults.standard.object(forKey: "epac.sync.fiscalMonitor") as? Date else {
 			return true
 		}
-		return Date().timeIntervalSince(lastSync) > Self.fiscalMonitorRefreshInterval
+		return Date().timeIntervalSince(lastSync) > 60 * 60 * 24
 	}
 
 	func downloadExpenditures(year: Int, quarter: Int) async throws {
@@ -221,11 +219,9 @@ actor Fetch: ObservableObject {
 		Log.debug("Found \(allLinks.count) links on the page")
 
 		guard let csvURL = findCSVURL(in: doc, relativeTo: hosturl) else {
-			// swiftlint:disable:next no_magic_numbers
-		for link in allLinks.prefix(10) {
+			for link in allLinks.prefix(10) {
 				Log.debug("Link: text='\(link.text ?? "")', href='\(link["href"] ?? "")'")
 			}
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "Fetch", code: 2, userInfo: [NSLocalizedDescriptionKey: "CSV link not found after checking \(allLinks.count) links"])
 		}
 		
@@ -316,13 +312,11 @@ actor Fetch: ObservableObject {
 		hasParsedRows: Bool
 	) {
 		let cells = row.css("td")
-		// swiftlint:disable:next no_magic_numbers
 		guard cells.count >= 7 else { return }
 		let nameText = cells[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
 		if let match = matchingSummaryExpenditure(for: nameText, in: targetExpenditures) {
 			updateDetailLinks(for: match, cells: cells)
-		// swiftlint:disable:next no_magic_numbers
 		} else if index < 5 && hasParsedRows {
 			Log.debug("Could not match HTML row \(index): '\(nameText)'")
 		}
@@ -340,12 +334,10 @@ actor Fetch: ObservableObject {
 	}
 
 	private func updateDetailLinks(for expenditure: SummaryExpenditure, cells: XPathObject) {
-		// swiftlint:disable no_magic_numbers
 		var foundLink = false
 		foundLink = updateDetailLink(at: 4, in: cells, assign: { expenditure.travelURL = $0 }) || foundLink
 		foundLink = updateDetailLink(at: 5, in: cells, assign: { expenditure.hospitalityURL = $0 }) || foundLink
 		foundLink = updateDetailLink(at: 6, in: cells, assign: { expenditure.contractsURL = $0 }) || foundLink
-		// swiftlint:enable no_magic_numbers
 		if foundLink {
 			Log.debug("Associated links for \(expenditure.lastName) (\(expenditure.firstName))")
 		}
@@ -595,7 +587,6 @@ actor Fetch: ObservableObject {
 		let request = URLRequest(url: xmlURL, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 7)
 		}
 		return utfstringvalue
@@ -617,7 +608,6 @@ actor Fetch: ObservableObject {
 	private func hansardPublicationURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
 		let href = try hansardPublicationHref(from: doc)
 		guard let url = URL(string: href, relativeTo: baseURL) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 6)
 		}
 		return url
@@ -630,7 +620,6 @@ actor Fetch: ObservableObject {
 			href = try updatedHansardHref(current: href, candidate: debatelink["href"], text: text)
 		}
 		guard let href else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 4)
 		}
 		return href
@@ -638,7 +627,6 @@ actor Fetch: ObservableObject {
 
 	private func activePublicationText(from link: Kanna.XMLElement) throws -> String {
 		guard let text = link.text?.lowercased() else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 2)
 		}
 		return text
@@ -649,7 +637,6 @@ actor Fetch: ObservableObject {
 			return candidate
 		}
 		if text.contains("projected") {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 3)
 		}
 		return current
@@ -657,15 +644,12 @@ actor Fetch: ObservableObject {
 
 	private func xmlExportURL(from doc: HTMLDocument, relativeTo baseURL: URL) throws -> URL {
 		guard let xmllinkelement = doc.css("a.btn-export-xml").first else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 5)
 		}
 		guard let href = xmllinkelement["href"] else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 4)
 		}
 		guard let xmllink = URL(string: href, relativeTo: baseURL) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 6)
 		}
 		return xmllink
@@ -710,14 +694,12 @@ actor Fetch: ObservableObject {
 	func downloadMembers() async throws {
 		Log.debug("Fetch.downloadMembers()")
 		guard let url = URL(string: membersPath, relativeTo: hosturl) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		Log.debug("got data \(data.count)")
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 7)
 		}
 		Log.debug("Got XML string")
@@ -757,7 +739,6 @@ actor Fetch: ObservableObject {
 	                        let (data, _) = try await NetworkService.shared.data(for: request)
 	                        guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 	                                failedDownloads.insert(identifier)
-	                                // swiftlint:disable:next no_magic_numbers
 	                                throw NSError(domain: "", code: 7)
 	                        }
 	                        let pastMembers = responseBody["pastMembers"] as? [[String: Any]] ?? []
@@ -804,13 +785,11 @@ actor Fetch: ObservableObject {
 	func downloadConstituencies() async throws {
 		Log.debug("Fetch.downloadConstituencies()")
 		guard let url = URL(string: constituenciesPath, relativeTo: hosturl) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 6)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await NetworkService.shared.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
-			// swiftlint:disable:next no_magic_numbers
 			throw NSError(domain: "", code: 7)
 		}
 		let constituencyDTOs = XMLBro.parseConstituencies(utfstringvalue)
@@ -831,7 +810,6 @@ actor Fetch: ObservableObject {
 		let path = String(format: memberPath, first, last, String(member.memberID))
 		guard let url = URL(string: path, relativeTo: hosturl) else { return }
 		let (data, response) = try await NetworkService.shared.data(from: url)
-		// swiftlint:disable:next no_magic_numbers
 		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let xmlString = String(data: data, encoding: .utf8) else { return }
 		let contact = XMLBro.parseMemberContact(xmlString)
@@ -1020,7 +998,6 @@ actor Fetch: ObservableObject {
 
 	private func fetchJSONDictionary(from url: URL) async throws -> [String: Any]? {
 		let (data, response) = try await NetworkService.shared.data(from: url)
-		// swiftlint:disable:next no_magic_numbers
 		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return nil
@@ -1225,7 +1202,6 @@ actor Fetch: ObservableObject {
 		guard !slug.isEmpty else { return false }
 		guard let url = URL(string: "/politicians/\(slug)/?format=json", relativeTo: openParliamentAPIURL) else { return false }
 		guard let (data, response) = try? await NetworkService.shared.data(from: url),
-			  // swiftlint:disable:next no_magic_numbers
 			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return false
@@ -1241,7 +1217,6 @@ actor Fetch: ObservableObject {
 			  let url = components.url else { return nil }
 
 		guard let (data, response) = try? await NetworkService.shared.data(from: url),
-			  // swiftlint:disable:next no_magic_numbers
 			  let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 			  let objects = json["objects"] as? [[String: Any]] else {
@@ -1297,13 +1272,11 @@ actor Fetch: ObservableObject {
 		let safeParliament = max(0, parliament)
 		let safeSession = max(0, session)
 		let safeNumber = max(0, number)
-		// swiftlint:disable:next no_magic_numbers
 		return (safeParliament * 1_000_000) + (safeSession * 10_000) + safeNumber
 	}
 
 	private func parseSessionComponents(from session: String) -> (Int, Int) {
 		let parts = session.split(separator: "-")
-		// swiftlint:disable:next no_magic_numbers
 		guard parts.count >= 2,
 			  let parliament = Int(parts[0]),
 			  let sessionNum = Int(parts[1]) else {
@@ -1323,7 +1296,6 @@ actor Fetch: ObservableObject {
 	private func openParliamentBallotID(from voteURL: String) -> Int? {
 		let trimmed = voteURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 		let segments = trimmed.split(separator: "/")
-		// swiftlint:disable:next no_magic_numbers
 		guard segments.count >= 3,
 			  segments[0] == "votes",
 			  let vote = Int(segments.last ?? ""),

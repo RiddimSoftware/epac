@@ -28,7 +28,6 @@ typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 typealias CabinetPosition = SchemaV8.CabinetPosition
 
 enum SchemaV3: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(3, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		[
@@ -346,7 +345,6 @@ enum SchemaV3: VersionedSchema {
 }
 
 enum SchemaV4: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(4, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		[
@@ -676,7 +674,6 @@ enum SchemaV4: VersionedSchema {
 }
 
 enum SchemaV5: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(5, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		[
@@ -1047,7 +1044,6 @@ enum SchemaV5: VersionedSchema {
 // MARK: - SchemaV6
 
 enum SchemaV6: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(6, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		// All V5 models unchanged + WrittenQuestion
@@ -1069,8 +1065,7 @@ enum SchemaV6: VersionedSchema {
 		var responseTextEn: String?
 		var daysElapsed: Int
 
-		// swiftlint:disable:next no_magic_numbers
-	var isOverdue: Bool { responseTextEn == nil && daysElapsed > 45 }
+		var isOverdue: Bool { responseTextEn == nil && daysElapsed > 45 }
 
 		init(questionID: Int, memberID: Int, parliament: Int, session: Int, number: Int,
 			 dateSubmitted: Date, subject: String, questionTextEn: String,
@@ -1094,7 +1089,6 @@ enum SchemaV6: VersionedSchema {
 // MARK: - SchemaV7
 
 enum SchemaV7: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(7, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		// All V6 models unchanged + FiscalMonitorEntry.
@@ -1159,7 +1153,6 @@ enum SchemaV7: VersionedSchema {
 // MARK: - SchemaV8
 
 enum SchemaV8: VersionedSchema {
-	// swiftlint:disable:next no_magic_numbers
 	static var versionIdentifier: Schema.Version { .init(8, 0, 0) }
 	static var models: [any PersistentModel.Type] {
 		// All V7 models unchanged + CabinetPosition.

@@ -25,7 +25,6 @@ struct GovernmentContract: Identifiable, Codable {
         GovernmentContract.currencyFormatter.string(from: NSNumber(value: originalValue)) ?? "$\(Int(originalValue))"
     }
 
-    // swiftlint:disable:next no_magic_numbers
     var isHighValue: Bool { value >= 1_000_000 }
 
     private static let currencyFormatter: NumberFormatter = {

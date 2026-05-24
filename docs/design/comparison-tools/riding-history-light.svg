@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="420" viewBox="0 0 430 420" role="img" aria-labelledby="title desc">
+  <title id="title">Riding history mini-component, light mode</title>
+  <desc id="desc">A vertical timeline showing current and past MPs for a riding.</desc>
+  <rect width="430" height="420" fill="#f2f2f7"/>
+  <rect x="20" y="28" width="390" height="364" rx="18" fill="#ffffff"/>
+  <text x="44" y="68" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1d1d1f">Riding history</text>
+  <text x="44" y="94" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="14" fill="#6e6e73">Newest term first</text>
+  <line x1="64" y1="132" x2="64" y2="336" stroke="#d1d1d6" stroke-width="2"/>
+
+  <circle cx="64" cy="142" r="10" fill="#0071e3"/>
+  <text x="92" y="146" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="16" font-weight="650" fill="#1d1d1f">Leah Taylor Roy</text>
+  <rect x="276" y="126" width="54" height="24" rx="12" fill="#d71920" opacity="0.13"/>
+  <text x="303" y="143" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="12" font-weight="650" fill="#b3131a">LIB</text>
+  <text x="92" y="172" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">2021 to present - current representative</text>
+
+  <circle cx="64" cy="220" r="8" fill="#8e8e93"/>
+  <text x="92" y="224" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="16" font-weight="650" fill="#1d1d1f">Leona Alleslev</text>
+  <rect x="276" y="204" width="54" height="24" rx="12" fill="#1a4782" opacity="0.13"/>
+  <text x="303" y="221" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="12" font-weight="650" fill="#15396c">CPC</text>
+  <text x="92" y="250" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">2015 to 2021</text>
+
+  <circle cx="64" cy="298" r="8" fill="#8e8e93"/>
+  <text x="92" y="302" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="16" font-weight="650" fill="#1d1d1f">Costas Menegakis</text>
+  <rect x="276" y="282" width="54" height="24" rx="12" fill="#1a4782" opacity="0.13"/>
+  <text x="303" y="299" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="12" font-weight="650" fill="#15396c">CPC</text>
+  <text x="92" y="328" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="13" fill="#6e6e73">2011 to 2015</text>
+
+  <text x="44" y="368" font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif" font-size="12" fill="#6e6e73">Source: House of Commons members data</text>
+</svg>

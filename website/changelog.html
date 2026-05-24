@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — epac</title>
+  <meta name="description" content="Track the latest features and improvements to epac. See our journey in making Canada's Parliament more accessible.">
+  <link rel="canonical" href="https://epac.riddimsoftware.com/changelog.html">
+  <link rel="stylesheet" href="default.css">
+  <style>
+    .page { max-width: 800px; margin: 0 auto; padding: 40px 6%; }
+    .page h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 12px; }
+    .page .lede { font-size: 1.2rem; opacity: 0.7; margin-bottom: 60px; }
+
+    .release { margin-bottom: 80px; position: relative; padding-left: 32px; border-left: 2px solid var(--card-bg, #f2f2f7); }
+    .release:last-child { margin-bottom: 40px; }
+    .release::before { content: ""; position: absolute; left: -9px; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--primary, #007aff); border: 4px solid var(--bg, #fff); }
+
+    .release-header { margin-bottom: 24px; }
+    .release-version { font-family: var(--font-rounded); font-size: 1.8rem; font-weight: 800; margin-right: 12px; }
+    .release-date { font-size: 0.9rem; opacity: 0.5; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .release-notes { list-style: none; }
+    .release-notes li { margin-bottom: 12px; font-size: 1.05rem; line-height: 1.6; display: flex; gap: 12px; }
+    .release-notes li::before { content: "•"; color: var(--primary, #007aff); font-weight: 900; }
+
+    footer { padding: 60px 6%; opacity: 0.4; font-size: 0.9rem; text-align: center; }
+  </style>
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Version 1.9 — Search & Localization Refresh",
+        "url": "https://epac.riddimsoftware.com/changelog.html#v1.9"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Version 1.8 — Live Parliament & Statistics",
+        "url": "https://epac.riddimsoftware.com/changelog.html#v1.8"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Version 1.7 — Lobbying & Accountability",
+        "url": "https://epac.riddimsoftware.com/changelog.html#v1.7"
+      }
+    ]
+  }
+  </script>
+  <script defer src="/open-in-app.js"></script>
+</head>
+<body>
+  <nav style="padding: 24px 6%; max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+    <a href="/" style="font-size: 1.6rem; font-weight: 800; text-decoration: none; color: inherit;">epac</a>
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <a href="/features.html" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">Features</a>
+      <a href="/faq.html" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">FAQ</a>
+      <a href="/blog/" style="opacity: 0.6; text-decoration: none; font-size: 0.9rem;">Blog</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1>Changelog</h1>
+    <p class="lede">Every update brings us closer to a more transparent and engaged democracy. Here is what we've been building.</p>
+
+    <div class="release" id="v1.9">
+      <div class="release-header">
+        <span class="release-version">v1.9</span>
+        <span class="release-date">May 2026</span>
+      </div>
+      <ul class="release-notes">
+        <li><strong>Bilingual Search:</strong> Deep-search Hansard debates in both English and French simultaneously.</li>
+        <li><strong>French Localization:</strong> Full fr-CA support across the entire app, from votes to statistics.</li>
+        <li><strong>App Store Assets:</strong> Refreshed professional screenshots and App Preview video showcasing the latest features.</li>
+        <li><strong>Performance:</strong> Extracted Home feed orchestration into dedicated use cases for 40% faster cold launch.</li>
+      </ul>
+    </div>
+
+    <div class="release" id="v1.8">
+      <div class="release-header">
+        <span class="release-version">v1.8</span>
+        <span class="release-date">April 2026</span>
+      </div>
+      <ul class="release-notes">
+        <li><strong>Live Parliament Card:</strong> Real-time status of the House of Commons on your Home feed.</li>
+        <li><strong>New Statistics:</strong> Added provincial context for CPI, Employment Insurance, and Canada Energy Regulator data.</li>
+        <li><strong>Calendar Export:</strong> Export the House of Commons sitting calendar directly to your iOS Calendar app.</li>
+        <li><strong>On This Day:</strong> Historical Parliament moments surfaced on the Home feed to provide historical context.</li>
+      </ul>
+    </div>
+
+    <div class="release" id="v1.7">
+      <div class="release-header">
+        <span class="release-version">v1.7</span>
+        <span class="release-date">March 2026</span>
+      </div>
+      <ul class="release-notes">
+        <li><strong>Lobbyist Connections:</strong> MP profiles now include communication reports and registrations from the Commissioner of Lobbying.</li>
+        <li><strong>PBO Costing:</strong> Independent Parliamentary Budget Officer analysis now appears on major bill detail pages.</li>
+        <li><strong>My Senators:</strong> Provincial representation from the Senate of Canada is now visible on the Home tab.</li>
+        <li><strong>Apple Watch Complication:</strong> Track whether Parliament is sitting directly from your watch face.</li>
+      </ul>
+    </div>
+
+    <div class="release" id="v1.6">
+      <div class="release-header">
+        <span class="release-version">v1.6</span>
+        <span class="release-date">February 2026</span>
+      </div>
+      <ul class="release-notes">
+        <li><strong>e-Petitions Tracker:</strong> Browse, search, and sign House of Commons e-petitions directly from the app.</li>
+        <li><strong>Bill Stage Timeline:</strong> Refined LEGISinfo integration with vote and debate cross-references for every stage.</li>
+        <li><strong>MP Contact Directory:</strong> Tap-to-call and tap-to-email on all member profiles with pre-filled templates.</li>
+        <li><strong>Home Feed Personalization:</strong> Unified activity feed for your MP, followed bills, and subscribed topics.</li>
+      </ul>
+    </div>
+
+    <div class="release" id="v1.5">
+      <div class="release-header">
+        <span class="release-version">v1.5</span>
+        <span class="release-date">January 2026</span>
+      </div>
+      <ul class="release-notes">
+        <li><strong>Riding Lookup:</strong> Postal code to MP resolution using official Elections Canada boundaries.</li>
+        <li><strong>Voting Records:</strong> Historical Yea/Nay results for every MP, updated within hours of each vote.</li>
+        <li><strong>Topic Following:</strong> Subscribe to specific policy areas like Housing, Environment, or Economy.</li>
+        <li><strong>Push Notifications:</strong> Get alerted when your MP votes or when a followed bill advances.</li>
+      </ul>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>&copy; <a href="https://riddimsoftware.com" style="color: inherit; text-decoration: none;">Riddim Software</a>. Built for Canadians. &middot; <a href="/blog/" style="color: inherit; text-decoration: none;">Blog</a> &middot; <a href="/faq.html" style="color: inherit; text-decoration: none;">FAQ</a> &middot; <a href="/changelog.html" style="color: inherit; text-decoration: none;">Changelog</a> &middot; <a href="/data-sources.html" style="color: inherit; text-decoration: none;">Sources</a> &middot; <a href="/educators.html" style="color: inherit; text-decoration: none;">Educators</a> &middot; <a href="/subscribe.html" style="color: inherit; text-decoration: none;">Newsletter</a> &middot; <a href="/press.html" style="color: inherit; text-decoration: none;">Press</a> &middot; <a href="/privacy.html" style="color: inherit; text-decoration: none;">Privacy</a></p>
+  </footer>
+</body>
+</html>
