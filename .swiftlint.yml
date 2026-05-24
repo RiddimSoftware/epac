@@ -51,7 +51,7 @@ disabled_rules:
 
 cyclomatic_complexity:
   warning: 5
-  error: 50
+  error: 5
 
 opt_in_rules:
   - force_cast                  # Real bug-in-waiting; should be Result-returning APIs instead.
@@ -62,7 +62,7 @@ opt_in_rules:
   - redundant_nil_coalescing    # Catches `?? nil` no-ops.
   - closure_end_indentation     # Auto-fixable; keeps trailing closures aligned.
   # Architectural rules
-  - swiftui_state_private       # @State must be private; leaking view state breaks encapsulation.
+  - private_swiftui_state       # @State must be private; leaking view state breaks encapsulation.
   - implicitly_unwrapped_optional # var x: T! is an init-order hack; use proper DI or lazy var instead.
   - private_over_fileprivate    # fileprivate leaks to the whole file; private is tighter.
   - superfluous_disable_command # Catches stale swiftlint:disable comments after violations are fixed.
