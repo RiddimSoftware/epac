@@ -32,12 +32,14 @@ struct DesignSystemColorTokensPreview: View {
 
     private func colorRow(_ name: String, _ color: Color) -> some View {
         HStack(spacing: EpacSpacing.s) {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: EpacCornerRadius.xs)
                 .fill(color)
-                .frame(width: 32, height: 32)
+                .frame(width: EpacIconSize.l, height: EpacIconSize.l)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.epacText.tertiary.opacity(0.3), lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: EpacCornerRadius.xs)
+                        // Hairline stroke; 0.5 is below the 4-pt base grid and has no named equivalent.
+                        // swiftlint:disable:next no_magic_numbers
+                        .stroke(Color.epacText.tertiary.opacity(EpacOpacity.disabled), lineWidth: 0.5)
                 )
             Text(name)
                 .font(.epacCaption.monospaced())
@@ -63,11 +65,13 @@ struct DesignSystemTypographyPreview: View {
     }
 
     private func row(_ label: String, font: Font) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
             Text("Canada's Parliament")
                 .font(font)
                 .foregroundStyle(Color.epacText.primary)
             Text(label)
+                // Design-system preview annotation only; 9pt has no named slot in EpacFont.
+                // swiftlint:disable:next no_magic_numbers
                 .font(.system(size: 9))
                 .foregroundStyle(Color.epacText.tertiary)
         }

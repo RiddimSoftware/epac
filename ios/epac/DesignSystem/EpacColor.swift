@@ -34,8 +34,8 @@ struct EpacBrandPalette {
     let accent: Color = .accentColor
     let accentMuted: Color = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor.systemBlue.withAlphaComponent(0.2)
-            : UIColor.systemBlue.withAlphaComponent(0.12)
+            ? UIColor.systemBlue.withAlphaComponent(CGFloat(EpacOpacity.tintStrong))
+            : UIColor.systemBlue.withAlphaComponent(CGFloat(EpacOpacity.tint))
     })
     // Civic role colors: used for vote outcomes and MP party indicators.
     let positive: Color = Color(uiColor: .systemGreen)
