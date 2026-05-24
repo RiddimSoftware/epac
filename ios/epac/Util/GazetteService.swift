@@ -59,6 +59,14 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
     private var currentCategory = ""
     private var inItem = false
 
+    private static let itemTextFields: [String: ReferenceWritableKeyPath<GazetteRSSParser, String>] = [
+        "title": \.currentTitle,
+        "link": \.currentLink,
+        "description": \.currentDescription,
+        "pubDate": \.currentPubDate,
+        "category": \.currentCategory
+    ]
+
     private let rfc822Formatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -75,20 +83,14 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
         currentElement = elementName
         if elementName == "item" {
             inItem = true
-            currentTitle = ""; currentLink = ""; currentDescription = ""
-            currentPubDate = ""; currentCategory = ""
+            resetCurrentItem()
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inItem else { return }
-        switch currentElement {
-        case "title":       currentTitle += string
-        case "link":        currentLink += string
-        case "description": currentDescription += string
-        case "pubDate":     currentPubDate += string
-        case "category":    currentCategory += string
-        default: break
+        if let field = Self.itemTextFields[currentElement] {
+            self[keyPath: field] += string
         }
     }
 
@@ -97,9 +99,23 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
         guard elementName == "item", inItem else { return }
         inItem = false
 
+        if let entry = currentEntry() {
+            entries.append(entry)
+        }
+    }
+
+    private func resetCurrentItem() {
+        currentTitle = ""
+        currentLink = ""
+        currentDescription = ""
+        currentPubDate = ""
+        currentCategory = ""
+    }
+
+    private func currentEntry() -> GazetteEntry? {
         let title = currentTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         let linkStr = currentLink.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, let url = URL(string: linkStr) else { return }
+        guard !title.isEmpty, let url = URL(string: linkStr) else { return nil }
 
         let date = rfc822Formatter.date(from: currentPubDate.trimmingCharacters(in: .whitespacesAndNewlines)) ?? .now
         let summary = currentDescription
@@ -108,7 +124,7 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
         let category = currentCategory.trimmingCharacters(in: .whitespacesAndNewlines)
         let id = linkStr
 
-        entries.append(GazetteEntry(
+        return GazetteEntry(
             id: id,
             title: title,
             url: url,
@@ -116,6 +132,6 @@ private final class GazetteRSSParser: NSObject, XMLParserDelegate {
             part: part,
             category: category,
             summary: summary
-        ))
+        )
     }
 }

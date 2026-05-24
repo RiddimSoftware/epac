@@ -114,45 +114,51 @@ struct SenatorsService {
         blockRegex?.enumerateMatches(in: xml, range: range) { match, _, _ in
             guard let match, let r = Range(match.range, in: xml) else { return }
             let block = String(xml[r])
-            guard block.lowercased().contains("senator") else { return }
-
-            func extract(_ tag: String) -> String {
-                guard let re = try? NSRegularExpression(pattern: "<\(tag)>(.*?)</\(tag)>"),
-                      let m = re.firstMatch(
-                          in: block,
-                          range: NSRange(block.startIndex..., in: block)
-                      ),
-                      let r2 = Range(m.range(at: 1), in: block) else { return "" }
-                return String(block[r2])
-            }
-
-            let fn       = extract("PersonOfficialFirstName")
-            let ln       = extract("PersonOfficialLastName")
-            let province = extract("ConstituencyProvinceTerritoryName")
-            let caucus   = extract("CaucusShortName")
-
-            guard !fn.isEmpty, !ln.isEmpty, !province.isEmpty else { return }
-            let abbrev = provinceAbbrev(province)
-            guard !abbrev.isEmpty else { return }
-
-            let id = "\(fn)-\(ln)-\(abbrev)"
-                .lowercased()
-                .replacingOccurrences(of: " ", with: "-")
-            let senateURL = URL(string: "https://sencanada.ca/en/senators/")!
-
-            results.append(Senator(
-                id: id,
-                firstName: fn,
-                lastName: ln,
-                province: abbrev,
-                caucus: caucus,
-                caucusFullName: caucus,
-                senateURL: senateURL,
-                appointedDate: nil
-            ))
+            guard let senator = senator(fromXMLBlock: block) else { return }
+            results.append(senator)
         }
 
         return results.isEmpty ? nil : results
+    }
+
+    private static func senator(fromXMLBlock block: String) -> Senator? {
+        guard block.lowercased().contains("senator") else { return nil }
+
+        let fn = extractXMLValue("PersonOfficialFirstName", from: block)
+        let ln = extractXMLValue("PersonOfficialLastName", from: block)
+        let province = extractXMLValue("ConstituencyProvinceTerritoryName", from: block)
+        let caucus = extractXMLValue("CaucusShortName", from: block)
+
+        guard !fn.isEmpty, !ln.isEmpty, !province.isEmpty else { return nil }
+        let abbrev = provinceAbbrev(province)
+        guard !abbrev.isEmpty else { return nil }
+
+        let id = "\(fn)-\(ln)-\(abbrev)"
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "-")
+        let senateURL = URL(string: "https://sencanada.ca/en/senators/")!
+
+        return Senator(
+            id: id,
+            firstName: fn,
+            lastName: ln,
+            province: abbrev,
+            caucus: caucus,
+            caucusFullName: caucus,
+            senateURL: senateURL,
+            appointedDate: nil
+        )
+    }
+
+    private static func extractXMLValue(_ tag: String, from block: String) -> String {
+        guard let re = try? NSRegularExpression(pattern: "<\(tag)>(.*?)</\(tag)>"),
+              let match = re.firstMatch(
+                  in: block,
+                  range: NSRange(block.startIndex..., in: block)
+              ),
+              let range = Range(match.range(at: 1), in: block) else { return "" }
+
+        return String(block[range])
     }
 
     // MARK: - Province mapping
