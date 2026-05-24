@@ -27,149 +27,189 @@ class XMLBro {
 
 	func parseXML() -> Self {
 		hansardID = xml["Hansard"].element?.attribute(by: "id")?.trimmedText() ?? ""
-		
+
 		let info = xml["Hansard"]["ExtractedInformation"]["ExtractedItem"].all
-		let day = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("MetaDateNumDay") == .orderedSame })?.element?.text ?? "")
-		let month = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("MetaDateNumMonth") == .orderedSame })?.element?.text ?? "")
-		let year = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("MetaDateNumYear") == .orderedSame })?.element?.text ?? "")
-		if let day, let month, let year, let date = Calendar.current.date(from: .init(year: year, month: month, day: day)) {
+		if let date = extractDate(from: info) {
 			self.date = date
 		}
-
-		parliamentNumber = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("ParliamentNumber") == .orderedSame })?.element?.text ?? "") ?? 0
-		sessionNumber = Int(info.first(where: { $0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare("SessionNumber") == .orderedSame })?.element?.text ?? "") ?? 0
-
-		for oob in xml["Hansard"]["HansardBody"]["OrderOfBusiness"].all {
-			guard let catchline = oob["CatchLine"].element?.trimmedText() else {
-				continue
-			}
-			if catchline.lowercased() == "routine proceedings" ||
-					catchline.lowercased() == "adjournment proceedings" {
-				continue
-			}
-			guard let oobID = oob.element?.attribute(by: "id")?.trimmedText() else {
-				continue
-			}
-			var subjects: [SubjectOfBusinessDTO] = []
-			for sob in oob["SubjectOfBusiness"].all {
-				let title = sob["SubjectOfBusinessTitle"].element?.trimmedText()
-				guard let title else {
-					continue
-				}
-				guard let sobID = sob.element?.attribute(by: "id")?.trimmedText() else {
-					continue
-				}
-				let content = sob["SubjectOfBusinessContent"]
-				var speeches: [SpeechDTO] = []
-				for intervention in content["Intervention"].all {
-					var personspeaking: String = ""
-					for affiliation in intervention["PersonSpeaking"]["Affiliation"].all {
-						personspeaking.append(text(fromXMLIndexer: affiliation))
-					}
-					personspeaking = personspeaking.trimmingCharacters(in: .whitespacesAndNewlines)
-
-					guard !personspeaking.isEmpty,
-								let interventionID = intervention.element?.attribute(by: "id")?.trimmedText() else {
-						continue
-					}
-                    
-                    let contentParas = paragraphArray(fromXML: intervention["Content"]["ParaText"])
-                    
-                    let parsed = parseAffiliationString(personspeaking)
-					
-					let cleanNames = parsed.speakerName.split(separator: " ").filter { !["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt", "Right"].contains(String($0)) }
-					
-					let firstName = cleanNames.dropLast().joined(separator: " ")
-					let lastName = cleanNames.last
-					
-					if let lastName {
-						let messages = contentParas.map { p in
-							SpeechMessageDTO(
-								firstName: String(firstName),
-								lastName: String(lastName),
-								partyAbbreviation: parsed.partyAbbreviation,
-								ridingName: parsed.ridingName,
-								hansardID: p.id,
-								content: p.content,
-								timestamp: date
-							)
-						}
-						let speech = SpeechDTO(
-							messages: messages,
-							hansardID: interventionID,
-							currentMessageID: nil,
-							date: date,
-							length: messages.count,
-							title: title
-						)
-						speeches.append(speech)
-					}
-				}
-				if !speeches.isEmpty {
-					subjects.append(
-						SubjectOfBusinessDTO(
-							title: title,
-							hansardID: sobID,
-							speeches: speeches,
-							currentSpeechID: nil
-						)
-					)
-				}
-			}
-			if !subjects.isEmpty {
-				ordersOfBusiness.append(OrderOfBusinessDTO(hansardID: oobID, catchline: catchline, subjects: subjects))
-			}
-		}
+		parliamentNumber = extractParliamentNumber(from: info)
+		sessionNumber = extractSessionNumber(from: info)
+		ordersOfBusiness = xml["Hansard"]["HansardBody"]["OrderOfBusiness"].all.compactMap(parseOrderOfBusiness)
 		return self
 	}
 
-	func parseAffiliationString(_ affiliationString: String) -> (speakerName: String, partyAbbreviation: String, ridingName: String) {
-		let trimmedString = affiliationString.replacingOccurrences(of: "Mme ", with: "Mme. ").trimmingCharacters(in: .whitespacesAndNewlines)
-		var speakerName = ""
-		var partyAbbreviation = ""
-		var ridingName = ""
-
-		if let firstParenIndex = trimmedString.firstIndex(of: "(") {
-			speakerName = String(trimmedString[..<firstParenIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-			
-			let detailsStartIndex = trimmedString.index(after: firstParenIndex)
-			if let lastParenIndex = trimmedString.lastIndex(of: ")") {
-				let detailsSubstring = trimmedString[detailsStartIndex..<lastParenIndex]
-				let details = String(detailsSubstring).trimmingCharacters(in: .whitespacesAndNewlines)
-
-				if let lastCommaIndex = details.lastIndex(of: ",") {
-					partyAbbreviation = String(details[details.index(after: lastCommaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-					if partyAbbreviation.hasSuffix(".") {
-						partyAbbreviation.removeLast()
-					}
-					
-					let potentialRidingAndRole = String(details[..<lastCommaIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-					
-					// Heuristic to extract riding name if present, otherwise assume it's part of the role.
-					// Look for another comma to separate riding from role, or if it's a simple string.
-					if let secondLastCommaIndex = potentialRidingAndRole.lastIndex(of: ",") {
-						// This case might be "Role, Riding"
-						let ridingPart = String(potentialRidingAndRole[potentialRidingAndRole.index(after: secondLastCommaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-						if !ridingPart.isEmpty {
-							ridingName = ridingPart
-						}
-					} else if !potentialRidingAndRole.isEmpty && !potentialRidingAndRole.contains("(") {
-						// If no second comma and no inner parentheses, it might be just the riding name.
-						ridingName = potentialRidingAndRole
-					}
-                    // For now, we are not trying to extract a specific 'role' beyond the speakerName
-				} else {
-					// No comma in details, this could be a simple riding or just a complex role.
-					ridingName = details // Assign the whole detail string as ridingName for now, for simplicity.
-				}
-			}
-		} else {
-			// No parentheses, the whole string is the speaker name.
-			speakerName = trimmedString
+	private func extractDate(from info: [XMLIndexer]) -> Date? {
+		let day = Int(extractedInfoText(named: "MetaDateNumDay", from: info))
+		let month = Int(extractedInfoText(named: "MetaDateNumMonth", from: info))
+		let year = Int(extractedInfoText(named: "MetaDateNumYear", from: info))
+		guard let day, let month, let year else {
+			return nil
 		}
+		return Calendar.current.date(from: .init(year: year, month: month, day: day))
+	}
 
+	private func extractParliamentNumber(from info: [XMLIndexer]) -> Int {
+		Int(extractedInfoText(named: "ParliamentNumber", from: info)) ?? 0
+	}
+
+	private func extractSessionNumber(from info: [XMLIndexer]) -> Int {
+		Int(extractedInfoText(named: "SessionNumber", from: info)) ?? 0
+	}
+
+	private func extractedInfoText(named name: String, from info: [XMLIndexer]) -> String {
+		info.first {
+			$0.element?.attribute(by: "Name")?.trimmedText().caseInsensitiveCompare(name) == .orderedSame
+		}?.element?.text ?? ""
+	}
+
+	private func parseOrderOfBusiness(_ oob: XMLIndexer) -> OrderOfBusinessDTO? {
+		guard
+			let catchline = oob["CatchLine"].element?.trimmedText(),
+			!shouldSkipOrderOfBusiness(catchline),
+			let oobID = oob.element?.attribute(by: "id")?.trimmedText()
+		else {
+			return nil
+		}
+		let subjects = oob["SubjectOfBusiness"].all.compactMap(parseSubjectOfBusiness)
+		guard !subjects.isEmpty else {
+			return nil
+		}
+		return OrderOfBusinessDTO(hansardID: oobID, catchline: catchline, subjects: subjects)
+	}
+
+	private func shouldSkipOrderOfBusiness(_ catchline: String) -> Bool {
+		let normalized = catchline.lowercased()
+		return normalized == "routine proceedings" || normalized == "adjournment proceedings"
+	}
+
+	private func parseSubjectOfBusiness(_ sob: XMLIndexer) -> SubjectOfBusinessDTO? {
+		guard
+			let title = sob["SubjectOfBusinessTitle"].element?.trimmedText(),
+			let sobID = sob.element?.attribute(by: "id")?.trimmedText()
+		else {
+			return nil
+		}
+		let speeches = sob["SubjectOfBusinessContent"]["Intervention"].all.compactMap { intervention in
+			parseSpeech(intervention, title: title)
+		}
+		guard !speeches.isEmpty else {
+			return nil
+		}
+		return SubjectOfBusinessDTO(title: title, hansardID: sobID, speeches: speeches, currentSpeechID: nil)
+	}
+
+	private func parseSpeech(_ intervention: XMLIndexer, title: String) -> SpeechDTO? {
+		let personspeaking = speakerText(from: intervention)
+		guard
+			!personspeaking.isEmpty,
+			let interventionID = intervention.element?.attribute(by: "id")?.trimmedText()
+		else {
+			return nil
+		}
+		let parsed = parseAffiliationString(personspeaking)
+		guard let lastName = parsed.speakerNameParts.lastName else {
+			return nil
+		}
+		let messages = speechMessages(
+			from: intervention["Content"]["ParaText"],
+			firstName: parsed.speakerNameParts.firstName,
+			lastName: String(lastName),
+			partyAbbreviation: parsed.partyAbbreviation,
+			ridingName: parsed.ridingName
+		)
+		return SpeechDTO(
+			messages: messages,
+			hansardID: interventionID,
+			currentMessageID: nil,
+			date: date,
+			length: messages.count,
+			title: title
+		)
+	}
+
+	private func speakerText(from intervention: XMLIndexer) -> String {
+		intervention["PersonSpeaking"]["Affiliation"].all
+			.map(text(fromXMLIndexer:))
+			.joined()
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+	}
+
+	private func speechMessages(
+		from paraText: XMLIndexer,
+		firstName: String,
+		lastName: String,
+		partyAbbreviation: String,
+		ridingName: String
+	) -> [SpeechMessageDTO] {
+		paragraphArray(fromXML: paraText).map { paragraph in
+			SpeechMessageDTO(
+				firstName: firstName,
+				lastName: lastName,
+				partyAbbreviation: partyAbbreviation,
+				ridingName: ridingName,
+				hansardID: paragraph.id,
+				content: paragraph.content,
+				timestamp: date
+			)
+		}
+	}
+
+	private func parseAffiliationString(_ affiliationString: String) -> (speakerNameParts: (firstName: String, lastName: String?), partyAbbreviation: String, ridingName: String) {
+		let trimmedString = affiliationString.replacingOccurrences(of: "Mme ", with: "Mme. ").trimmingCharacters(in: .whitespacesAndNewlines)
+		let details = affiliationDetails(from: trimmedString)
+		return (
+			speakerNameParts: speakerNameParts(from: details.speakerName),
+			partyAbbreviation: details.partyAbbreviation,
+			ridingName: details.ridingName
+		)
+	}
+
+	private func affiliationDetails(from string: String) -> (speakerName: String, partyAbbreviation: String, ridingName: String) {
+		guard let firstParenIndex = string.firstIndex(of: "(") else {
+			return (speakerName: string, partyAbbreviation: "", ridingName: "")
+		}
+		let speakerName = String(string[..<firstParenIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+		guard let details = parenthesizedDetails(in: string, after: firstParenIndex) else {
+			return (speakerName: speakerName, partyAbbreviation: "", ridingName: "")
+		}
+		guard let lastCommaIndex = details.lastIndex(of: ",") else {
+			return (speakerName: speakerName, partyAbbreviation: "", ridingName: details)
+		}
+		let partyAbbreviation = normalizedPartyAbbreviation(in: details, after: lastCommaIndex)
+		let ridingName = ridingName(in: String(details[..<lastCommaIndex]).trimmingCharacters(in: .whitespacesAndNewlines))
 		return (speakerName: speakerName, partyAbbreviation: partyAbbreviation, ridingName: ridingName)
 	}
+
+	private func parenthesizedDetails(in string: String, after firstParenIndex: String.Index) -> String? {
+		guard let lastParenIndex = string.lastIndex(of: ")") else {
+			return nil
+		}
+		let detailsStartIndex = string.index(after: firstParenIndex)
+		return String(string[detailsStartIndex..<lastParenIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+	}
+
+	private func normalizedPartyAbbreviation(in details: String, after commaIndex: String.Index) -> String {
+		var partyAbbreviation = String(details[details.index(after: commaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+		if partyAbbreviation.hasSuffix(".") {
+			partyAbbreviation.removeLast()
+		}
+		return partyAbbreviation
+	}
+
+	private func ridingName(in potentialRidingAndRole: String) -> String {
+		if let secondLastCommaIndex = potentialRidingAndRole.lastIndex(of: ",") {
+			return String(potentialRidingAndRole[potentialRidingAndRole.index(after: secondLastCommaIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+		}
+		return potentialRidingAndRole.contains("(") ? "" : potentialRidingAndRole
+	}
+
+	private func speakerNameParts(from speakerName: String) -> (firstName: String, lastName: String?) {
+		let cleanNames = speakerName.split(separator: " ").filter { !Self.speakerTitleWords.contains(String($0)) }
+		return (firstName: cleanNames.dropLast().joined(separator: " "), lastName: cleanNames.last.map(String.init))
+	}
+
+	private static let defaultParliamentNumberForMemberPhotos = 45
+	private static let speakerTitleWords = ["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt", "Right"]
 
 	struct Paragraph {
 		var content: String
@@ -270,7 +310,7 @@ extension XMLBro {
 
 			let party = Party.partyWithAbbreviation(caucus)
 			let province = Province(rawValue: provinceName) ?? Province(rawValue: provinceName.replacingOccurrences(of: "é", with: "e")) ?? .Ontario
-			let provider = PhotoProvider(parliamentNumber: 45)
+			let provider = PhotoProvider(parliamentNumber: defaultParliamentNumberForMemberPhotos)
 			let mp = ParliamentMemberDTO(
 				name: "\(firstName) \(lastName)",
 				memberID: personID,
