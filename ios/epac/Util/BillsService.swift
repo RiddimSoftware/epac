@@ -20,6 +20,14 @@ struct BillsService {
     }
 
     private static let legisInfoBase = "https://www.parl.ca/legisinfo/en/bill"
+    private static let houseChamberID = 1
+    private static let billTypeMappings: [(needle: String, type: BillType)] = [
+        ("house government", .houseGovernment),
+        ("private member", .privateMember),
+        ("senate government", .senateGovernment),
+        ("senate public", .senatePublic),
+        ("senate private", .senatePrivate)
+    ]
 
     // MARK: - Public
 
@@ -65,85 +73,11 @@ struct BillsService {
     private static func bill(_ raw: LEGISinfoBill, parliament: Int, session: Int) -> Bill? {
         let number = raw.BillNumberFormatted
         guard !number.isEmpty else { return nil }
+        guard let title = billTitle(from: raw) else { return nil }
 
-        let title: String
-        if let short = raw.ShortTitleEn, !short.isEmpty {
-            title = short
-        } else if let long = raw.LongTitleEn, !long.isEmpty {
-            title = long
-        } else {
-            return nil
-        }
-
-        let status: BillStatus
-        let statusLower = (raw.CurrentStatusEn ?? "").lowercased()
-        if raw.ReceivedRoyalAssentDateTime != nil || statusLower.contains("royal assent") {
-            status = .royalAssent
-        } else if statusLower.contains("defeat") {
-            status = .defeated
-        } else {
-            status = .inProgress
-        }
-
-        let billType: BillType
-        let typeLower = (raw.BillTypeEn ?? "").lowercased()
-        if typeLower.contains("house government") {
-            billType = .houseGovernment
-        } else if typeLower.contains("private member") {
-            billType = .privateMember
-        } else if typeLower.contains("senate government") {
-            billType = .senateGovernment
-        } else if typeLower.contains("senate public") {
-            billType = .senatePublic
-        } else if typeLower.contains("senate private") {
-            billType = .senatePrivate
-        } else {
-            billType = .unknown
-        }
-
-        let houseFirst = parseDate(raw.PassedHouseFirstReadingDateTime)
-        let houseSecond = parseDate(raw.PassedHouseSecondReadingDateTime)
-        let houseThird = parseDate(raw.PassedHouseThirdReadingDateTime)
-        let senateFirst = parseDate(raw.PassedSenateFirstReadingDateTime)
-        let senateSecond = parseDate(raw.PassedSenateSecondReadingDateTime)
-        let senateThird = parseDate(raw.PassedSenateThirdReadingDateTime)
-        let royalAssent = parseDate(raw.ReceivedRoyalAssentDateTime)
-
-        let introducedDate: Date?
-        switch (houseFirst, senateFirst) {
-        case let (house?, senate?):
-            introducedDate = house < senate ? house : senate
-        case let (house?, nil):
-            introducedDate = house
-        case let (nil, senate?):
-            introducedDate = senate
-        case (nil, nil):
-            introducedDate = nil
-        }
-
-        let isHouseOriginating = (raw.OriginatingChamberId ?? 1) == 1
-        let stages: [BillStage]
-        if isHouseOriginating {
-            stages = [
-                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst", date: houseFirst),
-                makeStage(id: "\(number)-h2", nameKey: "bills.stage.houseSecond", date: houseSecond),
-                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird", date: houseThird),
-                makeStage(id: "\(number)-s1", nameKey: "bills.stage.senateFirst", date: senateFirst),
-                makeStage(id: "\(number)-s2", nameKey: "bills.stage.senateSecond", date: senateSecond),
-                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird", date: senateThird),
-                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent", date: royalAssent)
-            ]
-        } else {
-            stages = [
-                makeStage(id: "\(number)-s1", nameKey: "bills.stage.senateFirst", date: senateFirst),
-                makeStage(id: "\(number)-s2", nameKey: "bills.stage.senateSecond", date: senateSecond),
-                makeStage(id: "\(number)-s3", nameKey: "bills.stage.senateThird", date: senateThird),
-                makeStage(id: "\(number)-h1", nameKey: "bills.stage.houseFirst", date: houseFirst),
-                makeStage(id: "\(number)-h2", nameKey: "bills.stage.houseSecond", date: houseSecond),
-                makeStage(id: "\(number)-h3", nameKey: "bills.stage.houseThird", date: houseThird),
-                makeStage(id: "\(number)-ra", nameKey: "bills.stage.royalAssent", date: royalAssent)
-            ]
-        }
+        let readingDates = billReadingDates(from: raw)
+        let introducedDate = billIntroducedDate(from: readingDates)
+        let stages = billStages(number: number, raw: raw, dates: readingDates)
 
         let currentStage = raw.LatestCompletedMajorStageEn ?? raw.CurrentStatusEn ?? ""
         let billSlug = "\(parliament)-\(session)/\(number.lowercased())"
@@ -155,15 +89,71 @@ struct BillsService {
             number: number,
             title: title,
             sponsorName: raw.SponsorEn ?? "",
-            status: status,
+            status: billStatus(from: raw),
             currentStage: currentStage,
             introducedDate: introducedDate,
             stages: stages,
             legisInfoURL: legisURL,
-            billType: billType,
+            billType: billType(from: raw),
             parliament: parliament,
             session: session
         )
+    }
+
+    private static func billTitle(from raw: LEGISinfoBill) -> String? {
+        if let short = raw.ShortTitleEn, !short.isEmpty {
+            return short
+        }
+        if let long = raw.LongTitleEn, !long.isEmpty {
+            return long
+        }
+        return nil
+    }
+
+    private static func billStatus(from raw: LEGISinfoBill) -> BillStatus {
+        let statusLower = (raw.CurrentStatusEn ?? "").lowercased()
+        if raw.ReceivedRoyalAssentDateTime != nil || statusLower.contains("royal assent") {
+            return .royalAssent
+        }
+        if statusLower.contains("defeat") {
+            return .defeated
+        }
+        return .inProgress
+    }
+
+    private static func billType(from raw: LEGISinfoBill) -> BillType {
+        let typeLower = (raw.BillTypeEn ?? "").lowercased()
+        return billTypeMappings.first { typeLower.contains($0.needle) }?.type ?? .unknown
+    }
+
+    private static func billReadingDates(from raw: LEGISinfoBill) -> BillReadingDates {
+        BillReadingDates(
+            houseFirst: parseDate(raw.PassedHouseFirstReadingDateTime),
+            houseSecond: parseDate(raw.PassedHouseSecondReadingDateTime),
+            houseThird: parseDate(raw.PassedHouseThirdReadingDateTime),
+            senateFirst: parseDate(raw.PassedSenateFirstReadingDateTime),
+            senateSecond: parseDate(raw.PassedSenateSecondReadingDateTime),
+            senateThird: parseDate(raw.PassedSenateThirdReadingDateTime),
+            royalAssent: parseDate(raw.ReceivedRoyalAssentDateTime)
+        )
+    }
+
+    private static func billIntroducedDate(from dates: BillReadingDates) -> Date? {
+        [dates.houseFirst, dates.senateFirst].compactMap { $0 }.min()
+    }
+
+    private static func billStages(number: String, raw: LEGISinfoBill, dates: BillReadingDates) -> [BillStage] {
+        let isHouseOriginating = (raw.OriginatingChamberId ?? houseChamberID) == houseChamberID
+        return billStageSpecs(isHouseOriginating: isHouseOriginating).map { spec in
+            makeStage(id: "\(number)-\(spec.suffix)", nameKey: spec.nameKey, date: spec.date(in: dates))
+        }
+    }
+
+    private static func billStageSpecs(isHouseOriginating: Bool) -> [BillStageSpec] {
+        if isHouseOriginating {
+            return houseStageSpecs + senateStageSpecs + royalAssentStageSpecs
+        }
+        return senateStageSpecs + houseStageSpecs + royalAssentStageSpecs
     }
 
     private static func makeStage(id: String, nameKey: String, date: Date?) -> BillStage {
@@ -173,6 +163,42 @@ struct BillsService {
             completedDate: date,
             isCompleted: date != nil
         )
+    }
+
+    private static let houseStageSpecs: [BillStageSpec] = [
+        BillStageSpec(suffix: "h1", nameKey: "bills.stage.houseFirst", date: \.houseFirst),
+        BillStageSpec(suffix: "h2", nameKey: "bills.stage.houseSecond", date: \.houseSecond),
+        BillStageSpec(suffix: "h3", nameKey: "bills.stage.houseThird", date: \.houseThird)
+    ]
+
+    private static let senateStageSpecs: [BillStageSpec] = [
+        BillStageSpec(suffix: "s1", nameKey: "bills.stage.senateFirst", date: \.senateFirst),
+        BillStageSpec(suffix: "s2", nameKey: "bills.stage.senateSecond", date: \.senateSecond),
+        BillStageSpec(suffix: "s3", nameKey: "bills.stage.senateThird", date: \.senateThird)
+    ]
+
+    private static let royalAssentStageSpecs: [BillStageSpec] = [
+        BillStageSpec(suffix: "ra", nameKey: "bills.stage.royalAssent", date: \.royalAssent)
+    ]
+}
+
+private struct BillReadingDates {
+    let houseFirst: Date?
+    let houseSecond: Date?
+    let houseThird: Date?
+    let senateFirst: Date?
+    let senateSecond: Date?
+    let senateThird: Date?
+    let royalAssent: Date?
+}
+
+private struct BillStageSpec {
+    let suffix: String
+    let nameKey: String
+    let date: KeyPath<BillReadingDates, Date?>
+
+    func date(in dates: BillReadingDates) -> Date? {
+        dates[keyPath: date]
     }
 }
 
