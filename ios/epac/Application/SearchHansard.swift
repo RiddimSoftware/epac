@@ -24,13 +24,14 @@ struct SearchHansard: SearchHansardUseCase {
     }
 
     private static let maxResults = 50
+    private static let minimumQueryLength = 2
 
     let store: any HansardSearchStore
 
     @MainActor
     func execute(query: String) -> [Match] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmedQuery.count >= 2,
+        guard trimmedQuery.count >= Self.minimumQueryLength,
               let documents = try? store.loadDocuments() else {
             return []
         }

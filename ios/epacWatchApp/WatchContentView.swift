@@ -7,16 +7,18 @@ import SwiftUI
 
 struct WatchContentView: View {
 	private let snapshot = WatchParliamentSnapshot.read()
+	private let contentSpacing: CGFloat = 8
+	private let lastVoteLineLimit: Int = 3
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: contentSpacing) {
 			Label(snapshot.statusText, systemImage: "building.columns.fill")
 				.font(.headline)
 			if let lastVoteLine = snapshot.lastVoteLine {
 				Text(lastVoteLine)
 					.font(.caption)
 					.foregroundStyle(.secondary)
-					.lineLimit(3)
+					.lineLimit(lastVoteLineLimit)
 			} else {
 				Text(snapshot.nextSittingText)
 					.font(.caption)
