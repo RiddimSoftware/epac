@@ -88,8 +88,38 @@ jobs:
           before-ref: ${{ inputs.before_sha }}
           after-ref: ${{ inputs.after_sha }}
           output-dir: ${{ steps.outdir.outputs.path }}
-          comment-on-pr: ${{ inputs.pr_number != '' }}
+          # comment-on-pr inside the action only fires on pull_request events.
+          # We post the comment ourselves below so workflow_dispatch runs also
+          # land a comment on the targeted PR.
+          comment-on-pr: 'false'
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post evidence summary to PR
+        if: always() && inputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPORT_PATH: ${{ steps.outdir.outputs.path }}/report.md
+          OUTPUT_DIR: ${{ steps.outdir.outputs.path }}
+        run: |
+          set -euo pipefail
+          BODY_FILE=$(mktemp)
+          {
+            echo "## Evidence regression run"
+            echo
+            echo "- **Workflow run:** $RUN_URL"
+            echo "- **Output bundle:** \`$OUTPUT_DIR\` (also attached as a workflow artifact)"
+            echo
+            if [[ -f "$REPORT_PATH" ]]; then
+              echo "### Report"
+              echo
+              cat "$REPORT_PATH"
+            else
+              echo "_No \`report.md\` was produced — check the workflow logs for failure details._"
+            fi
+          } > "$BODY_FILE"
+          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file "$BODY_FILE"
 
       - name: Upload evidence bundle artifact
         if: always()
