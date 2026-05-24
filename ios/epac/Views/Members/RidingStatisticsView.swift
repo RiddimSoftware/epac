@@ -18,6 +18,31 @@ struct RidingStatisticsView: View {
 	let member: ParliamentMember
 	@Environment(\.openURL) private var openURL
 
+	private enum Layout {
+		static let rowSpacing: CGFloat = 12
+		static let inlineRowSpacing: CGFloat = 8
+		static let iconColumnWidth: CGFloat = 28
+		static let textSpacing: CGFloat = 2
+		static let compactTextSpacing: CGFloat = 3
+		static let groupSpacing: CGFloat = 6
+		static let compactVerticalPadding: CGFloat = 4
+		static let rowVerticalPadding: CGFloat = 2
+		static let cpiTrendMonthCount = 12
+		static let chartRuleLineWidth: CGFloat = 1
+		static let chartRuleDashLongSegment: CGFloat = 4
+		static let chartRuleDashShortSegment: CGFloat = 3
+		static var chartRuleDashPattern: [CGFloat] {
+			[chartRuleDashLongSegment, chartRuleDashShortSegment]
+		}
+		static let cpiChartHeight: CGFloat = 140
+		static let standardChartHeight: CGFloat = 120
+		static let ociHighlightLimit = 2
+		static let topMineralsLimit = 3
+		static let thousandsMultiplier = 1_000.0
+		static let million = 1_000_000.0
+		static let billion = 1_000_000_000.0
+	}
+
 	private static let statcanBaseURL = "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof"
 	private static let cmhcBaseURL    = "https://www.cmhc-schl.gc.ca"
 	// IRCC canonical pages (verified 2026-04-28). The previous Levels-Plan and
@@ -65,10 +90,10 @@ struct RidingStatisticsView: View {
 					Button {
 						openURL(statCanURL(topic: cat.label))
 					} label: {
-						HStack(spacing: 12) {
+						HStack(spacing: Layout.rowSpacing) {
 							Image(systemName: cat.icon)
 								.foregroundStyle(cat.color)
-								.frame(width: 28)
+								.frame(width: Layout.iconColumnWidth)
 								.accessibilityHidden(true)
 							Text(cat.label)
 								.font(.subheadline)
@@ -84,12 +109,12 @@ struct RidingStatisticsView: View {
 
 			Section {
 				NavigationLink(destination: NHSTrackerView()) {
-					HStack(spacing: 12) {
+					HStack(spacing: Layout.rowSpacing) {
 						Image(systemName: "house.lodge.fill")
 							.foregroundStyle(.orange)
-							.frame(width: 28)
+							.frame(width: Layout.iconColumnWidth)
 							.accessibilityHidden(true)
-						VStack(alignment: .leading, spacing: 2) {
+						VStack(alignment: .leading, spacing: Layout.textSpacing) {
 							Text("NHS Housing Tracker")
 								.font(.subheadline)
 								.foregroundStyle(.primary)
@@ -126,14 +151,14 @@ struct RidingStatisticsView: View {
 			veteransAffairsSection
 
 			Section {
-				VStack(alignment: .leading, spacing: 6) {
+				VStack(alignment: .leading, spacing: Layout.groupSpacing) {
 					Text("About this data")
 						.font(.caption.bold())
 					Text("Statistics Canada releases riding-level census profiles after each census (most recent: 2021). Data covers population, age, household income, housing costs, education, and immigration. CMHC publishes housing market data by metropolitan area.")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
-				.padding(.vertical, 4)
+				.padding(.vertical, Layout.compactVerticalPadding)
 			}
 		}
 		.listStyle(.insetGrouped)
@@ -144,12 +169,12 @@ struct RidingStatisticsView: View {
 	// MARK: - Sub-views
 
 	private var ridingContextCard: some View {
-		HStack(spacing: 12) {
+		HStack(spacing: Layout.rowSpacing) {
 			Circle()
 				.fill(Color.party(member.party))
-				.frame(width: 12, height: 12)
+				.frame(width: Layout.rowSpacing, height: Layout.rowSpacing)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: Layout.compactTextSpacing) {
 				Text(member.riding)
 					.font(.headline)
 				Text("\(member.province.rawValue) · \(member.party.fullName)")
@@ -157,19 +182,19 @@ struct RidingStatisticsView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, Layout.compactVerticalPadding)
 	}
 
 	private var statCanSearchRow: some View {
 		Button {
 			openURL(statCanSearchURL())
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "magnifyingglass.circle.fill")
 					.foregroundStyle(.blue)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Find \(member.riding) on Statistics Canada")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -254,7 +279,7 @@ struct RidingStatisticsView: View {
 
 	private func cpiTrendChart(_ cpi: ConsumerPriceIndexStatistic) -> some View {
 		Chart {
-			ForEach(Array(cpi.months.suffix(12))) { month in
+			ForEach(Array(cpi.months.suffix(Layout.cpiTrendMonthCount))) { month in
 				if let date = ConsumerPriceIndexStatisticsDatabase.date(for: month.refDate) {
 					LineMark(
 						x: .value("Month", date),
@@ -270,9 +295,9 @@ struct RidingStatisticsView: View {
 			}
 			RuleMark(y: .value("National", cpi.nationalAllItemsYearOverYearPercent))
 				.foregroundStyle(.secondary)
-				.lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+				.lineStyle(StrokeStyle(lineWidth: Layout.chartRuleLineWidth, dash: Layout.chartRuleDashPattern))
 		}
-		.frame(height: 140)
+		.frame(height: Layout.cpiChartHeight)
 		.chartYAxis {
 			AxisMarks(position: .leading) { value in
 				AxisGridLine()
@@ -358,7 +383,7 @@ struct RidingStatisticsView: View {
 				.foregroundStyle(.purple)
 			}
 		}
-		.frame(height: 120)
+		.frame(height: Layout.standardChartHeight)
 		.chartYAxis {
 			AxisMarks(position: .leading) { value in
 				AxisGridLine()
@@ -399,8 +424,8 @@ struct RidingStatisticsView: View {
 						.monospacedDigit()
 				}
 				correctionsCostChart(snapshot)
-				ForEach(snapshot.ociHighlights.prefix(2)) { highlight in
-					VStack(alignment: .leading, spacing: 3) {
+				ForEach(snapshot.ociHighlights.prefix(Layout.ociHighlightLimit)) { highlight in
+					VStack(alignment: .leading, spacing: Layout.compactTextSpacing) {
 						Text(highlight.title)
 							.font(.caption.bold())
 						Text(highlight.summary)
@@ -438,7 +463,7 @@ struct RidingStatisticsView: View {
 				.foregroundStyle(.red)
 			}
 		}
-		.frame(height: 120)
+		.frame(height: Layout.standardChartHeight)
 		.chartYAxis {
 			AxisMarks(position: .leading) { value in
 				AxisGridLine()
@@ -457,12 +482,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(cmhcURL())
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "building.2.fill")
 					.foregroundStyle(.orange)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("CMHC Housing Data")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -482,12 +507,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.nhsStrategyOverviewURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "house.lodge.fill")
 					.foregroundStyle(.orange)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("National Housing Strategy")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -507,12 +532,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.nhsLatestProgressReportURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "chart.bar.doc.horizontal.fill")
 					.foregroundStyle(.orange)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("NHS Progress Report")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -548,12 +573,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.irccLevelsPlanURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "target")
 					.foregroundStyle(.indigo)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Immigration Levels Plan")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -573,12 +598,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.irccAdmissionsDatasetURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "airplane.arrival")
 					.foregroundStyle(.indigo)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Permanent Residents — Admissions")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -598,12 +623,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.irccAnnualReportURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "doc.text.fill")
 					.foregroundStyle(.indigo)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Annual Report to Parliament")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -644,12 +669,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.ecccNIROverviewURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "leaf.fill")
 					.foregroundStyle(.green)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("National Inventory Report")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -669,12 +694,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.ecccNIRDatasetURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "tablecells")
 					.foregroundStyle(.green)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("NIR Dataset (Open Data)")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -694,12 +719,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.ecccProvincialURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "chart.bar.xaxis")
 					.foregroundStyle(.green)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Provincial Emissions Indicator")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -729,11 +754,11 @@ struct RidingStatisticsView: View {
 						}
 					}
 					if !resources.topMinerals.isEmpty {
-						VStack(alignment: .leading, spacing: 6) {
+						VStack(alignment: .leading, spacing: Layout.groupSpacing) {
 							Text("Top visible minerals")
 								.font(.caption.bold())
-							ForEach(Array(resources.topMinerals.prefix(3))) { mineral in
-								HStack(alignment: .firstTextBaseline, spacing: 8) {
+							ForEach(Array(resources.topMinerals.prefix(Layout.topMineralsLimit))) { mineral in
+								HStack(alignment: .firstTextBaseline, spacing: Layout.inlineRowSpacing) {
 									Text(mineral.commodity)
 										.font(.caption)
 									Spacer()
@@ -801,12 +826,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.infrastructureProjectMapURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "map.fill")
 					.foregroundStyle(.brown)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Project Map")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -826,12 +851,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.infrastructureDatasetURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "tablecells.fill")
 					.foregroundStyle(.brown)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Investing in Canada Plan — Open Data")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -851,12 +876,12 @@ struct RidingStatisticsView: View {
 		Button {
 			openURL(Self.infrastructurePortfolioURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: Layout.rowSpacing) {
 				Image(systemName: "building.columns.fill")
 					.foregroundStyle(.brown)
-					.frame(width: 28)
+					.frame(width: Layout.iconColumnWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: Layout.textSpacing) {
 					Text("Federal Programs")
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -916,14 +941,14 @@ struct RidingStatisticsView: View {
 					HStack {
 						Text(wt.procedure).font(.subheadline)
 						Spacer()
-						VStack(alignment: .trailing, spacing: 2) {
+						VStack(alignment: .trailing, spacing: Layout.textSpacing) {
 							Text("\(Int(wt.medianWeeks))w median")
 								.font(.caption.monospacedDigit())
 							Text("\(Int(wt.p90Weeks))w (90th)")
 								.font(.caption2).foregroundStyle(.secondary)
 						}
 					}
-					.padding(.vertical, 2)
+					.padding(.vertical, Layout.rowVerticalPadding)
 				}
 				Link(NSLocalizedString("cihi.viewSource", comment: ""), destination: CIHIWaitTimeDatabase.sourceURL)
 					.font(.caption2)
@@ -1070,31 +1095,31 @@ struct RidingStatisticsView: View {
 		guard let value = statistic.shipmentValueThousands else {
 			return statistic.isConfidential ? "Confidential" : "Not reported"
 		}
-		return compactDollars(Double(value) * 1_000)
+		return compactDollars(Double(value) * Layout.thousandsMultiplier)
 	}
 
 	private func mineralValueLabel(_ mineral: MineralCommodityValue) -> String {
 		guard let value = mineral.shipmentValueThousands else {
 			return mineral.isConfidential ? "confidential" : "not reported"
 		}
-		return compactDollars(Double(value) * 1_000)
+		return compactDollars(Double(value) * Layout.thousandsMultiplier)
 	}
 
 	private func volumeLabel(_ cubicMetres: Int) -> String {
 		let value = Double(cubicMetres)
-		if value >= 1_000_000 {
-			return "\(formattedDecimal(value / 1_000_000))M m³"
+		if value >= Layout.million {
+			return "\(formattedDecimal(value / Layout.million))M m³"
 		}
 		return "\(cubicMetres.formatted()) m³"
 	}
 
 	private func compactDollars(_ dollars: Double) -> String {
 		let absValue = abs(dollars)
-		if absValue >= 1_000_000_000 {
-			return "$\(formattedDecimal(dollars / 1_000_000_000))B"
+		if absValue >= Layout.billion {
+			return "$\(formattedDecimal(dollars / Layout.billion))B"
 		}
-		if absValue >= 1_000_000 {
-			return "$\(formattedDecimal(dollars / 1_000_000))M"
+		if absValue >= Layout.million {
+			return "$\(formattedDecimal(dollars / Layout.million))M"
 		}
 		return dollars.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
 	}
