@@ -97,6 +97,13 @@ struct ContentView: View {
 			}
 		}
 		.task {
+			// Seed the in-memory SwiftData store with a real Hansard XML when
+			// EPAC_EVIDENCE_MODE=1 is set, so Parliament-tab regression captures
+			// land on populated state instead of empty placeholders. See
+			// EvidenceFixtureSeed for the fixture selection logic.
+			await EvidenceFixtureSeed.seedIfNeeded(via: fetch)
+		}
+		.task {
 			guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
 			registerMacCommands()
 			// Wire the router to the AppDelegate so Home Screen Quick Actions
