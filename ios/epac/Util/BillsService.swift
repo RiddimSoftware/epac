@@ -12,6 +12,17 @@
 import Foundation
 
 struct BillsService {
+    private enum Constants {
+        static let currentParliament = 45
+        static let currentSession = 1
+        static let requestTimeout: TimeInterval = 20
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     // The LEGISinfo JSON endpoint requires no auth and returns public data.
     // URL template: /legisinfo/en/bills/json?parlsession=<parliament>-<session>
@@ -34,18 +45,18 @@ struct BillsService {
     /// Fetches all bills for the given Parliament and session.
     /// Defaults to Parliament 45, session 1 (current as of the app's inception date).
     static func fetchBills(
-        parliament: Int = 45,
-        session: Int = 1,
+        parliament: Int = Constants.currentParliament,
+        session: Int = Constants.currentSession,
         network: NetworkService = .shared
     ) async throws -> [Bill] {
         guard let url = billsURL(parliament: parliament, session: session) else {
             throw URLError(.badURL)
         }
-        var request = URLRequest(url: url, timeoutInterval: 20)
+        var request = URLRequest(url: url, timeoutInterval: Constants.requestTimeout)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         let (data, response) = try await network.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, Constants.successStatusCodes.contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
 

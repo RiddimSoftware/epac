@@ -6,13 +6,24 @@
 import Foundation
 import Kanna
 
+private enum FiscalMonitorConstants {
+	static let fiscalYearStartMonth = 4
+	static let fiscalMonthWrapOffset = 8
+	static let regexMonthCaptureGroup = 2
+	static let minimumCurrentMonthValueCount = 2
+	static let currentMonthValueIndex = 1
+	static let minimumYearToDateValueCount = 4
+	static let yearToDateValueIndex = 3
+	static let periodDay = 1
+}
+
 struct FiscalMonitorIssue: Sendable, Hashable {
 	let year: Int
 	let month: Int
 	let url: URL
 
 	var fiscalYearStart: Int {
-		month >= 4 ? year : year - 1
+		month >= FiscalMonitorConstants.fiscalYearStartMonth ? year : year - 1
 	}
 }
 
@@ -110,7 +121,7 @@ struct FiscalMonitorService {
 			guard let href = link["href"],
 				  let match = regex.firstMatch(in: href, range: NSRange(href.startIndex..., in: href)),
 				  let yearRange = Range(match.range(at: 1), in: href),
-				  let monthRange = Range(match.range(at: 2), in: href),
+				  let monthRange = Range(match.range(at: FiscalMonitorConstants.regexMonthCaptureGroup), in: href),
 				  let year = Int(href[yearRange]),
 				  let month = Int(href[monthRange]),
 				  let url = URL(string: href, relativeTo: baseURL)?.absoluteURL else {
@@ -131,7 +142,7 @@ struct FiscalMonitorService {
 		for publication in publications.data where publication.publicationType == "Fiscal Monitor" {
 			guard let match = regex.firstMatch(in: publication.link, range: NSRange(publication.link.startIndex..., in: publication.link)),
 				  let yearRange = Range(match.range(at: 1), in: publication.link),
-				  let monthRange = Range(match.range(at: 2), in: publication.link),
+				  let monthRange = Range(match.range(at: FiscalMonitorConstants.regexMonthCaptureGroup), in: publication.link),
 				  let year = Int(publication.link[yearRange]),
 				  let month = Int(publication.link[monthRange]),
 				  let url = URL(string: publication.link, relativeTo: baseURL)?.absoluteURL else {
@@ -240,10 +251,11 @@ struct FiscalMonitorService {
 		url: URL,
 		matching predicate: (String) -> Bool
 	) throws -> Double {
-		guard let numbers = values.first(where: { predicate($0.key) })?.value, numbers.count >= 2 else {
+		guard let numbers = values.first(where: { predicate($0.key) })?.value,
+			  numbers.count >= FiscalMonitorConstants.minimumCurrentMonthValueCount else {
 			throw FiscalMonitorServiceError.valueMissing(row, url)
 		}
-		return numbers[1]
+		return numbers[FiscalMonitorConstants.currentMonthValueIndex]
 	}
 
 	private static func yearToDateValue(
@@ -252,10 +264,11 @@ struct FiscalMonitorService {
 		url: URL,
 		matching predicate: (String) -> Bool
 	) throws -> Double {
-		guard let numbers = values.first(where: { predicate($0.key) })?.value, numbers.count >= 4 else {
+		guard let numbers = values.first(where: { predicate($0.key) })?.value,
+			  numbers.count >= FiscalMonitorConstants.minimumYearToDateValueCount else {
 			throw FiscalMonitorServiceError.valueMissing("\(row) year-to-date", url)
 		}
-		return numbers[3]
+		return numbers[FiscalMonitorConstants.yearToDateValueIndex]
 	}
 
 	private static func parseAnnualProjection(_ doc: HTMLDocument) -> Double? {
@@ -263,7 +276,9 @@ struct FiscalMonitorService {
 			let key = normalized(row.at_css("th")?.text)
 			guard key.contains("Actual/projected annual budgetary balance") else { continue }
 			let numbers = row.css("td").compactMap { parseAmount($0.text) }
-			return numbers.count >= 2 ? numbers[1] : numbers.last
+			return numbers.count >= FiscalMonitorConstants.minimumCurrentMonthValueCount
+				? numbers[FiscalMonitorConstants.currentMonthValueIndex]
+				: numbers.last
 		}
 		return nil
 	}
@@ -274,7 +289,7 @@ struct FiscalMonitorService {
 		let regex = try NSRegularExpression(pattern: pattern)
 		guard let match = regex.firstMatch(in: path, range: NSRange(path.startIndex..., in: path)),
 			  let yearRange = Range(match.range(at: 1), in: path),
-			  let monthRange = Range(match.range(at: 2), in: path),
+			  let monthRange = Range(match.range(at: FiscalMonitorConstants.regexMonthCaptureGroup), in: path),
 			  let year = Int(path[yearRange]),
 			  let month = Int(path[monthRange]) else {
 			throw FiscalMonitorServiceError.invalidPeriod(url)
@@ -283,7 +298,9 @@ struct FiscalMonitorService {
 	}
 
 	private static func periodDate(year: Int, month: Int) -> Date {
-		Calendar(identifier: .gregorian).date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+		Calendar(identifier: .gregorian).date(
+			from: DateComponents(year: year, month: month, day: FiscalMonitorConstants.periodDay)
+		) ?? Date()
 	}
 
 	private static func parseMetadataDate(_ raw: String?) -> Date? {
@@ -320,11 +337,15 @@ struct FiscalMonitorService {
 	}
 
 	private func fiscalMonthOrder(_ month: Int) -> Int {
-		month >= 4 ? month - 4 : month + 8
+		month >= FiscalMonitorConstants.fiscalYearStartMonth
+			? month - FiscalMonitorConstants.fiscalYearStartMonth
+			: month + FiscalMonitorConstants.fiscalMonthWrapOffset
 	}
 
 	private static func fiscalMonthOrder(_ month: Int) -> Int {
-		month >= 4 ? month - 4 : month + 8
+		month >= FiscalMonitorConstants.fiscalYearStartMonth
+			? month - FiscalMonitorConstants.fiscalYearStartMonth
+			: month + FiscalMonitorConstants.fiscalMonthWrapOffset
 	}
 }
 

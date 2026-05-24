@@ -10,22 +10,40 @@ import Foundation
 import SwiftUI
 import UIKit
 
+private enum AppearanceConstants {
+	static let navigationTitleFontSize: CGFloat = 17
+	static let messageFontSize: CGFloat = 17
+	static let cellTitleFontSize: CGFloat = 16
+	static let cellSubtitleFontSize: CGFloat = 12
+	static let messageSpeakerNameFontSize: CGFloat = 14
+	static let messageRidingNameFontSize: CGFloat = 14
+	static let rgbMinimumComponent = 0
+	static let rgbMaximumComponent = 255
+	static let rgbDivisor: CGFloat = 255
+	static let rgbAlpha: CGFloat = 1
+	static let redComponentShift = 16
+	static let greenComponentShift = 8
+	static let rgbComponentMask = 0xFF
+}
+
 class Appearance {
 	@MainActor
 	class func setup() {
-		UINavigationBar.appearance().titleTextAttributes = [.font: UIFont(name: "CooperHewitt-Semibold", size: 17)!]
+		UINavigationBar.appearance().titleTextAttributes = [
+			.font: UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.navigationTitleFontSize)!
+		]
 		UINavigationBar.appearance().tintColor = UIColor.black
 	}
 }
 
 extension Font {
-	static let messageFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 17)!
-	static let cellTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: 16)!
-	static let cellSubtitleFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 12)!
-	static let cellBoldSubTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: 12)!
-	static let messageSpeakerNameFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: 14)!
-	static let messageRidingNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 14)!
-	static let messagePartyNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: 12)!
+	static let messageFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.messageFontSize)!
+	static let cellTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.cellTitleFontSize)!
+	static let cellSubtitleFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.cellSubtitleFontSize)!
+	static let cellBoldSubTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.cellSubtitleFontSize)!
+	static let messageSpeakerNameFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.messageSpeakerNameFontSize)!
+	static let messageRidingNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.messageRidingNameFontSize)!
+	static let messagePartyNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.cellSubtitleFontSize)!
 }
 
 extension View {
@@ -49,18 +67,23 @@ extension View {
 
 extension UIColor {
 	convenience init(red: Int, green: Int, blue: Int) {
-		assert(red >= 0 && red <= 255, "Invalid red component")
-		assert(green >= 0 && green <= 255, "Invalid green component")
-		assert(blue >= 0 && blue <= 255, "Invalid blue component")
+		assert(red >= AppearanceConstants.rgbMinimumComponent && red <= AppearanceConstants.rgbMaximumComponent, "Invalid red component")
+		assert(green >= AppearanceConstants.rgbMinimumComponent && green <= AppearanceConstants.rgbMaximumComponent, "Invalid green component")
+		assert(blue >= AppearanceConstants.rgbMinimumComponent && blue <= AppearanceConstants.rgbMaximumComponent, "Invalid blue component")
 
-		self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: 1.0)
+		self.init(
+			red: CGFloat(red) / AppearanceConstants.rgbDivisor,
+			green: CGFloat(green) / AppearanceConstants.rgbDivisor,
+			blue: CGFloat(blue) / AppearanceConstants.rgbDivisor,
+			alpha: AppearanceConstants.rgbAlpha
+		)
 	}
 
 	convenience init(rgb: Int) {
 		self.init(
-			red: (rgb >> 16) & 0xFF,
-			green: (rgb >> 8) & 0xFF,
-			blue: rgb & 0xFF
+			red: (rgb >> AppearanceConstants.redComponentShift) & AppearanceConstants.rgbComponentMask,
+			green: (rgb >> AppearanceConstants.greenComponentShift) & AppearanceConstants.rgbComponentMask,
+			blue: rgb & AppearanceConstants.rgbComponentMask
 		)
 	}
 }

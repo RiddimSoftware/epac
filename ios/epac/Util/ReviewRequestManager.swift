@@ -16,6 +16,10 @@ import UIKit
 final class ReviewRequestManager {
     @MainActor static let shared = ReviewRequestManager()
 
+    private enum Constants {
+        static let secondsPerDay = 86_400
+    }
+
     private enum TriggerSource: String {
         case debateThreadsInSession = "debate_threads_in_session"
         case followedMPProfileRepeatView = "followed_mp_profile_repeat_view"
@@ -109,7 +113,7 @@ final class ReviewRequestManager {
 
     private func meetsGateCriteria() -> Bool {
         guard let installDate = defaults.object(forKey: installDateKey) as? Date,
-              now().timeIntervalSince(installDate) >= Double(minDaysInstalled * 86_400) else {
+              now().timeIntervalSince(installDate) >= Double(minDaysInstalled * Constants.secondsPerDay) else {
             return false
         }
 
@@ -118,7 +122,7 @@ final class ReviewRequestManager {
         }
 
         if let lastPrompt = defaults.object(forKey: lastPromptKey) as? Date,
-           now().timeIntervalSince(lastPrompt) < Double(minDaysSincePrompt * 86_400) {
+           now().timeIntervalSince(lastPrompt) < Double(minDaysSincePrompt * Constants.secondsPerDay) {
             return false
         }
 

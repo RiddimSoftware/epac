@@ -13,6 +13,9 @@ final class BackgroundRefreshManager {
     static let shared = BackgroundRefreshManager()
 
     static let taskIdentifier = "net.dinglebox.cabinetdoor.refresh"
+    private enum Constants {
+        static let earliestRefreshDelay: TimeInterval = 3_600
+    }
 
     var modelContainer: ModelContainer?
 
@@ -21,7 +24,7 @@ final class BackgroundRefreshManager {
     func scheduleRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         // Wake at least 1 hour from now; iOS throttles actual execution.
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 3600)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: Constants.earliestRefreshDelay)
         try? BGTaskScheduler.shared.submit(request)
         Log.debug("BackgroundRefreshManager: scheduled next refresh")
     }

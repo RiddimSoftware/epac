@@ -21,6 +21,17 @@ import Foundation
 struct CommitteesService {
     private static let baseURL = URL(string: "https://api.openparliament.ca")!
     private static let committeesWebBaseURL = URL(string: "https://www.ourcommons.ca")!
+    private enum Constants {
+        static let currentParliament = 45
+        static let currentSession = 1
+        static let committeeNameCaptureGroup = 2
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     struct CommitteeMeetingsResult: Sendable {
         let upcoming: [CommitteeMeeting]
@@ -31,19 +42,19 @@ struct CommitteesService {
 
     /// Returns all House of Commons committees for the given parliament.
     /// Returns [] on any network or parse failure.
-    static func fetchCommittees(parliament: Int = 45) async -> [ParliamentaryCommittee] {
+    static func fetchCommittees(parliament: Int = Constants.currentParliament) async -> [ParliamentaryCommittee] {
         guard var components = URLComponents(
             url: committeesWebBaseURL.appendingPathComponent("Committees/en/List"),
             resolvingAgainstBaseURL: false
         ) else { return [] }
         components.queryItems = [
             URLQueryItem(name: "parl", value: String(parliament)),
-            URLQueryItem(name: "session", value: "1")
+            URLQueryItem(name: "session", value: String(Constants.currentSession))
         ]
         guard let url = components.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let html = String(data: data, encoding: .utf8)
         else { return [] }
 
@@ -66,7 +77,7 @@ struct CommitteesService {
         var seen: Set<String> = []
         return matches.compactMap { match -> ParliamentaryCommittee? in
             guard let acronymRange = Range(match.range(at: 1), in: html),
-                  let nameRange = Range(match.range(at: 2), in: html)
+                  let nameRange = Range(match.range(at: Constants.committeeNameCaptureGroup), in: html)
             else { return nil }
 
             let acronym = decodeHTML(String(html[acronymRange])).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -87,7 +98,7 @@ struct CommitteesService {
 
     /// Returns the most recent meetings for a given committee.
     /// Returns [] on any network or parse failure.
-    static func fetchRecentMeetings(committeeId: String, parliament: Int = 45) async -> [CommitteeMeeting] {
+    static func fetchRecentMeetings(committeeId: String, parliament: Int = Constants.currentParliament) async -> [CommitteeMeeting] {
         let meetings = await fetchMeetings(committeeId: committeeId, parliament: parliament)
         return meetings.recent
     }
@@ -96,7 +107,7 @@ struct CommitteesService {
     /// Returns empty sections on any network or parse failure.
     static func fetchMeetings(
         committeeId: String,
-        parliament: Int = 45,
+        parliament: Int = Constants.currentParliament,
         now: Date = Date()
     ) async -> CommitteeMeetingsResult {
         guard var components = URLComponents(
@@ -111,7 +122,7 @@ struct CommitteesService {
         guard let url = components.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [[String: Any]]
         else { return CommitteeMeetingsResult(upcoming: [], recent: []) }
@@ -197,7 +208,7 @@ struct CommitteesService {
         guard let url = components.url,
               let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
+              Constants.successStatusCodes.contains(http.statusCode),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [[String: Any]]
         else { return [] }

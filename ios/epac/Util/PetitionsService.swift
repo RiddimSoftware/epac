@@ -13,6 +13,16 @@
 import Foundation
 
 struct PetitionsService {
+    private enum Constants {
+        static let requestTimeout: TimeInterval = 20
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+        static let subjectCaptureGroup = 3
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
 
     private static let searchURL = URL(string: "https://petitions.ourcommons.ca/en/Petition/SearchAsync")!
     private static let basePortalURL = "https://petitions.ourcommons.ca"
@@ -22,7 +32,7 @@ struct PetitionsService {
     /// Fetches open e-Petitions for Parliament 44.
     /// Returns an empty array on any network or parse failure.
     static func fetchOpenPetitions() async throws -> [EPetition] {
-        var request = URLRequest(url: searchURL, timeoutInterval: 20)
+        var request = URLRequest(url: searchURL, timeoutInterval: Constants.requestTimeout)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
         request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
@@ -31,7 +41,7 @@ struct PetitionsService {
         request.httpBody = body.data(using: .utf8)
 
         let (data, response) = try await NetworkService.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, Constants.successStatusCodes.contains(http.statusCode) else {
             return []
         }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -72,7 +82,7 @@ struct PetitionsService {
         ) else { return nil }
 
         let petitionID = idSubjectMatch[1]
-        let subject = idSubjectMatch[3].htmlDecoded
+        let subject = idSubjectMatch[Constants.subjectCaptureGroup].htmlDecoded
 
         // Keywords: each <li><a …>Keyword</a></li> in the keywords column
         let keywordMatches = content.allMatches(pattern: #"class="index"[^>]*>([^<]+)</a>"#)

@@ -27,6 +27,15 @@ enum RidingLookupError: LocalizedError, Equatable {
 }
 
 struct RidingLookupService {
+    private enum Constants {
+        static let successStatusLowerBound = 200
+        static let successStatusUpperBound = 300
+
+        static var successStatusCodes: Range<Int> {
+            successStatusLowerBound..<successStatusUpperBound
+        }
+    }
+
     private let baseURL = URL(string: "https://represent.opennorth.ca")!
 
     /// Returns the current federal riding name for a given postal code.
@@ -67,7 +76,7 @@ struct RidingLookupService {
             throw RidingLookupError.networkError
         }
 
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+        if let http = response as? HTTPURLResponse, !Constants.successStatusCodes.contains(http.statusCode) {
             throw RidingLookupError.noResults
         }
 

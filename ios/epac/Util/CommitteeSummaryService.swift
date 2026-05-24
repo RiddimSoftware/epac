@@ -32,6 +32,11 @@ actor CommitteeSummaryService {
 	static let shared = CommitteeSummaryService(generator: CommitteeSummaryService.makeDefaultGenerator())
 	static let label = "AI Summary · on-device · May contain errors"
 
+	private enum Constants {
+		static let minimumWitnessInterventionWords = 20
+		static let proceduralContentCharacterLimit = 220
+	}
+
 	private let generator: (any CommitteeSummaryGenerating)?
 	private var cache: [String: CommitteeHearingDigest] = [:]
 
@@ -168,7 +173,7 @@ actor CommitteeSummaryService {
 		let role = intervention.speakerRole.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 		let affiliation = intervention.affiliation.trimmingCharacters(in: .whitespacesAndNewlines)
 		let content = intervention.content.trimmingCharacters(in: .whitespacesAndNewlines)
-		guard content.split(whereSeparator: \.isWhitespace).count >= 20 else { return false }
+		guard content.split(whereSeparator: \.isWhitespace).count >= Constants.minimumWitnessInterventionWords else { return false }
 
 		if role.contains("chair")
 			|| role.contains("member")
@@ -187,7 +192,7 @@ actor CommitteeSummaryService {
 			"point of order",
 			"thank you, colleagues"
 		]
-		if content.count < 220 && proceduralFragments.contains(where: lowerContent.contains) {
+		if content.count < Constants.proceduralContentCharacterLimit && proceduralFragments.contains(where: lowerContent.contains) {
 			return false
 		}
 
