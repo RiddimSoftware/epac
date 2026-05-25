@@ -208,7 +208,7 @@ def attach_build(group_id: str, build_id: str, token: str) -> dict[str, str | bo
         json=payload,
     )
 
-    if response.status_code == 201:
+    if response.status_code in (201, 204):
         return {"attached": True, "build_id": build_id, "group_id": group_id}
 
     if response.status_code == 409:
