@@ -120,6 +120,7 @@ class OpenCIFailureIssue:
 class TeamResolution:
     team_id: str
     todo_state_id: str | None
+    done_state_id: str | None
 
 
 class LinearAPIError(RuntimeError):
@@ -254,6 +255,19 @@ class LinearClient:
         if not payload.get("success"):
             raise LinearAPIError(f"Linear issueUpdate did not succeed: {payload!r}")
 
+    def transition_issue_to_done(self, issue_id: str, done_state_id: str) -> None:
+        mutation = """
+        mutation TransitionCIWorkflowFailureIssue($id: String!, $stateId: String!) {
+          issueUpdate(id: $id, input: { stateId: $stateId }) {
+            success
+          }
+        }
+        """
+        data = self._graphql(mutation, {"id": issue_id, "stateId": done_state_id})
+        payload = data.get("issueUpdate") or {}
+        if not payload.get("success"):
+            raise LinearAPIError(f"Linear issueUpdate (state transition) did not succeed: {payload!r}")
+
     def resolve_team(self, team_key: str) -> TeamResolution:
         if team_key in self._team_cache:
             return self._team_cache[team_key]
@@ -278,7 +292,8 @@ class LinearClient:
             raise LinearAPIError(f"Linear team not found for key: {team_key}")
 
         todo_state_id = _todo_state_id(team.get("states", {}).get("nodes", []))
-        resolution = TeamResolution(team_id=team["id"], todo_state_id=todo_state_id)
+        done_state_id = _done_state_id(team.get("states", {}).get("nodes", []))
+        resolution = TeamResolution(team_id=team["id"], todo_state_id=todo_state_id, done_state_id=done_state_id)
         self._team_cache[team_key] = resolution
         return resolution
 
@@ -378,15 +393,52 @@ def report_ci_workflow_outcome(
     team_key: str,
 ) -> dict[str, Any] | None:
     if outcome.conclusion == "success":
-        logger.info(
-            "workflow succeeded; no Linear issue created",
-            extra={
-                "workflow_name": outcome.workflow_name,
-                "repo": outcome.repo,
-                "head_sha": outcome.head_sha,
-            },
+        title = ci_failure_issue_title(outcome)
+        matching_issues = linear_client.find_open_issue(
+            team_key=team_key,
+            label_name=CI_FAILURE_LABEL,
+            title=title,
         )
+        if not matching_issues:
+            logger.info(
+                "workflow succeeded; no open CI issue to resolve",
+                extra={
+                    "workflow_name": outcome.workflow_name,
+                    "repo": outcome.repo,
+                    "head_sha": outcome.head_sha,
+                },
+            )
+            return None
+        
+        team = linear_client.resolve_team(team_key)
+        if not team.done_state_id:
+            raise LinearAPIError(f"Linear 'Done' state not found for team: {team_key}")
+        
+        if len(matching_issues) > 1:
+            logger.warning(
+                "multiple open CI failure issues matched on success; resolving all",
+                extra={
+                    "title": title,
+                    "match_count": len(matching_issues),
+                },
+            )
+        
+        for issue in matching_issues:
+            linear_client.add_comment(
+                issue.id,
+                f"Resolved by [green run]({outcome.run_url}) at SHA `{outcome.head_sha[:8]}`."
+            )
+            linear_client.transition_issue_to_done(issue.id, team.done_state_id)
+            logger.info(
+                "resolved open CI failure issue",
+                extra={
+                    "issue_id": issue.id,
+                    "run_url": outcome.run_url,
+                    "head_sha": outcome.head_sha[:8],
+                },
+            )
         return None
+
     if outcome.conclusion != "failure":
         raise ValueError(f"Unsupported workflow conclusion: {outcome.conclusion}")
 
@@ -558,6 +610,13 @@ def _todo_state_id(states: list[dict[str, Any]]) -> str | None:
     return None
 
 
+def _done_state_id(states: list[dict[str, Any]]) -> str | None:
+    for state in states:
+        if str(state.get("name", "")) == "Done":
+            return state.get("id")
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         args = parse_args(argv)
@@ -572,10 +631,6 @@ def main(argv: list[str] | None = None) -> int:
             extra={"error": "Missing required Linear team key: pass --team-key or set LINEAR_TEAM_KEY"},
         )
         return 2
-
-    if outcome.conclusion == "success":
-        report_ci_workflow_outcome(outcome, LinearClient("unused"), team_key=args.team_key)
-        return 0
 
     api_token = os.environ.get("LINEAR_API_TOKEN", "").strip()
     if not api_token:
