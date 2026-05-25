@@ -35,11 +35,15 @@ class SpeechViewModel {
 	var speakers: [String: ParliamentMember] = [:]
 	var didFinish = false
 	var isResuming = false
+	var isSpeechLoaded = false
 
 	// Injected resolver dependency. Defaults to CachingMemberResolver (production)
 	// so callers don't need to supply one. In unit tests, pass a mock conforming
 	// to MemberResolving to avoid SwiftData/network I/O.
 	private let resolver: any MemberResolving
+	private var readHansardSpeech: (any ReadHansardSpeechUseCase)?
+	private var orderedSpeechMessages: [SpeechMessageRecord] = []
+	private var nextSpeechMessageIndex = 0
 
 	var tapAnywhereOpacity: Double {
 		messages.count < SpeechViewModelLayout.tapHintMessageThreshold || isResuming
@@ -47,9 +51,32 @@ class SpeechViewModel {
 			: SpeechViewModelLayout.tapHintHiddenOpacity
 	}
 
-	init(messages: [Message] = [], resolver: any MemberResolving = CachingMemberResolver()) {
+	init(
+		messages: [Message] = [],
+		readHansardSpeech: (any ReadHansardSpeechUseCase)? = nil,
+		resolver: any MemberResolving = CachingMemberResolver()
+	) {
 		self.messages = messages
+		self.readHansardSpeech = readHansardSpeech
 		self.resolver = resolver
+	}
+
+	func configure(readHansardSpeech: any ReadHansardSpeechUseCase) {
+		self.readHansardSpeech = readHansardSpeech
+	}
+
+	func loadSpeech(jurisdiction: Jurisdiction, sittingDate: Date, subjectID: String) async throws {
+		guard let readHansardSpeech else {
+			throw SpeechViewModelError.missingReadHansardSpeech
+		}
+		orderedSpeechMessages = try await readHansardSpeech.execute(
+			jurisdiction: jurisdiction,
+			sittingDate: sittingDate,
+			subjectID: subjectID
+		)
+		nextSpeechMessageIndex = 0
+		isSpeechLoaded = true
+		didFinish = orderedSpeechMessages.isEmpty
 	}
 
 	func append(_ message: Message, speaker: ParliamentMember) {
@@ -57,16 +84,40 @@ class SpeechViewModel {
 		speakers[message.id] = speaker
 	}
 
-	func reset(navigator: SubjectNavigator, subject: SubjectOfBusiness) {
+	func reset(subject: SubjectOfBusiness) {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
+		isResuming = false
+		nextSpeechMessageIndex = 0
 		resolver.resetCache()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
 		subject.currentSpeechID = nil
+	}
+
+	func reset(navigator: SubjectNavigator, subject: SubjectOfBusiness) {
+		reset(subject: subject)
 		navigator.reset()
+	}
+
+	func prepareResume(subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
+		guard isSpeechLoaded, messages.isEmpty else { return }
+		let savedSpeechID = subject.currentSpeechID ?? subject.currentSpeech?.hansardID
+		let savedMessageID = subject.currentSpeech?.currentMessageID ?? subject.currentSpeech?.currentMessage?.hansardID
+
+		if let savedSpeechID {
+			while !didFinish && currentSpeechID != savedSpeechID {
+				nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+			}
+			if let savedMessageID {
+				while !didFinish && messages.last?.id != savedMessageID {
+					nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+				}
+			}
+			isResuming = !didFinish
+		}
 	}
 
 	func prepareResume(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
@@ -87,6 +138,26 @@ class SpeechViewModel {
 		}
 	}
 
+	func nextMessage(subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
+		isResuming = false
+		guard isSpeechLoaded, !didFinish else { return }
+		guard nextSpeechMessageIndex < orderedSpeechMessages.count else {
+			didFinish = true
+			return
+		}
+
+		let message = orderedSpeechMessages[nextSpeechMessageIndex]
+		nextSpeechMessageIndex += 1
+		if let currentSpeech = subject.speeches.first(where: { $0.hansardID == message.speechID }) {
+			subject.currentSpeech = currentSpeech
+			subject.currentSpeechID = currentSpeech.hansardID
+			currentSpeech.currentMessage = currentSpeech.messages.first { $0.hansardID == message.hansardID }
+			currentSpeech.currentMessageID = message.hansardID
+		}
+
+		appendChatMessage(message, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+	}
+
 	func nextMessage(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
 		isResuming = false
 		guard !didFinish else { return }
@@ -102,6 +173,16 @@ class SpeechViewModel {
 			currentSpeech.currentMessageID = message.hansardID
 		}
 
+		appendChatMessage(message.record(speechID: navigator.navigator?.speech.hansardID ?? ""), hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+	}
+
+	private func appendChatMessage(
+		_ message: SpeechMessageRecord,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)?
+	) {
 		// Use the method-level override when provided (e.g. tests); fall back to
 		// the injected stored resolver.
 		let activeResolver = resolver ?? self.resolver
@@ -151,14 +232,14 @@ class SpeechViewModel {
 	}
 
 	@MainActor
-	func shareLast5Messages(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
+	func shareLast5Messages(subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
 		let lastMessages = Array(messages.suffix(SpeechViewModelLayout.shareMessageLimit))
 		let baseURL = "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)"
 		let url: URL
 		if didFinish {
 			url = URL(string: baseURL)!
-		} else if let nav = navigator.navigator, let firstMessage = nav.speech.messages.first {
-			url = URL(string: "\(baseURL)&speechID=\(nav.speech.hansardID)&messageID=\(firstMessage.hansardID)")!
+		} else if let nextMessage = nextSpeechMessage {
+			url = URL(string: "\(baseURL)&speechID=\(nextMessage.speechID)&messageID=\(nextMessage.hansardID)")!
 		} else {
 			url = URL(string: baseURL)!
 		}
@@ -172,6 +253,16 @@ class SpeechViewModel {
 		} else {
 			return ActivityItem(items: url)
 		}
+	}
+
+	private var currentSpeechID: String? {
+		guard nextSpeechMessageIndex > 0 else { return nil }
+		return orderedSpeechMessages[nextSpeechMessageIndex - 1].speechID
+	}
+
+	private var nextSpeechMessage: SpeechMessageRecord? {
+		guard nextSpeechMessageIndex < orderedSpeechMessages.count else { return nil }
+		return orderedSpeechMessages[nextSpeechMessageIndex]
 	}
 
 	private func createMessageView(_ message: Message, speaker: ParliamentMember, subject: SubjectOfBusiness, hansard: Hansard) -> some View {
@@ -223,4 +314,8 @@ class SpeechViewModel {
 		.fixedSize(horizontal: false, vertical: true)
 		.frame(width: SpeechViewModelLayout.shareWidth)
 	}
+}
+
+enum SpeechViewModelError: Error {
+	case missingReadHansardSpeech
 }

@@ -41,7 +41,6 @@ struct SpeechView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(NavigationRouter.self) var router
 	@EnvironmentObject var fetch: Fetch
-	@State private var navigator: SubjectNavigator
 
 	let hansard: Hansard
 	let subject: SubjectOfBusiness
@@ -52,12 +51,11 @@ struct SpeechView: View {
 	@State private var followStore = MemberFollowStore.shared
 	@State private var userProvinceCode = ""
 
-	init(hansard: Hansard, subject: SubjectOfBusiness) {
+	init(hansard: Hansard, subject: SubjectOfBusiness, readHansardSpeech: (any ReadHansardSpeechUseCase)? = nil) {
 		self.hansard = hansard
 		self.subject = subject
-		navigator = SubjectNavigator(subject)
 		self.length = subject.speeches.map { $0.messages.count }.reduce(0, +)
-		self.viewModel = SpeechViewModel()
+		self.viewModel = SpeechViewModel(readHansardSpeech: readHansardSpeech)
 	}
 
 	var body: some View {
@@ -210,24 +208,32 @@ struct SpeechView: View {
 			TapGesture()
 				.onEnded {
 					withAnimation(reduceMotion ? nil : .default) {
-						viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+						viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 					}
 				}
 		)
-		.task {
+		.task(id: subject.hansardID) {
 			guard viewModel.messages.isEmpty else { return }
 			do {
+				viewModel.configure(readHansardSpeech: ReadHansardSpeech(
+					repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+				))
+				try await viewModel.loadSpeech(
+					jurisdiction: .houseOfCommons,
+					sittingDate: hansard.date,
+					subjectID: subject.hansardID
+				)
+				viewModel.prepareResume(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
 				guard viewModel.messages.isEmpty else { return }
 				withAnimation(reduceMotion ? nil : .default) {
-					viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+					viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				}
 			} catch {
-				Log.debug("Failed to sleep 0.7s \(error.localizedDescription)")
+				Log.debug("Failed to load speech \(error.localizedDescription)")
 			}
 		}
 		.onAppear {
-			viewModel.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 			resolveSavedMemberProvince()
 			ReviewRequestManager.shared.recordDebateThreadRead(
 				hansardID: hansard.hansardID,
@@ -256,12 +262,12 @@ struct SpeechView: View {
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					withAnimation(reduceMotion ? nil : .default) {
-						viewModel.reset(navigator: navigator, subject: subject)
+						viewModel.reset(subject: subject)
 					}
 					Task {
 						do {
 							try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
-							viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+							viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 						} catch {}
 					}
 				} label: {
@@ -271,7 +277,7 @@ struct SpeechView: View {
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
-					item = viewModel.shareLast5Messages(navigator: navigator, subject: subject, hansard: hansard)
+					item = viewModel.shareLast5Messages(subject: subject, hansard: hansard)
 				} label: {
 					Image(systemName: "square.and.arrow.up")
 				}

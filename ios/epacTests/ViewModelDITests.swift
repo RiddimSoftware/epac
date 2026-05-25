@@ -11,18 +11,19 @@ import Testing
 
 // MARK: - Mocks
 
-/// Mock for SittingCalendarFetching. Runs on MainActor (Sendable via global actor).
+/// Mock for BrowseHansardSittingUseCase. Runs on MainActor (Sendable via global actor).
 @MainActor
-private final class MockSittingCalendarFetcher: SittingCalendarFetching {
-    var downloadCallYears: [Int] = []
+private final class MockBrowseHansardSittingUseCase: BrowseHansardSittingUseCase {
+    var requests: [(jurisdiction: Jurisdiction, from: Date, to: Date)] = []
+    var result = BrowseHansardSitting.Result(sittingDates: [], sittings: [])
     var shouldThrow = false
 
-    // nonisolated required by Sendable conformance for async protocol method.
-    nonisolated func downloadSittingCalendar(_ year: Int) async throws {
-        await MainActor.run { downloadCallYears.append(year) }
-        if await MainActor.run(body: { shouldThrow }) {
-            throw NSError(domain: "MockSittingCalendarFetcher", code: 1)
+    func execute(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> BrowseHansardSitting.Result {
+        requests.append((jurisdiction, from, to))
+        if shouldThrow {
+            throw NSError(domain: "MockBrowseHansardSittingUseCase", code: 1)
         }
+        return result
     }
 }
 
@@ -74,46 +75,49 @@ private final class MockMemberResolver: MemberResolving {
 @MainActor
 struct SittingCalendarViewModelDITests {
 
-    private func makeContext() throws -> ModelContext {
+    private func makeDependencies() throws -> (ModelContainer, ModelContext, Fetch) {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
-        return ModelContext(container)
+        let context = ModelContext(container)
+        return (container, context, Fetch(modelContainer: container))
     }
 
-    /// Injected mock fetcher is called instead of the network.
-    @Test func fetchSittingCalendarUsesMockFetcher() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        let vm = SittingCalendarViewModel()
+    /// Injected use case is called instead of direct calendar/network orchestration.
+    @Test func fetchSittingCalendarUsesInjectedBrowseUseCase() async throws {
+        let (_, context, fetch) = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        let sitting = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 5, day: 1))!
+        mockUseCase.result = BrowseHansardSitting.Result(sittingDates: [sitting], sittings: [])
+        let vm = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        // No SittingCalendar in store → triggers download via the injected mock.
-        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: mockFetcher)
+        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: fetch)
 
-        #expect(mockFetcher.downloadCallYears == [2026])
+        #expect(mockUseCase.requests.map(\.jurisdiction) == [.houseOfCommons])
+        #expect(vm.dates.union(vm.futureDates).count == 1)
         #expect(!vm.loadFailed)
     }
 
-    /// When the mock throws, loadFailed is set.
+    /// When the injected use case throws, loadFailed is set.
     @Test func fetchSittingCalendarSetsLoadFailedOnError() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        mockFetcher.shouldThrow = true
-        let vm = SittingCalendarViewModel()
+        let (_, context, fetch) = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        mockUseCase.shouldThrow = true
+        let vm = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: mockFetcher)
+        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: fetch)
 
         #expect(vm.loadFailed)
     }
 
-    /// refresh() uses the mock fetcher, not a real network call.
-    @Test func refreshUsesMockFetcher() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        let vm = SittingCalendarViewModel()
+    /// refresh() uses the injected use case, not direct calendar orchestration.
+    @Test func refreshUsesInjectedBrowseUseCase() async throws {
+        let (_, context, fetch) = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        let vm = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        await vm.refresh(modelContext: context, fetch: mockFetcher)
+        await vm.refresh(modelContext: context, fetch: fetch)
 
-        #expect(mockFetcher.downloadCallYears.count == 1)
+        #expect(mockUseCase.requests.count == 1)
         #expect(!vm.loadFailed)
     }
 }

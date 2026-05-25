@@ -36,6 +36,7 @@ grep_files() {
 }
 
 IOS_FORBIDDEN_PATTERN='import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter\|UNNotification\|UNNotificationRequest\|UNNotificationResponse\|UNMutableNotificationContent\|UIApplication\|registerForRemoteNotifications'
+IOS_APPLICATION_FORBIDDEN_PATTERN="$IOS_FORBIDDEN_PATTERN"
 
 # ── iOS Domain boundary (EPAC-1741) ───────────────────────────────────────────
 header "iOS Domain layer (ios/epac/Domain/)"
@@ -60,7 +61,7 @@ header "iOS Application layer (ios/epac/Application/)"
 APP_DIR="$REPO_ROOT/ios/epac/Application"
 if [[ -d "$APP_DIR" ]]; then
   FRAMEWORK_IMPORTS=$(grep_files \
-    "$IOS_FORBIDDEN_PATTERN" \
+    "$IOS_APPLICATION_FORBIDDEN_PATTERN" \
     "*.swift" "$APP_DIR")
   if [[ -n "$FRAMEWORK_IMPORTS" ]]; then
     while IFS= read -r line; do fail "$line"; done <<< "$FRAMEWORK_IMPORTS"
