@@ -31,6 +31,17 @@ class FakeLinearClient:
         self.find_requests: list[dict[str, str]] = []
         self.comments: list[tuple[str, str]] = []
         self.description_updates: list[tuple[str, str]] = []
+        self.transitions: list[tuple[str, str]] = []
+
+    def resolve_team(self, team_key: str) -> ci_failure_to_linear.TeamResolution:
+        return ci_failure_to_linear.TeamResolution(
+            team_id="team-123",
+            todo_state_id="state-todo",
+            done_state_id="state-done",
+        )
+
+    def transition_issue_to_done(self, issue_id: str, done_state_id: str) -> None:
+        self.transitions.append((issue_id, done_state_id))
 
     def find_open_issue(
         self,
@@ -201,7 +212,7 @@ def test_two_matching_open_issues_comments_on_most_recently_updated_and_warns(ca
     assert "multiple open CI failure issues matched" in captured.err
 
 
-def test_success_path_is_noop() -> None:
+def test_success_path_no_existing_issue_is_noop() -> None:
     client = FakeLinearClient()
 
     created = ci_failure_to_linear.report_ci_workflow_outcome(
@@ -212,7 +223,91 @@ def test_success_path_is_noop() -> None:
 
     assert created is None
     assert client.created == []
-    assert client.find_requests == []
+    assert client.find_requests == [
+        {
+            "team_key": "EPAC",
+            "label_name": "ci-failure",
+            "title": "[CI] Backend PR failing on feature-branch",
+        }
+    ]
+    assert client.comments == []
+    assert client.transitions == []
+
+
+def test_success_path_with_existing_issue_closes_it() -> None:
+    client = FakeLinearClient(
+        [
+            ci_failure_to_linear.OpenCIFailureIssue(
+                id="issue-1",
+                title="[CI] Backend PR failing on feature-branch",
+                description="",
+                updated_at="2026-05-25T10:00:00.000Z",
+            )
+        ]
+    )
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome("success"),
+        client,  # type: ignore[arg-type]
+        team_key="EPAC",
+    )
+
+    assert created is None
+    assert client.created == []
+    assert client.comments == [
+        (
+            "issue-1",
+            "Resolved by [green run](https://github.com/RiddimSoftware/epac/actions/runs/123) at SHA `abc12345`.",
+        )
+    ]
+    assert client.transitions == [("issue-1", "state-done")]
+
+
+def test_success_path_with_multiple_issues_closes_all_and_warns(capsys) -> None:
+    for handler in ci_failure_to_linear.logger.handlers:
+        if hasattr(handler, "stream"):
+            handler.stream = sys.stderr
+    client = FakeLinearClient(
+        [
+            ci_failure_to_linear.OpenCIFailureIssue(
+                id="older-issue",
+                title="[CI] Backend PR failing on feature-branch",
+                description="",
+                updated_at="2026-05-25T10:00:00.000Z",
+            ),
+            ci_failure_to_linear.OpenCIFailureIssue(
+                id="newer-issue",
+                title="[CI] Backend PR failing on feature-branch",
+                description="",
+                updated_at="2026-05-25T11:00:00.000Z",
+            ),
+        ]
+    )
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome("success"),
+        client,  # type: ignore[arg-type]
+        team_key="EPAC",
+    )
+
+    captured = capsys.readouterr()
+    assert created is None
+    assert client.created == []
+    assert client.comments == [
+        (
+            "older-issue",
+            "Resolved by [green run](https://github.com/RiddimSoftware/epac/actions/runs/123) at SHA `abc12345`.",
+        ),
+        (
+            "newer-issue",
+            "Resolved by [green run](https://github.com/RiddimSoftware/epac/actions/runs/123) at SHA `abc12345`.",
+        ),
+    ]
+    assert client.transitions == [
+        ("older-issue", "state-done"),
+        ("newer-issue", "state-done"),
+    ]
+    assert "multiple open CI failure issues matched on success" in captured.err
 
 
 def test_missing_linear_api_token_exits_nonzero_with_clear_message(monkeypatch, capsys) -> None:
