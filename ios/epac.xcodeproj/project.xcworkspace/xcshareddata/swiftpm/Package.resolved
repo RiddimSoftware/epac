@@ -1,5 +1,5 @@
 {
-  "originHash" : "0c0f1b509a927f349ab2b2c7ae1f9b68e26baa34019b36caf4f86b85afde4c2e",
+  "originHash" : "701fe4f8466a9ab4700d10f1d2b585918c372a199d5ca3298d48438dddce1052",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "ecf7edb1ba6d4406543af3796c512005dc013802",
         "version" : "2.7.6"
+      }
+    },
+    {
+      "identity" : "evidence",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RiddimSoftware/evidence",
+      "state" : {
+        "branch" : "main",
+        "revision" : "e76e7991b7eda56857080e46fd84ec6ebb642161"
       }
     },
     {
