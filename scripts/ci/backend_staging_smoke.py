@@ -183,6 +183,22 @@ def validate_openapi(status: int, payload: Any) -> None:
         raise SmokeFailure("openapi-json: response body missing 'paths' key")
 
 
+def validate_hansard_search(status: int, payload: Any) -> None:
+    body = require_dict(payload, "hansard-search")
+    if status == 503:
+        if "error" not in body:
+            raise SmokeFailure("hansard-search: 503 response missing error key")
+        body["_smoke_evidence"] = f"HTTP 503 ({body['error']})"
+        return
+
+    require_keys(body, "hansard-search", {"page", "per_page", "total", "results"})
+    require_list(body, "hansard-search", "results")
+    if body["page"] != 1:
+        raise SmokeFailure(f"hansard-search: page = {body['page']!r}, want 1")
+    if body["per_page"] != 1:
+        raise SmokeFailure(f"hansard-search: per_page = {body['per_page']!r}, want 1")
+
+
 def validate_hansard_search_manifest(status: int, payload: Any) -> None:
     if status == 404:
         return
@@ -370,6 +386,16 @@ CHECKS = [
         validator=validate_openapi,
         deterministic_note="Contract check verifies the OpenAPI spec endpoint returns valid JSON with a paths key.",
         fixture_note="No fixture required; catches OpenAPI generation regressions.",
+    ),
+    SmokeCheck(
+        name="hansard-search",
+        method="GET",
+        path="/api/v1/hansard/search",
+        query={"q": "test", "per_page": "1"},
+        expected_statuses={200, 503},
+        validator=validate_hansard_search,
+        deterministic_note="Contract check validates the Hansard search response envelope; HTTP 503 is accepted until the index is generated in staging.",
+        fixture_note="Result count is data-dependent and may be zero even after the index exists.",
     ),
     SmokeCheck(
         name="member-speeches:unknown-member",

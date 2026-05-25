@@ -518,6 +518,88 @@
         }
       }
     },
+    "/api/v1/hansard/search": {
+      "get": {
+        "tags": ["Parliament"],
+        "summary": "Search Hansard interventions",
+        "description": "Queries the published Hansard SQLite FTS5 index and returns paginated message hits with inline match snippets.",
+        "operationId": "searchHansard",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Full-text search query. Trimmed input must be non-empty and at most 200 characters.",
+            "schema": { "type": "string", "maxLength": 200, "example": "climate housing" }
+          },
+          {
+            "name": "speaker",
+            "in": "query",
+            "required": false,
+            "description": "Optional case-insensitive speaker-name filter.",
+            "schema": { "type": "string", "maxLength": 100, "example": "Jane Smith" }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "description": "Optional case-insensitive intervention topic filter.",
+            "schema": { "type": "string", "maxLength": 200, "example": "Budget Implementation Act" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "One-based page number.",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Items per page.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated Hansard search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HansardSearchResponse" },
+                "examples": {
+                  "results": {
+                    "value": {
+                      "page": 1,
+                      "per_page": 20,
+                      "total": 42,
+                      "results": [
+                        {
+                          "parliament_number": 45,
+                          "session_number": 1,
+                          "sitting_date": "2026-04-27",
+                          "intervention_id": "12345",
+                          "message_id": "12345-p3",
+                          "speaker_name": "Smith",
+                          "party_abbreviation": "LIB",
+                          "riding_name": "Some Riding",
+                          "topic": "Budget Implementation Act",
+                          "snippet": "...matched <mark>phrase</mark>...",
+                          "score": 1.23
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/estimates": {
       "get": {
         "tags": ["Fiscal"],
@@ -869,6 +951,48 @@
           "preview": { "type": "string" },
           "word_count": { "type": "integer" },
           "filename": { "type": "string" }
+        }
+      },
+      "HansardSearchResponse": {
+        "type": "object",
+        "required": ["page", "per_page", "total", "results"],
+        "properties": {
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/HansardSearchResult" }
+          }
+        }
+      },
+      "HansardSearchResult": {
+        "type": "object",
+        "required": [
+          "parliament_number",
+          "session_number",
+          "sitting_date",
+          "intervention_id",
+          "message_id",
+          "speaker_name",
+          "party_abbreviation",
+          "riding_name",
+          "topic",
+          "snippet",
+          "score"
+        ],
+        "properties": {
+          "parliament_number": { "type": "integer" },
+          "session_number": { "type": "integer" },
+          "sitting_date": { "type": "string", "format": "date" },
+          "intervention_id": { "type": "string" },
+          "message_id": { "type": "string" },
+          "speaker_name": { "type": "string" },
+          "party_abbreviation": { "type": "string" },
+          "riding_name": { "type": "string" },
+          "topic": { "type": "string" },
+          "snippet": { "type": "string", "description": "HTML snippet with <mark> tags around matches." },
+          "score": { "type": "number", "format": "double" }
         }
       },
       "OnThisDayResponse": {
