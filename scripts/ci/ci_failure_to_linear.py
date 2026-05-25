@@ -276,7 +276,7 @@ class LinearClient:
           issues(
             filter: {
               team: { key: { eq: $teamKey } }
-              state: { type: { in: [unstarted, started] } }
+              state: { type: { in: ["unstarted", "started"] } }
               labels: { name: { eq: $labelName } }
               title: { eq: $title }
             }
