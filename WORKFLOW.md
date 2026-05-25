@@ -7,8 +7,11 @@ workflow_template:
 extends: ../agent-config/symphony/shared.yml
 tracker:
   project_slug: EPAC
-repositories:
-  - epac
+agent:
+  max_agents: 4
+  per_tick_dispatch_ceiling: 4
+polling:
+  interval_ms: 15000
 
 server:
   port: 4781
