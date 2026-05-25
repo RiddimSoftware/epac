@@ -14,6 +14,21 @@
 import SwiftData
 import SwiftUI
 
+private enum HomeFeedLayout {
+    static let refreshToastAnimationDuration = EpacAnimation.standard
+    static let refreshToastDurationSeconds: Int64 = 3
+    static let iconColumnWidth = EpacIconSize.m
+    static let followedBillsLimit = 3
+    static let compactVerticalPadding = EpacSpacing.xxs
+    static let followedTopicsLimit = 6
+    static let senatorsLimit = 3
+    static let senatorRowSpacing: CGFloat = 10
+    static let senatorDotOpacity = EpacOpacity.tintStrong
+    static let senatorDotSize = EpacSpacing.s
+    static let senatorTextSpacing = EpacSpacing.xxs
+    static let healthcarePreviewLimit = 2
+}
+
 @MainActor
 struct HomeFeedView: View {
     @Environment(\.modelContext) private var modelContext
@@ -93,10 +108,10 @@ struct HomeFeedView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: showRefreshToast)
+            .animation(.easeInOut(duration: HomeFeedLayout.refreshToastAnimationDuration), value: showRefreshToast)
             .task(id: showRefreshToast) {
                 guard showRefreshToast else { return }
-                try? await Task.sleep(for: .seconds(3))
+                try? await Task.sleep(for: .seconds(HomeFeedLayout.refreshToastDurationSeconds))
                 showRefreshToast = false
             }
             .navigationTitle(NSLocalizedString("Home", comment: ""))
@@ -256,7 +271,7 @@ struct HomeFeedView: View {
         HStack(alignment: .top, spacing: EpacSpacing.s) {
             Image(systemName: icon)
                 .foregroundStyle(Color.epacBrand.accent)
-                .frame(width: 24)
+                .frame(width: HomeFeedLayout.iconColumnWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: EpacSpacing.xs) {
                 Text(title)
@@ -327,7 +342,7 @@ struct HomeFeedView: View {
     private var followedBillsSection: some View {
         Section(header: Text(NSLocalizedString("home.followedBills", comment: "")).accessibilityAddTraits(.isHeader)) {
             let sorted = billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt }
-            ForEach(Array(sorted.prefix(3)), id: \.key) { number, state in
+            ForEach(Array(sorted.prefix(HomeFeedLayout.followedBillsLimit)), id: \.key) { number, state in
                 HStack {
                     Image(systemName: "doc.badge.clock.fill")
                         .foregroundStyle(Color.epacBrand.accent)
@@ -342,7 +357,7 @@ struct HomeFeedView: View {
                     }
                     Spacer()
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, HomeFeedLayout.compactVerticalPadding)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Bill \(number), \(state.lastKnownStage), Followed")
             }
@@ -352,7 +367,7 @@ struct HomeFeedView: View {
                         .font(.epacCaption)
                         .foregroundStyle(Color.epacBrand.accent)
                 }
-                if billStore.followed.count > 3 {
+                if billStore.followed.count > HomeFeedLayout.followedBillsLimit {
                     Spacer()
                     Button {
                         billStore.unfollowAll()
@@ -374,7 +389,7 @@ struct HomeFeedView: View {
             let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: EpacSpacing.s) {
-                    ForEach(followedTopics.prefix(6)) { topic in
+                    ForEach(followedTopics.prefix(HomeFeedLayout.followedTopicsLimit)) { topic in
                         Text(topic.localizedName)
                             .font(.epacCaption.weight(.medium))
                             .foregroundStyle(Color.epacText.onAccent)
@@ -398,13 +413,13 @@ struct HomeFeedView: View {
 
     private var senatorsSection: some View {
         Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: "")).accessibilityAddTraits(.isHeader)) {
-            ForEach(mySenators.prefix(3)) { senator in
+            ForEach(mySenators.prefix(HomeFeedLayout.senatorsLimit)) { senator in
                 Link(destination: senator.senateURL) {
-                    HStack(spacing: 10) {
+                    HStack(spacing: HomeFeedLayout.senatorRowSpacing) {
                         Circle()
-                            .fill(senator.caucusColor.opacity(0.2))
-                            .frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 2) {
+                            .fill(senator.caucusColor.opacity(HomeFeedLayout.senatorDotOpacity))
+                            .frame(width: HomeFeedLayout.senatorDotSize, height: HomeFeedLayout.senatorDotSize)
+                        VStack(alignment: .leading, spacing: HomeFeedLayout.senatorTextSpacing) {
                             Text(senator.name)
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)
@@ -491,7 +506,7 @@ struct HomeFeedView: View {
                     VStack(alignment: .leading, spacing: EpacSpacing.s) {
                         Text(String(format: NSLocalizedString("cihi.contextCard.title", comment: ""), provinceAbbrev))
                             .font(.epacSubheadline.weight(.semibold))
-                        ForEach(healthData.prefix(2), id: \.procedure) { wt in
+                        ForEach(healthData.prefix(HomeFeedLayout.healthcarePreviewLimit), id: \.procedure) { wt in
                             HStack {
                                 Text(wt.procedure).font(.epacCallout)
                                 Spacer()

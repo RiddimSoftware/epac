@@ -5,6 +5,21 @@
 
 import SwiftUI
 
+private enum PoliticalDonationsLayout {
+	static let infoSpacing: CGFloat = 6
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let headerSpacing: CGFloat = 12
+	static let headerTextSpacing: CGFloat = 3
+	static let limitTextSpacing = EpacSpacing.xxs
+	static let rowVerticalPadding = EpacSpacing.xxs
+	static let partyRowSpacing: CGFloat = 12
+	static let partyDotSize: CGFloat = 12
+	static let partyTextSpacing = EpacSpacing.xxs
+	static let sourceRowSpacing: CGFloat = 12
+	static let sourceIconWidth: CGFloat = 28
+	static let sourceTextSpacing = EpacSpacing.xxs
+}
+
 // Shows political financing information for Canada's federal parties.
 // Data: Elections Canada public disclosures (elections.ca/fin).
 //
@@ -76,14 +91,14 @@ struct PoliticalDonationsView: View {
 			}
 
 			Section {
-				VStack(alignment: .leading, spacing: 6) {
+				VStack(alignment: .leading, spacing: PoliticalDonationsLayout.infoSpacing) {
 					Text("About political financing")
 						.font(.caption.bold())
 					Text("Canada bans corporate and union donations to federal parties. Only Canadian citizens and permanent residents may donate, up to the indexed annual limits. All donations above $200 are publicly disclosed.")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
-				.padding(.vertical, 4)
+				.padding(.vertical, PoliticalDonationsLayout.compactVerticalPadding)
 			}
 		}
 		.listStyle(.insetGrouped)
@@ -94,12 +109,12 @@ struct PoliticalDonationsView: View {
 	// MARK: - Sub-views
 
 	private var headerCard: some View {
-		HStack(spacing: 12) {
+		HStack(spacing: PoliticalDonationsLayout.headerSpacing) {
 			Image(systemName: "dollarsign.circle.fill")
 				.font(.title2)
 				.foregroundStyle(.orange)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: PoliticalDonationsLayout.headerTextSpacing) {
 				Text("Who funds Canada's parties?")
 					.font(.headline)
 				Text("Donations are publicly disclosed by Elections Canada under the Canada Elections Act.")
@@ -107,12 +122,12 @@ struct PoliticalDonationsView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, PoliticalDonationsLayout.compactVerticalPadding)
 	}
 
 	private func limitRow(label: String, amount: Int, note: String) -> some View {
 		HStack {
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: PoliticalDonationsLayout.limitTextSpacing) {
 				Text(label)
 					.font(.subheadline)
 				Text(note)
@@ -124,19 +139,19 @@ struct PoliticalDonationsView: View {
 				.font(.headline.monospacedDigit())
 				.foregroundStyle(.orange)
 		}
-		.padding(.vertical, 2)
+		.padding(.vertical, PoliticalDonationsLayout.rowVerticalPadding)
 	}
 
 	private func partyRow(party: Party, fullName: String) -> some View {
 		Button {
 			openURL(Self.financialReturnsURL)
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: PoliticalDonationsLayout.partyRowSpacing) {
 				Circle()
 					.fill(Color.party(party))
-					.frame(width: 12, height: 12)
+					.frame(width: PoliticalDonationsLayout.partyDotSize, height: PoliticalDonationsLayout.partyDotSize)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: PoliticalDonationsLayout.partyTextSpacing) {
 					Text(fullName)
 						.font(.subheadline)
 						.foregroundStyle(.primary)
@@ -156,12 +171,12 @@ struct PoliticalDonationsView: View {
 		Button {
 			if let u = URL(string: url) { openURL(u) }
 		} label: {
-			HStack(spacing: 12) {
+			HStack(spacing: PoliticalDonationsLayout.sourceRowSpacing) {
 				Image(systemName: icon)
 					.foregroundStyle(color)
-					.frame(width: 28)
+					.frame(width: PoliticalDonationsLayout.sourceIconWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: PoliticalDonationsLayout.sourceTextSpacing) {
 					Text(title)
 						.font(.subheadline)
 						.foregroundStyle(.primary)

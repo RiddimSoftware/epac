@@ -9,6 +9,34 @@ import ActivityView
 import SwiftData
 import SwiftUI
 
+private enum ExpendituresLayout {
+	static let loadingStackSpacing = EpacSpacing.m
+	static let loadingScale = 1.5
+	static let retryDelaySeconds: Int64 = 2
+	static let badgeBottomPadding = EpacSpacing.xs
+	static let insetBottomPadding: CGFloat = 10
+	static let periodSelectorSpacing = EpacSpacing.xs
+	static let taskIDQuarterMultiplier = 10
+	static let searchFieldPadding: CGFloat = 7
+	static let searchFieldHorizontalPadding: CGFloat = 25
+	static let searchIconLeadingPadding = EpacSpacing.s
+	static let searchButtonTrailingPadding = EpacSpacing.s
+	static let searchBarHorizontalPadding: CGFloat = 10
+	static let searchBarVerticalPadding: CGFloat = 5
+	static let rowSpacing: CGFloat = 12
+	static let avatarSize: CGFloat = 44
+	static let avatarTintOpacity = EpacOpacity.tintStrong
+	static let partyBadgeSize: CGFloat = 14
+	static let partyBadgePadding = EpacSpacing.xxs
+	static let partyBadgeBorderOpacity = EpacOpacity.tintStrong
+	static let partyBadgeBorderWidth: CGFloat = 0.5
+	static let partyBadgeOffset = EpacSpacing.xs
+	static let primaryTextSpacing = EpacSpacing.xs
+	static let compactTextSpacing = EpacSpacing.xxs
+	static let metricStackSpacing = EpacSpacing.xs
+	static let rowVerticalPadding = EpacSpacing.xs
+}
+
 struct ExpendituresView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var fetch: Fetch
@@ -26,9 +54,9 @@ struct ExpendituresView: View {
     var body: some View {
         Group {
             if filteredExpenditures.isEmpty && viewModel.isLoading {
-                VStack(spacing: 16) {
+                VStack(spacing: ExpendituresLayout.loadingStackSpacing) {
                     ProgressView()
-                        .scaleEffect(1.5)
+                        .scaleEffect(ExpendituresLayout.loadingScale)
                     Text("Fetching expenditure data...")
                         .font(.headline)
                         .foregroundColor(.secondary)
@@ -46,7 +74,7 @@ struct ExpendituresView: View {
                     Button("Retry") {
                         guard !isRetryDisabled else { return }
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: .seconds(ExpendituresLayout.retryDelaySeconds)); isRetryDisabled = false }
                         Task { await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch) }
                     }
                     .buttonStyle(.borderedProminent)
@@ -79,10 +107,10 @@ struct ExpendituresView: View {
                     DataSourceBadge(source: .expenditures())
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 4)
+                .padding(.bottom, ExpendituresLayout.badgeBottomPadding)
                 searchBar
             }
-            .padding(.bottom, 10)
+            .padding(.bottom, ExpendituresLayout.insetBottomPadding)
         }
         .navigationTitle("Expenditures")
         .navigationBarTitleDisplayMode(.large)
@@ -114,7 +142,7 @@ struct ExpendituresView: View {
             }
         }
         .activitySheet($item)
-        .task(id: viewModel.selectedYear * 10 + viewModel.selectedQuarter) {
+        .task(id: viewModel.selectedYear * ExpendituresLayout.taskIDQuarterMultiplier + viewModel.selectedQuarter) {
             await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
         }
         .onAppear {
@@ -139,7 +167,7 @@ struct ExpendituresView: View {
                 }
             }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: ExpendituresLayout.periodSelectorSpacing) {
                 Text("\(String(viewModel.selectedYear)) Q\(viewModel.selectedQuarter)")
                 Image(systemName: "chevron.down")
                     .font(.caption2)
@@ -163,15 +191,15 @@ struct ExpendituresView: View {
     private var searchBar: some View {
         HStack {
             TextField("Search for a member", text: $viewModel.searchText)
-                .padding(7)
-                .padding(.horizontal, 25)
+                .padding(ExpendituresLayout.searchFieldPadding)
+                .padding(.horizontal, ExpendituresLayout.searchFieldHorizontalPadding)
                 .background(Color.clear)
                 .overlay(
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
                             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 8)
+                            .padding(.leading, ExpendituresLayout.searchIconLeadingPadding)
 
                         if !viewModel.searchText.isEmpty {
                             Button(action: {
@@ -179,14 +207,14 @@ struct ExpendituresView: View {
                             }) {
                                 Image(systemName: "multiply.circle.fill")
                                     .foregroundColor(.gray)
-                                    .padding(.trailing, 8)
+                                    .padding(.trailing, ExpendituresLayout.searchButtonTrailingPadding)
                             }
                         }
                     }
                 )
-                .padding(.horizontal, 10)
+                .padding(.horizontal, ExpendituresLayout.searchBarHorizontalPadding)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, ExpendituresLayout.searchBarVerticalPadding)
         .glassHeaderStyle()
         .padding(.horizontal)
     }
@@ -197,15 +225,15 @@ struct ExpenditureRow: View {
     let member: ParliamentMember?
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: ExpendituresLayout.rowSpacing) {
             ZStack(alignment: .bottomTrailing) {
                 if let member = member {
                     MemberAvatar(member: member)
-                        .frame(width: 44, height: 44)
+                        .frame(width: ExpendituresLayout.avatarSize, height: ExpendituresLayout.avatarSize)
                 } else {
                     Circle()
-                        .fill(Color.party(expenditure.party).opacity(0.2))
-                        .frame(width: 44, height: 44)
+                        .fill(Color.party(expenditure.party).opacity(ExpendituresLayout.avatarTintOpacity))
+                        .frame(width: ExpendituresLayout.avatarSize, height: ExpendituresLayout.avatarSize)
                         .overlay(
                             Text(expenditure.firstName.prefix(1) + expenditure.lastName.prefix(1))
                                 .font(.headline)
@@ -217,23 +245,23 @@ struct ExpenditureRow: View {
                     Image(uiImage: partyImage)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 14, height: 14)
-                        .padding(2)
+                        .frame(width: ExpendituresLayout.partyBadgeSize, height: ExpendituresLayout.partyBadgeSize)
+                        .padding(ExpendituresLayout.partyBadgePadding)
                         .background(Color.white)
                         .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.gray.opacity(0.2), lineWidth: 0.5))
-                        .offset(x: 4, y: 4)
+                        .overlay(Circle().stroke(Color.gray.opacity(ExpendituresLayout.partyBadgeBorderOpacity), lineWidth: ExpendituresLayout.partyBadgeBorderWidth))
+                        .offset(x: ExpendituresLayout.partyBadgeOffset, y: ExpendituresLayout.partyBadgeOffset)
                 }
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: ExpendituresLayout.primaryTextSpacing) {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .firstTextBaseline) {
                         memberName
                         Spacer()
                         expenditureTotal
                     }
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: ExpendituresLayout.compactTextSpacing) {
                         memberName
                         expenditureTotal
                     }
@@ -252,16 +280,16 @@ struct ExpenditureRow: View {
                         Spacer()
                         expenditureMetric(label: "Contracts", amount: expenditure.contracts)
                     }
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: ExpendituresLayout.metricStackSpacing) {
                         expenditureMetric(label: "Travel", amount: expenditure.travel)
                         expenditureMetric(label: "Hospitality", amount: expenditure.hospitality)
                         expenditureMetric(label: "Contracts", amount: expenditure.contracts)
                     }
                 }
-                .padding(.top, 4)
+                .padding(.top, ExpendituresLayout.rowVerticalPadding)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, ExpendituresLayout.rowVerticalPadding)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(expenditure.lastName), \(expenditure.firstName), \(expenditure.party.fullName), \(expenditure.constituency), total \(expenditure.total.formatted(.currency(code: "CAD")))")
     }

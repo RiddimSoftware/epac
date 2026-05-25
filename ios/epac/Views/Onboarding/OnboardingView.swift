@@ -15,30 +15,61 @@
 import SwiftData
 import SwiftUI
 
+private enum OnboardingLayout {
+	static let welcomePage = 0
+	static let postalCodePage = 1
+	static let mpConfirmPage = 2
+	static let topicsPage = 3
+	static let totalPages = 4
+	static let lastPageOffset = 1
+	static let pageIndicatorBottomPadding = EpacSpacing.m
+	static let pageIndicatorSpacing: CGFloat = 6
+	static let pageIndicatorInactiveOpacity = EpacOpacity.disabled
+	static let pageIndicatorActiveWidth: CGFloat = 20
+	static let pageIndicatorInactiveWidth: CGFloat = 6
+	static let pageIndicatorHeight: CGFloat = 6
+	static let pageIndicatorAnimationDuration = EpacAnimation.standard
+	static let welcomeIconSize: CGFloat = 80
+	static let primaryBottomPadding: CGFloat = 60
+	static let postalIconSize: CGFloat = 56
+	static let screenTopPadding: CGFloat = 60
+	static let fieldCornerRadius = EpacCornerRadius.m
+	static let largeSpacerLength: CGFloat = 80
+	static let mpIconSize: CGFloat = 64
+	static let topicsIconSize = EpacIconSize.xl
+	static let topicsPreviewLimit = 10
+	static let topicsGridBottomPadding: CGFloat = 80
+	static let dataPointIconWidth = EpacIconSize.m
+	static let topicChipMinHeight: CGFloat = 44
+	static let topicChipCornerRadius = EpacCornerRadius.m
+	static let continueButtonCornerRadius: CGFloat = 14
+	static let continueButtonBorderWidth: CGFloat = 1.5
+}
+
 @MainActor
 struct OnboardingView: View {
     var onComplete: () -> Void
 
-    @State private var page = 0
+    @State private var page = OnboardingLayout.welcomePage
     @State private var postalCodeVM = PostalCodeViewModel()
     @State private var selectedTopics: Set<String> = []
     @Environment(\.modelContext) private var modelContext
 
-    private let totalPages = 4
+    private let totalPages = OnboardingLayout.totalPages
 
     var body: some View {
         TabView(selection: $page) {
-            welcomeScreen.tag(0)
-            postalCodeScreen.tag(1)
-            mpConfirmScreen.tag(2)
-            topicsScreen.tag(3)
+            welcomeScreen.tag(OnboardingLayout.welcomePage)
+            postalCodeScreen.tag(OnboardingLayout.postalCodePage)
+            mpConfirmScreen.tag(OnboardingLayout.mpConfirmPage)
+            topicsScreen.tag(OnboardingLayout.topicsPage)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .overlay(alignment: .topTrailing) {
             if page < totalPages {
                 Button(NSLocalizedString("onboarding.skip", comment: "")) {
                     Log.info("onboarding.step.\(page).skipped")
-                    if page == totalPages - 1 {
+                    if page == totalPages - OnboardingLayout.lastPageOffset {
                         complete()
                     } else {
                         advance()
@@ -51,7 +82,7 @@ struct OnboardingView: View {
         }
         .overlay(alignment: .bottom) {
             pageIndicator
-                .padding(.bottom, 16)
+                .padding(.bottom, OnboardingLayout.pageIndicatorBottomPadding)
         }
         .onChange(of: page) { _, newPage in
             Log.info("onboarding.step.\(newPage).viewed")
@@ -64,12 +95,15 @@ struct OnboardingView: View {
     // MARK: - Page indicator
 
     private var pageIndicator: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: OnboardingLayout.pageIndicatorSpacing) {
             ForEach(0..<totalPages, id: \.self) { i in
                 Capsule()
-                    .fill(i == page ? Color.epacBrand.accent : Color.epacText.secondary.opacity(0.3))
-                    .frame(width: i == page ? 20 : 6, height: 6)
-                    .animation(.spring(duration: 0.3), value: page)
+                    .fill(i == page ? Color.epacBrand.accent : Color.epacText.secondary.opacity(OnboardingLayout.pageIndicatorInactiveOpacity))
+                    .frame(
+                        width: i == page ? OnboardingLayout.pageIndicatorActiveWidth : OnboardingLayout.pageIndicatorInactiveWidth,
+                        height: OnboardingLayout.pageIndicatorHeight
+                    )
+                    .animation(.spring(duration: OnboardingLayout.pageIndicatorAnimationDuration), value: page)
             }
         }
     }
@@ -81,7 +115,7 @@ struct OnboardingView: View {
             Spacer()
             VStack(spacing: EpacSpacing.xl) {
                 Image(systemName: "building.columns.fill")
-                    .font(.system(size: 80))
+                    .font(.system(size: OnboardingLayout.welcomeIconSize))
                     .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
 
@@ -121,7 +155,7 @@ struct OnboardingView: View {
                 advance()
             }
             .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
+            .padding(.bottom, OnboardingLayout.primaryBottomPadding)
         }
     }
 
@@ -133,10 +167,10 @@ struct OnboardingView: View {
                 VStack(spacing: EpacSpacing.xl) {
                     VStack(spacing: EpacSpacing.m) {
                         Image(systemName: "mappin.and.ellipse")
-                            .font(.system(size: 56))
+                            .font(.system(size: OnboardingLayout.postalIconSize))
                             .foregroundStyle(Color.epacBrand.accent)
                             .accessibilityHidden(true)
-                            .padding(.top, 60)
+                            .padding(.top, OnboardingLayout.screenTopPadding)
 
                         Text(NSLocalizedString("riding.setup.title", comment: ""))
                             .font(.epacDisplay.bold())
@@ -155,7 +189,7 @@ struct OnboardingView: View {
                             .autocorrectionDisabled()
                             .padding()
                             .background(Color.epacSurface.elevated)
-                            .cornerRadius(12)
+                            .cornerRadius(OnboardingLayout.fieldCornerRadius)
                             .onSubmit { lookupAndAdvance() }
 
                         Button {
@@ -172,7 +206,7 @@ struct OnboardingView: View {
                             .padding()
                             .background(Color.epacBrand.accent)
                             .foregroundStyle(Color.epacText.onAccent)
-                            .cornerRadius(12)
+                            .cornerRadius(OnboardingLayout.fieldCornerRadius)
                         }
                         .disabled(postalCodeVM.isLoading ||
                                   postalCodeVM.postalCode.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -186,7 +220,7 @@ struct OnboardingView: View {
                             .padding(.horizontal, EpacSpacing.l)
                     }
 
-                    Spacer(minLength: 80)
+                    Spacer(minLength: OnboardingLayout.largeSpacerLength)
                 }
             }
 
@@ -196,7 +230,7 @@ struct OnboardingView: View {
                 advance()
             }
             .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
+            .padding(.bottom, OnboardingLayout.primaryBottomPadding)
         }
     }
 
@@ -218,7 +252,7 @@ struct OnboardingView: View {
             if let result = postalCodeVM.result {
                 VStack(spacing: EpacSpacing.xl) {
                     Image(systemName: "person.fill.viewfinder")
-                        .font(.system(size: 64))
+                        .font(.system(size: OnboardingLayout.mpIconSize))
                         .foregroundStyle(Color.epacBrand.accent)
                         .accessibilityHidden(true)
 
@@ -291,7 +325,7 @@ struct OnboardingView: View {
                 }
             }
             .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
+            .padding(.bottom, OnboardingLayout.primaryBottomPadding)
         }
     }
 
@@ -301,10 +335,10 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             VStack(spacing: EpacSpacing.l) {
                 Image(systemName: "tag.fill")
-                    .font(.system(size: 48))
+                    .font(.system(size: OnboardingLayout.topicsIconSize))
                     .foregroundStyle(Color.epacBrand.accent)
                     .accessibilityHidden(true)
-                    .padding(.top, 60)
+                    .padding(.top, OnboardingLayout.screenTopPadding)
 
                 VStack(spacing: EpacSpacing.s) {
                     Text(NSLocalizedString("onboarding.topics.title", comment: ""))
@@ -320,7 +354,7 @@ struct OnboardingView: View {
 
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: EpacSpacing.m) {
-                    ForEach(ParliamentaryTopic.all.prefix(10)) { topic in
+                    ForEach(ParliamentaryTopic.all.prefix(OnboardingLayout.topicsPreviewLimit)) { topic in
                         TopicChip(
                             topic: topic,
                             isSelected: selectedTopics.contains(topic.id)
@@ -336,7 +370,7 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, EpacSpacing.l)
                 .padding(.vertical, EpacSpacing.l)
-                .padding(.bottom, 80)
+                .padding(.bottom, OnboardingLayout.topicsGridBottomPadding)
             }
 
             ContinueButton(label: selectedTopics.isEmpty
@@ -352,14 +386,14 @@ struct OnboardingView: View {
                 advance()
             }
             .padding(.horizontal, EpacSpacing.l)
-            .padding(.bottom, 60)
+            .padding(.bottom, OnboardingLayout.primaryBottomPadding)
         }
     }
 
     // MARK: - Navigation helpers
 
     private func advance() {
-        if page < totalPages - 1 {
+        if page < totalPages - OnboardingLayout.lastPageOffset {
             withAnimation { page += 1 }
         } else {
             complete()
@@ -384,7 +418,7 @@ private struct DataPointRow: View {
             Image(systemName: icon)
                 .font(.epacBody)
                 .foregroundStyle(Color.epacBrand.accent)
-                .frame(width: 24)
+                .frame(width: OnboardingLayout.dataPointIconWidth)
                 .accessibilityHidden(true)
             Text(text)
                 .font(.epacSubheadline)
@@ -402,11 +436,11 @@ private struct TopicChip: View {
         Button(action: action) {
             Text(topic.localizedName)
                 .font(.epacSubheadline.weight(isSelected ? .semibold : .regular))
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: OnboardingLayout.topicChipMinHeight)
                 .padding(.horizontal, EpacSpacing.m)
                 .background(isSelected ? Color.epacBrand.accent : Color.epacSurface.elevated)
                 .foregroundStyle(isSelected ? Color.epacText.onAccent : Color.epacText.primary)
-                .cornerRadius(12)
+                .cornerRadius(OnboardingLayout.topicChipCornerRadius)
         }
         .accessibilityLabel(topic.localizedName)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -427,9 +461,9 @@ private struct ContinueButton: View {
                 .padding()
                 .background(style == .primary ? Color.epacBrand.accent : Color.clear)
                 .foregroundStyle(style == .primary ? Color.epacText.onAccent : Color.epacBrand.accent)
-                .cornerRadius(14)
+                .cornerRadius(OnboardingLayout.continueButtonCornerRadius)
                 .overlay(style == .secondary
-                         ? RoundedRectangle(cornerRadius: 14).strokeBorder(Color.epacBrand.accent, lineWidth: 1.5)
+                         ? RoundedRectangle(cornerRadius: OnboardingLayout.continueButtonCornerRadius).strokeBorder(Color.epacBrand.accent, lineWidth: OnboardingLayout.continueButtonBorderWidth)
                          : nil)
         }
     }

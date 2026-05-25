@@ -10,6 +10,35 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+private enum SittingCalendarLayout {
+	static let sittingDayCornerRadius = EpacCornerRadius.m
+	static let futureSittingStrokeWidth: CGFloat = 2
+	static let interMonthSpacing: CGFloat = 15
+	static let dayMargin = EpacSpacing.s
+	static let controlsSpacing: CGFloat = 12
+	static let legendSwatchCornerRadius: CGFloat = 6
+	static let legendSwatchSize = EpacIconSize.m
+	static let legendGroupSpacing: CGFloat = 20
+	static let legendItemSpacing = EpacSpacing.s
+	static let legendIndicatorSize = EpacIconSize.xs
+	static let calendarBottomPadding = EpacSpacing.s
+	static let contentMaxWidth: CGFloat = 500
+	static let retryDelaySeconds: Int64 = 2
+	static let retryVerticalPadding: CGFloat = 10
+	static let yearPickerSpacing = EpacSpacing.xs
+	static let firstAvailableYear = 2016
+	static let yearStep = 1
+	static let januaryMonth = 1
+	static let firstDayOfMonth = 1
+	static let recessRootSpacing = EpacSpacing.l
+	static let recessIconSize: CGFloat = 80
+	static let recessIconTopPadding: CGFloat = 40
+	static let recessDateSpacing = EpacSpacing.s
+	static let recessDividerHorizontalPadding: CGFloat = 40
+	static let recessInfoSpacing = EpacSpacing.m
+	static let recessInfoHorizontalPadding: CGFloat = 30
+}
+
 struct SittingCalendarView: View {
 	@EnvironmentObject var fetch: Fetch
 	@Binding var selectedDate: DateComponents?
@@ -61,11 +90,11 @@ struct SittingCalendarView: View {
 								Circle()
 									.fill(Color.appDestructive)
 							} else if isPastSitting {
-								RoundedRectangle(cornerRadius: 12)
+								RoundedRectangle(cornerRadius: SittingCalendarLayout.sittingDayCornerRadius)
 									.fill(Color.appPositive)
 							} else if isFutureSitting {
-								RoundedRectangle(cornerRadius: 12)
-									.stroke(Color.appPositive, lineWidth: 2)
+								RoundedRectangle(cornerRadius: SittingCalendarLayout.sittingDayCornerRadius)
+									.stroke(Color.appPositive, lineWidth: SittingCalendarLayout.futureSittingStrokeWidth)
 							} else {
 								Color.clear
 							}
@@ -98,12 +127,12 @@ struct SittingCalendarView: View {
 				.onScroll({ visibleDayRange, _ in
 					updateTodayVisibility(for: visibleDayRange)
 				})
-				.interMonthSpacing(15)
-				.verticalDayMargin(8)
-				.horizontalDayMargin(8)
+				.interMonthSpacing(SittingCalendarLayout.interMonthSpacing)
+				.verticalDayMargin(SittingCalendarLayout.dayMargin)
+				.horizontalDayMargin(SittingCalendarLayout.dayMargin)
 				.padding([.leading, .trailing, .bottom])
 				.background(CalendarScrollsToTopDisabler())
-			VStack(alignment: .leading, spacing: 12) {
+			VStack(alignment: .leading, spacing: SittingCalendarLayout.controlsSpacing) {
 				Button {
 					scrollToToday(animated: true)
 				} label: {
@@ -115,10 +144,10 @@ struct SittingCalendarView: View {
 				.accessibilityHint(isTodayVisible ? "Today is already visible" : "Scrolls to today's date")
 				.accessibilityIdentifier("parliament-calendar-today-button")
 
-				HStack(spacing: 12) {
-					RoundedRectangle(cornerRadius: 6)
+				HStack(spacing: SittingCalendarLayout.controlsSpacing) {
+					RoundedRectangle(cornerRadius: SittingCalendarLayout.legendSwatchCornerRadius)
 						.fill(Color.appPositive)
-						.frame(width: 24, height: 24)
+						.frame(width: SittingCalendarLayout.legendSwatchSize, height: SittingCalendarLayout.legendSwatchSize)
 						.accessibilityHidden(true)
 					Text("Sitting days")
 						.font(.subheadline)
@@ -134,20 +163,20 @@ struct SittingCalendarView: View {
 					? "Sitting days: \(viewModel.sittingDayCount) in \(viewModel.currentYear)"
 					: "Sitting days legend")
 
-				HStack(spacing: 20) {
-					HStack(spacing: 8) {
+				HStack(spacing: SittingCalendarLayout.legendGroupSpacing) {
+					HStack(spacing: SittingCalendarLayout.legendItemSpacing) {
 						Circle()
 							.fill(Color.appDestructive)
-							.frame(width: 16, height: 16)
+							.frame(width: SittingCalendarLayout.legendIndicatorSize, height: SittingCalendarLayout.legendIndicatorSize)
 							.accessibilityHidden(true)
 						Text("Today")
 					}
 					.accessibilityLabel("Today")
 
-					HStack(spacing: 8) {
-						RoundedRectangle(cornerRadius: 4)
-							.stroke(Color.appPositive, lineWidth: 2)
-							.frame(width: 16, height: 16)
+					HStack(spacing: SittingCalendarLayout.legendItemSpacing) {
+						RoundedRectangle(cornerRadius: EpacCornerRadius.xs)
+							.stroke(Color.appPositive, lineWidth: SittingCalendarLayout.futureSittingStrokeWidth)
+							.frame(width: SittingCalendarLayout.legendIndicatorSize, height: SittingCalendarLayout.legendIndicatorSize)
 							.accessibilityHidden(true)
 						Text("Upcoming")
 					}
@@ -157,9 +186,9 @@ struct SittingCalendarView: View {
 				.foregroundColor(.secondary)
 			}
 			.padding(.horizontal)
-			.padding(.bottom, 8)
+			.padding(.bottom, SittingCalendarLayout.calendarBottomPadding)
 		}
-		.frame(maxWidth: 500)
+		.frame(maxWidth: SittingCalendarLayout.contentMaxWidth)
 		.frame(maxWidth: .infinity)
 		.task(id: viewModel.currentYear) {
 			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
@@ -171,7 +200,7 @@ struct SittingCalendarView: View {
 		}
 		.safeAreaInset(edge: .bottom) {
 			if viewModel.loadFailed {
-				HStack(spacing: 12) {
+				HStack(spacing: SittingCalendarLayout.controlsSpacing) {
 					Image(systemName: "wifi.exclamationmark")
 						.foregroundStyle(.red)
 					Text("Couldn't load sitting dates.")
@@ -180,14 +209,14 @@ struct SittingCalendarView: View {
 					Button("Retry") {
 						guard !isRetryDisabled else { return }
 						isRetryDisabled = true
-						Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+						Task { try? await Task.sleep(for: .seconds(SittingCalendarLayout.retryDelaySeconds)); isRetryDisabled = false }
 						Task { await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch) }
 					}
 					.font(.footnote.bold())
 					.disabled(isRetryDisabled)
 				}
 				.padding(.horizontal)
-				.padding(.vertical, 10)
+				.padding(.vertical, SittingCalendarLayout.retryVerticalPadding)
 				.background(.ultraThinMaterial)
 			}
 		}
@@ -199,12 +228,12 @@ struct SittingCalendarView: View {
 		.toolbar {
 			ToolbarItem(placement: .principal) {
 				// Year picker: tap ‹ or › to jump by one year; the calendar scrolls to that year's January.
-				HStack(spacing: 4) {
+				HStack(spacing: SittingCalendarLayout.yearPickerSpacing) {
 					Button {
-						let prev = viewModel.currentYear - 1
-						if prev >= 2016 {
+						let prev = viewModel.currentYear - SittingCalendarLayout.yearStep
+						if prev >= SittingCalendarLayout.firstAvailableYear {
 							Task { await viewModel.fetchSittingCalendar(prev, modelContext: modelContext, fetch: fetch) }
-							if let jan = Calendar.current.date(from: DateComponents(year: prev, month: 1, day: 1)) {
+							if let jan = Calendar.current.date(from: DateComponents(year: prev, month: SittingCalendarLayout.januaryMonth, day: SittingCalendarLayout.firstDayOfMonth)) {
 								calendarViewProxy.scrollToMonth(containing: jan, scrollPosition: .firstFullyVisiblePosition, animated: true)
 							}
 						}
@@ -212,19 +241,23 @@ struct SittingCalendarView: View {
 						Image(systemName: "chevron.left")
 							.font(.caption.weight(.semibold))
 					}
-					.disabled(viewModel.currentYear <= 2016)
+					.disabled(viewModel.currentYear <= SittingCalendarLayout.firstAvailableYear)
 					.accessibilityLabel("Previous year")
-					.accessibilityHint(viewModel.currentYear > 2016 ? "Shows \(viewModel.currentYear - 1)" : "Not available before 2016")
+					.accessibilityHint(
+						viewModel.currentYear > SittingCalendarLayout.firstAvailableYear
+							? "Shows \(viewModel.currentYear - SittingCalendarLayout.yearStep)"
+							: "Not available before \(SittingCalendarLayout.firstAvailableYear)"
+					)
 
 					Text(verbatim: "\(viewModel.currentYear)")
 						.font(.headline)
 						.monospacedDigit()
 
 					Button {
-						let next = viewModel.currentYear + 1
+						let next = viewModel.currentYear + SittingCalendarLayout.yearStep
 						if next <= Calendar.current.dateComponents([.year], from: .now).year! {
 							Task { await viewModel.fetchSittingCalendar(next, modelContext: modelContext, fetch: fetch) }
-							if let jan = Calendar.current.date(from: DateComponents(year: next, month: 1, day: 1)) {
+							if let jan = Calendar.current.date(from: DateComponents(year: next, month: SittingCalendarLayout.januaryMonth, day: SittingCalendarLayout.firstDayOfMonth)) {
 								calendarViewProxy.scrollToMonth(containing: jan, scrollPosition: .firstFullyVisiblePosition, animated: true)
 							}
 						}
@@ -234,7 +267,7 @@ struct SittingCalendarView: View {
 					}
 					.disabled(viewModel.currentYear >= Calendar.current.dateComponents([.year], from: .now).year!)
 					.accessibilityLabel("Next year")
-					.accessibilityHint("Shows \(viewModel.currentYear + 1)")
+					.accessibilityHint("Shows \(viewModel.currentYear + SittingCalendarLayout.yearStep)")
 				}
 				.accessibilityElement(children: .contain)
 			}
@@ -353,14 +386,14 @@ struct NonSittingDayView: View {
     let date: Date
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: SittingCalendarLayout.recessRootSpacing) {
             Image(systemName: "building.columns.fill")
-                .font(.system(size: 80))
+                .font(.system(size: SittingCalendarLayout.recessIconSize))
                 .foregroundColor(.accentColor)
-                .padding(.top, 40)
+                .padding(.top, SittingCalendarLayout.recessIconTopPadding)
                 .accessibilityHidden(true)
             
-            VStack(spacing: 8) {
+            VStack(spacing: SittingCalendarLayout.recessDateSpacing) {
                 Text(date.formatted(date: .long, time: .omitted))
                     .font(.title3)
                     .fontWeight(.bold)
@@ -371,9 +404,9 @@ struct NonSittingDayView: View {
             }
             
             Divider()
-                .padding(.horizontal, 40)
+                .padding(.horizontal, SittingCalendarLayout.recessDividerHorizontalPadding)
             
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: SittingCalendarLayout.recessInfoSpacing) {
                 Label("Committee Meetings", systemImage: "person.3.fill")
                     .font(.headline)
                 Text("Committees often meet even when the House is not in session to study legislation and specific issues in depth.")
@@ -386,12 +419,12 @@ struct NonSittingDayView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, SittingCalendarLayout.recessInfoHorizontalPadding)
             
             Spacer()
         }
         .padding()
-        .frame(maxWidth: 500)
+        .frame(maxWidth: SittingCalendarLayout.contentMaxWidth)
         .frame(maxWidth: .infinity)
         .navigationTitle("Recess")
         .navigationBarTitleDisplayMode(.inline)

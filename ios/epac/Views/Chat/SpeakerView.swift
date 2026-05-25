@@ -8,6 +8,16 @@
 import SwiftData
 import SwiftUI
 
+private enum SpeakerLayout {
+	static let portraitWidth: CGFloat = 46
+	static let portraitHeight: CGFloat = 77
+	static let portraitCornerRadius = EpacCornerRadius.s
+	static let placeholderSize: CGFloat = 46
+	static let partyImageSize = EpacIconSize.xl
+	static let partyImagePadding: CGFloat = 5
+	static let compactPartyImageSize = EpacIconSize.m
+}
+
 struct SpeakerView: View {
 	@Environment(\.modelContext) var modelContext
 	let speaker: ParliamentMember
@@ -22,18 +32,18 @@ struct SpeakerView: View {
 						Image(uiImage: photo)
 							.resizable()
 							.scaledToFit()
-							.frame(width: 46, height: 77)
-							.cornerRadius(8)
+							.frame(width: SpeakerLayout.portraitWidth, height: SpeakerLayout.portraitHeight)
+							.cornerRadius(SpeakerLayout.portraitCornerRadius)
 					} else {
 						ZStack {
 							Circle()
 								.fill(Color.party(speaker.party))
-								.frame(width: 46, height: 46)
+								.frame(width: SpeakerLayout.placeholderSize, height: SpeakerLayout.placeholderSize)
 							Text(speaker.initials)
 								.font(.system(.headline, design: .rounded))
 								.foregroundColor(.white)
 						}
-						.frame(width: 46, height: 77)
+						.frame(width: SpeakerLayout.portraitWidth, height: SpeakerLayout.portraitHeight)
 					}
 				}
 			}
@@ -45,8 +55,8 @@ struct SpeakerView: View {
 			if let image = speaker.party.image {
 				Image(uiImage: image)
 					.resizable()
-					.frame(width: 48, height: 48)
-					.padding(5)
+					.frame(width: SpeakerLayout.partyImageSize, height: SpeakerLayout.partyImageSize)
+					.padding(SpeakerLayout.partyImagePadding)
 					.background(.white)
 					.accessibilityHidden(true)
 			}
@@ -87,8 +97,8 @@ struct PartyImageView: View {
 		if let image = party.image {
 			Image(uiImage: image)
 				.resizable()
-				.frame(width: 24, height: 24)
-				.padding(5)
+				.frame(width: SpeakerLayout.compactPartyImageSize, height: SpeakerLayout.compactPartyImageSize)
+				.padding(SpeakerLayout.partyImagePadding)
 				.background(.white)
 				.accessibilityHidden(true)
 		}
@@ -108,18 +118,18 @@ struct SpeakerImageView: View {
 				Image(uiImage: photo)
 					.resizable()
 					.scaledToFit()
-					.frame(width: 46, height: 77)
-					.cornerRadius(8)
+					.frame(width: SpeakerLayout.portraitWidth, height: SpeakerLayout.portraitHeight)
+					.cornerRadius(SpeakerLayout.portraitCornerRadius)
 			} else {
 				ZStack {
 					Circle()
 						.fill(Color.party(speaker.party))
-						.frame(width: 46, height: 46)
+						.frame(width: SpeakerLayout.placeholderSize, height: SpeakerLayout.placeholderSize)
 					Text(speaker.initials)
 						.font(.system(.headline, design: .rounded))
 						.foregroundColor(.white)
 				}
-				.frame(width: 46, height: 77)
+				.frame(width: SpeakerLayout.portraitWidth, height: SpeakerLayout.portraitHeight)
 			}
 			PartyImageView(party: speaker.party)
 		}

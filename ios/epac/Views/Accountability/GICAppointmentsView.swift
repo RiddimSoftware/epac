@@ -5,6 +5,18 @@
 
 import SwiftUI
 
+private enum GICAppointmentsLayout {
+	static let summarySpacing: CGFloat = 10
+	static let compactTextSpacing = EpacSpacing.xxs
+	static let summaryMetricSpacing: CGFloat = 12
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let rowSpacing: CGFloat = 5
+	static let rowHeaderSpacing: CGFloat = 6
+	static let primaryLineLimit = 1
+	static let secondaryLineLimit = 2
+	static let detailSpacing = EpacSpacing.s
+}
+
 struct GICAppointmentsView: View {
 	@Environment(\.openURL) private var openURL
 	@State private var searchText = ""
@@ -95,9 +107,9 @@ struct GICAppointmentsView: View {
 	}
 
 	private var summaryCard: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: GICAppointmentsLayout.summarySpacing) {
 			HStack(alignment: .firstTextBaseline) {
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: GICAppointmentsLayout.compactTextSpacing) {
 					Text("Governor in Council appointments")
 						.font(.headline)
 					if let retrievedAt = snapshot?.retrievedAt {
@@ -113,18 +125,18 @@ struct GICAppointmentsView: View {
 			}
 
 			if let coverage = snapshot?.coverage {
-				HStack(spacing: 12) {
+				HStack(spacing: GICAppointmentsLayout.summaryMetricSpacing) {
 					metricTile(value: "\(coverage.recordsBundled)", label: "bundled")
 					metricTile(value: "\(coverage.profilesScraped)", label: "profiles")
 					metricTile(value: "\(appointments.filter { $0.orderInCouncil != nil }.count)", label: "P.C. refs")
 				}
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, GICAppointmentsLayout.compactVerticalPadding)
 	}
 
 	private func metricTile(value: String, label: String) -> some View {
-		VStack(alignment: .leading, spacing: 2) {
+		VStack(alignment: .leading, spacing: GICAppointmentsLayout.compactTextSpacing) {
 			Text(value)
 				.font(.subheadline.monospacedDigit().weight(.semibold))
 			Text(label)
@@ -172,8 +184,8 @@ private struct GICAppointmentRow: View {
 	let appointment: GICAppointment
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 5) {
-			HStack(spacing: 6) {
+		VStack(alignment: .leading, spacing: GICAppointmentsLayout.rowSpacing) {
+			HStack(spacing: GICAppointmentsLayout.rowHeaderSpacing) {
 				Text(appointment.currentAppointmentDate)
 					.font(.caption.monospacedDigit().weight(.semibold))
 					.foregroundStyle(.tint)
@@ -190,15 +202,15 @@ private struct GICAppointmentRow: View {
 
 			Text(appointment.displayName)
 				.font(.subheadline.weight(.semibold))
-				.lineLimit(1)
+				.lineLimit(GICAppointmentsLayout.primaryLineLimit)
 			Text(appointment.position)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(2)
+				.lineLimit(GICAppointmentsLayout.secondaryLineLimit)
 			Text(appointment.organization)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(1)
+				.lineLimit(GICAppointmentsLayout.primaryLineLimit)
 
 			if let compensation = appointment.compensation {
 				Text(compensation.displayValue)
@@ -206,7 +218,7 @@ private struct GICAppointmentRow: View {
 					.foregroundStyle(.tertiary)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, GICAppointmentsLayout.compactVerticalPadding)
 		.accessibilityElement(children: .combine)
 	}
 }
@@ -218,7 +230,7 @@ struct GICAppointmentDetailView: View {
 	var body: some View {
 		List {
 			Section {
-				VStack(alignment: .leading, spacing: 8) {
+				VStack(alignment: .leading, spacing: GICAppointmentsLayout.detailSpacing) {
 					Text(appointment.displayName)
 						.font(.title3.weight(.semibold))
 					Text(appointment.position)
@@ -227,7 +239,7 @@ struct GICAppointmentDetailView: View {
 						.font(.subheadline)
 						.foregroundStyle(.secondary)
 				}
-				.padding(.vertical, 4)
+				.padding(.vertical, GICAppointmentsLayout.compactVerticalPadding)
 			}
 
 			Section("Appointment") {

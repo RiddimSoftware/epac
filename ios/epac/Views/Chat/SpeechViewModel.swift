@@ -11,6 +11,23 @@ import Observation
 import SwiftData
 import SwiftUI
 
+private enum SpeechViewModelLayout {
+	static let tapHintMessageThreshold = 2
+	static let tapHintVisibleOpacity = 1.0
+	static let tapHintHiddenOpacity = 0.0
+	static let shareMessageLimit = 5
+	static let shareRootSpacing = EpacSpacing.m
+	static let shareHeaderSpacing = EpacSpacing.xs
+	static let shareHeaderOpacity = 0.8
+	static let shareHeaderBottomPadding = EpacSpacing.s
+	static let shareMessageSpacing = EpacSpacing.xs
+	static let shareSpeakerOpacity = 0.8
+	static let shareLineSpacing = EpacSpacing.xs
+	static let shareBubblePadding: CGFloat = 10
+	static let shareBubbleCornerRadius: CGFloat = 10
+	static let shareWidth: CGFloat = 400
+}
+
 @MainActor
 @Observable
 class SpeechViewModel {
@@ -25,7 +42,9 @@ class SpeechViewModel {
 	private let resolver: any MemberResolving
 
 	var tapAnywhereOpacity: Double {
-		messages.count < 2 || isResuming ? 1 : 0
+		messages.count < SpeechViewModelLayout.tapHintMessageThreshold || isResuming
+			? SpeechViewModelLayout.tapHintVisibleOpacity
+			: SpeechViewModelLayout.tapHintHiddenOpacity
 	}
 
 	init(messages: [Message] = [], resolver: any MemberResolving = CachingMemberResolver()) {
@@ -133,7 +152,7 @@ class SpeechViewModel {
 
 	@MainActor
 	func shareLast5Messages(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
-		let last5 = Array(messages.suffix(5))
+		let lastMessages = Array(messages.suffix(SpeechViewModelLayout.shareMessageLimit))
 		let baseURL = "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)"
 		let url: URL
 		if didFinish {
@@ -144,7 +163,7 @@ class SpeechViewModel {
 			url = URL(string: baseURL)!
 		}
 
-		let shareView = MultiMessageShareView(messages: last5, speakers: speakers, parliamentNumber: hansard.parliamentNumber, subjectTitle: subject.title, date: hansard.date)
+		let shareView = MultiMessageShareView(messages: lastMessages, speakers: speakers, parliamentNumber: hansard.parliamentNumber, subjectTitle: subject.title, date: hansard.date)
 		let renderer = ImageRenderer(content: shareView)
 		renderer.scale = UIScreen.main.scale
 		if let image = renderer.uiImage {
@@ -156,16 +175,16 @@ class SpeechViewModel {
 	}
 
 	private func createMessageView(_ message: Message, speaker: ParliamentMember, subject: SubjectOfBusiness, hansard: Hansard) -> some View {
-		VStack(alignment: .leading, spacing: 16) {
-			VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareRootSpacing) {
+			VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareHeaderSpacing) {
 				Text(subject.title)
 					.font(.system(.headline, design: .rounded))
 					.foregroundStyle(.gray)
 				Text(hansard.date.formatted(date: .long, time: .omitted))
 					.font(.system(.subheadline, design: .rounded))
-					.foregroundStyle(.gray.opacity(0.8))
+					.foregroundStyle(.gray.opacity(SpeechViewModelLayout.shareHeaderOpacity))
 			}
-			.padding(.bottom, 8)
+			.padding(.bottom, SpeechViewModelLayout.shareHeaderBottomPadding)
 
 			HStack(alignment: .bottom) {
 				if message.user.isCurrentUser {
@@ -175,20 +194,20 @@ class SpeechViewModel {
 					SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 				}
 				VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
-					VStack(alignment: .leading, spacing: 4) {
+					VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareMessageSpacing) {
 						VStack(alignment: .leading, spacing: 0) {
 							Text(speaker.name)
 								.font(.system(.caption, design: .rounded, weight: .bold))
 							Text("\(speaker.riding), \(speaker.province.rawValue)")
 								.font(.system(.caption2, design: .rounded))
 						}
-						.foregroundStyle(.white.opacity(0.8))
+						.foregroundStyle(.white.opacity(SpeechViewModelLayout.shareSpeakerOpacity))
 						Text(verbatim: message.text)
-							.lineSpacing(4)
+							.lineSpacing(SpeechViewModelLayout.shareLineSpacing)
 					}
-					.padding(10)
+					.padding(SpeechViewModelLayout.shareBubblePadding)
 					.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray))
-					.cornerRadius(10)
+					.cornerRadius(SpeechViewModelLayout.shareBubbleCornerRadius)
 					.foregroundStyle(.white)
 				}
 				if message.user.isCurrentUser {
@@ -202,6 +221,6 @@ class SpeechViewModel {
 		.padding()
 		.background(Color.appBackground)
 		.fixedSize(horizontal: false, vertical: true)
-		.frame(width: 400)
+		.frame(width: SpeechViewModelLayout.shareWidth)
 	}
 }

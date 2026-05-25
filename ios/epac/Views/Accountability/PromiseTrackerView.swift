@@ -7,6 +7,34 @@
 
 import SwiftUI
 
+private enum PromiseTrackerLayout {
+	static let headerSpacing: CGFloat = 12
+	static let headerTextSpacing = EpacSpacing.xs
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let statusGridMinimum: CGFloat = 112
+	static let statusGridSpacing = EpacSpacing.s
+	static let statusItemSpacing: CGFloat = 6
+	static let statusDotSize = EpacSpacing.s
+	static let statusLineLimit = 1
+	static let statusMinimumScaleFactor = 0.8
+	static let statusHorizontalPadding: CGFloat = 10
+	static let statusVerticalPadding: CGFloat = 7
+	static let statusSummaryOpacity = EpacOpacity.tint
+	static let commitmentRowSpacing = EpacSpacing.s
+	static let commitmentHeaderSpacing: CGFloat = 10
+	static let commitmentTextSpacing = EpacSpacing.xs
+	static let statusSpacerLength = EpacSpacing.s
+	static let statusRationaleLineLimit = 3
+	static let badgeHorizontalPadding = EpacSpacing.s
+	static let badgeVerticalPadding: CGFloat = 5
+	static let badgeOpacity: Double = 0.14
+	static let detailHeaderSpacing: CGFloat = 10
+	static let sourceRowSpacing: CGFloat = 12
+	static let sourceIconWidth = EpacIconSize.m
+	static let sourceTextSpacing = EpacSpacing.xs
+	static let sourceVerticalPadding = EpacSpacing.xxs
+}
+
 struct PromiseTrackerView: View {
 	@State private var dataset: PromiseTrackerDataset?
 	@State private var loadError: String?
@@ -65,8 +93,8 @@ struct PromiseTrackerView: View {
 
 	@ViewBuilder
 	private func header(_ dataset: PromiseTrackerDataset) -> some View {
-		VStack(alignment: .leading, spacing: 12) {
-			VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: PromiseTrackerLayout.headerSpacing) {
+			VStack(alignment: .leading, spacing: PromiseTrackerLayout.headerTextSpacing) {
 				Text(dataset.metadata.governingParty)
 					.font(.headline)
 				Text(dataset.metadata.platformTitle)
@@ -93,7 +121,7 @@ struct PromiseTrackerView: View {
 				.font(.caption)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, PromiseTrackerLayout.compactVerticalPadding)
 	}
 }
 
@@ -108,20 +136,24 @@ private struct PromiseStatusSummary: View {
 	}
 
 	var body: some View {
-		LazyVGrid(columns: [GridItem(.adaptive(minimum: 112), spacing: 8)], alignment: .leading, spacing: 8) {
+		LazyVGrid(
+			columns: [GridItem(.adaptive(minimum: PromiseTrackerLayout.statusGridMinimum), spacing: PromiseTrackerLayout.statusGridSpacing)],
+			alignment: .leading,
+			spacing: PromiseTrackerLayout.statusGridSpacing
+		) {
 			ForEach(counts, id: \.0.rawValue) { status, count in
-				HStack(spacing: 6) {
+				HStack(spacing: PromiseTrackerLayout.statusItemSpacing) {
 					Circle()
 						.fill(status.tone.color)
-						.frame(width: 8, height: 8)
+						.frame(width: PromiseTrackerLayout.statusDotSize, height: PromiseTrackerLayout.statusDotSize)
 					Text("\(count) \(status.rawValue)")
 						.font(.caption.weight(.semibold))
-						.lineLimit(1)
-						.minimumScaleFactor(0.8)
+						.lineLimit(PromiseTrackerLayout.statusLineLimit)
+						.minimumScaleFactor(PromiseTrackerLayout.statusMinimumScaleFactor)
 				}
-				.padding(.horizontal, 10)
-				.padding(.vertical, 7)
-				.background(status.tone.color.opacity(0.12), in: Capsule())
+				.padding(.horizontal, PromiseTrackerLayout.statusHorizontalPadding)
+				.padding(.vertical, PromiseTrackerLayout.statusVerticalPadding)
+				.background(status.tone.color.opacity(PromiseTrackerLayout.statusSummaryOpacity), in: Capsule())
 				.foregroundStyle(.primary)
 			}
 		}
@@ -132,9 +164,9 @@ private struct PromiseCommitmentRow: View {
 	let commitment: PromiseCommitment
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 8) {
-			HStack(alignment: .top, spacing: 10) {
-				VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: PromiseTrackerLayout.commitmentRowSpacing) {
+			HStack(alignment: .top, spacing: PromiseTrackerLayout.commitmentHeaderSpacing) {
+				VStack(alignment: .leading, spacing: PromiseTrackerLayout.commitmentTextSpacing) {
 					Text(commitment.promise)
 						.font(.subheadline.weight(.semibold))
 						.foregroundStyle(.primary)
@@ -143,16 +175,16 @@ private struct PromiseCommitmentRow: View {
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
-				Spacer(minLength: 8)
+				Spacer(minLength: PromiseTrackerLayout.statusSpacerLength)
 				PromiseStatusBadge(status: commitment.status)
 			}
 
 			Text(commitment.statusRationale)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(3)
+				.lineLimit(PromiseTrackerLayout.statusRationaleLineLimit)
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, PromiseTrackerLayout.compactVerticalPadding)
 	}
 }
 
@@ -163,9 +195,9 @@ private struct PromiseStatusBadge: View {
 		Text(status.rawValue)
 			.font(.caption2.weight(.bold))
 			.foregroundStyle(status.tone.color)
-			.padding(.horizontal, 8)
-			.padding(.vertical, 5)
-			.background(status.tone.color.opacity(0.14), in: Capsule())
+			.padding(.horizontal, PromiseTrackerLayout.badgeHorizontalPadding)
+			.padding(.vertical, PromiseTrackerLayout.badgeVerticalPadding)
+			.background(status.tone.color.opacity(PromiseTrackerLayout.badgeOpacity), in: Capsule())
 			.accessibilityLabel("Status: \(status.rawValue)")
 	}
 }
@@ -176,7 +208,7 @@ private struct PromiseCommitmentDetailView: View {
 	var body: some View {
 		List {
 			Section {
-				VStack(alignment: .leading, spacing: 10) {
+				VStack(alignment: .leading, spacing: PromiseTrackerLayout.detailHeaderSpacing) {
 					PromiseStatusBadge(status: commitment.status)
 					Text(commitment.promise)
 						.font(.headline)
@@ -184,7 +216,7 @@ private struct PromiseCommitmentDetailView: View {
 						.font(.subheadline)
 						.foregroundStyle(.secondary)
 				}
-				.padding(.vertical, 4)
+				.padding(.vertical, PromiseTrackerLayout.compactVerticalPadding)
 			}
 
 			Section("Platform Source") {
@@ -225,12 +257,12 @@ private struct PromiseCommitmentDetailView: View {
 	}
 
 	private func sourceLabel(title: String, subtitle: String, icon: String) -> some View {
-		HStack(alignment: .top, spacing: 12) {
+		HStack(alignment: .top, spacing: PromiseTrackerLayout.sourceRowSpacing) {
 			Image(systemName: icon)
 				.foregroundStyle(.blue)
-				.frame(width: 24)
+				.frame(width: PromiseTrackerLayout.sourceIconWidth)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: PromiseTrackerLayout.sourceTextSpacing) {
 				Text(title)
 					.font(.subheadline.weight(.semibold))
 					.foregroundStyle(.primary)
@@ -239,12 +271,12 @@ private struct PromiseCommitmentDetailView: View {
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
-			Spacer(minLength: 8)
+			Spacer(minLength: PromiseTrackerLayout.statusSpacerLength)
 			Image(systemName: "arrow.up.right.square")
 				.font(.caption)
 				.foregroundStyle(.tertiary)
 		}
-		.padding(.vertical, 2)
+		.padding(.vertical, PromiseTrackerLayout.sourceVerticalPadding)
 	}
 }
 

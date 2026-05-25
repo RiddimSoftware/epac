@@ -11,19 +11,43 @@ import Observation
 import SwiftData
 import SwiftUI
 
+private enum SpeechLayout {
+	static let speakerPlaceholderWidth: CGFloat = 51
+	static let speakerMetadataSpacing = EpacSpacing.xs
+	static let speakerMetadataOpacity = 0.8
+	static let messageLineSpacing = EpacSpacing.xs
+	static let messageBubblePadding: CGFloat = 10
+	static let messageBubbleCornerRadius: CGFloat = 10
+	static let bottomBadgePadding = EpacSpacing.xs
+	static let messageAdvanceDelayNanoseconds: UInt64 = 700_000_000
+	static let contextSpacing: CGFloat = 6
+	static let contextHorizontalPadding: CGFloat = 12
+	static let contextVerticalPadding: CGFloat = 10
+	static let contextCornerRadius = EpacCornerRadius.s
+	static let statPillSpacing = EpacSpacing.xxs
+	static let statPillRowSpacing: CGFloat = 12
+	static let statPillColumnSpacing = EpacSpacing.s
+	static let shareRootSpacing = EpacSpacing.m
+	static let shareHeaderSpacing = EpacSpacing.xs
+	static let shareHeaderOpacity = 0.8
+	static let shareHeaderBottomPadding = EpacSpacing.s
+	static let shareGroupSpacing = EpacSpacing.xs
+	static let shareWidth: CGFloat = 400
+}
+
 struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.colorScheme) var colorScheme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(NavigationRouter.self) var router
 	@EnvironmentObject var fetch: Fetch
-	@State var navigator: SubjectNavigator
+	@State private var navigator: SubjectNavigator
 
 	let hansard: Hansard
 	let subject: SubjectOfBusiness
 	let length: Int
 
-	@State var viewModel: SpeechViewModel
+	@State private var viewModel: SpeechViewModel
 	@State private var item: ActivityItem?
 	@State private var followStore = MemberFollowStore.shared
 	@State private var userProvinceCode = ""
@@ -65,11 +89,11 @@ struct SpeechView: View {
 							}
 							.accessibilityHidden(true)
 					} else {
-						Spacer(minLength: 51)
+						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
 					}
 					VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
 						HStack {
-							VStack(alignment: .leading, spacing: 4) {
+							VStack(alignment: .leading, spacing: SpeechLayout.speakerMetadataSpacing) {
 								if let speaker = viewModel.speakers[message.id] {
 									VStack(alignment: .leading, spacing: 0) {
 										Text(speaker.name)
@@ -77,14 +101,14 @@ struct SpeechView: View {
 										Text("\(speaker.riding), \(speaker.province.rawValue)")
 											.font(.system(.caption2, design: .rounded))
 									}
-									.foregroundStyle(.white.opacity(0.8))
+									.foregroundStyle(.white.opacity(SpeechLayout.speakerMetadataOpacity))
 								}
 								Text(verbatim: message.text)
-									.lineSpacing(4)
+									.lineSpacing(SpeechLayout.messageLineSpacing)
 							}
-							.padding(10)
+							.padding(SpeechLayout.messageBubblePadding)
 							.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray) )
-							.cornerRadius(10)
+							.cornerRadius(SpeechLayout.messageBubbleCornerRadius)
 							.foregroundStyle(.white)
 						}
 					}
@@ -142,7 +166,7 @@ struct SpeechView: View {
 							}
 							.accessibilityHidden(true)
 					} else {
-						Spacer(minLength: 51)
+						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
 					}
 					if !message.user.isCurrentUser {
 						Spacer()
@@ -180,7 +204,7 @@ struct SpeechView: View {
 				DataSourceBadge(source: .hansard())
 			}
 			.padding(.horizontal)
-			.padding(.bottom, 4)
+			.padding(.bottom, SpeechLayout.bottomBadgePadding)
 		}
 		.simultaneousGesture(
 			TapGesture()
@@ -193,7 +217,7 @@ struct SpeechView: View {
 		.task {
 			guard viewModel.messages.isEmpty else { return }
 			do {
-				try await Task.sleep(nanoseconds: 700_000_000)
+				try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
 				guard viewModel.messages.isEmpty else { return }
 				withAnimation(reduceMotion ? nil : .default) {
 					viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
@@ -236,7 +260,7 @@ struct SpeechView: View {
 					}
 					Task {
 						do {
-							try await Task.sleep(nanoseconds: 700_000_000)
+							try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
 							viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 						} catch {}
 					}
@@ -260,7 +284,7 @@ struct SpeechView: View {
 	private var consumerPriceIndexDebateContext: some View {
 		if isConsumerPriceIndexRelevant,
 		   let cpi = ConsumerPriceIndexStatisticsDatabase.statistic(for: userProvinceCode) {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("Inflation context", systemImage: "chart.line.uptrend.xyaxis")
 						.font(.caption.bold())
@@ -275,10 +299,10 @@ struct SpeechView: View {
 					statPill("Canada", yearOverYearLabel(cpi.nationalAllItemsYearOverYearPercent))
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -287,7 +311,7 @@ struct SpeechView: View {
 	private var employmentInsuranceDebateContext: some View {
 		if isEmploymentInsuranceRelevant,
 		   let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("EI context", systemImage: "briefcase.fill")
 						.font(.caption.bold())
@@ -307,10 +331,10 @@ struct SpeechView: View {
 					}
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -337,7 +361,7 @@ struct SpeechView: View {
 		if isStudentFinanceRelevant,
 		   let finance = StudentFinancialAssistanceStatisticsDatabase.statistic(for: userProvinceCode),
 		   let tuition = finance.latestTuitionYear {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("Student finance context", systemImage: "graduationcap.fill")
 						.font(.caption.bold())
@@ -359,10 +383,10 @@ struct SpeechView: View {
 					}
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -376,7 +400,7 @@ struct SpeechView: View {
 		if isCorrectionsRelevant,
 		   let snapshot = CorrectionsStatisticsDatabase.snapshot(),
 		   let latest = snapshot.latestAnnualStatistic {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("Corrections context", systemImage: "building.columns.fill")
 						.font(.caption.bold())
@@ -391,10 +415,10 @@ struct SpeechView: View {
 					statPill("Recidivism", percentLabel(latest.recidivismRatePercent))
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -416,7 +440,7 @@ struct SpeechView: View {
 	private var cppOasDebateContext: some View {
 		if isCPPOASRelevant,
 		   let stat = CPPOASStatisticsDatabase.statistic(for: userProvinceCode) {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				Label("Pensions context", systemImage: "person.text.rectangle.fill")
 					.font(.caption.bold())
 				statPillRow {
@@ -428,10 +452,10 @@ struct SpeechView: View {
 					}
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -446,7 +470,7 @@ struct SpeechView: View {
 		   let summary = VeteransAffairsStatisticsDatabase.nationalSummary(),
 		   let latestAnnual = VeteransAffairsStatisticsDatabase.latestAnnual(),
 		   let latestWait = latestAnnual.firstApplicationAverageWeeks {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("Veterans context", systemImage: "cross.case.fill")
 						.font(.caption.bold())
@@ -464,10 +488,10 @@ struct SpeechView: View {
 					statPill("Backlog", summary.backlogApplications.formatted())
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -488,7 +512,7 @@ struct SpeechView: View {
 		if isTransportationSafetyRelevant,
 		   let road = TransportSafetyStatisticsDatabase.roadStatistic(for: userProvinceCode),
 		   let rail = TransportSafetyStatisticsDatabase.latestModeYear("rail") {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("Transport safety context", systemImage: "car.2.fill")
 						.font(.caption.bold())
@@ -505,10 +529,10 @@ struct SpeechView: View {
 					}
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 10)
+			.padding(.horizontal, SpeechLayout.contextHorizontalPadding)
+			.padding(.vertical, SpeechLayout.contextVerticalPadding)
 			.background(Color(.secondarySystemGroupedBackground))
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: SpeechLayout.contextCornerRadius))
 			.padding(.horizontal)
 		}
 	}
@@ -528,7 +552,7 @@ struct SpeechView: View {
 	}
 
 	private func statPill(_ label: String, _ value: String) -> some View {
-		VStack(alignment: .leading, spacing: 2) {
+		VStack(alignment: .leading, spacing: SpeechLayout.statPillSpacing) {
 			Text(label)
 				.font(.caption2)
 				.foregroundStyle(.secondary)
@@ -543,10 +567,10 @@ struct SpeechView: View {
 	@ViewBuilder
 	private func statPillRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: 12) {
+			HStack(spacing: SpeechLayout.statPillRowSpacing) {
 				content()
 			}
-			VStack(alignment: .leading, spacing: 8) {
+			VStack(alignment: .leading, spacing: SpeechLayout.statPillColumnSpacing) {
 				content()
 			}
 		}
@@ -619,16 +643,16 @@ struct MultiMessageShareView: View {
 	}
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 16) {
-			VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: SpeechLayout.shareRootSpacing) {
+			VStack(alignment: .leading, spacing: SpeechLayout.shareHeaderSpacing) {
 				Text(subjectTitle)
 					.font(.system(.headline, design: .rounded))
 					.foregroundStyle(.gray)
 				Text(date.formatted(date: .long, time: .omitted))
 					.font(.system(.subheadline, design: .rounded))
-					.foregroundStyle(.gray.opacity(0.8))
+					.foregroundStyle(.gray.opacity(SpeechLayout.shareHeaderOpacity))
 			}
-			.padding(.bottom, 8)
+			.padding(.bottom, SpeechLayout.shareHeaderBottomPadding)
 
 			ForEach(groupedMessages) { group in
 				HStack(alignment: .bottom) {
@@ -638,7 +662,7 @@ struct MultiMessageShareView: View {
 						Spacer()
 					}
 
-					VStack(alignment: group.isCurrentUser ? .trailing : .leading, spacing: 4) {
+					VStack(alignment: group.isCurrentUser ? .trailing : .leading, spacing: SpeechLayout.shareGroupSpacing) {
 						if !group.isCurrentUser {
 							VStack(alignment: .leading, spacing: 0) {
 								Text(group.speaker.name)
@@ -646,18 +670,18 @@ struct MultiMessageShareView: View {
 								Text("\(group.speaker.riding), \(group.speaker.province.rawValue)")
 									.font(.system(.caption2, design: .rounded))
 							}
-							.foregroundStyle(.white.opacity(0.8))
+							.foregroundStyle(.white.opacity(SpeechLayout.speakerMetadataOpacity))
 						}
 
-						VStack(alignment: .leading, spacing: 4) {
+						VStack(alignment: .leading, spacing: SpeechLayout.shareGroupSpacing) {
 							ForEach(group.texts, id: \.self) { text in
 								Text(verbatim: text)
-									.lineSpacing(4)
+									.lineSpacing(SpeechLayout.messageLineSpacing)
 							}
 						}
-						.padding(10)
+						.padding(SpeechLayout.messageBubblePadding)
 						.background(group.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray))
-						.cornerRadius(10)
+						.cornerRadius(SpeechLayout.messageBubbleCornerRadius)
 						.foregroundStyle(.white)
 					}
 
@@ -672,6 +696,6 @@ struct MultiMessageShareView: View {
 		.padding()
 		.background(Color.appBackground)
 		.fixedSize(horizontal: false, vertical: true)
-		.frame(width: 400)
+		.frame(width: SpeechLayout.shareWidth)
 	}
 }

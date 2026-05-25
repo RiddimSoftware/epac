@@ -8,6 +8,18 @@ import Observation
 import Sentry
 import SwiftUI
 
+private enum ExpendituresViewModelLayout {
+	static let monthOffset = 1
+	static let monthsPerQuarter = 3
+	static let quarterOffset = 1
+	static let firstDataYear = 2021
+	static let firstDataQuarter = 2
+	static let firstQuarter = 1
+	static let quartersPerYear = 4
+	static let shareItemLimit = 20
+	static let shareWidth: CGFloat = 400
+}
+
 // Protocol describing the expenditure-fetch operations ExpendituresViewModel
 // needs. Fetch conforms in production; tests supply a mock without network I/O.
 protocol ExpendituresFetching: Sendable {
@@ -41,12 +53,12 @@ class ExpendituresViewModel {
 		let now = Date()
 		let cal = Calendar.current
 		let currentYear = cal.component(.year, from: now)
-		let currentQuarter = (cal.component(.month, from: now) - 1) / 3 + 1
+		let currentQuarter = (cal.component(.month, from: now) - ExpendituresViewModelLayout.monthOffset) / ExpendituresViewModelLayout.monthsPerQuarter + ExpendituresViewModelLayout.quarterOffset
 		var p: [ExpenditurePeriod] = []
-		for year in (2021...currentYear).reversed() {
-			let maxQ = (year == currentYear) ? currentQuarter : 4
-			for quarter in stride(from: maxQ, through: 1, by: -1) {
-				if year == 2021 && quarter < 2 { continue }
+		for year in (ExpendituresViewModelLayout.firstDataYear...currentYear).reversed() {
+			let maxQ = (year == currentYear) ? currentQuarter : ExpendituresViewModelLayout.quartersPerYear
+			for quarter in stride(from: maxQ, through: ExpendituresViewModelLayout.firstQuarter, by: -ExpendituresViewModelLayout.quarterOffset) {
+				if year == ExpendituresViewModelLayout.firstDataYear && quarter < ExpendituresViewModelLayout.firstDataQuarter { continue }
 				p.append(ExpenditurePeriod(year: year, quarter: quarter))
 			}
 		}
@@ -54,7 +66,7 @@ class ExpendituresViewModel {
 	}()
 
 	var selectedYear: Int = Calendar.current.component(.year, from: Date())
-	var selectedQuarter: Int = (Calendar.current.component(.month, from: Date()) - 1) / 3 + 1
+	var selectedQuarter: Int = (Calendar.current.component(.month, from: Date()) - ExpendituresViewModelLayout.monthOffset) / ExpendituresViewModelLayout.monthsPerQuarter + ExpendituresViewModelLayout.quarterOffset
 	var searchText = ""
 	var sortOrder: SortOrder = .total
 	var isLoading = false
@@ -118,21 +130,21 @@ class ExpendituresViewModel {
 				.font(.headline)
 				.padding()
 
-			ForEach(expenditures.prefix(20)) { expenditure in
+			ForEach(expenditures.prefix(ExpendituresViewModelLayout.shareItemLimit)) { expenditure in
 				let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
 				ExpenditureRow(expenditure: expenditure, member: member)
 					.padding()
 				Divider()
 			}
 
-			if expenditures.count > 20 {
-				Text("... and \(expenditures.count - 20) more")
+			if expenditures.count > ExpendituresViewModelLayout.shareItemLimit {
+				Text("... and \(expenditures.count - ExpendituresViewModelLayout.shareItemLimit) more")
 					.font(.caption)
 					.foregroundColor(.secondary)
 					.padding()
 			}
 		}
-		.frame(width: 400)
+		.frame(width: ExpendituresViewModelLayout.shareWidth)
 		.background(Color.appBackground)
 
 		let renderer = ImageRenderer(content: view)

@@ -9,6 +9,15 @@ import ActivityView
 import SwiftData
 import SwiftUI
 
+private enum ExpenditureDetailLayout {
+    static let loadingCornerRadius: CGFloat = 10
+    static let expandedRotationDegrees: Double = 90
+    static let headerVerticalPadding: CGFloat = 12
+    static let rowTextSpacing = EpacSpacing.xxs
+    static let rowDetailSpacing = EpacSpacing.xs
+    static let rowVerticalPadding = EpacSpacing.xs
+}
+
 struct ExpenditureDetailView: View {
     let expenditure: SummaryExpenditure
     @EnvironmentObject var fetch: Fetch
@@ -181,7 +190,7 @@ struct ExpenditureDetailView: View {
                     ProgressView("Fetching details...")
                         .padding()
                         .background(.ultraThinMaterial)
-                        .cornerRadius(10)
+                        .cornerRadius(ExpenditureDetailLayout.loadingCornerRadius)
                 }
             }
             .task {
@@ -216,7 +225,7 @@ struct SectionHeader: View {
         HStack {
             HStack {
                 Image(systemName: "chevron.right")
-                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .rotationEffect(.degrees(isCollapsed ? 0 : ExpenditureDetailLayout.expandedRotationDegrees))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -234,7 +243,7 @@ struct SectionHeader: View {
                     .textCase(nil)
             }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, ExpenditureDetailLayout.headerVerticalPadding)
         .padding(.horizontal)
         .glassHeaderStyle()
         .listRowInsets(EdgeInsets())
@@ -248,7 +257,7 @@ struct ShareRow: View {
     let amount: Double
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {
                 Text(title)
                     .font(.subheadline)
@@ -276,7 +285,7 @@ struct HospitalityRow: View {
     let item: HospitalityExpenditure
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {
                 Text(item.supplier)
                     .font(.subheadline)
@@ -300,7 +309,7 @@ struct HospitalityRow: View {
             .font(.caption2)
             .foregroundColor(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, ExpenditureDetailLayout.rowVerticalPadding)
     }
 }
 
@@ -308,7 +317,7 @@ struct ContractRow: View {
     let item: ContractExpenditure
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {
                 Text(item.supplier)
                     .font(.subheadline)
@@ -324,7 +333,7 @@ struct ContractRow: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, ExpenditureDetailLayout.rowVerticalPadding)
     }
 }
 
@@ -359,7 +368,7 @@ struct TravelClaimRow: View {
 
             if isExpanded {
                 ForEach(claim.details) { detail in
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowDetailSpacing) {
                         Text(detail.purposeOfTravel)
                             .fontWeight(.medium)
                         HStack(alignment: .top) {
@@ -379,10 +388,10 @@ struct TravelClaimRow: View {
                         .foregroundColor(.secondary)
                     }
                     .padding(.leading)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, ExpenditureDetailLayout.rowVerticalPadding)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, ExpenditureDetailLayout.rowVerticalPadding)
     }
 }

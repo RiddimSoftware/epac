@@ -6,6 +6,24 @@
 import SwiftData
 import SwiftUI
 
+private enum FederalProjectCostLayout {
+	static let contractFetchLimit = 20
+	static let lifecycleSpacing: CGFloat = 12
+	static let lifecycleStepSpacing = EpacSpacing.xs
+	static let lifecycleIconOpacity = 0.15
+	static let lifecycleIconSize: CGFloat = 36
+	static let lifecycleIconFontSize: CGFloat = 14
+	static let arrowWidth: CGFloat = 12
+	static let arrowTopPadding: CGFloat = 10
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let contractTextSpacing: CGFloat = 3
+	static let rowLineLimit = 2
+	static let rowVerticalPadding = EpacSpacing.xxs
+	static let sourceRowSpacing: CGFloat = 12
+	static let sourceIconWidth: CGFloat = 28
+	static let sourceTextSpacing = EpacSpacing.xxs
+}
+
 // Shows the federal government's project cost lifecycle: from initial
 // estimate through appropriated budget, actual spending, and audit findings.
 //
@@ -20,7 +38,7 @@ struct FederalProjectCostView: View {
 		var descriptor = FetchDescriptor<ContractExpenditure>(
 			sortBy: [SortDescriptor(\.total, order: .reverse)]
 		)
-		descriptor.fetchLimit = 20
+		descriptor.fetchLimit = FederalProjectCostLayout.contractFetchLimit
 		_topContracts = Query(descriptor)
 	}
 
@@ -81,20 +99,20 @@ struct FederalProjectCostView: View {
 	// MARK: - Lifecycle explainer card
 
 	private var lifecycleCard: some View {
-		VStack(alignment: .leading, spacing: 12) {
+		VStack(alignment: .leading, spacing: FederalProjectCostLayout.lifecycleSpacing) {
 			Text("How federal project costs work")
 				.font(.headline)
 
 			HStack(alignment: .top, spacing: 0) {
 				ForEach(Self.lifecycleSteps, id: \.title) { step in
-					VStack(spacing: 4) {
+					VStack(spacing: FederalProjectCostLayout.lifecycleStepSpacing) {
 						ZStack {
 							Circle()
-								.fill(step.color.opacity(0.15))
-								.frame(width: 36, height: 36)
+								.fill(step.color.opacity(FederalProjectCostLayout.lifecycleIconOpacity))
+								.frame(width: FederalProjectCostLayout.lifecycleIconSize, height: FederalProjectCostLayout.lifecycleIconSize)
 							Image(systemName: step.icon)
 								.foregroundStyle(step.color)
-								.font(.system(size: 14))
+								.font(.system(size: FederalProjectCostLayout.lifecycleIconFontSize))
 						}
 						Text(step.title)
 							.font(.system(.caption2, weight: .semibold))
@@ -106,18 +124,18 @@ struct FederalProjectCostView: View {
 						Image(systemName: "arrow.right")
 							.font(.caption2)
 							.foregroundStyle(.tertiary)
-							.frame(width: 12)
-							.padding(.top, 10)
+							.frame(width: FederalProjectCostLayout.arrowWidth)
+							.padding(.top, FederalProjectCostLayout.arrowTopPadding)
 					}
 				}
 			}
-			.padding(.vertical, 4)
+			.padding(.vertical, FederalProjectCostLayout.compactVerticalPadding)
 
 			Text("Estimates often differ from actual spending. The PBO provides independent costings; the Auditor General audits results.")
 				.font(.caption)
 				.foregroundStyle(.secondary)
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, FederalProjectCostLayout.compactVerticalPadding)
 	}
 
 	private struct LifecycleStep { let title: String; let icon: String; let color: Color }
@@ -132,14 +150,14 @@ struct FederalProjectCostView: View {
 	// MARK: - Contract rows
 
 	private func contractRow(_ contract: ContractExpenditure) -> some View {
-		VStack(alignment: .leading, spacing: 3) {
+		VStack(alignment: .leading, spacing: FederalProjectCostLayout.contractTextSpacing) {
 			Text(contract.supplier)
 				.font(.subheadline)
-				.lineLimit(2)
+				.lineLimit(FederalProjectCostLayout.rowLineLimit)
 			Text(contract.details.isEmpty ? "Contract" : contract.details)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(2)
+				.lineLimit(FederalProjectCostLayout.rowLineLimit)
 			HStack {
 				Text(contract.date.formatted(date: .abbreviated, time: .omitted))
 					.font(.caption2)
@@ -150,19 +168,19 @@ struct FederalProjectCostView: View {
 					.foregroundStyle(.primary)
 			}
 		}
-		.padding(.vertical, 2)
+		.padding(.vertical, FederalProjectCostLayout.rowVerticalPadding)
 	}
 
 	// MARK: - Source rows
 
 	private func sourceRow(title: String, subtitle: String, icon: String, color: Color, url: String) -> some View {
 		Button { if let u = URL(string: url) { openURL(u) } } label: {
-			HStack(spacing: 12) {
+			HStack(spacing: FederalProjectCostLayout.sourceRowSpacing) {
 				Image(systemName: icon)
 					.foregroundStyle(color)
-					.frame(width: 28)
+					.frame(width: FederalProjectCostLayout.sourceIconWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: FederalProjectCostLayout.sourceTextSpacing) {
 					Text(title).font(.subheadline).foregroundStyle(.primary)
 					Text(subtitle).font(.caption).foregroundStyle(.secondary)
 				}

@@ -8,6 +8,20 @@
 import SwiftData
 import SwiftUI
 
+private enum WrittenQuestionsLayout {
+    static let sectionSpacing: CGFloat = 12
+    static let previewLimit = 5
+    static let contentTopPadding = EpacSpacing.s
+    static let badgeHorizontalPadding = EpacSpacing.s
+    static let badgeVerticalPadding = EpacSpacing.xxs
+    static let cardCornerRadius = EpacCornerRadius.m
+    static let rowSpacing = EpacSpacing.xs
+    static let subjectLineLimit = 2
+    static let questionLineLimit = 3
+    static let rowVerticalPadding = EpacSpacing.xs
+    static let statusHorizontalPadding: CGFloat = 6
+}
+
 struct WrittenQuestionsSection: View {
     let member: ParliamentMember
 
@@ -28,17 +42,17 @@ struct WrittenQuestionsSection: View {
             DisclosureGroup(
                 isExpanded: $isExpanded,
                 content: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(questions.prefix(5)) { question in
+                    VStack(alignment: .leading, spacing: WrittenQuestionsLayout.sectionSpacing) {
+                        ForEach(questions.prefix(WrittenQuestionsLayout.previewLimit)) { question in
                             WrittenQuestionRow(question: question)
                         }
-                        if questions.count > 5 {
-                            Text("\(questions.count - 5) more questions")
+                        if questions.count > WrittenQuestionsLayout.previewLimit {
+                            Text("\(questions.count - WrittenQuestionsLayout.previewLimit) more questions")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(.top, WrittenQuestionsLayout.contentTopPadding)
                 },
                 label: {
                     HStack {
@@ -53,8 +67,8 @@ struct WrittenQuestionsSection: View {
                             Text("\(overdueCount) unanswered")
                                 .font(.caption)
                                 .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
+                                .padding(.horizontal, WrittenQuestionsLayout.badgeHorizontalPadding)
+                                .padding(.vertical, WrittenQuestionsLayout.badgeVerticalPadding)
                                 .background(Color.appWarning)
                                 .clipShape(Capsule())
                         }
@@ -63,7 +77,7 @@ struct WrittenQuestionsSection: View {
             )
             .padding()
             .background(Color.appSurface)
-            .cornerRadius(12)
+            .cornerRadius(WrittenQuestionsLayout.cardCornerRadius)
         }
     }
 }
@@ -72,7 +86,7 @@ private struct WrittenQuestionRow: View {
     let question: WrittenQuestion
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: WrittenQuestionsLayout.rowSpacing) {
             HStack {
                 Text("Q-\(question.number)")
                     .font(.caption.bold())
@@ -83,17 +97,17 @@ private struct WrittenQuestionRow: View {
             if !question.subject.isEmpty {
                 Text(question.subject)
                     .font(.subheadline)
-                    .lineLimit(2)
+                    .lineLimit(WrittenQuestionsLayout.subjectLineLimit)
             }
             Text(question.questionTextEn)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(WrittenQuestionsLayout.questionLineLimit)
             Text(question.dateSubmitted, style: .date)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, WrittenQuestionsLayout.rowVerticalPadding)
     }
 
     @ViewBuilder
@@ -102,8 +116,8 @@ private struct WrittenQuestionRow: View {
             Text("Overdue")
                 .font(.caption2.bold())
                 .foregroundStyle(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .padding(.horizontal, WrittenQuestionsLayout.statusHorizontalPadding)
+                .padding(.vertical, WrittenQuestionsLayout.badgeVerticalPadding)
                 .background(Color.appWarning)
                 .clipShape(Capsule())
         } else if question.responseTextEn != nil {

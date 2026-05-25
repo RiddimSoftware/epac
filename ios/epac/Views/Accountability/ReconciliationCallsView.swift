@@ -7,6 +7,38 @@
 
 import SwiftUI
 
+private enum ReconciliationLayout {
+	static let headerSpacing: CGFloat = 12
+	static let headerTextSpacing = EpacSpacing.xs
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let filterSpacing: CGFloat = 10
+	static let contextRowSpacing: CGFloat = 12
+	static let contextIconWidth: CGFloat = 28
+	static let contextTextSpacing: CGFloat = 3
+	static let statusGridMinimum: CGFloat = 112
+	static let statusGridSpacing = EpacSpacing.s
+	static let statusItemSpacing: CGFloat = 6
+	static let statusDotSize = EpacSpacing.s
+	static let statusLineLimit = 1
+	static let statusMinimumScaleFactor = 0.8
+	static let statusHorizontalPadding: CGFloat = 10
+	static let statusVerticalPadding: CGFloat = 7
+	static let statusSummaryOpacity = EpacOpacity.tint
+	static let callRowSpacing = EpacSpacing.s
+	static let callRowHeaderSpacing: CGFloat = 10
+	static let callRowTitleSpacing = EpacSpacing.xs
+	static let statusSpacerLength = EpacSpacing.s
+	static let statusSummaryLineLimit = 3
+	static let detailHeaderSpacing: CGFloat = 10
+	static let sourceRowSpacing: CGFloat = 12
+	static let sourceIconWidth = EpacIconSize.m
+	static let sourceTextSpacing = EpacSpacing.xs
+	static let sourceVerticalPadding = EpacSpacing.xxs
+	static let badgeHorizontalPadding = EpacSpacing.s
+	static let badgeVerticalPadding: CGFloat = 5
+	static let badgeOpacity: Double = 0.14
+}
+
 struct ReconciliationCallsView: View {
 	@State private var dataset: ReconciliationCallsDataset?
 	@State private var loadError: String?
@@ -76,8 +108,8 @@ struct ReconciliationCallsView: View {
 
 	@ViewBuilder
 	private func header(_ dataset: ReconciliationCallsDataset) -> some View {
-		VStack(alignment: .leading, spacing: 12) {
-			VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: ReconciliationLayout.headerSpacing) {
+			VStack(alignment: .leading, spacing: ReconciliationLayout.headerTextSpacing) {
 				Text(dataset.metadata.title)
 					.font(.headline)
 				Text("Reviewed \(dataset.metadata.lastReviewed)")
@@ -98,11 +130,11 @@ struct ReconciliationCallsView: View {
 				}
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, ReconciliationLayout.compactVerticalPadding)
 	}
 
 	private var filters: some View {
-		VStack(spacing: 10) {
+		VStack(spacing: ReconciliationLayout.filterSpacing) {
 			Picker("Theme", selection: $selectedTheme) {
 				Text("All themes").tag(nil as ReconciliationTheme?)
 				ForEach(ReconciliationTheme.allCases) { theme in
@@ -124,12 +156,12 @@ struct ReconciliationCallsView: View {
 struct ReconciliationContextCard: View {
 	var body: some View {
 		NavigationLink(destination: ReconciliationCallsView()) {
-			HStack(alignment: .top, spacing: 12) {
+			HStack(alignment: .top, spacing: ReconciliationLayout.contextRowSpacing) {
 				Image(systemName: "figure.stand.line.dotted.figure.stand")
 					.foregroundStyle(.orange)
-					.frame(width: 28)
+					.frame(width: ReconciliationLayout.contextIconWidth)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 3) {
+				VStack(alignment: .leading, spacing: ReconciliationLayout.contextTextSpacing) {
 					Text("TRC Calls to Action")
 						.font(.subheadline.weight(.semibold))
 						.foregroundStyle(.primary)
@@ -154,20 +186,24 @@ private struct ReconciliationStatusSummary: View {
 	}
 
 	var body: some View {
-		LazyVGrid(columns: [GridItem(.adaptive(minimum: 112), spacing: 8)], alignment: .leading, spacing: 8) {
+		LazyVGrid(
+			columns: [GridItem(.adaptive(minimum: ReconciliationLayout.statusGridMinimum), spacing: ReconciliationLayout.statusGridSpacing)],
+			alignment: .leading,
+			spacing: ReconciliationLayout.statusGridSpacing
+		) {
 			ForEach(counts, id: \.0.rawValue) { status, count in
-				HStack(spacing: 6) {
+				HStack(spacing: ReconciliationLayout.statusItemSpacing) {
 					Circle()
 						.fill(status.tone.color)
-						.frame(width: 8, height: 8)
+						.frame(width: ReconciliationLayout.statusDotSize, height: ReconciliationLayout.statusDotSize)
 					Text("\(count) \(status.rawValue)")
 						.font(.caption.weight(.semibold))
-						.lineLimit(1)
-						.minimumScaleFactor(0.8)
+						.lineLimit(ReconciliationLayout.statusLineLimit)
+						.minimumScaleFactor(ReconciliationLayout.statusMinimumScaleFactor)
 				}
-				.padding(.horizontal, 10)
-				.padding(.vertical, 7)
-				.background(status.tone.color.opacity(0.12), in: Capsule())
+				.padding(.horizontal, ReconciliationLayout.statusHorizontalPadding)
+				.padding(.vertical, ReconciliationLayout.statusVerticalPadding)
+				.background(status.tone.color.opacity(ReconciliationLayout.statusSummaryOpacity), in: Capsule())
 				.foregroundStyle(.primary)
 			}
 		}
@@ -178,9 +214,9 @@ private struct ReconciliationCallRow: View {
 	let call: ReconciliationCall
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 8) {
-			HStack(alignment: .top, spacing: 10) {
-				VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: ReconciliationLayout.callRowSpacing) {
+			HStack(alignment: .top, spacing: ReconciliationLayout.callRowHeaderSpacing) {
+				VStack(alignment: .leading, spacing: ReconciliationLayout.callRowTitleSpacing) {
 					Text("Call \(call.number)")
 						.font(.caption.weight(.semibold))
 						.foregroundStyle(.secondary)
@@ -189,7 +225,7 @@ private struct ReconciliationCallRow: View {
 						.foregroundStyle(.primary)
 						.fixedSize(horizontal: false, vertical: true)
 				}
-				Spacer(minLength: 8)
+				Spacer(minLength: ReconciliationLayout.statusSpacerLength)
 				ReconciliationStatusBadge(status: call.status)
 			}
 
@@ -199,9 +235,9 @@ private struct ReconciliationCallRow: View {
 			Text(call.statusSummary)
 				.font(.caption)
 				.foregroundStyle(.secondary)
-				.lineLimit(3)
+				.lineLimit(ReconciliationLayout.statusSummaryLineLimit)
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, ReconciliationLayout.compactVerticalPadding)
 	}
 }
 
@@ -211,7 +247,7 @@ private struct ReconciliationCallDetailView: View {
 	var body: some View {
 		List {
 			Section {
-				VStack(alignment: .leading, spacing: 10) {
+				VStack(alignment: .leading, spacing: ReconciliationLayout.detailHeaderSpacing) {
 					ReconciliationStatusBadge(status: call.status)
 					Text("Call \(call.number): \(call.title)")
 						.font(.headline)
@@ -219,7 +255,7 @@ private struct ReconciliationCallDetailView: View {
 						.font(.subheadline)
 						.foregroundStyle(.secondary)
 				}
-				.padding(.vertical, 4)
+				.padding(.vertical, ReconciliationLayout.compactVerticalPadding)
 			}
 
 			Section("Call Text") {
@@ -286,12 +322,12 @@ private struct ReconciliationCallDetailView: View {
 	}
 
 	private func sourceLabel(title: String, subtitle: String, icon: String) -> some View {
-		HStack(alignment: .top, spacing: 12) {
+		HStack(alignment: .top, spacing: ReconciliationLayout.sourceRowSpacing) {
 			Image(systemName: icon)
 				.foregroundStyle(.orange)
-				.frame(width: 24)
+				.frame(width: ReconciliationLayout.sourceIconWidth)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: ReconciliationLayout.sourceTextSpacing) {
 				Text(title)
 					.font(.subheadline.weight(.semibold))
 					.foregroundStyle(.primary)
@@ -300,12 +336,12 @@ private struct ReconciliationCallDetailView: View {
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
-			Spacer(minLength: 8)
+			Spacer(minLength: ReconciliationLayout.statusSpacerLength)
 			Image(systemName: "arrow.up.right.square")
 				.font(.caption)
 				.foregroundStyle(.tertiary)
 		}
-		.padding(.vertical, 2)
+		.padding(.vertical, ReconciliationLayout.sourceVerticalPadding)
 	}
 }
 
@@ -316,9 +352,9 @@ private struct ReconciliationStatusBadge: View {
 		Text(status.rawValue)
 			.font(.caption2.weight(.bold))
 			.foregroundStyle(status.tone.color)
-			.padding(.horizontal, 8)
-			.padding(.vertical, 5)
-			.background(status.tone.color.opacity(0.14), in: Capsule())
+			.padding(.horizontal, ReconciliationLayout.badgeHorizontalPadding)
+			.padding(.vertical, ReconciliationLayout.badgeVerticalPadding)
+			.background(status.tone.color.opacity(ReconciliationLayout.badgeOpacity), in: Capsule())
 			.accessibilityLabel("Status: \(status.rawValue)")
 	}
 }

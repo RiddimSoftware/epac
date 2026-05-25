@@ -13,6 +13,28 @@
 
 import SwiftUI
 
+private enum CommitteesLayout {
+    static let priorityFallbackIndex = 99
+    static let loadingSpacing = EpacSpacing.m
+    static let sourceRowSpacing: CGFloat = 12
+    static let sourceIconWidth: CGFloat = 28
+    static let compactTextSpacing: CGFloat = 3
+    static let rowVerticalPadding = EpacSpacing.xxs
+    static let rowLineLimit = 2
+    static let meetingRowSpacing: CGFloat = 5
+    static let meetingDateSpacing: CGFloat = 1
+    static let meetingVerticalPadding: CGFloat = 3
+    static let witnessPreviewLimit = 3
+    static let summaryTopPadding = EpacSpacing.xs
+    static let digestTextSpacing: CGFloat = 3
+    static let interventionSpacing: CGFloat = 6
+    static let interventionBadgeSpacing: CGFloat = 6
+    static let interventionBadgeHorizontalPadding: CGFloat = 5
+    static let interventionBadgeVerticalPadding = EpacSpacing.xxs
+    static let interventionLineLimit = 6
+    static let interventionVerticalPadding: CGFloat = 6
+}
+
 // MARK: - Committees list
 
 struct CommitteesView: View {
@@ -33,8 +55,8 @@ struct CommitteesView: View {
         let priority = committees
             .filter { priorityAcronyms.contains($0.acronym) }
             .sorted {
-                (priorityAcronyms.firstIndex(of: $0.acronym) ?? 99)
-                    < (priorityAcronyms.firstIndex(of: $1.acronym) ?? 99)
+                (priorityAcronyms.firstIndex(of: $0.acronym) ?? CommitteesLayout.priorityFallbackIndex)
+                    < (priorityAcronyms.firstIndex(of: $1.acronym) ?? CommitteesLayout.priorityFallbackIndex)
             }
         let rest = committees
             .filter { !priorityAcronyms.contains($0.acronym) }
@@ -48,7 +70,7 @@ struct CommitteesView: View {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
             } else if loadFailed && committees.isEmpty {
-                VStack(spacing: 16) {
+                VStack(spacing: CommitteesLayout.loadingSpacing) {
                     ContentUnavailableView(
                         NSLocalizedString("committees.error.title", comment: ""),
                         systemImage: "exclamationmark.triangle",
@@ -70,12 +92,12 @@ struct CommitteesView: View {
                         Button {
                             openURL(Self.senateCommitteesURL)
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: CommitteesLayout.sourceRowSpacing) {
                                 Image(systemName: "building.columns.circle.fill")
                                     .foregroundStyle(.red)
-                                    .frame(width: 28)
+                                    .frame(width: CommitteesLayout.sourceIconWidth)
                                     .accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: CommitteesLayout.compactTextSpacing) {
                                     Text("Senate Committees")
                                         .font(.subheadline)
                                         .foregroundStyle(.primary)
@@ -88,7 +110,7 @@ struct CommitteesView: View {
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
                             }
-                            .padding(.vertical, 2)
+                            .padding(.vertical, CommitteesLayout.rowVerticalPadding)
                         }
                         .accessibilityLabel("Senate Committees, opens sencanada.ca in Safari")
                     } header: {
@@ -102,15 +124,15 @@ struct CommitteesView: View {
                     Section {
                         ForEach(featured) { committee in
                             NavigationLink(destination: CommitteeMeetingsView(committee: committee)) {
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: CommitteesLayout.compactTextSpacing) {
                                     Text(committee.acronym)
                                         .font(.caption.monospacedDigit().weight(.bold))
                                         .foregroundStyle(.tint)
                                     Text(committee.name)
                                         .font(.subheadline)
-                                        .lineLimit(2)
+                                        .lineLimit(CommitteesLayout.rowLineLimit)
                                 }
-                                .padding(.vertical, 2)
+                                .padding(.vertical, CommitteesLayout.rowVerticalPadding)
                             }
                             .accessibilityLabel("\(committee.acronym), \(committee.name)")
                         }
@@ -159,7 +181,7 @@ struct CommitteeMeetingsView: View {
                 ProgressView()
                     .accessibilityLabel(Text("Loading"))
             } else if loadFailed && !hasMeetings {
-                VStack(spacing: 16) {
+                VStack(spacing: CommitteesLayout.loadingSpacing) {
                     ContentUnavailableView(
                         NSLocalizedString("committees.error.title", comment: ""),
                         systemImage: "exclamationmark.triangle",
@@ -253,7 +275,7 @@ private struct CommitteeMeetingRow: View {
     let showsWitnesses: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: CommitteesLayout.meetingRowSpacing) {
             HStack {
                 Text(
                     String(
@@ -264,7 +286,7 @@ private struct CommitteeMeetingRow: View {
                 .font(.caption.monospacedDigit().weight(.semibold))
                 Spacer()
                 if let date = meeting.date {
-                    VStack(alignment: .trailing, spacing: 1) {
+                    VStack(alignment: .trailing, spacing: CommitteesLayout.meetingDateSpacing) {
                         Text(date, style: .date)
                             .font(.caption2)
                         Text(date, style: .time)
@@ -277,25 +299,25 @@ private struct CommitteeMeetingRow: View {
                 Text(first)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(CommitteesLayout.rowLineLimit)
             }
             if showsWitnesses, !meeting.witnesses.isEmpty {
                 Text(witnessSummary)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(CommitteesLayout.rowLineLimit)
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, CommitteesLayout.meetingVerticalPadding)
     }
 
     private var witnessSummary: String {
-        let names = meeting.witnesses.prefix(3).map(\.name).joined(separator: ", ")
-        if meeting.witnesses.count > 3 {
+        let names = meeting.witnesses.prefix(CommitteesLayout.witnessPreviewLimit).map(\.name).joined(separator: ", ")
+        if meeting.witnesses.count > CommitteesLayout.witnessPreviewLimit {
             return String(
                 format: NSLocalizedString("committees.witnesses.count", comment: ""),
                 names,
-                meeting.witnesses.count - 3
+                meeting.witnesses.count - CommitteesLayout.witnessPreviewLimit
             )
         }
         return String(format: NSLocalizedString("committees.witnesses", comment: ""), names)
@@ -377,9 +399,9 @@ struct CommitteeEvidenceView: View {
                         Text(digest.summary)
                             .font(.subheadline)
                             .foregroundStyle(.primary)
-                            .padding(.top, 4)
+                            .padding(.top, CommitteesLayout.summaryTopPadding)
                     } label: {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: CommitteesLayout.digestTextSpacing) {
                             Text(digest.witnessName)
                                 .font(.subheadline.weight(.semibold))
                             if !digest.affiliation.isEmpty {
@@ -398,7 +420,7 @@ struct CommitteeEvidenceView: View {
                     DisclosureGroup("Hearing overview") {
                         Text(hearingOverview)
                             .font(.subheadline)
-                            .padding(.top, 4)
+                            .padding(.top, CommitteesLayout.summaryTopPadding)
                     }
                 }
 
@@ -440,7 +462,7 @@ struct CommitteeEvidenceView: View {
             if !meeting.witnesses.isEmpty {
                 Section(NSLocalizedString("committees.confirmedWitnesses", comment: "")) {
                     ForEach(meeting.witnesses) { witness in
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: CommitteesLayout.compactTextSpacing) {
                             Text(witness.name)
                                 .font(.subheadline.weight(.semibold))
                             if !witness.organization.isEmpty {
@@ -545,16 +567,16 @@ private struct InterventionRow: View {
     let intervention: CommitteeIntervention
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: CommitteesLayout.interventionSpacing) {
+            HStack(spacing: CommitteesLayout.interventionBadgeSpacing) {
                 Text(intervention.speakerName)
                     .font(.subheadline.weight(.semibold))
                 if intervention.isMP {
                     Text(NSLocalizedString("committees.mp", comment: ""))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
+                        .padding(.horizontal, CommitteesLayout.interventionBadgeHorizontalPadding)
+                        .padding(.vertical, CommitteesLayout.interventionBadgeVerticalPadding)
                         .background(Color.accentColor)
                         .clipShape(Capsule())
                 } else {
@@ -570,9 +592,9 @@ private struct InterventionRow: View {
             }
             Text(intervention.content)
                 .font(.body)
-                .lineLimit(6)
+                .lineLimit(CommitteesLayout.interventionLineLimit)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, CommitteesLayout.interventionVerticalPadding)
         .accessibilityElement(children: .combine)
     }
 }

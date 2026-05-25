@@ -7,6 +7,21 @@
 
 import SwiftUI
 
+private enum WhatsNewLayout {
+    static let rootSpacing: CGFloat = 24
+    static let titleSpacing = EpacSpacing.s
+    static let iconFontSize = EpacSpacing.avatar
+    static let titleTopPadding = EpacSpacing.xl
+    static let itemListSpacing: CGFloat = 20
+    static let itemRowSpacing = EpacSpacing.m
+    static let itemIconWidth: CGFloat = 36
+    static let itemTextSpacing = EpacSpacing.xs
+    static let itemHorizontalPadding = EpacSpacing.s
+    static let continueBottomPadding = EpacSpacing.xl
+    static let horizontalPadding: CGFloat = 28
+    static let autoDismissSeconds: Int64 = 5
+}
+
 struct WhatsNewEntry: Decodable {
     let version: String
     let headline: String
@@ -69,25 +84,25 @@ struct WhatsNewView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
+            VStack(spacing: WhatsNewLayout.rootSpacing) {
+                VStack(spacing: WhatsNewLayout.titleSpacing) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 40))
+                        .font(.system(size: WhatsNewLayout.iconFontSize))
                         .foregroundStyle(Color.accentColor)
                     Text(entry?.headline ?? "What's new in epac")
                         .font(.title2.bold())
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 32)
+                .padding(.top, WhatsNewLayout.titleTopPadding)
 
                 if let items = entry?.items {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: WhatsNewLayout.itemListSpacing) {
                         ForEach(items, id: \.title) { item in
-                            HStack(alignment: .top, spacing: 16) {
+                            HStack(alignment: .top, spacing: WhatsNewLayout.itemRowSpacing) {
                                 Text(item.icon)
                                     .font(.title2)
-                                    .frame(width: 36)
-                                VStack(alignment: .leading, spacing: 4) {
+                                    .frame(width: WhatsNewLayout.itemIconWidth)
+                                VStack(alignment: .leading, spacing: WhatsNewLayout.itemTextSpacing) {
                                     Text(item.title)
                                         .font(.headline)
                                     Text(item.body)
@@ -97,7 +112,7 @@ struct WhatsNewView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, WhatsNewLayout.itemHorizontalPadding)
                 }
 
                 Spacer(minLength: 0)
@@ -111,14 +126,14 @@ struct WhatsNewView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .padding(.bottom, 32)
+                .padding(.bottom, WhatsNewLayout.continueBottomPadding)
             }
-            .padding(.horizontal, 28)
+            .padding(.horizontal, WhatsNewLayout.horizontalPadding)
         }
         .onAppear {
             entry = WhatsNewManager.shared.entry()
             dismissTask = Task {
-                try? await Task.sleep(for: .seconds(5))
+                try? await Task.sleep(for: .seconds(WhatsNewLayout.autoDismissSeconds))
                 dismiss()
             }
         }
