@@ -9,7 +9,7 @@ final class FixtureHansardRepository: HansardRepository {
 	var listError: Error?
 	var storeError: Error?
 	private(set) var fetchRequests: [(jurisdiction: Jurisdiction, sittingDate: Date)] = []
-	private(set) var listRequests: [(jurisdiction: Jurisdiction, from: Date, to: Date)] = []
+	private(set) var listRequests: [ListRequest] = []
 	private(set) var storedTranscripts: [HansardTranscript] = []
 
 	init(transcripts: [HansardTranscript] = [], sittingDates: [Date] = []) {
@@ -30,8 +30,16 @@ final class FixtureHansardRepository: HansardRepository {
 		return transcript
 	}
 
-	func listSittingDates(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> [Date] {
-		listRequests.append((jurisdiction, from, to))
+	func listSittingDates(
+		jurisdiction: Jurisdiction,
+		from startDate: Date,
+		through endDate: Date
+	) async throws -> [Date] {
+		listRequests.append(ListRequest(
+			jurisdiction: jurisdiction,
+			startDate: startDate,
+			endDate: endDate
+		))
 		if let listError {
 			throw listError
 		}
@@ -45,6 +53,12 @@ final class FixtureHansardRepository: HansardRepository {
 		storedTranscripts.append(transcript)
 		transcripts[Key(jurisdiction: transcript.jurisdiction, sittingDate: transcript.sittingDate)] = transcript
 	}
+}
+
+struct ListRequest: Equatable {
+	let jurisdiction: Jurisdiction
+	let startDate: Date
+	let endDate: Date
 }
 
 enum FixtureHansardRepositoryError: Error, Equatable {

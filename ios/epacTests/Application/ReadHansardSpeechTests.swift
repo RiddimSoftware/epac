@@ -7,35 +7,29 @@ struct ReadHansardSpeechTests {
 	@Test func ordersSpeechesByFirstMessageThenMessagesByHansardID() async throws {
 		let date = Self.date(day: 4)
 		let targetSubject = SubjectOfBusinessRecord(
+			id: "subject-1",
 			title: "Housing",
-			hansardID: "subject-1",
-			speeches: [
-				Self.speech(id: "speech-b", messageIDs: ["msg-003", "msg-002"], date: date),
-				Self.speech(id: "speech-a", messageIDs: ["msg-001"], date: date)
-			],
-			currentSpeechID: nil
+			speeches: Self.messages(ids: ["msg-003", "msg-002", "msg-001"], date: date)
 		)
 		let transcript = Self.transcript(date: date, subjects: [targetSubject])
 		let useCase = ReadHansardSpeech(repository: FixtureHansardRepository(transcripts: [transcript]))
 
 		let messages = try await useCase.execute(
-			jurisdiction: .houseOfCommons,
+			jurisdiction: .federal,
 			sittingDate: date,
 			subjectID: "subject-1"
 		)
 
-		#expect(messages.map(\.hansardID) == ["msg-001", "msg-002", "msg-003"])
-		#expect(messages.map(\.speechID) == ["speech-a", "speech-b", "speech-b"])
+		#expect(messages.map(\.interventionID) == ["msg-001", "msg-002", "msg-003"])
 	}
 
 	@Test func routesJurisdictionToRepository() async throws {
 		let date = Self.date(day: 5)
-		let jurisdiction = Jurisdiction.provincial(.Ontario)
+		let jurisdiction = Jurisdiction.ontario
 		let subject = SubjectOfBusinessRecord(
+			id: "subject-on",
 			title: "Question Period",
-			hansardID: "subject-on",
-			speeches: [Self.speech(id: "speech-on", messageIDs: ["msg-on"], date: date)],
-			currentSpeechID: nil
+			speeches: Self.messages(ids: ["msg-on"], date: date)
 		)
 		let transcript = Self.transcript(jurisdiction: jurisdiction, date: date, subjects: [subject])
 		let repository = FixtureHansardRepository(transcripts: [transcript])
@@ -54,21 +48,20 @@ struct ReadHansardSpeechTests {
 	@Test func missingOrEmptySubjectReturnsNoMessages() async throws {
 		let date = Self.date(day: 6)
 		let emptySubject = SubjectOfBusinessRecord(
+			id: "empty-subject",
 			title: "Routine Proceedings",
-			hansardID: "empty-subject",
-			speeches: [],
-			currentSpeechID: nil
+			speeches: []
 		)
 		let transcript = Self.transcript(date: date, subjects: [emptySubject])
 		let useCase = ReadHansardSpeech(repository: FixtureHansardRepository(transcripts: [transcript]))
 
 		let emptyMessages = try await useCase.execute(
-			jurisdiction: .houseOfCommons,
+			jurisdiction: .federal,
 			sittingDate: date,
 			subjectID: "empty-subject"
 		)
 		let missingMessages = try await useCase.execute(
-			jurisdiction: .houseOfCommons,
+			jurisdiction: .federal,
 			sittingDate: date,
 			subjectID: "missing"
 		)
@@ -78,49 +71,39 @@ struct ReadHansardSpeechTests {
 	}
 
 	private static func transcript(
-		jurisdiction: Jurisdiction = .houseOfCommons,
+		jurisdiction: Jurisdiction = .federal,
 		date: Date,
 		subjects: [SubjectOfBusinessRecord]
 	) -> HansardTranscript {
 		HansardTranscript(
 			jurisdiction: jurisdiction,
 			sittingDate: date,
-			hansardID: "h-\(Int(date.timeIntervalSince1970))",
 			parliamentNumber: nil,
 			sessionNumber: nil,
-			orders: [
-				OrderOfBusinessRecord(
-					hansardID: "order-1",
-					catchline: "Debates",
-					subjects: subjects
-				)
-			]
+			legislatureNumber: nil,
+			sourceURL: Self.sourceURL(for: date),
+			language: Locale(identifier: "en-CA"),
+			subjects: subjects
 		)
 	}
 
-	private static func speech(id: String, messageIDs: [String], date: Date) -> HansardSpeechRecord {
-		HansardSpeechRecord(
-			messages: messageIDs.map {
-				SpeechMessageRecord(
-					speechID: id,
-					firstName: "A",
-					lastName: "Member",
-					partyAbbreviation: "Lib",
-					ridingName: "Riding",
-					hansardID: $0,
-					content: $0,
-					timestamp: date
-				)
-			},
-			hansardID: id,
-			currentMessageID: nil,
-			date: date,
-			length: messageIDs.count,
-			title: id
-		)
+	private static func messages(ids: [String], date: Date) -> [SpeechMessageRecord] {
+		ids.map {
+			SpeechMessageRecord(
+				interventionID: $0,
+				speakerName: "A Member",
+				speakerMemberID: nil,
+				text: $0,
+				timestamp: date
+			)
+		}
 	}
 
 	private static func date(day: Int) -> Date {
 		Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 5, day: day))!
+	}
+
+	private static func sourceURL(for date: Date) -> URL {
+		URL(string: "https://example.com/hansard/\(Int(date.timeIntervalSince1970))")!
 	}
 }

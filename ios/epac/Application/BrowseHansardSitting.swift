@@ -10,12 +10,16 @@ struct HansardSittingSummary: Identifiable, Equatable, Sendable {
 	let sittingDate: Date
 	let subjects: [SubjectOfBusinessRecord]
 
-	var id: String { "\(jurisdiction.id)-\(sittingDate.timeIntervalSince1970)" }
+	var id: String { "\(jurisdiction.rawValue)-\(sittingDate.timeIntervalSince1970)" }
 }
 
 @MainActor
 protocol BrowseHansardSittingUseCase: Sendable {
-	func execute(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> BrowseHansardSitting.Result
+	func execute(
+		jurisdiction: Jurisdiction,
+		from startDate: Date,
+		through endDate: Date
+	) async throws -> BrowseHansardSitting.Result
 }
 
 @MainActor
@@ -31,17 +35,17 @@ struct BrowseHansardSitting: BrowseHansardSittingUseCase {
 		self.repository = repository
 	}
 
-	func execute(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> Result {
-		guard from <= to else {
+	func execute(jurisdiction: Jurisdiction, from startDate: Date, through endDate: Date) async throws -> Result {
+		guard startDate <= endDate else {
 			return Result(sittingDates: [], sittings: [])
 		}
 
 		let sittingDates = try await repository.listSittingDates(
 			jurisdiction: jurisdiction,
-			from: from,
-			to: to
+			from: startDate,
+			through: endDate
 		)
-		.filter { from <= $0 && $0 <= to }
+		.filter { startDate <= $0 && $0 <= endDate }
 		.removingDuplicates()
 		.sorted()
 

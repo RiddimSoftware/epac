@@ -33,93 +33,95 @@ struct SittingCalendarViewModelTests {
 
     // MARK: - sittingDayCount
 
-    @Test func sittingDayCountIncludesPastAndFutureForCurrentYear() {
-        let vm = SittingCalendarViewModel()
-        let year = Calendar.current.component(.year, from: Date())
-        vm.dates.insert(dateComponents(year: year, month: 4, day: 28))
-        vm.dates.insert(dateComponents(year: year - 1, month: 12, day: 1))
-        vm.futureDates.insert(dateComponents(year: year, month: 5, day: 5))
+	@Test func sittingDayCountIncludesPastAndFutureForCurrentYear() {
+		let viewModel = SittingCalendarViewModel()
+		let year = Calendar.current.component(.year, from: Date())
+		viewModel.dates.insert(dateComponents(year: year, month: 4, day: 28))
+		viewModel.dates.insert(dateComponents(year: year - 1, month: 12, day: 1))
+		viewModel.futureDates.insert(dateComponents(year: year, month: 5, day: 5))
 
-        // Only the two dates in the current year should be counted.
-        #expect(vm.sittingDayCount == 2)
-    }
+		// Only the two dates in the current year should be counted.
+		#expect(viewModel.sittingDayCount == 2)
+	}
 
-    @Test func sittingDayCountIsZeroOnEmptyViewModel() {
-        let vm = SittingCalendarViewModel()
-        #expect(vm.sittingDayCount == 0)
-    }
+	@Test func sittingDayCountIsZeroOnEmptyViewModel() {
+		let viewModel = SittingCalendarViewModel()
+		#expect(viewModel.sittingDayCount == 0)
+	}
 
     // MARK: - upcomingSittingDates
 
-    @Test func upcomingSittingDatesFiltersToWindow() {
-        let vm = SittingCalendarViewModel()
-        let anchor = date(year: 2026, month: 5, day: 1)
-        // Inside window
-        vm.futureDates.insert(dateComponents(year: 2026, month: 5, day: 5))
-        vm.futureDates.insert(dateComponents(year: 2026, month: 5, day: 28))
-        // Outside window (> 30 days from anchor)
-        vm.futureDates.insert(dateComponents(year: 2026, month: 6, day: 15))
+	@Test func upcomingSittingDatesFiltersToWindow() {
+		let viewModel = SittingCalendarViewModel()
+		let anchor = date(year: 2026, month: 5, day: 1)
+		// Inside window
+		viewModel.futureDates.insert(dateComponents(year: 2026, month: 5, day: 5))
+		viewModel.futureDates.insert(dateComponents(year: 2026, month: 5, day: 28))
+		// Outside window (> 30 days from anchor)
+		viewModel.futureDates.insert(dateComponents(year: 2026, month: 6, day: 15))
 
-        let result = vm.upcomingSittingDates(from: anchor, throughDays: 30)
-        #expect(result.count == 2)
-    }
+		let result = viewModel.upcomingSittingDates(from: anchor, throughDays: 30)
+		#expect(result.count == 2)
+	}
 
-    @Test func upcomingSittingDatesReturnsSortedAscending() {
-        let vm = SittingCalendarViewModel()
-        let anchor = date(year: 2026, month: 5, day: 1)
-        vm.futureDates.insert(dateComponents(year: 2026, month: 5, day: 20))
-        vm.futureDates.insert(dateComponents(year: 2026, month: 5, day: 10))
+	@Test func upcomingSittingDatesReturnsSortedAscending() {
+		let viewModel = SittingCalendarViewModel()
+		let anchor = date(year: 2026, month: 5, day: 1)
+		viewModel.futureDates.insert(dateComponents(year: 2026, month: 5, day: 20))
+		viewModel.futureDates.insert(dateComponents(year: 2026, month: 5, day: 10))
 
-        let result = vm.upcomingSittingDates(from: anchor, throughDays: 30)
-        #expect(result.count == 2)
-        #expect(result[0] < result[1])
-    }
+		let result = viewModel.upcomingSittingDates(from: anchor, throughDays: 30)
+		#expect(result.count == 2)
+		#expect(result[0] < result[1])
+	}
 
     @Test func rapidRefreshKeepsNewestCompletedLoadApplied() async throws {
         let (context, fetch) = try makeDependencies()
-        let year = Calendar.current.component(.year, from: Date())
-        let staleDate = date(year: year, month: 12, day: 1)
-        let freshDate = date(year: year, month: 12, day: 2)
-        let browseUseCase = DelayedBrowseHansardSittingUseCase(staleDate: staleDate, freshDate: freshDate)
-        let vm = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
-        vm.currentYear = year
+		let year = Calendar.current.component(.year, from: Date())
+		let staleDate = date(year: year, month: 12, day: 1)
+		let freshDate = date(year: year, month: 12, day: 2)
+		let browseUseCase = DelayedBrowseHansardSittingUseCase(staleDate: staleDate, freshDate: freshDate)
+		let viewModel = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
+		viewModel.currentYear = year
 
-        let firstRefresh = Task { await vm.refresh(modelContext: context, fetch: fetch) }
-        try await Task.sleep(for: .milliseconds(10))
-        let secondRefresh = Task { await vm.refresh(modelContext: context, fetch: fetch) }
+		let firstRefresh = Task { await viewModel.refresh(modelContext: context, fetch: fetch) }
+		try await Task.sleep(for: .milliseconds(10))
+		let secondRefresh = Task { await viewModel.refresh(modelContext: context, fetch: fetch) }
 
         await firstRefresh.value
-        await secondRefresh.value
+		await secondRefresh.value
 
-        #expect(browseUseCase.callCount == 2)
-        #expect(containsYMD(vm.futureDates, year: year, month: 12, day: 2))
-        #expect(!containsYMD(vm.futureDates, year: year, month: 12, day: 1))
-        #expect(!vm.loadFailed)
-    }
+		#expect(browseUseCase.callCount == 2)
+		#expect(containsYMD(viewModel.futureDates, year: year, month: 12, day: 2))
+		#expect(!containsYMD(viewModel.futureDates, year: year, month: 12, day: 1))
+		#expect(!viewModel.loadFailed)
+	}
 
     @Test func refreshPreservesSittingDatesFromOtherYears() async throws {
-        let (context, fetch) = try makeDependencies()
-        let currentYear = Calendar.current.component(.year, from: Date())
-        let previousYear = currentYear - 1
-        let refreshedCurrentYearDate = date(year: currentYear, month: 12, day: 1)
-        let browseUseCase = SingleYearBrowseHansardSittingUseCase(updatedDates: [currentYear: [refreshedCurrentYearDate]])
+		let (context, fetch) = try makeDependencies()
+		let currentYear = Calendar.current.component(.year, from: Date())
+		let previousYear = currentYear - 1
+		let refreshedCurrentYearDate = date(year: currentYear, month: 12, day: 1)
+		let browseUseCase = SingleYearBrowseHansardSittingUseCase(
+			updatedDates: [currentYear: [refreshedCurrentYearDate]]
+		)
 
-        let vm = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
-        vm.currentYear = currentYear
-        vm.dates = [
-            dateComponents(year: previousYear, month: 6, day: 10),
-            dateComponents(year: currentYear, month: 1, day: 1)
-        ]
+		let viewModel = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
+		viewModel.currentYear = currentYear
+		viewModel.dates = [
+			dateComponents(year: previousYear, month: 6, day: 10),
+			dateComponents(year: currentYear, month: 1, day: 1)
+		]
 
-        await vm.refresh(modelContext: context, fetch: fetch)
+		await viewModel.refresh(modelContext: context, fetch: fetch)
 
-        #expect(vm.dates.contains(dateComponents(year: previousYear, month: 6, day: 10)))
-        #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 1, day: 1)))
-        #expect(!vm.dates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
-        #expect(containsYMD(vm.futureDates, year: currentYear, month: 12, day: 1))
-        #expect(browseUseCase.calls == 1)
-        #expect(!vm.loadFailed)
-    }
+		#expect(viewModel.dates.contains(dateComponents(year: previousYear, month: 6, day: 10)))
+		#expect(!viewModel.dates.contains(dateComponents(year: currentYear, month: 1, day: 1)))
+		#expect(!viewModel.dates.contains(dateComponents(year: currentYear, month: 12, day: 1)))
+		#expect(containsYMD(viewModel.futureDates, year: currentYear, month: 12, day: 1))
+		#expect(browseUseCase.calls == 1)
+		#expect(!viewModel.loadFailed)
+	}
 }
 
 @MainActor
@@ -135,10 +137,14 @@ private final class DelayedBrowseHansardSittingUseCase: BrowseHansardSittingUseC
         self.freshDate = freshDate
     }
 
-    func execute(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> BrowseHansardSitting.Result {
-        callCount += 1
+	func execute(
+		jurisdiction: Jurisdiction,
+		from startDate: Date,
+		through endDate: Date
+	) async throws -> BrowseHansardSitting.Result {
+		callCount += 1
 
-        if callCount == 1 {
+		if callCount == 1 {
             try await Task.sleep(for: .milliseconds(firstCallDelayMs))
             return BrowseHansardSitting.Result(sittingDates: [staleDate], sittings: [])
         } else {
@@ -157,11 +163,15 @@ private final class SingleYearBrowseHansardSittingUseCase: BrowseHansardSittingU
         self.updatedDates = updatedDates
     }
 
-    func execute(jurisdiction: Jurisdiction, from: Date, to: Date) async throws -> BrowseHansardSitting.Result {
-        calls += 1
-        guard let year = Calendar.current.dateComponents([.year], from: from).year else {
-            return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
-        }
+	func execute(
+		jurisdiction: Jurisdiction,
+		from startDate: Date,
+		through endDate: Date
+	) async throws -> BrowseHansardSitting.Result {
+		calls += 1
+		guard let year = Calendar.current.dateComponents([.year], from: startDate).year else {
+			return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
+		}
         return BrowseHansardSitting.Result(sittingDates: updatedDates[year] ?? [], sittings: [])
     }
 }

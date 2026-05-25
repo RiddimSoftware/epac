@@ -148,11 +148,15 @@ class SittingCalendarViewModel {
 		generation == loadGeneration
 	}
 
-	private func loadSittingWindow(year: Int, modelContext: ModelContext, fetch: Fetch) async throws -> BrowseHansardSitting.Result {
-		guard let from = Foundation.Calendar.current.date(
+	private func loadSittingWindow(
+		year: Int,
+		modelContext: ModelContext,
+		fetch: Fetch
+	) async throws -> BrowseHansardSitting.Result {
+		guard let startDate = Foundation.Calendar.current.date(
 			from: DateComponents(year: year, month: CalendarBoundary.january, day: CalendarBoundary.firstDayOfMonth)
 		),
-		let to = Foundation.Calendar.current.date(
+		let endDate = Foundation.Calendar.current.date(
 			from: DateComponents(year: year, month: CalendarBoundary.december, day: CalendarBoundary.lastDayOfDecember)
 		) else {
 			return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
@@ -161,7 +165,7 @@ class SittingCalendarViewModel {
 		let useCase = browseHansardSitting ?? BrowseHansardSitting(
 			repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
 		)
-		return try await useCase.execute(jurisdiction: .houseOfCommons, from: from, to: to)
+		return try await useCase.execute(jurisdiction: .federal, from: startDate, through: endDate)
 	}
 
 	private func makeDateComponentSets(from sittings: [Date]) -> (past: Set<DateComponents>, future: Set<DateComponents>) {

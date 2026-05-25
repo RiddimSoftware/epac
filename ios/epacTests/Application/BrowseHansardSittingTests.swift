@@ -18,11 +18,11 @@ struct BrowseHansardSittingTests {
 		)
 		let useCase = BrowseHansardSitting(repository: repository)
 
-		let result = try await useCase.execute(
-			jurisdiction: .houseOfCommons,
-			from: first,
-			to: second
-		)
+			let result = try await useCase.execute(
+				jurisdiction: .federal,
+				from: first,
+				through: second
+			)
 
 		#expect(result.sittingDates == [first, second])
 		#expect(result.sittings.map(\.sittingDate) == [first, second])
@@ -44,11 +44,11 @@ struct BrowseHansardSittingTests {
 		)
 		let useCase = BrowseHansardSitting(repository: repository)
 
-		let result = try await useCase.execute(
-			jurisdiction: .houseOfCommons,
-			from: first,
-			to: second
-		)
+			let result = try await useCase.execute(
+				jurisdiction: .federal,
+				from: first,
+				through: second
+			)
 
 		#expect(result.sittings[0].subjects.map(\.title) == ["Housing", "Finance"])
 		#expect(result.sittings[1].subjects.map(\.title) == ["Environment"])
@@ -60,36 +60,36 @@ struct BrowseHansardSittingTests {
 		let useCase = BrowseHansardSitting(repository: repository)
 
 		await #expect(throws: FixtureHansardRepositoryError.listFailed) {
-			try await useCase.execute(
-				jurisdiction: .houseOfCommons,
-				from: Self.date(day: 1),
-				to: Self.date(day: 2)
-			)
+				try await useCase.execute(
+					jurisdiction: .federal,
+					from: Self.date(day: 1),
+					through: Self.date(day: 2)
+				)
 		}
 	}
 
 	private static func transcript(date: Date, subjects: [SubjectOfBusinessRecord]) -> HansardTranscript {
 		HansardTranscript(
-			jurisdiction: .houseOfCommons,
+			jurisdiction: .federal,
 			sittingDate: date,
-			hansardID: "h-\(Int(date.timeIntervalSince1970))",
 			parliamentNumber: 45,
 			sessionNumber: 1,
-			orders: [
-				OrderOfBusinessRecord(
-					hansardID: "order-1",
-					catchline: "Debates",
-					subjects: subjects
-				)
-			]
+			legislatureNumber: nil,
+			sourceURL: Self.sourceURL(for: date),
+			language: Locale(identifier: "en-CA"),
+			subjects: subjects
 		)
 	}
 
 	private static func subject(id: String, title: String) -> SubjectOfBusinessRecord {
-		SubjectOfBusinessRecord(title: title, hansardID: id, speeches: [], currentSpeechID: nil)
+		SubjectOfBusinessRecord(id: id, title: title, speeches: [])
 	}
 
 	private static func date(day: Int) -> Date {
 		Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 5, day: day))!
+	}
+
+	private static func sourceURL(for date: Date) -> URL {
+		URL(string: "https://example.com/hansard/\(Int(date.timeIntervalSince1970))")!
 	}
 }

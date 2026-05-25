@@ -5,6 +5,7 @@
 //  Created by Sunny on 2024-12-16.
 //
 
+// swiftlint:disable type_body_length
 import ActivityView
 import ExyteChat
 import Observation
@@ -72,18 +73,19 @@ struct SpeechView: View {
 			cppOasDebateContext
 			veteransAffairsDebateContext
 			transportationSafetyDebateContext
-			ChatView(messages: viewModel.messages) { _ in
-				/// didSendMessage
-			}
-			messageBuilder: { message, positionInGroup, _, _, _, _, _ in
-				HStack(alignment: .bottom) {
-					if message.user.isCurrentUser {
-						Spacer()
-					}
-					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
-						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-							.onTapGesture {
-								openSpeakerProfile(speaker)
+				ChatView(messages: viewModel.messages) { _ in
+					/// didSendMessage
+				}
+				messageBuilder: { message, positionInGroup, _, _, _, _, _ in
+					HStack(alignment: .bottom) {
+						if message.user.isCurrentUser {
+							Spacer()
+						}
+						// swiftlint:disable:next line_length
+						if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
+							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
+								.onTapGesture {
+									openSpeakerProfile(speaker)
 							}
 							.accessibilityHidden(true)
 					} else {
@@ -132,13 +134,16 @@ struct SpeechView: View {
 								)
 							}
 							Button {
-								router.selectedMember = speaker
-								router.selectedTab = .members
-							} label: {
-								Label(String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName), systemImage: "person.circle")
-							}
-							Button {
-								UIPasteboard.general.string = message.text
+									router.selectedMember = speaker
+									router.selectedTab = .members
+								} label: {
+									Label(
+										String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName),
+										systemImage: "person.circle"
+									)
+								}
+								Button {
+									UIPasteboard.general.string = message.text
 							} label: {
 								Label(NSLocalizedString("speech.copyQuote", comment: ""), systemImage: "doc.on.doc")
 							}
@@ -152,15 +157,16 @@ struct SpeechView: View {
 					.accessibilityAction(named: NSLocalizedString("speech.copyQuote", comment: "")) {
 						UIPasteboard.general.string = message.text
 					}
-					.accessibilityAction(named: NSLocalizedString("View member profile", comment: "")) {
-						if let speaker = viewModel.speakers[message.id] {
-							openSpeakerProfile(speaker)
-						}
-					}
-					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
-						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-							.onTapGesture {
+						.accessibilityAction(named: NSLocalizedString("View member profile", comment: "")) {
+							if let speaker = viewModel.speakers[message.id] {
 								openSpeakerProfile(speaker)
+							}
+						}
+						// swiftlint:disable:next line_length
+						if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
+							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
+								.onTapGesture {
+									openSpeakerProfile(speaker)
 							}
 							.accessibilityHidden(true)
 					} else {
@@ -219,7 +225,7 @@ struct SpeechView: View {
 					repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
 				))
 				try await viewModel.loadSpeech(
-					jurisdiction: .houseOfCommons,
+					jurisdiction: .federal,
 					sittingDate: hansard.date,
 					subjectID: subject.hansardID
 				)
@@ -240,14 +246,18 @@ struct SpeechView: View {
 				subjectTitle: subject.title
 			)
 		}
-		.activitySheet($item)
-		.toolbar {
-			ToolbarItem(placement: .topBarLeading) {
-				Menu {
-					if let url = URL(string: "https://openparliament.ca/debates/\(hansard.parliamentNumber)/\(hansard.sessionNumber)/\(DateUtils.getCSVStringFromDate(hansard.date))/") {
-						Link(destination: url) {
-							Label(NSLocalizedString("speech.openOpenParliament", comment: ""), systemImage: "safari")
-						}
+			.activitySheet($item)
+			.toolbar {
+				ToolbarItem(placement: .topBarLeading) {
+					Menu {
+						let openParliamentURL = "https://openparliament.ca/debates/"
+							+ "\(hansard.parliamentNumber)/"
+							+ "\(hansard.sessionNumber)/"
+							+ "\(DateUtils.getCSVStringFromDate(hansard.date))/"
+						if let url = URL(string: openParliamentURL) {
+							Link(destination: url) {
+								Label(NSLocalizedString("speech.openOpenParliament", comment: ""), systemImage: "safari")
+							}
 					}
 					if let url = ParlVULinkBuilder.houseDebateURL(for: hansard.date) {
 						Link(destination: url) {
@@ -316,23 +326,25 @@ struct SpeechView: View {
 	@ViewBuilder
 	private var employmentInsuranceDebateContext: some View {
 		if isEmploymentInsuranceRelevant,
-		   let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
+		   let insuranceStatistic = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
 			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("EI context", systemImage: "briefcase.fill")
 						.font(.caption.bold())
 					Spacer()
-					Text(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))
+					Text(EmploymentInsuranceStatisticsDatabase.monthLabel(insuranceStatistic.referenceMonth))
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
 				statPillRow {
-					statPill("Beneficiaries", ei.beneficiaries.formatted())
+					statPill("Beneficiaries", insuranceStatistic.beneficiaries.formatted())
 					statPill(
 						"Avg. benefit",
-						ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
+						insuranceStatistic.averageWeeklyBenefit.formatted(
+							.currency(code: "CAD").precision(.fractionLength(0))
+						)
 					)
-					if let change = ei.claimsYearOverYearChangePercent {
+					if let change = insuranceStatistic.claimsYearOverYearChangePercent {
 						statPill("Claims YoY", yearOverYearLabel(change))
 					}
 				}
@@ -621,6 +633,8 @@ struct SpeechView: View {
 	}
 }
 
+// swiftlint:enable type_body_length
+
 struct MultiMessageShareView: View {
 	let messages: [Message]
 	let speakers: [String: ParliamentMember]
@@ -635,18 +649,23 @@ struct MultiMessageShareView: View {
 		var texts: [String]
 	}
 
-	var groupedMessages: [MessageGroup] {
-		var groups: [MessageGroup] = []
-		for message in messages {
-			guard let speaker = speakers[message.id] else { continue }
-			if let lastIndex = groups.indices.last, groups[lastIndex].speaker.name == speaker.name {
-				groups[lastIndex].texts.append(message.text)
-			} else {
-				groups.append(MessageGroup(id: message.id, speaker: speaker, isCurrentUser: message.user.isCurrentUser, texts: [message.text]))
+		var groupedMessages: [MessageGroup] {
+			var groups: [MessageGroup] = []
+			for message in messages {
+				guard let speaker = speakers[message.id] else { continue }
+				if let lastIndex = groups.indices.last, groups[lastIndex].speaker.name == speaker.name {
+					groups[lastIndex].texts.append(message.text)
+				} else {
+					groups.append(MessageGroup(
+						id: message.id,
+						speaker: speaker,
+						isCurrentUser: message.user.isCurrentUser,
+						texts: [message.text]
+					))
+				}
 			}
+			return groups
 		}
-		return groups
-	}
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: SpeechLayout.shareRootSpacing) {
@@ -704,4 +723,4 @@ struct MultiMessageShareView: View {
 		.fixedSize(horizontal: false, vertical: true)
 		.frame(width: SpeechLayout.shareWidth)
 	}
-}
+} // swiftlint:disable:this file_length
