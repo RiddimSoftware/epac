@@ -73,7 +73,7 @@ class TestEnsureBetaAppReviewDetail:
         )
         assert result == {"status": "updated", "id": "detail-456"}
 
-    def test_missing_contact_input_raises_only_for_missing_asc_fields(self):
+    def test_missing_contact_input_skips_for_missing_asc_fields(self):
         get_resp = MagicMock()
         get_resp.status_code = 200
         get_resp.json.return_value = {
@@ -87,15 +87,37 @@ class TestEnsureBetaAppReviewDetail:
                 },
             }
         }
-        with pytest.raises(
-            RuntimeError,
-            match="contactLastName \\(BETA_REVIEW_CONTACT_LAST_NAME\\)",
-        ):
-            ensure_beta_app_review_detail(
-                "app-1", "token",
-                "", "", "", "",
-                http_get=lambda *a, **kw: get_resp,
-            )
+        result = ensure_beta_app_review_detail(
+            "app-1", "token",
+            "", "", "", "",
+            http_get=lambda *a, **kw: get_resp,
+        )
+        assert result["status"] == "skipped"
+        assert result["id"] == "detail-456"
+        assert any("contactLastName" in f for f in result["missing_fields"])
+
+    def test_all_contact_fields_missing_skips(self):
+        get_resp = MagicMock()
+        get_resp.status_code = 200
+        get_resp.json.return_value = {
+            "data": {
+                "id": "detail-456",
+                "attributes": {
+                    "contactEmail": None,
+                    "contactFirstName": None,
+                    "contactLastName": None,
+                    "contactPhone": None,
+                },
+            }
+        }
+        result = ensure_beta_app_review_detail(
+            "app-1", "token",
+            "", "", "", "",
+            http_get=lambda *a, **kw: get_resp,
+        )
+        assert result["status"] == "skipped"
+        assert result["id"] == "detail-456"
+        assert len(result["missing_fields"]) == 4
 
     def test_patch_failure_raises(self):
         get_resp = MagicMock()

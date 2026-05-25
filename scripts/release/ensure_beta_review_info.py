@@ -112,16 +112,17 @@ def ensure_beta_app_review_detail(
                 "contactPhone": contact_phone,
             }
             missing_inputs = [
-                f"{field} ({REVIEW_CONTACT_FIELDS[field]})"
-                for field in missing_fields
+                field for field in missing_fields
                 if not contact_values.get(field)
             ]
             if missing_inputs:
-                raise RuntimeError(
-                    "Missing beta app review contact details. Set "
-                    + ", ".join(missing_inputs)
-                    + " or populate Beta App Review Details in App Store Connect."
-                )
+                return {
+                    "status": "skipped",
+                    "id": detail_id,
+                    "missing_fields": [
+                        f"{f} ({REVIEW_CONTACT_FIELDS[f]})" for f in missing_inputs
+                    ],
+                }
             patch_url = f"{BASE_URL}/betaAppReviewDetails/{detail_id}"
             patch_payload = {
                 "data": {
@@ -245,6 +246,16 @@ def main() -> None:
     except Exception as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stderr)
         sys.exit(1)
+
+    if review_result.get("status") == "skipped":
+        print(
+            json.dumps({
+                "warning": "Beta review contact details incomplete. "
+                "Set " + ", ".join(review_result["missing_fields"])
+                + " or populate in App Store Connect.",
+            }),
+            file=sys.stderr,
+        )
 
     print(json.dumps({
         "beta_app_review_detail": review_result,
