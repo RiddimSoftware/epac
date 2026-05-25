@@ -16,53 +16,37 @@ All modules use an S3 backend with DynamoDB locking in `us-east-1`.
 | staging | `epac-tfstate-staging-227530433709` | `staging.tfstate` | `epac-tfstate-lock-staging` |
 | production | `epac-tfstate-production-227530433709` | `production.tfstate` | `epac-tfstate-lock-production` |
 
+`infra/terraform/bootstrap.sh` (added in A1) handles the per-account bootstrap for state storage.
+Backend blocks are declared in each workspace `versions.tf` and were set by A2.
+
 The account ID is hard-coded in each backend block because Terraform loads backend configuration before variables are available.
 
-## Bootstrap
+## Local operator path
 
-Run the bootstrap script before `terraform init` in a fresh account or before migrating existing state:
-
-```bash
-cd infra/terraform
-export AWS_PROFILE=riddim-agent
-./bootstrap.sh staging
-```
-
-`bootstrap.sh staging` creates the `core` and `staging` backend resources. `bootstrap.sh production` creates the `core` and `production` backend resources. The script is idempotent; existing buckets and lock tables produce `bucket exists, no-op` and `lock table exists, no-op` log lines.
-
-No human AWS console or pre-created bucket/table steps are required for state storage.
-
-## Local Terraform Use
+From a terminal:
 
 ```bash
-cd infra/terraform/staging
-export AWS_PROFILE=riddim-agent
+aws sso login
+bash infra/terraform/bootstrap.sh <env>
+cd infra/terraform/<env>
 terraform init
 terraform plan
 ```
 
-For the shared artifact infrastructure, use `infra/terraform/core`. For production, use `infra/terraform/production` and keep the existing production human gate before any apply.
+`<env>` is one of `core`, `staging`, or `production`.
 
-To migrate an already-initialized local checkout from the previous backend configuration to the current backend:
+For an existing repository, this is the standard local path after bootstrap.
 
-```bash
-terraform init -migrate-state -force-copy
-terraform state list
-terraform plan
-```
+### Fresh AWS account
 
-Do not commit generated state, plan, variable, lock, or `.terraform/` files.
+From a fresh account, this is the full path:
 
-## Bootstrap Smoke Test
+1. `aws sso login`
+2. `bash infra/terraform/bootstrap.sh <env>`
+3. `cd infra/terraform/<env> && terraform init && terraform plan`
 
-From a scratch AWS account or disposable sub-account with the IAM permissions documented in `bootstrap.sh`, run:
+`bootstrap.sh` owns the substrate creation step, including any first-time state migration; no additional human AWS steps are required.
 
-```bash
-cd infra/terraform
-./bootstrap.sh staging
-./bootstrap.sh staging
-aws s3api get-bucket-versioning --bucket "epac-tfstate-staging-$(aws sts get-caller-identity --query Account --output text --region us-east-1)" --region us-east-1
-aws dynamodb describe-table --table-name epac-tfstate-lock-staging --region us-east-1 --query 'Table.BillingModeSummary.BillingMode'
-```
+## Existing committed local state
 
-The first run creates the `core` and `staging` buckets/tables. The second run exits 0 with no-op lines for both workspaces.
+Committed local `terraform.tfstate*` files were removed after the migration in [EPAC-2060](https://github.com/RiddimSoftware/epac/pull/594).
