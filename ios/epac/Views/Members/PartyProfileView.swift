@@ -6,6 +6,24 @@
 import SwiftData
 import SwiftUI
 
+private enum PartyProfileLayout {
+	static let rootSpacing: CGFloat = 20
+	static let headerSpacing: CGFloat = 14
+	static let partyLogoSize: CGFloat = 56
+	static let logoCornerRadius = EpacCornerRadius.s
+	static let cardCornerRadius = EpacCornerRadius.m
+	static let compactTextSpacing = EpacSpacing.xxs
+	static let seatRowSpacing: CGFloat = 12
+	static let seatCountFontSize: CGFloat = 44
+	static let cardTextSpacing: CGFloat = 6
+	static let caucusSpacing: CGFloat = 10
+	static let filterSpacing = EpacSpacing.xs
+	static let memberRowSpacing: CGFloat = 10
+	static let memberAvatarSize: CGFloat = 36
+	static let memberTextSpacing: CGFloat = 1
+	static let memberVerticalPadding = EpacSpacing.xs
+}
+
 // Party profile: aggregate view for a single Party.
 //
 // Seat count is computed from the ParliamentMember table, so by-elections and
@@ -36,7 +54,7 @@ struct PartyProfileView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(alignment: .leading, spacing: 20) {
+			VStack(alignment: .leading, spacing: PartyProfileLayout.rootSpacing) {
 				headerCard
 				seatCountCard
 				historicalSeatsPlaceholder
@@ -54,19 +72,19 @@ struct PartyProfileView: View {
 	}
 
 	private var headerCard: some View {
-		HStack(spacing: 14) {
+		HStack(spacing: PartyProfileLayout.headerSpacing) {
 			if let image = party.image {
 				Image(uiImage: image)
 					.resizable()
 					.aspectRatio(contentMode: .fit)
-					.frame(width: 56, height: 56)
+					.frame(width: PartyProfileLayout.partyLogoSize, height: PartyProfileLayout.partyLogoSize)
 					.accessibilityHidden(true)
 			} else {
-				RoundedRectangle(cornerRadius: 8)
+				RoundedRectangle(cornerRadius: PartyProfileLayout.logoCornerRadius)
 					.fill(Color(party.colour))
-					.frame(width: 56, height: 56)
+					.frame(width: PartyProfileLayout.partyLogoSize, height: PartyProfileLayout.partyLogoSize)
 			}
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: PartyProfileLayout.compactTextSpacing) {
 				Text(party.fullName)
 					.font(.title3.weight(.semibold))
 				Text(party.localizedAbbreviation)
@@ -77,15 +95,15 @@ struct PartyProfileView: View {
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(PartyProfileLayout.cardCornerRadius)
 	}
 
 	private var seatCountCard: some View {
-		HStack(alignment: .firstTextBaseline, spacing: 12) {
+		HStack(alignment: .firstTextBaseline, spacing: PartyProfileLayout.seatRowSpacing) {
 			Text("\(seatCount)")
-				.font(.system(size: 44, weight: .bold, design: .rounded))
+				.font(.system(size: PartyProfileLayout.seatCountFontSize, weight: .bold, design: .rounded))
 				.foregroundStyle(Color(party.colour))
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: PartyProfileLayout.compactTextSpacing) {
 				Text(seatCount == 1 ? "Current seat" : "Current seats")
 					.font(.headline)
 				Text("Calculated from current sitting MPs")
@@ -97,7 +115,7 @@ struct PartyProfileView: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(PartyProfileLayout.cardCornerRadius)
 		.accessibilityElement(children: .combine)
 		.accessibilityLabel("\(seatCount) current seats")
 		.accessibilityIdentifier("party-profile-seat-count")
@@ -118,7 +136,7 @@ struct PartyProfileView: View {
 	}
 
 	private func deferredCard(title: String, body: String) -> some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: PartyProfileLayout.cardTextSpacing) {
 			Text(title)
 				.font(.headline)
 			Text(body)
@@ -129,11 +147,11 @@ struct PartyProfileView: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(PartyProfileLayout.cardCornerRadius)
 	}
 
 	private func websiteCard(url: URL) -> some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: PartyProfileLayout.cardTextSpacing) {
 			Link(destination: url) {
 				HStack {
 					Label("Official party website", systemImage: "globe")
@@ -150,12 +168,12 @@ struct PartyProfileView: View {
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(PartyProfileLayout.cardCornerRadius)
 		.accessibilityIdentifier("party-profile-website-link")
 	}
 
 	private var caucusSection: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: PartyProfileLayout.caucusSpacing) {
 			HStack {
 				Text("Caucus (\(seatCount))")
 					.font(.headline)
@@ -168,7 +186,7 @@ struct PartyProfileView: View {
 						}
 					}
 				} label: {
-					HStack(spacing: 4) {
+					HStack(spacing: PartyProfileLayout.filterSpacing) {
 						Image(systemName: "map")
 						Text(selectedProvince?.shortCode ?? "All")
 							.font(.caption)
@@ -193,7 +211,7 @@ struct PartyProfileView: View {
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(PartyProfileLayout.cardCornerRadius)
 	}
 
 	private var provincesInCaucus: [Province] {
@@ -205,11 +223,11 @@ private struct CaucusMemberRow: View {
 	let member: ParliamentMember
 
 	var body: some View {
-		HStack(spacing: 10) {
+		HStack(spacing: PartyProfileLayout.memberRowSpacing) {
 			MemberAvatar(member: member)
-				.frame(width: 36, height: 36)
+				.frame(width: PartyProfileLayout.memberAvatarSize, height: PartyProfileLayout.memberAvatarSize)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 1) {
+			VStack(alignment: .leading, spacing: PartyProfileLayout.memberTextSpacing) {
 				Text(member.name)
 					.font(.subheadline.weight(.medium))
 				Text(member.riding)
@@ -224,7 +242,7 @@ private struct CaucusMemberRow: View {
 				.font(.caption)
 				.foregroundStyle(.tertiary)
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, PartyProfileLayout.memberVerticalPadding)
 	}
 }
 

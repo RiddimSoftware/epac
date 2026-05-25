@@ -10,6 +10,34 @@ import AppIntents
 import SwiftData
 import SwiftUI
 
+private enum MemberProfileLayout {
+	static let cardSpacing: CGFloat = 10
+	static let cardCornerRadius = EpacCornerRadius.m
+	static let copyDelayNanoseconds: UInt64 = 1_500_000_000
+	static let copyButtonHorizontalPadding = EpacSpacing.s
+	static let profileStackSpacing = EpacSpacing.m
+	static let avatarSize: CGFloat = 150
+	static let avatarTopPadding: CGFloat = 20
+	static let inlineSpacing = EpacSpacing.s
+	static let loadingScale = 0.8
+	static let lobbyingPreviewLimit = 3
+	static let compactTextSpacing: CGFloat = 3
+	static let rowVerticalPadding = EpacSpacing.xxs
+	static let sectionTopPadding = EpacSpacing.xs
+	static let compareRowSpacing: CGFloat = 12
+	static let compareAvatarSize: CGFloat = 36
+	static let compareTextSpacing = EpacSpacing.xxs
+	static let statCardVerticalPadding = EpacSpacing.s
+	static let statCellSpacing = EpacSpacing.xs
+	static let detailIconWidth: CGFloat = 30
+	static let avatarTintOpacity = EpacOpacity.tintStrong
+	static let badgeHorizontalPadding: CGFloat = 6
+	static let badgeVerticalPadding = EpacSpacing.xxs
+	static let cabinetSpacing: CGFloat = 10
+	static let cabinetHeaderSpacing: CGFloat = 6
+	static let cabinetSourceSpacing = EpacSpacing.xs
+}
+
 struct MemberProfileView: View {
 	let member: ParliamentMember
 
@@ -44,7 +72,7 @@ struct MemberProfileView: View {
 	}
 
 	private var contactSection: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: MemberProfileLayout.cardSpacing) {
 			if let email = member.email, let url = URL(string: "mailto:\(email)") {
 				HStack(spacing: 0) {
 					Button { UIApplication.shared.open(url) } label: {
@@ -56,7 +84,7 @@ struct MemberProfileView: View {
 						UIPasteboard.general.string = email
 						showCopiedConfirmation = true
 						Task {
-							try? await Task.sleep(nanoseconds: 1_500_000_000)
+							try? await Task.sleep(nanoseconds: MemberProfileLayout.copyDelayNanoseconds)
 							showCopiedConfirmation = false
 						}
 					} label: {
@@ -64,7 +92,7 @@ struct MemberProfileView: View {
 							Image(systemName: showCopiedConfirmation ? "checkmark" : "doc.on.doc")
 								.font(.caption)
 								.foregroundStyle(showCopiedConfirmation ? Color.appPositive : Color.secondary)
-								.padding(.horizontal, 8)
+								.padding(.horizontal, MemberProfileLayout.copyButtonHorizontalPadding)
 						}
 					}
 					.accessibilityLabel(showCopiedConfirmation ? "Copied" : "Copy email address")
@@ -91,7 +119,7 @@ struct MemberProfileView: View {
 		}
 		.padding()
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(MemberProfileLayout.cardCornerRadius)
 	}
 
 	@ViewBuilder
@@ -115,16 +143,16 @@ struct MemberProfileView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(alignment: .center, spacing: 16) {
+			VStack(alignment: .center, spacing: MemberProfileLayout.profileStackSpacing) {
 				MemberAvatar(member: member)
-					.frame(width: 150, height: 150)
-					.padding(.top, 20)
+					.frame(width: MemberProfileLayout.avatarSize, height: MemberProfileLayout.avatarSize)
+					.padding(.top, MemberProfileLayout.avatarTopPadding)
 
 				MemberHighlightsCard(member: member)
 
 				PartyLineScoreView(member: member)
 
-				VStack(alignment: .leading, spacing: 10) {
+				VStack(alignment: .leading, spacing: MemberProfileLayout.cardSpacing) {
 					NavigationLink(destination: partyDestination(for: member.party)) {
 						HStack(spacing: 0) {
 							ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
@@ -140,7 +168,7 @@ struct MemberProfileView: View {
 				}
 				.padding()
 				.background(Color(.secondarySystemBackground))
-				.cornerRadius(12)
+				.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
 				if let position = cabinetPosition {
 					CabinetPositionSection(position: position)
@@ -149,8 +177,8 @@ struct MemberProfileView: View {
 				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 					contactSection
 				} else if !member.contactFetched {
-					HStack(spacing: 8) {
-						ProgressView().scaleEffect(0.8)
+					HStack(spacing: MemberProfileLayout.inlineSpacing) {
+						ProgressView().scaleEffect(MemberProfileLayout.loadingScale)
 						Text(NSLocalizedString("member.contact.loading", comment: ""))
 							.font(.caption)
 							.foregroundStyle(.secondary)
@@ -158,7 +186,7 @@ struct MemberProfileView: View {
 					.padding()
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.background(Color(.secondarySystemBackground))
-					.cornerRadius(12)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
 				}
 
 				NavigationLink(destination: MemberVotingRecordView(member: member)) {
@@ -171,7 +199,7 @@ struct MemberProfileView: View {
 					}
 					.padding()
 					.background(Color(.secondarySystemBackground))
-					.cornerRadius(12)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
 				}
 				.foregroundStyle(.primary)
 
@@ -185,7 +213,7 @@ struct MemberProfileView: View {
 					}
 					.padding()
 					.background(Color(.secondarySystemBackground))
-					.cornerRadius(12)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
 				}
 				.foregroundStyle(.primary)
 
@@ -197,10 +225,10 @@ struct MemberProfileView: View {
 							Text(NSLocalizedString("lobbying.empty.title", comment: ""))
 								.font(.caption)
 								.foregroundStyle(.secondary)
-								.padding(.vertical, 8)
+								.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
 						} else {
-							ForEach(lobbyingComms.prefix(3)) { comm in
-								VStack(alignment: .leading, spacing: 3) {
+							ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
+								VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
 									Text(comm.organizationName)
 										.font(.subheadline)
 										.fixedSize(horizontal: false, vertical: true)
@@ -216,7 +244,7 @@ struct MemberProfileView: View {
 											.foregroundStyle(.secondary)
 									}
 								}
-								.padding(.vertical, 2)
+								.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
 							}
 							if !lobbyingComms.isEmpty {
 								NavigationLink(destination: LobbyingView(member: member)) {
@@ -240,7 +268,7 @@ struct MemberProfileView: View {
 				)
 				.padding()
 				.background(Color.appSurface)
-				.cornerRadius(12)
+				.cornerRadius(MemberProfileLayout.cardCornerRadius)
 				.onChange(of: showLobbying) { _, isExpanded in
 					if isExpanded && !lobbyingLoaded {
 						// Capture primitive name values on the main actor before async hop.
@@ -260,11 +288,11 @@ struct MemberProfileView: View {
 				isExpanded: $showEthics,
 				content: {
 					if ethicsInvestigations.isEmpty {
-						VStack(alignment: .leading, spacing: 6) {
+						VStack(alignment: .leading, spacing: MemberProfileLayout.badgeHorizontalPadding) {
 							Text("No Commissioner reports found for this MP.")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-								.padding(.vertical, 4)
+								.padding(.vertical, MemberProfileLayout.sectionTopPadding)
 							Link("View annual compliance status (CIEC)", destination: EthicsInvestigationsDatabase.complianceStatusURL)
 								.font(.caption)
 							Link("Public registry — disclosures and statements", destination: EthicsInvestigationsDatabase.registryURL)
@@ -272,7 +300,7 @@ struct MemberProfileView: View {
 						}
 					} else {
 						ForEach(ethicsInvestigations) { investigation in
-							VStack(alignment: .leading, spacing: 3) {
+							VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
 								Text(investigation.reportTitle)
 									.font(.subheadline)
 								Text("\(investigation.type) · \(EthicsInvestigationsDatabase.formattedDate(investigation.date))")
@@ -282,7 +310,7 @@ struct MemberProfileView: View {
 									.font(.caption2)
 									.foregroundStyle(.tint)
 							}
-							.padding(.vertical, 2)
+							.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
 						}
 						Link("All Commissioner reports", destination: EthicsInvestigationsDatabase.commissionerURL)
 							.font(.caption)
@@ -301,7 +329,7 @@ struct MemberProfileView: View {
 			)
 			.padding()
 			.background(Color.appSurface)
-			.cornerRadius(12)
+			.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
 			// MARK: Written Questions
 			WrittenQuestionsSection(member: member)
@@ -309,14 +337,14 @@ struct MemberProfileView: View {
 			// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
 			ShortcutsLink()
 				.shortcutsLinkStyle(.automaticOutline)
-				.padding(.top, 4)
+				.padding(.top, MemberProfileLayout.sectionTopPadding)
 				.accessibilityLabel("Add epac to Siri and Shortcuts")
 
 			#if DEBUG
 			Text("Member ID: \(member.memberID)")
 				.font(.caption2)
 				.foregroundStyle(.tertiary)
-				.padding(.top, 4)
+				.padding(.top, MemberProfileLayout.sectionTopPadding)
 				.frame(maxWidth: .infinity)
 			#endif
 		}
@@ -407,10 +435,10 @@ struct MemberProfileView: View {
 						showingComparePicker = false
 						navigateToComparison = true
 					} label: {
-						HStack(spacing: 12) {
+						HStack(spacing: MemberProfileLayout.compareRowSpacing) {
 							MemberAvatar(member: other)
-								.frame(width: 36, height: 36)
-							VStack(alignment: .leading, spacing: 2) {
+								.frame(width: MemberProfileLayout.compareAvatarSize, height: MemberProfileLayout.compareAvatarSize)
+							VStack(alignment: .leading, spacing: MemberProfileLayout.compareTextSpacing) {
 								Text(other.name).font(.headline)
 								Text(other.riding).font(.caption).foregroundStyle(.secondary)
 							}
@@ -445,13 +473,13 @@ struct MemberHighlightsCard: View {
 
     var body: some View {
         statCell(icon: "hand.raised.fill", value: "\(memberVotes.count)", label: NSLocalizedString("votes.navTitle", comment: ""))
-        .padding(.vertical, 8)
+        .padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .cornerRadius(MemberProfileLayout.cardCornerRadius)
     }
 
     private func statCell(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: MemberProfileLayout.statCellSpacing) {
             Image(systemName: icon).font(.caption).foregroundStyle(Color.party(member.party))
                 .accessibilityHidden(true)
             Text(value).font(.title3.bold())
@@ -472,7 +500,7 @@ struct ProfileDetailRow: View {
 		HStack {
 			Image(systemName: icon)
 				.foregroundColor(.accentColor)
-				.frame(width: 30)
+				.frame(width: MemberProfileLayout.detailIconWidth)
 			VStack(alignment: .leading) {
 				Text(label)
 					.font(.caption)
@@ -534,7 +562,7 @@ struct MemberAvatar: View {
 
 	private var placeholder: some View {
 		ZStack {
-			Color.party(member.party).opacity(0.2)
+			Color.party(member.party).opacity(MemberProfileLayout.avatarTintOpacity)
 			Text(member.initials)
 				.font(.headline)
 				.foregroundColor(Color.party(member.party))
@@ -555,8 +583,8 @@ struct PartyBadge: View {
 			.font(.caption2)
 			.fontWeight(.semibold)
 			.foregroundColor(.white)
-			.padding(.horizontal, 6)
-			.padding(.vertical, 2)
+			.padding(.horizontal, MemberProfileLayout.badgeHorizontalPadding)
+			.padding(.vertical, MemberProfileLayout.badgeVerticalPadding)
 			.background(Color.party(party))
 			.clipShape(Capsule())
 			.accessibilityLabel(party.fullName)
@@ -567,8 +595,8 @@ struct CabinetPositionSection: View {
 	let position: CabinetPosition
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 10) {
-			HStack(spacing: 6) {
+		VStack(alignment: .leading, spacing: MemberProfileLayout.cabinetSpacing) {
+			HStack(spacing: MemberProfileLayout.cabinetHeaderSpacing) {
 				Image(systemName: "building.columns.fill")
 					.foregroundStyle(Color.accentColor)
 				Text(position.isPrimeMinister ? "Prime Minister" : "Cabinet Minister")
@@ -598,7 +626,7 @@ struct CabinetPositionSection: View {
 					.foregroundStyle(.secondary)
 			}
 
-			HStack(spacing: 4) {
+			HStack(spacing: MemberProfileLayout.cabinetSourceSpacing) {
 				Text("Source:")
 				if let sourceURL = URL(string: position.sourceURL) {
 					Link(position.sourceTitle, destination: sourceURL)
@@ -612,7 +640,7 @@ struct CabinetPositionSection: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(MemberProfileLayout.cardCornerRadius)
 		.accessibilityElement(children: .combine)
 		.accessibilityIdentifier("cabinet-position-section")
 		.accessibilityLabel("\(position.isPrimeMinister ? "Prime Minister" : "Cabinet Minister"). Portfolio: \(position.portfolio)")

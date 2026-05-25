@@ -6,6 +6,19 @@
 import SwiftData
 import SwiftUI
 
+private enum SearchLayout {
+    static let minimumQueryLength = 2
+    static let debounceNanoseconds: UInt64 = 300_000_000
+    static let memberRowSpacing: CGFloat = 10
+    static let memberAvatarSize: CGFloat = 36
+    static let compactTextSpacing = EpacSpacing.xxs
+    static let voteTextSpacing: CGFloat = 3
+    static let voteBadgeSpacing: CGFloat = 6
+    static let resultLineLimit = 2
+    static let rowVerticalPadding = EpacSpacing.xxs
+    static let debateTextSpacing = EpacSpacing.xs
+}
+
 struct SearchView: View {
     @EnvironmentObject var fetch: Fetch
     @Environment(\.modelContext) var modelContext
@@ -34,7 +47,7 @@ struct SearchView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines).count < 2 {
+                if debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines).count < SearchLayout.minimumQueryLength {
                     promptView
                 } else if viewModel.searchResults.isEmpty {
                     ContentUnavailableView.search(text: viewModel.searchText)
@@ -98,7 +111,7 @@ struct SearchView: View {
         .task(id: viewModel.searchText) {
             // 300ms debounce: cancel the task if the user types again before it fires.
             do {
-                try await Task.sleep(nanoseconds: 300_000_000)
+                try await Task.sleep(nanoseconds: SearchLayout.debounceNanoseconds)
                 debouncedQuery = viewModel.searchText
                 updateSearch()
             } catch {
@@ -127,10 +140,10 @@ struct SearchView: View {
                         Button {
                             selectedMember = result.member
                         } label: {
-                            HStack(spacing: 10) {
+                            HStack(spacing: SearchLayout.memberRowSpacing) {
                                 MemberAvatar(member: result.member)
-                                    .frame(width: 36, height: 36)
-                                VStack(alignment: .leading, spacing: 2) {
+                                    .frame(width: SearchLayout.memberAvatarSize, height: SearchLayout.memberAvatarSize)
+                                VStack(alignment: .leading, spacing: SearchLayout.compactTextSpacing) {
                                     Text(result.member.name).font(.subheadline).foregroundStyle(.primary)
                                     Text("\(result.member.party.shortName) · \(result.member.riding)")
                                         .font(.caption).foregroundStyle(.secondary)
@@ -145,8 +158,8 @@ struct SearchView: View {
             if !viewModel.searchResults.votes.isEmpty {
                 Section(NSLocalizedString("search.section.votes", comment: "")) {
                     ForEach(viewModel.searchResults.votes) { result in
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 6) {
+                        VStack(alignment: .leading, spacing: SearchLayout.voteTextSpacing) {
+                            HStack(spacing: SearchLayout.voteBadgeSpacing) {
                                 if !result.vote.billNumberCode.isEmpty {
                                     Text(result.vote.billNumberCode)
                                         .font(.caption.bold())
@@ -162,12 +175,12 @@ struct SearchView: View {
                             }
                             Text(result.vote.descriptionEn)
                                 .font(.subheadline)
-                                .lineLimit(2)
+                                .lineLimit(SearchLayout.resultLineLimit)
                             Text(result.vote.date, style: .date)
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                         }
-                        .padding(.vertical, 2)
+                        .padding(.vertical, SearchLayout.rowVerticalPadding)
                         .accessibilityElement(children: .combine)
                     }
                 }
@@ -177,13 +190,13 @@ struct SearchView: View {
                 Section(NSLocalizedString("search.section.bills", comment: "")) {
                     ForEach(viewModel.searchResults.bills) { result in
                         NavigationLink(destination: BillDetailView(bill: result.bill)) {
-                            VStack(alignment: .leading, spacing: 3) {
+                            VStack(alignment: .leading, spacing: SearchLayout.voteTextSpacing) {
                                 Text(result.bill.number)
                                     .font(.caption.monospacedDigit().weight(.bold))
                                     .foregroundStyle(.tint)
-                                Text(result.bill.title).font(.subheadline).lineLimit(2)
+                                Text(result.bill.title).font(.subheadline).lineLimit(SearchLayout.resultLineLimit)
                             }
-                            .padding(.vertical, 2)
+                            .padding(.vertical, SearchLayout.rowVerticalPadding)
                         }
                     }
                 }
@@ -195,7 +208,7 @@ struct SearchView: View {
                         Button {
                             selectDebate(result)
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: SearchLayout.debateTextSpacing) {
                                 Text(result.subjectTitle)
                                     .font(.headline)
                                     .foregroundStyle(.primary)
@@ -203,7 +216,7 @@ struct SearchView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
-                            .padding(.vertical, 2)
+                            .padding(.vertical, SearchLayout.rowVerticalPadding)
                         }
                         .accessibilityLabel(result.subjectTitle)
                         .accessibilityHint(result.hansardDate.formatted(date: .long, time: .omitted))

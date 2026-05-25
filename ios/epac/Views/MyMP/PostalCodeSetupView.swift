@@ -1,6 +1,18 @@
 import SwiftData
 import SwiftUI
 
+private enum PostalCodeSetupLayout {
+    static let rootSpacing: CGFloat = 28
+    static let titleSpacing: CGFloat = 12
+    static let iconSize: CGFloat = 56
+    static let titleTopPadding = EpacSpacing.xl
+    static let formSpacing: CGFloat = 14
+    static let fieldCornerRadius = EpacCornerRadius.m
+    static let errorSpacing = EpacSpacing.s
+    static let resultSpacing = EpacSpacing.m
+    static let resultTextSpacing = EpacSpacing.xs
+}
+
 struct PostalCodeSetupView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = PostalCodeViewModel()
@@ -9,10 +21,10 @@ struct PostalCodeSetupView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
-                    VStack(spacing: 12) {
+                VStack(spacing: PostalCodeSetupLayout.rootSpacing) {
+                    VStack(spacing: PostalCodeSetupLayout.titleSpacing) {
                         Image(systemName: "mappin.and.ellipse")
-                            .font(.system(size: 56))
+                            .font(.system(size: PostalCodeSetupLayout.iconSize))
                             .foregroundStyle(.tint)
                             .accessibilityHidden(true)
 
@@ -26,15 +38,15 @@ struct PostalCodeSetupView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
-                    .padding(.top, 32)
+                    .padding(.top, PostalCodeSetupLayout.titleTopPadding)
 
-                    VStack(spacing: 14) {
+                    VStack(spacing: PostalCodeSetupLayout.formSpacing) {
                         TextField(NSLocalizedString("riding.setup.placeholder", comment: ""), text: $viewModel.postalCode)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(12)
+                            .cornerRadius(PostalCodeSetupLayout.fieldCornerRadius)
                             .onSubmit { Task { await viewModel.lookup(modelContext: modelContext) } }
 
                         Button {
@@ -52,14 +64,14 @@ struct PostalCodeSetupView: View {
                             .padding()
                             .background(Color.accentColor)
                             .foregroundStyle(.white)
-                            .cornerRadius(12)
+                            .cornerRadius(PostalCodeSetupLayout.fieldCornerRadius)
                         }
                         .disabled(viewModel.isLoading || viewModel.postalCode.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     .padding(.horizontal)
 
                     if let error = viewModel.errorMessage {
-                        HStack(alignment: .top, spacing: 8) {
+                        HStack(alignment: .top, spacing: PostalCodeSetupLayout.errorSpacing) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.orange)
                             Text(error)
@@ -89,8 +101,8 @@ struct PostalCodeSetupView: View {
 
     @ViewBuilder
     private func resultCard(_ result: RidingLookupResult) -> some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 4) {
+        VStack(spacing: PostalCodeSetupLayout.resultSpacing) {
+            VStack(spacing: PostalCodeSetupLayout.resultTextSpacing) {
                 Text(result.ridingName)
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -114,7 +126,7 @@ struct PostalCodeSetupView: View {
             .padding()
             .frame(maxWidth: .infinity)
             .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
+            .cornerRadius(PostalCodeSetupLayout.fieldCornerRadius)
 
             Button {
                 viewModel.confirm()
@@ -126,7 +138,7 @@ struct PostalCodeSetupView: View {
                     .padding()
                     .background(Color.accentColor)
                     .foregroundStyle(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(PostalCodeSetupLayout.fieldCornerRadius)
             }
         }
         .padding(.horizontal)

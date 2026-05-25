@@ -5,13 +5,26 @@
 
 import SwiftUI
 
+private enum TopicsLayout {
+    static let minimumSearchLength = 2
+    static let rowSpacing = EpacSpacing.s
+    static let rowVerticalPadding = EpacSpacing.xxs
+    static let keywordPreviewLimit = 3
+    static let contextSpacing: CGFloat = 6
+    static let statRowSpacing: CGFloat = 12
+    static let contextHorizontalPadding: CGFloat = 10
+    static let contextVerticalPadding = EpacSpacing.s
+    static let contextCornerRadius = EpacCornerRadius.s
+    static let statSpacing = EpacSpacing.xxs
+}
+
 struct TopicsView: View {
     @State private var store = TopicFollowStore.shared
     @State private var searchText = ""
 
     private var filtered: [ParliamentaryTopic] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard q.count >= 2 else { return ParliamentaryTopic.all }
+        guard q.count >= TopicsLayout.minimumSearchLength else { return ParliamentaryTopic.all }
         return ParliamentaryTopic.all.filter {
             $0.localizedName.localizedCaseInsensitiveContains(q) ||
             $0.keywords.contains { $0.localizedCaseInsensitiveContains(q) }
@@ -20,7 +33,7 @@ struct TopicsView: View {
 
     var body: some View {
         List(filtered) { topic in
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: TopicsLayout.rowSpacing) {
                 HStack {
                     if topic.id == "transport" {
                         NavigationLink(destination: TransportationSafetyView()) {
@@ -43,7 +56,7 @@ struct TopicsView: View {
                 }
                 correctionsContext(for: topic)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, TopicsLayout.rowVerticalPadding)
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if store.isFollowing(topic.id) {
                     Button(role: .destructive) {
@@ -68,7 +81,7 @@ struct TopicsView: View {
         VStack(alignment: .leading) {
             Text(topic.localizedName)
                 .font(.subheadline)
-            Text(topic.keywords.prefix(3).joined(separator: " · "))
+            Text(topic.keywords.prefix(TopicsLayout.keywordPreviewLimit).joined(separator: " · "))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -79,7 +92,7 @@ struct TopicsView: View {
         if topic.id == "justice",
            let snapshot = CorrectionsStatisticsDatabase.snapshot(),
            let latest = snapshot.latestAnnualStatistic {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: TopicsLayout.contextSpacing) {
                 HStack {
                     Label("Federal corrections", systemImage: "building.columns.fill")
                         .font(.caption.bold())
@@ -88,7 +101,7 @@ struct TopicsView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                HStack(spacing: 12) {
+                HStack(spacing: TopicsLayout.statRowSpacing) {
                     topicStat("Indigenous custody", percentLabel(latest.indigenousInCustodyPercent))
                     topicStat("Canada share", percentLabel(snapshot.indigenousPopulationShare.percentOfCanada))
                     topicStat("Recidivism", percentLabel(latest.recidivismRatePercent))
@@ -103,15 +116,15 @@ struct TopicsView: View {
                         .font(.caption2)
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, TopicsLayout.contextHorizontalPadding)
+            .padding(.vertical, TopicsLayout.contextVerticalPadding)
             .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: TopicsLayout.contextCornerRadius))
         }
     }
 
     private func topicStat(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: TopicsLayout.statSpacing) {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)

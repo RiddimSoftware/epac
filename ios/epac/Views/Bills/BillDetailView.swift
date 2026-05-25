@@ -9,6 +9,21 @@ import ActivityView
 import SwiftData
 import SwiftUI
 
+private enum BillDetailLayout {
+    static let timelineRowSpacing: CGFloat = 12
+    static let timelineTextSpacing = EpacSpacing.xxs
+    static let voteTextSpacing = EpacSpacing.xxs
+    static let headerSpacing: CGFloat = 10
+    static let headerBadgeSpacing = EpacSpacing.s
+    static let headerBadgeColumnSpacing: CGFloat = 6
+    static let headerSpacerLength = EpacSpacing.s
+    static let accentBadgeOpacity = 0.85
+    static let sponsorRowSpacing: CGFloat = 6
+    static let sponsorMatchPrefixLength = 3
+    static let badgeHorizontalPadding: CGFloat = 6
+    static let badgeVerticalPadding: CGFloat = 3
+}
+
 struct BillDetailView: View {
     let bill: Bill
     @Environment(\.modelContext) private var modelContext
@@ -32,11 +47,11 @@ struct BillDetailView: View {
             Section(NSLocalizedString("bills.detail.timeline", comment: "")) {
                 ForEach(Array(bill.stages.enumerated()), id: \.element.id) { index, stage in
                     let state = timelineState(forStageAt: index)
-                    HStack(spacing: 12) {
+                    HStack(spacing: BillDetailLayout.timelineRowSpacing) {
                         Image(systemName: state.systemImage)
                             .foregroundStyle(state.color)
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: BillDetailLayout.timelineTextSpacing) {
                             Text(stage.name)
                                 .font(.subheadline)
                                 .fontWeight(state == .current ? .semibold : .regular)
@@ -67,7 +82,7 @@ struct BillDetailView: View {
             if !matchingVotes.isEmpty {
                 Section(NSLocalizedString("bills.detail.votes", comment: "")) {
                     ForEach(matchingVotes, id: \.voteID) { vote in
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: BillDetailLayout.voteTextSpacing) {
                             Text(vote.descriptionEn)
                                 .font(.subheadline)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -152,14 +167,14 @@ struct BillDetailView: View {
 
     private var billHeaderSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: BillDetailLayout.headerSpacing) {
                 ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: BillDetailLayout.headerBadgeSpacing) {
                         billNumberHeader
-                        Spacer(minLength: 8)
+                        Spacer(minLength: BillDetailLayout.headerSpacerLength)
                         headerBadges
                     }
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: BillDetailLayout.headerBadgeSpacing) {
                         billNumberHeader
                         headerBadges
                     }
@@ -190,12 +205,12 @@ struct BillDetailView: View {
     @ViewBuilder
     private var headerBadges: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: BillDetailLayout.headerBadgeSpacing) {
                 if !bill.billType.shortName.isEmpty {
                     BillHeaderBadge(
                         text: bill.billType.shortName,
                         foreground: .white,
-                        background: Color.accentColor.opacity(0.85)
+                        background: Color.accentColor.opacity(BillDetailLayout.accentBadgeOpacity)
                     )
                 }
                 BillHeaderBadge(
@@ -204,12 +219,12 @@ struct BillDetailView: View {
                     background: bill.status.color
                 )
             }
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: BillDetailLayout.headerBadgeColumnSpacing) {
                 if !bill.billType.shortName.isEmpty {
                     BillHeaderBadge(
                         text: bill.billType.shortName,
                         foreground: .white,
-                        background: Color.accentColor.opacity(0.85)
+                        background: Color.accentColor.opacity(BillDetailLayout.accentBadgeOpacity)
                     )
                 }
                 BillHeaderBadge(
@@ -225,7 +240,7 @@ struct BillDetailView: View {
         Section(NSLocalizedString("bills.detail.keyFacts", comment: "")) {
             if !bill.sponsorName.isEmpty {
                 LabeledContent(NSLocalizedString("bills.detail.sponsor", comment: "")) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: BillDetailLayout.sponsorRowSpacing) {
                         Text(bill.sponsorName)
                         if let party = sponsorMember?.party {
                             NavigationLink(destination: partyDestination(for: party)) {
@@ -343,7 +358,7 @@ struct BillDetailView: View {
             let lastName = parts.last ?? ""
             sponsorMember = allMembers.first(where: {
                 $0.lastName.localizedCaseInsensitiveCompare(lastName) == .orderedSame &&
-                bill.sponsorName.localizedCaseInsensitiveContains($0.firstName.prefix(3))
+                bill.sponsorName.localizedCaseInsensitiveContains($0.firstName.prefix(BillDetailLayout.sponsorMatchPrefixLength))
             })
         }
     }
@@ -402,8 +417,8 @@ private struct BillHeaderBadge: View {
             .font(.caption2.weight(.semibold))
             .fixedSize(horizontal: false, vertical: true)
             .foregroundStyle(foreground)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .padding(.horizontal, BillDetailLayout.badgeHorizontalPadding)
+            .padding(.vertical, BillDetailLayout.badgeVerticalPadding)
             .background(background, in: Capsule())
     }
 }

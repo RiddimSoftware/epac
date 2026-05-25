@@ -5,6 +5,15 @@
 
 import SwiftUI
 
+private enum ElectionDetailLayout {
+	static let cardSpacing: CGFloat = 20
+	static let sectionSpacing = EpacSpacing.s
+	static let inlineSpacing: CGFloat = 6
+	static let cardCornerRadius = EpacCornerRadius.m
+	static let sourceSpacing: CGFloat = 6
+	static let sourceTopPadding = EpacSpacing.xs
+}
+
 // Detail view explaining the fixed-election-date law and linking to
 // elections.ca for voter registration. Reachable from the Home feed
 // countdown card.
@@ -23,7 +32,7 @@ struct ElectionDetailView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(alignment: .leading, spacing: 20) {
+			VStack(alignment: .leading, spacing: ElectionDetailLayout.cardSpacing) {
 				headerCard
 				explanationCard
 				registerCard
@@ -37,13 +46,13 @@ struct ElectionDetailView: View {
 	}
 
 	private var headerCard: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: ElectionDetailLayout.sectionSpacing) {
 			Label("Mandated election date", systemImage: "checkmark.seal.fill")
 				.font(.headline)
 				.foregroundStyle(Color.epacBrand.accent)
 			Text(Self.dateFormatter.string(from: mandatedDate))
 				.font(.title2.weight(.semibold))
-			HStack(spacing: 6) {
+			HStack(spacing: ElectionDetailLayout.inlineSpacing) {
 				Image(systemName: "clock")
 					.foregroundStyle(.secondary)
 				Text(daysRemainingText)
@@ -54,11 +63,11 @@ struct ElectionDetailView: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(ElectionDetailLayout.cardCornerRadius)
 	}
 
 	private var explanationCard: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: ElectionDetailLayout.sectionSpacing) {
 			Text("Fixed-election-date law")
 				.font(.headline)
 			Text("The Canada Elections Act, section 56.1, sets the polling day for each general election as the third Monday of October in the fourth calendar year following polling day for the last general election.")
@@ -78,11 +87,11 @@ struct ElectionDetailView: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(ElectionDetailLayout.cardCornerRadius)
 	}
 
 	private var registerCard: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: ElectionDetailLayout.sectionSpacing) {
 			Label("Register to vote", systemImage: "person.crop.circle.badge.checkmark")
 				.font(.headline)
 			Text("Confirm or update your information on the National Register of Electors with Elections Canada.")
@@ -104,12 +113,12 @@ struct ElectionDetailView: View {
 		.padding()
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color(.secondarySystemBackground))
-		.cornerRadius(12)
+		.cornerRadius(ElectionDetailLayout.cardCornerRadius)
 		.accessibilityIdentifier("election-detail-register-link")
 	}
 
 	private var sourceFooter: some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: ElectionDetailLayout.sourceSpacing) {
 			Text("Source")
 				.font(.caption.weight(.semibold))
 				.foregroundStyle(.secondary)
@@ -122,7 +131,7 @@ struct ElectionDetailView: View {
 					.font(.caption)
 			}
 		}
-		.padding(.top, 4)
+		.padding(.top, ElectionDetailLayout.sourceTopPadding)
 	}
 
 	private var daysRemainingText: String {

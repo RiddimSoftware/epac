@@ -6,6 +6,17 @@
 import SwiftData
 import SwiftUI
 
+private enum OrderPaperLayout {
+	static let upcomingLimit = 15
+	static let minimumUpcomingCount = 1
+	static let rowIconWidth: CGFloat = 28
+	static let compactTextSpacing = EpacSpacing.xxs
+	static let cardSpacing = EpacSpacing.s
+	static let buttonVerticalPadding = EpacSpacing.s
+	static let buttonCornerRadius: CGFloat = 10
+	static let cardVerticalPadding = EpacSpacing.xs
+}
+
 // Shows upcoming scheduled sitting days from the local SittingCalendar cache
 // and links to the official ourcommons.ca Order Paper for the full agenda.
 //
@@ -25,7 +36,7 @@ struct OrderPaperView: View {
 			.flatMap { $0.sittings }
 			.filter { $0 >= today }
 			.sorted()
-			.prefix(15))
+			.prefix(OrderPaperLayout.upcomingLimit))
 	}
 
 	private var nextSitting: Date? { upcomingSittings.first }
@@ -38,14 +49,14 @@ struct OrderPaperView: View {
 				}
 			}
 
-			if upcomingSittings.count > 1 {
+			if upcomingSittings.count > OrderPaperLayout.minimumUpcomingCount {
 				Section("Upcoming Sittings") {
 					ForEach(upcomingSittings.dropFirst(), id: \.self) { date in
 						HStack {
 							Image(systemName: "calendar")
 								.foregroundStyle(.secondary)
-								.frame(width: 28)
-							VStack(alignment: .leading, spacing: 2) {
+								.frame(width: OrderPaperLayout.rowIconWidth)
+							VStack(alignment: .leading, spacing: OrderPaperLayout.compactTextSpacing) {
 								Text(date.formatted(.dateTime.weekday(.wide)))
 									.font(.subheadline.bold())
 								Text(date.formatted(date: .long, time: .omitted))
@@ -78,9 +89,9 @@ struct OrderPaperView: View {
 
 	private func nextSittingCard(date: Date) -> some View {
 		let daysUntil = Calendar.current.dateComponents([.day], from: .now, to: date).day ?? 0
-		return VStack(alignment: .leading, spacing: 8) {
+		return VStack(alignment: .leading, spacing: OrderPaperLayout.cardSpacing) {
 			HStack {
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: OrderPaperLayout.compactTextSpacing) {
 					Text("Next Sitting")
 						.font(.caption)
 						.foregroundStyle(.secondary)
@@ -88,7 +99,7 @@ struct OrderPaperView: View {
 						.font(.title3.bold())
 				}
 				Spacer()
-				VStack(alignment: .trailing, spacing: 2) {
+				VStack(alignment: .trailing, spacing: OrderPaperLayout.compactTextSpacing) {
 					Text(daysUntil == 0 ? "Today" : daysUntil == 1 ? "Tomorrow" : "In \(daysUntil) days")
 						.font(.headline)
 						.foregroundStyle(daysUntil <= 1 ? .green : .primary)
@@ -102,13 +113,13 @@ struct OrderPaperView: View {
 			} label: {
 				Label("View Order Paper", systemImage: "doc.text")
 					.frame(maxWidth: .infinity)
-					.padding(.vertical, 8)
+					.padding(.vertical, OrderPaperLayout.buttonVerticalPadding)
 					.background(Color.accentColor)
 					.foregroundStyle(.white)
-					.cornerRadius(10)
+					.cornerRadius(OrderPaperLayout.buttonCornerRadius)
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, OrderPaperLayout.cardVerticalPadding)
 	}
 
 	private var officialSourceRow: some View {
@@ -116,7 +127,7 @@ struct OrderPaperView: View {
 			openURL(URL(string: "https://www.ourcommons.ca/en/parliamentary-business/order-papers")!)
 		} label: {
 			HStack {
-				VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: OrderPaperLayout.compactTextSpacing) {
 					Text("ourcommons.ca Order Papers")
 						.font(.subheadline)
 						.foregroundStyle(.primary)

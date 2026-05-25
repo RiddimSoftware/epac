@@ -1,5 +1,23 @@
 import SwiftUI
 
+private enum ContractsLayout {
+    static let skeletonRows = 6
+    static let retryDelaySeconds: Int64 = 2
+    static let fetchLimit = 100
+    static let rowSpacing = EpacSpacing.xs
+    static let metadataSpacing: CGFloat = 6
+    static let singleLineLimit = 1
+    static let summaryLineLimit = 2
+    static let rowVerticalPadding = EpacSpacing.xs
+    static let skeletonSpacing: CGFloat = 6
+    static let skeletonCornerRadius: CGFloat = 3
+    static let skeletonValueWidth: CGFloat = 100
+    static let skeletonCompactHeight: CGFloat = 10
+    static let skeletonTitleHeight: CGFloat = 14
+    static let skeletonDetailWidth: CGFloat = 180
+    static let skeletonVerticalPadding: CGFloat = 6
+}
+
 struct ContractsView: View {
     @State private var contracts: [GovernmentContract] = []
     @State private var isLoading = false
@@ -21,7 +39,7 @@ struct ContractsView: View {
         Group {
             if isLoading && contracts.isEmpty {
                 List {
-                    ForEach(0..<6, id: \.self) { _ in
+                    ForEach(0..<ContractsLayout.skeletonRows, id: \.self) { _ in
                         FederalContractRowSkeleton().shimmer(when: true)
                     }
                 }
@@ -34,7 +52,7 @@ struct ContractsView: View {
                     message: NSLocalizedString("contracts.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: .seconds(ContractsLayout.retryDelaySeconds)); isRetryDisabled = false }
                         Task { await load() }
                     })
                 )
@@ -69,7 +87,7 @@ struct ContractsView: View {
         isLoading = true
         loadFailed = false
         do {
-            contracts = try await ContractsService.fetchTopContracts(limit: 100)
+            contracts = try await ContractsService.fetchTopContracts(limit: ContractsLayout.fetchLimit)
         } catch {
             loadFailed = contracts.isEmpty
         }
@@ -83,8 +101,8 @@ private struct FederalContractRow: View {
     let contract: GovernmentContract
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: ContractsLayout.rowSpacing) {
+            HStack(spacing: ContractsLayout.metadataSpacing) {
                 if contract.isHighValue {
                     Image(systemName: "exclamationmark.circle.fill")
                         .font(.caption)
@@ -100,19 +118,19 @@ private struct FederalContractRow: View {
             }
             Text(contract.vendor)
                 .font(.subheadline)
-                .lineLimit(1)
+                .lineLimit(ContractsLayout.singleLineLimit)
             Text(contract.department)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .lineLimit(ContractsLayout.singleLineLimit)
             if !contract.purpose.isEmpty {
                 Text(contract.purpose)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(ContractsLayout.summaryLineLimit)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, ContractsLayout.rowVerticalPadding)
         .accessibilityElement(children: .combine)
     }
 }
@@ -121,12 +139,15 @@ private struct FederalContractRow: View {
 
 private struct FederalContractRowSkeleton: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            RoundedRectangle(cornerRadius: 3).frame(width: 100, height: 10)
-            RoundedRectangle(cornerRadius: 3).frame(maxWidth: .infinity, minHeight: 14)
-            RoundedRectangle(cornerRadius: 3).frame(width: 180, height: 10)
+        VStack(alignment: .leading, spacing: ContractsLayout.skeletonSpacing) {
+            RoundedRectangle(cornerRadius: ContractsLayout.skeletonCornerRadius)
+                .frame(width: ContractsLayout.skeletonValueWidth, height: ContractsLayout.skeletonCompactHeight)
+            RoundedRectangle(cornerRadius: ContractsLayout.skeletonCornerRadius)
+                .frame(maxWidth: .infinity, minHeight: ContractsLayout.skeletonTitleHeight)
+            RoundedRectangle(cornerRadius: ContractsLayout.skeletonCornerRadius)
+                .frame(width: ContractsLayout.skeletonDetailWidth, height: ContractsLayout.skeletonCompactHeight)
         }
         .foregroundStyle(Color(.systemFill))
-        .padding(.vertical, 6)
+        .padding(.vertical, ContractsLayout.skeletonVerticalPadding)
     }
 }

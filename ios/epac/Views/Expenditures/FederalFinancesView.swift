@@ -7,6 +7,41 @@ import Charts
 import SwiftData
 import SwiftUI
 
+private enum FederalFinancesLayout {
+	static let retryDelaySeconds: Int64 = 2
+	static let chartHeight: CGFloat = 220
+	static let rowInsetVertical: CGFloat = 14
+	static let rowInsetHorizontal: CGFloat = 12
+	static var chartInsets: EdgeInsets {
+		EdgeInsets(
+			top: rowInsetVertical,
+			leading: rowInsetHorizontal,
+			bottom: rowInsetVertical,
+			trailing: rowInsetHorizontal
+		)
+	}
+	static let sourceRowSpacing: CGFloat = 12
+	static let sourceIconWidth: CGFloat = 28
+	static let sourceTextSpacing = EpacSpacing.xxs
+	static let summarySpacing: CGFloat = 14
+	static let summaryHeaderSpacing = EpacSpacing.xs
+	static let shortFiscalYearDigits = 2
+	static let metricRowSpacing: CGFloat = 12
+	static let projectionWarningMultiplier = 1.05
+	static let compactVerticalPadding = EpacSpacing.xs
+	static let millionsPerBillion = 1_000.0
+	static let budgetRuleLineWidth: CGFloat = 2
+	static let budgetRuleDashLength: CGFloat = 5
+	static var budgetRuleDashPattern: [CGFloat] {
+		[budgetRuleDashLength]
+	}
+	static let monthlyRowTextSpacing: CGFloat = 3
+	static let metricTextSpacing = EpacSpacing.xs
+	static let balancePillHorizontalPadding: CGFloat = 10
+	static let balancePillVerticalPadding: CGFloat = 5
+	static let balancePillOpacity = EpacOpacity.tint
+}
+
 struct FederalFinancesView: View {
 	@EnvironmentObject private var fetch: Fetch
 	@Environment(\.openURL) private var openURL
@@ -56,7 +91,7 @@ struct FederalFinancesView: View {
 				Button("Retry") {
 					guard !isRetryDisabled else { return }
 					isRetryDisabled = true
-					Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+					Task { try? await Task.sleep(for: .seconds(FederalFinancesLayout.retryDelaySeconds)); isRetryDisabled = false }
 					Task { await refreshFiscalMonitor() }
 				}
 				.buttonStyle(.borderedProminent)
@@ -72,8 +107,8 @@ struct FederalFinancesView: View {
 
 				Section("Year-to-Date Balance vs Budget") {
 					ytdBudgetChart
-						.frame(height: 220)
-						.listRowInsets(EdgeInsets(top: 14, leading: 12, bottom: 14, trailing: 12))
+						.frame(height: FederalFinancesLayout.chartHeight)
+						.listRowInsets(FederalFinancesLayout.chartInsets)
 					Text("The line shows the running year-to-date budgetary balance. The budget marker is the annual projection from the Fiscal Monitor. Amounts are shown in billions of Canadian dollars.")
 						.font(.caption)
 						.foregroundStyle(.secondary)
@@ -81,8 +116,8 @@ struct FederalFinancesView: View {
 
 				Section("Revenue and Spending") {
 					revenueSpendingChart
-						.frame(height: 220)
-						.listRowInsets(EdgeInsets(top: 14, leading: 12, bottom: 14, trailing: 12))
+						.frame(height: FederalFinancesLayout.chartHeight)
+						.listRowInsets(FederalFinancesLayout.chartInsets)
 				}
 
 				Section("Monthly Results") {
@@ -98,11 +133,11 @@ struct FederalFinancesView: View {
 								openURL(url)
 							}
 						} label: {
-							HStack(spacing: 12) {
+							HStack(spacing: FederalFinancesLayout.sourceRowSpacing) {
 								Image(systemName: "checkmark.seal.fill")
 									.foregroundStyle(.green)
-									.frame(width: 28)
-								VStack(alignment: .leading, spacing: 2) {
+									.frame(width: FederalFinancesLayout.sourceIconWidth)
+								VStack(alignment: .leading, spacing: FederalFinancesLayout.sourceTextSpacing) {
 									Text(latestEntry.sourceTitle)
 										.font(.subheadline)
 										.foregroundStyle(.primary)
@@ -124,12 +159,12 @@ struct FederalFinancesView: View {
 	}
 
 	private func summaryCard(_ entry: FiscalMonitorEntry) -> some View {
-		VStack(alignment: .leading, spacing: 14) {
+		VStack(alignment: .leading, spacing: FederalFinancesLayout.summarySpacing) {
 			HStack(alignment: .top) {
-				VStack(alignment: .leading, spacing: 4) {
+				VStack(alignment: .leading, spacing: FederalFinancesLayout.summaryHeaderSpacing) {
 					Text("\(entry.monthName) \(Calendar.current.component(.year, from: entry.periodDate))")
 						.font(.headline)
-					Text("Fiscal year \(entry.fiscalYearStart)-\(String(entry.fiscalYearStart + 1).suffix(2))")
+					Text("Fiscal year \(entry.fiscalYearStart)-\(String(entry.fiscalYearStart + 1).suffix(FederalFinancesLayout.shortFiscalYearDigits))")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
@@ -137,7 +172,7 @@ struct FederalFinancesView: View {
 				balancePill(entry.budgetaryBalanceMillions)
 			}
 
-			HStack(spacing: 12) {
+			HStack(spacing: FederalFinancesLayout.metricRowSpacing) {
 				metricTile(title: "Revenue", value: entry.revenueMillions)
 				metricTile(title: "Spending", value: entry.totalSpendingMillions)
 			}
@@ -159,14 +194,14 @@ struct FederalFinancesView: View {
 				.font(.subheadline)
 				.foregroundStyle(.secondary)
 
-				if abs(entry.yearToDateBudgetaryBalanceMillions) > abs(projection) * 1.05 {
+				if abs(entry.yearToDateBudgetaryBalanceMillions) > abs(projection) * FederalFinancesLayout.projectionWarningMultiplier {
 					Label("Year-to-date deficit has exceeded the annual budget projection by over 5%.", systemImage: "exclamationmark.triangle.fill")
 						.font(.caption)
 						.foregroundStyle(.orange)
 				}
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, FederalFinancesLayout.compactVerticalPadding)
 	}
 
 	private var ytdBudgetChart: some View {
@@ -174,20 +209,20 @@ struct FederalFinancesView: View {
 			ForEach(currentFiscalYearEntries) { entry in
 				LineMark(
 					x: .value("Month", entry.monthName),
-					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / 1_000)
+					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / FederalFinancesLayout.millionsPerBillion)
 				)
 				.foregroundStyle(.blue)
 				PointMark(
 					x: .value("Month", entry.monthName),
-					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / 1_000)
+					y: .value("Year-to-date balance", entry.yearToDateBudgetaryBalanceMillions / FederalFinancesLayout.millionsPerBillion)
 				)
 				.foregroundStyle(.blue)
 			}
 
 			if let projection = latestEntry?.annualBudgetProjectionMillions {
-				RuleMark(y: .value("Budget projection", projection / 1_000))
+				RuleMark(y: .value("Budget projection", projection / FederalFinancesLayout.millionsPerBillion))
 					.foregroundStyle(.orange)
-					.lineStyle(StrokeStyle(lineWidth: 2, dash: [5]))
+					.lineStyle(StrokeStyle(lineWidth: FederalFinancesLayout.budgetRuleLineWidth, dash: FederalFinancesLayout.budgetRuleDashPattern))
 			}
 		}
 		.chartYAxisLabel("$B")
@@ -197,7 +232,7 @@ struct FederalFinancesView: View {
 		Chart(currentFiscalYearEntries) { entry in
 			BarMark(
 				x: .value("Month", entry.monthName),
-				y: .value("Balance", entry.budgetaryBalanceMillions / 1_000)
+				y: .value("Balance", entry.budgetaryBalanceMillions / FederalFinancesLayout.millionsPerBillion)
 			)
 			.foregroundStyle(entry.budgetaryBalanceMillions >= 0 ? Color.green : Color.red)
 		}
@@ -209,14 +244,14 @@ struct FederalFinancesView: View {
 			ForEach(currentFiscalYearEntries) { entry in
 				LineMark(
 					x: .value("Month", entry.monthName),
-					y: .value("Revenue", entry.revenueMillions / 1_000),
+					y: .value("Revenue", entry.revenueMillions / FederalFinancesLayout.millionsPerBillion),
 					series: .value("Type", "Revenue")
 				)
 				.foregroundStyle(.green)
 
 				LineMark(
 					x: .value("Month", entry.monthName),
-					y: .value("Spending", entry.totalSpendingMillions / 1_000),
+					y: .value("Spending", entry.totalSpendingMillions / FederalFinancesLayout.millionsPerBillion),
 					series: .value("Type", "Spending")
 				)
 				.foregroundStyle(.blue)
@@ -227,7 +262,7 @@ struct FederalFinancesView: View {
 
 	private func monthlyRow(_ entry: FiscalMonitorEntry) -> some View {
 		HStack {
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: FederalFinancesLayout.monthlyRowTextSpacing) {
 				Text(entry.monthName)
 					.font(.subheadline)
 				Text("Published \(entry.publicationDate.formatted(date: .abbreviated, time: .omitted))")
@@ -235,7 +270,7 @@ struct FederalFinancesView: View {
 					.foregroundStyle(.secondary)
 			}
 			Spacer()
-			VStack(alignment: .trailing, spacing: 3) {
+			VStack(alignment: .trailing, spacing: FederalFinancesLayout.monthlyRowTextSpacing) {
 				Text(formatCurrencyMillions(entry.budgetaryBalanceMillions))
 					.font(.subheadline.weight(.semibold))
 					.foregroundStyle(entry.budgetaryBalanceMillions >= 0 ? .green : .red)
@@ -247,7 +282,7 @@ struct FederalFinancesView: View {
 	}
 
 	private func metricTile(title: String, value: Double) -> some View {
-		VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: FederalFinancesLayout.metricTextSpacing) {
 			Text(title)
 				.font(.caption)
 				.foregroundStyle(.secondary)
@@ -261,14 +296,14 @@ struct FederalFinancesView: View {
 		Text(formatCurrencyMillions(value))
 			.font(.caption.weight(.semibold))
 			.foregroundStyle(value >= 0 ? .green : .red)
-			.padding(.horizontal, 10)
-			.padding(.vertical, 5)
-			.background((value >= 0 ? Color.green : Color.red).opacity(0.12))
+			.padding(.horizontal, FederalFinancesLayout.balancePillHorizontalPadding)
+			.padding(.vertical, FederalFinancesLayout.balancePillVerticalPadding)
+			.background((value >= 0 ? Color.green : Color.red).opacity(FederalFinancesLayout.balancePillOpacity))
 			.clipShape(Capsule())
 	}
 
 	private func formatCurrencyMillions(_ value: Double) -> String {
-		let billions = value / 1_000
+		let billions = value / FederalFinancesLayout.millionsPerBillion
 		let prefix = billions < 0 ? "-$" : "$"
 		return "\(prefix)\(String(format: "%.1f", abs(billions)))B"
 	}

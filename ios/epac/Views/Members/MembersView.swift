@@ -9,6 +9,24 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+private enum MembersLayout {
+	static let sourceBadgeVerticalPadding: CGFloat = 6
+	static let activeFilterBadgeMinSize = EpacIconSize.xs
+	static let activeFilterBadgeOffset: CGFloat = 7
+	static let skeletonRows = 8
+	static let memberRowSpacing: CGFloat = 12
+	static let memberAvatarSize: CGFloat = 52
+	static let memberTextSpacing = EpacSpacing.xxs
+	static let badgeStackSpacing: CGFloat = 6
+	static let badgeTopPadding = EpacSpacing.xxs
+	static let cabinetBadgeSpacing: CGFloat = 3
+	static let cabinetBadgeHorizontalPadding: CGFloat = 6
+	static let cabinetBadgeVerticalPadding = EpacSpacing.xxs
+	static let cabinetBadgeOpacity = 0.15
+	static let cabinetBadgeCornerRadius = EpacCornerRadius.xs
+	static let popoverMinWidth: CGFloat = 150
+}
+
 struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
 	@Query private var cabinetPositions: [CabinetPosition]
@@ -101,7 +119,7 @@ struct MembersView: View {
 				DataSourceBadge(source: .members())
 			}
 			.padding(.horizontal)
-			.padding(.vertical, 6)
+			.padding(.vertical, MembersLayout.sourceBadgeVerticalPadding)
 		}
 		.navigationTitle("Members")
 		.navigationBarTitleDisplayMode(.large)
@@ -115,9 +133,9 @@ struct MembersView: View {
 				Text(verbatim: "\(viewModel.activeFilterCount)")
 					.font(.caption2.weight(.bold))
 					.foregroundStyle(.white)
-					.frame(minWidth: 16, minHeight: 16)
+					.frame(minWidth: MembersLayout.activeFilterBadgeMinSize, minHeight: MembersLayout.activeFilterBadgeMinSize)
 					.background(Circle().fill(Color.appDestructive))
-					.offset(x: 7, y: -7)
+					.offset(x: MembersLayout.activeFilterBadgeOffset, y: -MembersLayout.activeFilterBadgeOffset)
 					.accessibilityHidden(true)
 			}
 		}
@@ -132,7 +150,7 @@ struct MembersView: View {
 
 	private var loadingView: some View {
 		List {
-			ForEach(0..<8, id: \.self) { _ in
+			ForEach(0..<MembersLayout.skeletonRows, id: \.self) { _ in
 				MemberRowSkeleton()
 					.shimmer(when: true)
 			}
@@ -177,23 +195,23 @@ struct MemberRow: View {
 	var isCabinetMinister: Bool = false
 
 	var body: some View {
-		HStack(alignment: .center, spacing: 12) {
+		HStack(alignment: .center, spacing: MembersLayout.memberRowSpacing) {
 			MemberAvatar(member: member)
-				.frame(width: 52, height: 52)
+				.frame(width: MembersLayout.memberAvatarSize, height: MembersLayout.memberAvatarSize)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 2) {
+			VStack(alignment: .leading, spacing: MembersLayout.memberTextSpacing) {
 				Text(member.name)
 					.font(.headline)
 				Text(member.riding)
 					.font(.subheadline)
 					.foregroundColor(.secondary)
-				HStack(spacing: 6) {
+				HStack(spacing: MembersLayout.badgeStackSpacing) {
 					PartyBadge(party: member.party)
 					if isCabinetMinister {
 						CabinetMinisterBadge()
 					}
 				}
-				.padding(.top, 2)
+				.padding(.top, MembersLayout.badgeTopPadding)
 			}
 			Spacer()
 			Text(member.province.rawValue)
@@ -241,17 +259,17 @@ private struct PartyMenuLink: View {
 
 struct CabinetMinisterBadge: View {
 	var body: some View {
-		HStack(spacing: 3) {
+		HStack(spacing: MembersLayout.cabinetBadgeSpacing) {
 			Image(systemName: "building.columns.fill")
 				.font(.caption2)
 			Text("Cabinet")
 				.font(.caption2.weight(.semibold))
 		}
-		.padding(.horizontal, 6)
-		.padding(.vertical, 2)
-		.background(Color.accentColor.opacity(0.15))
+		.padding(.horizontal, MembersLayout.cabinetBadgeHorizontalPadding)
+		.padding(.vertical, MembersLayout.cabinetBadgeVerticalPadding)
+		.background(Color.accentColor.opacity(MembersLayout.cabinetBadgeOpacity))
 		.foregroundColor(.accentColor)
-		.cornerRadius(4)
+		.cornerRadius(MembersLayout.cabinetBadgeCornerRadius)
 		.accessibilityIdentifier("cabinet-minister-badge")
 	}
 }
@@ -280,7 +298,7 @@ private struct StatusFilterView: View {
 				}
 			}
 		}
-		.frame(minWidth: 150)
+		.frame(minWidth: MembersLayout.popoverMinWidth)
 		.presentationCompactAdaptation(.popover)
 	}
 }
@@ -322,7 +340,7 @@ private struct ProvinceFilterView: View {
 				}
 			}
 		}
-		.frame(minWidth: 150)
+		.frame(minWidth: MembersLayout.popoverMinWidth)
 		.presentationCompactAdaptation(.popover)
 	}
 }
@@ -364,7 +382,7 @@ private struct PartyFilterView: View {
 				}
 			}
 		}
-		.frame(minWidth: 150)
+		.frame(minWidth: MembersLayout.popoverMinWidth)
 		.presentationCompactAdaptation(.popover)
 	}
 }

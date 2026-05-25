@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+private enum NHSLayout {
+    static let sourceRowSpacing: CGFloat = 12
+    static let sourceIconWidth: CGFloat = 28
+    static let sourceTextSpacing = EpacSpacing.xxs
+    static let maxProgressFraction = 1.0
+    static let cardSpacing: CGFloat = 12
+    static let compactTextSpacing = EpacSpacing.xxs
+    static let percentMultiplier = 100
+    static let homesPerDisplayUnit = 1_000
+    static let compactVerticalPadding = EpacSpacing.xs
+    static let fiscalYearStep = 1
+    static let fiscalYearSuffixDigits = 2
+    static let yearLabelWidth: CGFloat = 72
+    static let progressCornerRadius: CGFloat = 3
+    static let progressTrackOpacity = 0.25
+    static let progressBarHeight: CGFloat = 10
+    static let committedWidth: CGFloat = 68
+    static let compactRowVerticalPadding = EpacSpacing.xxs
+    static let programSpacing: CGFloat = 6
+    static let programSpacerLength = EpacSpacing.s
+}
+
 struct NHSTrackerView: View {
     @Environment(\.openURL) private var openURL
 
@@ -37,12 +59,12 @@ struct NHSTrackerView: View {
                 Button {
                     openURL(db.progressReportURL)
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: NHSLayout.sourceRowSpacing) {
                         Image(systemName: "chart.bar.doc.horizontal.fill")
                             .foregroundStyle(.orange)
-                            .frame(width: 28)
+                            .frame(width: NHSLayout.sourceIconWidth)
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: NHSLayout.sourceTextSpacing) {
                             Text("NHS Quarterly Progress Report (Q1 2024)")
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)
@@ -59,12 +81,12 @@ struct NHSTrackerView: View {
                 Button {
                     openURL(db.sourceURL)
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: NHSLayout.sourceRowSpacing) {
                         Image(systemName: "house.lodge.fill")
                             .foregroundStyle(.orange)
-                            .frame(width: 28)
+                            .frame(width: NHSLayout.sourceIconWidth)
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: NHSLayout.sourceTextSpacing) {
                             Text("National Housing Strategy Overview")
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)
@@ -96,10 +118,10 @@ struct NHSTrackerView: View {
     private var overallProgressCard: some View {
         let committed = db.totalCommitted
         let target    = db.totalHomesTarget
-        let fraction  = min(Double(committed) / Double(target), 1.0)
+        let fraction  = min(Double(committed) / Double(target), NHSLayout.maxProgressFraction)
         let remaining = target - committed
 
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: NHSLayout.cardSpacing) {
             Text("National Housing Strategy")
                 .font(.headline)
             Text("10-year federal plan (2017–2027) · \(db.reportingPeriod)")
@@ -111,7 +133,7 @@ struct NHSTrackerView: View {
                 .tint(.orange)
 
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: NHSLayout.compactTextSpacing) {
                     Text("\(committed.formatted()) homes")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                     Text("committed")
@@ -119,7 +141,7 @@ struct NHSTrackerView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: NHSLayout.compactTextSpacing) {
                     Text("\(target.formatted()) homes")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                     Text("target (new + repaired)")
@@ -128,37 +150,37 @@ struct NHSTrackerView: View {
                 }
             }
 
-            Text(String(format: "%.0f%% of target committed — %dK homes remaining", fraction * 100, remaining / 1000))
+            Text(String(format: "%.0f%% of target committed — %dK homes remaining", fraction * Double(NHSLayout.percentMultiplier), remaining / NHSLayout.homesPerDisplayUnit))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, NHSLayout.compactVerticalPadding)
     }
 
     private func yearRow(_ yr: NHSYearlyProgress) -> some View {
         let maxCommitted = db.yearlyProgress.map(\.cumulativeHomesCommitted).max() ?? 1
         let fraction = Double(yr.cumulativeHomesCommitted) / Double(maxCommitted)
 
-        return HStack(spacing: 12) {
-            Text("FY \(yr.fiscalYearEnd - 1)–\(String(yr.fiscalYearEnd).suffix(2))")
+        return HStack(spacing: NHSLayout.sourceRowSpacing) {
+            Text("FY \(yr.fiscalYearEnd - NHSLayout.fiscalYearStep)–\(String(yr.fiscalYearEnd).suffix(NHSLayout.fiscalYearSuffixDigits))")
                 .font(.caption.monospacedDigit())
-                .frame(width: 72, alignment: .leading)
+                .frame(width: NHSLayout.yearLabelWidth, alignment: .leading)
                 .foregroundStyle(.secondary)
             GeometryReader { geo in
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.orange.opacity(0.25))
+                RoundedRectangle(cornerRadius: NHSLayout.progressCornerRadius)
+                    .fill(Color.orange.opacity(NHSLayout.progressTrackOpacity))
                     .overlay(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
+                        RoundedRectangle(cornerRadius: NHSLayout.progressCornerRadius)
                             .fill(Color.orange)
                             .frame(width: geo.size.width * fraction)
                     }
             }
-            .frame(height: 10)
+            .frame(height: NHSLayout.progressBarHeight)
             Text("\(yr.cumulativeHomesCommitted.formatted())")
                 .font(.caption.monospacedDigit())
-                .frame(width: 68, alignment: .trailing)
+                .frame(width: NHSLayout.committedWidth, alignment: .trailing)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, NHSLayout.compactRowVerticalPadding)
     }
 
     @ViewBuilder
@@ -174,13 +196,13 @@ struct NHSTrackerView: View {
     }
 
     private func programRow(_ program: NHSProgram) -> some View {
-        let fraction = min(Double(program.committedUnits) / Double(program.targetUnits), 1.0)
+        let fraction = min(Double(program.committedUnits) / Double(program.targetUnits), NHSLayout.maxProgressFraction)
 
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: NHSLayout.programSpacing) {
             HStack(alignment: .firstTextBaseline) {
                 Text(program.name)
                     .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 8)
+                Spacer(minLength: NHSLayout.programSpacerLength)
                 Text("$\(program.budgetBillions, specifier: "%.1f")B")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -200,7 +222,7 @@ struct NHSTrackerView: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, NHSLayout.compactVerticalPadding)
     }
 
     private func tint(for category: NHSCategory) -> Color {

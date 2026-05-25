@@ -7,50 +7,68 @@
 
 import SwiftUI
 
+private enum SkeletonLayout {
+    static let rowSpacing: CGFloat = 12
+    static let avatarSize = EpacSpacing.avatar
+    static let textSpacing: CGFloat = 6
+    static let barCornerRadius = EpacCornerRadius.xs
+    static let primaryHeight: CGFloat = 14
+    static let titleMaxWidth: CGFloat = 180
+    static let secondaryHeight: CGFloat = 10
+    static let subtitleMaxWidth: CGFloat = 120
+    static let rowVerticalPadding = EpacSpacing.xs
+    static let compactBarWidth = EpacSpacing.avatar
+    static let compactBarHeight: CGFloat = 12
+    static let badgeCornerRadius: CGFloat = 6
+    static let badgeWidth: CGFloat = 70
+    static let badgeHeight: CGFloat = 18
+    static let detailMaxWidth: CGFloat = 200
+}
+
 /// Placeholder MP row matching MemberRow dimensions.
 struct MemberRowSkeleton: View {
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SkeletonLayout.rowSpacing) {
             Circle()
                 .fill(Color(.systemGray5))
-                .frame(width: 40, height: 40)
-            VStack(alignment: .leading, spacing: 6) {
-                RoundedRectangle(cornerRadius: 4)
+                .frame(width: SkeletonLayout.avatarSize, height: SkeletonLayout.avatarSize)
+            VStack(alignment: .leading, spacing: SkeletonLayout.textSpacing) {
+                RoundedRectangle(cornerRadius: SkeletonLayout.barCornerRadius)
                     .fill(Color(.systemGray5))
-                    .frame(height: 14)
-                    .frame(maxWidth: 180)
-                RoundedRectangle(cornerRadius: 4)
+                    .frame(height: SkeletonLayout.primaryHeight)
+                    .frame(maxWidth: SkeletonLayout.titleMaxWidth)
+                RoundedRectangle(cornerRadius: SkeletonLayout.barCornerRadius)
                     .fill(Color(.systemGray6))
-                    .frame(height: 10)
-                    .frame(maxWidth: 120)
+                    .frame(height: SkeletonLayout.secondaryHeight)
+                    .frame(maxWidth: SkeletonLayout.subtitleMaxWidth)
             }
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SkeletonLayout.rowVerticalPadding)
     }
 }
 
 /// Placeholder bill row matching BillRow dimensions.
 struct BillRowSkeleton: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: SkeletonLayout.textSpacing) {
             HStack {
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: SkeletonLayout.barCornerRadius)
                     .fill(Color(.systemGray5))
-                    .frame(width: 40, height: 12)
+                    .frame(width: SkeletonLayout.compactBarWidth, height: SkeletonLayout.compactBarHeight)
                 Spacer()
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: SkeletonLayout.badgeCornerRadius)
                     .fill(Color(.systemGray5))
-                    .frame(width: 70, height: 18)
+                    .frame(width: SkeletonLayout.badgeWidth, height: SkeletonLayout.badgeHeight)
             }
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: SkeletonLayout.barCornerRadius)
                 .fill(Color(.systemGray5))
-                .frame(height: 14)
-            RoundedRectangle(cornerRadius: 4)
+                .frame(height: SkeletonLayout.primaryHeight)
+            RoundedRectangle(cornerRadius: SkeletonLayout.barCornerRadius)
                 .fill(Color(.systemGray6))
-                .frame(height: 14)
-                .frame(maxWidth: 200)
+                .frame(height: SkeletonLayout.primaryHeight)
+                .frame(maxWidth: SkeletonLayout.detailMaxWidth)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SkeletonLayout.rowVerticalPadding)
     }
 }

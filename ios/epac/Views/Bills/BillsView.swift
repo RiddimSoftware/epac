@@ -8,6 +8,17 @@
 import ActivityView
 import SwiftUI
 
+private enum BillsLayout {
+    static let skeletonRows = 5
+    static let retryDelaySeconds: Int64 = 2
+    static let rowSpacing = EpacSpacing.xs
+    static let badgeRowSpacing: CGFloat = 6
+    static let rowVerticalPadding = EpacSpacing.xs
+    static let newIndicatorFontSize: CGFloat = 6
+    static let statusBadgeHorizontalPadding: CGFloat = 6
+    static let statusBadgeVerticalPadding = EpacSpacing.xxs
+}
+
 struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
@@ -34,7 +45,7 @@ struct BillsView: View {
         Group {
             if isLoading && bills.isEmpty {
                 List {
-                    ForEach(0..<5, id: \.self) { _ in
+                    ForEach(0..<BillsLayout.skeletonRows, id: \.self) { _ in
                         BillRowSkeleton()
                             .shimmer(when: true)
                     }
@@ -48,7 +59,7 @@ struct BillsView: View {
                     message: NSLocalizedString("bills.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: .seconds(BillsLayout.retryDelaySeconds)); isRetryDisabled = false }
                         Task { await load() }
                     })
                 )
@@ -226,16 +237,16 @@ struct BillRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: BillsLayout.rowSpacing) {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
+                HStack(spacing: BillsLayout.badgeRowSpacing) {
                     billNumberLabel
                     BillStatusBadge(status: bill.status)
                     Spacer()
                     billTypeLabel
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: BillsLayout.rowSpacing) {
+                    HStack(spacing: BillsLayout.badgeRowSpacing) {
                         billNumberLabel
                         BillStatusBadge(status: bill.status)
                     }
@@ -257,7 +268,7 @@ struct BillRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, BillsLayout.rowVerticalPadding)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(billAccessibilityLabel)
     }
@@ -275,13 +286,13 @@ struct BillRow: View {
     }
 
     private var billNumberLabel: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: BillsLayout.rowSpacing) {
             Text(bill.number)
                 .font(.caption.monospacedDigit())
                 .fontWeight(.bold)
             if isNew {
                 Image(systemName: "circle.fill")
-                    .font(.system(size: 6))
+                    .font(.system(size: BillsLayout.newIndicatorFontSize))
                     .foregroundStyle(.tint)
                     .accessibilityHidden(true)
             }
@@ -308,8 +319,8 @@ struct BillStatusBadge: View {
         Text(status.displayName)
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, BillsLayout.statusBadgeHorizontalPadding)
+            .padding(.vertical, BillsLayout.statusBadgeVerticalPadding)
             .background(status.color)
             .clipShape(Capsule())
             // BillRow composes the full label; badge is redundant for VoiceOver

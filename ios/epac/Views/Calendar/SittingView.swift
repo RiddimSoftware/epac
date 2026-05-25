@@ -8,6 +8,44 @@
 import SwiftData
 import SwiftUI
 
+private enum SittingViewLayout {
+	static let listRowTopInset: CGFloat = 12
+	static let listRowHorizontalInset = EpacSpacing.m
+	static let listRowBottomInset = EpacSpacing.xs
+	static var oralQuestionsInsets: EdgeInsets {
+		EdgeInsets(
+			top: listRowTopInset,
+			leading: listRowHorizontalInset,
+			bottom: listRowBottomInset,
+			trailing: listRowHorizontalInset
+		)
+	}
+	static let subjectSpacing = EpacSpacing.s
+	static let speakerStackSpacing = EpacSpacing.xs
+	static let subjectVerticalPadding = EpacSpacing.xs
+	static let headerTopPadding: CGFloat = 20
+	static let headerBottomPadding = EpacSpacing.s
+	static let oralCardSpacing: CGFloat = 14
+	static let oralCardContentVerticalPadding = EpacSpacing.xxs
+	static let oralCardPadding = EpacSpacing.m
+	static let oralCardCornerRadius = EpacCornerRadius.s
+	static let oralCardBorderOpacity = 0.22
+	static let oralHeaderSpacing = EpacSpacing.xs
+	static let partyGroupSpacing = EpacSpacing.s
+	static let partyHeaderSpacing: CGFloat = 6
+	static let partyIconSize: CGFloat = 18
+	static let partyIconPadding = EpacSpacing.xxs
+	static let questionRowSpacing: CGFloat = 10
+	static let questionTextSpacing: CGFloat = 5
+	static let questionFirstLineTopPadding = EpacSpacing.xxs
+	static let questionSpacerLength = EpacSpacing.s
+	static let questionChevronTopPadding = EpacSpacing.xs
+	static let questionVerticalPadding = EpacSpacing.s
+	static let speakerRowSpacing: CGFloat = 6
+	static let speakerIconSize = EpacIconSize.xs
+	static let speakerIconPadding = EpacSpacing.xxs
+}
+
 struct SittingView: View {
 
 	@Environment(\.modelContext) var modelContext
@@ -37,26 +75,26 @@ struct SittingView: View {
 							selectedSubject = question.subject
 						}
 						.listRowSeparator(.hidden)
-						.listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 4, trailing: 16))
+						.listRowInsets(SittingViewLayout.oralQuestionsInsets)
 					}
 					ForEach(pairs, id: \.order.hansardID) { (order, subjects) in
 						Section {
 							ForEach(subjects) { subject in
-								VStack(alignment: .leading, spacing: 8) {
+								VStack(alignment: .leading, spacing: SittingViewLayout.subjectSpacing) {
 									Text(subject.title)
 										.font(.headline)
 										.foregroundColor(.primary)
 
 									HStack {
 										Spacer()
-										VStack(alignment: .trailing, spacing: 4) {
+										VStack(alignment: .trailing, spacing: SittingViewLayout.speakerStackSpacing) {
 											ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
 												SittingSpeakerView(member: member)
 											}
 										}
 									}
 								}
-								.padding(.vertical, 4)
+								.padding(.vertical, SittingViewLayout.subjectVerticalPadding)
 								.contentShape(Rectangle())
 								.accessibilityElement(children: .ignore)
 								.accessibilityLabel(subject.title)
@@ -72,8 +110,8 @@ struct SittingView: View {
 								.fontWeight(.black)
 								.textCase(.uppercase)
 								.foregroundColor(.secondary)
-								.padding(.top, 20)
-								.padding(.bottom, 8)
+								.padding(.top, SittingViewLayout.headerTopPadding)
+								.padding(.bottom, SittingViewLayout.headerBottomPadding)
 						}
 					}
 				}
@@ -89,32 +127,32 @@ private struct OralQuestionsCard: View {
 	let onSelect: (OralQuestion) -> Void
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
+		VStack(alignment: .leading, spacing: SittingViewLayout.oralCardSpacing) {
 			header
 			ScrollView {
-				LazyVStack(alignment: .leading, spacing: 14) {
+				LazyVStack(alignment: .leading, spacing: SittingViewLayout.oralCardSpacing) {
 					ForEach(summary.groups) { group in
 						partyGroup(group)
 					}
 				}
-				.padding(.vertical, 2)
+				.padding(.vertical, SittingViewLayout.oralCardContentVerticalPadding)
 			}
 		}
-		.padding(16)
+		.padding(SittingViewLayout.oralCardPadding)
 		.background(
-			RoundedRectangle(cornerRadius: 8)
+			RoundedRectangle(cornerRadius: SittingViewLayout.oralCardCornerRadius)
 				.fill(Color(uiColor: .secondarySystemGroupedBackground))
 		)
 		.overlay(
-			RoundedRectangle(cornerRadius: 8)
-				.stroke(Color.accentColor.opacity(0.22), lineWidth: 1)
+			RoundedRectangle(cornerRadius: SittingViewLayout.oralCardCornerRadius)
+				.stroke(Color.accentColor.opacity(SittingViewLayout.oralCardBorderOpacity), lineWidth: 1)
 		)
 		.accessibilityElement(children: .contain)
 	}
 
 	private var header: some View {
 		HStack(alignment: .firstTextBaseline) {
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: SittingViewLayout.oralHeaderSpacing) {
 				Label(NSLocalizedString("sitting.oralQuestions.title", comment: ""), systemImage: "questionmark.bubble.fill")
 					.font(.headline)
 				Text(String(format: NSLocalizedString("sitting.oralQuestions.count", comment: ""), summary.totalQuestions))
@@ -126,14 +164,14 @@ private struct OralQuestionsCard: View {
 	}
 
 	private func partyGroup(_ group: OralQuestionGroup) -> some View {
-		VStack(alignment: .leading, spacing: 8) {
-			HStack(spacing: 6) {
+		VStack(alignment: .leading, spacing: SittingViewLayout.partyGroupSpacing) {
+			HStack(spacing: SittingViewLayout.partyHeaderSpacing) {
 				if let image = group.party.image {
 					Image(uiImage: image)
 						.resizable()
 						.scaledToFit()
-						.frame(width: 18, height: 18)
-						.padding(2)
+						.frame(width: SittingViewLayout.partyIconSize, height: SittingViewLayout.partyIconSize)
+						.padding(SittingViewLayout.partyIconPadding)
 						.background(Circle().fill(Color.white).shadow(radius: 1))
 				}
 				Text(group.party.shortName)
@@ -156,8 +194,8 @@ private struct OralQuestionRow: View {
 
 	var body: some View {
 		Button(action: onSelect) {
-			HStack(alignment: .top, spacing: 10) {
-				VStack(alignment: .leading, spacing: 5) {
+			HStack(alignment: .top, spacing: SittingViewLayout.questionRowSpacing) {
+				VStack(alignment: .leading, spacing: SittingViewLayout.questionTextSpacing) {
 					Text(question.topic)
 						.font(.subheadline.weight(.semibold))
 						.foregroundStyle(.primary)
@@ -173,15 +211,15 @@ private struct OralQuestionRow: View {
 						.font(.caption)
 						.foregroundStyle(.secondary)
 						.fixedSize(horizontal: false, vertical: true)
-						.padding(.top, 2)
+						.padding(.top, SittingViewLayout.questionFirstLineTopPadding)
 				}
-				Spacer(minLength: 8)
+				Spacer(minLength: SittingViewLayout.questionSpacerLength)
 				Image(systemName: "chevron.right")
 					.font(.caption.weight(.semibold))
 					.foregroundStyle(.tertiary)
-					.padding(.top, 4)
+					.padding(.top, SittingViewLayout.questionChevronTopPadding)
 			}
-			.padding(.vertical, 8)
+			.padding(.vertical, SittingViewLayout.questionVerticalPadding)
 			.contentShape(Rectangle())
 		}
 		.buttonStyle(.plain)
@@ -235,7 +273,7 @@ struct SittingSpeakerView: View {
 
 	var body: some View {
 
-		HStack(spacing: 6) {
+		HStack(spacing: SittingViewLayout.speakerRowSpacing) {
 
 			Text(verbatim: name)
 
@@ -251,9 +289,9 @@ struct SittingSpeakerView: View {
 
 					.scaledToFit()
 
-					.frame(width: 16, height: 16)
+					.frame(width: SittingViewLayout.speakerIconSize, height: SittingViewLayout.speakerIconSize)
 
-					.padding(2)
+					.padding(SittingViewLayout.speakerIconPadding)
 
 					.background(Circle().fill(Color.white).shadow(radius: 1))
 

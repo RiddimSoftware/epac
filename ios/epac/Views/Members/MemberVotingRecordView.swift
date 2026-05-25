@@ -7,6 +7,27 @@ import ActivityView
 import SwiftData
 import SwiftUI
 
+private enum MemberVotingLayout {
+	static let voteFetchLimit = 100
+	static let sourceBadgeVerticalPadding: CGFloat = 6
+	static let summarySpacing: CGFloat = 12
+	static let summaryCornerRadius = EpacCornerRadius.s
+	static let majorityThreshold = EpacOpacity.overlay
+	static let summaryVerticalPadding = EpacSpacing.xs
+	static let pillSpacing = EpacSpacing.xxs
+	static let pillVerticalPadding = EpacSpacing.s
+	static let pillBackgroundOpacity = 0.08
+	static let voteRowSpacing: CGFloat = 12
+	static let voteIconWidth: CGFloat = 28
+	static let voteTextSpacing: CGFloat = 3
+	static let voteTitleLineLimit = 2
+	static let voteBadgeSpacing: CGFloat = 6
+	static let voteBadgeHorizontalPadding: CGFloat = 6
+	static let voteBadgeVerticalPadding = EpacSpacing.xxs
+	static let voteBadgeOpacity: Double = 0.1
+	static let rowVerticalPadding = EpacSpacing.xxs
+}
+
 struct MemberVotingRecordView: View {
 	let member: ParliamentMember
 
@@ -24,7 +45,7 @@ struct MemberVotingRecordView: View {
 			predicate: #Predicate<MemberVote> { $0.memberID == memberID },
 			sortBy: [SortDescriptor(\.voteID, order: .reverse)]
 		)
-		descriptor.fetchLimit = 100
+		descriptor.fetchLimit = MemberVotingLayout.voteFetchLimit
 		_memberVotes = Query(descriptor)
 	}
 
@@ -86,7 +107,7 @@ struct MemberVotingRecordView: View {
 					}
 					Section {
 						PartyLineScoreView(member: member)
-							.padding(.vertical, 4)
+							.padding(.vertical, MemberVotingLayout.summaryVerticalPadding)
 					}
 					Section(header: Text(NSLocalizedString("voting.recentVotes", comment: "")).accessibilityAddTraits(.isHeader)) {
 						ForEach(Array(sortedVotes.enumerated()), id: \.offset) { index, mv in
@@ -167,7 +188,7 @@ struct MemberVotingRecordView: View {
 				DataSourceBadge(source: .votes())
 			}
 			.padding(.horizontal)
-			.padding(.vertical, 6)
+			.padding(.vertical, MemberVotingLayout.sourceBadgeVerticalPadding)
 		}
 		.toolbar {
 			ToolbarItem(placement: .topBarTrailing) {
@@ -189,13 +210,13 @@ struct MemberVotingRecordView: View {
 	// MARK: - Summary card
 
 	private var voteSummaryCard: some View {
-		VStack(spacing: 12) {
+		VStack(spacing: MemberVotingLayout.summarySpacing) {
 			HStack(spacing: 0) {
 				SummaryPill(label: "Yea", count: yeaCount, color: .appPositive)
 				SummaryPill(label: "Nay", count: nayCount, color: .appDestructive)
 				SummaryPill(label: "Absent", count: absentCount, color: .secondary)
 			}
-			.clipShape(RoundedRectangle(cornerRadius: 8))
+			.clipShape(RoundedRectangle(cornerRadius: MemberVotingLayout.summaryCornerRadius))
 
 			if yeaCount + nayCount > 0 {
 				HStack {
@@ -205,11 +226,11 @@ struct MemberVotingRecordView: View {
 					Spacer()
 					Text(winnerAlignmentScore, format: .percent.precision(.fractionLength(0)))
 						.font(.caption.bold())
-						.foregroundStyle(winnerAlignmentScore >= 0.5 ? Color.appPositive : Color.appWarning)
+						.foregroundStyle(winnerAlignmentScore >= MemberVotingLayout.majorityThreshold ? Color.appPositive : Color.appWarning)
 				}
 			}
 		}
-		.padding(.vertical, 4)
+		.padding(.vertical, MemberVotingLayout.summaryVerticalPadding)
 	}
 }
 
@@ -221,7 +242,7 @@ private struct SummaryPill: View {
 	let color: Color
 
 	var body: some View {
-		VStack(spacing: 2) {
+		VStack(spacing: MemberVotingLayout.pillSpacing) {
 			Text("\(count)")
 				.font(.title3.bold())
 				// `count` is an Int field on this struct, not a collection — empty_count's auto-fix is wrong here.
@@ -232,9 +253,9 @@ private struct SummaryPill: View {
 				.foregroundStyle(.secondary)
 		}
 		.frame(maxWidth: .infinity)
-		.padding(.vertical, 8)
+		.padding(.vertical, MemberVotingLayout.pillVerticalPadding)
 		// swiftlint:disable:next empty_count
-		.background(count != 0 ? color.opacity(0.08) : Color.clear)
+		.background(count != 0 ? color.opacity(MemberVotingLayout.pillBackgroundOpacity) : Color.clear)
 	}
 }
 
@@ -255,25 +276,25 @@ private struct VoteRow: View {
 	}
 
 	var body: some View {
-		HStack(alignment: .top, spacing: 12) {
+		HStack(alignment: .top, spacing: MemberVotingLayout.voteRowSpacing) {
 			Image(systemName: voteIcon)
 				.foregroundStyle(voteColor)
 				.font(.title3)
-				.frame(width: 28)
+				.frame(width: MemberVotingLayout.voteIconWidth)
 				.accessibilityHidden(true)
 
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: MemberVotingLayout.voteTextSpacing) {
 				if let vote = rv {
 					Text(vote.descriptionEn.isEmpty ? "Vote #\(vote.number)" : vote.descriptionEn)
 						.font(.subheadline)
-						.lineLimit(2)
-					HStack(spacing: 6) {
+						.lineLimit(MemberVotingLayout.voteTitleLineLimit)
+					HStack(spacing: MemberVotingLayout.voteBadgeSpacing) {
 						if !vote.billNumberCode.isEmpty {
 							Text(vote.billNumberCode)
 								.font(.caption2)
-								.padding(.horizontal, 6)
-								.padding(.vertical, 2)
-								.background(Color.accentColor.opacity(0.1))
+								.padding(.horizontal, MemberVotingLayout.voteBadgeHorizontalPadding)
+								.padding(.vertical, MemberVotingLayout.voteBadgeVerticalPadding)
+								.background(Color.accentColor.opacity(MemberVotingLayout.voteBadgeOpacity))
 								.foregroundStyle(Color.accentColor)
 								.clipShape(Capsule())
 						}
@@ -296,7 +317,7 @@ private struct VoteRow: View {
 				.font(.caption.bold())
 				.foregroundStyle(voteColor)
 		}
-		.padding(.vertical, 2)
+		.padding(.vertical, MemberVotingLayout.rowVerticalPadding)
 		.accessibilityElement(children: .combine)
 		.accessibilityLabel("\(rv?.descriptionEn ?? "Vote \(memberVote.voteID)"), \(memberVote.recordedVote)")
 	}

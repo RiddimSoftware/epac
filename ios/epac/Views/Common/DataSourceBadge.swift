@@ -7,6 +7,23 @@
 
 import SwiftUI
 
+private enum DataSourceBadgeLayout {
+    static let spacing = EpacSpacing.xs
+    static let horizontalPadding = EpacSpacing.s
+    static let verticalPadding: CGFloat = 3
+    static let badgeOpacity = EpacOpacity.tint
+}
+
+private enum DataSourceTiming {
+    static let secondsPerMinute: TimeInterval = 60
+    static let secondsPerHour: TimeInterval = 3_600
+    static let secondsPerDay: TimeInterval = 86_400
+    static let staleMultiplier: TimeInterval = 3
+    static let weeklyMultiplier: TimeInterval = 7
+    static let fiscalMonitorMultiplier: TimeInterval = 45
+    static let membersMultiplier: TimeInterval = 30
+}
+
 /// A small pill badge showing the data source and approximate age of the data.
 /// Amber when >24h old (daily-sync sources), red when >72h old.
 /// Tap to open a sheet with the full source description and URL.
@@ -17,16 +34,16 @@ struct DataSourceBadge: View {
 
     var body: some View {
         Button { showDetail = true } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: DataSourceBadgeLayout.spacing) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.caption2)
                 Text(badgeText)
                     .font(.caption2.weight(.medium))
             }
             .foregroundStyle(badgeColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(badgeColor.opacity(0.12))
+            .padding(.horizontal, DataSourceBadgeLayout.horizontalPadding)
+            .padding(.vertical, DataSourceBadgeLayout.verticalPadding)
+            .background(badgeColor.opacity(DataSourceBadgeLayout.badgeOpacity))
             .clipShape(Capsule())
         }
         .accessibilityLabel("\(source.name) — \(badgeText)")
@@ -45,12 +62,12 @@ struct DataSourceBadge: View {
         guard let age = ageSeconds else {
             return source.vintage ?? source.name
         }
-        if age < 3600 {
-            return "\(source.name) · \(Int(age / 60))m ago"
-        } else if age < 86400 {
-            return "\(source.name) · \(Int(age / 3600))h ago"
+        if age < DataSourceTiming.secondsPerHour {
+            return "\(source.name) · \(Int(age / DataSourceTiming.secondsPerMinute))m ago"
+        } else if age < DataSourceTiming.secondsPerDay {
+            return "\(source.name) · \(Int(age / DataSourceTiming.secondsPerHour))h ago"
         } else {
-            return "\(source.name) · \(Int(age / 86400))d ago"
+            return "\(source.name) · \(Int(age / DataSourceTiming.secondsPerDay))d ago"
         }
     }
 
@@ -58,7 +75,7 @@ struct DataSourceBadge: View {
         guard let age = ageSeconds, let threshold = source.stalenessThreshold else {
             return Color.secondary
         }
-        if age > threshold * 3 { return Color.red }
+        if age > threshold * DataSourceTiming.staleMultiplier { return Color.red }
         if age > threshold { return Color.orange }
         return Color.secondary
     }
@@ -126,7 +143,7 @@ struct DataSource {
             url: URL(string: "https://www.ourcommons.ca/en/parliamentary-business/house-publications/")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.hansard") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400   // amber after 24h
+            stalenessThreshold: DataSourceTiming.secondsPerDay   // amber after 24h
         )
     }
 
@@ -137,7 +154,7 @@ struct DataSource {
             url: URL(string: "https://api.openparliament.ca")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.votes") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400
+            stalenessThreshold: DataSourceTiming.secondsPerDay
         )
     }
 
@@ -148,7 +165,7 @@ struct DataSource {
             url: URL(string: "https://www.parl.ca/LegisInfo/")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.bills") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400
+            stalenessThreshold: DataSourceTiming.secondsPerDay
         )
     }
 
@@ -159,7 +176,7 @@ struct DataSource {
             url: URL(string: "https://www.ourcommons.ca/en/parliamentary-business/financial-transparency")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.expenditures") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400 * 7   // amber after 7 days (quarterly data)
+            stalenessThreshold: DataSourceTiming.secondsPerDay * DataSourceTiming.weeklyMultiplier   // amber after 7 days (quarterly data)
         )
     }
 
@@ -170,7 +187,7 @@ struct DataSource {
             url: URL(string: "https://www.canada.ca/en/department-finance/services/publications/fiscal-monitor.html")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.fiscalMonitor") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400 * 45
+            stalenessThreshold: DataSourceTiming.secondsPerDay * DataSourceTiming.fiscalMonitorMultiplier
         )
     }
 
@@ -181,7 +198,7 @@ struct DataSource {
             url: URL(string: "https://www.ourcommons.ca/members/en")!,
             lastSyncDate: lastSync ?? UserDefaults.standard.object(forKey: "epac.sync.members") as? Date,
             vintage: nil,
-            stalenessThreshold: 86400 * 30  // amber after 30 days
+            stalenessThreshold: DataSourceTiming.secondsPerDay * DataSourceTiming.membersMultiplier  // amber after 30 days
         )
     }
 

@@ -1,5 +1,21 @@
 import SwiftUI
 
+private enum GazetteLayout {
+    static let skeletonRows = 6
+    static let retryDelaySeconds: Int64 = 2
+    static let rowSpacing = EpacSpacing.xs
+    static let metadataSpacing: CGFloat = 6
+    static let titleLineLimit = 2
+    static let rowVerticalPadding = EpacSpacing.xs
+    static let skeletonSpacing: CGFloat = 6
+    static let skeletonCornerRadius: CGFloat = 3
+    static let skeletonMetadataWidth: CGFloat = 80
+    static let skeletonCompactHeight: CGFloat = 10
+    static let skeletonTitleHeight: CGFloat = 14
+    static let skeletonDetailWidth: CGFloat = 200
+    static let skeletonVerticalPadding: CGFloat = 6
+}
+
 struct GazetteView: View {
     @State private var entries: [GazetteEntry] = []
     @State private var isLoading = false
@@ -22,7 +38,7 @@ struct GazetteView: View {
         Group {
             if isLoading && entries.isEmpty {
                 List {
-                    ForEach(0..<6, id: \.self) { _ in
+                    ForEach(0..<GazetteLayout.skeletonRows, id: \.self) { _ in
                         GazetteRowSkeleton()
                             .shimmer(when: true)
                     }
@@ -36,7 +52,7 @@ struct GazetteView: View {
                     message: NSLocalizedString("gazette.error.description", comment: ""),
                     action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(2)); isRetryDisabled = false }
+                        Task { try? await Task.sleep(for: .seconds(GazetteLayout.retryDelaySeconds)); isRetryDisabled = false }
                         Task { await load() }
                     })
                 )
@@ -110,8 +126,8 @@ private struct GazetteRow: View {
     let entry: GazetteEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: GazetteLayout.rowSpacing) {
+            HStack(spacing: GazetteLayout.metadataSpacing) {
                 Text(entry.part.localizedName)
                     .font(.caption.bold())
                     .foregroundStyle(.tint)
@@ -129,15 +145,15 @@ private struct GazetteRow: View {
             }
             Text(entry.title)
                 .font(.subheadline)
-                .lineLimit(2)
+                .lineLimit(GazetteLayout.titleLineLimit)
             if !entry.summary.isEmpty {
                 Text(entry.summary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(GazetteLayout.titleLineLimit)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, GazetteLayout.rowVerticalPadding)
         .accessibilityElement(children: .combine)
     }
 }
@@ -146,15 +162,15 @@ private struct GazetteRow: View {
 
 private struct GazetteRowSkeleton: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            RoundedRectangle(cornerRadius: 3)
-                .frame(width: 80, height: 10)
-            RoundedRectangle(cornerRadius: 3)
-                .frame(maxWidth: .infinity, minHeight: 14)
-            RoundedRectangle(cornerRadius: 3)
-                .frame(width: 200, height: 10)
+        VStack(alignment: .leading, spacing: GazetteLayout.skeletonSpacing) {
+            RoundedRectangle(cornerRadius: GazetteLayout.skeletonCornerRadius)
+                .frame(width: GazetteLayout.skeletonMetadataWidth, height: GazetteLayout.skeletonCompactHeight)
+            RoundedRectangle(cornerRadius: GazetteLayout.skeletonCornerRadius)
+                .frame(maxWidth: .infinity, minHeight: GazetteLayout.skeletonTitleHeight)
+            RoundedRectangle(cornerRadius: GazetteLayout.skeletonCornerRadius)
+                .frame(width: GazetteLayout.skeletonDetailWidth, height: GazetteLayout.skeletonCompactHeight)
         }
         .foregroundStyle(Color(.systemFill))
-        .padding(.vertical, 6)
+        .padding(.vertical, GazetteLayout.skeletonVerticalPadding)
     }
 }
