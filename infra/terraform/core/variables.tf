@@ -21,3 +21,15 @@ variable "artifacts_route53_zone_name" {
   type        = string
   default     = "riddimsoftware.com"
 }
+
+variable "lambda_role_name" {
+  description = "Existing EPAC Lambda execution role name."
+  type        = string
+  default     = "epac-lambda-role"
+}
+
+variable "hansard_search_prefix" {
+  description = "S3 key prefix used by the Hansard search index artifact."
+  type        = string
+  default     = "hansard-search/v1"
+}

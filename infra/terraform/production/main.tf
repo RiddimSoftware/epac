@@ -36,6 +36,17 @@ locals {
     for service in keys(local.http_services) :
     service => "apigw-epac-api-${service}"
   }
+
+  canonical_function_services = toset([
+    "hansard-search-index",
+  ])
+
+  lambda_config = {
+    "hansard-search-index" = {
+      timeout     = 900
+      memory_size = 1024
+    }
+  }
 }
 
 # Production HTTP API (existing API ID smun5g2szc; import before apply).
@@ -78,12 +89,14 @@ resource "aws_apigatewayv2_stage" "production" {
 resource "aws_lambda_function" "production" {
   for_each = toset(local.services)
 
-  function_name = each.key
+  function_name = contains(local.canonical_function_services, each.key) ? "epac-${each.key}-production" : each.key
   role          = var.lambda_role_arn
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   handler       = "bootstrap"
   publish       = false
+  timeout       = try(local.lambda_config[each.key].timeout, null)
+  memory_size   = try(local.lambda_config[each.key].memory_size, null)
 
   filename = "${path.module}/placeholder.zip"
 

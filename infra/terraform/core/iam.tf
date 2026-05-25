@@ -1,5 +1,6 @@
 locals {
-  account_id = "227530433709"
+  account_id            = "227530433709"
+  hansard_search_prefix = trim(var.hansard_search_prefix, "/")
 
   backend_ci_roles = {
     staging    = "GitHubActions-epac-backend-staging"
@@ -173,4 +174,28 @@ resource "aws_iam_role_policy" "backend_production_ci" {
   name   = "EpacProductionDeploy"
   role   = local.backend_ci_roles.production
   policy = data.aws_iam_policy_document.backend_production_ci.json
+}
+
+data "aws_iam_policy_document" "lambda_hansard_search_index_artifacts" {
+  statement {
+    sid    = "AllowHansardSearchIndexArtifactWrites"
+    effect = "Allow"
+
+    actions = [
+      # AWS authorizes HeadObject through s3:GetObject; there is no separate
+      # s3:HeadObject IAM action.
+      "s3:GetObject",
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.artifacts_bucket_name}/${local.hansard_search_prefix}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_hansard_search_index_artifacts" {
+  name   = "epac-hansard-search-index-artifacts"
+  role   = var.lambda_role_name
+  policy = data.aws_iam_policy_document.lambda_hansard_search_index_artifacts.json
 }

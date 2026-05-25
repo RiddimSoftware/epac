@@ -47,6 +47,7 @@ jobs:
           - calendar
           - config
           - hansard-subjects-index
+          - hansard-search-index
           - manifest
           - openapi
           - members-publisher
