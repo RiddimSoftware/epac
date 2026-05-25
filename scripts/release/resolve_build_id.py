@@ -10,6 +10,9 @@ from pathlib import Path
 import jwt
 import requests
 
+DEFAULT_LOOKUP_TIMEOUT_SECONDS = 20 * 60
+DEFAULT_POLL_INTERVAL_SECONDS = 30
+
 
 def get_asc_secret():
     env = os.environ.copy()
@@ -57,54 +60,134 @@ def get_token(key_id, issuer_id, key):
     return jwt.encode(payload, key, algorithm="ES256", headers={"kid": key_id})
 
 
+def build_query_params(app_id, build_number):
+    return {
+        "filter[app]": app_id,
+        "filter[version]": build_number,
+        "fields[builds]": "version,processingState,preReleaseVersion",
+        "include": "preReleaseVersion",
+        "limit": 50,
+        "sort": "-uploadedDate"
+    }
+
+
+def find_matching_build_id(payload, marketing_version):
+    version_map = {
+        inc["id"]: inc["attributes"]["version"]
+        for inc in payload.get("included", [])
+        if inc.get("type") == "preReleaseVersions"
+    }
+
+    for build in payload.get("data", []):
+        pre_release_id = (
+            build.get("relationships", {})
+            .get("preReleaseVersion", {})
+            .get("data", {})
+            .get("id")
+        )
+        if version_map.get(pre_release_id) == marketing_version:
+            return build["id"]
+
+    return None
+
+
+def resolve_build_id(
+    app_id,
+    marketing_version,
+    build_number,
+    token,
+    timeout_seconds=DEFAULT_LOOKUP_TIMEOUT_SECONDS,
+    poll_interval_seconds=DEFAULT_POLL_INTERVAL_SECONDS,
+    current_time=None,
+    sleep=None,
+    get_fn=None,
+):
+    if current_time is None:
+        current_time = time.time
+    if sleep is None:
+        sleep = time.sleep
+    if get_fn is None:
+        get_fn = requests.get
+
+    headers = {"Authorization": f"Bearer {token}"}
+    url = "https://api.appstoreconnect.apple.com/v1/builds"
+    params = build_query_params(app_id, build_number)
+    start = current_time()
+    attempt = 1
+
+    while True:
+        response = get_fn(url, headers=headers, params=params, timeout=30)
+        response.raise_for_status()
+        build_id = find_matching_build_id(response.json(), marketing_version)
+        if build_id:
+            return build_id
+
+        elapsed = current_time() - start
+        if elapsed >= timeout_seconds:
+            return None
+
+        print(
+            f"Build not found yet (attempt {attempt}; elapsed {int(elapsed)}s/"
+            f"{int(timeout_seconds)}s). Waiting {poll_interval_seconds}s...",
+            flush=True,
+        )
+        attempt += 1
+        sleep(max(0, poll_interval_seconds))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--app-id", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--build-number", required=True)
+    parser.add_argument(
+        "--timeout-minutes",
+        type=float,
+        default=DEFAULT_LOOKUP_TIMEOUT_SECONDS / 60,
+        help="Maximum time to wait for ASC build lookup visibility (default: 20)",
+    )
+    parser.add_argument(
+        "--poll-interval-seconds",
+        type=float,
+        default=DEFAULT_POLL_INTERVAL_SECONDS,
+        help="Polling period while waiting for build lookup visibility (default: 30)",
+    )
     args = parser.parse_args()
+
+    timeout_seconds = int(args.timeout_minutes * 60)
+    poll_interval_seconds = int(args.poll_interval_seconds)
+    if timeout_seconds <= 0:
+        print("timeout-minutes must be > 0")
+        sys.exit(1)
+    if poll_interval_seconds <= 0:
+        print("poll-interval-seconds must be > 0")
+        sys.exit(1)
 
     key_id, issuer_id, key = get_asc_credentials()
     token = get_token(key_id, issuer_id, key)
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    url = "https://api.appstoreconnect.apple.com/v1/builds"
-    params = {
-        "filter[app]": args.app_id,
-        "filter[version]": args.build_number,
-        "fields[builds]": "version,processingState",
-        "include": "preReleaseVersion",
-        "limit": 50,
-        "sort": "-uploadedDate"
-    }
-    
-    # Retry logic just in case the build isn't instantly available in the API
-    for attempt in range(5):
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-        
-        vmap = {
-            inc["id"]: inc["attributes"]["version"] 
-            for inc in data.get("included", []) 
-            if inc.get("type") == "preReleaseVersions"
-        }
-        
-        for b in data.get("data", []):
-            prv_id = b.get("relationships", {}).get("preReleaseVersion", {}).get("data", {}).get("id")
-            if vmap.get(prv_id) == args.version:
-                out = os.environ.get("GITHUB_OUTPUT")
-                if out:
-                    with open(out, "a") as f:
-                        f.write(f"build_id={b['id']}\n")
-                print(b["id"])
-                sys.exit(0)
-        
-        print(f"Build not found yet (attempt {attempt+1}/5). Waiting 15s...")
-        time.sleep(15)
-        
-    print("Build not found after retries.")
+
+    build_id = resolve_build_id(
+        args.app_id,
+        args.version,
+        args.build_number,
+        token,
+        timeout_seconds=timeout_seconds,
+        poll_interval_seconds=poll_interval_seconds,
+    )
+    if build_id:
+        out = os.environ.get("GITHUB_OUTPUT")
+        if out:
+            with open(out, "a") as f:
+                f.write(f"build_id={build_id}\n")
+        print(build_id)
+        sys.exit(0)
+
+    print(
+        "Build not found after waiting "
+        f"{timeout_seconds}s for version {args.version} build {args.build_number}."
+    )
     sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
