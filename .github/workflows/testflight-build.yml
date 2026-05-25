@@ -242,6 +242,18 @@ jobs:
             --group-name "PublicTesting" \
             --app-id "${{ vars.APPLE_APP_ID }}"
 
+      - name: Ensure beta review info
+        if: ${{ !inputs.dry_run }}
+        env:
+          BETA_REVIEW_CONTACT_EMAIL: ${{ vars.BETA_REVIEW_CONTACT_EMAIL }}
+          BETA_REVIEW_CONTACT_FIRST_NAME: ${{ vars.BETA_REVIEW_CONTACT_FIRST_NAME }}
+          BETA_REVIEW_CONTACT_LAST_NAME: ${{ vars.BETA_REVIEW_CONTACT_LAST_NAME }}
+          BETA_REVIEW_CONTACT_PHONE: ${{ vars.BETA_REVIEW_CONTACT_PHONE }}
+        run: |
+          .venv-release/bin/python scripts/release/ensure_beta_review_info.py \
+            --app-id "${{ vars.APPLE_APP_ID }}" \
+            --build-id "${{ steps.build-id.outputs.build_id }}"
+
       - name: Submit for Beta App Review
         if: ${{ !inputs.dry_run }}
         run: |
