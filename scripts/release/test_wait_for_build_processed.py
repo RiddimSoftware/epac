@@ -5,15 +5,18 @@ import pytest
 from scripts.release import wait_for_build_processed as wf
 
 
-def build_payload(state: str, expired=False, errors=None):
+def build_payload(state: str, expired=False, errors=None, uses_non_exempt_encryption=None):
+    attrs = {
+        "processingState": state,
+        "expired": expired,
+    }
+    if uses_non_exempt_encryption is not None:
+        attrs["usesNonExemptEncryption"] = uses_non_exempt_encryption
     payload = {
         "data": {
             "id": "b1",
             "type": "builds",
-            "attributes": {
-                "processingState": state,
-                "expired": expired,
-            },
+            "attributes": attrs,
         }
     }
     if state == "INVALID" and errors is not None:
@@ -39,7 +42,7 @@ def test_waits_until_valid():
     responses = [
         build_payload("PROCESSING"),
         build_payload("PROCESSING"),
-        build_payload("VALID"),
+        build_payload("VALID", uses_non_exempt_encryption=False),
     ]
 
     def get_build(_build_id: str, _token: str):
@@ -61,6 +64,55 @@ def test_waits_until_valid():
     assert payload["wait_seconds"] == 120
     assert responses == []
     assert clock.sleep_calls == [60, 60]
+
+
+def test_waits_for_compliance_after_valid():
+    clock = FakeClock()
+    responses = [
+        build_payload("VALID"),
+        build_payload("VALID"),
+        build_payload("VALID", uses_non_exempt_encryption=False),
+    ]
+
+    def get_build(_build_id: str, _token: str):
+        return responses.pop(0)
+
+    status, payload = wf.wait_for_build_processed(
+        "b1",
+        "token",
+        timeout_seconds=600,
+        poll_interval_seconds=60,
+        current_time=clock.time,
+        sleep=clock.sleep,
+        get_build_fn=get_build,
+    )
+
+    assert status == 0
+    assert payload["processing_state"] == "VALID"
+    assert payload["wait_seconds"] == 120
+    assert clock.sleep_calls == [60, 60]
+
+
+def test_compliance_timeout():
+    clock = FakeClock()
+    responses = [build_payload("VALID")] * 4
+
+    def get_build(_build_id: str, _token: str):
+        return responses.pop(0)
+
+    status, payload = wf.wait_for_build_processed(
+        "b1",
+        "token",
+        timeout_seconds=120,
+        poll_interval_seconds=60,
+        current_time=clock.time,
+        sleep=clock.sleep,
+        get_build_fn=get_build,
+    )
+
+    assert status == 5
+    assert payload["timed_out"] is True
+    assert payload["last_state"] == "VALID_MISSING_COMPLIANCE"
 
 
 def test_times_out_with_structured_output():

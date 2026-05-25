@@ -160,6 +160,19 @@ def wait_for_build_processed(
             }
 
         if state == "VALID":
+            encryption = attrs.get("usesNonExemptEncryption")
+            if encryption is None:
+                elapsed = current_time() - start
+                if elapsed >= timeout_seconds:
+                    return 5, {
+                        "build_id": build_id,
+                        "timed_out": True,
+                        "last_state": "VALID_MISSING_COMPLIANCE",
+                        "elapsed_seconds": int(elapsed),
+                    }
+                sleep(max(0, poll_interval_seconds))
+                continue
+
             elapsed = current_time() - start
             return 0, {
                 "build_id": build_id,
