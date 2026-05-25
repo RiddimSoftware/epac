@@ -250,9 +250,11 @@ class SpeechViewModel {
 		}?.hansardID
 	}
 
+	private static let fullNameComponentCount = 2
+
 	private static func speakerComponents(from name: String) -> (firstName: String, lastName: String) {
 		let parts = name.split(separator: " ", maxSplits: 1).map(String.init)
-		guard parts.count == 2 else {
+		guard parts.count == fullNameComponentCount else {
 			return ("", name)
 		}
 		return (parts[0], parts[1])

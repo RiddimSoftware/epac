@@ -86,7 +86,7 @@ struct SpeechView: View {
 							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 								.onTapGesture {
 									openSpeakerProfile(speaker)
-							}
+        }
 							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
@@ -134,16 +134,16 @@ struct SpeechView: View {
 								)
 							}
 							Button {
-									router.selectedMember = speaker
-									router.selectedTab = .members
-								} label: {
-									Label(
-										String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName),
-										systemImage: "person.circle"
-									)
-								}
-								Button {
-									UIPasteboard.general.string = message.text
+								router.selectedMember = speaker
+								router.selectedTab = .members
+							} label: {
+								Label(
+									String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName),
+									systemImage: "person.circle"
+								)
+							}
+							Button {
+								UIPasteboard.general.string = message.text
 							} label: {
 								Label(NSLocalizedString("speech.copyQuote", comment: ""), systemImage: "doc.on.doc")
 							}
@@ -167,7 +167,7 @@ struct SpeechView: View {
 							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
 								.onTapGesture {
 									openSpeakerProfile(speaker)
-							}
+        }
 							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
@@ -175,9 +175,9 @@ struct SpeechView: View {
 					if !message.user.isCurrentUser {
 						Spacer()
 					}
-				}
+     }
 				.padding()
-			}
+    }
 			inputViewBuilder: { _, _, _, _, _, _ in
 				EmptyView()
 			}
@@ -264,11 +264,11 @@ struct SpeechView: View {
 							Label(NSLocalizedString("speech.watchParlVU", comment: ""), systemImage: "play.rectangle")
 						}
 					}
-				} label: {
-					Image(systemName: "link")
+					} label: {
+						Image(systemName: "link")
+					}
+					.accessibilityLabel(NSLocalizedString("speech.sourceLinks", comment: ""))
 				}
-				.accessibilityLabel(NSLocalizedString("speech.sourceLinks", comment: ""))
-			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					withAnimation(reduceMotion ? nil : .default) {
@@ -293,7 +293,7 @@ struct SpeechView: View {
 				}
 				.accessibilityLabel("Share recent messages")
 			}
-		}
+   }
 	}
 
 	@ViewBuilder
