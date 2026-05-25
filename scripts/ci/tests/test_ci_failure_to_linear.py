@@ -378,13 +378,17 @@ def test_team_key_lookup_is_cached_for_run() -> None:
                 json.dumps(
                     {
                         "data": {
-                            "team": {
-                                "id": "team-123",
-                                "states": {
-                                    "nodes": [
-                                        {"id": "state-todo", "name": "Todo", "type": "unstarted"}
-                                    ]
-                                },
+                            "teams": {
+                                "nodes": [
+                                    {
+                                        "id": "team-123",
+                                        "states": {
+                                            "nodes": [
+                                                {"id": "state-todo", "name": "Todo", "type": "unstarted"}
+                                            ]
+                                        },
+                                    }
+                                ]
                             }
                         }
                     }
@@ -678,6 +682,6 @@ def test_find_open_issue_uses_exact_linear_graphql_filter() -> None:
     }
     query = requests[0]["query"]
     assert 'team: { key: { eq: $teamKey } }' in query
-    assert 'state: { type: { in: [unstarted, started] } }' in query
+    assert 'state: { type: { in: ["unstarted", "started"] } }' in query
     assert 'labels: { name: { eq: $labelName } }' in query
     assert 'title: { eq: $title }' in query
