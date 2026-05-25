@@ -1,6 +1,13 @@
 """Tests for ensure_beta_review_info.py."""
 from __future__ import annotations
 
+import io
+import json
+import sys
+import types
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,6 +16,8 @@ from ensure_beta_review_info import (
     ensure_beta_app_review_detail,
     ensure_beta_build_localizations,
 )
+
+SCRIPT = Path(__file__).parent / "ensure_beta_review_info.py"
 
 
 class TestEnsureBetaAppReviewDetail:
@@ -232,3 +241,55 @@ class TestEnsureBetaBuildLocalizations:
             http_post=lambda *a, **kw: post_resp,
         )
         assert result == {"status": "created", "id": "loc-en", "locale": "en-US"}
+
+
+class TestMainExitOnMissingContactInfo:
+    def test_main_exits_1_when_contact_info_skipped(self):
+        module = types.ModuleType("ensure_beta_review_info")
+        exec(compile(SCRIPT.read_text(), SCRIPT, "exec"), module.__dict__)
+
+        review_resp = MagicMock()
+        review_resp.status_code = 200
+        review_resp.json.return_value = {
+            "data": {
+                "id": "detail-456",
+                "attributes": {
+                    "contactEmail": None,
+                    "contactFirstName": None,
+                    "contactLastName": None,
+                    "contactPhone": None,
+                },
+            }
+        }
+
+        loc_resp = MagicMock()
+        loc_resp.status_code = 200
+        loc_resp.json.return_value = {
+            "data": [{"id": "loc-1", "attributes": {"locale": "en-US", "whatsNew": "Notes"}}]
+        }
+
+        env = {
+            "ASC_KEY_ID": "key",
+            "ASC_ISSUER_ID": "issuer",
+            "ASC_PRIVATE_KEY": "pem",
+            "BETA_REVIEW_CONTACT_EMAIL": "",
+            "BETA_REVIEW_CONTACT_FIRST_NAME": "",
+            "BETA_REVIEW_CONTACT_LAST_NAME": "",
+            "BETA_REVIEW_CONTACT_PHONE": "",
+        }
+
+        with mock.patch.object(module, "get_asc_token", return_value="token"), \
+                mock.patch.object(module, "get_asc_credentials", return_value=("key", "issuer", "pem")), \
+                mock.patch.object(module, "requests") as mock_requests, \
+                mock.patch.dict("os.environ", env, clear=False), \
+                mock.patch.object(sys, "argv", ["ensure_beta_review_info.py", "--app-id", "app-1", "--build-id", "b-1"]), \
+                redirect_stdout(io.StringIO()), \
+                redirect_stderr(io.StringIO()) as err:
+
+            mock_requests.get.side_effect = [review_resp, loc_resp]
+
+            with pytest.raises(SystemExit) as exc_info:
+                module.main()
+
+        assert exc_info.value.code == 1
+        assert "required but missing" in err.getvalue()
