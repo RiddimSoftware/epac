@@ -15,29 +15,30 @@ jobs:
       github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
       - name: Create Linear issue for failed CI
         env:
           LINEAR_API_TOKEN: ${{ secrets.LINEAR_API_TOKEN }}
+          LINEAR_TEAM_KEY: EPAC
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
-          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
-          TEAM_ID: b817e951-d79c-4fd0-90e4-63ebe0855a09
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          # Build the GraphQL mutation payload using jq for safe JSON construction
-          PAYLOAD=$(jq -n \
-            --arg wf "$WORKFLOW_NAME" \
-            --arg branch "$BRANCH_NAME" \
-            --arg url "$RUN_URL" \
-            --arg teamId "$TEAM_ID" \
-            '
-            {
-              query: "mutation {\n  issueCreate(input: {\n    teamId: \"\($teamId)\",\n    title: \"CI: \($wf) failed on \($branch)\",\n    description: \"Failed run: \($url)\",\n    priority: 1\n  }) {\n    success\n    issue { identifier url }\n  }\n}"
-            }
-            ')
-
-          # Call Linear GraphQL API
-          curl -X POST \
-            -H "Authorization: Bearer ${LINEAR_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD" \
-            https://api.linear.app/graphql
+          python3 scripts/ci/ci_failure_to_linear.py \
+            --workflow-name "${WORKFLOW_NAME}" \
+            --run-url "${RUN_URL}" \
+            --head-sha "${HEAD_SHA}" \
+            --branch "${BRANCH_NAME}" \
+            --conclusion "${CONCLUSION}" \
+            --repo "${REPOSITORY}" \
+            --team-key "${LINEAR_TEAM_KEY}"
