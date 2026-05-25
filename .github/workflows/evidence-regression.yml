@@ -80,11 +80,16 @@ jobs:
 
       - name: Capture before/after PR evidence
         id: capture
-        # Pin to a SHA past EVI-7 (which wired capture-pr into the action). The
-        # `v0` tag was created before that PR landed, so `@v0` runs the CLI without
-        # --repo / --pr / --plan and fails at argument parsing. Move to `@v0`
-        # again once that tag is fast-forwarded in RiddimSoftware/evidence.
-        uses: RiddimSoftware/evidence@fc65484f400ec8bc0ded78a70fb54ed32f7dfa6d
+        # Pin past EVI-11 (current evidence/main as of this commit). Earlier
+        # pins are missing two fixes we need: (1) EVI-7 (#39) which wired
+        # capture-pr argument translation into the action's case statement
+        # (`@v0` predates this — runs the CLI without --repo/--pr/--plan and
+        # fails at argument parsing); (2) EVI-11 (#41) which drains the
+        # xcodebuild stdout/stderr pipes concurrently inside the CLI
+        # (the prior CLI deadlocked on a full pipe buffer mid-build).
+        # Move back to `@v0` once that tag is fast-forwarded in
+        # RiddimSoftware/evidence past EVI-11.
+        uses: RiddimSoftware/evidence@e76e7991b7eda56857080e46fd84ec6ebb642161
         with:
           subcommand: capture-pr
           plan: ${{ inputs.plan_path }}
