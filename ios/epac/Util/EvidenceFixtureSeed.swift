@@ -26,8 +26,8 @@ enum EvidenceFixtureSeed {
     /// Keep this dictionary in sync with the XML files in
     /// `Resources/EvidenceFixtures/` and with `.evidence/regression-parliament-calendar.json`.
     static let fixtureDates: [String: String] = [
-        "45-1-HAN020-E": "2025-06-20",
         "45-1-HAN050-E": "2025-11-04",
+        "45-1-HAN070-E": "2025-12-09",
         "45-1-HAN100-E": "2026-03-26"
     ]
 
