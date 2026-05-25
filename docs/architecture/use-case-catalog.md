@@ -568,7 +568,7 @@ issue lands.
 | Manitoba | `ios/epac/Data/Adapters/Hansard/ManitobaHansardAdapter.swift` | TODO — EPAC-786. |
 | Nova Scotia | `ios/epac/Data/Adapters/Hansard/NovaScotiaHansardAdapter.swift` | TODO — EPAC-793. |
 | Quebec | `ios/epac/Data/Adapters/Hansard/QuebecHansardAdapter.swift` | TODO — EPAC-936. |
-| Saskatchewan | `ios/epac/Data/Adapters/Hansard/SaskatchewanHansardAdapter.swift` | TODO — EPAC-874. |
+| Saskatchewan | `ios/epac/Data/Adapters/Hansard/SaskatchewanHansardAdapter.swift` | Registered in `JurisdictionRoutedHansardRepository` at app startup. |
 
 Boundary rule: files matching
 `ios/epac/Data/Adapters/Hansard/**/*Adapter.swift` must not import `SwiftUI`,
