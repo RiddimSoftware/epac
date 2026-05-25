@@ -3,3 +3,6 @@
 
 # Cucumber's reference Gherkin parser — used by scripts/journeys/lint.py
 gherkin-official==39.0.0
+
+# Test runner for repo-local Python CI helper tests.
+pytest==9.0.3
