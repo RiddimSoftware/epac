@@ -192,6 +192,22 @@ data "aws_iam_policy_document" "lambda_hansard_search_index_artifacts" {
       "arn:aws:s3:::${var.artifacts_bucket_name}/${local.hansard_search_prefix}/*",
     ]
   }
+
+  # hansard-search Lambda (EPAC-2063) needs ListBucket to enumerate index artifacts.
+  statement {
+    sid    = "AllowHansardSearchIndexArtifactList"
+    effect = "Allow"
+
+    actions = ["s3:ListBucket"]
+
+    resources = ["arn:aws:s3:::${var.artifacts_bucket_name}"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["${local.hansard_search_prefix}/*"]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_hansard_search_index_artifacts" {
