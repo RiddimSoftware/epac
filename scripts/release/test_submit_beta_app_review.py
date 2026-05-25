@@ -220,6 +220,50 @@ class SubmitBetaAppReviewTests(unittest.TestCase):
         self.assertEqual(mock_requests.post.call_count, 3)
         self.assertEqual(len(sleep_calls), 2)
 
+    def test_submit_raises_submission_error_on_missing_data_422(self):
+        missing_data_response = FakeResponse(
+            422,
+            {"errors": [{"detail": "Missing required data"}]},
+        )
+
+        with mock.patch.object(self.module, "requests") as mock_requests:
+            mock_requests.post.return_value = missing_data_response
+
+            with self.assertRaises(self.module.SubmissionError) as ctx:
+                self.module.submit_beta_app_review("build-missing", "token")
+
+        self.assertNotIsInstance(ctx.exception, self.module.BuildNotProcessedError)
+        self.assertIn("betaAppReviewDetail", str(ctx.exception))
+
+    def test_submit_does_not_retry_on_missing_data_422(self):
+        missing_data_response = FakeResponse(
+            422,
+            {"errors": [{"detail": "Missing required data"}]},
+        )
+
+        with mock.patch.object(self.module, "get_asc_token", return_value="token"), \
+                mock.patch.object(
+                    self.module,
+                    "get_asc_credentials",
+                    return_value=("key", "issuer", "pem"),
+                ), \
+                mock.patch.object(self.module, "requests") as mock_requests, \
+                mock.patch.object(
+                    sys, "argv",
+                    ["submit_beta_app_review.py", "--build-id", "build-m",
+                     "--max-retries", "3"],
+                ), \
+                redirect_stdout(io.StringIO()), \
+                redirect_stderr(io.StringIO()):
+
+            mock_requests.post.return_value = missing_data_response
+
+            with self.assertRaises(SystemExit) as ctx:
+                self.module.main()
+
+        self.assertEqual(ctx.exception.code, 1)
+        self.assertEqual(mock_requests.post.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

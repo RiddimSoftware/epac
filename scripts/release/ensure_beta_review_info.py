@@ -248,14 +248,13 @@ def main() -> None:
         sys.exit(1)
 
     if review_result.get("status") == "skipped":
-        print(
-            json.dumps({
-                "warning": "Beta review contact details incomplete. "
-                "Set " + ", ".join(review_result["missing_fields"])
-                + " or populate in App Store Connect.",
-            }),
-            file=sys.stderr,
-        )
+        missing = ", ".join(review_result["missing_fields"])
+        print(json.dumps({
+            "error": "Beta review contact details are required but missing. "
+            f"Set GitHub repository variables: {missing}, "
+            "or populate the contact info in App Store Connect.",
+        }), file=sys.stderr)
+        sys.exit(1)
 
     print(json.dumps({
         "beta_app_review_detail": review_result,

@@ -176,9 +176,14 @@ def submit_beta_app_review(build_id: str, token: str) -> dict[str, str]:
         errors = payload.get("errors") if isinstance(payload, dict) else None
         if isinstance(errors, list) and errors:
             detail = f" {errors[0].get('detail') if isinstance(errors[0], dict) else errors[0]}"
+        full_msg = "ASC rejected the submission with 422: build not ready for review." + detail
+        if "missing" in detail.lower():
+            raise SubmissionError(
+                full_msg + " Check that betaAppReviewDetail contact info is populated "
+                "(run ensure_beta_review_info.py or set it in App Store Connect)."
+            )
         raise BuildNotProcessedError(
-            "ASC rejected the submission with 422: build not ready for review." + detail +
-            " Call wait_for_build_processed.py before retrying."
+            full_msg + " Call wait_for_build_processed.py before retrying."
         )
 
     raise SubmissionError(
