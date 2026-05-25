@@ -2,10 +2,10 @@ terraform {
   required_version = ">= 1.5"
 
   backend "s3" {
-    bucket         = "epac-terraform-state"
-    key            = "epac/production/terraform.tfstate"
+    bucket         = "epac-tfstate-production-227530433709"
+    key            = "production.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "epac-terraform-locks"
+    dynamodb_table = "epac-tfstate-lock-production"
     encrypt        = true
   }
 

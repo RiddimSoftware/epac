@@ -13,6 +13,7 @@ Terraform module for the epac staging backend: 10 Lambda functions, API Gateway 
 ```bash
 cd infra/terraform/staging
 export AWS_PROFILE=riddim-agent
+../bootstrap.sh staging
 terraform init
 terraform plan   # should show 0 changes after import
 terraform apply  # idempotent once imported
@@ -65,4 +66,4 @@ The EPAC-1914 artifact-backed functions (`members`, `sittings`, and `bills`) may
 
 - Lambda **code** is managed by `.github/workflows/backend-staging.yml`, not Terraform. The `placeholder.zip` is used only when creating a function from scratch; `lifecycle.ignore_changes` prevents Terraform from overwriting CI-deployed code.
 - State is remote (S3). `terraform.tfstate` files should not be committed (covered by the repo root `.gitignore`).
-- Remote state (S3 + DynamoDB lock) is enabled. State is stored in the `epac-terraform-state` bucket with locks in `epac-terraform-locks`.
+- Remote state (S3 + DynamoDB lock) is enabled. Staging state is stored in `epac-tfstate-staging-227530433709` with locks in `epac-tfstate-lock-staging`.

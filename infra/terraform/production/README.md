@@ -14,6 +14,7 @@ Terraform module for the epac production backend: the production HTTP API, produ
 ```bash
 cd infra/terraform/production
 export AWS_PROFILE=riddim-agent
+../bootstrap.sh production
 terraform init
 terraform plan
 ```
@@ -106,4 +107,4 @@ The production API also contains older staging-target integrations left over fro
 
 - Lambda code is not managed by Terraform. `placeholder.zip` is used only to create missing production functions; `lifecycle.ignore_changes` prevents Terraform from overwriting deployed code.
 - Production stage `auto_deploy` remains `false` to preserve the existing production release gate.
-- State is remote (S3). Remote state (S3 + DynamoDB lock) was added in EPAC-1852. State is stored in the `epac-terraform-state` bucket with locks in `epac-terraform-locks`.
+- State is remote (S3). Production state is stored in `epac-tfstate-production-227530433709` with locks in `epac-tfstate-lock-production`.

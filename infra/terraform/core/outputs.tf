@@ -1,11 +1,3 @@
-output "terraform_state_bucket_name" {
-  value = aws_s3_bucket.terraform_state.id
-}
-
-output "terraform_locks_table_name" {
-  value = aws_dynamodb_table.terraform_locks.name
-}
-
 output "artifacts_bucket_arn" {
   description = "ARN of the epac artifacts bucket."
   value       = module.artifacts.bucket_arn
