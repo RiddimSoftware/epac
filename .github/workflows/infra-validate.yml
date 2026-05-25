@@ -58,9 +58,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Bootstrap staging Terraform backend
-        run: bash infra/terraform/bootstrap.sh staging
-
       - name: Terraform init
         working-directory: infra/terraform/staging
         run: terraform init -input=false -no-color
