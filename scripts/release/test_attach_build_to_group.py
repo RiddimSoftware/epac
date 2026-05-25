@@ -51,6 +51,10 @@ def _build_attached():
     return SimpleNamespace(status_code=201, text="", json=lambda: {"data": {}})
 
 
+def _build_attached_no_content():
+    return SimpleNamespace(status_code=204, text="", json=lambda: {})
+
+
 def _already_attached():
     return SimpleNamespace(
         status_code=409,
@@ -151,6 +155,15 @@ def test_attach_build_success(monkeypatch):
             {"data": [{"type": "builds", "id": "123"}]},
         )
     ]
+
+
+def test_attach_build_accepts_no_content_success(monkeypatch):
+    def fake_request(method, url, headers=None, timeout=None, json=None, **_):
+        return _build_attached_no_content()
+
+    monkeypatch.setattr(attach.requests, "request", fake_request)
+    result = attach.attach_build("group-1", "123", "token")
+    assert result == {"attached": True, "build_id": "123", "group_id": "group-1"}
 
 
 def test_attach_build_idempotent(monkeypatch):
