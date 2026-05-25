@@ -70,6 +70,14 @@ opt_in_rules:
   - unowned_variable_capture    # [unowned self] crashes on dealloc; [weak self] is always safer.
   - no_magic_numbers            # Inline numeric literals should be named constants.
 
+no_magic_numbers:
+  # 0 and 1 appear legitimately throughout the codebase (zero-counts, single items,
+  # identity values, boolean-like flags). Allow them explicitly so they don't flood
+  # violations alongside the layout literals that EPAC-2003 is replacing with named
+  # DesignSystem constants. Escalate severity to error after EPAC-2003 merges and
+  # zero violations are confirmed.
+  allowed_numbers: [0, 1]
+
 custom_rules:
   application_layer_framework_imports:
     name: Application Layer Framework Imports
