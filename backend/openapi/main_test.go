@@ -33,6 +33,7 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 	requiredPaths := []string{
 		"/api/v1/sittings",
 		"/api/v1/sittings/{date}/speeches",
+		"/api/v1/hansard/search",
 		"/api/v1/members",
 		"/api/v1/members/{id}/votes",
 		"/api/v1/ridings/{slug}/boundary",
@@ -55,6 +56,7 @@ func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
 	requiredGETPaths := []string{
 		"/api/v1/sittings",
 		"/api/v1/sittings/{date}/speeches",
+		"/api/v1/hansard/search",
 		"/api/v1/members",
 		"/api/v1/members/{id}/votes",
 		"/api/v1/ridings/{slug}/boundary",
