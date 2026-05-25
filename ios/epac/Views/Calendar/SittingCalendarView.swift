@@ -42,6 +42,7 @@ private enum SittingCalendarLayout {
 struct SittingCalendarView: View {
 	@EnvironmentObject var fetch: Fetch
 	@Binding var selectedDate: DateComponents?
+	@Binding var pendingInterventionID: String?
 
 	@Environment(\.modelContext) private var modelContext
 	@Environment(\.hansardRepository) private var hansardRepository
@@ -57,6 +58,7 @@ struct SittingCalendarView: View {
 	@State private var exportStatusMessage = ""
 	@State private var isShowingExportStatus = false
 	@State private var isTodayVisible = true
+	@State private var isShowingHansardSearch = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -227,7 +229,22 @@ struct SittingCalendarView: View {
 		} message: {
 			Text(exportStatusMessage)
 		}
+		.navigationDestination(isPresented: $isShowingHansardSearch) {
+			HansardSearchView { result in
+				isShowingHansardSearch = false
+				pendingInterventionID = result.interventionID
+				selectedDate = Calendar.current.dateComponents([.year, .month, .day], from: result.sittingDate)
+			}
+		}
 		.toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button {
+					isShowingHansardSearch = true
+				} label: {
+					Image(systemName: "magnifyingglass")
+				}
+				.accessibilityLabel("Search Hansard debates")
+			}
 			ToolbarItem(placement: .principal) {
 				// Year picker: tap ‹ or › to jump by one year; the calendar scrolls to that year's January.
 				HStack(spacing: SittingCalendarLayout.yearPickerSpacing) {

@@ -533,20 +533,23 @@ struct ContentView: View {
 
 	private var parliamentStack: some View {
 		NavigationStack {
-			SittingCalendarView(selectedDate: $viewModel.selectedDate)
-				.environmentObject(fetch)
-				.navigationDestination(item: $viewModel.selectedHansard) { hansard in
-					hansardDestination(hansard)
-				}
-				.navigationDestination(item: $viewModel.selectedSittingDate) { date in
-					sittingLoaderDestination(date)
-				}
-				.navigationDestination(item: $viewModel.nonSittingDate) { date in
-					NonSittingDayView(date: date)
-				}
-				.onChange(of: viewModel.selectedDate) { _, newValue in
-					viewModel.onSelectedDateChanged(to: newValue)
-				}
+			SittingCalendarView(
+				selectedDate: $viewModel.selectedDate,
+				pendingInterventionID: $viewModel.pendingInterventionID
+			)
+			.environmentObject(fetch)
+			.navigationDestination(item: $viewModel.selectedHansard) { hansard in
+				hansardDestination(hansard)
+			}
+			.navigationDestination(item: $viewModel.selectedSittingDate) { date in
+				sittingLoaderDestination(date)
+			}
+			.navigationDestination(item: $viewModel.nonSittingDate) { date in
+				NonSittingDayView(date: date)
+			}
+			.onChange(of: viewModel.selectedDate) { _, newValue in
+				viewModel.onSelectedDateChanged(to: newValue)
+			}
 		}
 	}
 
@@ -560,9 +563,12 @@ struct ContentView: View {
 	}
 
 	private func sittingLoaderDestination(_ date: Date) -> some View {
-		SittingLoaderView(
+		let interventionID = viewModel.pendingInterventionID
+		viewModel.pendingInterventionID = nil
+		return SittingLoaderView(
 			date: date,
-			selectedSubject: $viewModel.selectedSubject
+			selectedSubject: $viewModel.selectedSubject,
+			initialInterventionID: interventionID
 		)
 	}
 }

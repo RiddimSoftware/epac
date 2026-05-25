@@ -13,6 +13,7 @@ import SwiftUI
 class ContentViewModel {
 	var selectedDate: DateComponents?
 	var selectedSittingDate: Date?
+	var pendingInterventionID: String?
 	var selectedHansard: Hansard?
 	var nonSittingDate: Date?
 	var selectedSubject: SubjectOfBusiness?
