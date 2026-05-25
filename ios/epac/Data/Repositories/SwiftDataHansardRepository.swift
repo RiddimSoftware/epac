@@ -54,8 +54,6 @@ final class SwiftDataHansardRepository: HansardRepository, @unchecked Sendable {
 	}
 
 	func storeTranscript(_ transcript: HansardTranscript) async throws {
-		try requireSupported(transcript.jurisdiction)
-
 		let sittingDate = transcript.sittingDate
 		let existing = try modelContext.fetch(FetchDescriptor<Hansard>(
 			predicate: #Predicate { $0.date == sittingDate }

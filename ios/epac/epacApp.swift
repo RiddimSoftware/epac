@@ -59,12 +59,16 @@ struct epacApp: App {
 	init() {
 		let modelContainer = Self.makeModelContainer()
 		let fetch = Fetch(modelContainer: modelContainer)
+		let swiftDataHansardRepository = SwiftDataHansardRepository(
+			modelContext: modelContainer.mainContext,
+			fetch: fetch
+		)
 		self.sharedModelContainer = modelContainer
 		self.fetch = fetch
 		self.hansardRepository = JurisdictionRoutedHansardRepository(adapters: [
-			.federal: SwiftDataHansardRepository(
-				modelContext: modelContainer.mainContext,
-				fetch: fetch
+			.federal: swiftDataHansardRepository,
+			.saskatchewan: SaskatchewanHansardAdapter(
+				persistTranscript: swiftDataHansardRepository.storeTranscript
 			)
 		])
 
