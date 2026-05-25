@@ -95,7 +95,7 @@ class SubmitBetaAppReviewTests(unittest.TestCase):
             mock_requests.get.assert_called_once()
             self.assertIn("/v1/builds/456/betaAppReviewSubmission", mock_requests.get.call_args.args[0])
 
-    def test_submit_returns_code_4_when_not_processed(self):
+    def test_submit_returns_code_4_when_not_processed_after_retries_exhausted(self):
         unprocessed_response = FakeResponse(
             422,
             {
@@ -115,7 +115,11 @@ class SubmitBetaAppReviewTests(unittest.TestCase):
                     return_value=("key", "issuer", "pem"),
                 ), \
                 mock.patch.object(self.module, "requests") as mock_requests, \
-                mock.patch.object(sys, "argv", ["submit_beta_app_review.py", "--build-id", "789"]), \
+                mock.patch.object(
+                    sys, "argv",
+                    ["submit_beta_app_review.py", "--build-id", "789",
+                     "--max-retries", "0"],
+                ), \
                 redirect_stdout(io.StringIO()) as out, \
                 redirect_stderr(io.StringIO()) as err:
 
@@ -127,6 +131,94 @@ class SubmitBetaAppReviewTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 4)
         self.assertIn("wait_for_build_processed.py", err.getvalue())
         self.assertEqual(out.getvalue(), "")
+
+    def test_submit_retries_on_422_then_succeeds(self):
+        unprocessed_response = FakeResponse(
+            422,
+            {"errors": [{"detail": "build not yet processed"}]},
+        )
+        success_response = FakeResponse(
+            201,
+            {
+                "data": {
+                    "id": "sub-retry",
+                    "attributes": {"betaReviewState": "WAITING_FOR_REVIEW"},
+                }
+            },
+        )
+
+        sleep_calls = []
+
+        def fake_sleep(seconds):
+            sleep_calls.append(seconds)
+
+        with mock.patch.object(self.module, "get_asc_token", return_value="token"), \
+                mock.patch.object(
+                    self.module,
+                    "get_asc_credentials",
+                    return_value=("key", "issuer", "pem"),
+                ), \
+                mock.patch.object(self.module, "requests") as mock_requests, \
+                mock.patch.object(
+                    sys, "argv",
+                    ["submit_beta_app_review.py", "--build-id", "build-42",
+                     "--max-retries", "3", "--retry-interval-seconds", "5"],
+                ), \
+                redirect_stdout(io.StringIO()) as out, \
+                redirect_stderr(io.StringIO()):
+
+            mock_requests.post.side_effect = [
+                unprocessed_response,
+                unprocessed_response,
+                success_response,
+            ]
+
+            self.module.main.__globals__["submit_with_retry"].__defaults__ = (
+                self.module.DEFAULT_MAX_RETRIES,
+                self.module.DEFAULT_RETRY_INTERVAL_SECONDS,
+                None,
+            )
+
+            original_submit_with_retry = self.module.submit_with_retry
+
+            def patched_submit_with_retry(build_id, token, **kwargs):
+                kwargs["sleep_fn"] = fake_sleep
+                return original_submit_with_retry(build_id, token, **kwargs)
+
+            with mock.patch.object(
+                self.module, "submit_with_retry", side_effect=patched_submit_with_retry
+            ):
+                self.module.main()
+
+            output = json.loads(out.getvalue())
+
+        self.assertEqual(output["submission_id"], "sub-retry")
+        self.assertEqual(output["build_id"], "build-42")
+        self.assertEqual(mock_requests.post.call_count, 3)
+        self.assertEqual(len(sleep_calls), 2)
+        self.assertTrue(all(s == 5 for s in sleep_calls))
+
+    def test_submit_with_retry_exhausts_all_attempts(self):
+        unprocessed_response = FakeResponse(
+            422,
+            {"errors": [{"detail": "not ready"}]},
+        )
+        sleep_calls = []
+
+        with mock.patch.object(self.module, "requests") as mock_requests:
+            mock_requests.post.return_value = unprocessed_response
+
+            with self.assertRaises(self.module.BuildNotProcessedError):
+                self.module.submit_with_retry(
+                    "build-99",
+                    "token",
+                    max_retries=2,
+                    retry_interval_seconds=1,
+                    sleep_fn=lambda s: sleep_calls.append(s),
+                )
+
+        self.assertEqual(mock_requests.post.call_count, 3)
+        self.assertEqual(len(sleep_calls), 2)
 
 
 if __name__ == "__main__":

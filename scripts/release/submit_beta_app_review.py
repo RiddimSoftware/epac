@@ -186,15 +186,54 @@ def submit_beta_app_review(build_id: str, token: str) -> dict[str, str]:
     )
 
 
+DEFAULT_MAX_RETRIES = 5
+DEFAULT_RETRY_INTERVAL_SECONDS = 30
+
+
+def submit_with_retry(
+    build_id: str,
+    token: str,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    retry_interval_seconds: int = DEFAULT_RETRY_INTERVAL_SECONDS,
+    sleep_fn: callable = None,
+) -> dict[str, str]:
+    if sleep_fn is None:
+        from time import sleep as sleep_fn
+
+    last_error = None
+    total_attempts = 1 + max_retries
+    for attempt in range(total_attempts):
+        try:
+            return submit_beta_app_review(build_id, token)
+        except BuildNotProcessedError as exc:
+            last_error = exc
+            if attempt < max_retries:
+                print(
+                    f"Attempt {attempt + 1}/{total_attempts}: build not ready. "
+                    f"Retrying in {retry_interval_seconds}s...",
+                    file=sys.stderr,
+                )
+                sleep_fn(retry_interval_seconds)
+
+    raise last_error
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-id", required=True)
+    parser.add_argument("--max-retries", type=int, default=DEFAULT_MAX_RETRIES)
+    parser.add_argument("--retry-interval-seconds", type=int, default=DEFAULT_RETRY_INTERVAL_SECONDS)
     args = parser.parse_args()
 
     try:
         key_id, issuer_id, private_key = get_asc_credentials()
         token = get_asc_token(key_id, issuer_id, private_key)
-        record = submit_beta_app_review(args.build_id, token)
+        record = submit_with_retry(
+            args.build_id,
+            token,
+            max_retries=args.max_retries,
+            retry_interval_seconds=args.retry_interval_seconds,
+        )
     except BuildNotProcessedError as exc:
         print(str(exc), file=sys.stderr)
         sys.exit(4)
