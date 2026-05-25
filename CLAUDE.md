@@ -6,7 +6,7 @@ epac is an iOS civic-engagement app that displays Canada's House of Commons Hans
 
 Brand and copy decisions live in `docs/brand/brand-brief-v1.md`. Treat that brief as the source of truth for product positioning, tagline, voice, tone, audience, and anti-positioning.
 
-Search backend decisions live in `docs/architecture/search-index-choice-epac452.md`. Use Postgres `tsvector` for v1 search and treat any Meilisearch work as a later migration after canonical records and ranking needs are proven.
+Search backend decisions live in `docs/architecture/search-index-choice-v2.md`. Use SQLite FTS5 (stored in S3, queried by a stateless Lambda) for v1 search. The prior Postgres `tsvector` decision (EPAC-452) is superseded; see that doc for historical context.
 
 Parsed speech schema decisions live in `docs/architecture/parsed-speech-schema-epac464.md`. Treat backend `speeches.intervention_id` as the canonical source-derived speech identity.
 
