@@ -71,14 +71,57 @@ Inputs: Selected date (defaults to today), calendar window (visible month range)
 Outputs: List of sittings with subjects, sitting status (scheduled / cancelled / in-progress).
 Entities / values: Hansard, SubjectOfBusiness, LiveParliamentStatus.
 Ports: HansardRepository, LiveParliamentStatusFetching, Clock.
-Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing).
+Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing), SwiftDataHansardRepository.
 Current implementation:
+  ios/epac/Application/BrowseHansardSitting.swift
   ios/epac/Views/Calendar/SittingCalendarViewModel.swift
   ios/epac/Views/Calendar/SittingCalendarView.swift
   ios/epac/Views/Calendar/SittingView.swift
   ios/epac/Views/Calendar/SittingViewModel.swift
   ios/epac/Model/Fetch.swift (downloadCalendar)
 ```
+
+> **Boundary note:** Calendar-window browse policy now lives in `BrowseHansardSitting` under `ios/epac/Application/`. `SittingCalendarViewModel` consumes that use case through dependency injection and keeps presentation state only.
+
+---
+
+### LoadDailyHansard
+
+```
+Actor: User (iOS app, foreground) / Background refresh
+Goal: Load one jurisdiction's Hansard transcript for a sitting date and persist it for later read/browse flows.
+Inputs: Jurisdiction, sitting date.
+Outputs: HansardTranscript.
+Entities / values: HansardTranscript, SubjectOfBusinessRecord, SpeechMessageRecord, Jurisdiction.
+Ports: HansardRepository.
+Primary adapters: SwiftDataHansardRepository, Fetch (downloadHansard), SwiftData (Hansard / SubjectOfBusiness / Message models).
+Current implementation:
+  ios/epac/Application/LoadDailyHansard.swift
+  ios/epac/Domain/Ports/HansardRepository.swift
+  ios/epac/Data/Repositories/SwiftDataHansardRepository.swift
+```
+
+> **Boundary note:** Fetch-and-store orchestration is an Application use case. SwiftData and network details remain behind `HansardRepository`.
+
+---
+
+### BrowseHansardSitting
+
+```
+Actor: User (iOS app, foreground)
+Goal: Browse jurisdiction-aware sitting dates and the subjects available for each date in a calendar window.
+Inputs: Jurisdiction, start date, end date.
+Outputs: Sitting dates and per-date subject summaries.
+Entities / values: HansardTranscript, SubjectOfBusinessRecord, Jurisdiction.
+Ports: HansardRepository.
+Primary adapters: SittingCalendarViewModel, SittingCalendarView, SwiftDataHansardRepository.
+Current implementation:
+  ios/epac/Application/BrowseHansardSitting.swift
+  ios/epac/Views/Calendar/SittingCalendarViewModel.swift
+  ios/epac/Data/Repositories/SwiftDataHansardRepository.swift
+```
+
+> **Boundary note:** The application policy for window filtering and subject aggregation is no longer in `SittingCalendarViewModel`.
 
 ---
 
@@ -91,8 +134,9 @@ Inputs: Sitting date, subject-of-business selection.
 Outputs: Ordered list of SpeechMessages with speaker names, photos, and text; resume position; replay state.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, ParliamentMember.
 Ports: HansardRepository, MemberRepository, Clock.
-Primary adapters: SpeechViewModel, SpeechView, SpeakerImageViewModel, MemberDownloadCoordinator, Fetch (downloadHansard), SwiftData (Hansard / SubjectOfBusiness / Message models).
+Primary adapters: SpeechViewModel, SpeechView, SpeakerImageViewModel, MemberDownloadCoordinator, SwiftDataHansardRepository, Fetch (downloadHansard), SwiftData (Hansard / SubjectOfBusiness / Message models).
 Current implementation:
+  ios/epac/Application/ReadHansardSpeech.swift
   ios/epac/Views/Chat/SpeechViewModel.swift
   ios/epac/Views/Chat/SpeechView.swift
   ios/epac/Views/Chat/SpeakerImageViewModel.swift
@@ -101,7 +145,7 @@ Current implementation:
   ios/epac/Model/Model.swift (Hansard, SubjectOfBusiness, Message)
 ```
 
-> **Boundary note:** `SpeechViewModel` currently holds SwiftData `ModelContext` references, which will be isolated when EPAC-1742 introduces the `SearchHansard` use case boundary. Until then the adapter boundary sits at the ViewModel/View seam.
+> **Boundary note:** Ordered speech loading now lives in `ReadHansardSpeech` under `ios/epac/Application/`. `SpeechViewModel` consumes that use case through dependency injection and keeps presentation state such as replay, sharing, resume position, and resolved speaker display.
 
 ---
 

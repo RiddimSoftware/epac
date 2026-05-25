@@ -11,19 +11,40 @@ import Testing
 
 // MARK: - Mocks
 
-/// Mock for SittingCalendarFetching. Runs on MainActor (Sendable via global actor).
+/// Mock for BrowseHansardSittingUseCase. Runs on MainActor (Sendable via global actor).
 @MainActor
-private final class MockSittingCalendarFetcher: SittingCalendarFetching {
-    var downloadCallYears: [Int] = []
+private final class MockBrowseHansardSittingUseCase: BrowseHansardSittingUseCase {
+    var requests: [BrowseHansardSittingRequest] = []
+    var result = BrowseHansardSitting.Result(sittingDates: [], sittings: [])
     var shouldThrow = false
 
-    // nonisolated required by Sendable conformance for async protocol method.
-    nonisolated func downloadSittingCalendar(_ year: Int) async throws {
-        await MainActor.run { downloadCallYears.append(year) }
-        if await MainActor.run(body: { shouldThrow }) {
-            throw NSError(domain: "MockSittingCalendarFetcher", code: 1)
+    func execute(
+        jurisdiction: Jurisdiction,
+        from startDate: Date,
+        through endDate: Date
+    ) async throws -> BrowseHansardSitting.Result {
+        requests.append(BrowseHansardSittingRequest(
+            jurisdiction: jurisdiction,
+            startDate: startDate,
+            endDate: endDate
+        ))
+        if shouldThrow {
+            throw NSError(domain: "MockBrowseHansardSittingUseCase", code: 1)
         }
+        return result
     }
+}
+
+private struct BrowseHansardSittingRequest: Equatable {
+    let jurisdiction: Jurisdiction
+    let startDate: Date
+    let endDate: Date
+}
+
+private struct SittingCalendarDependencies {
+    let container: ModelContainer
+    let context: ModelContext
+    let fetch: Fetch
 }
 
 /// Mock for ExpendituresFetching. Runs on MainActor.
@@ -58,6 +79,7 @@ private final class MockMemberResolver: MemberResolving {
         self.stubbedMember = stubbedMember
     }
 
+    // swiftlint:disable:next function_parameter_count
     func resolve(
         firstName: String, lastName: String,
         partyAbbreviation: String, ridingName: String,
@@ -74,47 +96,54 @@ private final class MockMemberResolver: MemberResolving {
 @MainActor
 struct SittingCalendarViewModelDITests {
 
-    private func makeContext() throws -> ModelContext {
+    private func makeDependencies() throws -> SittingCalendarDependencies {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
-        return ModelContext(container)
+        let context = ModelContext(container)
+        return SittingCalendarDependencies(
+            container: container,
+            context: context,
+            fetch: Fetch(modelContainer: container)
+        )
     }
 
-    /// Injected mock fetcher is called instead of the network.
-    @Test func fetchSittingCalendarUsesMockFetcher() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        let vm = SittingCalendarViewModel()
+    /// Injected use case is called instead of direct calendar/network orchestration.
+    @Test func fetchSittingCalendarUsesInjectedBrowseUseCase() async throws {
+        let dependencies = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        let sitting = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 5, day: 1))!
+        mockUseCase.result = BrowseHansardSitting.Result(sittingDates: [sitting], sittings: [])
+        let viewModel = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        // No SittingCalendar in store → triggers download via the injected mock.
-        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: mockFetcher)
+        await viewModel.fetchSittingCalendar(2026, modelContext: dependencies.context, fetch: dependencies.fetch)
 
-        #expect(mockFetcher.downloadCallYears == [2026])
-        #expect(!vm.loadFailed)
+        #expect(mockUseCase.requests.map(\.jurisdiction) == [.federal])
+        #expect(viewModel.dates.union(viewModel.futureDates).count == 1)
+        #expect(!viewModel.loadFailed)
     }
 
-    /// When the mock throws, loadFailed is set.
+    /// When the injected use case throws, loadFailed is set.
     @Test func fetchSittingCalendarSetsLoadFailedOnError() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        mockFetcher.shouldThrow = true
-        let vm = SittingCalendarViewModel()
+        let dependencies = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        mockUseCase.shouldThrow = true
+        let viewModel = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        await vm.fetchSittingCalendar(2026, modelContext: context, fetch: mockFetcher)
+        await viewModel.fetchSittingCalendar(2026, modelContext: dependencies.context, fetch: dependencies.fetch)
 
-        #expect(vm.loadFailed)
+        #expect(viewModel.loadFailed)
     }
 
-    /// refresh() uses the mock fetcher, not a real network call.
-    @Test func refreshUsesMockFetcher() async throws {
-        let context = try makeContext()
-        let mockFetcher = MockSittingCalendarFetcher()
-        let vm = SittingCalendarViewModel()
+    /// refresh() uses the injected use case, not direct calendar orchestration.
+    @Test func refreshUsesInjectedBrowseUseCase() async throws {
+        let dependencies = try makeDependencies()
+        let mockUseCase = MockBrowseHansardSittingUseCase()
+        let viewModel = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
-        await vm.refresh(modelContext: context, fetch: mockFetcher)
+        await viewModel.refresh(modelContext: dependencies.context, fetch: dependencies.fetch)
 
-        #expect(mockFetcher.downloadCallYears.count == 1)
-        #expect(!vm.loadFailed)
+        #expect(mockUseCase.requests.count == 1)
+        #expect(!viewModel.loadFailed)
     }
 }
 
@@ -126,11 +155,11 @@ struct ExpendituresViewModelDITests {
     /// When no cached data exists, loadData calls expenditures() on the injected mock.
     @Test func loadDataCallsMockWhenNoCachedData() async throws {
         let mockFetcher = MockExpendituresFetcher()
-        let vm = ExpendituresViewModel()
-        vm.selectedYear = 2024
-        vm.selectedQuarter = 1
+        let viewModel = ExpendituresViewModel()
+        viewModel.selectedYear = 2024
+        viewModel.selectedQuarter = 1
 
-        await vm.loadData(expenditures: [], fetch: mockFetcher)
+        await viewModel.loadData(expenditures: [], fetch: mockFetcher)
 
         #expect(mockFetcher.expendituresCalls.count == 1)
         #expect(mockFetcher.expendituresCalls[0].year == 2024)
@@ -144,9 +173,9 @@ struct ExpendituresViewModelDITests {
         let context = ModelContext(container)
         let mockFetcher = MockExpendituresFetcher()
 
-        let vm = ExpendituresViewModel()
-        vm.selectedYear = 2024
-        vm.selectedQuarter = 1
+        let viewModel = ExpendituresViewModel()
+        viewModel.selectedYear = 2024
+        viewModel.selectedQuarter = 1
 
         let cached = SummaryExpenditure(
             firstName: "Alice", lastName: "Smith",
@@ -156,7 +185,7 @@ struct ExpendituresViewModelDITests {
         )
         context.insert(cached)
 
-        await vm.loadData(expenditures: [cached], fetch: mockFetcher)
+        await viewModel.loadData(expenditures: [cached], fetch: mockFetcher)
 
         #expect(mockFetcher.expendituresCalls.isEmpty)
     }
@@ -164,11 +193,11 @@ struct ExpendituresViewModelDITests {
     /// refresh() calls downloadExpenditures on the injected mock.
     @Test func refreshCallsMockDownload() async throws {
         let mockFetcher = MockExpendituresFetcher()
-        let vm = ExpendituresViewModel()
-        vm.selectedYear = 2023
-        vm.selectedQuarter = 3
+        let viewModel = ExpendituresViewModel()
+        viewModel.selectedYear = 2023
+        viewModel.selectedQuarter = 3
 
-        await vm.refresh(fetch: mockFetcher)
+        await viewModel.refresh(fetch: mockFetcher)
 
         #expect(mockFetcher.downloadCalls.count == 1)
         #expect(mockFetcher.downloadCalls[0].year == 2023)
@@ -179,12 +208,12 @@ struct ExpendituresViewModelDITests {
     @Test func refreshSetsLoadFailedOnMockError() async throws {
         let mockFetcher = MockExpendituresFetcher()
         mockFetcher.shouldThrow = true
-        let vm = ExpendituresViewModel()
+        let viewModel = ExpendituresViewModel()
 
-        await vm.refresh(fetch: mockFetcher)
+        await viewModel.refresh(fetch: mockFetcher)
 
-        #expect(vm.loadFailed)
-        #expect(!vm.isLoading)
+        #expect(viewModel.loadFailed)
+        #expect(!viewModel.isLoading)
     }
 }
 
@@ -192,6 +221,12 @@ struct ExpendituresViewModelDITests {
 
 @MainActor
 struct SpeechViewModelDITests {
+    private struct SpeechDependencies {
+        let container: ModelContainer
+        let context: ModelContext
+        let hansard: Hansard
+        let subject: SubjectOfBusiness
+    }
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -211,7 +246,7 @@ struct SpeechViewModelDITests {
         )
     }
 
-    private func makeHansardWithOneMessage() throws -> (ModelContainer, ModelContext, Hansard, SubjectOfBusiness) {
+    private func makeHansardWithOneMessage() throws -> SpeechDependencies {
         let container = try makeContainer()
         let context = ModelContext(container)
         let message = SpeechMessage(
@@ -225,40 +260,50 @@ struct SpeechViewModelDITests {
         let hansard = Hansard(date: Date(), hansardID: "h-0", parliamentNumber: 45, sessionNumber: 1, orders: [order])
         context.insert(hansard)
         try context.save()
-        return (container, context, hansard, subject)
+        return SpeechDependencies(container: container, context: context, hansard: hansard, subject: subject)
     }
 
     /// Injected mock resolver is used by nextMessage when no method-level override is passed.
     @Test func initInjectedResolverIsUsedByNextMessage() throws {
-        let (container, context, hansard, subject) = try makeHansardWithOneMessage()
-        let fetch = Fetch(modelContainer: container)
+        let dependencies = try makeHansardWithOneMessage()
+        let fetch = Fetch(modelContainer: dependencies.container)
         let stub = stubMember()
         let mockResolver = MockMemberResolver(stubbedMember: stub)
 
         // Inject resolver at init — the key DI contract.
-        let vm = SpeechViewModel(resolver: mockResolver)
-        let navigator = SubjectNavigator(subject)
+        let viewModel = SpeechViewModel(resolver: mockResolver)
+        let navigator = SubjectNavigator(dependencies.subject)
 
         // No method-level resolver override → init-injected mock is used.
-        vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard,
-                       modelContext: context, fetch: fetch)
+        viewModel.nextMessage(
+            navigator: navigator,
+            subject: dependencies.subject,
+            hansard: dependencies.hansard,
+            modelContext: dependencies.context,
+            fetch: fetch
+        )
 
-        #expect(vm.messages.first?.user.name == "Stub Member")
+        #expect(viewModel.messages.first?.user.name == "Stub Member")
     }
 
     /// Verify reset() propagates resetCache() to the injected resolver.
     @Test func resetCallsResetCacheOnInjectedResolver() throws {
-        let (container, context, hansard, subject) = try makeHansardWithOneMessage()
-        let fetch = Fetch(modelContainer: container)
+        let dependencies = try makeHansardWithOneMessage()
+        let fetch = Fetch(modelContainer: dependencies.container)
         let mockResolver = MockMemberResolver(stubbedMember: stubMember())
-        let vm = SpeechViewModel(resolver: mockResolver)
-        let navigator = SubjectNavigator(subject)
+        let viewModel = SpeechViewModel(resolver: mockResolver)
+        let navigator = SubjectNavigator(dependencies.subject)
 
-        vm.nextMessage(navigator: navigator, subject: subject, hansard: hansard,
-                       modelContext: context, fetch: fetch)
-        vm.reset(navigator: navigator, subject: subject)
+        viewModel.nextMessage(
+            navigator: navigator,
+            subject: dependencies.subject,
+            hansard: dependencies.hansard,
+            modelContext: dependencies.context,
+            fetch: fetch
+        )
+        viewModel.reset(navigator: navigator, subject: dependencies.subject)
 
-        #expect(vm.messages.isEmpty)
+        #expect(viewModel.messages.isEmpty)
         #expect(mockResolver.resetCacheCallCount == 1)
     }
 }
@@ -273,7 +318,7 @@ struct MembersViewModelNoNetworkTests {
 
     /// filteredMembers works with plain in-memory ParliamentMember values — no service needed.
     @Test func filteredMembersRequiresNoNetworkOrService() {
-        let vm = MembersViewModel()
+        let viewModel = MembersViewModel()
 
         // swiftlint:disable:next force_unwrapping
         let photoURL = URL(string: "https://example.com/photo.jpg")!
@@ -286,8 +331,8 @@ struct MembersViewModelNoNetworkTests {
             photoURL: photoURL, riding: "Carleton", province: .Ontario, party: .conservative
         )
 
-        vm.selectedParty = .liberal
-        let result = vm.filteredMembers(from: [trudeau, poilievre])
+        viewModel.selectedParty = .liberal
+        let result = viewModel.filteredMembers(from: [trudeau, poilievre])
 
         #expect(result.count == 1)
         #expect(result.first?.party == .liberal)
@@ -295,8 +340,8 @@ struct MembersViewModelNoNetworkTests {
 
     /// Cabinet filter works without a network or Fetch dependency.
     @Test func cabinetFilterWorksWithInMemoryMinisterKeys() {
-        let vm = MembersViewModel()
-        vm.selectedCabinet = .cabinetOnly
+        let viewModel = MembersViewModel()
+        viewModel.selectedCabinet = .cabinetOnly
 
         // swiftlint:disable:next force_unwrapping
         let photoURL = URL(string: "https://example.com/photo.jpg")!
@@ -310,7 +355,7 @@ struct MembersViewModelNoNetworkTests {
         )
 
         let ministerKey = CabinetMatch.key(firstName: "Mark", lastName: "Carney")
-        let result = vm.filteredMembers(from: [minister, backbencher], ministerKeys: [ministerKey])
+        let result = viewModel.filteredMembers(from: [minister, backbencher], ministerKeys: [ministerKey])
 
         #expect(result.count == 1)
         #expect(result.first?.lastName == "Carney")

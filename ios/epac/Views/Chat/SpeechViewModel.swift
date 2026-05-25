@@ -11,7 +11,7 @@ import Observation
 import SwiftData
 import SwiftUI
 
-private enum SpeechViewModelLayout {
+enum SpeechViewModelLayout {
 	static let tapHintMessageThreshold = 2
 	static let tapHintVisibleOpacity = 1.0
 	static let tapHintHiddenOpacity = 0.0
@@ -28,6 +28,16 @@ private enum SpeechViewModelLayout {
 	static let shareWidth: CGFloat = 400
 }
 
+private struct ChatMessageInput {
+	let firstName: String
+	let lastName: String
+	let partyAbbreviation: String
+	let ridingName: String
+	let id: String
+	let text: String
+	let timestamp: Date
+}
+
 @MainActor
 @Observable
 class SpeechViewModel {
@@ -35,11 +45,15 @@ class SpeechViewModel {
 	var speakers: [String: ParliamentMember] = [:]
 	var didFinish = false
 	var isResuming = false
+	var isSpeechLoaded = false
 
 	// Injected resolver dependency. Defaults to CachingMemberResolver (production)
 	// so callers don't need to supply one. In unit tests, pass a mock conforming
 	// to MemberResolving to avoid SwiftData/network I/O.
 	private let resolver: any MemberResolving
+	private var readHansardSpeech: (any ReadHansardSpeechUseCase)?
+	private var orderedSpeechMessages: [SpeechMessageRecord] = []
+	private var nextSpeechMessageIndex = 0
 
 	var tapAnywhereOpacity: Double {
 		messages.count < SpeechViewModelLayout.tapHintMessageThreshold || isResuming
@@ -47,9 +61,32 @@ class SpeechViewModel {
 			: SpeechViewModelLayout.tapHintHiddenOpacity
 	}
 
-	init(messages: [Message] = [], resolver: any MemberResolving = CachingMemberResolver()) {
+	init(
+		messages: [Message] = [],
+		readHansardSpeech: (any ReadHansardSpeechUseCase)? = nil,
+		resolver: any MemberResolving = CachingMemberResolver()
+	) {
 		self.messages = messages
+		self.readHansardSpeech = readHansardSpeech
 		self.resolver = resolver
+	}
+
+	func configure(readHansardSpeech: any ReadHansardSpeechUseCase) {
+		self.readHansardSpeech = readHansardSpeech
+	}
+
+	func loadSpeech(jurisdiction: Jurisdiction, sittingDate: Date, subjectID: String) async throws {
+		guard let readHansardSpeech else {
+			throw SpeechViewModelError.missingReadHansardSpeech
+		}
+		orderedSpeechMessages = try await readHansardSpeech.execute(
+			jurisdiction: jurisdiction,
+			sittingDate: sittingDate,
+			subjectID: subjectID
+		)
+		nextSpeechMessageIndex = 0
+		isSpeechLoaded = true
+		didFinish = orderedSpeechMessages.isEmpty
 	}
 
 	func append(_ message: Message, speaker: ParliamentMember) {
@@ -57,59 +94,123 @@ class SpeechViewModel {
 		speakers[message.id] = speaker
 	}
 
-	func reset(navigator: SubjectNavigator, subject: SubjectOfBusiness) {
+	func reset(subject: SubjectOfBusiness) {
 		messages.removeAll()
 		speakers.removeAll()
 		didFinish = false
+		isResuming = false
+		nextSpeechMessageIndex = 0
 		resolver.resetCache()
 		subject.currentSpeech?.currentMessage = nil
 		subject.currentSpeech?.currentMessageID = nil
 		subject.currentSpeech = nil
 		subject.currentSpeechID = nil
-		navigator.reset()
 	}
 
-	func prepareResume(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
-		guard messages.isEmpty else { return }
+	func prepareResume(
+		subject: SubjectOfBusiness,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)? = nil
+	) {
+		guard isSpeechLoaded, messages.isEmpty else { return }
 		let savedSpeechID = subject.currentSpeechID ?? subject.currentSpeech?.hansardID
 		let savedMessageID = subject.currentSpeech?.currentMessageID ?? subject.currentSpeech?.currentMessage?.hansardID
 
 		if let savedSpeechID {
-			while !didFinish && (navigator.navigator == nil || navigator.navigator?.speech.hansardID != savedSpeechID) {
-				nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+			while !didFinish && subject.currentSpeechID != savedSpeechID {
+				nextMessage(
+					subject: subject,
+					hansard: hansard,
+					modelContext: modelContext,
+					fetch: fetch,
+					resolver: resolver
+				)
 			}
 			if let savedMessageID {
 				while !didFinish && messages.last?.id != savedMessageID {
-					nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+					nextMessage(
+						subject: subject,
+						hansard: hansard,
+						modelContext: modelContext,
+						fetch: fetch,
+						resolver: resolver
+					)
 				}
 			}
 			isResuming = !didFinish
 		}
 	}
 
-	func nextMessage(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard, modelContext: ModelContext, fetch: Fetch, resolver: (any MemberResolving)? = nil) {
+	func nextMessage(
+		subject: SubjectOfBusiness,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)? = nil
+	) {
 		isResuming = false
-		guard !didFinish else { return }
-		guard let message = navigator.next() else {
+		guard isSpeechLoaded, !didFinish else { return }
+		guard nextSpeechMessageIndex < orderedSpeechMessages.count else {
 			didFinish = true
 			return
 		}
 
-		if let currentSpeech = navigator.navigator?.speech {
+		let message = orderedSpeechMessages[nextSpeechMessageIndex]
+		nextSpeechMessageIndex += 1
+		if let currentSpeech = subject.speeches.first(where: { speech in
+			speech.messages.contains { $0.hansardID == message.interventionID }
+		}) {
 			subject.currentSpeech = currentSpeech
 			subject.currentSpeechID = currentSpeech.hansardID
-			currentSpeech.currentMessage = message
-			currentSpeech.currentMessageID = message.hansardID
+			currentSpeech.currentMessage = currentSpeech.messages.first { $0.hansardID == message.interventionID }
+			currentSpeech.currentMessageID = message.interventionID
 		}
 
+		appendChatMessage(message, hansard: hansard, modelContext: modelContext, fetch: fetch, resolver: resolver)
+	}
+
+	private func appendChatMessage(
+		_ message: SpeechMessageRecord,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)?
+	) {
+		let speakerComponents = Self.speakerComponents(from: message.speakerName)
+		appendChatMessage(
+			ChatMessageInput(
+				firstName: speakerComponents.firstName,
+				lastName: speakerComponents.lastName,
+				partyAbbreviation: "",
+				ridingName: "",
+				id: message.interventionID,
+				text: message.text,
+				timestamp: message.timestamp ?? hansard.date
+			),
+			hansard: hansard,
+			modelContext: modelContext,
+			fetch: fetch,
+			resolver: resolver
+		)
+	}
+
+	private func appendChatMessage(
+		_ input: ChatMessageInput,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)?
+	) {
 		// Use the method-level override when provided (e.g. tests); fall back to
 		// the injected stored resolver.
 		let activeResolver = resolver ?? self.resolver
 		let speaker = activeResolver.resolve(
-			firstName: message.firstName,
-			lastName: message.lastName,
-			partyAbbreviation: message.partyAbbreviation,
-			ridingName: message.ridingName,
+			firstName: input.firstName,
+			lastName: input.lastName,
+			partyAbbreviation: input.partyAbbreviation,
+			ridingName: input.ridingName,
 			parliamentNumber: hansard.parliamentNumber,
 			modelContext: modelContext,
 			fetch: fetch
@@ -126,101 +227,127 @@ class SpeechViewModel {
 		}
 
 		append(Message(
-			id: message.hansardID,
+			id: input.id,
 			user: User(
 				id: "\(speaker.persistentModelID)",
 				name: speaker.name,
 				avatarURL: speaker.photoURL,
 				isCurrentUser: isCurrentUser
 			),
-			createdAt: message.timestamp,
-			text: message.content
+			createdAt: input.timestamp,
+			text: input.text
 		), speaker: speaker)
 	}
 
-	@MainActor
-	func shareMessage(_ message: Message, subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
-		guard let speaker = speakers[message.id] else { return nil }
-		let renderer = ImageRenderer(content: createMessageView(message, speaker: speaker, subject: subject, hansard: hansard))
-		renderer.scale = UIScreen.main.scale
-		if let image = renderer.uiImage {
-			let source = ShareActivityItemSource(image: image, title: subject.title)
-			return ActivityItem(items: source)
-		}
-		return nil
+	var nextSpeechMessage: SpeechMessageRecord? {
+		guard nextSpeechMessageIndex < orderedSpeechMessages.count else { return nil }
+		return orderedSpeechMessages[nextSpeechMessageIndex]
 	}
 
-	@MainActor
-	func shareLast5Messages(navigator: SubjectNavigator, subject: SubjectOfBusiness, hansard: Hansard) -> ActivityItem? {
-		let lastMessages = Array(messages.suffix(SpeechViewModelLayout.shareMessageLimit))
-		let baseURL = "https://epac.riddimsoftware.com/app?date=\(hansard.date.ISO8601Format())&subjectID=\(subject.hansardID)"
-		let url: URL
-		if didFinish {
-			url = URL(string: baseURL)!
-		} else if let nav = navigator.navigator, let firstMessage = nav.speech.messages.first {
-			url = URL(string: "\(baseURL)&speechID=\(nav.speech.hansardID)&messageID=\(firstMessage.hansardID)")!
-		} else {
-			url = URL(string: baseURL)!
-		}
-
-		let shareView = MultiMessageShareView(messages: lastMessages, speakers: speakers, parliamentNumber: hansard.parliamentNumber, subjectTitle: subject.title, date: hansard.date)
-		let renderer = ImageRenderer(content: shareView)
-		renderer.scale = UIScreen.main.scale
-		if let image = renderer.uiImage {
-			let source = ShareActivityItemSource(image: image, title: subject.title, url: url)
-			return ActivityItem(items: source, url)
-		} else {
-			return ActivityItem(items: url)
-		}
+	func speechID(containing messageID: String, in subject: SubjectOfBusiness) -> String? {
+		subject.speeches.first { speech in
+			speech.messages.contains { $0.hansardID == messageID }
+		}?.hansardID
 	}
 
-	private func createMessageView(_ message: Message, speaker: ParliamentMember, subject: SubjectOfBusiness, hansard: Hansard) -> some View {
-		VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareRootSpacing) {
-			VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareHeaderSpacing) {
-				Text(subject.title)
-					.font(.system(.headline, design: .rounded))
-					.foregroundStyle(.gray)
-				Text(hansard.date.formatted(date: .long, time: .omitted))
-					.font(.system(.subheadline, design: .rounded))
-					.foregroundStyle(.gray.opacity(SpeechViewModelLayout.shareHeaderOpacity))
+	private static let fullNameComponentCount = 2
+
+	private static func speakerComponents(from name: String) -> (firstName: String, lastName: String) {
+		let parts = name.split(separator: " ", maxSplits: 1).map(String.init)
+		guard parts.count == fullNameComponentCount else {
+			return ("", name)
+		}
+		return (parts[0], parts[1])
+	}
+
+}
+
+extension SpeechViewModel {
+	func reset(navigator: SubjectNavigator, subject: SubjectOfBusiness) {
+		reset(subject: subject)
+		navigator.reset()
+	}
+
+	func prepareResume(
+		navigator: SubjectNavigator,
+		subject: SubjectOfBusiness,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)? = nil
+	) {
+		guard messages.isEmpty else { return }
+		let savedSpeechID = subject.currentSpeechID ?? subject.currentSpeech?.hansardID
+		let savedMessageID = subject.currentSpeech?.currentMessageID ?? subject.currentSpeech?.currentMessage?.hansardID
+
+		if let savedSpeechID {
+			while !didFinish
+				&& (navigator.navigator == nil || navigator.navigator?.speech.hansardID != savedSpeechID) {
+				nextMessage(
+					navigator: navigator,
+					subject: subject,
+					hansard: hansard,
+					modelContext: modelContext,
+					fetch: fetch,
+					resolver: resolver
+				)
 			}
-			.padding(.bottom, SpeechViewModelLayout.shareHeaderBottomPadding)
-
-			HStack(alignment: .bottom) {
-				if message.user.isCurrentUser {
-					Spacer()
-				}
-				if !message.user.isCurrentUser {
-					SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-				}
-				VStack(alignment: message.user.isCurrentUser ? .trailing : .leading) {
-					VStack(alignment: .leading, spacing: SpeechViewModelLayout.shareMessageSpacing) {
-						VStack(alignment: .leading, spacing: 0) {
-							Text(speaker.name)
-								.font(.system(.caption, design: .rounded, weight: .bold))
-							Text("\(speaker.riding), \(speaker.province.rawValue)")
-								.font(.system(.caption2, design: .rounded))
-						}
-						.foregroundStyle(.white.opacity(SpeechViewModelLayout.shareSpeakerOpacity))
-						Text(verbatim: message.text)
-							.lineSpacing(SpeechViewModelLayout.shareLineSpacing)
-					}
-					.padding(SpeechViewModelLayout.shareBubblePadding)
-					.background(message.user.isCurrentUser ? Color(UIColor.darkGray) : Color(UIColor.gray))
-					.cornerRadius(SpeechViewModelLayout.shareBubbleCornerRadius)
-					.foregroundStyle(.white)
-				}
-				if message.user.isCurrentUser {
-					SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-				}
-				if !message.user.isCurrentUser {
-					Spacer()
+			if let savedMessageID {
+				while !didFinish && messages.last?.id != savedMessageID {
+					nextMessage(
+						navigator: navigator,
+						subject: subject,
+						hansard: hansard,
+						modelContext: modelContext,
+						fetch: fetch,
+						resolver: resolver
+					)
 				}
 			}
+			isResuming = !didFinish
 		}
-		.padding()
-		.background(Color.appBackground)
-		.fixedSize(horizontal: false, vertical: true)
-		.frame(width: SpeechViewModelLayout.shareWidth)
 	}
+
+	func nextMessage(
+		navigator: SubjectNavigator,
+		subject: SubjectOfBusiness,
+		hansard: Hansard,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		resolver: (any MemberResolving)? = nil
+	) {
+		isResuming = false
+		guard !didFinish else { return }
+		guard let message = navigator.next() else {
+			didFinish = true
+			return
+		}
+
+		if let currentSpeech = navigator.navigator?.speech {
+			subject.currentSpeech = currentSpeech
+			subject.currentSpeechID = currentSpeech.hansardID
+			currentSpeech.currentMessage = message
+			currentSpeech.currentMessageID = message.hansardID
+		}
+
+		appendChatMessage(
+			ChatMessageInput(
+				firstName: message.firstName,
+				lastName: message.lastName,
+				partyAbbreviation: message.partyAbbreviation,
+				ridingName: message.ridingName,
+				id: message.hansardID,
+				text: message.content,
+				timestamp: message.timestamp
+			),
+			hansard: hansard,
+			modelContext: modelContext,
+			fetch: fetch,
+			resolver: resolver
+		)
+	}
+}
+
+enum SpeechViewModelError: Error {
+	case missingReadHansardSpeech
 }

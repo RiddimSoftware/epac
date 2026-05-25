@@ -8,15 +8,6 @@ import Observation
 import Sentry
 import SwiftData
 
-// Protocol describing the calendar-download capability SittingCalendarViewModel
-// needs. Fetch conforms in production; tests supply a mock without network I/O.
-protocol SittingCalendarFetching: Sendable {
-	func downloadSittingCalendar(_ year: Int) async throws
-}
-
-// Fetch already implements downloadSittingCalendar — conformance is additive.
-extension Fetch: SittingCalendarFetching {}
-
 @MainActor
 @Observable
 class SittingCalendarViewModel {
@@ -25,12 +16,21 @@ class SittingCalendarViewModel {
 	var currentYear: Int = Calendar.current.dateComponents([.year], from: .now).year!
 	var loadFailed = false
 	private var loadGeneration = 0
+	private var browseHansardSitting: (any BrowseHansardSittingUseCase)?
 
 	private enum CalendarBoundary {
 		static let january = 1
 		static let firstDayOfMonth = 1
 		static let december = 12
 		static let lastDayOfDecember = 31
+	}
+
+	init(browseHansardSitting: (any BrowseHansardSittingUseCase)? = nil) {
+		self.browseHansardSitting = browseHansardSitting
+	}
+
+	func configure(browseHansardSitting: any BrowseHansardSittingUseCase) {
+		self.browseHansardSitting = browseHansardSitting
 	}
 
 	var sittingDayCount: Int {
@@ -53,19 +53,13 @@ class SittingCalendarViewModel {
 			.sorted()
 	}
 
-	// fetch param typed as the protocol so tests can inject a mock without
-	// a real ModelContainer-backed Fetch actor.
-	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: any SittingCalendarFetching) async {
+	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
 		let generation = nextLoadGeneration()
 		loadFailed = false
 		do {
-			var calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
-			if calendar == nil {
-				try await fetch.downloadSittingCalendar(year)
-				calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
-			}
+			let result = try await loadSittingWindow(year: year, modelContext: modelContext, fetch: fetch)
 			guard isCurrentLoad(generation) else { return }
-			let splitDates = makeDateComponentSets(from: calendar?.sittings ?? [])
+			let splitDates = makeDateComponentSets(from: result.sittingDates)
 			dates.formUnion(splitDates.past)
 			futureDates.formUnion(splitDates.future)
 		} catch {
@@ -77,15 +71,17 @@ class SittingCalendarViewModel {
 	}
 
 	/// Force-reloads the current year from the network, bypassing the SwiftData cache.
-	func refresh(modelContext: ModelContext, fetch: any SittingCalendarFetching) async {
+	func refresh(modelContext: ModelContext, fetch: Fetch) async {
 		let year = currentYear
 		let generation = nextLoadGeneration()
 		loadFailed = false
 		do {
-			try await fetch.downloadSittingCalendar(year)
-			let calendar = try? modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })).first
+			if browseHansardSitting == nil {
+				try await fetch.downloadSittingCalendar(year)
+			}
+			let result = try await loadSittingWindow(year: year, modelContext: modelContext, fetch: fetch)
 			guard isCurrentLoad(generation), currentYear == year else { return }
-			let splitDates = makeDateComponentSets(from: calendar?.sittings ?? [])
+			let splitDates = makeDateComponentSets(from: result.sittingDates)
 			dates = dates.filter { $0.year != year }
 			futureDates = futureDates.filter { $0.year != year }
 			dates.formUnion(splitDates.past)
@@ -98,7 +94,7 @@ class SittingCalendarViewModel {
 		}
 	}
 
-	func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange, modelContext: ModelContext, fetch: any SittingCalendarFetching) {
+	func onVisibleDayRangeChanged(_ visibleDayRange: DayComponentsRange, modelContext: ModelContext, fetch: Fetch) {
 		guard let lowerYear = visibleDayRange.lowerBound.components.year,
 					let upperYear = visibleDayRange.upperBound.components.year else {
 			return
@@ -150,6 +146,26 @@ class SittingCalendarViewModel {
 
 	private func isCurrentLoad(_ generation: Int) -> Bool {
 		generation == loadGeneration
+	}
+
+	private func loadSittingWindow(
+		year: Int,
+		modelContext: ModelContext,
+		fetch: Fetch
+	) async throws -> BrowseHansardSitting.Result {
+		guard let startDate = Foundation.Calendar.current.date(
+			from: DateComponents(year: year, month: CalendarBoundary.january, day: CalendarBoundary.firstDayOfMonth)
+		),
+		let endDate = Foundation.Calendar.current.date(
+			from: DateComponents(year: year, month: CalendarBoundary.december, day: CalendarBoundary.lastDayOfDecember)
+		) else {
+			return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
+		}
+
+		let useCase = browseHansardSitting ?? BrowseHansardSitting(
+			repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+		)
+		return try await useCase.execute(jurisdiction: .federal, from: startDate, through: endDate)
 	}
 
 	private func makeDateComponentSets(from sittings: [Date]) -> (past: Set<DateComponents>, future: Set<DateComponents>) {

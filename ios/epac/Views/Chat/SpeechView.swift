@@ -5,6 +5,7 @@
 //  Created by Sunny on 2024-12-16.
 //
 
+// swiftlint:disable type_body_length
 import ActivityView
 import ExyteChat
 import Observation
@@ -41,7 +42,6 @@ struct SpeechView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(NavigationRouter.self) var router
 	@EnvironmentObject var fetch: Fetch
-	@State private var navigator: SubjectNavigator
 
 	let hansard: Hansard
 	let subject: SubjectOfBusiness
@@ -52,12 +52,11 @@ struct SpeechView: View {
 	@State private var followStore = MemberFollowStore.shared
 	@State private var userProvinceCode = ""
 
-	init(hansard: Hansard, subject: SubjectOfBusiness) {
+	init(hansard: Hansard, subject: SubjectOfBusiness, readHansardSpeech: (any ReadHansardSpeechUseCase)? = nil) {
 		self.hansard = hansard
 		self.subject = subject
-		navigator = SubjectNavigator(subject)
 		self.length = subject.speeches.map { $0.messages.count }.reduce(0, +)
-		self.viewModel = SpeechViewModel()
+		self.viewModel = SpeechViewModel(readHansardSpeech: readHansardSpeech)
 	}
 
 	var body: some View {
@@ -74,19 +73,20 @@ struct SpeechView: View {
 			cppOasDebateContext
 			veteransAffairsDebateContext
 			transportationSafetyDebateContext
-			ChatView(messages: viewModel.messages) { _ in
-				/// didSendMessage
-			}
-			messageBuilder: { message, positionInGroup, _, _, _, _, _ in
-				HStack(alignment: .bottom) {
-					if message.user.isCurrentUser {
-						Spacer()
-					}
-					if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
-						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-							.onTapGesture {
-								openSpeakerProfile(speaker)
-							}
+				ChatView(messages: viewModel.messages) { _ in
+					/// didSendMessage
+				}
+				messageBuilder: { message, positionInGroup, _, _, _, _, _ in
+					HStack(alignment: .bottom) {
+						if message.user.isCurrentUser {
+							Spacer()
+						}
+						// swiftlint:disable:next line_length
+						if (positionInGroup == .last || positionInGroup == .single) && !message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
+							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
+								.onTapGesture {
+									openSpeakerProfile(speaker)
+        }
 							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
@@ -137,7 +137,10 @@ struct SpeechView: View {
 								router.selectedMember = speaker
 								router.selectedTab = .members
 							} label: {
-								Label(String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName), systemImage: "person.circle")
+								Label(
+									String(format: NSLocalizedString("speech.goToProfile", comment: ""), speaker.firstName),
+									systemImage: "person.circle"
+								)
 							}
 							Button {
 								UIPasteboard.general.string = message.text
@@ -154,16 +157,17 @@ struct SpeechView: View {
 					.accessibilityAction(named: NSLocalizedString("speech.copyQuote", comment: "")) {
 						UIPasteboard.general.string = message.text
 					}
-					.accessibilityAction(named: NSLocalizedString("View member profile", comment: "")) {
-						if let speaker = viewModel.speakers[message.id] {
-							openSpeakerProfile(speaker)
-						}
-					}
-					if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
-						SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
-							.onTapGesture {
+						.accessibilityAction(named: NSLocalizedString("View member profile", comment: "")) {
+							if let speaker = viewModel.speakers[message.id] {
 								openSpeakerProfile(speaker)
 							}
+						}
+						// swiftlint:disable:next line_length
+						if (positionInGroup == .last || positionInGroup == .single) && message.user.isCurrentUser, let speaker = viewModel.speakers[message.id] {
+							SpeakerImageView(speaker: speaker, parliamentNumber: hansard.parliamentNumber)
+								.onTapGesture {
+									openSpeakerProfile(speaker)
+        }
 							.accessibilityHidden(true)
 					} else {
 						Spacer(minLength: SpeechLayout.speakerPlaceholderWidth)
@@ -171,9 +175,9 @@ struct SpeechView: View {
 					if !message.user.isCurrentUser {
 						Spacer()
 					}
-				}
+     }
 				.padding()
-			}
+    }
 			inputViewBuilder: { _, _, _, _, _, _ in
 				EmptyView()
 			}
@@ -210,58 +214,70 @@ struct SpeechView: View {
 			TapGesture()
 				.onEnded {
 					withAnimation(reduceMotion ? nil : .default) {
-						viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+						viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 					}
 				}
 		)
-		.task {
+		.task(id: subject.hansardID) {
 			guard viewModel.messages.isEmpty else { return }
 			do {
+				viewModel.configure(readHansardSpeech: ReadHansardSpeech(
+					repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+				))
+				try await viewModel.loadSpeech(
+					jurisdiction: .federal,
+					sittingDate: hansard.date,
+					subjectID: subject.hansardID
+				)
+				viewModel.prepareResume(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
 				guard viewModel.messages.isEmpty else { return }
 				withAnimation(reduceMotion ? nil : .default) {
-					viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+					viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 				}
 			} catch {
-				Log.debug("Failed to sleep 0.7s \(error.localizedDescription)")
+				Log.debug("Failed to load speech \(error.localizedDescription)")
 			}
 		}
 		.onAppear {
-			viewModel.prepareResume(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 			resolveSavedMemberProvince()
 			ReviewRequestManager.shared.recordDebateThreadRead(
 				hansardID: hansard.hansardID,
 				subjectTitle: subject.title
 			)
 		}
-		.activitySheet($item)
-		.toolbar {
-			ToolbarItem(placement: .topBarLeading) {
-				Menu {
-					if let url = URL(string: "https://openparliament.ca/debates/\(hansard.parliamentNumber)/\(hansard.sessionNumber)/\(DateUtils.getCSVStringFromDate(hansard.date))/") {
-						Link(destination: url) {
-							Label(NSLocalizedString("speech.openOpenParliament", comment: ""), systemImage: "safari")
-						}
+			.activitySheet($item)
+			.toolbar {
+				ToolbarItem(placement: .topBarLeading) {
+					Menu {
+						let openParliamentURL = "https://openparliament.ca/debates/"
+							+ "\(hansard.parliamentNumber)/"
+							+ "\(hansard.sessionNumber)/"
+							+ "\(DateUtils.getCSVStringFromDate(hansard.date))/"
+						if let url = URL(string: openParliamentURL) {
+							Link(destination: url) {
+								Label(NSLocalizedString("speech.openOpenParliament", comment: ""), systemImage: "safari")
+							}
 					}
 					if let url = ParlVULinkBuilder.houseDebateURL(for: hansard.date) {
 						Link(destination: url) {
 							Label(NSLocalizedString("speech.watchParlVU", comment: ""), systemImage: "play.rectangle")
 						}
 					}
-				} label: {
-					Image(systemName: "link")
+					} label: {
+						Image(systemName: "link")
+					}
+					.accessibilityLabel(NSLocalizedString("speech.sourceLinks", comment: ""))
 				}
-				.accessibilityLabel(NSLocalizedString("speech.sourceLinks", comment: ""))
-			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
 					withAnimation(reduceMotion ? nil : .default) {
-						viewModel.reset(navigator: navigator, subject: subject)
+						viewModel.reset(subject: subject)
 					}
 					Task {
 						do {
 							try await Task.sleep(nanoseconds: SpeechLayout.messageAdvanceDelayNanoseconds)
-							viewModel.nextMessage(navigator: navigator, subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
+							viewModel.nextMessage(subject: subject, hansard: hansard, modelContext: modelContext, fetch: fetch)
 						} catch {}
 					}
 				} label: {
@@ -271,13 +287,13 @@ struct SpeechView: View {
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button {
-					item = viewModel.shareLast5Messages(navigator: navigator, subject: subject, hansard: hansard)
+					item = viewModel.shareLast5Messages(subject: subject, hansard: hansard)
 				} label: {
 					Image(systemName: "square.and.arrow.up")
 				}
 				.accessibilityLabel("Share recent messages")
 			}
-		}
+   }
 	}
 
 	@ViewBuilder
@@ -310,23 +326,25 @@ struct SpeechView: View {
 	@ViewBuilder
 	private var employmentInsuranceDebateContext: some View {
 		if isEmploymentInsuranceRelevant,
-		   let ei = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
+		   let insuranceStatistic = EmploymentInsuranceStatisticsDatabase.statistic(for: userProvinceCode) {
 			VStack(alignment: .leading, spacing: SpeechLayout.contextSpacing) {
 				HStack {
 					Label("EI context", systemImage: "briefcase.fill")
 						.font(.caption.bold())
 					Spacer()
-					Text(EmploymentInsuranceStatisticsDatabase.monthLabel(ei.referenceMonth))
+					Text(EmploymentInsuranceStatisticsDatabase.monthLabel(insuranceStatistic.referenceMonth))
 						.font(.caption2)
 						.foregroundStyle(.secondary)
 				}
 				statPillRow {
-					statPill("Beneficiaries", ei.beneficiaries.formatted())
+					statPill("Beneficiaries", insuranceStatistic.beneficiaries.formatted())
 					statPill(
 						"Avg. benefit",
-						ei.averageWeeklyBenefit.formatted(.currency(code: "CAD").precision(.fractionLength(0)))
+						insuranceStatistic.averageWeeklyBenefit.formatted(
+							.currency(code: "CAD").precision(.fractionLength(0))
+						)
 					)
-					if let change = ei.claimsYearOverYearChangePercent {
+					if let change = insuranceStatistic.claimsYearOverYearChangePercent {
 						statPill("Claims YoY", yearOverYearLabel(change))
 					}
 				}
@@ -615,6 +633,8 @@ struct SpeechView: View {
 	}
 }
 
+// swiftlint:enable type_body_length
+
 struct MultiMessageShareView: View {
 	let messages: [Message]
 	let speakers: [String: ParliamentMember]
@@ -629,18 +649,23 @@ struct MultiMessageShareView: View {
 		var texts: [String]
 	}
 
-	var groupedMessages: [MessageGroup] {
-		var groups: [MessageGroup] = []
-		for message in messages {
-			guard let speaker = speakers[message.id] else { continue }
-			if let lastIndex = groups.indices.last, groups[lastIndex].speaker.name == speaker.name {
-				groups[lastIndex].texts.append(message.text)
-			} else {
-				groups.append(MessageGroup(id: message.id, speaker: speaker, isCurrentUser: message.user.isCurrentUser, texts: [message.text]))
+		var groupedMessages: [MessageGroup] {
+			var groups: [MessageGroup] = []
+			for message in messages {
+				guard let speaker = speakers[message.id] else { continue }
+				if let lastIndex = groups.indices.last, groups[lastIndex].speaker.name == speaker.name {
+					groups[lastIndex].texts.append(message.text)
+				} else {
+					groups.append(MessageGroup(
+						id: message.id,
+						speaker: speaker,
+						isCurrentUser: message.user.isCurrentUser,
+						texts: [message.text]
+					))
+				}
 			}
+			return groups
 		}
-		return groups
-	}
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: SpeechLayout.shareRootSpacing) {
@@ -698,4 +723,4 @@ struct MultiMessageShareView: View {
 		.fixedSize(horizontal: false, vertical: true)
 		.frame(width: SpeechLayout.shareWidth)
 	}
-}
+} // swiftlint:disable:this file_length
