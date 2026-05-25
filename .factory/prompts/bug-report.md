@@ -19,6 +19,29 @@ Do **not** invent missing details — ask once, briefly, then move on.
 
 ---
 
+## Step 0 — Suggest seeded bug when attendee is unsure
+
+If the attendee says they don’t know what to file (examples:
+“I don't know what to file”, “no specific bug”, “what should I file”), read
+one random entry from `.factory/intake/seeded-bugs.md` and offer it as a suggestion.
+
+Use this response pattern:
+
+> "Here’s one good starter bug you can file: <summary> (repro: <steps>).
+> Want me to use this?"
+
+If they confirm:
+
+- Use the seeded **Summary** as **Observed behaviour**.
+- Use the seeded **Repro steps** as **Reproduction steps**.
+- Use the seeded **Suggested classification** and **Suggested estimate** from the file.
+- Then continue with Step 2 classification flow and onward.
+- Still collect reporter email and screenshot consent from Step 1 so intake still has a valid contact and attachment path.
+
+If they decline, continue with normal Step 1.
+
+---
+
 ## Step 1 — Collect (probe only for missing fields)
 
 Ask for these in order. Skip any the attendee has already given.
