@@ -80,6 +80,36 @@ actor Fetch: ObservableObject {
 		case openCommons
 		case openParliament
 	}
+
+	private struct ParsedRecordedVote: Sendable {
+		let voteID: Int
+		let parliament: Int
+		let session: Int
+		let number: Int
+		let date: Date
+		let descriptionEn: String
+		let billNumberCode: String
+		let yea: Int
+		let nay: Int
+		let paired: Int
+		let resultEn: String
+
+		var model: RecordedVote {
+			RecordedVote(
+				voteID: voteID,
+				parliament: parliament,
+				session: session,
+				number: number,
+				date: date,
+				descriptionEn: descriptionEn,
+				billNumberCode: billNumberCode,
+				yea: yea,
+				nay: nay,
+				paired: paired,
+				resultEn: resultEn
+			)
+		}
+	}
 	func sittingCalendar(_ year: Int) async throws -> SittingCalendar {
 		Log.debug("Fetch.sittingCalendar(year: \(year))")
 		let calendar = try modelContext.fetch(FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year }))
@@ -1002,7 +1032,7 @@ actor Fetch: ObservableObject {
 				from: source
 			)
 			for vote in voteItems {
-				modelContext.insert(vote)
+				modelContext.insert(vote.model)
 			}
 			hasMore = continuePagination
 			page += 1
@@ -1048,7 +1078,7 @@ actor Fetch: ObservableObject {
 		parliament: Int,
 		page: Int,
 		from source: VotingEndpoint
-	) async throws -> (votes: [RecordedVote], hasMore: Bool) {
+	) async throws -> (votes: [ParsedRecordedVote], hasMore: Bool) {
 		guard let url = votingPageURL(parliament: parliament, page: page, from: source),
 			  let json = try await fetchJSONDictionary(from: url) else {
 			return ([], false)
@@ -1103,7 +1133,7 @@ actor Fetch: ObservableObject {
 		_ json: [String: Any],
 		parliament: Int,
 		from source: VotingEndpoint
-	) -> (votes: [RecordedVote], hasMore: Bool) {
+	) -> (votes: [ParsedRecordedVote], hasMore: Bool) {
 		switch source {
 		case .openCommons:
 			return parseOpenCommonsVotingPage(json, parliament: parliament)
@@ -1115,7 +1145,7 @@ actor Fetch: ObservableObject {
 	private func parseOpenCommonsVotingPage(
 		_ json: [String: Any],
 		parliament: Int
-	) -> (votes: [RecordedVote], hasMore: Bool) {
+	) -> (votes: [ParsedRecordedVote], hasMore: Bool) {
 		guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
 		let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament) }
 		return (votes, !votes.isEmpty && votes.count == votePageSize)
@@ -1123,14 +1153,14 @@ actor Fetch: ObservableObject {
 
 	private func parseOpenParliamentVotingPage(
 		_ json: [String: Any]
-	) -> (votes: [RecordedVote], hasMore: Bool) {
+	) -> (votes: [ParsedRecordedVote], hasMore: Bool) {
 		guard let objects = json["objects"] as? [[String: Any]] else { return ([], false) }
 		let votes = objects.compactMap { parseOpenParliamentVote($0) }
 		let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
 		return (votes, nextURL?.isEmpty == false)
 	}
 
-	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int) -> RecordedVote? {
+	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int) -> ParsedRecordedVote? {
 		guard let id = item["id"] as? Int else { return nil }
 		let dateStr = item["date"] as? String ?? ""
 		let date = voteDateFormatter.date(from: dateStr) ?? Date()
@@ -1138,7 +1168,7 @@ actor Fetch: ObservableObject {
 		let desc = descObj?["en"] ?? item["description"] as? String ?? ""
 		let resultObj = item["result"] as? [String: String]
 		let result = resultObj?["en"] ?? item["result"] as? String ?? ""
-		return RecordedVote(
+		return ParsedRecordedVote(
 			voteID: id,
 			parliament: item["parliament"] as? Int ?? parliament,
 			session: item["session"] as? Int ?? 0,
@@ -1153,7 +1183,7 @@ actor Fetch: ObservableObject {
 		)
 	}
 
-	private func parseOpenParliamentVote(_ item: [String: Any]) -> RecordedVote? {
+	private func parseOpenParliamentVote(_ item: [String: Any]) -> ParsedRecordedVote? {
 		guard let number = item["number"] as? Int,
 			  let sessionText = item["session"] as? String else { return nil }
 		let (voteParliament, session) = parseSessionComponents(from: sessionText)
@@ -1164,7 +1194,7 @@ actor Fetch: ObservableObject {
 		let desc = descObj?["en"] as? String ?? ""
 		let result = item["result"] as? String ?? ""
 		let bill = item["bill_url"] as? String
-		return RecordedVote(
+		return ParsedRecordedVote(
 			voteID: voteID,
 			parliament: voteParliament,
 			session: session,
