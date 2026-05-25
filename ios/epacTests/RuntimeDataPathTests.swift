@@ -152,7 +152,7 @@ struct RuntimeDataPathTests {
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Schema(SchemaV9.models), configurations: config)
+        return try ModelContainer(for: Schema(SchemaV10.models), configurations: config)
     }
 
     private func makeNetworkHarness() throws -> NetworkHarness {

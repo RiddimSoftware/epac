@@ -18,6 +18,7 @@ private enum SchemaVersionComponent {
 	static let v7Major = 7
 	static let v8Major = 8
 	static let v9Major = 9
+	static let v10Major = 10
 }
 
 private enum WrittenQuestionConstants {
@@ -37,8 +38,8 @@ typealias TravelExpenditureDetail = SchemaV5.TravelExpenditureDetail
 typealias HospitalityExpenditure = SchemaV5.HospitalityExpenditure
 typealias ContractExpenditure = SchemaV5.ContractExpenditure
 typealias SummaryExpenditure = SchemaV5.SummaryExpenditure
-typealias RecordedVote = SchemaV5.RecordedVote
-typealias MemberVote = SchemaV5.MemberVote
+typealias RecordedVote = SchemaV10.RecordedVote
+typealias MemberVote = SchemaV10.MemberVote
 typealias WrittenQuestion = SchemaV6.WrittenQuestion
 typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 typealias CabinetPosition = SchemaV8.CabinetPosition
@@ -1328,6 +1329,103 @@ enum SchemaV9: VersionedSchema {
 
 		func hash(into hasher: inout Hasher) {
 			hasher.combine(directoryKey)
+		}
+	}
+}
+
+// MARK: - SchemaV10
+
+enum SchemaV10: VersionedSchema {
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v10Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
+
+	static var models: [any PersistentModel.Type] {
+		[
+			SchemaV5.SittingCalendar.self,
+			SchemaV5.Hansard.self,
+			SchemaV5.OrderOfBusiness.self,
+			SchemaV5.SubjectOfBusiness.self,
+			SchemaV9.ParliamentMember.self,
+			SchemaV5.Speech.self,
+			SchemaV5.SpeechMessage.self,
+			SchemaV5.Constituency.self,
+			SchemaV5.SummaryExpenditure.self,
+			SchemaV5.TravelClaim.self,
+			SchemaV5.TravelExpenditureDetail.self,
+			SchemaV5.HospitalityExpenditure.self,
+			SchemaV5.ContractExpenditure.self,
+			RecordedVote.self,
+			MemberVote.self,
+			SchemaV6.WrittenQuestion.self,
+			SchemaV7.FiscalMonitorEntry.self,
+			SchemaV8.CabinetPosition.self
+		]
+	}
+
+	@Model
+	final class RecordedVote: @unchecked Sendable {
+		@Attribute(.unique) var voteID: Int
+		var parliament: Int
+		var session: Int
+		var number: Int
+		var date: Date
+		var descriptionEn: String
+		var billNumberCode: String
+		var yea: Int
+		var nay: Int
+		var paired: Int
+		var resultEn: String
+		var jurisdiction: String = Jurisdiction.federal.rawValue
+		@Relationship(deleteRule: .cascade, inverse: \SchemaV10.MemberVote.vote) var memberVotes: [SchemaV10.MemberVote] = []
+
+		init(
+			voteID: Int,
+			parliament: Int,
+			session: Int,
+			number: Int,
+			date: Date,
+			descriptionEn: String,
+			billNumberCode: String,
+			yea: Int,
+			nay: Int,
+			paired: Int,
+			resultEn: String,
+			jurisdiction: String = Jurisdiction.federal.rawValue
+		) {
+			self.voteID = voteID
+			self.parliament = parliament
+			self.session = session
+			self.number = number
+			self.date = date
+			self.descriptionEn = descriptionEn
+			self.billNumberCode = billNumberCode
+			self.yea = yea
+			self.nay = nay
+			self.paired = paired
+			self.resultEn = resultEn
+			self.jurisdiction = jurisdiction
+		}
+	}
+
+	@Model
+	final class MemberVote {
+		var voteID: Int
+		var memberID: Int
+		var recordedVote: String
+		var jurisdiction: String = Jurisdiction.federal.rawValue
+		var vote: SchemaV10.RecordedVote?
+
+		init(
+			voteID: Int,
+			memberID: Int,
+			recordedVote: String,
+			jurisdiction: String = Jurisdiction.federal.rawValue
+		) {
+			self.voteID = voteID
+			self.memberID = memberID
+			self.recordedVote = recordedVote
+			self.jurisdiction = jurisdiction
 		}
 	}
 }
