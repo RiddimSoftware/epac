@@ -7,11 +7,11 @@ import SwiftData
 
 enum EpacMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self, SchemaV7.self, SchemaV8.self]
+        [SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self, SchemaV7.self, SchemaV8.self, SchemaV9.self]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7, migrateV7toV8]
+        [migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7, migrateV7toV8, migrateV8toV9]
     }
 
     // Custom stage: V4 added contact fields to ParliamentMember, including the
@@ -57,5 +57,25 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
     static let migrateV7toV8 = MigrationStage.lightweight(
         fromVersion: SchemaV7.self,
         toVersion: SchemaV8.self
+    )
+
+    // Custom stage: V9 makes ParliamentMember jurisdiction-aware and switches
+    // uniqueness to a stored directoryKey so federal and provincial members can
+    // coexist without name collisions.
+    static let migrateV8toV9 = MigrationStage.custom(
+        fromVersion: SchemaV8.self,
+        toVersion: SchemaV9.self,
+        willMigrate: nil,
+        didMigrate: { context in
+            let members = try context.fetch(FetchDescriptor<SchemaV9.ParliamentMember>())
+            for member in members {
+                member.jurisdiction = .federal
+                member.directoryKey = SchemaV9.ParliamentMember.directoryKey(
+                    name: member.name,
+                    jurisdiction: member.jurisdiction
+                )
+            }
+            try context.save()
+        }
     )
 }

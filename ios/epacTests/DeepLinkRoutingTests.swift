@@ -112,7 +112,7 @@ struct DeepLinkRoutingTests {
     @MainActor
     @Test func eventURLRoutesToHansard() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: Schema(SchemaV8.models), configurations: config)
+        let container = try ModelContainer(for: Schema(SchemaV9.models), configurations: config)
         let context = container.mainContext
         
         let formatter = DateFormatter()

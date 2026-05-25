@@ -27,8 +27,49 @@ struct ParliamentMemberDTO: Identifiable, Codable, Hashable, Sendable {
 	let constituencyPhone: String?
 	let constituencyAddress: String?
 	let contactFetched: Bool
+	let jurisdiction: Jurisdiction
 
-	var id: String { name }
+	init(
+		name: String,
+		memberID: Int,
+		lastName: String,
+		firstName: String,
+		photoURL: URL,
+		riding: String,
+		province: Province,
+		party: Party,
+		websiteURL: URL?,
+		imageData: Data?,
+		fromDateTime: Date?,
+		toDateTime: Date?,
+		email: String?,
+		hillPhone: String?,
+		constituencyPhone: String?,
+		constituencyAddress: String?,
+		contactFetched: Bool,
+		jurisdiction: Jurisdiction = .federal
+	) {
+		self.name = name
+		self.memberID = memberID
+		self.lastName = lastName
+		self.firstName = firstName
+		self.photoURL = photoURL
+		self.riding = riding
+		self.province = province
+		self.party = party
+		self.websiteURL = websiteURL
+		self.imageData = imageData
+		self.fromDateTime = fromDateTime
+		self.toDateTime = toDateTime
+		self.email = email
+		self.hillPhone = hillPhone
+		self.constituencyPhone = constituencyPhone
+		self.constituencyAddress = constituencyAddress
+		self.contactFetched = contactFetched
+		self.jurisdiction = jurisdiction
+	}
+
+	var id: String { "\(jurisdiction.rawValue)::\(name)" }
 }
 
 struct ConstituencyDTO: Identifiable, Codable, Hashable, Sendable {

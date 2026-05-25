@@ -273,7 +273,8 @@ extension XMLBro {
 				hillPhone: nil,
 				constituencyPhone: nil,
 				constituencyAddress: nil,
-				contactFetched: false
+				contactFetched: false,
+				jurisdiction: .federal
 			)
 			members.append(mp)
 		}

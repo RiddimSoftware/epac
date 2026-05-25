@@ -17,6 +17,7 @@ private enum SchemaVersionComponent {
 	static let v6Major = 6
 	static let v7Major = 7
 	static let v8Major = 8
+	static let v9Major = 9
 }
 
 private enum WrittenQuestionConstants {
@@ -27,7 +28,7 @@ typealias SittingCalendar = SchemaV5.SittingCalendar
 typealias Hansard = SchemaV5.Hansard
 typealias OrderOfBusiness = SchemaV5.OrderOfBusiness
 typealias SubjectOfBusiness = SchemaV5.SubjectOfBusiness
-typealias ParliamentMember = SchemaV5.ParliamentMember
+typealias ParliamentMember = SchemaV9.ParliamentMember
 typealias Speech = SchemaV5.Speech
 typealias SpeechMessage = SchemaV5.SpeechMessage
 typealias Constituency = SchemaV5.Constituency
@@ -1221,6 +1222,112 @@ enum SchemaV8: VersionedSchema {
 			self.sourceTitle = sourceTitle
 			self.sourceURL = sourceURL
 			self.asOfDate = asOfDate
+		}
+	}
+}
+
+// MARK: - SchemaV9
+
+enum SchemaV9: VersionedSchema {
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v9Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
+
+	static var models: [any PersistentModel.Type] {
+		[
+			SchemaV5.SittingCalendar.self,
+			SchemaV5.Hansard.self,
+			SchemaV5.OrderOfBusiness.self,
+			SchemaV5.SubjectOfBusiness.self,
+			ParliamentMember.self,
+			SchemaV5.Speech.self,
+			SchemaV5.SpeechMessage.self,
+			SchemaV5.Constituency.self,
+			SchemaV5.SummaryExpenditure.self,
+			SchemaV5.TravelClaim.self,
+			SchemaV5.TravelExpenditureDetail.self,
+			SchemaV5.HospitalityExpenditure.self,
+			SchemaV5.ContractExpenditure.self,
+			SchemaV5.RecordedVote.self,
+			SchemaV5.MemberVote.self,
+			SchemaV6.WrittenQuestion.self,
+			SchemaV7.FiscalMonitorEntry.self,
+			SchemaV8.CabinetPosition.self
+		]
+	}
+
+	@Model
+	final class ParliamentMember: Hashable {
+		@Attribute(.unique) var directoryKey: String
+		var name: String
+		var memberID: Int
+		var lastName: String
+		var firstName: String
+		var photoURL: URL
+		var riding: String
+		var province: Province
+		var jurisdiction: Jurisdiction
+		var party: Party
+		var websiteURL: URL?
+		var imageData: Data?
+		var fromDateTime: Date?
+		var toDateTime: Date?
+		var email: String?
+		var hillPhone: String?
+		var constituencyPhone: String?
+		var constituencyAddress: String?
+		var contactFetched: Bool
+
+		init(
+			name: String,
+			lastName: String,
+			firstName: String,
+			photoURL: URL,
+			riding: String,
+			province: Province,
+			jurisdiction: Jurisdiction = .federal,
+			party: Party,
+			websiteURL: URL? = nil,
+			memberID: Int = 0,
+			fromDateTime: Date? = nil,
+			toDateTime: Date? = nil
+		) {
+			self.directoryKey = Self.directoryKey(name: name, jurisdiction: jurisdiction)
+			self.name = name
+			self.memberID = memberID
+			self.lastName = lastName
+			self.firstName = firstName
+			self.photoURL = photoURL
+			self.riding = riding
+			self.province = province
+			self.jurisdiction = jurisdiction
+			self.party = party
+			self.websiteURL = websiteURL
+			self.fromDateTime = fromDateTime
+			self.toDateTime = toDateTime
+			self.email = nil
+			self.hillPhone = nil
+			self.constituencyPhone = nil
+			self.constituencyAddress = nil
+			self.contactFetched = false
+		}
+
+		static func directoryKey(name: String, jurisdiction: Jurisdiction) -> String {
+			"\(jurisdiction.rawValue)::\(name)"
+		}
+
+		var initials: String {
+			let first = firstName.first.map(String.init) ?? ""
+			let last = lastName.first.map(String.init) ?? ""
+			return first + last
+		}
+
+		static func == (lhs: ParliamentMember, rhs: ParliamentMember) -> Bool {
+			lhs.directoryKey == rhs.directoryKey
+		}
+
+		func hash(into hasher: inout Hasher) {
+			hasher.combine(directoryKey)
 		}
 	}
 }
