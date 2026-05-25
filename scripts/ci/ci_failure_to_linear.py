@@ -422,7 +422,7 @@ class LinearClient:
 
     def _request_with_retries(self, payload: dict[str, Any]) -> tuple[int, str]:
         headers = {
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": self.api_token,
             "Content-Type": "application/json",
         }
         delays = list(RETRY_DELAYS_SECONDS)
