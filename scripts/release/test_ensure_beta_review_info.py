@@ -18,12 +18,38 @@ class TestEnsureBetaAppReviewDetail:
         mock_resp.json.return_value = {
             "data": {
                 "id": "detail-123",
-                "attributes": {"contactEmail": "test@example.com"},
+                "attributes": {
+                    "contactEmail": "test@example.com",
+                    "contactFirstName": "Jane",
+                    "contactLastName": "Doe",
+                    "contactPhone": "+1555000",
+                },
             }
         }
         result = ensure_beta_app_review_detail(
             "app-1", "token",
             "new@example.com", "First", "Last", "+1555000",
+            http_get=lambda *a, **kw: mock_resp,
+        )
+        assert result == {"status": "exists", "id": "detail-123"}
+
+    def test_existing_contact_details_do_not_require_env_values(self):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "data": {
+                "id": "detail-123",
+                "attributes": {
+                    "contactEmail": "test@example.com",
+                    "contactFirstName": "Jane",
+                    "contactLastName": "Doe",
+                    "contactPhone": "+1555000",
+                },
+            }
+        }
+        result = ensure_beta_app_review_detail(
+            "app-1", "token",
+            "", "", "", "",
             http_get=lambda *a, **kw: mock_resp,
         )
         assert result == {"status": "exists", "id": "detail-123"}
@@ -46,6 +72,30 @@ class TestEnsureBetaAppReviewDetail:
             http_patch=lambda *a, **kw: patch_resp,
         )
         assert result == {"status": "updated", "id": "detail-456"}
+
+    def test_missing_contact_input_raises_only_for_missing_asc_fields(self):
+        get_resp = MagicMock()
+        get_resp.status_code = 200
+        get_resp.json.return_value = {
+            "data": {
+                "id": "detail-456",
+                "attributes": {
+                    "contactEmail": "test@example.com",
+                    "contactFirstName": "Jane",
+                    "contactLastName": "",
+                    "contactPhone": "+1555000",
+                },
+            }
+        }
+        with pytest.raises(
+            RuntimeError,
+            match="contactLastName \\(BETA_REVIEW_CONTACT_LAST_NAME\\)",
+        ):
+            ensure_beta_app_review_detail(
+                "app-1", "token",
+                "", "", "", "",
+                http_get=lambda *a, **kw: get_resp,
+            )
 
     def test_patch_failure_raises(self):
         get_resp = MagicMock()
