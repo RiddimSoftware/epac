@@ -31,6 +31,11 @@ This bugfix SPEC turns a contributor or LLM-session report into a factory-ready 
   When [evidence plan runs]
   Then [artifact proves the behavior]
 
+## Effort estimate
+- Estimate: [1, 2, 4, 8, 16, 32, 64]
+- Confidence: [low|medium|high]
+- Reasoning: [One-sentence rationale]
+
 ## Evidence Plan
 [Screenshots, videos, XCTest/SnapshotTesting, Maestro flow, logs, manifest, or TestFlight validation needed to prove the fix.]
 

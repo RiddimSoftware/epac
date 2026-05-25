@@ -25,6 +25,7 @@ You are running bugfix intake for `RiddimSoftware/epac`. Your job is to turn an 
 - observed behavior
 - expected behavior
 - reproduction steps
+- estimate
 - evidence plan
 - validation plan
 
@@ -48,6 +49,7 @@ python3 scripts/intake/bugfix_spec.py new \
   --expected "The card explains that epac currently shows past debates and archival data." \
   --step "Launch epac." \
   --step "Open the Home tab." \
+  --estimate 8 \
   --evidence "Before/after screenshot of the Home status card." \
   --validation "Reporter confirms the TestFlight build no longer implies live data."
 ```
