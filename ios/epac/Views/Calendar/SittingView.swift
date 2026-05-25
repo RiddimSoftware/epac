@@ -44,6 +44,10 @@ private enum SittingViewLayout {
 	static let speakerRowSpacing: CGFloat = 6
 	static let speakerIconSize = EpacIconSize.xs
 	static let speakerIconPadding = EpacSpacing.xxs
+	static let highlightBorderWidth: CGFloat = 2
+	static let highlightCornerRadius = EpacCornerRadius.s
+	static let highlightOpacity = 0.18
+	static let scrollDelaySeconds = 0.3
 }
 
 struct SittingView: View {
@@ -55,11 +59,13 @@ struct SittingView: View {
 	let hansard: Hansard
 
 	@Binding var selectedSubject: SubjectOfBusiness?
+	var initialInterventionID: String?
 
 	@Query var members: [ParliamentMember]
 
 	@State private var coordinator = MemberDownloadCoordinator()
 	@State private var viewModel = SittingViewModel()
+	@State private var highlightedSubjectHansardID: String?
 
 	var body: some View {
 		let pairs = viewModel.visibleOrderSubjects(from: hansard)
@@ -68,57 +74,104 @@ struct SittingView: View {
 			if pairs.isEmpty && !viewModel.searchText.isEmpty {
 				ContentUnavailableView.search(text: viewModel.searchText)
 			} else {
-				List {
-					if let oralQuestions {
-						OralQuestionsCard(summary: oralQuestions) { question in
-							viewModel.prepareNavigation(to: question)
-							selectedSubject = question.subject
+				ScrollViewReader { proxy in
+					List {
+						if let oralQuestions {
+							OralQuestionsCard(summary: oralQuestions) { question in
+								viewModel.prepareNavigation(to: question)
+								selectedSubject = question.subject
+							}
+							.listRowSeparator(.hidden)
+							.listRowInsets(SittingViewLayout.oralQuestionsInsets)
 						}
-						.listRowSeparator(.hidden)
-						.listRowInsets(SittingViewLayout.oralQuestionsInsets)
-					}
-					ForEach(pairs, id: \.order.hansardID) { (order, subjects) in
-						Section {
-							ForEach(subjects) { subject in
-								VStack(alignment: .leading, spacing: SittingViewLayout.subjectSpacing) {
-									Text(subject.title)
-										.font(.headline)
-										.foregroundColor(.primary)
+						ForEach(pairs, id: \.order.hansardID) { (order, subjects) in
+							Section {
+								ForEach(subjects) { subject in
+									let isHighlighted = subject.hansardID == highlightedSubjectHansardID
+									VStack(alignment: .leading, spacing: SittingViewLayout.subjectSpacing) {
+										Text(subject.title)
+											.font(.headline)
+											.foregroundColor(.primary)
 
-									HStack {
-										Spacer()
-										VStack(alignment: .trailing, spacing: SittingViewLayout.speakerStackSpacing) {
-											ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
-												SittingSpeakerView(member: member)
+										HStack {
+											Spacer()
+											VStack(alignment: .trailing, spacing: SittingViewLayout.speakerStackSpacing) {
+												ForEach(coordinator.speakers(for: subject, from: members, fetch: fetch)) { member in
+													SittingSpeakerView(member: member)
+												}
 											}
 										}
 									}
+									.padding(.vertical, SittingViewLayout.subjectVerticalPadding)
+									.background(
+										isHighlighted
+											? RoundedRectangle(cornerRadius: SittingViewLayout.highlightCornerRadius)
+												.fill(Color.accentColor.opacity(SittingViewLayout.highlightOpacity))
+												.overlay(
+													RoundedRectangle(cornerRadius: SittingViewLayout.highlightCornerRadius)
+														.stroke(Color.accentColor, lineWidth: SittingViewLayout.highlightBorderWidth)
+												)
+											: nil
+									)
+									.id(subject.hansardID)
+									.contentShape(Rectangle())
+									.accessibilityElement(children: .ignore)
+									.accessibilityLabel(subject.title)
+									.accessibilityHint("Open debate")
+									.accessibilityAddTraits(.isButton)
+									.onTapGesture {
+										selectedSubject = subject
+									}
 								}
-								.padding(.vertical, SittingViewLayout.subjectVerticalPadding)
-								.contentShape(Rectangle())
-								.accessibilityElement(children: .ignore)
-								.accessibilityLabel(subject.title)
-								.accessibilityHint("Open debate")
-								.accessibilityAddTraits(.isButton)
-								.onTapGesture {
-									selectedSubject = subject
-								}
+							} header: {
+								Text(order.catchline)
+									.font(.title2)
+									.fontWeight(.black)
+									.textCase(.uppercase)
+									.foregroundColor(.secondary)
+									.padding(.top, SittingViewLayout.headerTopPadding)
+									.padding(.bottom, SittingViewLayout.headerBottomPadding)
 							}
-						} header: {
-							Text(order.catchline)
-								.font(.title2)
-								.fontWeight(.black)
-								.textCase(.uppercase)
-								.foregroundColor(.secondary)
-								.padding(.top, SittingViewLayout.headerTopPadding)
-								.padding(.bottom, SittingViewLayout.headerBottomPadding)
 						}
 					}
+					.listStyle(.plain)
+					.onAppear {
+						resolveAndScrollToIntervention(proxy: proxy, fallbackSubjectID: pairs.first?.1.first?.hansardID)
+					}
 				}
-				.listStyle(.plain)
 			}
 		}
 		.searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search debates")
+	}
+
+	private func resolveAndScrollToIntervention(proxy: ScrollViewProxy, fallbackSubjectID: String?) {
+		guard let interventionID = initialInterventionID else { return }
+
+		let targetSubjectID = hansard.orders
+			.flatMap(\.subjects)
+			.first { subject in
+				subject.speeches.contains { speech in
+					speech.hansardID == interventionID || speech.messages.contains { $0.hansardID == interventionID }
+				}
+			}?.hansardID
+
+		guard let targetSubjectID else {
+			highlightedSubjectHansardID = nil
+			scrollToSubject(fallbackSubjectID, anchor: .top, with: proxy)
+			return
+		}
+
+		highlightedSubjectHansardID = targetSubjectID
+		scrollToSubject(targetSubjectID, anchor: .center, with: proxy)
+	}
+
+	private func scrollToSubject(_ subjectID: String?, anchor: UnitPoint, with proxy: ScrollViewProxy) {
+		guard let subjectID else { return }
+		DispatchQueue.main.asyncAfter(deadline: .now() + SittingViewLayout.scrollDelaySeconds) {
+			withAnimation {
+				proxy.scrollTo(subjectID, anchor: anchor)
+			}
+		}
 	}
 }
 
