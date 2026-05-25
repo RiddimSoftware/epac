@@ -130,12 +130,15 @@
 
 /* Party labels */
 "CPC" = "CPC";
+"SK" = "SK";
 "Lib" = "Lib";
 "NDP" = "NDP";
 "BQ" = "BQ";
 "GP" = "GP";
 "Ind" = "Ind";
 "Conservative" = "Conservative";
+"SK Party" = "SK Party";
+"Saskatchewan Party" = "Saskatchewan Party";
 "Liberal" = "Liberal";
 "New Democratic Party" = "New Democratic Party";
 "Bloc Québécois" = "Bloc Québécois";

@@ -43,7 +43,12 @@ struct RuntimeDataPathTests {
 
         MockURLProtocol.requestHandler = { request in
             let url = try #require(request.url)
-            #expect(url.absoluteString == "https://www.ourcommons.ca/Members/en/search/XML?parliament=all&caucusId=all&province=all&gender=all")
+            let expectedURL =
+                "https://www.ourcommons.ca/Members/en/search/XML?" +
+                "parliament=all&caucusId=all&province=all&gender=all"
+            #expect(
+                url.absoluteString == expectedURL
+            )
             let xml = """
             <ArrayOfMemberOfParliament>
                 <MemberOfParliament>
@@ -71,6 +76,35 @@ struct RuntimeDataPathTests {
         let members = try container.mainContext.fetch(FetchDescriptor<ParliamentMember>())
         #expect(members.map(\.memberID) == [278707])
         #expect(members.first?.riding == "Ottawa Centre")
+    }
+
+    @Test func fetchDownloadsSaskatchewanMembersFromRosterHTML() async throws {
+        URLProtocol.registerClass(MockURLProtocol.self)
+        defer { URLProtocol.unregisterClass(MockURLProtocol.self) }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        MockURLProtocol.requestHandler = { request in
+            let url = try #require(request.url)
+            #expect(url.absoluteString == "https://www.legassembly.sk.ca/mlas/mla-contact-information/")
+            return (
+                HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                try Data(contentsOf: Self.saskatchewanMembersFixtureURL())
+            )
+        }
+
+        let container = try makeContainer()
+        let fetch = Fetch(modelContainer: container)
+
+        try await fetch.downloadMembers(jurisdiction: .saskatchewan)
+
+        let members = try container.mainContext.fetch(FetchDescriptor<ParliamentMember>())
+        #expect(members.count == 61)
+        #expect(members.contains {
+            $0.name == "Carla Beck" && $0.jurisdiction == .saskatchewan && $0.party == .newdemocratic
+        })
+        #expect(members.contains {
+            $0.name == "Jeremy Harrison" && $0.jurisdiction == .saskatchewan
+        })
     }
 
     @Test func billsServiceUsesLEGISinfoEndpoint() async throws {
@@ -118,7 +152,7 @@ struct RuntimeDataPathTests {
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Schema(SchemaV8.models), configurations: config)
+        return try ModelContainer(for: Schema(SchemaV9.models), configurations: config)
     }
 
     private func makeNetworkHarness() throws -> NetworkHarness {
@@ -137,6 +171,12 @@ struct RuntimeDataPathTests {
             cacheDirectory: cacheDirectory
         )
     }
+
+    private nonisolated static func saskatchewanMembersFixtureURL() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/Hansard/Saskatchewan/Members/mla-contact-information.html")
+    }
 }
 
 private struct NetworkHarness {
@@ -150,7 +190,7 @@ private struct NetworkHarness {
     }
 }
 
-private final class MockURLProtocol: URLProtocol {
+private class MockURLProtocol: URLProtocol {
     nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
     override class func canInit(with request: URLRequest) -> Bool { true }

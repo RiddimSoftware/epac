@@ -9,6 +9,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var id: Self { self }
 
 	case conservative
+	case saskatchewanParty
 	case liberal
 	case newdemocratic
 	case bloc
@@ -18,6 +19,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var abbreviation: String {
 		switch self {
 		case .conservative: return "CPC"
+		case .saskatchewanParty: return "SK"
 		case .liberal: return "Lib"
 		case .newdemocratic: return "NDP"
 		case .bloc: return "BQ"
@@ -29,6 +31,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var localizedAbbreviation: String {
 		switch self {
 		case .conservative: return NSLocalizedString("CPC", comment: "")
+		case .saskatchewanParty: return NSLocalizedString("SK", comment: "")
 		case .liberal: return NSLocalizedString("Lib", comment: "")
 		case .newdemocratic: return NSLocalizedString("NDP", comment: "")
 		case .bloc: return NSLocalizedString("BQ", comment: "")
@@ -40,6 +43,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var fullName: String {
 		switch self {
 		case .conservative: return NSLocalizedString("Conservative", comment: "")
+		case .saskatchewanParty: return NSLocalizedString("Saskatchewan Party", comment: "")
 		case .liberal: return NSLocalizedString("Liberal", comment: "")
 		case .newdemocratic: return NSLocalizedString("New Democratic Party", comment: "")
 		case .bloc: return NSLocalizedString("Bloc Québécois", comment: "")
@@ -51,6 +55,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 	var shortName: String {
 		switch self {
 		case .conservative: return NSLocalizedString("Conservative", comment: "")
+		case .saskatchewanParty: return NSLocalizedString("SK Party", comment: "")
 		case .liberal: return NSLocalizedString("Liberal", comment: "")
 		case .newdemocratic: return NSLocalizedString("NDP", comment: "")
 		case .bloc: return NSLocalizedString("Bloc Québécois", comment: "")
@@ -75,6 +80,7 @@ enum Party: Codable, CaseIterable, Identifiable, Sendable {
 		switch self {
 		case .liberal: return URL(string: "https://liberal.ca")
 		case .conservative: return URL(string: "https://www.conservative.ca")
+		case .saskatchewanParty: return nil
 		case .newdemocratic: return URL(string: "https://www.ndp.ca")
 		case .bloc: return URL(string: "https://www.blocquebecois.org")
 		case .green: return URL(string: "https://www.greenparty.ca")

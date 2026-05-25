@@ -155,7 +155,10 @@ actor Fetch: ObservableObject {
 
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {
 		Log.debug("Fetch.member(firstName: \(firstName), lastName: \(lastName))")
-		let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.firstName == firstName && $0.lastName == lastName }))
+		let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
+			.filter {
+				$0.jurisdiction == .federal && $0.firstName == firstName && $0.lastName == lastName
+			}
 		if let first = fetched.first {
 			return first
 		} else {
@@ -167,6 +170,7 @@ actor Fetch: ObservableObject {
 	func members() async throws -> [ParliamentMember] {
 		Log.debug("Fetch.members()")
 		let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
+			.filter { $0.jurisdiction == .federal }
 		if !fetched.isEmpty {
 			return fetched
 		} else {
@@ -725,8 +729,19 @@ actor Fetch: ObservableObject {
 
 	}
 
-	func downloadMembers() async throws {
-		Log.debug("Fetch.downloadMembers()")
+	func downloadMembers(jurisdiction: Jurisdiction = .federal) async throws {
+		Log.debug("Fetch.downloadMembers(jurisdiction: \(jurisdiction.rawValue))")
+		switch jurisdiction {
+		case .federal:
+			try await downloadFederalMembers()
+		case .saskatchewan:
+			try await downloadSaskatchewanMembers()
+		default:
+			throw HansardAdapterError.unsupportedJurisdiction(jurisdiction)
+		}
+	}
+
+	private func downloadFederalMembers() async throws {
 		guard let url = URL(string: membersPath, relativeTo: hosturl) else {
 			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
@@ -739,20 +754,16 @@ actor Fetch: ObservableObject {
 		Log.debug("Got XML string")
 		let memberDTOs = XMLBro.parseMembers(utfstringvalue)
 		Log.debug("parsed XML \(memberDTOs.count) members")
-		let existingMembers = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
-		Log.debug("Found \(existingMembers.count) existing members")
-		let existingNames = Set(existingMembers.map { $0.name })
-
-		Log.debug("Inserting members")
-		try modelContext.transaction {
-			for dto in memberDTOs {
-				if !existingNames.contains(dto.name) {
-					modelContext.insert(ParliamentMember(domain: dto))
-				}
-			}
-		}
+		try insertMembers(memberDTOs)
 		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}
+
+	private func downloadSaskatchewanMembers() async throws {
+		let memberDTOs = try await SaskatchewanMemberDirectoryAdapter().fetchMembers()
+		try insertMembers(memberDTOs)
+		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
+	}
+
 	func downloadMember(_ firstName: String, _ lastName: String) async throws {
 		let identifier = "\(firstName) \(lastName)"
 		guard !downloadsInProgress.contains(identifier), !failedDownloads.contains(identifier) else {
@@ -782,31 +793,16 @@ actor Fetch: ObservableObject {
 		if let member = allMembers.first {
 			let name = "\(firstName) \(lastName)"
 			let personID = member["personId"] as? Int ?? 0
-			let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>(predicate: #Predicate { $0.name == name })).first
+			let existing = try? modelContext.fetch(FetchDescriptor<ParliamentMember>())
+				.first {
+					$0.jurisdiction == .federal && $0.name == name
+				}
 			if existing == nil {
-				let dto = ParliamentMemberDTO(
-					name: name,
-					memberID: personID,
-					lastName: lastName,
+				let dto = makeFederalMemberDTO(
+					from: member,
 					firstName: firstName,
-					// ourcommons.ca members search response shape is part of the API contract; a missing
-					// field here means the API broke and we want to fail loudly. Replace with guard-let
-					// when the upstream API stabilises around a typed schema.
-					// swiftlint:disable force_cast
-					photoURL: URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!,
-					riding: member["constituencyNameEn"] as! String,
-					province: Province(rawValue: (member["provinceNameEn"] as? String) ?? "") ?? .Ontario,
-					party: Party.partyWithAbbreviation((member["caucusAbbreviationEn"] as! String).trimmingCharacters(in: .alphanumerics.inverted)),
-					websiteURL: nil,
-					imageData: nil,
-					// swiftlint:enable force_cast
-					fromDateTime: nil,
-					toDateTime: nil,
-					email: nil,
-					hillPhone: nil,
-					constituencyPhone: nil,
-					constituencyAddress: nil,
-					contactFetched: false
+					lastName: lastName,
+					personID: personID
 				)
 				modelContext.insert(ParliamentMember(domain: dto))
 				try modelContext.save()
@@ -829,6 +825,60 @@ actor Fetch: ObservableObject {
 		let constituencyDTOs = XMLBro.parseConstituencies(utfstringvalue)
 		constituencyDTOs.map(Constituency.init(domain:)).forEach { modelContext.insert($0) }
 		try modelContext.save()
+	}
+
+	private func insertMembers(_ memberDTOs: [ParliamentMemberDTO]) throws {
+		let existingMembers = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
+		Log.debug("Found \(existingMembers.count) existing members")
+		var existingDirectoryKeys = Set(existingMembers.map(\.directoryKey))
+
+		Log.debug("Inserting members")
+		try modelContext.transaction {
+			for dto in memberDTOs where !existingDirectoryKeys.contains(dto.id) {
+				modelContext.insert(ParliamentMember(domain: dto))
+				existingDirectoryKeys.insert(dto.id)
+			}
+		}
+	}
+
+	private func makeFederalMemberDTO(
+		from member: [String: Any],
+		firstName: String,
+		lastName: String,
+		personID: Int
+	) -> ParliamentMemberDTO {
+		let name = "\(firstName) \(lastName)"
+		// ourcommons.ca members search response shape is part of the API contract; a missing
+		// field here means the API broke and we want to fail loudly. Replace with guard-let
+		// when the upstream API stabilises around a typed schema.
+		// swiftlint:disable force_cast
+		let photoURL = URL(string: member["officialPhotoUrl"] as! String, relativeTo: hosturl)!
+		let riding = member["constituencyNameEn"] as! String
+		let provinceName = (member["provinceNameEn"] as? String) ?? ""
+		let caucus = (member["caucusAbbreviationEn"] as! String)
+			.trimmingCharacters(in: .alphanumerics.inverted)
+		// swiftlint:enable force_cast
+
+		return ParliamentMemberDTO(
+			name: name,
+			memberID: personID,
+			lastName: lastName,
+			firstName: firstName,
+			photoURL: photoURL,
+			riding: riding,
+			province: Province(rawValue: provinceName) ?? .Ontario,
+			party: Party.partyWithAbbreviation(caucus),
+			websiteURL: nil,
+			imageData: nil,
+			fromDateTime: nil,
+			toDateTime: nil,
+			email: nil,
+			hillPhone: nil,
+			constituencyPhone: nil,
+			constituencyAddress: nil,
+			contactFetched: false,
+			jurisdiction: .federal
+		)
 	}
 
 	func downloadMemberContact(identifier: PersistentIdentifier) async throws {

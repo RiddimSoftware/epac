@@ -45,7 +45,7 @@ struct epacApp: App {
 		do {
 			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try ModelContainer(
-				for: Schema(versionedSchema: SchemaV8.self),
+				for: Schema(versionedSchema: SchemaV9.self),
 				migrationPlan: EpacMigrationPlan.self,
 				configurations: [ModelConfiguration(isStoredInMemoryOnly: usesInMemoryStore)]
 			)

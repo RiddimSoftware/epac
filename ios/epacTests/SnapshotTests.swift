@@ -63,7 +63,7 @@ final class SnapshotTests: XCTestCase {
 
     private func makeSnapshotModelContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Schema(SchemaV8.models), configurations: config)
+        return try ModelContainer(for: Schema(SchemaV9.models), configurations: config)
     }
 
     private static func member(party: Party) -> ParliamentMember {

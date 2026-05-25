@@ -132,12 +132,15 @@
 
 /* Libellés des partis */
 "CPC" = "PCC";
+"SK" = "SK";
 "Lib" = "Lib.";
 "NDP" = "NPD";
 "BQ" = "BQ";
 "GP" = "PV";
 "Ind" = "Ind.";
 "Conservative" = "Conservateur";
+"SK Party" = "Parti saskatchewanais";
+"Saskatchewan Party" = "Parti saskatchewanais";
 "Liberal" = "Libéral";
 "New Democratic Party" = "Nouveau Parti démocratique";
 "Bloc Québécois" = "Bloc Québécois";

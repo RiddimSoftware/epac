@@ -17,6 +17,7 @@ extension ParliamentMember {
 			photoURL: domain.photoURL,
 			riding: domain.riding,
 			province: domain.province,
+			jurisdiction: domain.jurisdiction,
 			party: domain.party,
 			websiteURL: domain.websiteURL,
 			memberID: domain.memberID,
@@ -49,7 +50,8 @@ extension ParliamentMember {
 			hillPhone: hillPhone,
 			constituencyPhone: constituencyPhone,
 			constituencyAddress: constituencyAddress,
-			contactFetched: contactFetched
+			contactFetched: contactFetched,
+			jurisdiction: jurisdiction
 		)
 	}
 }
