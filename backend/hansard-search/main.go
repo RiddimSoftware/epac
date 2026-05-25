@@ -1,7 +1,7 @@
 // hansard-search Lambda — GET /api/v1/hansard/search
 //
 // D1 scaffold: returns HTTP 503 for every request.
-// Query logic lands in D2; the HTTP handler is wired in D3.
+// D2 adds the query use case + adapter; the HTTP handler wiring lands in D3.
 package main
 
 import (

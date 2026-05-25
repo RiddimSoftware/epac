@@ -1,10 +1,12 @@
 # hansard-search Lambda
 
-**Slice 1 of 3** — scaffold, S3 manifest reader, and SQLite index downloader.
+**Slices 1-2 of 3** — scaffold, S3 manifest reader, SQLite index downloader,
+and the FTS5 query layer.
 
-This Lambda serves `GET /api/v1/hansard/search`. D1 returns HTTP 503 with
-`{"error":"search index not yet available"}` for every request. D2 adds the
-FTS5 query adapter and use case; D3 wires the real HTTP handler and OpenAPI spec.
+This Lambda serves `GET /api/v1/hansard/search`. It still returns HTTP 503
+until D3 wires the HTTP handler, but D2 adds the `SearchHansard` use case and
+the `sqlitefts5` adapter that execute FTS5 `MATCH` queries against the downloaded
+SQLite index.
 
 ## Environment variables
 
@@ -43,6 +45,12 @@ hansard-search-index Lambda (EPAC-2062):
 4. Opens the file read-only (`file:/tmp/index.sqlite?mode=ro&_pragma=query_only(1)`),
    reads `meta.version`, and returns `ErrSchemaMismatch` if it is not `v1`.
 
+`SearchHansard` use case (query path, added in D2):
+1. Validates a non-empty FTS5 query and 1-indexed pagination (`1 <= per_page <= 100`).
+2. Sanitizes control characters from the `MATCH` expression while preserving FTS5 operators.
+3. Queries the SQLite FTS5 index with optional speaker/topic substring filters.
+4. Maps FTS5 parser failures from `modernc.org/sqlite` to `ErrInvalidQuerySyntax`.
+
 ## Architecture
 
 ```
@@ -52,10 +60,11 @@ cmd/main.go
 
 internal/
   domain/         — Manifest value object
-  usecase/        — OpenSearchIndex (port interfaces ManifestLoader, IndexDownloader)
+  usecase/        — OpenSearchIndex and SearchHansard application policy
   adapter/
     s3manifest/   — ManifestLoader backed by S3
     sqlitefile/   — IndexDownloader: S3 download + SHA-256 + schema-version check
+    sqlitefts5/   — HansardSearchRepository backed by SQLite FTS5
 ```
 
 Dependency rule: `usecase/` has no imports from `aws-sdk-go-v2` or `modernc.org/sqlite`.

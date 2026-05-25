@@ -29,8 +29,8 @@ type IndexDownloader interface {
 	Download(ctx context.Context, sqliteKey, expectedSHA256 string) (localPath string, err error)
 }
 
-// SearchIndex holds a verified, downloaded SQLite index ready for query use cases.
-// D2 will extend this with an open *sql.DB connection.
+// SearchIndex holds a verified, downloaded SQLite index ready for D3's handler
+// wiring to open and pass into the SQLite FTS5 query adapter.
 type SearchIndex struct {
 	Manifest  domain.Manifest
 	LocalPath string
