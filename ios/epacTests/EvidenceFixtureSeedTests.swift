@@ -15,7 +15,7 @@ struct EvidenceFixtureSeedTests {
 
     @Test func fixtureDates_containAllThreeBundledFixtures() {
         let names = Set(EvidenceFixtureSeed.fixtureDates.keys)
-        #expect(names == ["45-1-HAN020-E", "45-1-HAN050-E", "45-1-HAN100-E"])
+        #expect(names == ["45-1-HAN050-E", "45-1-HAN070-E", "45-1-HAN100-E"])
     }
 
     @Test func fixtureDates_useISO8601_format() {

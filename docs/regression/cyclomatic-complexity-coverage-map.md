@@ -82,9 +82,11 @@ For the plan's deep-links to land on real (non-empty) surfaces, the in-memory Sw
 
 | Fixture name | Sitting date | Source URL | File size |
 |---|---|---|---|
-| `45-1-HAN020-E` | Friday, June 20, 2025 | `https://www.ourcommons.ca/Content/House/451/Debates/020/HAN020-E.XML` | 811 KB |
 | `45-1-HAN050-E` (**default**) | Tuesday, November 4, 2025 | `https://www.ourcommons.ca/Content/House/451/Debates/050/HAN050-E.XML` | 543 KB |
+| `45-1-HAN070-E` | Tuesday, December 9, 2025 | `https://www.ourcommons.ca/Content/House/451/Debates/070/HAN070-E.XML` | 729 KB |
 | `45-1-HAN100-E` | Thursday, March 26, 2026 | `https://www.ourcommons.ca/Content/House/451/Debates/100/HAN100-E.XML` | 556 KB |
+
+All three fixtures are sittings where both **Prime Minister Mark Carney** (`DbId 317577`) and **Leader of the Opposition Pierre Poilievre** (`DbId 322130`) spoke. That gives the QA reviewer (human or LLM) two recognizable speakers to verify rendering against — the speech-view screenshot of a Question Period exchange between the two is unmistakable, which makes regressions in speaker attribution, name parsing, or affiliation rendering instantly visible.
 
 Three fixtures provide redundancy: if one XML's content trips an `XMLBro` edge case, the others can be selected via the `EPAC_EVIDENCE_FIXTURE` env var (set in the plan's `launch.environment` block). Within a single capture-pr run, the same value is passed to both phase launches so the seeded state matches across before/after. Between runs, the value can rotate.
 
