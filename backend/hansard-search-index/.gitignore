@@ -1,0 +1,4 @@
+bootstrap
+function.zip
+!testdata/
+!testdata/*.xml

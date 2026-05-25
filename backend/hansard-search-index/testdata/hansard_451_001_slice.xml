@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Hansard xml:lang="EN" id="13077655">
+  <ExtractedInformation>
+    <ExtractedItem Name="Date">Monday, May 26, 2025</ExtractedItem>
+    <ExtractedItem Name="SessionNumber">1</ExtractedItem>
+    <ExtractedItem Name="ParliamentNumber">45</ExtractedItem>
+  </ExtractedInformation>
+  <HansardBody>
+    <OrderOfBusiness id="13077693" Rubric="Other">
+      <OrderOfBusinessTitle>First Session—45th Parliament</OrderOfBusinessTitle>
+      <SubjectOfBusiness id="13077688">
+        <Timestamp Hr="08" Mn="45">(0845)</Timestamp>
+        <FloorLanguage language="FR">[<I>Translation</I>]</FloorLanguage>
+        <SubjectOfBusinessTitle>Election of Speaker</SubjectOfBusinessTitle>
+        <CatchLine>Election of Speaker</CatchLine>
+        <SubjectOfBusinessContent>
+          <Intervention Type="Debate" ToC="Yes" ToCText="Nater" id="13077673">
+            <PersonSpeaking>
+              <Affiliation DbId="317841" Type="2">John Nater (Perth—Wellington, CPC)</Affiliation>: </PersonSpeaking>
+            <Content>
+              <ParaText id="8830321">Mr. Chair, dean of the House of Commons, I am very pleased to see you presiding over the election of a Speaker for the seventh time, and I wish to inform you that I am withdrawing my name from the list of candidates.</ParaText>
+            </Content>
+          </Intervention>
+          <FloorLanguage language="EN">[<I>English</I>]</FloorLanguage>
+          <Intervention Type="Debate" ToC="Yes" ToCText="d'Entremont" id="13077675">
+            <PersonSpeaking>
+              <Affiliation DbId="317567" Type="2">Chris d'Entremont (Acadie—Annapolis, CPC)</Affiliation>: </PersonSpeaking>
+            <Content>
+              <ParaText id="8830322">A good Speaker knows when to keep their speeches short.</ParaText>
+              <ParaText id="8830323">Mr. Chair, I would ask you to withdraw my name from the ballot, please.</ParaText>
+            </Content>
+          </Intervention>
+        </SubjectOfBusinessContent>
+      </SubjectOfBusiness>
+    </OrderOfBusiness>
+  </HansardBody>
+</Hansard>

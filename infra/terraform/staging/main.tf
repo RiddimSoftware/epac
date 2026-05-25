@@ -29,6 +29,13 @@ locals {
     for route in local.staging_api_routes :
     "${route.service}::${route.route_key}" => route
   }
+
+  lambda_config = {
+    "hansard-search-index" = {
+      timeout     = 900
+      memory_size = 1024
+    }
+  }
 }
 
 # Lambda functions — code is managed by the staging deploy workflow, not Terraform.
@@ -42,6 +49,8 @@ resource "aws_lambda_function" "staging" {
   architectures = ["arm64"]
   handler       = "bootstrap"
   publish       = false
+  timeout       = try(local.lambda_config[each.key].timeout, null)
+  memory_size   = try(local.lambda_config[each.key].memory_size, null)
 
   # Placeholder zip — CI overwrites code on every staging deploy.
   filename = "${path.module}/placeholder.zip"

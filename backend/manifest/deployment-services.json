@@ -68,6 +68,14 @@
       }
     },
     {
+      "name": "hansard-search-index",
+      "deploy": {"staging": true, "production": true},
+      "sync": {
+        "staging": {"database": false, "artifact": true},
+        "production": {"database": false, "artifact": true}
+      }
+    },
+    {
       "name": "member-speeches",
       "deploy": {"staging": true, "production": true},
       "http": {

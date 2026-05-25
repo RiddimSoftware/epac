@@ -35,6 +35,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ArtifactKey` | A published object key used by backend artifact publishers, such as `members/v1/all.json`. |
 | `Manifest` | The root manifest.json document: schema version, generation timestamp, and sorted artifact entries. |
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
+| `HansardSearchIntervention` | Backend-only parsed Hansard intervention value used while building the SQLite FTS5 search artifact. |
+| `HansardSearchManifest` | Backend-only manifest pointer for the current-session Hansard search SQLite artifact. |
 
 ## Ports
 
@@ -57,6 +59,10 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `RidingBoundaryRepository` | outbound | Read federal riding boundary artifacts by slug. |
 | `CalendarArtifactRepository` | outbound | Read the published House sitting calendar ICS artifact. |
 | `AppConfigRepository` | outbound | Read backend-provided app configuration artifacts. |
+| `HansardXMLSource` | outbound | Fetch authoritative ourcommons.ca Hansard XML by parliament, session, and sitting number. |
+| `HansardParser` | outbound | Parse Hansard XML into intervention and paragraph values without coupling the use case to `encoding/xml`. |
+| `HansardSearchIndexBuilder` | outbound | Build and self-check a local SQLite FTS5 index from parsed interventions. |
+| `HansardSearchArtifactStore` | outbound | Upload the SQLite search index and write the manifest pointer to S3. |
 
 ---
 
@@ -167,6 +173,30 @@ Current implementation:
 ```
 
 > **Boundary note:** An explicit `SearchHansard` use case type is introduced by EPAC-1742. Until that PR lands, search policy lives in `SearchViewModel`. The catalog entry is documented here so the boundary target is visible.
+
+---
+
+### BuildIndex
+
+```
+Actor: Operator (manual GitHub Actions dispatch or aws lambda invoke)
+Goal: Build the current-session Hansard SQLite FTS5 index and publish its manifest pointer.
+Inputs: Parliament number, session number, artifact bucket, artifact prefix.
+Outputs: index.sqlite and manifest.json under the configured S3 prefix.
+Entities / values: HansardSearchIntervention, HansardSearchManifest, ArtifactKey.
+Ports: HansardXMLSource, HansardParser, HansardSearchIndexBuilder, HansardSearchArtifactStore.
+Primary adapters: ourcommons.ca XML source/parser, modernc.org/sqlite FTS5 builder, AWS S3 artifact writer.
+Current implementation:
+  backend/hansard-search-index/main.go
+  backend/hansard-search-index/internal/usecase/usecase.go
+  backend/hansard-search-index/internal/domain/domain.go
+  backend/hansard-search-index/internal/adapter/ourcommons/source.go
+  backend/hansard-search-index/internal/adapter/ourcommons/parser.go
+  backend/hansard-search-index/internal/adapter/sqlitefts5/builder.go
+  backend/hansard-search-index/internal/adapter/s3/s3.go
+```
+
+> **Boundary rule:** `backend/hansard-search-index/internal/usecase/` owns the application policy and imports only standard library packages plus the local domain package. HTTP, XML decoding, SQLite, AWS SDK, and Lambda runtime wiring stay in adapters or `main.go`.
 
 ---
 

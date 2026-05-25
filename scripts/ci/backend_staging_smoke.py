@@ -12,12 +12,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from tempfile import NamedTemporaryFile
 from typing import Any, Callable
 
 
@@ -44,6 +47,7 @@ class SmokeCheck:
     fixture_note: str = ""
     # When False, the validator receives raw response bytes instead of parsed JSON.
     expect_json: bool = True
+    kind: str = "http"
 
     def url(self, base_url: str) -> str:
         base = base_url.rstrip("/")
@@ -179,6 +183,23 @@ def validate_openapi(status: int, payload: Any) -> None:
         raise SmokeFailure("openapi-json: response body missing 'paths' key")
 
 
+def validate_hansard_search_manifest(status: int, payload: Any) -> None:
+    if status == 404:
+        return
+    body = require_dict(payload, "hansard-search-manifest")
+    require_keys(
+        body,
+        "hansard-search-manifest",
+        {"version", "sitting_count", "sqlite_sha256"},
+    )
+    if body["version"] != "v1":
+        raise SmokeFailure(f"hansard-search-manifest: version = {body['version']!r}, want 'v1'")
+    if not isinstance(body["sitting_count"], int) or body["sitting_count"] < 0:
+        raise SmokeFailure("hansard-search-manifest: sitting_count must be a non-negative integer")
+    if not isinstance(body["sqlite_sha256"], str) or not re.fullmatch(r"[a-f0-9]{64}", body["sqlite_sha256"]):
+        raise SmokeFailure("hansard-search-manifest: sqlite_sha256 must be a 64-character lowercase hex string")
+
+
 CHECKS = [
     # --- health ---
     SmokeCheck(
@@ -190,6 +211,18 @@ CHECKS = [
         validator=validate_health,
         deterministic_note="Contract check accepts ok/degraded HealthResponse and catches DB/Lambda error bodies.",
         fixture_note="Pipeline freshness can make this degraded until staging data jobs are seeded and scheduled.",
+    ),
+    # --- hansard search index manifest ---
+    SmokeCheck(
+        name="hansard-search-manifest",
+        method="S3",
+        path="hansard-search/v1/manifest.json",
+        query={},
+        expected_statuses={200, 404},
+        validator=validate_hansard_search_manifest,
+        deterministic_note="Contract check validates the v1 manifest envelope and SHA-256 format when the index has been generated.",
+        fixture_note="The first deploy may not have a manifest until an operator runs the manual reindex; HTTP 404 is reported as a skip warning.",
+        kind="s3-hansard-search-manifest",
     ),
     # --- member speeches ---
     SmokeCheck(
@@ -374,6 +407,9 @@ CHECKS = [
 
 
 def fetch_response(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
+    if check.kind == "s3-hansard-search-manifest":
+        return fetch_hansard_search_manifest()
+
     headers = {
         "Accept": "application/json",
         "User-Agent": "epac-staging-smoke/1.0",
@@ -408,6 +444,60 @@ def fetch_response(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
     return status, payload
 
 
+def fetch_hansard_search_manifest() -> tuple[int, Any]:
+    bucket = first_env(
+        "EPAC_ARTIFACT_BUCKET_STAGING",
+        "EPAC_ARTIFACT_BUCKET",
+        "ARTIFACTS_BUCKET",
+        "ARTIFACT_BUCKET",
+    )
+    prefix = os.environ.get("EPAC_HANSARD_SEARCH_PREFIX", "hansard-search/v1").strip().strip("/")
+    key = f"{prefix}/manifest.json"
+    if not bucket:
+        return 404, {"_smoke_evidence": "SKIP artifact bucket not configured"}
+
+    with NamedTemporaryFile(delete=False) as handle:
+        output_path = handle.name
+    try:
+        result = subprocess.run(
+            [
+                "aws",
+                "s3api",
+                "get-object",
+                "--bucket",
+                bucket,
+                "--key",
+                key,
+                output_path,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr or result.stdout
+            if any(fragment in stderr for fragment in ("NoSuchKey", "Not Found", "404", "NoSuchBucket")):
+                return 404, {"_smoke_evidence": f"SKIP s3://{bucket}/{key} not found"}
+            raise SmokeFailure(f"hansard-search-manifest: aws s3api get-object failed: {stderr.strip()}")
+        with open(output_path, "r", encoding="utf-8") as manifest_file:
+            return 200, json.load(manifest_file)
+    except FileNotFoundError as error:
+        raise SmokeFailure("hansard-search-manifest: aws CLI is not installed") from error
+    finally:
+        try:
+            os.unlink(output_path)
+        except OSError:
+            pass
+
+
+def first_env(*names: str) -> str:
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def run_check(check: SmokeCheck, base_url: str) -> tuple[bool, str]:
     last_error = ""
     for attempt in range(1, RETRIES + 1):
@@ -417,6 +507,8 @@ def run_check(check: SmokeCheck, base_url: str) -> tuple[bool, str]:
                 expected = ", ".join(str(code) for code in sorted(check.expected_statuses))
                 raise SmokeFailure(f"{check.name}: expected HTTP {expected}, got {status}")
             check.validator(status, payload)
+            if isinstance(payload, dict) and "_smoke_evidence" in payload:
+                return True, str(payload["_smoke_evidence"])
             return True, f"HTTP {status}"
         except SmokeFailure as error:
             last_error = str(error)
