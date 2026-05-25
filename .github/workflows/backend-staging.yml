@@ -57,21 +57,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check service source exists
+        id: service-source
+        run: |
+          set -euo pipefail
+          if [ -f "backend/${{ matrix.service }}/go.mod" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=Skipping staging deploy::backend/${{ matrix.service }}/go.mod does not exist."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-go@v5
+        if: ${{ steps.service-source.outputs.exists == 'true' }}
         with:
           go-version-file: backend/${{ matrix.service }}/go.mod
 
       - name: Configure AWS credentials
+        if: ${{ steps.service-source.outputs.exists == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
+      - name: Check staging Lambda exists
+        id: staging-lambda
+        if: ${{ steps.service-source.outputs.exists == 'true' }}
+        env:
+          FUNCTION_NAME: epac-${{ matrix.service }}-staging
+        run: |
+          set -euo pipefail
+          if aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=Skipping staging deploy::${FUNCTION_NAME} does not exist. Apply staging Terraform before deploying this service."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Test and package Lambda
+        if: ${{ steps.staging-lambda.outputs.exists == 'true' }}
         working-directory: backend
         run: make test package SERVICE=${{ matrix.service }}
 
       - name: Update staging Lambda
+        if: ${{ steps.staging-lambda.outputs.exists == 'true' }}
         working-directory: backend/${{ matrix.service }}
         env:
           SERVICE: ${{ matrix.service }}
@@ -86,7 +115,7 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging DATABASE_URL from Secrets Manager
-        if: ${{ contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
+        if: ${{ steps.staging-lambda.outputs.exists == 'true' && contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
           DATABASE_URL_SECRET_ID: epac/database-url
@@ -94,10 +123,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          DATABASE_URL=$(aws secretsmanager get-secret-value \
-            --secret-id "$DATABASE_URL_SECRET_ID" \
-            --query SecretString \
-            --output text)
+          secret_error="$(mktemp)"
+          if ! DATABASE_URL=$(aws secretsmanager get-secret-value \
+              --secret-id "$DATABASE_URL_SECRET_ID" \
+              --query SecretString \
+              --output text 2>"$secret_error"); then
+            if grep -q "marked for deletion" "$secret_error"; then
+              echo "::warning title=Skipping DATABASE_URL refresh::${DATABASE_URL_SECRET_ID} is marked for deletion; preserving the current Lambda DATABASE_URL."
+              DATABASE_URL=$(aws lambda get-function-configuration \
+                --function-name "$FUNCTION_NAME" \
+                --query 'Environment.Variables.DATABASE_URL' \
+                --output text)
+            else
+              cat "$secret_error" >&2
+              exit 1
+            fi
+          fi
+          rm -f "$secret_error"
           if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
             DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
           fi
@@ -124,11 +166,11 @@ jobs:
             --function-name "$FUNCTION_NAME"
 
       - name: Sync staging artifact environment
-        if: ${{ contains(fromJson(needs.prepare.outputs.artifact_services), matrix.service) }}
+        if: ${{ steps.staging-lambda.outputs.exists == 'true' && contains(fromJson(needs.prepare.outputs.artifact_services), matrix.service) }}
         env:
           SERVICE: ${{ matrix.service }}
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
-          ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
+          ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
           ARTIFACT_PREFIX: ${{ vars.EPAC_ARTIFACT_PREFIX_STAGING || vars.EPAC_ARTIFACT_PREFIX }}
           HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
           PARLIAMENT_NUMBER: ${{ vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
@@ -183,14 +225,42 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
+      - name: Check staging smoke readiness
+        id: smoke-readiness
+        run: |
+          set -euo pipefail
+          missing=()
+          while IFS= read -r service; do
+            function_name="epac-${service}-staging"
+            if ! aws lambda get-function --function-name "$function_name" >/dev/null 2>&1; then
+              missing+=("$function_name")
+            fi
+          done < <(jq -r '.services[] | select(.http != null and .deploy.staging == true) | .name' backend/manifest/deployment-services.json)
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            IFS=', '
+            echo "::warning title=Skipping staging smoke tests::Missing staging Lambda functions: ${missing[*]}. Apply staging Terraform before running full smoke coverage."
+            {
+              echo "## Backend staging smoke tests"
+              echo
+              echo "Skipped because these staging Lambda functions are not provisioned:"
+              printf -- "- %s\n" "${missing[@]}"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Ensure staging routes are synced
+        if: ${{ steps.smoke-readiness.outputs.ready == 'true' }}
         env:
           ENV_NAME: staging
           STAGE_NAME: staging
         run: ./scripts/ci/ensure-staging-api-routes.sh
 
       - name: Run staging backend smoke tests
+        if: ${{ steps.smoke-readiness.outputs.ready == 'true' }}
         env:
-          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
           EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
         run: python3 scripts/ci/backend_staging_smoke.py --base-url "$STAGING_API_BASE_URL"
