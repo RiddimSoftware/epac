@@ -23,6 +23,22 @@ def _ok_group(group_id: str):
     )
 
 
+def _ok_app(app_id: str):
+    return SimpleNamespace(
+        status_code=200,
+        text="{\"data\": [{\"id\": \"%s\"}] }" % app_id,
+        json=lambda: {"data": [{"id": app_id}]},
+    )
+
+
+def _ok_app_group(group_id: str, name: str = "PublicTesting"):
+    return SimpleNamespace(
+        status_code=200,
+        text="{\"data\": [{\"id\": \"%s\", \"attributes\": {\"name\": \"%s\"}}] }" % (group_id, name),
+        json=lambda: {"data": [{"id": group_id, "attributes": {"name": name}}]},
+    )
+
+
 def _empty_group():
     return SimpleNamespace(
         status_code=200,
@@ -65,6 +81,56 @@ def test_find_group_id_success(monkeypatch):
             f"{attach.BASE_URL}/betaGroups",
             {"filter[name]": "PublicTesting", "limit": "200"},
         )
+    ]
+
+
+def test_find_group_id_scopes_lookup_to_app_id(monkeypatch):
+    calls = []
+
+    def fake_request(method, url, headers=None, timeout=None, params=None, **_):
+        calls.append((method, url, params))
+        assert headers and headers["Authorization"].startswith("Bearer ")
+        return _ok_app_group("group-1")
+
+    monkeypatch.setattr(attach.requests, "request", fake_request)
+    group_id = attach.find_group_id("PublicTesting", "token", app_id="app-1")
+    assert group_id == "group-1"
+    assert calls == [
+        (
+            "GET",
+            f"{attach.BASE_URL}/apps/app-1/betaGroups",
+            {"limit": "200", "fields[betaGroups]": "name"},
+        )
+    ]
+
+
+def test_find_group_id_resolves_bundle_id_before_scoped_lookup(monkeypatch):
+    calls = []
+
+    def fake_request(method, url, headers=None, timeout=None, params=None, **_):
+        calls.append((method, url, params))
+        if url == f"{attach.BASE_URL}/apps":
+            return _ok_app("app-1")
+        return _ok_app_group("group-1")
+
+    monkeypatch.setattr(attach.requests, "request", fake_request)
+    group_id = attach.find_group_id("PublicTesting", "token", bundle_id="net.dinglebox.cabinetdoor")
+    assert group_id == "group-1"
+    assert calls == [
+        (
+            "GET",
+            f"{attach.BASE_URL}/apps",
+            {
+                "filter[bundleId]": "net.dinglebox.cabinetdoor",
+                "limit": "1",
+                "fields[apps]": "bundleId,name",
+            },
+        ),
+        (
+            "GET",
+            f"{attach.BASE_URL}/apps/app-1/betaGroups",
+            {"limit": "200", "fields[betaGroups]": "name"},
+        ),
     ]
 
 

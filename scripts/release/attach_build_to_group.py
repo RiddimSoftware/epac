@@ -17,6 +17,8 @@ import requests
 
 BASE_URL = "https://api.appstoreconnect.apple.com/v1"
 SECRET_ID = "appstore/connect-api"
+DEFAULT_MAX_RETRIES = 6
+DEFAULT_BASE_DELAY_SECONDS = 2.0
 
 
 class AttachBuildError(Exception):
@@ -88,8 +90,8 @@ def request_with_retries(
     method: str,
     path: str,
     token: str,
-    max_retries: int = 3,
-    base_delay: float = 1.0,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    base_delay: float = DEFAULT_BASE_DELAY_SECONDS,
     **kwargs,
 ) -> requests.Response:
     """Call ASC with retries on 5xx responses only."""
@@ -122,18 +124,60 @@ def request_with_retries(
     raise RetriesExhausted(f"{method} {path} failed after {max_retries} attempts")
 
 
+def find_app_id_for_bundle_id(bundle_id: str, token: str) -> str:
+    """Resolve an App Store Connect app ID from a bundle identifier."""
+    response = request_with_retries(
+        "GET",
+        "/apps",
+        token,
+        params={
+            "filter[bundleId]": bundle_id,
+            "limit": "1",
+            "fields[apps]": "bundleId,name",
+        },
+    )
+    if response.status_code != 200:
+        raise AttachBuildError(f"app lookup failed ({response.status_code}): {response.text}")
+
+    data = response.json().get("data", [])
+    if not data:
+        raise AttachBuildError(f"app not found: bundle_id={bundle_id}")
+    return data[0]["id"]
+
+
 def find_group_id(
     group_name: str,
     token: str,
+    app_id: str | None = None,
     bundle_id: str | None = None,
 ) -> str:
-    """Resolve a beta group ID by name (optionally scoped by bundle ID)."""
+    """Resolve a beta group ID by name, scoped to an app when possible."""
+    if app_id is None and bundle_id:
+        app_id = find_app_id_for_bundle_id(bundle_id, token)
+
+    if app_id:
+        response = request_with_retries(
+            "GET",
+            f"/apps/{app_id}/betaGroups",
+            token,
+            params={
+                "limit": "200",
+                "fields[betaGroups]": "name",
+            },
+        )
+        if response.status_code != 200:
+            raise AttachBuildError(f"beta group lookup failed ({response.status_code}): {response.text}")
+
+        for group in response.json().get("data", []):
+            if group.get("attributes", {}).get("name") == group_name:
+                return group["id"]
+
+        raise AttachBuildError(f"beta group not found: name={group_name}, app_id={app_id}")
+
     params: dict[str, str] = {
         "filter[name]": group_name,
         "limit": "200",
     }
-    if bundle_id:
-        params["filter[app]"] = bundle_id
 
     response = request_with_retries("GET", "/betaGroups", token, params=params)
 
@@ -142,8 +186,6 @@ def find_group_id(
         if data:
             return data[0]["id"]
 
-        if bundle_id:
-            raise AttachBuildError(f"beta group not found: name={group_name}, bundle_id={bundle_id}")
         raise AttachBuildError(f"beta group not found: name={group_name}")
 
     raise AttachBuildError(f"beta group lookup failed ({response.status_code}): {response.text}")
@@ -183,24 +225,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-id", required=True)
     parser.add_argument("--group-name", required=True)
+    parser.add_argument("--app-id", default="")
     parser.add_argument("--bundle-id", default="")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    app_id = args.app_id.strip() or None
     bundle_id = args.bundle_id.strip() or None
 
     key_id, issuer_id, private_key = get_asc_credentials()
     token = get_asc_token(key_id, issuer_id, private_key)
 
     try:
-        group_id = find_group_id(args.group_name, token, bundle_id=bundle_id)
+        group_id = find_group_id(args.group_name, token, app_id=app_id, bundle_id=bundle_id)
         result = attach_build(group_id, args.build_id, token)
     except AttachBuildError as exc:
         message = str(exc)
         if message.startswith("beta group not found:"):
-            print(json.dumps({"error": "group_not_found", "message": message, "group_name": args.group_name, "bundle_id": bundle_id}), flush=True)
+            print(
+                json.dumps({
+                    "error": "group_not_found",
+                    "message": message,
+                    "group_name": args.group_name,
+                    "app_id": app_id,
+                    "bundle_id": bundle_id,
+                }),
+                flush=True,
+            )
             return 3
 
         print(json.dumps({"error": "request_failed", "message": message}), flush=True)

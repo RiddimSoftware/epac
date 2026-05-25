@@ -240,7 +240,7 @@ jobs:
           .venv-release/bin/python scripts/release/attach_build_to_group.py \
             --build-id "${{ steps.build-id.outputs.build_id }}" \
             --group-name "PublicTesting" \
-            --bundle-id "${{ vars.BUNDLE_ID }}"
+            --app-id "${{ vars.APPLE_APP_ID }}"
 
       - name: Submit for Beta App Review
         if: ${{ !inputs.dry_run }}
