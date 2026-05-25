@@ -1,6 +1,7 @@
 {
   "_doc": "Regression evidence plan for Parliament-tab entry surfaces. Exercises the deep-link router into sitting overview, Hansard speech rendering, legacy share format, encoded-path routing, and home-fallback. Covers the read path through Fetch.downloadHansard/downloadCalendar, XMLBro.parseXML, HansardSpeakerParser, and ContentView.handleCustomScheme/handleUniversalLink. Out of scope: in-app calendar UI navigation, SpeechView replay/scroll, speaker-photo loading, EventKit export, Members/Accountability/Search/Home tabs. Requires the EPAC_EVIDENCE_MODE fixture-seed contract — see docs/regression/cyclomatic-complexity-coverage-map.md.",
   "repo": "RiddimSoftware/epac",
+  "pr": 542,
   "platform": "ios",
   "runner": "simctl",
   "ios": {
