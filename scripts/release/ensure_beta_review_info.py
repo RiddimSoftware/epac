@@ -24,6 +24,12 @@ import requests
 
 
 BASE_URL = "https://api.appstoreconnect.apple.com/v1"
+REVIEW_CONTACT_FIELDS = {
+    "contactEmail": "BETA_REVIEW_CONTACT_EMAIL",
+    "contactFirstName": "BETA_REVIEW_CONTACT_FIRST_NAME",
+    "contactLastName": "BETA_REVIEW_CONTACT_LAST_NAME",
+    "contactPhone": "BETA_REVIEW_CONTACT_PHONE",
+}
 
 
 def get_asc_credentials() -> tuple[str, str, str]:
@@ -93,21 +99,37 @@ def ensure_beta_app_review_detail(
     if response.status_code == 200:
         data = response.json().get("data", {})
         attrs = data.get("attributes", {}) if isinstance(data, dict) else {}
-        if attrs.get("contactEmail"):
+        missing_fields = [field for field in REVIEW_CONTACT_FIELDS if not attrs.get(field)]
+        if not missing_fields:
             return {"status": "exists", "id": data.get("id", "")}
 
         detail_id = data.get("id", "")
         if detail_id:
+            contact_values = {
+                "contactEmail": contact_email,
+                "contactFirstName": contact_first_name,
+                "contactLastName": contact_last_name,
+                "contactPhone": contact_phone,
+            }
+            missing_inputs = [
+                f"{field} ({REVIEW_CONTACT_FIELDS[field]})"
+                for field in missing_fields
+                if not contact_values.get(field)
+            ]
+            if missing_inputs:
+                raise RuntimeError(
+                    "Missing beta app review contact details. Set "
+                    + ", ".join(missing_inputs)
+                    + " or populate Beta App Review Details in App Store Connect."
+                )
             patch_url = f"{BASE_URL}/betaAppReviewDetails/{detail_id}"
             patch_payload = {
                 "data": {
                     "type": "betaAppReviewDetails",
                     "id": detail_id,
                     "attributes": {
-                        "contactEmail": contact_email,
-                        "contactFirstName": contact_first_name,
-                        "contactLastName": contact_last_name,
-                        "contactPhone": contact_phone,
+                        field: contact_values[field]
+                        for field in missing_fields
                     },
                 }
             }
@@ -208,12 +230,6 @@ def main() -> None:
     contact_first_name = os.getenv("BETA_REVIEW_CONTACT_FIRST_NAME", "")
     contact_last_name = os.getenv("BETA_REVIEW_CONTACT_LAST_NAME", "")
     contact_phone = os.getenv("BETA_REVIEW_CONTACT_PHONE", "")
-
-    if not all([contact_email, contact_first_name, contact_last_name, contact_phone]):
-        print("Error: BETA_REVIEW_CONTACT_EMAIL, BETA_REVIEW_CONTACT_FIRST_NAME, "
-              "BETA_REVIEW_CONTACT_LAST_NAME, and BETA_REVIEW_CONTACT_PHONE must be set.",
-              file=sys.stderr)
-        sys.exit(1)
 
     try:
         key_id, issuer_id, private_key = get_asc_credentials()
