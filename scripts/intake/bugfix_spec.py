@@ -17,6 +17,8 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT_DIR = ROOT / ".factory" / "intake"
 TARGET_REPO = "RiddimSoftware/epac"
+EFFORT_ESTIMATE_LADDER = (1, 2, 4, 8, 16, 32, 64)
+EFFORT_ESTIMATE_CHOICES = ", ".join(str(v) for v in EFFORT_ESTIMATE_LADDER)
 
 REQUIRED_SECTIONS = [
     "## Original Prompt",
@@ -25,6 +27,7 @@ REQUIRED_SECTIONS = [
     "### Expected Behavior",
     "## Reproduction Steps",
     "## Acceptance Criteria",
+    "## Effort estimate",
     "## Evidence Plan",
     "## Validation Plan",
     "## Non-goals",
@@ -55,6 +58,7 @@ class BugfixSpecInput:
     steps: list[str]
     evidence: str
     validation: str
+    estimate: int
     original_prompt: str
     non_goals: str
     trace_id: str
@@ -93,6 +97,16 @@ def collect_steps(args: argparse.Namespace) -> list[str]:
     return collected
 
 
+def parse_estimate(value: str) -> int:
+    try:
+        estimate = int(value)
+    except ValueError as error:
+        raise ValueError(f"--estimate must be one of {EFFORT_ESTIMATE_CHOICES}") from error
+    if estimate not in EFFORT_ESTIMATE_LADDER:
+        raise ValueError(f"--estimate must be one of {EFFORT_ESTIMATE_CHOICES}")
+    return estimate
+
+
 def value_or_prompt(args: argparse.Namespace, attr: str, label: str) -> str:
     value = getattr(args, attr)
     if value:
@@ -111,6 +125,7 @@ def build_input(args: argparse.Namespace) -> BugfixSpecInput:
     expected = value_or_prompt(args, "expected", "Expected behavior")
     evidence = value_or_prompt(args, "evidence", "Required evidence")
     validation = value_or_prompt(args, "validation", "Reporter/TestFlight validation")
+    estimate = parse_estimate(value_or_prompt(args, "estimate", f"Effort estimate ({EFFORT_ESTIMATE_CHOICES})"))
     steps = collect_steps(args)
 
     missing = [
@@ -124,6 +139,7 @@ def build_input(args: argparse.Namespace) -> BugfixSpecInput:
             ("--expected", expected),
             ("--evidence", evidence),
             ("--validation", validation),
+            ("--estimate", str(estimate)),
         ]
         if not value
     ]
@@ -152,6 +168,7 @@ def build_input(args: argparse.Namespace) -> BugfixSpecInput:
         expected=expected,
         steps=steps,
         evidence=evidence,
+        estimate=estimate,
         validation=validation,
         original_prompt=original_prompt,
         non_goals=non_goals,
@@ -199,6 +216,11 @@ This bugfix SPEC turns a contributor or LLM-session report into a factory-ready 
 - Given a TestFlight or local validation build is available
   When the reporter validates the affected surface
   Then their approval or blocker is recorded before release promotion.
+
+## Effort estimate
+- Estimate: {spec.estimate}
+- Confidence: medium
+- Reasoning: Initial SF effort estimate captured during intake; Opus may revise this during enrichment.
 
 ## Evidence Plan
 {spec.evidence}
@@ -295,6 +317,11 @@ def section_body(text: str, heading: str) -> str:
     return match.group("body").strip() if match else ""
 
 
+def section_field(section: str, label: str) -> str:
+    match = re.search(rf"^\s*-?\s*{re.escape(label)}:\s*(.+)$", section, re.MULTILINE)
+    return match.group(1).strip() if match else ""
+
+
 def validate_text(text: str) -> list[str]:
     errors: list[str] = []
     if not text.startswith("# Bugfix SPEC: "):
@@ -315,6 +342,16 @@ def validate_text(text: str) -> list[str]:
     criteria = re.findall(r"^- Given .+", section_body(text, "## Acceptance Criteria"), re.MULTILINE)
     if len(criteria) < 2:
         errors.append("missing at least two acceptance criteria starting with '- Given'")
+
+    effort_section = section_body(text, "## Effort estimate")
+    estimate_text = section_field(effort_section, "Estimate")
+    if not estimate_text:
+        errors.append("missing required effort estimate field: Estimate")
+    else:
+        try:
+            parse_estimate(estimate_text)
+        except ValueError as error:
+            errors.append(f"invalid effort estimate: {error}")
 
     if PLACEHOLDER_RE.search(text):
         errors.append("SPEC contains placeholder text; replace TBD/TODO/FIXME/bracket placeholders before intake")
@@ -409,6 +446,7 @@ def build_parser() -> argparse.ArgumentParser:
     new.add_argument("--surface")
     new.add_argument("--observed")
     new.add_argument("--expected")
+    new.add_argument("--estimate")
     new.add_argument("--step", action="append", default=[])
     new.add_argument("--evidence")
     new.add_argument("--validation")
