@@ -10,6 +10,7 @@ use (
 	./daily-fetch
 	./estimates
 	./hansard-backfill
+	./hansard-search
 	./hansard-search-index
 	./hansard-subjects-index
 	./health

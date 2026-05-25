@@ -265,6 +265,21 @@
         "staging": {"database": true, "artifact": false},
         "production": {"database": true, "artifact": false}
       }
+    },
+    {
+      "name": "hansard-search",
+      "deploy": {"staging": true, "production": true},
+      "http": {
+        "payload_format_version": "2.0",
+        "routes": {
+          "staging": [{"method": "GET", "path": "/api/v1/hansard/search"}],
+          "production": [{"method": "GET", "path": "/api/v1/hansard/search"}]
+        }
+      },
+      "sync": {
+        "staging": {"database": false, "artifact": true},
+        "production": {"database": false, "artifact": true}
+      }
     }
   ]
 }
