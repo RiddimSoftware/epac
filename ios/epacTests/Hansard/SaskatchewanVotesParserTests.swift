@@ -3,10 +3,10 @@
 //  epacTests
 //
 
-import Testing
+@testable import epac
 import Foundation
 import SwiftData
-@testable import epac
+import Testing
 
 @Suite("Saskatchewan Votes Parser Tests")
 struct SaskatchewanVotesParserTests {

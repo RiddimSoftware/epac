@@ -1029,7 +1029,7 @@ enum SchemaV5: VersionedSchema {
 	}
 
 	@Model
-	final class RecordedVote: @unchecked Sendable {
+	final class RecordedVote {
 		@Attribute(.unique) var voteID: Int
 		var parliament: Int
 		var session: Int
@@ -1364,7 +1364,7 @@ enum SchemaV10: VersionedSchema {
 	}
 
 	@Model
-	final class RecordedVote: @unchecked Sendable {
+	final class RecordedVote {
 		@Attribute(.unique) var voteID: Int
 		var parliament: Int
 		var session: Int
