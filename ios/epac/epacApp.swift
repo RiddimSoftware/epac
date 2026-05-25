@@ -15,6 +15,10 @@ enum AppRuntime {
 	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
+private enum SentryConfiguration {
+	static let tracesSampleRate: NSNumber = 0.1
+}
+
 @MainActor
 class AppDelegate: NSObject, UIApplicationDelegate {
 	/// Injected by ContentView once it has created the router.
@@ -33,7 +37,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct epacApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-	var sharedModelContainer: ModelContainer = {
+	let sharedModelContainer: ModelContainer
+	let fetch: Fetch
+	let hansardRepository: any HansardRepository
+
+	private static func makeModelContainer() -> ModelContainer {
 		do {
 			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try ModelContainer(
@@ -44,18 +52,29 @@ struct epacApp: App {
 		} catch {
 			fatalError("Could not create ModelContainer: \(error)")
 		}
-	}()
+	}
 
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
+		let modelContainer = Self.makeModelContainer()
+		let fetch = Fetch(modelContainer: modelContainer)
+		self.sharedModelContainer = modelContainer
+		self.fetch = fetch
+		self.hansardRepository = JurisdictionRoutedHansardRepository(adapters: [
+			.federal: SwiftDataHansardRepository(
+				modelContext: modelContainer.mainContext,
+				fetch: fetch
+			)
+		])
+
 		guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
 
 		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
 			SentrySDK.start { options in
 				options.dsn = "https://\(dsn)"
 				options.enableCrashHandler = true
-				options.tracesSampleRate = 0.1
+				options.tracesSampleRate = SentryConfiguration.tracesSampleRate
 			}
 		}
 
@@ -77,7 +96,11 @@ struct epacApp: App {
 
 	var body: some Scene {
 		WindowGroup {
-			ContentView(modelContainer: sharedModelContainer, appDelegate: appDelegate)
+			ContentView(
+				fetch: fetch,
+				hansardRepository: hansardRepository,
+				appDelegate: appDelegate
+			)
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { _, newPhase in

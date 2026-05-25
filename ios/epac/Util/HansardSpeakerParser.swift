@@ -82,7 +82,23 @@ struct HansardSpeakerParser {
 		return (firstName: cleanNames.dropLast().joined(separator: " "), lastName: cleanNames.last.map(String.init))
 	}
 
-	private static let speakerTitleWords = ["Hon.", "Rt.", "Mr.", "Ms.", "Mrs.", "Mme.", "Dr.", "The", "Hon", "Rt", "Right"]
+	private static let speakerTitleWords = [
+		"Hon.",
+		"Rt.",
+		"Mr.",
+		"Ms.",
+		"Mrs.",
+		"Mme.",
+		"Mme",
+		"M.",
+		"L'hon.",
+		"L\u{2019}hon.",
+		"Dr.",
+		"The",
+		"Hon",
+		"Rt",
+		"Right"
+	]
 }
 
 private extension String {

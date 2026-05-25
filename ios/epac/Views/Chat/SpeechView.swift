@@ -40,6 +40,7 @@ struct SpeechView: View {
 	@Environment(\.modelContext) var modelContext
 	@Environment(\.colorScheme) var colorScheme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.hansardRepository) private var hansardRepository
 	@Environment(NavigationRouter.self) var router
 	@EnvironmentObject var fetch: Fetch
 
@@ -222,7 +223,7 @@ struct SpeechView: View {
 			guard viewModel.messages.isEmpty else { return }
 			do {
 				viewModel.configure(readHansardSpeech: ReadHansardSpeech(
-					repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+					repository: hansardRepository
 				))
 				try await viewModel.loadSpeech(
 					jurisdiction: .federal,

@@ -553,6 +553,28 @@ scripts/check-boundaries.sh
 
 See that file for exit codes and per-path skip notes.
 
+## Provincial Hansard adapters
+
+The application layer depends on `HansardRepository`. Runtime dispatch is owned
+by `JurisdictionRoutedHansardRepository`, which maps each `Jurisdiction` to one
+adapter. Provincial rows stay TODO until the province-specific implementation
+issue lands.
+
+| Jurisdiction | Adapter file | Status |
+|---|---|---|
+| Federal | `ios/epac/Data/Repositories/SwiftDataHansardRepository.swift` | Registered in `JurisdictionRoutedHansardRepository` at app startup. |
+| Alberta | `ios/epac/Data/Adapters/Hansard/AlbertaHansardAdapter.swift` | TODO — EPAC-613. |
+| British Columbia | `ios/epac/Data/Adapters/Hansard/BritishColumbiaHansardAdapter.swift` | TODO — EPAC-680. |
+| Manitoba | `ios/epac/Data/Adapters/Hansard/ManitobaHansardAdapter.swift` | TODO — EPAC-786. |
+| Nova Scotia | `ios/epac/Data/Adapters/Hansard/NovaScotiaHansardAdapter.swift` | TODO — EPAC-793. |
+| Quebec | `ios/epac/Data/Adapters/Hansard/QuebecHansardAdapter.swift` | TODO — EPAC-936. |
+| Saskatchewan | `ios/epac/Data/Adapters/Hansard/SaskatchewanHansardAdapter.swift` | TODO — EPAC-874. |
+
+Boundary rule: files matching
+`ios/epac/Data/Adapters/Hansard/**/*Adapter.swift` must not import `SwiftUI`,
+`SwiftData`, or `UIKit`. If the check fails, move UI or persistence concerns to
+a Repository or ViewModel layer.
+
 ### What "inward" means for epac today
 
 The boundary between application policy and delivery adapters does not have fully isolated directories yet (those are being created by EPAC-1741, EPAC-1742, EPAC-1743). Until those tickets land, the boundary is conceptual and documented here:
