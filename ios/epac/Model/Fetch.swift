@@ -42,6 +42,11 @@ actor Fetch: ObservableObject {
 	private let openAPIURL = URL(string: "https://api.openparliament.ca")!
 	private let openParliamentAPIURL = URL(string: "https://api.openparliament.ca")!
 	private let votePageSize = 200
+	private let voteDateFormatter: ISO8601DateFormatter = {
+		let f = ISO8601DateFormatter()
+		f.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+		return f
+	}()
 
 	private enum Constants {
 		static let secondsPerMinute: TimeInterval = 60
@@ -990,14 +995,11 @@ actor Fetch: ObservableObject {
 	private func fetchVotingRecords(parliament: Int, from source: VotingEndpoint) async throws {
 		var page = 1
 		var hasMore = true
-		let isoFormatter = ISO8601DateFormatter()
-		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
 		while hasMore {
 			let (voteItems, continuePagination) = try await loadVotingPage(
 				parliament: parliament,
 				page: page,
-				from: source,
-				isoFormatter: isoFormatter
+				from: source
 			)
 			for vote in voteItems {
 				modelContext.insert(vote)
@@ -1045,15 +1047,14 @@ actor Fetch: ObservableObject {
 	private func loadVotingPage(
 		parliament: Int,
 		page: Int,
-		from source: VotingEndpoint,
-		isoFormatter: ISO8601DateFormatter
+		from source: VotingEndpoint
 	) async throws -> (votes: [RecordedVote], hasMore: Bool) {
 		guard let url = votingPageURL(parliament: parliament, page: page, from: source),
 			  let json = try await fetchJSONDictionary(from: url) else {
 			return ([], false)
 		}
 
-		return parseVotingPage(json, parliament: parliament, from: source, isoFormatter: isoFormatter)
+		return parseVotingPage(json, parliament: parliament, from: source)
 	}
 
 	private func votingPageURL(parliament: Int, page: Int, from source: VotingEndpoint) -> URL? {
@@ -1101,41 +1102,38 @@ actor Fetch: ObservableObject {
 	private func parseVotingPage(
 		_ json: [String: Any],
 		parliament: Int,
-		from source: VotingEndpoint,
-		isoFormatter: ISO8601DateFormatter
+		from source: VotingEndpoint
 	) -> (votes: [RecordedVote], hasMore: Bool) {
 		switch source {
 		case .openCommons:
-			return parseOpenCommonsVotingPage(json, parliament: parliament, isoFormatter: isoFormatter)
+			return parseOpenCommonsVotingPage(json, parliament: parliament)
 		case .openParliament:
-			return parseOpenParliamentVotingPage(json, isoFormatter: isoFormatter)
+			return parseOpenParliamentVotingPage(json)
 		}
 	}
 
 	private func parseOpenCommonsVotingPage(
 		_ json: [String: Any],
-		parliament: Int,
-		isoFormatter: ISO8601DateFormatter
+		parliament: Int
 	) -> (votes: [RecordedVote], hasMore: Bool) {
 		guard let items = json["items"] as? [[String: Any]] else { return ([], false) }
-		let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament, isoFormatter: isoFormatter) }
+		let votes = items.compactMap { parseOpenCommonsVote($0, parliament: parliament) }
 		return (votes, !votes.isEmpty && votes.count == votePageSize)
 	}
 
 	private func parseOpenParliamentVotingPage(
-		_ json: [String: Any],
-		isoFormatter: ISO8601DateFormatter
+		_ json: [String: Any]
 	) -> (votes: [RecordedVote], hasMore: Bool) {
 		guard let objects = json["objects"] as? [[String: Any]] else { return ([], false) }
-		let votes = objects.compactMap { parseOpenParliamentVote($0, isoFormatter: isoFormatter) }
+		let votes = objects.compactMap { parseOpenParliamentVote($0) }
 		let nextURL = (json["pagination"] as? [String: Any])?["next_url"] as? String
 		return (votes, nextURL?.isEmpty == false)
 	}
 
-	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int, isoFormatter: ISO8601DateFormatter) -> RecordedVote? {
+	private func parseOpenCommonsVote(_ item: [String: Any], parliament: Int) -> RecordedVote? {
 		guard let id = item["id"] as? Int else { return nil }
 		let dateStr = item["date"] as? String ?? ""
-		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let date = voteDateFormatter.date(from: dateStr) ?? Date()
 		let descObj = item["description"] as? [String: String]
 		let desc = descObj?["en"] ?? item["description"] as? String ?? ""
 		let resultObj = item["result"] as? [String: String]
@@ -1155,13 +1153,13 @@ actor Fetch: ObservableObject {
 		)
 	}
 
-	private func parseOpenParliamentVote(_ item: [String: Any], isoFormatter: ISO8601DateFormatter) -> RecordedVote? {
+	private func parseOpenParliamentVote(_ item: [String: Any]) -> RecordedVote? {
 		guard let number = item["number"] as? Int,
 			  let sessionText = item["session"] as? String else { return nil }
 		let (voteParliament, session) = parseSessionComponents(from: sessionText)
 		let voteID = makeStableVoteID(parliament: voteParliament, session: session, number: number)
 		let dateStr = item["date"] as? String ?? ""
-		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let date = voteDateFormatter.date(from: dateStr) ?? Date()
 		let descObj = item["description"] as? [String: Any]
 		let desc = descObj?["en"] as? String ?? ""
 		let result = item["result"] as? String ?? ""
@@ -1404,16 +1402,13 @@ actor Fetch: ObservableObject {
 		))
 		guard existing.isEmpty else { return }
 
-		let isoFormatter = ISO8601DateFormatter()
-		isoFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-
 		var page = 1
 		var hasMore = true
 		while hasMore {
 			guard let items = try await loadWrittenQuestionsPage(memberID: memberID, parliament: parliament, page: page) else { break }
 			hasMore = !items.isEmpty && items.count == 100
 			page += 1
-			insertWrittenQuestions(items, memberID: memberID, parliament: parliament, isoFormatter: isoFormatter)
+			insertWrittenQuestions(items, memberID: memberID, parliament: parliament)
 			try modelContext.save()
 		}
 	}
@@ -1442,11 +1437,10 @@ actor Fetch: ObservableObject {
 	private func insertWrittenQuestions(
 		_ items: [[String: Any]],
 		memberID: Int,
-		parliament: Int,
-		isoFormatter: ISO8601DateFormatter
+		parliament: Int
 	) {
 		for item in items {
-			guard let question = writtenQuestion(from: item, memberID: memberID, parliament: parliament, isoFormatter: isoFormatter) else {
+			guard let question = writtenQuestion(from: item, memberID: memberID, parliament: parliament) else {
 				continue
 			}
 			modelContext.insert(question)
@@ -1456,14 +1450,13 @@ actor Fetch: ObservableObject {
 	private func writtenQuestion(
 		from item: [String: Any],
 		memberID: Int,
-		parliament: Int,
-		isoFormatter: ISO8601DateFormatter
+		parliament: Int
 	) -> WrittenQuestion? {
 		guard let id = item["id"] as? Int else { return nil }
 		let dateStr = item["dateSubmitted"] as? String ?? ""
-		let date = isoFormatter.date(from: dateStr) ?? Date()
+		let date = voteDateFormatter.date(from: dateStr) ?? Date()
 		let responseDateStr = item["responseDate"] as? String
-		let responseDate = responseDateStr.flatMap { isoFormatter.date(from: $0) }
+		let responseDate = responseDateStr.flatMap { voteDateFormatter.date(from: $0) }
 		return WrittenQuestion(
 			questionID: id,
 			memberID: memberID,
