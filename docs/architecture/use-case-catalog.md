@@ -164,15 +164,17 @@ Inputs: Query string, optional entity-type filter.
 Outputs: Ranked list of matching results with entity type, title, and navigation hint.
 Entities / values: Hansard, SubjectOfBusiness, ParliamentMember.
 Ports: HansardRepository, MemberRepository.
-Primary adapters (backend): None. Backend search routes and Lambda were retired by EPAC-1921.
+Primary adapters (backend): hansard-search Lambda startup/wiring in `backend/hansard-search`, plus the SQLite FTS5 repository adapter in `internal/adapter/sqlitefts5`.
 Primary adapters (iOS): SearchViewModel, SearchView, NetworkService.
 Current implementation:
+  backend/hansard-search/internal/usecase/search_hansard.go
+  backend/hansard-search/internal/adapter/sqlitefts5/repository.go
   ios/epac/Views/Search/SearchViewModel.swift
   ios/epac/Views/Search/SearchView.swift
   ios/epac/Util/NetworkService.swift
 ```
 
-> **Boundary note:** An explicit `SearchHansard` use case type is introduced by EPAC-1742. Until that PR lands, search policy lives in `SearchViewModel`. The catalog entry is documented here so the boundary target is visible.
+> **Boundary note:** The backend `SearchHansard` use case now lives in `backend/hansard-search/internal/usecase/` and depends on a `HansardSearchRepository` port implemented by the SQLite FTS5 adapter. The iOS `SearchViewModel` remains a presentation concern for the broader search UI while D3 wires the hansard-search Lambda handler to this backend policy.
 
 ---
 
