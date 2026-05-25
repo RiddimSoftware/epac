@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import jwt
 import requests
@@ -24,7 +25,6 @@ class AttachBuildError(Exception):
 
 class RetriesExhausted(AttachBuildError):
     """Raised after retry budget is exhausted."""
-
 
 
 def get_asc_secret() -> dict[str, str]:
@@ -48,6 +48,24 @@ def get_asc_secret() -> dict[str, str]:
         check=True,
     )
     return json.loads(result.stdout)
+
+
+def get_asc_credentials() -> tuple[str, str, str]:
+    """Read ASC credentials from environment first, otherwise from Secrets Manager."""
+    key_id = os.getenv("ASC_KEY_ID")
+    issuer_id = os.getenv("ASC_ISSUER_ID")
+    private_key = os.getenv("ASC_PRIVATE_KEY")
+
+    if key_id and issuer_id and private_key:
+        return key_id, issuer_id, private_key
+
+    key_path = os.getenv("ASC_KEY_PATH")
+    if key_id and issuer_id and key_path:
+        return key_id, issuer_id, Path(os.path.expanduser(key_path)).read_text(encoding="utf-8")
+
+    secret = get_asc_secret()
+    private_key = secret.get("private_key") or secret.get("key")
+    return secret["key_id"], secret["issuer_id"], private_key
 
 
 def get_asc_token(key_id: str, issuer_id: str, private_key: str) -> str:
@@ -173,13 +191,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     bundle_id = args.bundle_id.strip() or None
 
-    secret = get_asc_secret()
-    private_key = secret["private_key"] if "private_key" in secret else secret["key"]
-    token = get_asc_token(
-        secret["key_id"],
-        secret["issuer_id"],
-        private_key,
-    )
+    key_id, issuer_id, private_key = get_asc_credentials()
+    token = get_asc_token(key_id, issuer_id, private_key)
 
     try:
         group_id = find_group_id(args.group_name, token, bundle_id=bundle_id)

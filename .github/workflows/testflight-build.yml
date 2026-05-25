@@ -119,6 +119,7 @@ jobs:
           {
             echo "ASC_KEY_ID=$ASC_KEY_ID"
             echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+            echo "ASC_KEY_PATH=$p8_path"
           } >> "$GITHUB_ENV"
 
       - name: Install release helper dependencies
