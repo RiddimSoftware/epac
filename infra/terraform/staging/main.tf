@@ -53,10 +53,11 @@ resource "aws_lambda_function" "staging" {
   }
 
   tags = {
-    Project     = "epac"
-    Environment = "staging"
-    ManagedBy   = "terraform"
-    Ticket      = "EPAC-1852"
+    Project        = "epac"
+    Environment    = "staging"
+    ManagedBy      = "terraform"
+    Ticket         = "EPAC-1852"
+    LastReviewedAt = "2026-05-25"
   }
 }
 
