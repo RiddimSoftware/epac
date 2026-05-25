@@ -357,22 +357,25 @@ class LinearClient:
 
         query = """
         query ResolveTeam($key: String!) {
-          team(key: $key) {
-            id
-            states(first: 50) {
-              nodes {
-                id
-                name
-                type
+          teams(filter: { key: { eq: $key } }) {
+            nodes {
+              id
+              states(first: 50) {
+                nodes {
+                  id
+                  name
+                  type
+                }
               }
             }
           }
         }
         """
         data = self._graphql(query, {"key": team_key})
-        team = data.get("team")
-        if not team:
+        nodes = data.get("teams", {}).get("nodes", [])
+        if not nodes:
             raise LinearAPIError(f"Linear team not found for key: {team_key}")
+        team = nodes[0]
 
         todo_state_id = _todo_state_id(team.get("states", {}).get("nodes", []))
         done_state_id = _done_state_id(team.get("states", {}).get("nodes", []))
