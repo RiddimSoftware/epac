@@ -15,8 +15,8 @@ struct MigrationPlanTests {
 
     @Test func schemasAreInChronologicalOrder() {
         let schemas = EpacMigrationPlan.schemas
-        #expect(schemas.count == 7)
-        // Confirm the ordering: V3 < V4 < V5 < V6 < V7 < V8 < V9
+        #expect(schemas.count == 8)
+        // Confirm the ordering: V3 < V4 < V5 < V6 < V7 < V8 < V9 < V10
         let v3 = SchemaV3.versionIdentifier
         let v4 = SchemaV4.versionIdentifier
         let v5 = SchemaV5.versionIdentifier
@@ -24,12 +24,14 @@ struct MigrationPlanTests {
         let v7 = SchemaV7.versionIdentifier
         let v8 = SchemaV8.versionIdentifier
         let v9 = SchemaV9.versionIdentifier
+        let v10 = SchemaV10.versionIdentifier
         #expect(v3 < v4)
         #expect(v4 < v5)
         #expect(v5 < v6)
         #expect(v6 < v7)
         #expect(v7 < v8)
         #expect(v8 < v9)
+        #expect(v9 < v10)
         // Confirm the plan lists them in the same order
         #expect(schemas[0] == SchemaV3.self)
         #expect(schemas[1] == SchemaV4.self)
@@ -38,6 +40,7 @@ struct MigrationPlanTests {
         #expect(schemas[4] == SchemaV7.self)
         #expect(schemas[5] == SchemaV8.self)
         #expect(schemas[6] == SchemaV9.self)
+        #expect(schemas[7] == SchemaV10.self)
     }
 
     @Test func stagesCountIsOnePerSchemaBoundary() {
@@ -51,9 +54,9 @@ struct MigrationPlanTests {
         // Verifies that epacApp's container initialisation doesn't throw on an empty store.
         // Uses an in-memory configuration so tests don't touch disk.
         let container = try ModelContainer(
-            for: Schema(versionedSchema: SchemaV9.self),
+            for: Schema(versionedSchema: SchemaV10.self),
             migrationPlan: EpacMigrationPlan.self,
-            configurations: [ModelConfiguration(isStoredInMemoryOnly: true)]
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         // Basic sanity: the container exposes the expected model types
         let context = ModelContext(container)
