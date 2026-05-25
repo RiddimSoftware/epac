@@ -44,10 +44,11 @@ resource "aws_apigatewayv2_api" "production" {
   protocol_type = "HTTP"
 
   tags = {
-    Project     = "epac"
-    Environment = "production"
-    ManagedBy   = "terraform"
-    Ticket      = "EPAC-1852"
+    Project        = "epac"
+    Environment    = "production"
+    ManagedBy      = "terraform"
+    Ticket         = "EPAC-1852"
+    LastReviewedAt = "2026-05-25"
   }
 }
 

@@ -3,8 +3,15 @@ name: Infrastructure Validation
 on:
   pull_request:
     paths:
+      - 'backend/**'
       - 'infra/terraform/**'
       - '.github/workflows/infra-validate.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: read
 
 jobs:
   validate:
@@ -34,3 +41,109 @@ jobs:
         run: |
           terraform init -backend=false
           terraform validate
+
+  infra-plan:
+    name: infra-plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.3"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Bootstrap staging Terraform backend
+        run: bash infra/terraform/bootstrap.sh staging
+
+      - name: Terraform init
+        working-directory: infra/terraform/staging
+        run: terraform init -input=false -no-color
+
+      - name: Terraform plan
+        id: plan
+        working-directory: infra/terraform/staging
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan > tfplan.txt 2>&1
+          status=$?
+          set -e
+          cat tfplan.txt
+          echo "exitcode=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Post sticky plan comment
+        uses: actions/github-script@v7
+        env:
+          PLAN_EXIT_CODE: ${{ steps.plan.outputs.exitcode }}
+          PLAN_PATH: infra/terraform/staging/tfplan.txt
+          PLAN_MARKER: '<!-- epac-tfplan-staging -->'
+        with:
+          script: |
+            const fs = require('fs');
+
+            const marker = process.env.PLAN_MARKER;
+            const exitCode = process.env.PLAN_EXIT_CODE || '1';
+            const planPath = process.env.PLAN_PATH;
+            const statusLabel = exitCode === '0' ? 'succeeded' : 'failed';
+            let plan = fs.existsSync(planPath) ? fs.readFileSync(planPath, 'utf8') : 'Terraform did not produce a plan output file.';
+            const maxPlanLength = 60000;
+            if (plan.length > maxPlanLength) {
+              plan = `${plan.slice(0, maxPlanLength)}\n\n[Plan output truncated to fit GitHub comment limits.]`;
+            }
+
+            const body = [
+              marker,
+              `### Staging Terraform plan ${statusLabel}`,
+              '',
+              `Commit: \`${context.payload.pull_request.head.sha}\``,
+              `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              '<details><summary>terraform plan output</summary>',
+              '',
+              '```terraform',
+              plan,
+              '```',
+              '',
+              '</details>'
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            const existing = comments.find(comment => comment.user.type === 'Bot' && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Upload staging Terraform plan
+        if: ${{ steps.plan.outputs.exitcode == '0' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: epac-tfplan-staging-${{ github.event.pull_request.head.sha }}
+          path: infra/terraform/staging/tfplan
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Fail if plan failed
+        if: ${{ steps.plan.outputs.exitcode != '0' }}
+        run: exit 1

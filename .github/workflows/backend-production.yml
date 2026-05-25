@@ -18,8 +18,53 @@ permissions:
   id-token: write
 
 jobs:
+  infra-apply:
+    name: Apply production Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.3"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Bootstrap production Terraform backend
+        run: bash infra/terraform/bootstrap.sh production
+
+      - name: Terraform init
+        working-directory: infra/terraform/production
+        run: terraform init -input=false -no-color
+
+      - name: Terraform plan
+        working-directory: infra/terraform/production
+        run: |
+          set -euo pipefail
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee tfplan.txt
+
+      - name: Add plan to workflow summary
+        working-directory: infra/terraform/production
+        run: |
+          {
+            echo "## Production Terraform plan"
+            echo
+            echo '```terraform'
+            cat tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Terraform apply
+        working-directory: infra/terraform/production
+        run: terraform apply -input=false -auto-approve -no-color tfplan
+
   prepare:
     name: Resolve backend service manifest
+    needs: infra-apply
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.resolve.outputs.services }}
