@@ -32,6 +32,7 @@ struct ContentView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.scenePhase) private var scenePhase
 	var fetch: Fetch
+	var hansardRepository: any HansardRepository
 	var appDelegate: AppDelegate
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
@@ -40,8 +41,9 @@ struct ContentView: View {
 	@State private var showOnboarding = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
-	init(modelContainer: ModelContainer, appDelegate: AppDelegate) {
-		self.fetch = Fetch(modelContainer: modelContainer)
+	init(fetch: Fetch, hansardRepository: any HansardRepository, appDelegate: AppDelegate) {
+		self.fetch = fetch
+		self.hansardRepository = hansardRepository
 		self.appDelegate = appDelegate
 		if AppEnvironment.isAppPreviewMode {
 			Self.configureAppPreviewMode()
@@ -80,6 +82,7 @@ struct ContentView: View {
 			}
 		}
 		.environmentObject(fetch)
+		.environment(\.hansardRepository, hansardRepository)
 		.environment(router)
 		.environment(networkMonitor)
 		.onOpenURL { url in

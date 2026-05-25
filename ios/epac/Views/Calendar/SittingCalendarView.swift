@@ -44,6 +44,7 @@ struct SittingCalendarView: View {
 	@Binding var selectedDate: DateComponents?
 
 	@Environment(\.modelContext) private var modelContext
+	@Environment(\.hansardRepository) private var hansardRepository
 	@Environment(\.isPresented) private var isPresented
 	@Environment(\.font) private var font
 	@StateObject private var calendarViewProxy = CalendarViewProxy()
@@ -192,6 +193,7 @@ struct SittingCalendarView: View {
 		.frame(maxWidth: .infinity)
 		.task(id: viewModel.currentYear) {
 			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
+			viewModel.configure(browseHansardSitting: BrowseHansardSitting(repository: hansardRepository))
 			if viewModel.dates.isEmpty {
 				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
 				scrollToToday(animated: false)

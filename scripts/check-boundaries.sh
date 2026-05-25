@@ -37,6 +37,7 @@ grep_files() {
 
 IOS_FORBIDDEN_PATTERN='import SwiftUI\|import SwiftData\|import UIKit\|import StoreKit\|import UserNotifications\|URLSession\|UNUserNotificationCenter\|UNNotification\|UNNotificationRequest\|UNNotificationResponse\|UNMutableNotificationContent\|UIApplication\|registerForRemoteNotifications'
 IOS_APPLICATION_FORBIDDEN_PATTERN="$IOS_FORBIDDEN_PATTERN"
+HANSARD_ADAPTER_FORBIDDEN_PATTERN='import SwiftUI\|import SwiftData\|import UIKit'
 
 # ── iOS Domain boundary (EPAC-1741) ───────────────────────────────────────────
 header "iOS Domain layer (ios/epac/Domain/)"
@@ -70,6 +71,32 @@ if [[ -d "$APP_DIR" ]]; then
   fi
 else
   skip "ios/epac/Application/ does not exist yet — boundary will be enforced by EPAC-1742"
+fi
+
+# ── iOS Hansard adapter boundary (EPAC-2029) ─────────────────────────────────
+header "iOS Hansard adapters (ios/epac/Data/Adapters/Hansard/**/*Adapter.swift)"
+
+HANSARD_ADAPTER_DIR="$REPO_ROOT/ios/epac/Data/Adapters/Hansard"
+if [[ -d "$HANSARD_ADAPTER_DIR" ]]; then
+  ADAPTER_FILES=$(find "$HANSARD_ADAPTER_DIR" -type f -name "*Adapter.swift" 2>/dev/null || true)
+  if [[ -n "$ADAPTER_FILES" ]]; then
+    ADAPTER_VIOLATIONS=$(
+      while IFS= read -r file; do
+        grep -n "$HANSARD_ADAPTER_FORBIDDEN_PATTERN" "$file" 2>/dev/null | sed "s#^#$file:#" || true
+      done <<< "$ADAPTER_FILES"
+    )
+    if [[ -n "$ADAPTER_VIOLATIONS" ]]; then
+      while IFS= read -r line; do
+        fail "$line — This adapter imports a UI/persistence framework. Move that concern to a Repository or ViewModel layer. See docs/architecture/use-case-catalog.md."
+      done <<< "$ADAPTER_VIOLATIONS"
+    else
+      pass "No SwiftUI/SwiftData/UIKit imports in Hansard adapter files"
+    fi
+  else
+    skip "No *Adapter.swift files in ios/epac/Data/Adapters/Hansard/ yet"
+  fi
+else
+  skip "ios/epac/Data/Adapters/Hansard/ does not exist yet"
 fi
 
 # ── Backend application packages ──────────────────────────────────────────────

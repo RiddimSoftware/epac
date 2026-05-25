@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SittingLoaderView: View {
 	@Environment(\.modelContext) private var modelContext
+	@Environment(\.hansardRepository) private var hansardRepository
 	@EnvironmentObject private var fetch: Fetch
 
 	let date: Date
@@ -57,7 +58,10 @@ struct SittingLoaderView: View {
 		}
 
 		do {
-			try await fetch.downloadHansard(date)
+			_ = try await LoadDailyHansard(repository: hansardRepository).execute(
+				jurisdiction: .federal,
+				sittingDate: date
+			)
 			guard let hansard = fetchHansard() else {
 				loadState = .failed
 				return
