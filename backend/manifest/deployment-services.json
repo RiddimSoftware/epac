@@ -68,24 +68,6 @@
       }
     },
     {
-      "name": "search",
-      "deploy": {"staging": true, "production": true},
-      "http": {
-        "payload_format_version": "1.0",
-        "routes": {
-          "staging": [{"method": "GET", "path": "/search/speeches"}],
-          "production": [
-            {"method": "ANY", "path": "/search"},
-            {"method": "GET", "path": "/search/speeches"}
-          ]
-        }
-      },
-      "sync": {
-        "staging": {"database": true, "artifact": false},
-        "production": {"database": true, "artifact": false}
-      }
-    },
-    {
       "name": "member-speeches",
       "deploy": {"staging": true, "production": true},
       "http": {

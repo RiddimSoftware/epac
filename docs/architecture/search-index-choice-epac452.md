@@ -1,6 +1,12 @@
 # Search Index Choice (EPAC-452)
 
-**Status:** Accepted for v1
+## Status: Superseded
+
+This decision has been superseded by [`search-index-choice-v2.md`](search-index-choice-v2.md) (2026-05-25). The Aurora Serverless v2 retirement (see `infra/rds/README.md`) and the EPAC-1914 → EPAC-1917 migration to S3 artifacts made the Postgres `tsvector` approach obsolete before it was fully implemented. The body below is retained as historical context.
+
+---
+
+**Status:** Superseded — see `search-index-choice-v2.md`
 **Last updated:** 2026-04-27
 **Decision:** Use PostgreSQL full-text search (`tsvector`) for the v1 parliamentary search index. Revisit Meilisearch after the canonical Hansard, bill, vote, and member records are flowing through the backend.
 

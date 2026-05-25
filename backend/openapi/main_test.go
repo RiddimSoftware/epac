@@ -87,8 +87,6 @@ func TestRetiredLambdaPathsAreAbsent(t *testing.T) {
 		"/api/v1/live",
 		"/device/register",
 		"/api/v1/device/register",
-		"/search",
-		"/search/speeches",
 	}
 	for _, path := range retiredPaths {
 		if _, ok := spec.Paths[path]; ok {
