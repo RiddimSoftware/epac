@@ -214,6 +214,39 @@ jobs:
             -m "source_sha=${SOURCE_SHA}"
           git push origin "refs/tags/${tag}"
 
+      - name: Resolve TestFlight build ID
+        id: build-id
+        if: ${{ !inputs.dry_run }}
+        env:
+          VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
+          BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
+          APPLE_APP_ID: ${{ vars.APPLE_APP_ID }}
+        run: |
+          .venv-release/bin/python scripts/release/resolve_build_id.py \
+            --app-id "$APPLE_APP_ID" \
+            --version "$VERSION" \
+            --build-number "$BUILD_NUMBER"
+
+      - name: Wait for TestFlight processing
+        if: ${{ !inputs.dry_run }}
+        run: |
+          .venv-release/bin/python scripts/release/wait_for_build_processed.py \
+            --build-id "${{ steps.build-id.outputs.build_id }}"
+
+      - name: Attach build to PublicTesting group
+        if: ${{ !inputs.dry_run }}
+        run: |
+          .venv-release/bin/python scripts/release/attach_build_to_group.py \
+            --build-id "${{ steps.build-id.outputs.build_id }}" \
+            --group-name "PublicTesting" \
+            --bundle-id "${{ vars.BUNDLE_ID }}"
+
+      - name: Submit for Beta App Review
+        if: ${{ !inputs.dry_run }}
+        run: |
+          .venv-release/bin/python scripts/release/submit_beta_app_review.py \
+            --build-id "${{ steps.build-id.outputs.build_id }}"
+
       - name: Delete ephemeral keychain
         if: ${{ always() && !inputs.dry_run }}
         run: scripts/runner/ephemeral_keychain.sh cleanup
