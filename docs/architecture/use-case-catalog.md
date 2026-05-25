@@ -12,7 +12,11 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 
 | Name | Description |
 |---|---|
-| `Hansard` | A single sitting's parsed debate record, keyed by sitting date. |
+| `Hansard` | SwiftData persistence model for a single federal sitting's parsed debate record; adapter detail, not application policy. |
+| `HansardTranscript` | Pure Swift transcript entity for a sitting's debate record, carrying jurisdiction, source, language, sitting metadata, and subject records. |
+| `Jurisdiction` | Jurisdiction discriminator for federal and provincial Hansard transcript sources. |
+| `SubjectOfBusinessRecord` | Pure Swift subject section within a jurisdiction-aware Hansard transcript. |
+| `SpeechMessageRecord` | Pure Swift speaker intervention record with source ID, speaker identity, text, timestamp, and word count. |
 | `SubjectOfBusiness` | A labelled section within a Hansard (e.g., "Oral Questions"). |
 | `SpeechMessage` | One speaker's intervention within a subject, with text, word count, and member reference. |
 | `RecordedVote` | A House of Commons division record with date, bill reference, result, and member ballot. |
