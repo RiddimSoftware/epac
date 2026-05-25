@@ -80,7 +80,11 @@ jobs:
 
       - name: Capture before/after PR evidence
         id: capture
-        uses: RiddimSoftware/evidence@v0
+        # Pin to a SHA past EVI-7 (which wired capture-pr into the action). The
+        # `v0` tag was created before that PR landed, so `@v0` runs the CLI without
+        # --repo / --pr / --plan and fails at argument parsing. Move to `@v0`
+        # again once that tag is fast-forwarded in RiddimSoftware/evidence.
+        uses: RiddimSoftware/evidence@fc65484f400ec8bc0ded78a70fb54ed32f7dfa6d
         with:
           subcommand: capture-pr
           plan: ${{ inputs.plan_path }}
