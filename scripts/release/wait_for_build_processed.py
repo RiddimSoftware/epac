@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 import jwt
@@ -57,6 +58,23 @@ def get_asc_secret() -> dict[str, str]:
         "issuer_id": secret["issuer_id"],
         "private_key": secret_key,
     }
+
+
+def get_asc_credentials() -> tuple[str, str, str]:
+    """Read ASC credentials from environment first, otherwise from Secrets Manager."""
+    key_id = os.getenv("ASC_KEY_ID")
+    issuer_id = os.getenv("ASC_ISSUER_ID")
+    private_key = os.getenv("ASC_PRIVATE_KEY")
+
+    if key_id and issuer_id and private_key:
+        return key_id, issuer_id, private_key
+
+    key_path = os.getenv("ASC_KEY_PATH")
+    if key_id and issuer_id and key_path:
+        return key_id, issuer_id, Path(os.path.expanduser(key_path)).read_text(encoding="utf-8")
+
+    secret = get_asc_secret()
+    return secret["key_id"], secret["issuer_id"], secret["private_key"]
 
 
 def get_asc_token(key_id: str, issuer_id: str, private_key: str) -> str:
@@ -198,8 +216,8 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        secret = get_asc_secret()
-        token = get_asc_token(secret["key_id"], secret["issuer_id"], secret["private_key"])
+        key_id, issuer_id, private_key = get_asc_credentials()
+        token = get_asc_token(key_id, issuer_id, private_key)
         status, payload = wait_for_build_processed(
             args.build_id,
             token,

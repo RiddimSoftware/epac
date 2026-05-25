@@ -5,28 +5,46 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import jwt
 import requests
+
 
 def get_asc_secret():
     env = os.environ.copy()
     env["AWS_PROFILE"] = os.environ.get("AWS_PROFILE", "riddim-agent")
     res = subprocess.run(
         [
-            "aws", "secretsmanager", "get-secret-value", 
-            "--secret-id", "appstore/connect-api", 
-            "--region", "us-east-1", 
-            "--query", "SecretString", 
+            "aws", "secretsmanager", "get-secret-value",
+            "--secret-id", "appstore/connect-api",
+            "--region", "us-east-1",
+            "--query", "SecretString",
             "--output", "text"
-        ], 
-        check=True, 
-        capture_output=True, 
+        ],
+        check=True,
+        capture_output=True,
         text=True,
         env=env
     )
     secret = json.loads(res.stdout)
     return secret["key_id"], secret["issuer_id"], secret.get("key") or secret.get("private_key")
+
+
+def get_asc_credentials():
+    key_id = os.getenv("ASC_KEY_ID")
+    issuer_id = os.getenv("ASC_ISSUER_ID")
+    private_key = os.getenv("ASC_PRIVATE_KEY")
+
+    if key_id and issuer_id and private_key:
+        return key_id, issuer_id, private_key
+
+    key_path = os.getenv("ASC_KEY_PATH")
+    if key_id and issuer_id and key_path:
+        return key_id, issuer_id, Path(os.path.expanduser(key_path)).read_text(encoding="utf-8")
+
+    return get_asc_secret()
+
 
 def get_token(key_id, issuer_id, key):
     now = int(time.time())
@@ -38,6 +56,7 @@ def get_token(key_id, issuer_id, key):
     }
     return jwt.encode(payload, key, algorithm="ES256", headers={"kid": key_id})
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--app-id", required=True)
@@ -45,7 +64,7 @@ def main():
     parser.add_argument("--build-number", required=True)
     args = parser.parse_args()
 
-    key_id, issuer_id, key = get_asc_secret()
+    key_id, issuer_id, key = get_asc_credentials()
     token = get_token(key_id, issuer_id, key)
     headers = {"Authorization": f"Bearer {token}"}
     

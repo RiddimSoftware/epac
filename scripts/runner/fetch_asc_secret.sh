@@ -45,6 +45,7 @@ chmod 600 /tmp/asc_api_key.json
 if [[ -n "${GITHUB_ENV:-}" ]]; then
   echo "ASC_KEY_ID=${KEY_ID}" >> "$GITHUB_ENV"
   echo "ASC_ISSUER_ID=${ISSUER_ID}" >> "$GITHUB_ENV"
+  echo "ASC_KEY_PATH=${P8_PATH}" >> "$GITHUB_ENV"
 fi
 
 echo "fetch_asc_secret: wrote ${P8_PATH} and /tmp/asc_api_key.json"
