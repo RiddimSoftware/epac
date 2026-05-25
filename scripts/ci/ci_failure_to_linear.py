@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import json
 import logging
 import os
+import re
 import sys
 import time
 from typing import Any, Callable
@@ -19,6 +20,11 @@ from urllib.request import Request, urlopen
 LINEAR_GRAPHQL_URL = "https://api.linear.app/graphql"
 PIPELINE_NAME = "ci_failure_to_linear"
 RETRY_DELAYS_SECONDS = (1, 2, 4)
+CI_FAILURE_LABEL = "ci-failure"
+CI_FAILURE_COMMENT_LIMIT = 5
+CI_FAILURE_COMMENT_COUNT_PATTERN = re.compile(
+    r"<!--\s*ci-failure-handler:comment-count:(\d+)\s*-->"
+)
 
 
 class _JSONFormatter(logging.Formatter):
@@ -97,6 +103,17 @@ class LinearIssueRequest:
     priority: int
     state: str
     team_key: str
+    label_names: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class OpenCIFailureIssue:
+    id: str
+    title: str
+    description: str
+    updated_at: str
+    identifier: str | None = None
+    url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -128,6 +145,7 @@ class LinearClient:
         self._transport = transport or self._urlopen_transport
         self._sleep = sleep
         self._team_cache: dict[str, TeamResolution] = {}
+        self._label_cache: dict[tuple[str, str], str] = {}
 
     def create_issue(self, issue: LinearIssueRequest) -> dict[str, Any]:
         team = self.resolve_team(issue.team_key)
@@ -139,6 +157,11 @@ class LinearClient:
         }
         if team.todo_state_id:
             input_payload["stateId"] = team.todo_state_id
+        if issue.label_names:
+            input_payload["labelIds"] = [
+                self.resolve_issue_label_id(issue.team_key, label_name)
+                for label_name in issue.label_names
+            ]
 
         mutation = """
         mutation CreateCIWorkflowFailureIssue($input: IssueCreateInput!) {
@@ -156,6 +179,80 @@ class LinearClient:
         if not payload.get("success"):
             raise LinearAPIError(f"Linear issueCreate did not succeed: {payload!r}")
         return payload.get("issue") or {}
+
+    def find_open_issue(
+        self,
+        *,
+        team_key: str,
+        label_name: str,
+        title: str,
+    ) -> list[OpenCIFailureIssue]:
+        query = """
+        query FindOpenCIFailureIssues($teamKey: String!, $labelName: String!, $title: String!) {
+          issues(
+            filter: {
+              team: { key: { eq: $teamKey } }
+              state: { type: { in: [unstarted, started] } }
+              labels: { name: { eq: $labelName } }
+              title: { eq: $title }
+            }
+            first: 20
+          ) {
+            nodes {
+              id
+              title
+              description
+              updatedAt
+              identifier
+              url
+            }
+          }
+        }
+        """
+        data = self._graphql(query, {"teamKey": team_key, "labelName": label_name, "title": title})
+        nodes = data.get("issues", {}).get("nodes", [])
+        return [
+            OpenCIFailureIssue(
+                id=node["id"],
+                title=node["title"],
+                description=node.get("description") or "",
+                updated_at=node.get("updatedAt") or "",
+                identifier=node.get("identifier"),
+                url=node.get("url"),
+            )
+            for node in nodes
+        ]
+
+    def add_comment(self, issue_id: str, body: str) -> dict[str, Any]:
+        mutation = """
+        mutation CreateCIWorkflowFailureComment($input: CommentCreateInput!) {
+          commentCreate(input: $input) {
+            success
+            comment {
+              id
+              url
+            }
+          }
+        }
+        """
+        data = self._graphql(mutation, {"input": {"issueId": issue_id, "body": body}})
+        payload = data.get("commentCreate") or {}
+        if not payload.get("success"):
+            raise LinearAPIError(f"Linear commentCreate did not succeed: {payload!r}")
+        return payload.get("comment") or {}
+
+    def update_issue_description(self, issue_id: str, description: str) -> None:
+        mutation = """
+        mutation UpdateCIWorkflowFailureIssue($id: String!, $description: String!) {
+          issueUpdate(id: $id, input: { description: $description }) {
+            success
+          }
+        }
+        """
+        data = self._graphql(mutation, {"id": issue_id, "description": description})
+        payload = data.get("issueUpdate") or {}
+        if not payload.get("success"):
+            raise LinearAPIError(f"Linear issueUpdate did not succeed: {payload!r}")
 
     def resolve_team(self, team_key: str) -> TeamResolution:
         if team_key in self._team_cache:
@@ -184,6 +281,35 @@ class LinearClient:
         resolution = TeamResolution(team_id=team["id"], todo_state_id=todo_state_id)
         self._team_cache[team_key] = resolution
         return resolution
+
+    def resolve_issue_label_id(self, team_key: str, label_name: str) -> str:
+        cache_key = (team_key, label_name)
+        if cache_key in self._label_cache:
+            return self._label_cache[cache_key]
+
+        query = """
+        query ResolveIssueLabel($teamKey: String!, $labelName: String!) {
+          issueLabels(
+            filter: {
+              team: { key: { eq: $teamKey } }
+              name: { eq: $labelName }
+            }
+            first: 10
+          ) {
+            nodes {
+              id
+              name
+            }
+          }
+        }
+        """
+        data = self._graphql(query, {"teamKey": team_key, "labelName": label_name})
+        nodes = data.get("issueLabels", {}).get("nodes", [])
+        if not nodes:
+            raise LinearAPIError(f"Linear label not found for team {team_key}: {label_name}")
+        label_id = nodes[0]["id"]
+        self._label_cache[cache_key] = label_id
+        return label_id
 
     def _graphql(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
         payload = {"query": query, "variables": variables}
@@ -264,15 +390,103 @@ def report_ci_workflow_outcome(
     if outcome.conclusion != "failure":
         raise ValueError(f"Unsupported workflow conclusion: {outcome.conclusion}")
 
+    title = ci_failure_issue_title(outcome)
+    matching_issues = linear_client.find_open_issue(
+        team_key=team_key,
+        label_name=CI_FAILURE_LABEL,
+        title=title,
+    )
+    if matching_issues:
+        issue = _most_recently_updated_issue(matching_issues)
+        if len(matching_issues) > 1:
+            logger.warning(
+                "multiple open CI failure issues matched; commenting on most recently updated",
+                extra={
+                    "title": title,
+                    "match_count": len(matching_issues),
+                    "selected_issue_id": issue.id,
+                },
+            )
+
+        comment_count = ci_failure_comment_count(issue.description)
+        if comment_count >= CI_FAILURE_COMMENT_LIMIT:
+            logger.warning(
+                "CI failure comment cap reached; leaving existing issue untouched",
+                extra={
+                    "issue_id": issue.id,
+                    "title": title,
+                    "comment_count": comment_count,
+                    "run_url": outcome.run_url,
+                    "head_sha": outcome.head_sha[:8],
+                },
+            )
+            return None
+
+        next_count = comment_count + 1
+        linear_client.add_comment(issue.id, ci_failure_comment_body(outcome, next_count))
+        linear_client.update_issue_description(
+            issue.id,
+            description_with_ci_failure_comment_count(issue.description, next_count),
+        )
+        return None
+
     return linear_client.create_issue(
         LinearIssueRequest(
-            title=f"CI: {outcome.workflow_name} failed on {outcome.branch}",
-            description=f"Failed run: {outcome.run_url}",
+            title=title,
+            description=initial_ci_failure_description(outcome),
             priority=1,
             state="Todo",
             team_key=team_key,
+            label_names=(CI_FAILURE_LABEL,),
         )
     )
+
+
+def ci_failure_issue_title(outcome: CIWorkflowOutcome) -> str:
+    return f"[CI] {outcome.workflow_name} failing on {outcome.branch}"
+
+
+def initial_ci_failure_description(outcome: CIWorkflowOutcome) -> str:
+    return "\n".join(
+        [
+            "<!-- ci-failure-handler:comment-count:0 -->",
+            "",
+            f"Failed run: {outcome.run_url}",
+            f"Head SHA: `{outcome.head_sha[:8]}`",
+        ]
+    )
+
+
+def ci_failure_comment_body(outcome: CIWorkflowOutcome, attempt_count: int) -> str:
+    return "\n".join(
+        [
+            "Additional failure detected for this workflow.",
+            "",
+            f"- Run: {outcome.run_url}",
+            f"- Head SHA: `{outcome.head_sha[:8]}`",
+            f"- Attempt count: {attempt_count}",
+        ]
+    )
+
+
+def ci_failure_comment_count(description: str) -> int:
+    match = CI_FAILURE_COMMENT_COUNT_PATTERN.search(description)
+    if not match:
+        return 0
+    return int(match.group(1))
+
+
+def description_with_ci_failure_comment_count(description: str, count: int) -> str:
+    marker = f"<!-- ci-failure-handler:comment-count:{count} -->"
+    if CI_FAILURE_COMMENT_COUNT_PATTERN.search(description):
+        return CI_FAILURE_COMMENT_COUNT_PATTERN.sub(marker, description, count=1)
+    if not description.strip():
+        return marker
+    return f"{description.rstrip()}\n\n{marker}"
+
+
+def _most_recently_updated_issue(issues: list[OpenCIFailureIssue]) -> OpenCIFailureIssue:
+    return max(issues, key=lambda issue: issue.updated_at)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
