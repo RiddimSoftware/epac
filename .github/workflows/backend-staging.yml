@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
-      - 'infra/terraform/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
       - 'backend/manifest/deployment-services.json'
@@ -16,91 +15,12 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  actions: read
   contents: read
   id-token: write
-  pull-requests: read
 
 jobs:
-  infra-apply:
-    name: Apply staging Terraform
-    runs-on: ubuntu-latest
-    outputs:
-      used_reviewed_plan: ${{ steps.reviewed-plan.outputs.found }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.15.3"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Terraform init
-        working-directory: infra/terraform/staging
-        run: terraform init -input=false -no-color
-
-      - name: Download reviewed PR plan when available
-        id: reviewed-plan
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          echo "found=false" >> "$GITHUB_OUTPUT"
-
-          pr_number=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
-            --jq '.[0].number // empty' || true)
-          if [ -z "$pr_number" ]; then
-            echo "No merged PR found for ${GITHUB_SHA}; applying a fresh plan."
-            exit 0
-          fi
-
-          head_sha=$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.head.sha // empty')
-          if [ -z "$head_sha" ]; then
-            echo "No head SHA found for PR #${pr_number}; applying a fresh plan."
-            exit 0
-          fi
-
-          run_id=$(gh api \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/infra-validate.yml/runs?event=pull_request&head_sha=${head_sha}&status=success&per_page=20" \
-            --jq '.workflow_runs[] | select(.conclusion == "success") | .id' \
-            | head -n 1)
-          if [ -z "$run_id" ]; then
-            echo "No successful infra-validate run found for PR #${pr_number}; applying a fresh plan."
-            exit 0
-          fi
-
-          artifact_name="epac-tfplan-staging-${head_sha}"
-          if gh run download "$run_id" --name "$artifact_name" --dir infra/terraform/staging; then
-            echo "Downloaded reviewed Terraform plan artifact ${artifact_name} from run ${run_id}."
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Reviewed Terraform plan artifact ${artifact_name} was not available; applying a fresh plan."
-          fi
-
-      - name: Terraform apply
-        working-directory: infra/terraform/staging
-        run: |
-          set -euo pipefail
-          if [ "${{ steps.reviewed-plan.outputs.found }}" = "true" ] && [ -f tfplan ]; then
-            echo "Applying reviewed Terraform plan artifact."
-            terraform apply -input=false -auto-approve -no-color tfplan
-          else
-            echo "Generating and applying a fresh Terraform plan."
-            terraform plan -input=false -no-color -out=tfplan 2>&1 | tee tfplan.txt
-            terraform apply -input=false -auto-approve -no-color tfplan
-          fi
-
   prepare:
     name: Resolve backend service manifest
-    needs: infra-apply
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.resolve.outputs.services }}
