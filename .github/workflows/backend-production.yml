@@ -34,9 +34,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Bootstrap production Terraform backend
-        run: bash infra/terraform/bootstrap.sh production
-
       - name: Terraform init
         working-directory: infra/terraform/production
         run: terraform init -input=false -no-color

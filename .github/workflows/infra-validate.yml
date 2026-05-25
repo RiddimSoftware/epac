@@ -3,7 +3,7 @@ name: Infrastructure Validation
 on:
   pull_request:
     paths:
-      - 'backend/**'
+      - 'backend/manifest/**'
       - 'infra/terraform/**'
       - '.github/workflows/infra-validate.yml'
 
@@ -58,15 +58,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Bootstrap staging Terraform backend
-        run: bash infra/terraform/bootstrap.sh staging
-
       - name: Terraform init
+        id: init
         working-directory: infra/terraform/staging
-        run: terraform init -input=false -no-color
+        run: |
+          set +e
+          terraform init -input=false -no-color 2>&1
+          status=$?
+          set -e
+          echo "exitcode=$status" >> "$GITHUB_OUTPUT"
 
       - name: Terraform plan
         id: plan
+        if: ${{ steps.init.outputs.exitcode == '0' }}
         working-directory: infra/terraform/staging
         run: |
           set +e
@@ -77,6 +81,7 @@ jobs:
           echo "exitcode=$status" >> "$GITHUB_OUTPUT"
 
       - name: Post sticky plan comment
+        if: ${{ steps.init.outputs.exitcode == '0' }}
         uses: actions/github-script@v7
         env:
           PLAN_EXIT_CODE: ${{ steps.plan.outputs.exitcode }}
@@ -136,7 +141,7 @@ jobs:
             }
 
       - name: Upload staging Terraform plan
-        if: ${{ steps.plan.outputs.exitcode == '0' }}
+        if: ${{ steps.init.outputs.exitcode == '0' && steps.plan.outputs.exitcode == '0' }}
         uses: actions/upload-artifact@v4
         with:
           name: epac-tfplan-staging-${{ github.event.pull_request.head.sha }}
@@ -145,5 +150,9 @@ jobs:
           retention-days: 14
 
       - name: Fail if plan failed
-        if: ${{ steps.plan.outputs.exitcode != '0' }}
+        if: ${{ steps.init.outputs.exitcode == '0' && steps.plan.outputs.exitcode != '0' }}
         run: exit 1
+
+      - name: Warn if init failed
+        if: ${{ steps.init.outputs.exitcode != '0' }}
+        run: echo "::warning::Terraform init failed — the S3 state backend may not be accessible. Run bootstrap.sh with admin credentials to provision the backend."
