@@ -24,14 +24,35 @@ def outcome(conclusion: str = "failure") -> ci_failure_to_linear.CIWorkflowOutco
     )
 
 
+class FakeGitHubPRClient:
+    def __init__(self, pr: ci_failure_to_linear.PRInfo | None = None, error: bool = False) -> None:
+        self._pr = pr
+        self._error = error
+        self.calls: list[tuple[str, str]] = []
+
+    def find_pr_for_commit(self, repo: str, sha: str) -> ci_failure_to_linear.PRInfo | None:
+        self.calls.append((repo, sha))
+        if self._error:
+            return None
+        return self._pr
+
+
 class FakeLinearClient:
-    def __init__(self, existing: list[ci_failure_to_linear.OpenCIFailureIssue] | None = None) -> None:
+    def __init__(
+        self,
+        existing: list[ci_failure_to_linear.OpenCIFailureIssue] | None = None,
+        project_ids: dict[str, str | None] | None = None,
+        project_lookup_error: bool = False,
+    ) -> None:
         self.existing = existing or []
+        self._project_ids = project_ids or {}
+        self._project_lookup_error = project_lookup_error
         self.created: list[ci_failure_to_linear.LinearIssueRequest] = []
         self.find_requests: list[dict[str, str]] = []
         self.comments: list[tuple[str, str]] = []
         self.description_updates: list[tuple[str, str]] = []
         self.transitions: list[tuple[str, str]] = []
+        self.project_id_lookups: list[str] = []
 
     def resolve_team(self, team_key: str) -> ci_failure_to_linear.TeamResolution:
         return ci_failure_to_linear.TeamResolution(
@@ -63,6 +84,12 @@ class FakeLinearClient:
 
     def update_issue_description(self, issue_id: str, description: str) -> None:
         self.description_updates.append((issue_id, description))
+
+    def get_issue_project_id(self, identifier: str) -> str | None:
+        self.project_id_lookups.append(identifier)
+        if self._project_lookup_error:
+            raise ci_failure_to_linear.LinearAPIError("Linear 500")
+        return self._project_ids.get(identifier)
 
 
 def test_no_existing_issue_creates_expected_linear_issue_request() -> None:
@@ -433,6 +460,170 @@ def test_team_key_lookup_is_cached_for_run() -> None:
         "stateId": "state-todo",
         "labelIds": ["label-ci-failure"],
     }
+
+
+def test_extract_linear_id_matches_epac_prefix() -> None:
+    assert ci_failure_to_linear.extract_linear_id("[EPAC-1993]: reduce service complexity (#550)") == "EPAC-1993"
+
+
+def test_extract_linear_id_returns_first_match() -> None:
+    assert ci_failure_to_linear.extract_linear_id("[EPAC-100]: foo EPAC-200") == "EPAC-100"
+
+
+def test_extract_linear_id_no_match() -> None:
+    assert ci_failure_to_linear.extract_linear_id("some random PR title") is None
+
+
+def test_extract_linear_id_ignores_non_epac_prefix() -> None:
+    assert ci_failure_to_linear.extract_linear_id("[AUTO-123]: cross-team work") is None
+
+
+def test_extract_linear_id_word_boundary() -> None:
+    assert ci_failure_to_linear.extract_linear_id("XEPAC-123 foo") is None
+
+
+def test_pr_found_linear_id_matches_project_inherits() -> None:
+    pr = ci_failure_to_linear.PRInfo(
+        number=550,
+        title="[EPAC-1993]: reduce service complexity (#550)",
+        html_url="https://github.com/RiddimSoftware/epac/pull/550",
+    )
+    github_client = FakeGitHubPRClient(pr=pr)
+    linear_client = FakeLinearClient(project_ids={"EPAC-1993": "project-abc"})
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    assert len(linear_client.created) == 1
+    req = linear_client.created[0]
+    assert req.project_id == "project-abc"
+    assert "Triggered by [PR #550]" in req.description
+    assert "EPAC-1993" in req.description
+    assert "linear://linear.app/riddimsoftware/issue/EPAC-1993" in req.description
+
+
+def test_pr_found_linear_id_matches_issue_unparented() -> None:
+    pr = ci_failure_to_linear.PRInfo(
+        number=550,
+        title="[EPAC-1993]: reduce service complexity",
+        html_url="https://github.com/RiddimSoftware/epac/pull/550",
+    )
+    github_client = FakeGitHubPRClient(pr=pr)
+    linear_client = FakeLinearClient(project_ids={"EPAC-1993": None})
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by [PR #550]" in req.description
+    assert "EPAC-1993" in req.description
+
+
+def test_pr_found_no_linear_id_match_no_footer() -> None:
+    pr = ci_failure_to_linear.PRInfo(
+        number=600,
+        title="chore: update deps",
+        html_url="https://github.com/RiddimSoftware/epac/pull/600",
+    )
+    github_client = FakeGitHubPRClient(pr=pr)
+    linear_client = FakeLinearClient()
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by" not in req.description
+    assert linear_client.project_id_lookups == []
+
+
+def test_no_pr_for_sha_no_footer() -> None:
+    github_client = FakeGitHubPRClient(pr=None)
+    linear_client = FakeLinearClient()
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by" not in req.description
+
+
+def test_github_api_failure_graceful_noop() -> None:
+    github_client = FakeGitHubPRClient(error=True)
+    linear_client = FakeLinearClient()
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by" not in req.description
+
+
+def test_linear_project_lookup_failure_graceful_noop() -> None:
+    pr = ci_failure_to_linear.PRInfo(
+        number=550,
+        title="[EPAC-1993]: reduce service complexity",
+        html_url="https://github.com/RiddimSoftware/epac/pull/550",
+    )
+    github_client = FakeGitHubPRClient(pr=pr)
+    linear_client = FakeLinearClient(project_lookup_error=True)
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=github_client,  # type: ignore[arg-type]
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by [PR #550]" in req.description
+    assert "EPAC-1993" in req.description
+
+
+def test_no_github_client_creates_issue_without_project() -> None:
+    linear_client = FakeLinearClient()
+
+    created = ci_failure_to_linear.report_ci_workflow_outcome(
+        outcome(),
+        linear_client,  # type: ignore[arg-type]
+        team_key="EPAC",
+        github_client=None,
+    )
+
+    assert created is not None
+    req = linear_client.created[0]
+    assert req.project_id is None
+    assert "Triggered by" not in req.description
 
 
 def test_find_open_issue_uses_exact_linear_graphql_filter() -> None:

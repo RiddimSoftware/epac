@@ -97,6 +97,20 @@ class CIWorkflowOutcome:
 
 
 @dataclass(frozen=True)
+class PRInfo:
+    number: int
+    title: str
+    html_url: str
+
+
+@dataclass(frozen=True)
+class OriginatingContext:
+    pr: PRInfo
+    linear_id: str | None = None
+    project_id: str | None = None
+
+
+@dataclass(frozen=True)
 class LinearIssueRequest:
     title: str
     description: str
@@ -104,6 +118,7 @@ class LinearIssueRequest:
     state: str
     team_key: str
     label_names: tuple[str, ...] = ()
+    project_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -121,6 +136,53 @@ class TeamResolution:
     team_id: str
     todo_state_id: str | None
     done_state_id: str | None
+
+
+class GitHubPRClient:
+    def __init__(self, token: str, *, base_url: str = "https://api.github.com") -> None:
+        self._token = token
+        self._base_url = base_url
+
+    def find_pr_for_commit(self, repo: str, sha: str) -> PRInfo | None:
+        url = f"{self._base_url}/repos/{repo}/commits/{sha}/pulls"
+        request = Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {self._token}",
+                "Accept": "application/vnd.github+json",
+            },
+        )
+        try:
+            with urlopen(request, timeout=30) as response:
+                pulls = json.loads(response.read().decode("utf-8"))
+        except (HTTPError, URLError, TimeoutError, OSError) as exc:
+            logger.warning(
+                "GitHub PR lookup failed",
+                extra={"error": str(exc), "sha": sha[:8], "repo": repo},
+            )
+            return None
+
+        if not pulls:
+            return None
+
+        for pr in pulls:
+            if pr.get("merge_commit_sha") == sha:
+                return PRInfo(
+                    number=pr["number"],
+                    title=pr["title"],
+                    html_url=pr["html_url"],
+                )
+
+        return PRInfo(
+            number=pulls[0]["number"],
+            title=pulls[0]["title"],
+            html_url=pulls[0]["html_url"],
+        )
+
+
+def extract_linear_id(pr_title: str) -> str | None:
+    match = re.search(r"\bEPAC-\d+\b", pr_title)
+    return match.group(0) if match else None
 
 
 class LinearAPIError(RuntimeError):
@@ -148,6 +210,25 @@ class LinearClient:
         self._team_cache: dict[str, TeamResolution] = {}
         self._label_cache: dict[tuple[str, str], str] = {}
 
+    def get_issue_project_id(self, identifier: str) -> str | None:
+        query = """
+        query GetIssueProjectId($id: String!) {
+          issue(id: $id) {
+            project {
+              id
+            }
+          }
+        }
+        """
+        data = self._graphql(query, {"id": identifier})
+        issue = data.get("issue")
+        if not issue:
+            return None
+        project = issue.get("project")
+        if not project:
+            return None
+        return project.get("id")
+
     def create_issue(self, issue: LinearIssueRequest) -> dict[str, Any]:
         team = self.resolve_team(issue.team_key)
         input_payload: dict[str, Any] = {
@@ -158,6 +239,8 @@ class LinearClient:
         }
         if team.todo_state_id:
             input_payload["stateId"] = team.todo_state_id
+        if issue.project_id:
+            input_payload["projectId"] = issue.project_id
         if issue.label_names:
             input_payload["labelIds"] = [
                 self.resolve_issue_label_id(issue.team_key, label_name)
@@ -386,11 +469,40 @@ class LinearClient:
             return exc.code, exc.read().decode("utf-8", errors="replace")
 
 
+def resolve_originating_context(
+    outcome: CIWorkflowOutcome,
+    github_client: GitHubPRClient | None,
+    linear_client: LinearClient,
+) -> OriginatingContext | None:
+    if not github_client:
+        return None
+
+    pr = github_client.find_pr_for_commit(outcome.repo, outcome.head_sha)
+    if not pr:
+        return None
+
+    linear_id = extract_linear_id(pr.title)
+    if not linear_id:
+        return OriginatingContext(pr=pr)
+
+    try:
+        project_id = linear_client.get_issue_project_id(linear_id)
+    except LinearAPIError as exc:
+        logger.warning(
+            "Linear issue lookup failed for project inheritance",
+            extra={"linear_id": linear_id, "error": str(exc)},
+        )
+        project_id = None
+
+    return OriginatingContext(pr=pr, linear_id=linear_id, project_id=project_id)
+
+
 def report_ci_workflow_outcome(
     outcome: CIWorkflowOutcome,
     linear_client: LinearClient,
     *,
     team_key: str,
+    github_client: GitHubPRClient | None = None,
 ) -> dict[str, Any] | None:
     if outcome.conclusion == "success":
         title = ci_failure_issue_title(outcome)
@@ -482,14 +594,17 @@ def report_ci_workflow_outcome(
         )
         return None
 
+    originating = resolve_originating_context(outcome, github_client, linear_client)
+
     return linear_client.create_issue(
         LinearIssueRequest(
             title=title,
-            description=initial_ci_failure_description(outcome),
+            description=initial_ci_failure_description(outcome, originating),
             priority=1,
             state="Todo",
             team_key=team_key,
             label_names=(CI_FAILURE_LABEL,),
+            project_id=originating.project_id if originating else None,
         )
     )
 
@@ -498,15 +613,24 @@ def ci_failure_issue_title(outcome: CIWorkflowOutcome) -> str:
     return f"[CI] {outcome.workflow_name} failing on {outcome.branch}"
 
 
-def initial_ci_failure_description(outcome: CIWorkflowOutcome) -> str:
-    return "\n".join(
-        [
-            "<!-- ci-failure-handler:comment-count:0 -->",
-            "",
-            f"Failed run: {outcome.run_url}",
-            f"Head SHA: `{outcome.head_sha[:8]}`",
-        ]
-    )
+def initial_ci_failure_description(
+    outcome: CIWorkflowOutcome,
+    originating: OriginatingContext | None = None,
+) -> str:
+    lines = [
+        "<!-- ci-failure-handler:comment-count:0 -->",
+        "",
+        f"Failed run: {outcome.run_url}",
+        f"Head SHA: `{outcome.head_sha[:8]}`",
+    ]
+    if originating and originating.linear_id:
+        lines.append("")
+        lines.append(
+            f"Triggered by [PR #{originating.pr.number}]({originating.pr.html_url})"
+            f" ([{originating.linear_id}]"
+            f"(linear://linear.app/riddimsoftware/issue/{originating.linear_id}))"
+        )
+    return "\n".join(lines)
 
 
 def ci_failure_comment_body(outcome: CIWorkflowOutcome, attempt_count: int) -> str:
@@ -637,11 +761,15 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("LINEAR_API_TOKEN is required")
         return 1
 
+    github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+    github_client = GitHubPRClient(github_token) if github_token else None
+
     try:
         issue = report_ci_workflow_outcome(
             outcome,
             LinearClient(api_token),
             team_key=args.team_key,
+            github_client=github_client,
         )
     except (LinearAPIError, ValueError) as exc:
         logger.error("failed to report workflow outcome", extra={"error": str(exc)})

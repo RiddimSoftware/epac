@@ -37,6 +37,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   create-linear-issue:
@@ -63,6 +64,7 @@ jobs:
           BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 scripts/ci/ci_failure_to_linear.py \
             --workflow-name "${WORKFLOW_NAME}" \
