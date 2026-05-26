@@ -280,6 +280,21 @@
         "staging": {"database": false, "artifact": true},
         "production": {"database": false, "artifact": true}
       }
+    },
+    {
+      "name": "telemetry",
+      "deploy": {"staging": true, "production": true},
+      "http": {
+        "payload_format_version": "2.0",
+        "routes": {
+          "staging": [{"method": "POST", "path": "/api/v1/telemetry"}],
+          "production": [{"method": "POST", "path": "/api/v1/telemetry"}]
+        }
+      },
+      "sync": {
+        "staging": {"database": false, "artifact": false},
+        "production": {"database": false, "artifact": false}
+      }
     }
   ]
 }

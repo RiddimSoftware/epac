@@ -29,6 +29,7 @@ use (
 	./riding-boundary
 	./sittings
 	./sittings-publisher
+	./telemetry
 	./toronto-council
 	./unloader
 	./vancouver-council

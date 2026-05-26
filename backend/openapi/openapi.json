@@ -16,6 +16,7 @@
     { "name": "Members", "description": "MP metadata, votes, and speech feeds." },
     { "name": "Bills", "description": "Bill list and status metadata." },
     { "name": "Fiscal", "description": "Government spending, estimates, and budgetary records." },
+    { "name": "Telemetry", "description": "Client telemetry ingestion." },
     { "name": "Operations", "description": "Health and API documentation endpoints." }
   ],
   "paths": {
@@ -662,6 +663,60 @@
         }
       }
     },
+    "/api/v1/telemetry": {
+      "post": {
+        "tags": ["Telemetry"],
+        "summary": "Ingest batched client telemetry events",
+        "description": "Accepts a batch of telemetry events from iOS clients and emits CloudWatch EMF lines. No PII should be included in message or attributes fields.",
+        "operationId": "postTelemetry",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TelemetryRequest" },
+              "examples": {
+                "batch": {
+                  "value": {
+                    "device_id": "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+                    "app_version": "1.2.0",
+                    "os_version": "18.1",
+                    "events": [
+                      {
+                        "type": "event",
+                        "name": "app_launch",
+                        "ts": "2026-05-26T12:00:00Z"
+                      },
+                      {
+                        "type": "span",
+                        "name": "api_call",
+                        "operation": "GET /api/v1/sittings",
+                        "duration_ms": 150,
+                        "ts": "2026-05-26T12:00:01Z"
+                      },
+                      {
+                        "type": "error",
+                        "name": "network_failure",
+                        "message": "connection timeout",
+                        "ts": "2026-05-26T12:00:02Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Events accepted"
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "405": { "$ref": "#/components/responses/Error" },
+          "415": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["Operations"],
@@ -1131,6 +1186,38 @@
           "vote_description": { "type": "string", "example": "Operating expenditures" },
           "authorities": { "type": "number", "example": 1234567.89 },
           "source": { "type": "string", "example": "GC InfoBase" }
+        }
+      },
+      "TelemetryRequest": {
+        "type": "object",
+        "required": ["device_id", "events"],
+        "properties": {
+          "device_id": { "type": "string", "maxLength": 64, "description": "UUID identifying the device." },
+          "app_version": { "type": "string", "maxLength": 32 },
+          "os_version": { "type": "string", "maxLength": 32 },
+          "events": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TelemetryEvent" },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        }
+      },
+      "TelemetryEvent": {
+        "type": "object",
+        "required": ["type", "name", "ts"],
+        "properties": {
+          "type": { "type": "string", "enum": ["error", "event", "span"] },
+          "name": { "type": "string", "maxLength": 128 },
+          "operation": { "type": "string", "maxLength": 64 },
+          "message": { "type": "string", "maxLength": 512 },
+          "duration_ms": { "type": "integer", "minimum": 0, "maximum": 600000 },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "maxLength": 256 },
+            "maxProperties": 16
+          },
+          "ts": { "type": "string", "format": "date-time" }
         }
       }
     }
