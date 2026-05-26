@@ -220,7 +220,7 @@ class SittingCalendarViewModel {
 			replaceSittingDates(for: year, with: cachedDates)
 		} catch {
 			Log.debug("Failed to load cached SittingCalendar count")
-			SentrySDK.capture(error: error)
+			Telemetry.recordError(error)
 			loadFailed = true
 		}
 	}
