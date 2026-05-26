@@ -74,6 +74,8 @@ actor Fetch: ObservableObject {
 		static let stableVoteSessionMultiplier = 10_000
 		static let sessionComponentCount = 2
 		static let voteURLSegmentCount = 3
+		static let ontarioDefaultSession = 1
+		static let missingSittingDateErrorCode = 8
 	}
 
 	private enum VotingEndpoint {
@@ -190,6 +192,15 @@ actor Fetch: ObservableObject {
 
 	func ingestSaskatchewanVotes(document: String, sittingDate: Date) throws {
 		let parser = SaskatchewanVotesParser()
+		let votes = try parser.parse(document: document, sittingDate: sittingDate)
+		for vote in votes {
+			modelContext.insert(vote)
+		}
+		try modelContext.save()
+	}
+
+	func ingestOntarioVotes(document: String, sittingDate: Date) throws {
+		let parser = OntarioVotesParser()
 		let votes = try parser.parse(document: document, sittingDate: sittingDate)
 		for vote in votes {
 			modelContext.insert(vote)
@@ -957,19 +968,42 @@ actor Fetch: ObservableObject {
 		try? modelContext.save()
 	}
 
-	func downloadVotingRecords(parliament: Int = 44) async throws {
-		if try modelContext.fetchCount(FetchDescriptor<RecordedVote>()) > 0 {
-			writeLatestVoteSummaryForWidgets()
+	func downloadVotingRecords(
+		jurisdiction: Jurisdiction = .federal,
+		parliament: Int = 44,
+		session: Int = Constants.ontarioDefaultSession,
+		sittingDate: Date? = nil
+	) async throws {
+		guard try shouldDownloadVotingRecords(jurisdiction: jurisdiction) else { return }
+		if jurisdiction == .ontario {
+			guard let sittingDate else {
+				throw NSError(domain: "OntarioVotes", code: Constants.missingSittingDateErrorCode)
+			}
+			try await downloadOntarioVotingRecords(parliament: parliament, session: session, sittingDate: sittingDate)
 			return
 		}
+		guard jurisdiction == .federal else {
+			throw HansardAdapterError.unsupportedJurisdiction(jurisdiction)
+		}
+		try await downloadFederalVotingRecords(parliament: parliament)
+	}
 
+	private func shouldDownloadVotingRecords(jurisdiction: Jurisdiction) throws -> Bool {
+		guard try recordedVoteCount(jurisdiction: jurisdiction) > 0 else { return true }
+		if jurisdiction == .federal {
+			writeLatestVoteSummaryForWidgets()
+		}
+		return false
+	}
+
+	private func downloadFederalVotingRecords(parliament: Int) async throws {
 		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
 		do {
 			do {
 				try await fetchVotingRecords(parliament: parliament, from: .openCommons)
 			} catch {
 				if shouldFallbackVotes(error: error),
-				   try modelContext.fetchCount(FetchDescriptor<RecordedVote>()) == 0 {
+				   try recordedVoteCount(jurisdiction: .federal) == 0 {
 					Log.debug("downloadVotingRecords: falling back to openparliament API due legacy host error: \(error.localizedDescription)")
 					try await fetchVotingRecords(parliament: parliament, from: .openParliament)
 				} else {
@@ -984,8 +1018,31 @@ actor Fetch: ObservableObject {
 		}
 	}
 
-	private func writeLatestVoteSummaryForWidgets() {
+	private func recordedVoteCount(jurisdiction: Jurisdiction) throws -> Int {
+		let jurisdictionValue = jurisdiction.rawValue
+		return try modelContext.fetchCount(FetchDescriptor<RecordedVote>(
+			predicate: #Predicate { $0.jurisdiction == jurisdictionValue }
+		))
+	}
+
+	private func downloadOntarioVotingRecords(parliament: Int, session: Int, sittingDate: Date) async throws {
+		let datePath = DateUtils.getCSVStringFromDate(sittingDate)
+		let path = "en/legislative-business/house-documents/parliament-\(parliament)/session-\(session)/\(datePath)/votes-proceedings"
+		guard let url = URL(string: path, relativeTo: URL(string: "https://www.ola.org")) else {
+			throw NSError(domain: "OntarioVotes", code: Constants.urlBuildErrorCode)
+		}
+		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+		let (data, _) = try await NetworkService.shared.data(for: request)
+		guard let document = String(data: data, encoding: .utf8) else {
+			throw NSError(domain: "OntarioVotes", code: Constants.invalidUTF8ErrorCode)
+		}
+		try ingestOntarioVotes(document: document, sittingDate: sittingDate)
+	}
+
+	private func writeLatestVoteSummaryForWidgets(jurisdiction: Jurisdiction = .federal) {
+		let jurisdictionValue = jurisdiction.rawValue
 		let descriptor = FetchDescriptor<RecordedVote>(
+			predicate: #Predicate { $0.jurisdiction == jurisdictionValue },
 			sortBy: [SortDescriptor(\RecordedVote.date, order: .reverse)]
 		)
 		guard let vote = try? modelContext.fetch(descriptor).first else { return }
