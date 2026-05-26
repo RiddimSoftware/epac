@@ -107,6 +107,45 @@ struct RuntimeDataPathTests {
         })
     }
 
+    @Test func fetchDownloadsOntarioMembersFromRosterHTML() async throws {
+        URLProtocol.registerClass(MockURLProtocol.self)
+        defer { URLProtocol.unregisterClass(MockURLProtocol.self) }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        MockURLProtocol.requestHandler = { request in
+            let url = try #require(request.url)
+            switch url.absoluteString {
+            case "https://www.ola.org/en/members/current":
+                return (
+                    HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    try Data(contentsOf: Self.ontarioMembersRosterFixtureURL())
+                )
+            case "https://www.ola.org/en/members/current/contact-information/constituency":
+                return (
+                    HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    try Data(contentsOf: Self.ontarioMembersContactFixtureURL())
+                )
+            default:
+                Issue.record("Unexpected URL: \(url.absoluteString)")
+                throw URLError(.unsupportedURL)
+            }
+        }
+
+        let container = try makeContainer()
+        let fetch = Fetch(modelContainer: container)
+
+        try await fetch.downloadMembers(jurisdiction: .ontario)
+
+        let members = try container.mainContext.fetch(FetchDescriptor<ParliamentMember>())
+        #expect(members.count == 123)
+        #expect(members.contains {
+            $0.name == "Teresa J. Armstrong" && $0.jurisdiction == .ontario && $0.party == .newdemocratic
+        })
+        #expect(members.contains {
+            $0.name == "Hon. Doug Ford" && $0.jurisdiction == .ontario && $0.party == .conservative
+        })
+    }
+
     @Test func billsServiceUsesLEGISinfoEndpoint() async throws {
         URLProtocol.registerClass(MockURLProtocol.self)
         defer { URLProtocol.unregisterClass(MockURLProtocol.self) }
@@ -176,6 +215,20 @@ struct RuntimeDataPathTests {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .appendingPathComponent("Fixtures/Hansard/Saskatchewan/Members/mla-contact-information.html")
+    }
+
+    private nonisolated static func ontarioMembersRosterFixtureURL() -> URL {
+        ontarioMembersFixtureDirectory().appendingPathComponent("current.html")
+    }
+
+    private nonisolated static func ontarioMembersContactFixtureURL() -> URL {
+        ontarioMembersFixtureDirectory().appendingPathComponent("constituency-contact.html")
+    }
+
+    private nonisolated static func ontarioMembersFixtureDirectory() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/Hansard/Ontario/Members")
     }
 }
 
