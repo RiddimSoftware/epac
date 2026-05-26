@@ -11,12 +11,6 @@ import SwiftUI
 import UIKit
 
 private enum AppearanceConstants {
-	static let navigationTitleFontSize: CGFloat = 17
-	static let messageFontSize: CGFloat = 17
-	static let cellTitleFontSize: CGFloat = 16
-	static let cellSubtitleFontSize: CGFloat = 12
-	static let messageSpeakerNameFontSize: CGFloat = 14
-	static let messageRidingNameFontSize: CGFloat = 14
 	static let rgbMinimumComponent = 0
 	static let rgbMaximumComponent = 255
 	static let rgbDivisor: CGFloat = 255
@@ -24,26 +18,6 @@ private enum AppearanceConstants {
 	static let redComponentShift = 16
 	static let greenComponentShift = 8
 	static let rgbComponentMask = 0xFF
-}
-
-class Appearance {
-	@MainActor
-	class func setup() {
-		UINavigationBar.appearance().titleTextAttributes = [
-			.font: UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.navigationTitleFontSize)!
-		]
-		UINavigationBar.appearance().tintColor = UIColor.black
-	}
-}
-
-extension Font {
-	static let messageFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.messageFontSize)!
-	static let cellTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.cellTitleFontSize)!
-	static let cellSubtitleFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.cellSubtitleFontSize)!
-	static let cellBoldSubTitleFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.cellSubtitleFontSize)!
-	static let messageSpeakerNameFont: UIFont = UIFont(name: "CooperHewitt-Semibold", size: AppearanceConstants.messageSpeakerNameFontSize)!
-	static let messageRidingNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.messageRidingNameFontSize)!
-	static let messagePartyNameFont: UIFont = UIFont(name: "CooperHewitt-Book", size: AppearanceConstants.cellSubtitleFontSize)!
 }
 
 extension View {
