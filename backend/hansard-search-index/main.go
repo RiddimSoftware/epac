@@ -48,7 +48,7 @@ func HandleRequest(ctx context.Context) error {
 		ourcommonsadapter.WithLogger(logger),
 	)
 	parser := ourcommonsadapter.NewParser(logger)
-	builder := sqlitefts5.NewBuilder(sqlitefts5.DefaultPath, sqlitefts5.SystemClock{})
+	builder := sqlitefts5.NewBuilder(sqlitefts5.DefaultPath, sqlitefts5.SystemClock{}, logger)
 
 	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {

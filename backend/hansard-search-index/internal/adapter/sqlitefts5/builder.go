@@ -29,19 +29,32 @@ type SystemClock struct{}
 
 func (SystemClock) Now() time.Time { return time.Now().UTC() }
 
-type Builder struct {
-	path  string
-	clock Clock
+// Logger is a minimal interface for structured warning output.
+type Logger interface {
+	Warn(event string, fields map[string]any)
 }
 
-func NewBuilder(path string, clock Clock) *Builder {
+type discardLogger struct{}
+
+func (discardLogger) Warn(string, map[string]any) {}
+
+type Builder struct {
+	path   string
+	clock  Clock
+	logger Logger
+}
+
+func NewBuilder(path string, clock Clock, logger Logger) *Builder {
 	if strings.TrimSpace(path) == "" {
 		path = DefaultPath
 	}
 	if clock == nil {
 		clock = SystemClock{}
 	}
-	return &Builder{path: path, clock: clock}
+	if logger == nil {
+		logger = discardLogger{}
+	}
+	return &Builder{path: path, clock: clock, logger: logger}
 }
 
 func (b *Builder) Build(ctx context.Context, interventions []domain.Intervention) (string, domain.Stats, error) {
@@ -158,6 +171,25 @@ func (b *Builder) insertCorpus(ctx context.Context, db *sql.DB, interventions []
 	})
 	stats.ParliamentNumber = ordered[0].ParliamentNumber
 	stats.SessionNumber = ordered[0].SessionNumber
+
+	seen := make(map[string]struct{}, len(ordered))
+	write := 0
+	for _, iv := range ordered {
+		id := strings.TrimSpace(iv.InterventionID)
+		if id == "" {
+			ordered[write] = iv
+			write++
+			continue
+		}
+		if _, dup := seen[id]; dup {
+			b.logger.Warn("duplicate_intervention_id", map[string]any{"intervention_id": id})
+			continue
+		}
+		seen[id] = struct{}{}
+		ordered[write] = iv
+		write++
+	}
+	ordered = ordered[:write]
 
 	for start := 0; start < len(ordered); {
 		end := start + 1
