@@ -5,11 +5,10 @@ on:
     branches: [main]
     paths:
       # Avoid spending Apple TestFlight upload quota on docs, backend, website,
-      # evidence-only, or other non-app changes.
+      # evidence-only, workflow-only, or other non-app changes.
       - 'ios/**'
       - 'scripts/release/**'
       - 'scripts/runner/ephemeral_keychain.sh'
-      - '.github/workflows/testflight-build.yml'
   workflow_dispatch:
     inputs:
       dry_run:
