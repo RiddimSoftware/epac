@@ -1,14 +1,8 @@
 name: TestFlight Build
 
 on:
-  push:
-    branches: [main]
-    paths:
-      # Avoid spending Apple TestFlight upload quota on docs, backend, website,
-      # evidence-only, workflow-only, or other non-app changes.
-      - 'ios/**'
-      - 'scripts/release/**'
-      - 'scripts/runner/ephemeral_keychain.sh'
+  schedule:
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -29,16 +23,58 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.event_name == 'push' && 'testflight-main-latest' || format('testflight-manual-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: ${{ github.event_name != 'workflow_dispatch' && 'testflight-main-latest' || format('testflight-manual-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 env:
   FASTLANE_SKIP_UPDATE_CHECK: "1"
   SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
 
 jobs:
+  check-changes:
+    name: Check for new changes since last TestFlight upload
+    runs-on: macos-15
+    outputs:
+      should_run: ${{ steps.change-check.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check if main HEAD changed since last upload
+        id: change-check
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          last_tag="$(git tag -l 'testflight/*' --sort=-creatordate | head -n 1 || true)"
+
+          if [ -z "$last_tag" ]; then
+            echo "No prior testflight tags found; proceeding with upload."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          latest_uploaded_sha="$(git rev-parse "${last_tag}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+
+          echo "Latest tag: ${last_tag}"
+          echo "Last uploaded SHA: ${latest_uploaded_sha}"
+          echo "Current HEAD SHA: ${head_sha}"
+
+          if [ "$latest_uploaded_sha" = "$head_sha" ]; then
+            echo "No new HEAD commit since last successful TestFlight upload; skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "New commit detected; continuing with TestFlight upload."
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+
   build-upload:
     name: Archive and upload to TestFlight
+    needs:
+      - check-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.check-changes.outputs.should_run == 'true' }}
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
