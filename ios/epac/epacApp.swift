@@ -67,6 +67,9 @@ struct epacApp: App {
 		self.fetch = fetch
 		self.hansardRepository = JurisdictionRoutedHansardRepository(adapters: [
 			.federal: swiftDataHansardRepository,
+			.novaScotia: NovaScotiaHansardAdapter(
+				persistTranscript: swiftDataHansardRepository.storeTranscript
+			),
 			.saskatchewan: SaskatchewanHansardAdapter(
 				persistTranscript: swiftDataHansardRepository.storeTranscript
 			)
