@@ -55,6 +55,12 @@ var (
 			},
 		},
 		{
+			Name:   "telemetry",
+			Limit:  30,
+			Window: time.Minute,
+			Match:  func(path string) bool { return path == "/api/v1/telemetry" },
+		},
+		{
 			Name:   "general",
 			Limit:  100,
 			Window: time.Minute,
