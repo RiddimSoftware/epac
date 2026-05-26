@@ -37,8 +37,8 @@ struct ContentView: View {
 	@State private var viewModel = ContentViewModel()
 	@State private var router = NavigationRouter()
 	@State private var networkMonitor = NetworkMonitor()
-	@State private var showMyMPSetup = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && PostalCodeViewModel.savedRidingName == nil
-	@State private var showOnboarding = !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
+	@State private var showMyMPSetup = !AppRuntime.shouldSuppressFirstLaunchSurfacesInTests && !AppEnvironment.isMarketingCaptureMode && UserDefaults.standard.bool(forKey: "epac.onboarding.completed") && PostalCodeViewModel.savedRidingName == nil
+	@State private var showOnboarding = !AppRuntime.shouldSuppressFirstLaunchSurfacesInTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
 
 	init(fetch: Fetch, hansardRepository: any HansardRepository, appDelegate: AppDelegate) {

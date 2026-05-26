@@ -1,0 +1,148 @@
+name: Golden Path CUJ
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Burst merges collapse to one latest-main run; this workflow is intentionally
+# not a PR or TestFlight gate.
+concurrency:
+  group: golden-path-cuj
+  cancel-in-progress: true
+
+jobs:
+  golden-path-cuj:
+    name: Golden path CUJ
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git for package resolution
+        run: |
+          cat > "$RUNNER_TEMP/ci-gitconfig" <<'EOF'
+          [url "https://github.com/"]
+            insteadOf = git@github.com:
+            insteadOf = ssh://git@github.com/
+            insteadOf = git://github.com/
+          EOF
+          echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/ci-gitconfig" >> "$GITHUB_ENV"
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify Xcode 26
+        run: xcodebuild -version | grep '^Xcode 26'
+
+      - name: Resolve iPhone 17 Pro Max simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_env="$RUNNER_TEMP/golden-path-simulator.env"
+          SIMULATOR_ENV="$simulator_env" python3 <<'PY'
+          import json
+          import os
+          import shlex
+          import subprocess
+          import sys
+
+          runtimes = json.loads(
+              subprocess.check_output(["xcrun", "simctl", "list", "runtimes", "--json"], text=True)
+          ).get("runtimes", [])
+          ios_26_runtimes = [
+              runtime
+              for runtime in runtimes
+              if runtime.get("isAvailable", True)
+              and (
+                  runtime.get("platform") == "iOS"
+                  or "iOS" in runtime.get("name", "")
+                  or "com.apple.CoreSimulator.SimRuntime.iOS" in runtime.get("identifier", "")
+              )
+              and str(runtime.get("version", "")).startswith("26.")
+          ]
+          if not ios_26_runtimes:
+              sys.exit("No available iOS 26.x Simulator runtime found.")
+
+          devices_by_runtime = json.loads(
+              subprocess.check_output(["xcrun", "simctl", "list", "devices", "--json"], text=True)
+          ).get("devices", {})
+          for runtime in ios_26_runtimes:
+              for device in devices_by_runtime.get(runtime["identifier"], []):
+                  if device.get("isAvailable", True) and device.get("name") == "iPhone 17 Pro Max":
+                      values = {
+                          "SIMULATOR_UDID": device["udid"],
+                          "SIMULATOR_NAME": device["name"],
+                          "SIMULATOR_RUNTIME": f'{runtime.get("name", "iOS")} {runtime.get("version", "")}'.strip(),
+                      }
+                      with open(os.environ["SIMULATOR_ENV"], "a", encoding="utf-8") as handle:
+                          for key, value in values.items():
+                              handle.write(f"{key}={shlex.quote(value)}\n")
+                      for path in (os.environ["GITHUB_ENV"], os.environ["GITHUB_OUTPUT"]):
+                          with open(path, "a", encoding="utf-8") as handle:
+                              for key, value in values.items():
+                                  handle.write(f"{key}={value}\n")
+                      sys.exit(0)
+
+          sys.exit("No available iPhone 17 Pro Max simulator found on an iOS 26.x runtime.")
+          PY
+          # shellcheck source=/dev/null
+          source "$simulator_env"
+          echo "Resolved $SIMULATOR_NAME on $SIMULATOR_RUNTIME ($SIMULATOR_UDID)"
+
+      - name: Build for testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_cache="$RUNNER_TEMP/xcode-package-cache"
+          cloned_packages="$RUNNER_TEMP/xcode-cloned-source-packages"
+          rm -rf "$package_cache" "$cloned_packages"
+          mkdir -p "$package_cache" "$cloned_packages"
+          xcodebuild build-for-testing \
+            -project ios/epac.xcodeproj \
+            -scheme epac \
+            -configuration Release \
+            -destination "id=$SIMULATOR_UDID" \
+            -derivedDataPath "$GITHUB_WORKSPACE/.deriveddata-golden-path-cuj" \
+            -clonedSourcePackagesDirPath "$cloned_packages" \
+            -packageCachePath "$package_cache" \
+            -disablePackageRepositoryCache \
+            ENABLE_TESTABILITY=YES \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Erase and boot simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl shutdown "$SIMULATOR_UDID" || true
+          xcrun simctl erase "$SIMULATOR_UDID"
+          xcrun simctl boot "$SIMULATOR_UDID"
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+
+      - name: Run golden path CUJ
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ./TestResults.xcresult
+          xcodebuild test-without-building \
+            -project ios/epac.xcodeproj \
+            -scheme epac \
+            -configuration Release \
+            -destination "id=$SIMULATOR_UDID" \
+            -derivedDataPath "$GITHUB_WORKSPACE/.deriveddata-golden-path-cuj" \
+            -resultBundlePath ./TestResults.xcresult \
+            -only-testing:epacUITests/OnboardingAndFirstDebateUITests
+
+      - name: Upload golden path result bundle
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-path-cuj-xcresult-${{ github.run_number }}
+          path: TestResults.xcresult
+          if-no-files-found: warn

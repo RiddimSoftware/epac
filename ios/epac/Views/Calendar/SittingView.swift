@@ -135,6 +135,7 @@ struct SittingView: View {
 						}
 					}
 					.listStyle(.plain)
+					.accessibilityIdentifier("debate-content")
 					.onAppear {
 						resolveAndScrollToIntervention(proxy: proxy, fallbackSubjectID: pairs.first?.1.first?.hansardID)
 					}
