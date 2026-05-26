@@ -6,6 +6,12 @@ on:
       - 'backend/manifest/**'
       - 'infra/terraform/**'
       - '.github/workflows/infra-validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/manifest/**'
+      - 'infra/terraform/**'
+      - '.github/workflows/infra-validate.yml'
 
 permissions:
   contents: read
@@ -84,7 +90,7 @@ jobs:
         if: ${{ steps.init.outputs.exitcode == '0' && steps.plan.outputs.exitcode == '0' }}
         uses: actions/upload-artifact@v4
         with:
-          name: epac-tfplan-staging-${{ github.event.pull_request.head.sha }}
+          name: epac-tfplan-staging-${{ github.sha }}
           path: infra/terraform/staging/tfplan
           if-no-files-found: error
           retention-days: 14
