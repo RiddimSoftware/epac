@@ -150,6 +150,40 @@ jobs:
             2>/dev/null || true
           echo "| Lambda permission (apigw-invoke-hansard-search) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
+          # --- IAM: S3 read/write on hansard-search prefix (put-role-policy is idempotent) ---
+          aws iam put-role-policy \
+            --role-name epac-lambda-role \
+            --policy-name EpacArtifactsBucketHansardSearch \
+            --policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "HansardSearchReadObjects",
+                  "Effect": "Allow",
+                  "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::epac-artifacts-227530433709/hansard-search/*"
+                },
+                {
+                  "Sid": "HansardSearchWriteObjects",
+                  "Effect": "Allow",
+                  "Action": "s3:PutObject",
+                  "Resource": "arn:aws:s3:::epac-artifacts-227530433709/hansard-search/*"
+                },
+                {
+                  "Sid": "HansardSearchListBucket",
+                  "Effect": "Allow",
+                  "Action": "s3:ListBucket",
+                  "Resource": "arn:aws:s3:::epac-artifacts-227530433709",
+                  "Condition": {
+                    "StringLike": {
+                      "s3:prefix": "hansard-search/*"
+                    }
+                  }
+                }
+              ]
+            }'
+          echo "| IAM EpacArtifactsBucketHansardSearch policy | ensured |" >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: Deploy ${{ matrix.service }} to staging
     needs: [prepare, provision-search]
