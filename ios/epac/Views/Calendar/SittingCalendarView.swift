@@ -59,6 +59,8 @@ struct SittingCalendarView: View {
 	@State private var isShowingExportStatus = false
 	@State private var isTodayVisible = true
 	@State private var isShowingHansardSearch = false
+	@State private var scrollCoordinator = SittingCalendarScrollCoordinator()
+	@State private var hasRequestedInitialTodayScroll = false
 
 	private let visibleDates = ISO8601DateFormatter().date(from: "2001-01-01T23:59:59Z")!...ISO8601DateFormatter().date(from: "2026-12-31T23:59:59Z")!
 	private let todayComponents = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -135,6 +137,14 @@ struct SittingCalendarView: View {
 				.horizontalDayMargin(SittingCalendarLayout.dayMargin)
 				.padding([.leading, .trailing, .bottom])
 				.background(CalendarScrollsToTopDisabler())
+				.onAppear {
+					if scrollCoordinator.calendarDidMount() {
+						scrollToToday(animated: false, deferIfUnmounted: false)
+					}
+				}
+				.onDisappear {
+					scrollCoordinator.calendarDidUnmount()
+				}
 			VStack(alignment: .leading, spacing: SittingCalendarLayout.controlsSpacing) {
 				Button {
 					scrollToToday(animated: true)
@@ -198,8 +208,8 @@ struct SittingCalendarView: View {
 			viewModel.configure(browseHansardSitting: BrowseHansardSitting(repository: hansardRepository))
 			if viewModel.dates.isEmpty {
 				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
-				scrollToToday(animated: false)
 			}
+			requestInitialScrollToToday()
 			selectedDate = nil
 		}
 		.safeAreaInset(edge: .bottom) {
@@ -357,7 +367,25 @@ struct SittingCalendarView: View {
 	}
 
 	private func scrollToToday(animated: Bool) {
-		calendarViewProxy.scrollToDay(containing: .now, scrollPosition: .centered, animated: animated)
+		scrollToToday(animated: animated, deferIfUnmounted: true)
+	}
+
+	private func requestInitialScrollToToday() {
+		guard !hasRequestedInitialTodayScroll else { return }
+		hasRequestedInitialTodayScroll = true
+		scrollToToday(animated: false)
+	}
+
+	private func scrollToToday(animated: Bool, deferIfUnmounted: Bool) {
+		switch scrollCoordinator.requestScrollToToday(deferIfUnmounted: deferIfUnmounted) {
+		case .scrollNow:
+			calendarViewProxy.scrollToDay(containing: .now, scrollPosition: .centered, animated: animated)
+		case .deferredUntilMounted:
+			Log.warning("Deferred SittingCalendarView scrollToToday until CalendarViewRepresentable appears")
+		case .skippedUnmounted:
+			Log.warning("Skipped SittingCalendarView scrollToToday because CalendarViewRepresentable is not mounted")
+			return
+		}
 		isTodayVisible = true
 	}
 
