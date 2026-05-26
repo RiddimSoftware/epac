@@ -2,11 +2,11 @@ terraform {
   required_version = ">= 1.5"
 
   backend "s3" {
-    bucket         = "epac-tfstate-staging-227530433709"
-    key            = "staging.tfstate"
-    region         = "us-east-1"
-    use_lockfile   = true
-    encrypt        = true
+    bucket       = "epac-tfstate-staging-227530433709"
+    key          = "staging.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 
   required_providers {

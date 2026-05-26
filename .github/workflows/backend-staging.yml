@@ -8,6 +8,7 @@ on:
       - 'infra/terraform/staging/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
+      - 'scripts/ci/import-staging-terraform-routes.sh'
       - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
 
@@ -37,6 +38,9 @@ jobs:
       - name: Terraform init
         run: terraform init -input=false
         working-directory: infra/terraform/staging
+
+      - name: Import existing staging API routes
+        run: ./scripts/ci/import-staging-terraform-routes.sh
 
       - name: Terraform apply
         run: terraform apply -auto-approve -input=false
