@@ -159,12 +159,12 @@ jobs:
           aws lambda wait function-updated \
             --function-name "$FUNCTION_NAME"
 
-      - name: Sync production DATABASE_URL from Secrets Manager
+      - name: Sync production DATABASE_URL from Parameter Store
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
         env:
           CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
           LEGACY_FUNCTION_NAME: ${{ matrix.service }}
-          DATABASE_URL_SECRET_ID: epac/database-url
+          DATABASE_URL_PARAMETER_NAME: /epac/database-url
           SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
         run: |
           set -euo pipefail
@@ -174,15 +174,16 @@ jobs:
             FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
           fi
 
-          DATABASE_URL=$(aws secretsmanager get-secret-value \
-            --secret-id "$DATABASE_URL_SECRET_ID" \
-            --query SecretString \
+          DATABASE_URL=$(aws ssm get-parameter \
+            --name "$DATABASE_URL_PARAMETER_NAME" \
+            --with-decryption \
+            --query Parameter.Value \
             --output text)
           if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
             DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
           fi
           if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
-            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
+            echo "Secret ${DATABASE_URL_PARAMETER_NAME} did not contain a DATABASE_URL value"
             exit 1
           fi
 
