@@ -80,7 +80,7 @@ jobs:
         working-directory: infra/terraform/staging
         run: |
           set +e
-          terraform plan -input=false -no-color -out=tfplan > tfplan.txt 2>&1
+          terraform plan -input=false -no-color -lock-timeout=5m -out=tfplan > tfplan.txt 2>&1
           status=$?
           set -e
           cat tfplan.txt
