@@ -44,13 +44,15 @@ struct epacApp: App {
 	private static func makeModelContainer() -> ModelContainer {
 		do {
 			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
-			return try ModelContainer(
-				for: Schema(versionedSchema: SchemaV10.self),
-				migrationPlan: EpacMigrationPlan.self,
-				configurations: [ModelConfiguration(isStoredInMemoryOnly: usesInMemoryStore)]
-			)
+			return try SwiftDataStoreRecovery.makeContainer(usesInMemoryStore: usesInMemoryStore) { configuration in
+				try ModelContainer(
+					for: Schema(versionedSchema: SchemaV10.self),
+					migrationPlan: EpacMigrationPlan.self,
+					configurations: [configuration]
+				)
+			}
 		} catch {
-			fatalError("Could not create ModelContainer: \(error)")
+			fatalError("Could not create ModelContainer after SwiftData cache recovery: \(error)")
 		}
 	}
 
