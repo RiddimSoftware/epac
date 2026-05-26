@@ -1,6 +1,7 @@
 @testable import epac
 import Testing
 
+#if DEBUG
 struct LobbyistServiceTests {
     @Test func parsesRFC4180Rows() {
         let csv = #"""
@@ -39,3 +40,4 @@ struct LobbyistServiceTests {
         #expect(rows == [["kept", "row"]])
     }
 }
+#endif
