@@ -242,8 +242,22 @@ jobs:
             --group-name "PublicTesting" \
             --app-id "${{ vars.APPLE_APP_ID }}"
 
-      - name: Ensure beta review info
+      - name: Check beta review contact configuration
+        id: beta-review-config
         if: ${{ !inputs.dry_run }}
+        run: |
+          if [ -n "${{ vars.BETA_REVIEW_CONTACT_EMAIL }}" ] && \
+             [ -n "${{ vars.BETA_REVIEW_CONTACT_FIRST_NAME }}" ] && \
+             [ -n "${{ vars.BETA_REVIEW_CONTACT_LAST_NAME }}" ] && \
+             [ -n "${{ vars.BETA_REVIEW_CONTACT_PHONE }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Beta review contact variables not configured. Skipping beta app review submission. Set BETA_REVIEW_CONTACT_EMAIL, BETA_REVIEW_CONTACT_FIRST_NAME, BETA_REVIEW_CONTACT_LAST_NAME, and BETA_REVIEW_CONTACT_PHONE as repository variables to enable automatic beta review submission."
+          fi
+
+      - name: Ensure beta review info
+        if: ${{ !inputs.dry_run && steps.beta-review-config.outputs.configured == 'true' }}
         env:
           BETA_REVIEW_CONTACT_EMAIL: ${{ vars.BETA_REVIEW_CONTACT_EMAIL }}
           BETA_REVIEW_CONTACT_FIRST_NAME: ${{ vars.BETA_REVIEW_CONTACT_FIRST_NAME }}
@@ -255,7 +269,7 @@ jobs:
             --build-id "${{ steps.build-id.outputs.build_id }}"
 
       - name: Submit for Beta App Review
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.beta-review-config.outputs.configured == 'true' }}
         run: |
           .venv-release/bin/python scripts/release/submit_beta_app_review.py \
             --build-id "${{ steps.build-id.outputs.build_id }}"
@@ -278,4 +292,8 @@ jobs:
             echo "- Version source: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override && 'manual override' || steps.version.outputs.version_source }}"
             echo "- Build: #${{ steps.build-number.outputs.build_number }}"
             echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
+            if [ "${{ steps.beta-review-config.outputs.configured }}" != "true" ]; then
+              echo ""
+              echo "> **Note:** Beta app review submission was skipped because \`BETA_REVIEW_CONTACT_*\` repository variables are not configured."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
