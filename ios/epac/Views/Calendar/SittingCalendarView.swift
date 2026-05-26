@@ -71,7 +71,7 @@ struct SittingCalendarView: View {
 	}()
 	var body: some View {
 		VStack {
-			CalendarViewRepresentable(visibleDateRange: visibleDates, monthsLayout: .vertical, dataDependency: viewModel.dates, proxy: calendarViewProxy)
+			CalendarViewRepresentable(visibleDateRange: visibleDates, monthsLayout: .vertical, dataDependency: viewModel.sittingDateComponents, proxy: calendarViewProxy)
 				.days({ day in
 					let isToday = todayComponents.sameYMD(as: day.components)
 					let isPastSitting = viewModel.dates.contains(where: { $0.sameYMD(as: day.components) })
@@ -194,11 +194,14 @@ struct SittingCalendarView: View {
 		.frame(maxWidth: SittingCalendarLayout.contentMaxWidth)
 		.frame(maxWidth: .infinity)
 		.task(id: viewModel.currentYear) {
-			// id-based task cancels any in-flight fetch when year changes via the chevron picker.
+			// id-based task cancels any in-flight load when year changes via the chevron picker.
 			viewModel.configure(browseHansardSitting: BrowseHansardSitting(repository: hansardRepository))
-			if viewModel.dates.isEmpty {
-				await viewModel.fetchSittingCalendar(viewModel.currentYear, modelContext: modelContext, fetch: fetch)
-			}
+			viewModel.loadSittingCalendarCacheFirst(
+				viewModel.currentYear,
+				modelContext: modelContext,
+				fetch: fetch,
+				forceRemoteRefresh: true
+			)
 			requestInitialScrollToToday()
 			selectedDate = nil
 		}
