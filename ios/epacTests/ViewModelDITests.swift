@@ -15,7 +15,7 @@ import Testing
 @MainActor
 private final class MockBrowseHansardSittingUseCase: BrowseHansardSittingUseCase {
     var requests: [BrowseHansardSittingRequest] = []
-    var result = BrowseHansardSitting.Result(sittingDates: [], sittings: [])
+    var result = BrowseHansardSitting.Result(sittingDates: [])
     var shouldThrow = false
 
     func execute(
@@ -112,7 +112,7 @@ struct SittingCalendarViewModelDITests {
         let dependencies = try makeDependencies()
         let mockUseCase = MockBrowseHansardSittingUseCase()
         let sitting = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 5, day: 1))!
-        mockUseCase.result = BrowseHansardSitting.Result(sittingDates: [sitting], sittings: [])
+        mockUseCase.result = BrowseHansardSitting.Result(sittingDates: [sitting])
         let viewModel = SittingCalendarViewModel(browseHansardSitting: mockUseCase)
 
         await viewModel.fetchSittingCalendar(2026, modelContext: dependencies.context, fetch: dependencies.fetch)

@@ -115,10 +115,10 @@ Current implementation:
 
 ```
 Actor: User (iOS app, foreground)
-Goal: Browse jurisdiction-aware sitting dates and the subjects available for each date in a calendar window.
+Goal: Browse jurisdiction-aware sitting dates available in a calendar window.
 Inputs: Jurisdiction, start date, end date.
-Outputs: Sitting dates and per-date subject summaries.
-Entities / values: HansardTranscript, SubjectOfBusinessRecord, Jurisdiction.
+Outputs: Sitting dates.
+Entities / values: Jurisdiction, Date.
 Ports: HansardRepository.
 Primary adapters: SittingCalendarViewModel, SittingCalendarView, SwiftDataHansardRepository.
 Current implementation:
@@ -127,7 +127,7 @@ Current implementation:
   ios/epac/Data/Repositories/SwiftDataHansardRepository.swift
 ```
 
-> **Boundary note:** The application policy for window filtering and subject aggregation is no longer in `SittingCalendarViewModel`.
+> **Boundary note:** The application policy for window filtering is no longer in `SittingCalendarViewModel`. Transcript loading stays on the on-demand sitting-reader path.
 
 ---
 

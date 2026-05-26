@@ -146,10 +146,10 @@ private final class DelayedBrowseHansardSittingUseCase: BrowseHansardSittingUseC
 
 		if callCount == 1 {
             try await Task.sleep(for: .milliseconds(firstCallDelayMs))
-            return BrowseHansardSitting.Result(sittingDates: [staleDate], sittings: [])
+            return BrowseHansardSitting.Result(sittingDates: [staleDate])
         } else {
             try await Task.sleep(for: .milliseconds(subsequentCallDelayMs))
-            return BrowseHansardSitting.Result(sittingDates: [freshDate], sittings: [])
+            return BrowseHansardSitting.Result(sittingDates: [freshDate])
         }
     }
 }
@@ -170,8 +170,8 @@ private final class SingleYearBrowseHansardSittingUseCase: BrowseHansardSittingU
 	) async throws -> BrowseHansardSitting.Result {
 		calls += 1
 		guard let year = Calendar.current.dateComponents([.year], from: startDate).year else {
-			return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
+			return BrowseHansardSitting.Result(sittingDates: [])
 		}
-        return BrowseHansardSitting.Result(sittingDates: updatedDates[year] ?? [], sittings: [])
+        return BrowseHansardSitting.Result(sittingDates: updatedDates[year] ?? [])
     }
 }
