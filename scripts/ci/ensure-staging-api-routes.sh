@@ -9,6 +9,7 @@ REGION="${AWS_REGION:-us-east-1}"
 API_ID="${API_ID:-}"
 REPOSITORY_ROOT="${REPOSITORY_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 MANIFEST_PATH="${MANIFEST_PATH:-${REPOSITORY_ROOT}/backend/manifest/deployment-services.json}"
+DOMAIN_NAME="${DOMAIN_NAME:-}"
 
 target_env="${ENV_NAME}"
 if [ "$target_env" != "staging" ] && [ "$target_env" != "production" ]; then
@@ -37,9 +38,13 @@ remove_matching_invoke_permissions() {
     return 0
   fi
 
-  printf '%s' "${policy}" | jq -r --arg prefix "${statement_prefix}" '
-    fromjson | .Statement[]? | select(.Sid | startswith($prefix)) | .Sid
-  ' 2>/dev/null | while IFS= read -r statement_id; do
+  printf '%s\n' "${policy}" | jq -r --arg prefix "${statement_prefix}" '
+    # AWS CLI may return Policy as either a JSON object or a JSON-encoded string.
+    (if type == "string" then fromjson else . end)
+    | .Statement[]?
+    | (.Sid? // empty)
+    | select(startswith($prefix))
+  ' | while IFS= read -r statement_id; do
     [ -z "${statement_id}" ] && continue
     remove_permission_statement "${function_name}" "${statement_id}"
   done
@@ -49,9 +54,7 @@ if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
   if [ -n "${STAGING_API_BASE_URL:-}" ]; then
     DOMAIN_NAME="${STAGING_API_BASE_URL#*://}"
     DOMAIN_NAME="${DOMAIN_NAME%%/*}"
-  elif [ -n "${DOMAIN_NAME:-}" ]; then
-    DOMAIN_NAME="${DOMAIN_NAME}"
-  elif [ -n "${CUSTOM_DOMAIN:-}" ]; then
+  elif [ -z "${DOMAIN_NAME}" ] && [ -n "${CUSTOM_DOMAIN:-}" ]; then
     DOMAIN_NAME="${CUSTOM_DOMAIN}"
   fi
 
