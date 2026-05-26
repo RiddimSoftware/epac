@@ -1,12 +1,8 @@
 # Enable auto-merge (squash) on every newly opened PR.
 #
-# Self-contained inlined version. The same file is replicated across all
-# active RiddimSoftware repos so each repo enables auto-merge independently
-# without depending on a cross-repo reusable workflow_call.
-#
-# Required org secrets (visibility=all):
-#   DEV_BOT_APP_ID
-#   DEV_BOT_PRIVATE_KEY
+# Uses GITHUB_TOKEN to flip the auto-merge flag — no dev bot credentials needed
+# because enabling auto-merge only sets a repository flag and does not author
+# any commit.
 
 name: Set Auto-Merge
 
@@ -26,16 +22,9 @@ jobs:
     timeout-minutes: 5
     if: ${{ !github.event.pull_request.draft }}
     steps:
-      - name: Generate developer-bot token
-        id: dev-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.DEV_BOT_APP_ID }}
-          private-key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ steps.dev-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           set -euo pipefail
