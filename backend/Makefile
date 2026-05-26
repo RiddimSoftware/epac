@@ -9,7 +9,7 @@ ROLE_ARN ?= arn:aws:iam::227530433709:role/epac-lambda-role
 # Usage: make test SERVICE=health
 test:
 	@if [ -z "$(SERVICE)" ]; then echo "Error: SERVICE parameter is required. Example: make test SERVICE=health"; exit 1; fi
-	cd $(SERVICE) && go test ./...
+	cd $(SERVICE) && go test -p 1 ./...
 
 # Build the Lambda binary for Linux ARM64 (recommended for AL2023)
 # Usage: make build SERVICE=health
