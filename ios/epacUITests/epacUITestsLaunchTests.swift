@@ -9,12 +9,18 @@ import XCTest
 
 final class epacUITestsLaunchTests: XCTestCase {
 
-    override class var runsForEachTargetApplicationUIConfiguration: Bool {
-        true
-    }
-
     override func setUpWithError() throws {
         continueAfterFailure = false
+    }
+
+    @MainActor
+    func testLaunchPerformance() throws {
+        if #available(iOS 13.0, *) {
+            let metrics: [XCTMetric] = [XCTApplicationLaunchMetric()]
+            measure(metrics: metrics) {
+                XCUIApplication().launch()
+            }
+        }
     }
 
     @MainActor
