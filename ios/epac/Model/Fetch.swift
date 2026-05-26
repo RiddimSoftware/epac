@@ -791,6 +791,8 @@ actor Fetch: ObservableObject {
 			try await downloadFederalMembers()
 		case .ontario:
 			try await downloadOntarioMembers()
+		case .novaScotia:
+			try await downloadNovaScotiaMembers()
 		case .saskatchewan:
 			try await downloadSaskatchewanMembers()
 		default:
@@ -823,6 +825,12 @@ actor Fetch: ObservableObject {
 
 	private func downloadOntarioMembers() async throws {
 		let memberDTOs = try await OntarioMemberDirectoryAdapter().fetchMembers()
+		try insertMembers(memberDTOs)
+		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
+	}
+
+	private func downloadNovaScotiaMembers() async throws {
+		let memberDTOs = try await NovaScotiaMemberDirectoryAdapter().fetchMembers()
 		try insertMembers(memberDTOs)
 		UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "epac.sync.members")
 	}

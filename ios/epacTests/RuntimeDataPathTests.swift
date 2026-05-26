@@ -146,6 +146,41 @@ struct RuntimeDataPathTests {
         })
     }
 
+    @Test func fetchDownloadsNovaScotiaMembersFromRosterHTML() async throws {
+        URLProtocol.registerClass(MockURLProtocol.self)
+        defer { URLProtocol.unregisterClass(MockURLProtocol.self) }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        MockURLProtocol.requestHandler = { request in
+            let url = try #require(request.url)
+            if url.absoluteString == "https://nslegislature.ca/members/profiles/65" {
+                return (
+                    HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data(Self.novaScotiaMembersFixtureHTML.utf8)
+                )
+            }
+            #expect(url.absoluteString == "https://nslegislature.ca/members/profiles/claudia-chender")
+            return (
+                HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(Self.novaScotiaMemberProfileHTML.utf8)
+            )
+        }
+
+        let container = try makeContainer()
+        let fetch = Fetch(modelContainer: container)
+
+        try await fetch.downloadMembers(jurisdiction: .novaScotia)
+
+        let members = try container.mainContext.fetch(FetchDescriptor<ParliamentMember>())
+        let member = try #require(members.onlyElement)
+        #expect(member.name == "Claudia Chender")
+        #expect(member.jurisdiction == .novaScotia)
+        #expect(member.party == .newdemocratic)
+        #expect(member.riding == "Dartmouth South")
+        #expect(member.email == "claudiachender@nsmla.ca")
+        #expect(member.constituencyPhone == "902-406-2301")
+    }
+
     @Test func billsServiceUsesLEGISinfoEndpoint() async throws {
         URLProtocol.registerClass(MockURLProtocol.self)
         defer { URLProtocol.unregisterClass(MockURLProtocol.self) }
@@ -230,6 +265,49 @@ struct RuntimeDataPathTests {
             .deletingLastPathComponent()
             .appendingPathComponent("Fixtures/Hansard/Ontario/Members")
     }
+
+    private nonisolated static let novaScotiaMembersFixtureHTML = """
+    <html><body>
+    <div class="view-mla-profile-listing">
+        <div class="views-row">
+            <div class="views-field views-field-field-thumbnail">
+                <div class="field-content">
+                    <img src="https://nslegislature.ca/sites/default/files/mla-thumbnails/ClaudiaChender.jpg" />
+                </div>
+            </div>
+            <div class="views-field views-field-field-last-name">
+                <div class="field-content"><a href="/members/profiles/claudia-chender/history">Chender, Claudia</a></div>
+            </div>
+            <div class="views-field views-field-field-party">
+                <div class="field-content"><span class="party-name">NDP</span></div>
+            </div>
+            <div class="views-field views-field-field-constituency-name">
+                <div class="field-content">Dartmouth South</div>
+            </div>
+        </div>
+    </div>
+    </body></html>
+    """
+
+    private nonisolated static let novaScotiaMemberProfileHTML = """
+    <html><body>
+    <div class="panel-pane pane-dsc mla-current-profile-contact">
+        <h2>Contact details</h2><h4>Constituency office</h4>
+        <p>
+        Civic address:
+        <br>33 Ochterloney Street<br />
+        Suite 360<br />
+        Dartmouth, NS<br />
+        B2Y 4P5
+        </p>
+        <p>
+        Phone: <a href="tel:+19024062301">902-406-2301</a>
+        <br>
+        E-mail: <a href="mailto:claudiachender@nsmla.ca">claudiachender@nsmla.ca</a>
+        </p>
+    </div>
+    </body></html>
+    """
 }
 
 private struct NetworkHarness {
@@ -264,4 +342,10 @@ private class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private extension Array {
+    var onlyElement: Element? {
+        count == 1 ? first : nil
+    }
 }
