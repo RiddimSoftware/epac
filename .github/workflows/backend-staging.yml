@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'infra/terraform/staging/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
       - 'backend/manifest/deployment-services.json'
@@ -19,6 +20,28 @@ permissions:
   id-token: write
 
 jobs:
+  infra-apply:
+    name: Apply staging Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: infra/terraform/staging
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve -input=false
+        working-directory: infra/terraform/staging
+
   prepare:
     name: Resolve backend service manifest
     runs-on: ubuntu-latest
@@ -48,7 +71,7 @@ jobs:
 
   deploy:
     name: Deploy ${{ matrix.service }} to staging
-    needs: prepare
+    needs: [prepare, infra-apply]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
