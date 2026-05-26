@@ -153,12 +153,22 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           BACKEND_BASE_URL: ${{ env.STAGING_BACKEND_BASE_URL }}
         run: |
-          bundle exec fastlane deploy \
+          set +e
+          output="$(bundle exec fastlane deploy \
             scheme:${{ vars.SCHEME }} \
             bundle_id:${{ vars.BUNDLE_ID }} \
             team_id:${{ vars.TEAM_ID }} \
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
-            extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
+            extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}" 2>&1)"
+          exit_code=$?
+          set -e
+          echo "$output"
+          if [ $exit_code -ne 0 ] && echo "$output" | grep -q "Upload limit reached"; then
+            echo "::warning::Apple daily upload limit reached. Build was successful but upload was rejected. This is transient and resolves after 24 hours."
+            echo "upload_limit_reached=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit $exit_code
 
       # ------------------------------------------------------------------
       # Emit release-manifest.json for chain-of-custody receipt generation.
@@ -171,13 +181,13 @@ jobs:
       # release.built_from_sha. See EPAC-1929.
       # ------------------------------------------------------------------
       - name: Clear runner AWS profile selectors
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         run: |
           echo "AWS_PROFILE=" >> "$GITHUB_ENV"
           echo "AWS_DEFAULT_PROFILE=" >> "$GITHUB_ENV"
 
       - name: Configure AWS credentials via OIDC
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_RELEASE_ROLE_ARN }}
@@ -185,7 +195,7 @@ jobs:
           unset-current-credentials: true
 
       - name: Emit release manifest
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         env:
           BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
           GIT_SHA: ${{ github.sha }}
@@ -201,16 +211,30 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           {
-            echo "## Internal staging TestFlight build uploaded"
-            echo ""
-            echo "This build is for internal staging backend QA only. Do not treat it as a production release candidate."
-            echo ""
-            echo "- Workflow source: ${{ github.event_name }}"
-            echo "- Commit: ${{ github.sha }}"
-            echo "- Version: ${{ steps.version.outputs.next_version }}"
-            echo "- Version source: ${{ steps.version.outputs.version_source }}"
-            echo "- Build: #${{ steps.build-number.outputs.build_number }}"
-            echo "- Backend: $STAGING_BACKEND_BASE_URL"
-            echo "- TestFlight metadata: $TESTFLIGHT_CHANGELOG"
-            echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
+            if [ "${{ steps.build-number.outputs.upload_limit_reached }}" = "true" ]; then
+              echo "## Internal staging TestFlight upload skipped - daily limit reached"
+              echo ""
+              echo "Apple's daily upload limit was hit. The internal staging build compiled successfully, but App Store Connect rejected the upload with HTTP 409."
+              echo "This is transient and self-resolves after 24 hours. No action required."
+              echo ""
+              echo "- Workflow source: ${{ github.event_name }}"
+              echo "- Commit: ${{ github.sha }}"
+              echo "- Version: ${{ steps.version.outputs.next_version }}"
+              echo "- Version source: ${{ steps.version.outputs.version_source }}"
+              echo "- Build attempted: #${{ steps.build-number.outputs.build_number }}"
+              echo "- Backend: $STAGING_BACKEND_BASE_URL"
+            else
+              echo "## Internal staging TestFlight build uploaded"
+              echo ""
+              echo "This build is for internal staging backend QA only. Do not treat it as a production release candidate."
+              echo ""
+              echo "- Workflow source: ${{ github.event_name }}"
+              echo "- Commit: ${{ github.sha }}"
+              echo "- Version: ${{ steps.version.outputs.next_version }}"
+              echo "- Version source: ${{ steps.version.outputs.version_source }}"
+              echo "- Build: #${{ steps.build-number.outputs.build_number }}"
+              echo "- Backend: $STAGING_BACKEND_BASE_URL"
+              echo "- TestFlight metadata: $TESTFLIGHT_CHANGELOG"
+              echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
