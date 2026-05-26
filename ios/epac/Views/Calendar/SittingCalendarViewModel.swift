@@ -5,7 +5,6 @@
 import Foundation
 import HorizonCalendar
 import Observation
-import Sentry
 import SwiftData
 
 @MainActor
@@ -65,7 +64,7 @@ class SittingCalendarViewModel {
 		} catch {
 			guard isCurrentLoad(generation) else { return }
 			Log.debug("Failed to fetch SittingCalendar count")
-			SentrySDK.capture(error: error)
+			Telemetry.recordError(error)
 			loadFailed = true
 		}
 	}
@@ -89,7 +88,7 @@ class SittingCalendarViewModel {
 		} catch {
 			guard isCurrentLoad(generation) else { return }
 			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")
-			SentrySDK.capture(error: error)
+			Telemetry.recordError(error)
 			loadFailed = true
 		}
 	}

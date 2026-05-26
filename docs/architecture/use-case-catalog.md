@@ -63,6 +63,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `HansardParser` | outbound | Parse Hansard XML into intervention and paragraph values without coupling the use case to `encoding/xml`. |
 | `HansardSearchIndexBuilder` | outbound | Build and self-check a local SQLite FTS5 index from parsed interventions. |
 | `HansardSearchArtifactStore` | outbound | Upload the SQLite search index and write the manifest pointer to S3. |
+| `TelemetryProvider` | outbound | Record errors, events, and performance spans without coupling app code to a third-party SDK. Default implementation is no-op. |
 
 ---
 

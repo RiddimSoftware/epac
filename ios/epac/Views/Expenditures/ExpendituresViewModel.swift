@@ -5,7 +5,6 @@
 
 import ActivityView
 import Observation
-import Sentry
 import SwiftUI
 
 private enum ExpendituresViewModelLayout {
@@ -101,7 +100,7 @@ class ExpendituresViewModel {
 				try await fetch.expenditures(year: selectedYear, quarter: selectedQuarter)
 			} catch {
 				Log.error("Failed to load expenditures: \(error.localizedDescription)")
-				SentrySDK.capture(error: error)
+				Telemetry.recordError(error)
 				loadFailed = true
 			}
 			isLoading = false
@@ -118,7 +117,7 @@ class ExpendituresViewModel {
 			try await fetch.downloadExpenditures(year: selectedYear, quarter: selectedQuarter)
 		} catch {
 			Log.error("ExpendituresViewModel.refresh failed: \(error.localizedDescription)")
-			SentrySDK.capture(error: error)
+			Telemetry.recordError(error)
 			loadFailed = true
 		}
 	}

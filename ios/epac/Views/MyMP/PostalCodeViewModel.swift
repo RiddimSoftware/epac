@@ -1,5 +1,4 @@
 import Observation
-import Sentry
 import SwiftData
 import SwiftUI
 
@@ -44,7 +43,7 @@ class PostalCodeViewModel {
             errorMessage = error.errorDescription
         } catch {
             errorMessage = NSLocalizedString("riding.error.networkError", comment: "")
-            SentrySDK.capture(error: error)
+            Telemetry.recordError(error)
         }
     }
 
