@@ -148,13 +148,20 @@ data "aws_iam_policy_document" "backend_staging_ci" {
   source_policy_documents = [data.aws_iam_policy_document.backend_ci_common.json]
 
   statement {
-    sid       = "ManageStagingLambda"
+    sid = "ManageStagingLambda"
     actions = [
       "lambda:AddPermission",
+      "lambda:CreateFunction",
+      "lambda:DeleteFunction",
       "lambda:GetFunction",
       "lambda:GetFunctionConfiguration",
+      "lambda:GetPolicy",
       "lambda:InvokeFunction",
+      "lambda:ListTags",
+      "lambda:ListVersionsByFunction",
       "lambda:RemovePermission",
+      "lambda:TagResource",
+      "lambda:UntagResource",
       "lambda:UpdateFunctionCode",
       "lambda:UpdateFunctionConfiguration",
       "lambda:WaitForFunctionUpdated",
@@ -167,13 +174,20 @@ data "aws_iam_policy_document" "backend_production_ci" {
   source_policy_documents = [data.aws_iam_policy_document.backend_ci_common.json]
 
   statement {
-    sid       = "ManageProductionLambda"
+    sid = "ManageProductionLambda"
     actions = [
       "lambda:AddPermission",
+      "lambda:CreateFunction",
+      "lambda:DeleteFunction",
       "lambda:GetFunction",
       "lambda:GetFunctionConfiguration",
+      "lambda:GetPolicy",
       "lambda:InvokeFunction",
+      "lambda:ListTags",
+      "lambda:ListVersionsByFunction",
       "lambda:RemovePermission",
+      "lambda:TagResource",
+      "lambda:UntagResource",
       "lambda:UpdateFunctionCode",
       "lambda:UpdateFunctionConfiguration",
       "lambda:WaitForFunctionUpdated",
