@@ -75,6 +75,80 @@ struct SittingCalendarViewModelTests {
 		#expect(result[0] < result[1])
 	}
 
+	@Test func cacheFirstLoadAppliesCachedDatesBeforeDeferredFetchCompletes() async throws {
+		let (context, fetch) = try makeDependencies()
+		let year = Calendar.current.component(.year, from: Date())
+		let cachedDate = date(year: year, month: 1, day: 1)
+		let remoteDate = date(year: year, month: 12, day: 2)
+		context.insert(SittingCalendar(year: year, sittings: [cachedDate]))
+		try context.save()
+
+		let browseUseCase = DeferredBrowseHansardSittingUseCase(
+			updatedDates: [year: [remoteDate]],
+			delaysMs: [year: 80]
+		)
+		let viewModel = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
+
+		viewModel.loadSittingCalendarCacheFirst(year, modelContext: context, fetch: fetch)
+
+		#expect(containsYMD(viewModel.sittingDateComponents, year: year, month: 1, day: 1))
+		#expect(!containsYMD(viewModel.sittingDateComponents, year: year, month: 12, day: 2))
+
+		try await Task.sleep(for: .milliseconds(120))
+
+		#expect(browseUseCase.calls == 1)
+		#expect(!containsYMD(viewModel.sittingDateComponents, year: year, month: 1, day: 1))
+		#expect(containsYMD(viewModel.sittingDateComponents, year: year, month: 12, day: 2))
+		#expect(!viewModel.loadFailed)
+	}
+
+	@Test func cacheFirstLoadSetsLoadFailedWhenDeferredFetchFails() async throws {
+		let (context, fetch) = try makeDependencies()
+		let year = Calendar.current.component(.year, from: Date())
+		let browseUseCase = DeferredBrowseHansardSittingUseCase(
+			failingYears: [year],
+			delaysMs: [year: 20]
+		)
+		let viewModel = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
+
+		viewModel.loadSittingCalendarCacheFirst(year, modelContext: context, fetch: fetch)
+		#expect(!viewModel.loadFailed)
+
+		try await Task.sleep(for: .milliseconds(60))
+
+		#expect(browseUseCase.calls == 1)
+		#expect(viewModel.loadFailed)
+	}
+
+	@Test func cacheFirstLoadCancelsStaleDeferredFetchAfterYearChange() async throws {
+		let (context, fetch) = try makeDependencies()
+		let year = Calendar.current.component(.year, from: Date())
+		let previousYear = year - 1
+		let staleDate = date(year: year, month: 12, day: 1)
+		let currentDate = date(year: previousYear, month: 12, day: 2)
+		let browseUseCase = DeferredBrowseHansardSittingUseCase(
+			updatedDates: [
+				year: [staleDate],
+				previousYear: [currentDate]
+			],
+			delaysMs: [
+				year: 80,
+				previousYear: 10
+			]
+		)
+		let viewModel = SittingCalendarViewModel(browseHansardSitting: browseUseCase)
+
+		viewModel.loadSittingCalendarCacheFirst(year, modelContext: context, fetch: fetch)
+		try await Task.sleep(for: .milliseconds(5))
+		viewModel.loadSittingCalendarCacheFirst(previousYear, modelContext: context, fetch: fetch)
+		try await Task.sleep(for: .milliseconds(120))
+
+		#expect(browseUseCase.calls == 2)
+		#expect(!containsYMD(viewModel.sittingDateComponents, year: year, month: 12, day: 1))
+		#expect(containsYMD(viewModel.sittingDateComponents, year: previousYear, month: 12, day: 2))
+		#expect(!viewModel.loadFailed)
+	}
+
     @Test func rapidRefreshKeepsNewestCompletedLoadApplied() async throws {
         let (context, fetch) = try makeDependencies()
 		let year = Calendar.current.component(.year, from: Date())
@@ -174,4 +248,44 @@ private final class SingleYearBrowseHansardSittingUseCase: BrowseHansardSittingU
 		}
         return BrowseHansardSitting.Result(sittingDates: updatedDates[year] ?? [])
     }
+}
+
+@MainActor
+private final class DeferredBrowseHansardSittingUseCase: BrowseHansardSittingUseCase {
+	private let updatedDates: [Int: [Date]]
+	private let failingYears: Set<Int>
+	private let delaysMs: [Int: Int64]
+	private(set) var calls = 0
+
+	init(
+		updatedDates: [Int: [Date]] = [:],
+		failingYears: Set<Int> = [],
+		delaysMs: [Int: Int64] = [:]
+	) {
+		self.updatedDates = updatedDates
+		self.failingYears = failingYears
+		self.delaysMs = delaysMs
+	}
+
+	func execute(
+		jurisdiction: Jurisdiction,
+		from startDate: Date,
+		through endDate: Date
+	) async throws -> BrowseHansardSitting.Result {
+		calls += 1
+		guard let year = Calendar.current.dateComponents([.year], from: startDate).year else {
+			return BrowseHansardSitting.Result(sittingDates: [])
+		}
+		if let delayMs = delaysMs[year] {
+			try await Task.sleep(for: .milliseconds(delayMs))
+		}
+		if failingYears.contains(year) {
+			throw DeferredBrowseHansardSittingUseCaseError.failed
+		}
+		return BrowseHansardSitting.Result(sittingDates: updatedDates[year] ?? [])
+	}
+}
+
+private enum DeferredBrowseHansardSittingUseCaseError: Error {
+	case failed
 }

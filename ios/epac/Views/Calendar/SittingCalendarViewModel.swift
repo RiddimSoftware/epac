@@ -14,8 +14,12 @@ class SittingCalendarViewModel {
 	var futureDates = Set<DateComponents>()
 	var currentYear: Int = Calendar.current.dateComponents([.year], from: .now).year!
 	var loadFailed = false
+	var sittingDateComponents: Set<DateComponents> {
+		dates.union(futureDates)
+	}
 	private var loadGeneration = 0
 	private var browseHansardSitting: (any BrowseHansardSittingUseCase)?
+	@ObservationIgnored private var deferredFetchTask: Task<Void, Never>?
 
 	private enum CalendarBoundary {
 		static let january = 1
@@ -26,6 +30,10 @@ class SittingCalendarViewModel {
 
 	init(browseHansardSitting: (any BrowseHansardSittingUseCase)? = nil) {
 		self.browseHansardSitting = browseHansardSitting
+	}
+
+	deinit {
+		deferredFetchTask?.cancel()
 	}
 
 	func configure(browseHansardSitting: any BrowseHansardSittingUseCase) {
@@ -52,17 +60,55 @@ class SittingCalendarViewModel {
 			.sorted()
 	}
 
-	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
+	func loadSittingCalendarCacheFirst(
+		_ year: Int,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		forceRemoteRefresh: Bool = false
+	) {
 		let generation = nextLoadGeneration()
 		loadFailed = false
+		loadCachedSittingCalendar(year, modelContext: modelContext)
+		startDeferredFetch(
+			year,
+			modelContext: modelContext,
+			fetch: fetch,
+			generation: generation,
+			forceRemoteRefresh: forceRemoteRefresh
+		)
+	}
+
+	func fetchSittingCalendar(_ year: Int, modelContext: ModelContext, fetch: Fetch) async {
+		let generation = nextLoadGeneration()
+		deferredFetchTask?.cancel()
+		deferredFetchTask = nil
+		loadFailed = false
+		await fetchSittingCalendar(
+			year,
+			modelContext: modelContext,
+			fetch: fetch,
+			generation: generation,
+			forceRemoteRefresh: false
+		)
+	}
+
+	private func fetchSittingCalendar(
+		_ year: Int,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		generation: Int,
+		forceRemoteRefresh: Bool
+	) async {
 		do {
+			if forceRemoteRefresh {
+				try await fetch.downloadSittingCalendar(year)
+			}
 			let result = try await loadSittingWindow(year: year, modelContext: modelContext, fetch: fetch)
-			guard isCurrentLoad(generation) else { return }
-			let splitDates = makeDateComponentSets(from: result.sittingDates)
-			dates.formUnion(splitDates.past)
-			futureDates.formUnion(splitDates.future)
+			guard !Task.isCancelled, isCurrentLoad(generation) else { return }
+			replaceSittingDates(for: year, with: result.sittingDates)
+			loadFailed = false
 		} catch {
-			guard isCurrentLoad(generation) else { return }
+			guard !Task.isCancelled, isCurrentLoad(generation) else { return }
 			Log.debug("Failed to fetch SittingCalendar count")
 			Telemetry.recordError(error)
 			loadFailed = true
@@ -73,6 +119,8 @@ class SittingCalendarViewModel {
 	func refresh(modelContext: ModelContext, fetch: Fetch) async {
 		let year = currentYear
 		let generation = nextLoadGeneration()
+		deferredFetchTask?.cancel()
+		deferredFetchTask = nil
 		loadFailed = false
 		do {
 			if browseHansardSitting == nil {
@@ -80,11 +128,7 @@ class SittingCalendarViewModel {
 			}
 			let result = try await loadSittingWindow(year: year, modelContext: modelContext, fetch: fetch)
 			guard isCurrentLoad(generation), currentYear == year else { return }
-			let splitDates = makeDateComponentSets(from: result.sittingDates)
-			dates = dates.filter { $0.year != year }
-			futureDates = futureDates.filter { $0.year != year }
-			dates.formUnion(splitDates.past)
-			futureDates.formUnion(splitDates.future)
+			replaceSittingDates(for: year, with: result.sittingDates)
 		} catch {
 			guard isCurrentLoad(generation) else { return }
 			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")
@@ -147,6 +191,40 @@ class SittingCalendarViewModel {
 		generation == loadGeneration
 	}
 
+	private func startDeferredFetch(
+		_ year: Int,
+		modelContext: ModelContext,
+		fetch: Fetch,
+		generation: Int,
+		forceRemoteRefresh: Bool
+	) {
+		deferredFetchTask?.cancel()
+		deferredFetchTask = Task {
+			await fetchSittingCalendar(
+				year,
+				modelContext: modelContext,
+				fetch: fetch,
+				generation: generation,
+				forceRemoteRefresh: forceRemoteRefresh
+			)
+			if isCurrentLoad(generation) {
+				deferredFetchTask = nil
+			}
+		}
+	}
+
+	private func loadCachedSittingCalendar(_ year: Int, modelContext: ModelContext) {
+		do {
+			let descriptor = FetchDescriptor<SittingCalendar>(predicate: #Predicate { $0.year == year })
+			let cachedDates = try modelContext.fetch(descriptor).first?.sittings ?? []
+			replaceSittingDates(for: year, with: cachedDates)
+		} catch {
+			Log.debug("Failed to load cached SittingCalendar count")
+			Telemetry.recordError(error)
+			loadFailed = true
+		}
+	}
+
 	private func loadSittingWindow(
 		year: Int,
 		modelContext: ModelContext,
@@ -165,6 +243,14 @@ class SittingCalendarViewModel {
 			repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
 		)
 		return try await useCase.execute(jurisdiction: .federal, from: startDate, through: endDate)
+	}
+
+	private func replaceSittingDates(for year: Int, with sittings: [Date]) {
+		let splitDates = makeDateComponentSets(from: sittings)
+		dates = dates.filter { $0.year != year }
+		futureDates = futureDates.filter { $0.year != year }
+		dates.formUnion(splitDates.past)
+		futureDates.formUnion(splitDates.future)
 	}
 
 	private func makeDateComponentSets(from sittings: [Date]) -> (past: Set<DateComponents>, future: Set<DateComponents>) {
