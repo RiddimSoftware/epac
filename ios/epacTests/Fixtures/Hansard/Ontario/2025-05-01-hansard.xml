@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Hansard parliament="44" session="1" date="2025-05-01">
+  <Section title="Orders of the Day">
+    <Speech id="P255_15151" speaker="MPP Jamie West" memberId="mpp-jamie-west">
+      <Para>Thank you, Madam Speaker. I am rising to debate Bill 5.</Para>
+      <Para>The bill needs careful review because northern communities depend on clear permitting rules.</Para>
+    </Speech>
+    <Speech id="P300_41728" speaker="Mr. Sol Mamakwa" memberId="mpp-sol-mamakwa">
+      <Para>Meegwetch, Speaker. The voices of First Nations need to be heard in this debate.</Para>
+    </Speech>
+  </Section>
+  <Section title="Statements by the Ministry and Responses">
+    <Statement id="P398_72105" speaker="Hon. Example Minister" memberId="mpp-example-minister">
+      <Para>Today I rise to update the House on a long-term public service plan.</Para>
+      <Para>The first continuation paragraph remains part of the same ministerial statement.</Para>
+      <Para>The second continuation paragraph is also attributed to the minister.</Para>
+    </Statement>
+  </Section>
+</Hansard>

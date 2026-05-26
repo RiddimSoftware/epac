@@ -599,6 +599,7 @@ issue lands.
 | British Columbia | `ios/epac/Data/Adapters/Hansard/BritishColumbiaHansardAdapter.swift` | TODO — EPAC-680. |
 | Manitoba | `ios/epac/Data/Adapters/Hansard/ManitobaHansardAdapter.swift` | TODO — EPAC-786. |
 | Nova Scotia | `ios/epac/Data/Adapters/Hansard/NovaScotiaHansardAdapter.swift` | Registered in `JurisdictionRoutedHansardRepository` at app startup. |
+| Ontario | `ios/epac/Data/Adapters/Hansard/OntarioHansardAdapter.swift` | Registered in `JurisdictionRoutedHansardRepository` at app startup. |
 | Quebec | `ios/epac/Data/Adapters/Hansard/QuebecHansardAdapter.swift` | TODO — EPAC-936. |
 | Saskatchewan | `ios/epac/Data/Adapters/Hansard/SaskatchewanHansardAdapter.swift` | Registered in `JurisdictionRoutedHansardRepository` at app startup. |
 
