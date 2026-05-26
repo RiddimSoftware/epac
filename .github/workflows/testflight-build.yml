@@ -3,6 +3,12 @@ name: TestFlight Build
 on:
   push:
     branches: [main]
+    paths:
+      # Avoid spending Apple TestFlight upload quota on docs, backend, website,
+      # evidence-only, workflow-only, or other non-app changes.
+      - 'ios/**'
+      - 'scripts/release/**'
+      - 'scripts/runner/ephemeral_keychain.sh'
   workflow_dispatch:
     inputs:
       dry_run:

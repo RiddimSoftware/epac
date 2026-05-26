@@ -2,22 +2,24 @@
 
 ## Goal
 
-A user can find today's Hansard chat session and view the group chat.
+A user can find a sitting with Hansard content, open its table of contents, read a debate from start to end, and return to the topics list.
 
 ## Sub-steps
 
-1. **Launch app and verify responsiveness** — app starts and remains responsive for 5 seconds without crashing; crash gate passes
-2. **Tap Parliament tab** — verify a calendar view appears with sitting dates listed
-3. **Verify today's date is visible on the calendar** — the fixture date (November 4, 2025) appears as a selectable date in the calendar surface; do not assert against wall-clock today
-4. **Tap the most-recent sitting with content** — select the sitting entry that corresponds to the fixture date; verify the tap is accepted
-5. **Verify sitting overview loads** — the sitting detail screen is not blank and shows no error state; at least one subject of business is visible
-6. **Navigate to group chat for this sitting** — tap into a subject of business or the chat entry point to open the Hansard chat surface
-7. **Verify chat surface appears with at least one message rendered** — the group chat view is visible and at least one speech bubble containing parliamentary text is rendered on screen
+1. **Launch app and remain responsive for 5s** — app starts and remains responsive for 5 seconds without crashing.
+2. **App is on the Parliament tab** — verify the calendar is visible on the current tab; tap the Parliament tab only if the app did not launch there by default.
+3. **Verify today's date is visible on the calendar** — confirm `2025-11-04` is visible as a selectable date in the calendar surface. Do not assert against wall-clock today.
+4. **Tap a green date** — select the fixture date (`2025-11-04`) or any visible date marked as a sitting day.
+5. **Verify the table of contents opens** — the debate / subjects-of-business list for the selected sitting appears.
+6. **Tap a debate entry in the ToC** — open a debate detail screen from the list; the view is not blank and renders debate content.
+7. **Page through the debate to the end** — use the debate pagination interaction (tap-anywhere to advance) until the end marker is reached.
+8. **Return to topics** — navigate back to the table of contents and verify the topics list is visible again.
 
 ## Anti-goals (out of scope)
 
-- Asserting the specific text content of any speech or intervention
-- Verifying speaker photos load or display correctly
-- Testing calendar UI affordances beyond confirming the fixture date is visible
-- Validating scroll behavior or message count within the chat thread
-- Checking any tab other than Parliament during this CUJ
+- Asserting any specific debate, speech, or speaker content.
+- Verifying speaker photos load.
+- Validating exact page count of a debate.
+- Asserting which debate is tapped in step 6 (any debate is acceptable).
+- Testing calendar UI affordances beyond confirming green-date visibility and tap.
+- Checking any tab other than Parliament.

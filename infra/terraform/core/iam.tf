@@ -37,6 +37,18 @@ locals {
     "arn:aws:apigateway:${var.aws_region}::/apis/bdnpz6v3c8/*"
   ]
 
+  api_gateway_domain_names = [
+    "api.epac.riddimsoftware.com",
+    "staging-api.epac.riddimsoftware.com"
+  ]
+
+  api_gateway_domain_arns = flatten([
+    for domain_name in local.api_gateway_domain_names : [
+      "arn:aws:apigateway:${var.aws_region}::/domainnames/${domain_name}",
+      "arn:aws:apigateway:${var.aws_region}::/domainnames/${domain_name}/*"
+    ]
+  ])
+
   legacy_production_lambda_names = [
     "daily-fetch",
     "loader",
@@ -70,7 +82,7 @@ data "aws_iam_policy_document" "backend_ci_common" {
     actions = [
       "apigateway:*"
     ]
-    resources = local.api_gateway_arns
+    resources = concat(local.api_gateway_arns, local.api_gateway_domain_arns)
   }
 
   statement {
@@ -154,8 +166,10 @@ data "aws_iam_policy_document" "backend_staging_ci" {
       "lambda:CreateFunction",
       "lambda:DeleteFunction",
       "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
       "lambda:GetFunctionConfiguration",
       "lambda:GetPolicy",
+      "lambda:GetRuntimeManagementConfig",
       "lambda:InvokeFunction",
       "lambda:ListTags",
       "lambda:ListVersionsByFunction",
@@ -180,8 +194,10 @@ data "aws_iam_policy_document" "backend_production_ci" {
       "lambda:CreateFunction",
       "lambda:DeleteFunction",
       "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
       "lambda:GetFunctionConfiguration",
       "lambda:GetPolicy",
+      "lambda:GetRuntimeManagementConfig",
       "lambda:InvokeFunction",
       "lambda:ListTags",
       "lambda:ListVersionsByFunction",
