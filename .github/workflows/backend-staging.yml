@@ -268,23 +268,22 @@ jobs:
           aws lambda wait function-updated \
             --function-name "$FUNCTION_NAME"
 
-      - name: Sync staging DATABASE_URL from Parameter Store
+      - name: Sync staging DATABASE_URL from Secrets Manager
         if: ${{ steps.staging-lambda.outputs.exists == 'true' && contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
         env:
           FUNCTION_NAME: epac-${{ matrix.service }}-staging
-          DATABASE_URL_PARAMETER_NAME: /epac/database-url
+          DATABASE_URL_SECRET_ID: epac/database-url
           SENTRY_DSN: ${{ secrets.SENTRY_DSN_STAGING }}
         run: |
           set -euo pipefail
 
           secret_error="$(mktemp)"
-          if ! DATABASE_URL=$(aws ssm get-parameter \
-              --name "$DATABASE_URL_PARAMETER_NAME" \
-              --with-decryption \
-              --query Parameter.Value \
+          if ! DATABASE_URL=$(aws secretsmanager get-secret-value \
+              --secret-id "$DATABASE_URL_SECRET_ID" \
+              --query SecretString \
               --output text 2>"$secret_error"); then
-            if grep -q "Parameter has been marked for deletion" "$secret_error"; then
-              echo "::warning title=Skipping DATABASE_URL refresh::${DATABASE_URL_PARAMETER_NAME} is marked for deletion; preserving the current Lambda DATABASE_URL."
+            if grep -q "marked for deletion" "$secret_error"; then
+              echo "::warning title=Skipping DATABASE_URL refresh::${DATABASE_URL_SECRET_ID} is marked for deletion; preserving the current Lambda DATABASE_URL."
               DATABASE_URL=$(aws lambda get-function-configuration \
                 --function-name "$FUNCTION_NAME" \
                 --query 'Environment.Variables.DATABASE_URL' \
@@ -299,7 +298,7 @@ jobs:
             DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
           fi
           if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
-            echo "Secret ${DATABASE_URL_PARAMETER_NAME} did not contain a DATABASE_URL value"
+            echo "Secret ${DATABASE_URL_SECRET_ID} did not contain a DATABASE_URL value"
             exit 1
           fi
 

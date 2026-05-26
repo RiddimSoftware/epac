@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fetch_asc_secret.sh — Fetch appstore/connect-api from AWS Systems Manager Parameter Store.
+# fetch_asc_secret.sh — Fetch appstore/connect-api from AWS Secrets Manager.
 # Inputs:  AWS credentials already configured (OIDC or env vars).
 # Outputs: ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 (chmod 600)
 #          /tmp/asc_api_key.json  (fastlane app_store_connect_api_key format)
@@ -12,11 +12,10 @@ set -euo pipefail
 # CLI to avoid "profile () could not be found" / mixed-provider failures.
 unset AWS_PROFILE AWS_DEFAULT_PROFILE
 
-SECRET=$(aws ssm get-parameter \
-  --name /appstore/connect-api \
+SECRET=$(aws secretsmanager get-secret-value \
+  --secret-id appstore/connect-api \
   --region us-east-1 \
-  --with-decryption \
-  --query Parameter.Value \
+  --query SecretString \
   --output text)
 
 KEY_ID=$(echo "$SECRET" | jq -r '.key_id')

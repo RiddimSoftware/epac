@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fetch_distribution_cert.sh — Fetch appstore/distribution-cert from AWS Systems Manager Parameter Store.
+# fetch_distribution_cert.sh — Fetch appstore/distribution-cert from AWS Secrets Manager.
 # Inputs:  AWS credentials already configured (OIDC or env vars).
 #          Secret shape: { "p12_base64": "<base64>", "password": "<p12 password>" }
 # Outputs: /tmp/dist_cert.p12 (chmod 600)
@@ -10,11 +10,10 @@ set -euo pipefail
 # AWS profile selection.
 unset AWS_PROFILE AWS_DEFAULT_PROFILE
 
-SECRET=$(aws ssm get-parameter \
-  --name /appstore/distribution-cert \
+SECRET=$(aws secretsmanager get-secret-value \
+  --secret-id appstore/distribution-cert \
   --region us-east-1 \
-  --with-decryption \
-  --query Parameter.Value \
+  --query SecretString \
   --output text)
 
 P12_BASE64=$(echo "$SECRET" | jq -r '.p12_base64')
