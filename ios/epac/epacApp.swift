@@ -12,6 +12,37 @@ import UIKit
 
 enum AppRuntime {
 	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+	static let isUITestFreshStateRequested = CommandLine.arguments.contains(UITestFreshState.argument)
+
+	static var shouldSuppressFirstLaunchSurfacesInTests: Bool {
+		isRunningTests && !isUITestFreshStateRequested
+	}
+
+	static var canResetFreshStateForUITests: Bool {
+		isRunningTests && isUITestFreshStateRequested
+	}
+}
+
+private enum UITestFreshState {
+	static let argument = "-UI_TEST_FRESH_STATE"
+	private static let defaultsKeyPrefix = "epac."
+	private static let unprefixedDefaultsKeys = ["pendingMemberID", "calendardates_v2"]
+
+	static func resetIfRequested() {
+		guard AppRuntime.canResetFreshStateForUITests else { return }
+
+		let defaults = UserDefaults.standard
+		for key in defaults.dictionaryRepresentation().keys
+			where key.hasPrefix(defaultsKeyPrefix) || unprefixedDefaultsKeys.contains(key) {
+			defaults.removeObject(forKey: key)
+		}
+
+		do {
+			try SwiftDataStoreRecovery.deleteStoreFiles(at: SwiftDataStoreRecovery.defaultStoreURL)
+		} catch {
+			Log.warning("UI test fresh-state SwiftData reset failed: \(error.localizedDescription)")
+		}
+	}
 }
 
 @MainActor
@@ -54,6 +85,7 @@ struct epacApp: App {
 	@Environment(\.scenePhase) private var scenePhase
 
 	init() {
+		UITestFreshState.resetIfRequested()
 		let modelContainer = Self.makeModelContainer()
 		let fetch = Fetch(modelContainer: modelContainer)
 		let swiftDataHansardRepository = SwiftDataHansardRepository(
