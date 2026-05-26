@@ -151,7 +151,8 @@ jobs:
           echo "| Lambda permission (apigw-invoke-hansard-search) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
           # --- IAM: S3 read/write on hansard-search prefix (put-role-policy is idempotent) ---
-          aws iam put-role-policy \
+          # The CI role may lack iam:PutRolePolicy; warn and continue so the deploy is not blocked.
+          if aws iam put-role-policy \
             --role-name epac-lambda-role \
             --policy-name EpacArtifactsBucketHansardSearch \
             --policy-document '{
@@ -181,8 +182,12 @@ jobs:
                   }
                 }
               ]
-            }'
-          echo "| IAM EpacArtifactsBucketHansardSearch policy | ensured |" >> "$GITHUB_STEP_SUMMARY"
+            }' 2>/dev/null; then
+            echo "| IAM EpacArtifactsBucketHansardSearch policy | ensured |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=IAM policy skipped::iam:PutRolePolicy denied for epac-lambda-role. Ensure EpacArtifactsBucketHansardSearch is applied via Terraform or manual IAM."
+            echo "| IAM EpacArtifactsBucketHansardSearch policy | skipped (AccessDenied) |" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   deploy:
     name: Deploy ${{ matrix.service }} to staging
