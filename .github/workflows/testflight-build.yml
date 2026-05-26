@@ -184,15 +184,25 @@ jobs:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           SPM_CLONED_SOURCE_PACKAGES_PATH: SourcePackages
         run: |
-          bundle exec fastlane deploy \
+          set +e
+          output="$(bundle exec fastlane deploy \
             scheme:${{ vars.SCHEME }} \
             bundle_id:${{ vars.BUNDLE_ID }} \
             team_id:${{ vars.APPLE_TEAM_ID }} \
             xcodeproj:${{ vars.XCODEPROJ_PATH }} \
-            extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}"
+            extra_bundle_ids:"${{ vars.EXTRA_BUNDLE_IDS || '' }}" 2>&1)"
+          exit_code=$?
+          set -e
+          echo "$output"
+          if [ $exit_code -ne 0 ] && echo "$output" | grep -q "Upload limit reached"; then
+            echo "::warning::Apple daily upload limit reached. Build was successful but upload was rejected. This is transient and resolves after 24 hours."
+            echo "upload_limit_reached=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit $exit_code
 
       - name: Tag TestFlight build provenance
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         shell: bash
         env:
           BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
@@ -223,7 +233,7 @@ jobs:
 
       - name: Resolve TestFlight build ID
         id: build-id
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         env:
           VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}
           BUILD_NUMBER: ${{ steps.build-number.outputs.build_number }}
@@ -235,13 +245,13 @@ jobs:
             --build-number "$BUILD_NUMBER"
 
       - name: Wait for TestFlight processing
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         run: |
           .venv-release/bin/python scripts/release/wait_for_build_processed.py \
             --build-id "${{ steps.build-id.outputs.build_id }}"
 
       - name: Attach build to PublicTesting group
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         run: |
           .venv-release/bin/python scripts/release/attach_build_to_group.py \
             --build-id "${{ steps.build-id.outputs.build_id }}" \
@@ -250,7 +260,7 @@ jobs:
 
       - name: Check beta review contact configuration
         id: beta-review-config
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' }}
         run: |
           if [ -n "${{ vars.BETA_REVIEW_CONTACT_EMAIL }}" ] && \
              [ -n "${{ vars.BETA_REVIEW_CONTACT_FIRST_NAME }}" ] && \
@@ -263,7 +273,7 @@ jobs:
           fi
 
       - name: Ensure beta review info
-        if: ${{ !inputs.dry_run && steps.beta-review-config.outputs.configured == 'true' }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' && steps.beta-review-config.outputs.configured == 'true' }}
         env:
           BETA_REVIEW_CONTACT_EMAIL: ${{ vars.BETA_REVIEW_CONTACT_EMAIL }}
           BETA_REVIEW_CONTACT_FIRST_NAME: ${{ vars.BETA_REVIEW_CONTACT_FIRST_NAME }}
@@ -275,7 +285,7 @@ jobs:
             --build-id "${{ steps.build-id.outputs.build_id }}"
 
       - name: Submit for Beta App Review
-        if: ${{ !inputs.dry_run && steps.beta-review-config.outputs.configured == 'true' }}
+        if: ${{ !inputs.dry_run && steps.build-number.outputs.upload_limit_reached != 'true' && steps.beta-review-config.outputs.configured == 'true' }}
         run: |
           .venv-release/bin/python scripts/release/submit_beta_app_review.py \
             --build-id "${{ steps.build-id.outputs.build_id }}"
@@ -288,18 +298,30 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           {
-            echo "## TestFlight build uploaded"
-            echo ""
-            echo "- Workflow source: ${{ github.event_name }}"
-            echo "- Workflow commit: ${{ github.sha }}"
-            echo "- Built source ref: ${{ steps.source.outputs.ref }}"
-            echo "- Built source commit: ${{ steps.source.outputs.sha }}"
-            echo "- Version: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}"
-            echo "- Version source: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override && 'manual override' || steps.version.outputs.version_source }}"
-            echo "- Build: #${{ steps.build-number.outputs.build_number }}"
-            echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
-            if [ "${{ steps.beta-review-config.outputs.configured }}" != "true" ]; then
+            if [ "${{ steps.build-number.outputs.upload_limit_reached }}" = "true" ]; then
+              echo "## TestFlight upload skipped — daily limit reached"
               echo ""
-              echo "> **Note:** Beta app review submission was skipped because \`BETA_REVIEW_CONTACT_*\` repository variables are not configured."
+              echo "Apple's daily upload limit (~3 builds/day) was hit. The build compiled successfully but the upload was rejected with HTTP 409."
+              echo "This is transient and self-resolves after 24 hours. No action required."
+              echo ""
+              echo "- Workflow source: ${{ github.event_name }}"
+              echo "- Workflow commit: ${{ github.sha }}"
+              echo "- Built source ref: ${{ steps.source.outputs.ref }}"
+              echo "- Built source commit: ${{ steps.source.outputs.sha }}"
+            else
+              echo "## TestFlight build uploaded"
+              echo ""
+              echo "- Workflow source: ${{ github.event_name }}"
+              echo "- Workflow commit: ${{ github.sha }}"
+              echo "- Built source ref: ${{ steps.source.outputs.ref }}"
+              echo "- Built source commit: ${{ steps.source.outputs.sha }}"
+              echo "- Version: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override || steps.version.outputs.next_version }}"
+              echo "- Version source: ${{ github.event_name == 'workflow_dispatch' && inputs.version_override && 'manual override' || steps.version.outputs.version_source }}"
+              echo "- Build: #${{ steps.build-number.outputs.build_number }}"
+              echo "- TestFlight: https://appstoreconnect.apple.com/apps/${{ vars.APPLE_APP_ID }}/testflight/ios"
+              if [ "${{ steps.beta-review-config.outputs.configured }}" != "true" ]; then
+                echo ""
+                echo "> **Note:** Beta app review submission was skipped because \`BETA_REVIEW_CONTACT_*\` repository variables are not configured."
+              fi
             fi
           } >> "$GITHUB_STEP_SUMMARY"
