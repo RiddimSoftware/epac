@@ -5,7 +5,7 @@ terraform {
     bucket         = "epac-tfstate-staging-227530433709"
     key            = "staging.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "epac-tfstate-lock-staging"
+    use_lockfile   = true
     encrypt        = true
   }
 
