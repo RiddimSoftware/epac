@@ -208,6 +208,15 @@ actor Fetch: ObservableObject {
 		try modelContext.save()
 	}
 
+	func ingestNovaScotiaVotes(document: String, sittingDate: Date) throws {
+		let parser = NovaScotiaVotesParser()
+		let votes = try parser.parse(document: document, sittingDate: sittingDate)
+		for vote in votes {
+			modelContext.insert(vote)
+		}
+		try modelContext.save()
+	}
+
 	func member(_ firstName: String, _ lastName: String) async throws -> ParliamentMember {
 		Log.debug("Fetch.member(firstName: \(firstName), lastName: \(lastName))")
 		let fetched = try modelContext.fetch(FetchDescriptor<ParliamentMember>())
