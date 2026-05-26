@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A3DEAD0BEEF00000CAFE0007 /* Evidence in Frameworks */ = {isa = PBXBuildFile; productRef = A3DEAD0BEEF00000CAFE0008 /* Evidence */; };
 		A327A9202D18F75B00A2D292 /* epac-clip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = A327A91F2D18F75B00A2D292 /* epac-clip.app */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A34F7CD22D13ADD70004C905 /* ActivityView in Frameworks */ = {isa = PBXBuildFile; productRef = A34F7CD12D13ADD70004C905 /* ActivityView */; };
 		A366154B2D0A24DD00A3FBF7 /* Kanna in Frameworks */ = {isa = PBXBuildFile; productRef = A366154A2D0A24DD00A3FBF7 /* Kanna */; };
@@ -177,7 +176,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3DEAD0BEEF00000CAFE0007 /* Evidence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -366,7 +364,6 @@
 			);
 			name = epacUITests;
 			packageProductDependencies = (
-				A3DEAD0BEEF00000CAFE0008 /* Evidence */,
 			);
 			productName = epacUITests;
 			productReference = A38427E02D062C8E00271C34 /* epacUITests.xctest */;
@@ -477,7 +474,6 @@
 			mainGroup = A38427BA2D062C8D00271C34;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A3DEAD0BEEF00000CAFE0009 /* XCRemoteSwiftPackageReference "evidence" */,
 				A36615492D0A24DD00A3FBF7 /* XCRemoteSwiftPackageReference "Kanna" */,
 				A36615822D0A261300A3FBF7 /* XCRemoteSwiftPackageReference "SWXMLHash" */,
 				A34F7CD02D13ADD70004C905 /* XCRemoteSwiftPackageReference "ActivityView" */,
@@ -1171,14 +1167,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A3DEAD0BEEF00000CAFE0009 /* XCRemoteSwiftPackageReference "evidence" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RiddimSoftware/evidence";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 		A3FADE01DEAD00001DEAD001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
@@ -1238,11 +1226,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A3DEAD0BEEF00000CAFE0008 /* Evidence */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A3DEAD0BEEF00000CAFE0009 /* XCRemoteSwiftPackageReference "evidence" */;
-			productName = Evidence;
-		};
 		A33253CD2F2852E500531242 /* ExyteChat */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A33253CC2F2852E500531242 /* XCRemoteSwiftPackageReference "Chat" */;

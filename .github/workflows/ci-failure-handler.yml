@@ -11,7 +11,6 @@ name: CI Failure Handler
 # - Backend Python tests
 # - Deliver App Store Metadata
 # - Infrastructure Validation
-# - Evidence regression
 # - Backend PR
 #
 # Exclusion criteria:
@@ -32,7 +31,6 @@ on:
       - "Backend Python tests"
       - "Deliver App Store Metadata"
       - "Infrastructure Validation"
-      - "Evidence regression"
       - "Backend PR"
 
 permissions:
