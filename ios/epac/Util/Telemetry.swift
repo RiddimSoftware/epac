@@ -7,7 +7,12 @@ protocol TelemetrySpan {
 protocol TelemetryProvider {
     func recordError(_ error: Error, attributes: [String: String])
     func recordEvent(_ name: String, attributes: [String: String])
+    func recordPayload(name: String, body: String, attributes: [String: String])
     func startSpan(name: String, operation: String) -> any TelemetrySpan
+}
+
+protocol FlushableTelemetryProvider {
+    func flush()
 }
 
 struct NoopTelemetrySpan: TelemetrySpan {
@@ -17,6 +22,7 @@ struct NoopTelemetrySpan: TelemetrySpan {
 struct NoopTelemetryProvider: TelemetryProvider {
     func recordError(_ error: Error, attributes: [String: String] = [:]) {}
     func recordEvent(_ name: String, attributes: [String: String] = [:]) {}
+    func recordPayload(name: String, body: String, attributes: [String: String] = [:]) {}
     func startSpan(name: String, operation: String) -> any TelemetrySpan { NoopTelemetrySpan() }
 }
 
@@ -32,7 +38,15 @@ enum Telemetry {
         provider.recordEvent(name, attributes: attributes)
     }
 
+    static func recordPayload(name: String, body: String, attributes: [String: String] = [:]) {
+        provider.recordPayload(name: name, body: body, attributes: attributes)
+    }
+
     static func startSpan(name: String, operation: String) -> any TelemetrySpan {
         provider.startSpan(name: name, operation: operation)
+    }
+
+    static func flush() {
+        (provider as? any FlushableTelemetryProvider)?.flush()
     }
 }

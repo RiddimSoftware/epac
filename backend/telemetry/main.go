@@ -25,6 +25,7 @@ const (
 	maxAttrKeyLen    = 32
 	maxAttrValueLen  = 256
 	maxAttrKeys      = 16
+	maxBodyLen       = 64 * 1024
 	maxBatchSize     = 100
 	maxDurationMs    = 600_000
 )
@@ -42,6 +43,7 @@ type TelemetryEvent struct {
 	Operation  string            `json:"operation"`
 	Message    string            `json:"message"`
 	DurationMs *int              `json:"duration_ms"`
+	Body       string            `json:"body"`
 	Attributes map[string]string `json:"attributes"`
 	Ts         string            `json:"ts"`
 }
@@ -104,9 +106,9 @@ func validateRequest(r *TelemetryRequest) error {
 
 func validateEvent(e *TelemetryEvent) error {
 	switch e.Type {
-	case "error", "event", "span":
+	case "error", "event", "span", "payload":
 	default:
-		return fmt.Errorf("type must be error, event, or span")
+		return fmt.Errorf("type must be error, event, span, or payload")
 	}
 	if e.Name == "" {
 		return fmt.Errorf("name is required")
@@ -119,6 +121,9 @@ func validateEvent(e *TelemetryEvent) error {
 	}
 	if len(e.Message) > maxMessageLen {
 		return fmt.Errorf("message exceeds %d characters", maxMessageLen)
+	}
+	if len(e.Body) > maxBodyLen {
+		return fmt.Errorf("body exceeds %d bytes", maxBodyLen)
 	}
 	if e.DurationMs != nil {
 		if *e.DurationMs < 0 || *e.DurationMs > maxDurationMs {
@@ -188,6 +193,10 @@ func emitEMF(req *TelemetryRequest, e *TelemetryEvent) {
 
 	if len(e.Attributes) > 0 {
 		emf["attributes"] = e.Attributes
+	}
+
+	if e.Type == "payload" && e.Body != "" {
+		emf["body"] = e.Body
 	}
 
 	line, _ := json.Marshal(emf)
