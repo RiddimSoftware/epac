@@ -66,6 +66,7 @@ struct epacApp: App {
 	let sharedModelContainer: ModelContainer
 	let fetch: Fetch
 	let hansardRepository: any HansardRepository
+	@MainActor private static var didInstallBackendTelemetryProvider = false
 
 	private static func makeModelContainer() -> ModelContainer {
 		do {
@@ -80,6 +81,20 @@ struct epacApp: App {
 		} catch {
 			fatalError("Could not create ModelContainer after SwiftData cache recovery: \(error)")
 		}
+	}
+
+	@MainActor
+	private static func installBackendTelemetryProviderIfNeeded() async {
+		guard !didInstallBackendTelemetryProvider,
+			  !AppRuntime.isRunningTests,
+			  !AppEnvironment.isMarketingCaptureMode else {
+			return
+		}
+
+		await Task.yield()
+		guard !didInstallBackendTelemetryProvider else { return }
+		Telemetry.provider = BackendTelemetryProvider(osVersion: UIDevice.current.systemVersion)
+		didInstallBackendTelemetryProvider = true
 	}
 
 	@Environment(\.scenePhase) private var scenePhase
@@ -132,9 +147,15 @@ struct epacApp: App {
 				hansardRepository: hansardRepository,
 				appDelegate: appDelegate
 			)
+			.task {
+				await Self.installBackendTelemetryProviderIfNeeded()
+			}
 		}
 		.modelContainer(sharedModelContainer)
 		.onChange(of: scenePhase) { _, newPhase in
+			if newPhase == .background && !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode {
+				Telemetry.flush()
+			}
 			if newPhase == .active && !AppRuntime.isRunningTests && !AppEnvironment.isMarketingCaptureMode {
 				// Snapshot the latest-seen bill introduction date so BillsView can mark
 				// bills introduced since the previous session as "New" this session.

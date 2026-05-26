@@ -158,6 +158,56 @@ func TestValidEventWithAttributes(t *testing.T) {
 	}
 }
 
+func TestPayloadEventIncludesBody(t *testing.T) {
+	body := `{"metric":true}`
+	payload := TelemetryRequest{
+		DeviceID: "device-payload",
+		Events: []TelemetryEvent{
+			{Type: "payload", Name: "metrickit.metric", Body: body, Ts: "2026-05-26T12:00:00Z"},
+		},
+	}
+	data, _ := json.Marshal(payload)
+
+	output := captureEMF(t, func() {
+		resp, err := handler(context.Background(), makeRequest(http.MethodPost, "application/json", string(data)))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected 204, got %d: %s", resp.StatusCode, resp.Body)
+		}
+	})
+
+	var emf map[string]any
+	json.Unmarshal([]byte(strings.TrimSpace(output)), &emf)
+	if emf["EventType"] != "payload" {
+		t.Errorf("expected EventType=payload, got %v", emf["EventType"])
+	}
+	if emf["body"] != body {
+		t.Errorf("expected payload body to be emitted, got %v", emf["body"])
+	}
+}
+
+func TestPayloadBodyMaxLength(t *testing.T) {
+	payload := TelemetryRequest{
+		DeviceID: "d1",
+		Events: []TelemetryEvent{
+			{Type: "payload", Name: "too_large", Body: strings.Repeat("x", maxBodyLen+1), Ts: "2026-05-26T12:00:00Z"},
+		},
+	}
+	data, _ := json.Marshal(payload)
+	resp, err := handler(context.Background(), makeRequest(http.MethodPost, "application/json", string(data)))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+	if !strings.Contains(resp.Body, "body exceeds") {
+		t.Errorf("expected body size error, got: %s", resp.Body)
+	}
+}
+
 func TestMissingDeviceID(t *testing.T) {
 	payload := `{"events":[{"type":"event","name":"test","ts":"2026-05-26T12:00:00Z"}]}`
 	resp, err := handler(context.Background(), makeRequest(http.MethodPost, "application/json", payload))

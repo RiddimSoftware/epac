@@ -698,6 +698,12 @@
                         "name": "network_failure",
                         "message": "connection timeout",
                         "ts": "2026-05-26T12:00:02Z"
+                      },
+                      {
+                        "type": "payload",
+                        "name": "metrickit.metric",
+                        "body": "{\"metric\":true}",
+                        "ts": "2026-05-26T12:00:03Z"
                       }
                     ]
                   }
@@ -1207,11 +1213,16 @@
         "type": "object",
         "required": ["type", "name", "ts"],
         "properties": {
-          "type": { "type": "string", "enum": ["error", "event", "span"] },
+          "type": { "type": "string", "enum": ["error", "event", "span", "payload"] },
           "name": { "type": "string", "maxLength": 128 },
           "operation": { "type": "string", "maxLength": 64 },
           "message": { "type": "string", "maxLength": 512 },
           "duration_ms": { "type": "integer", "minimum": 0, "maximum": 600000 },
+          "body": {
+            "type": "string",
+            "maxLength": 65536,
+            "description": "Opaque payload body for MetricKit JSON and similar larger client payloads. Not extracted as a metric."
+          },
           "attributes": {
             "type": "object",
             "additionalProperties": { "type": "string", "maxLength": 256 },
