@@ -14,7 +14,7 @@ import (
 
 func TestBuildCreatesSchemaAndMatchesInsertedMessages(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "index.sqlite")
-	builder := NewBuilder(path, fixedClock{})
+	builder := NewBuilder(path, fixedClock{}, nil)
 	_, stats, err := builder.Build(context.Background(), []domain.Intervention{sampleIntervention()})
 	if err != nil {
 		t.Fatalf("Build: %v", err)
@@ -63,7 +63,7 @@ func TestFixtureToSQLiteIntegrationMatchesKnownPhrase(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "index.sqlite")
-	_, stats, err := NewBuilder(path, fixedClock{}).Build(context.Background(), interventions)
+	_, stats, err := NewBuilder(path, fixedClock{}, nil).Build(context.Background(), interventions)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -121,6 +121,63 @@ func sampleIntervention() domain.Intervention {
 			{MessageID: "m-2", Position: 2, Text: "The index should keep message rows aligned."},
 		},
 	}
+}
+
+func TestBuildSucceedsWithDuplicateInterventionID(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.sqlite")
+	sitting1 := time.Date(2025, 5, 26, 0, 0, 0, 0, time.UTC)
+	sitting2 := time.Date(2025, 5, 27, 0, 0, 0, 0, time.UTC)
+	interventions := []domain.Intervention{
+		{
+			ParliamentNumber: 45, SessionNumber: 1,
+			SittingDate: sitting1, InterventionID: "dup-id",
+			SpeakerFirstName: "Alice", SpeakerLastName: "Smith",
+			Messages: []domain.Message{{MessageID: "m-a1", Position: 1, Text: "First occurrence text."}},
+		},
+		{
+			ParliamentNumber: 45, SessionNumber: 1,
+			SittingDate: sitting2, InterventionID: "dup-id",
+			SpeakerFirstName: "Bob", SpeakerLastName: "Jones",
+			Messages: []domain.Message{{MessageID: "m-b1", Position: 1, Text: "Second occurrence text."}},
+		},
+	}
+
+	warnLog := &captureLogger{}
+	_, stats, err := NewBuilder(path, fixedClock{}, warnLog).Build(context.Background(), interventions)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if stats.InterventionCount != 1 {
+		t.Fatalf("intervention count = %d, want 1", stats.InterventionCount)
+	}
+	if stats.MessageCount != 1 {
+		t.Fatalf("message count = %d, want 1", stats.MessageCount)
+	}
+	if len(warnLog.warns) != 1 || warnLog.warns[0].interventionID != "dup-id" {
+		t.Fatalf("warns = %+v, want one entry for dup-id", warnLog.warns)
+	}
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	defer db.Close()
+	var speaker string
+	if err := db.QueryRow("SELECT speaker_name FROM interventions WHERE intervention_id = 'dup-id'").Scan(&speaker); err != nil {
+		t.Fatalf("query intervention: %v", err)
+	}
+	if speaker != "Alice Smith" {
+		t.Fatalf("speaker = %q, want Alice Smith (first occurrence)", speaker)
+	}
+}
+
+type captureLogger struct {
+	warns []struct{ event, interventionID string }
+}
+
+func (l *captureLogger) Warn(event string, fields map[string]any) {
+	id, _ := fields["intervention_id"].(string)
+	l.warns = append(l.warns, struct{ event, interventionID string }{event, id})
 }
 
 type fixedClock struct{}
