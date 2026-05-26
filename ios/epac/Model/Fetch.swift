@@ -7,7 +7,6 @@
 
 import Foundation
 import Kanna
-import Sentry
 import SwiftData
 import SWXMLHash
 
@@ -159,14 +158,14 @@ actor Fetch: ObservableObject {
 
 	func downloadHansard(_ date: Date) async throws {
 		Log.debug("Fetch.downloadHansard(date: \(date))")
-		let transaction = SentrySDK.startTransaction(name: "hansard.sync", operation: "fetch.hansard")
+		let span = Telemetry.startSpan(name: "hansard.sync", operation: "fetch.hansard")
 		do {
 			let xml = try await downloadXML(forDate: date)
 			try ingestHansard(xml: xml)
 			UserDefaults.standard.set(Date(), forKey: "epac.sync.hansard")
-			transaction.finish(status: .ok)
+			span.finish()
 		} catch {
-			transaction.finish(status: .internalError)
+			span.finish()
 			throw error
 		}
 	}
@@ -1014,7 +1013,7 @@ actor Fetch: ObservableObject {
 	}
 
 	private func downloadFederalVotingRecords(parliament: Int) async throws {
-		let transaction = SentrySDK.startTransaction(name: "votes.sync", operation: "fetch.votes")
+		let span = Telemetry.startSpan(name: "votes.sync", operation: "fetch.votes")
 		do {
 			do {
 				try await fetchVotingRecords(parliament: parliament, from: .openCommons)
@@ -1028,9 +1027,9 @@ actor Fetch: ObservableObject {
 				}
 			}
 			writeLatestVoteSummaryForWidgets()
-			transaction.finish(status: .ok)
+			span.finish()
 		} catch {
-			transaction.finish(status: .internalError)
+			span.finish()
 			throw error
 		}
 	}

@@ -3,7 +3,6 @@
 //  epac
 //
 
-import Sentry
 import SwiftData
 import SwiftUI
 
@@ -98,7 +97,7 @@ struct SittingLoaderView: View {
 			updateRecentSubjects(for: hansard)
 		} catch {
 			Log.debug("Failed to fetch hansard \(date): \(error.localizedDescription)")
-			SentrySDK.capture(error: error)
+			Telemetry.recordError(error)
 			updateOfflineLoadMessage()
 			loadState = .failed
 		}

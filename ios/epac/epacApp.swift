@@ -6,17 +6,12 @@
 //
 
 import BackgroundTasks
-import Sentry
 import SwiftData
 import SwiftUI
 import UIKit
 
 enum AppRuntime {
 	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-}
-
-private enum SentryConfiguration {
-	static let tracesSampleRate: NSNumber = 0.1
 }
 
 @MainActor
@@ -81,14 +76,6 @@ struct epacApp: App {
 		])
 
 		guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
-
-		if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String, !dsn.isEmpty, !dsn.hasPrefix("$(") {
-			SentrySDK.start { options in
-				options.dsn = "https://\(dsn)"
-				options.enableCrashHandler = true
-				options.tracesSampleRate = SentryConfiguration.tracesSampleRate
-			}
-		}
 
 		MetricKitSubscriber.shared.start()
 
