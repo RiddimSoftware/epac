@@ -82,12 +82,18 @@ jobs:
               --architectures arm64 \
               --role "$LAMBDA_ROLE" \
               --zip-file fileb://infra/terraform/staging/placeholder.zip \
-              --timeout 60 \
-              --memory-size 128
+              --timeout 900 \
+              --memory-size 1024
             aws lambda wait function-active-v2 --function-name epac-hansard-search-index-staging
             echo "| epac-hansard-search-index-staging | created |" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "| epac-hansard-search-index-staging | already existed, skipped |" >> "$GITHUB_STEP_SUMMARY"
+            aws lambda update-function-configuration \
+              --function-name epac-hansard-search-index-staging \
+              --timeout 900 \
+              --memory-size 1024 \
+              >/dev/null
+            aws lambda wait function-updated --function-name epac-hansard-search-index-staging
+            echo "| epac-hansard-search-index-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # --- epac-hansard-search-staging Lambda ---
@@ -99,12 +105,17 @@ jobs:
               --architectures arm64 \
               --role "$LAMBDA_ROLE" \
               --zip-file fileb://infra/terraform/staging/placeholder.zip \
-              --timeout 60 \
+              --timeout 30 \
               --memory-size 128
             aws lambda wait function-active-v2 --function-name epac-hansard-search-staging
             echo "| epac-hansard-search-staging | created |" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "| epac-hansard-search-staging | already existed, skipped |" >> "$GITHUB_STEP_SUMMARY"
+            aws lambda update-function-configuration \
+              --function-name epac-hansard-search-staging \
+              --timeout 30 \
+              >/dev/null
+            aws lambda wait function-updated --function-name epac-hansard-search-staging
+            echo "| epac-hansard-search-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # --- API Gateway integration for hansard-search ---
