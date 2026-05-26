@@ -82,6 +82,10 @@ Every user-facing change needs a one-line `Release-Note:` in the PR body. Omit i
 
 Linear `Estimate` is complexity, not effort hours. Use the org ladder from `/Users/sunny/code/agent-config/context/linear-standards.md`: `1, 2, 4, 8, 16`. The maximum is `16`; anything larger must be split. Effort-hour planning is separate and belongs to sprint planning, not this field.
 
+## Verification
+
+This is an iOS app — there is no dev server or browser. For any change that affects a UI surface, build and run in the iOS Simulator and navigate to the affected screen before reporting the task as complete. Include a simulator screenshot in the PR description. If simulator verification is genuinely not possible, say so explicitly and state why; do not claim success based on tests alone.
+
 ## Definition of Done
 
 A ticket is Done when the scoped change is merged to `main`, relevant local verification has passed or been explicitly skipped with a reason, CI is green, required tests or screenshots are present, docs and OpenAPI specs are updated when touched, and Linear reflects the merged state.
