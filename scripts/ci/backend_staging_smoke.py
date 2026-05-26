@@ -5,6 +5,12 @@ The checks intentionally assert response contract shape instead of seeded record
 counts. Several endpoints depend on staging database contents that are not yet
 fixture-managed, so empty result sets are acceptable when the JSON schema is
 still recognizable.
+
+Checks are filtered at runtime against the deployment manifest
+(backend/manifest/deployment-services.json). A check whose ``service`` field
+names a service that is not deployed to staging is skipped automatically, so
+the script stays correct as services are added or removed from staging without
+requiring a code change. Checks with ``service=None`` always run.
 """
 
 from __future__ import annotations
@@ -20,6 +26,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable
 
@@ -48,6 +55,10 @@ class SmokeCheck:
     # When False, the validator receives raw response bytes instead of parsed JSON.
     expect_json: bool = True
     kind: str = "http"
+    # Manifest service name this check belongs to. None = always run regardless
+    # of which services are deployed. Set to a service name to skip automatically
+    # when that service has deploy.staging=false in the manifest.
+    service: str | None = None
 
     def url(self, base_url: str) -> str:
         base = base_url.rstrip("/")
@@ -162,7 +173,6 @@ def validate_member_speeches_invalid_page(status: int, payload: Any) -> None:
         raise SmokeFailure(f"member-speeches:invalid-page: expected total=0 for page=-1, got {body['total']}")
 
 
-
 def validate_on_this_day_min_args(_: int, payload: Any) -> None:
     """on-this-day with no date param — endpoint uses today's date as default."""
     body = require_dict(payload, "on-this-day:min-args")
@@ -225,10 +235,11 @@ CHECKS = [
         query={},
         expected_statuses={200, 503},
         validator=validate_health,
+        service="health",
         deterministic_note="Contract check accepts ok/degraded HealthResponse and catches DB/Lambda error bodies.",
         fixture_note="Pipeline freshness can make this degraded until staging data jobs are seeded and scheduled.",
     ),
-    # --- hansard search index manifest ---
+    # --- hansard search index manifest (S3) ---
     SmokeCheck(
         name="hansard-search-manifest",
         method="S3",
@@ -236,6 +247,7 @@ CHECKS = [
         query={},
         expected_statuses={200, 404},
         validator=validate_hansard_search_manifest,
+        service="hansard-search-index",
         deterministic_note="Contract check validates the v1 manifest envelope and SHA-256 format when the index has been generated.",
         fixture_note="The first deploy may not have a manifest until an operator runs the manual reindex; HTTP 404 is reported as a skip warning.",
         kind="s3-hansard-search-manifest",
@@ -248,6 +260,7 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_member_speeches,
+        service="member-speeches",
         deterministic_note="Contract check uses a harmless member id with no pagination params.",
         fixture_note="Seeded member/person records would allow an assertion against a known current MP.",
     ),
@@ -258,6 +271,7 @@ CHECKS = [
         query={"page": "1", "per_page": "10"},
         expected_statuses={200},
         validator=validate_member_speeches,
+        service="member-speeches",
         deterministic_note="Contract check uses explicit pagination params.",
         fixture_note="Seeded member/person records would allow an assertion against a known current MP.",
     ),
@@ -268,6 +282,7 @@ CHECKS = [
         query={"page": "-1"},
         expected_statuses={400, 200},
         validator=validate_member_speeches_invalid_page,
+        service="member-speeches",
         deterministic_note="Negative check — page=-1 should return 400 or 200 with total=0. Documents current behavior.",
         fixture_note="No fixture required.",
     ),
@@ -279,6 +294,7 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_member_votes,
+        service="member-votes",
         deterministic_note="Contract check uses a harmless member id with no pagination params.",
         fixture_note="Seeded member vote artifacts would allow an assertion against a known current MP.",
     ),
@@ -289,6 +305,7 @@ CHECKS = [
         query={"page": "1", "per_page": "10"},
         expected_statuses={200},
         validator=validate_member_votes,
+        service="member-votes",
         deterministic_note="Contract check uses explicit pagination params.",
         fixture_note="Seeded member vote artifacts would allow an assertion against a known current MP.",
     ),
@@ -300,6 +317,7 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_on_this_day_min_args,
+        service="on-this-day",
         deterministic_note="No date param — endpoint defaults to today's date. Documents and locks expected behavior.",
         fixture_note="Items list will be empty outside active sitting periods.",
     ),
@@ -310,6 +328,7 @@ CHECKS = [
         query={"date": "2030-01-01", "limit": "1"},
         expected_statuses={200},
         validator=validate_on_this_day,
+        service="on-this-day",
         deterministic_note="Contract check uses a fixed date and accepts an empty moments list.",
         fixture_note="Seeded historical speeches would allow a known moment assertion.",
     ),
@@ -320,6 +339,7 @@ CHECKS = [
         query={"date": "not-a-date"},
         expected_statuses={400},
         validator=validate_error_body("on-this-day:invalid-date", "date"),
+        service="on-this-day",
         deterministic_note="Negative check — invalid date param must return HTTP 400.",
         fixture_note="No fixture required; validates date parsing guard.",
     ),
@@ -331,6 +351,7 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_riding_boundary,
+        service="riding-boundary",
         deterministic_note="Contract check uses a 2023 federal riding slug and validates GeoJSON shape.",
         fixture_note="No database fixture required; response is served from the published S3 boundary artifact.",
     ),
@@ -341,6 +362,7 @@ CHECKS = [
         query={},
         expected_statuses={404},
         validator=validate_error_no_stack("riding-boundary:unknown-slug"),
+        service="riding-boundary",
         deterministic_note="Negative check — unknown slug must return HTTP 404 with error body and no stack trace leak.",
         fixture_note="No fixture required.",
     ),
@@ -352,6 +374,7 @@ CHECKS = [
         query={"fiscal_year": "2024-25"},
         expected_statuses={200},
         validator=validate_estimates,
+        service="estimates",
         deterministic_note="Contract check verifies the fiscal-year filter returns the estimates envelope.",
         fixture_note="Result count depends on the published estimates artifact; empty list is acceptable.",
     ),
@@ -362,6 +385,7 @@ CHECKS = [
         query={},
         expected_statuses={400},
         validator=validate_error_body("estimates:missing-filter", "missing"),
+        service="estimates",
         deterministic_note="Negative check — estimates list requires fiscal_year unless an org id is in the path.",
         fixture_note="No fixture required; validates input validation gate.",
     ),
@@ -373,6 +397,7 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_config,
+        service="config",
         deterministic_note="Contract check verifies the app config artifact response shape.",
         fixture_note="Feature flag values are release-config dependent and not asserted.",
     ),
@@ -384,9 +409,11 @@ CHECKS = [
         query={},
         expected_statuses={200},
         validator=validate_openapi,
+        service="openapi",
         deterministic_note="Contract check verifies the OpenAPI spec endpoint returns valid JSON with a paths key.",
         fixture_note="No fixture required; catches OpenAPI generation regressions.",
     ),
+    # --- hansard search ---
     SmokeCheck(
         name="hansard-search",
         method="GET",
@@ -394,6 +421,7 @@ CHECKS = [
         query={"q": "test", "per_page": "1"},
         expected_statuses={200, 503},
         validator=validate_hansard_search,
+        service="hansard-search",
         deterministic_note="Contract check validates the Hansard search response envelope; HTTP 503 is accepted until the index is generated in staging.",
         fixture_note="Result count is data-dependent and may be zero even after the index exists.",
     ),
@@ -404,6 +432,7 @@ CHECKS = [
         query={},
         expected_statuses={200, 404},
         validator=validate_member_speeches_invalid_page,
+        service="member-speeches",
         deterministic_note="Edge case: large member ID that does not exist. Documents whether the handler returns 200+empty or 404.",
         fixture_note="No fixture required.",
     ),
@@ -414,6 +443,7 @@ CHECKS = [
         query={"date": "1985-06-15"},
         expected_statuses={200},
         validator=validate_on_this_day,
+        service="on-this-day",
         deterministic_note="Edge case: a 1985 date exercises the handler against historical data that predates the app's primary corpus.",
         fixture_note="Items list is data-dependent; empty list is acceptable.",
     ),
@@ -426,10 +456,31 @@ CHECKS = [
         expected_statuses={200},
         validator=validate_calendar,
         expect_json=False,
+        service="calendar",
         deterministic_note="Contract check verifies the iCal endpoint returns a valid VCALENDAR body.",
         fixture_note="No fixture required; calendar is generated from the parliamentary schedule.",
     ),
 ]
+
+
+def load_deployed_services(manifest_path: Path) -> set[str]:
+    """Return the set of service names with deploy.staging=true in the manifest."""
+    try:
+        with open(manifest_path, encoding="utf-8") as f:
+            manifest = json.load(f)
+        return {
+            svc["name"]
+            for svc in manifest.get("services", [])
+            if svc.get("deploy", {}).get("staging", False)
+        }
+    except (OSError, json.JSONDecodeError, KeyError) as exc:
+        print(f"Warning: could not read manifest at {manifest_path}: {exc}. Running all checks.", file=sys.stderr)
+        return {check.service for check in CHECKS if check.service is not None}
+
+
+def _default_manifest_path() -> Path:
+    """Resolve manifest path relative to the repo root (two levels above this script)."""
+    return Path(__file__).resolve().parent.parent.parent / "backend" / "manifest" / "deployment-services.json"
 
 
 def fetch_response(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
@@ -486,16 +537,7 @@ def fetch_hansard_search_manifest() -> tuple[int, Any]:
         output_path = handle.name
     try:
         result = subprocess.run(
-            [
-                "aws",
-                "s3api",
-                "get-object",
-                "--bucket",
-                bucket,
-                "--key",
-                key,
-                output_path,
-            ],
+            ["aws", "s3api", "get-object", "--bucket", bucket, "--key", key, output_path],
             check=False,
             capture_output=True,
             text=True,
@@ -543,7 +585,11 @@ def run_check(check: SmokeCheck, base_url: str) -> tuple[bool, str]:
     return False, last_error
 
 
-def write_summary(base_url: str, results: list[tuple[SmokeCheck, bool, str]]) -> None:
+def write_summary(
+    base_url: str,
+    results: list[tuple[SmokeCheck, bool, str]],
+    skipped: list[SmokeCheck],
+) -> None:
     lines = [
         "## Backend staging smoke tests",
         "",
@@ -555,10 +601,14 @@ def write_summary(base_url: str, results: list[tuple[SmokeCheck, bool, str]]) ->
     for check, passed, evidence in results:
         icon = "PASS" if passed else "FAIL"
         lines.append(f"| {check.name} | {icon} | {evidence} |")
+    for check in skipped:
+        lines.append(f"| {check.name} | SKIP | service `{check.service}` not deployed to staging |")
 
     lines.extend(["", "### Deterministic and fixture-dependent coverage", ""])
     for check, _, _ in results:
         lines.append(f"- **{check.name}:** {check.deterministic_note} {check.fixture_note}")
+    for check in skipped:
+        lines.append(f"- **{check.name}:** *(skipped — `{check.service}` not in staging manifest)*")
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
@@ -570,23 +620,42 @@ def write_summary(base_url: str, results: list[tuple[SmokeCheck, bool, str]]) ->
 def list_checks() -> None:
     for check in CHECKS:
         query = f"?{urllib.parse.urlencode(check.query)}" if check.query else ""
-        print(f"{check.method} {check.path}{query} - {check.name}")
+        svc = f" [{check.service}]" if check.service else " [always]"
+        print(f"{check.method} {check.path}{query} - {check.name}{svc}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run EPAC staging backend smoke tests.")
     parser.add_argument("--base-url", default=os.environ.get("STAGING_API_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--list", action="store_true", help="List configured checks without making network calls.")
+    parser.add_argument(
+        "--manifest",
+        default=None,
+        help="Path to deployment-services.json. Defaults to backend/manifest/deployment-services.json at the repo root.",
+    )
     args = parser.parse_args()
 
     if args.list:
         list_checks()
         return 0
 
+    manifest_path = Path(args.manifest) if args.manifest else _default_manifest_path()
+    deployed_services = load_deployed_services(manifest_path)
+
+    active_checks = [c for c in CHECKS if c.service is None or c.service in deployed_services]
+    skipped_checks = [c for c in CHECKS if c.service is not None and c.service not in deployed_services]
+
+    if skipped_checks:
+        skipped_names = ", ".join(c.name for c in skipped_checks)
+        print(
+            f"Skipping {len(skipped_checks)} check(s) for services not deployed to staging: {skipped_names}",
+            file=sys.stderr,
+        )
+
     base_url = args.base_url.rstrip("/")
     failures = 0
     results: list[tuple[SmokeCheck, bool, str]] = []
-    for check in CHECKS:
+    for check in active_checks:
         passed, evidence = run_check(check, base_url)
         results.append((check, passed, evidence))
         if passed:
@@ -595,7 +664,7 @@ def main() -> int:
             failures += 1
             print(f"FAIL {check.name}: {evidence}", file=sys.stderr)
 
-    write_summary(base_url, results)
+    write_summary(base_url, results, skipped_checks)
     return 1 if failures else 0
 
 
