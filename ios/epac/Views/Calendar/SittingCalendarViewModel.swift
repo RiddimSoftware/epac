@@ -159,7 +159,7 @@ class SittingCalendarViewModel {
 		let endDate = Foundation.Calendar.current.date(
 			from: DateComponents(year: year, month: CalendarBoundary.december, day: CalendarBoundary.lastDayOfDecember)
 		) else {
-			return BrowseHansardSitting.Result(sittingDates: [], sittings: [])
+			return BrowseHansardSitting.Result(sittingDates: [])
 		}
 
 		let useCase = browseHansardSitting ?? BrowseHansardSitting(
