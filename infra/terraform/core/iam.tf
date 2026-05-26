@@ -149,7 +149,16 @@ data "aws_iam_policy_document" "backend_staging_ci" {
 
   statement {
     sid       = "ManageStagingLambda"
-    actions   = ["lambda:*"]
+    actions = [
+      "lambda:AddPermission",
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
+      "lambda:InvokeFunction",
+      "lambda:RemovePermission",
+      "lambda:UpdateFunctionCode",
+      "lambda:UpdateFunctionConfiguration",
+      "lambda:WaitForFunctionUpdated",
+    ]
     resources = ["arn:aws:lambda:${var.aws_region}:${local.account_id}:function:epac-*-staging"]
   }
 }
@@ -159,7 +168,16 @@ data "aws_iam_policy_document" "backend_production_ci" {
 
   statement {
     sid       = "ManageProductionLambda"
-    actions   = ["lambda:*"]
+    actions = [
+      "lambda:AddPermission",
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
+      "lambda:InvokeFunction",
+      "lambda:RemovePermission",
+      "lambda:UpdateFunctionCode",
+      "lambda:UpdateFunctionConfiguration",
+      "lambda:WaitForFunctionUpdated",
+    ]
     resources = local.production_lambda_arns
   }
 }
