@@ -70,6 +70,9 @@ struct epacApp: App {
 			.novaScotia: NovaScotiaHansardAdapter(
 				persistTranscript: swiftDataHansardRepository.storeTranscript
 			),
+			.ontario: OntarioHansardAdapter(
+				persistTranscript: swiftDataHansardRepository.storeTranscript
+			),
 			.saskatchewan: SaskatchewanHansardAdapter(
 				persistTranscript: swiftDataHansardRepository.storeTranscript
 			)
