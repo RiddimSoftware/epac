@@ -671,6 +671,7 @@
 "toronto.votes.sourceLink" = "Source : Données ouvertes de Toronto";
 
 /* Onboarding v2 (EPAC-621) */
+"onboarding.welcome.title" = "Le Parlement canadien";
 "onboarding.welcome.oneLineValueProp" = "Le Parlement du Canada dans votre poche";
 "onboarding.mp.confirm.title" = "Votre député est %@";
 "onboarding.mp.confirm.subtitle" = "Suivez-le pour garder son activité à portée de main.";

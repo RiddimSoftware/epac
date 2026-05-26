@@ -669,6 +669,7 @@
 "toronto.votes.sourceLink" = "Source: Open Data Toronto";
 
 /* Onboarding v2 (EPAC-621) */
+"onboarding.welcome.title" = "Canada's Parliament";
 "onboarding.welcome.oneLineValueProp" = "Canada's parliament, in your pocket";
 "onboarding.mp.confirm.title" = "Your MP is %@";
 "onboarding.mp.confirm.subtitle" = "Follow them to keep their activity close at hand.";
