@@ -20,9 +20,15 @@ These match the determinism contract used by the sibling JSON evidence plan (`.e
 
 ## Fixture date implication
 
-The fixture `45-1-HAN050-E` corresponds to Parliament 45, Session 1, Hansard number 050 (Tuesday, **November 4, 2025**). When the CUJ sub-step says "verify today's date is visible on the calendar," the LLM decision maker must assert against **2025-11-04**, not wall-clock today. The fixture date is static; wall-clock today will never match it after 2025-11-04 has passed.
+The fixture `45-1-HAN050-E` corresponds to Parliament 45, Session 1, Hansard number 050 (Tuesday, **November 4, 2025**). When the CUJ sub-step says "verify today's date is visible on the calendar," the LLM decision maker must assert against **2025-11-04**, not wall-clock today. The fixture date is static; wall-clock today will not equal it after 2025-11-04.
 
-The first subject of business in HAN050 is "Foreign Affairs" (under Routine Proceedings). Steps that tap into a subject of business should target that entry or the first visible one, not a hardcoded label that may change if a different fixture is used in future.
+## Green date meaning
+
+In the current Parliament calendar, dates with Hansard content are shown with a green date affordance. They are visually distinguished from non-sittings by an app-positive green date chip (filled green rounded rectangle), and their accessibility labels resolve as `sitting day`.
+
+## Pagination interaction
+
+The current debate view advances through content by exposing a tap gesture on the chat surface (`"Tap anywhere to continue"` hint). Repeated taps (or equivalent tap-next interaction) move the view forward until the terminal state appears (`End`).
 
 ## Related files
 
