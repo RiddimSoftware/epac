@@ -2,7 +2,7 @@
   "services": [
     {
       "name": "daily-fetch",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "sync": {
         "staging": {"database": false, "artifact": false},
         "production": {"database": true, "artifact": false}
@@ -10,7 +10,7 @@
     },
     {
       "name": "loader",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "sync": {
         "staging": {"database": false, "artifact": false},
         "production": {"database": true, "artifact": false}
@@ -18,7 +18,7 @@
     },
     {
       "name": "members",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -33,7 +33,7 @@
     },
     {
       "name": "sittings",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -54,7 +54,7 @@
     },
     {
       "name": "bills",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -77,7 +77,7 @@
     },
     {
       "name": "member-speeches",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -95,7 +95,7 @@
     },
     {
       "name": "member-votes",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -113,7 +113,7 @@
     },
     {
       "name": "on-this-day",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -128,7 +128,7 @@
     },
     {
       "name": "estimates",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
@@ -149,7 +149,7 @@
     },
     {
       "name": "riding-boundary",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -164,7 +164,7 @@
     },
     {
       "name": "calendar",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
@@ -182,7 +182,7 @@
     },
     {
       "name": "config",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
@@ -197,7 +197,7 @@
     },
     {
       "name": "health",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
@@ -212,7 +212,7 @@
     },
     {
       "name": "device-register",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "1.0",
         "routes": {
@@ -230,7 +230,7 @@
     },
     {
       "name": "openapi",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
@@ -253,7 +253,7 @@
     },
     {
       "name": "live-status",
-      "deploy": {"staging": true, "production": true},
+      "deploy": {"staging": false, "production": true},
       "http": {
         "payload_format_version": "2.0",
         "routes": {
