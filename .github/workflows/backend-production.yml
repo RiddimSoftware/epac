@@ -18,54 +18,11 @@ permissions:
   id-token: write
 
 jobs:
-  infra-apply:
-    name: Apply production Terraform
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.15.3"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Terraform init
-        working-directory: infra/terraform/production
-        run: terraform init -input=false -no-color
-
-      - name: Terraform plan
-        working-directory: infra/terraform/production
-        run: |
-          set -euo pipefail
-          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee tfplan.txt
-
-      - name: Add plan to workflow summary
-        working-directory: infra/terraform/production
-        run: |
-          {
-            echo "## Production Terraform plan"
-            echo
-            echo '```terraform'
-            cat tfplan.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Terraform apply
-        working-directory: infra/terraform/production
-        run: terraform apply -input=false -auto-approve -no-color tfplan
-
   prepare:
     name: Resolve backend service manifest
-    needs: infra-apply
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.resolve.outputs.services }}
-      database_services: ${{ steps.resolve.outputs.database_services }}
       artifact_services: ${{ steps.resolve.outputs.artifact_services }}
       service_is_valid: ${{ steps.validate.outputs.service_is_valid }}
     steps:
@@ -74,7 +31,6 @@ jobs:
       - id: resolve
         run: |
           SERVICES=$(jq -c '[.services[] | select(.deploy.production == true) | .name]' backend/manifest/deployment-services.json)
-          DATABASE_SERVICES=$(jq -c '[.services[] | select(.sync.production.database == true) | .name]' backend/manifest/deployment-services.json)
           ARTIFACT_SERVICES=$(jq -c '[.services[] | select(.sync.production.artifact == true) | .name]' backend/manifest/deployment-services.json)
 
           if [ "$SERVICES" = "[]" ]; then
@@ -84,7 +40,6 @@ jobs:
 
           {
             echo "services=$SERVICES"
-            echo "database_services=$DATABASE_SERVICES"
             echo "artifact_services=$ARTIFACT_SERVICES"
           } >> "$GITHUB_OUTPUT"
 
@@ -111,9 +66,122 @@ jobs:
             exit 1
           fi
 
+  provision-search:
+    name: Provision production search Lambdas and API route
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Provision search Lambdas and API Gateway route
+        env:
+          LAMBDA_ROLE: arn:aws:iam::227530433709:role/epac-lambda-role
+          API_ID: bdnpz6v3c8
+          ACCOUNT_ID: '227530433709'
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Provision production search resources"
+            echo ""
+            echo "| Resource | Outcome |"
+            echo "|----------|---------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # --- epac-hansard-search-index-production Lambda ---
+          if ! aws lambda get-function --function-name epac-hansard-search-index-production > /dev/null 2>&1; then
+            aws lambda create-function \
+              --function-name epac-hansard-search-index-production \
+              --runtime provided.al2023 \
+              --handler bootstrap \
+              --architectures arm64 \
+              --role "$LAMBDA_ROLE" \
+              --zip-file fileb://infra/placeholder.zip \
+              --timeout 900 \
+              --memory-size 1024
+            aws lambda wait function-active-v2 --function-name epac-hansard-search-index-production
+            echo "| epac-hansard-search-index-production | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            aws lambda update-function-configuration \
+              --function-name epac-hansard-search-index-production \
+              --timeout 900 \
+              --memory-size 1024 \
+              >/dev/null
+            aws lambda wait function-updated --function-name epac-hansard-search-index-production
+            echo "| epac-hansard-search-index-production | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # --- epac-hansard-search-production Lambda ---
+          if ! aws lambda get-function --function-name epac-hansard-search-production > /dev/null 2>&1; then
+            aws lambda create-function \
+              --function-name epac-hansard-search-production \
+              --runtime provided.al2023 \
+              --handler bootstrap \
+              --architectures arm64 \
+              --role "$LAMBDA_ROLE" \
+              --zip-file fileb://infra/placeholder.zip \
+              --timeout 30 \
+              --memory-size 128
+            aws lambda wait function-active-v2 --function-name epac-hansard-search-production
+            echo "| epac-hansard-search-production | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            aws lambda update-function-configuration \
+              --function-name epac-hansard-search-production \
+              --timeout 30 \
+              >/dev/null
+            aws lambda wait function-updated --function-name epac-hansard-search-production
+            echo "| epac-hansard-search-production | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # --- API Gateway integration ---
+          EXISTING_INTEGRATION_ID=$(aws apigatewayv2 get-integrations --api-id "$API_ID" \
+            --query "Items[?IntegrationUri=='arn:aws:lambda:us-east-1:${ACCOUNT_ID}:function:epac-hansard-search-production'].IntegrationId | [0]" \
+            --output text)
+          if [ "$EXISTING_INTEGRATION_ID" = "None" ] || [ -z "$EXISTING_INTEGRATION_ID" ]; then
+            INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+              --api-id "$API_ID" \
+              --integration-type AWS_PROXY \
+              --integration-uri "arn:aws:lambda:us-east-1:${ACCOUNT_ID}:function:epac-hansard-search-production" \
+              --payload-format-version 2.0 \
+              --query IntegrationId --output text)
+            echo "| API Gateway integration | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            INTEGRATION_ID="$EXISTING_INTEGRATION_ID"
+            echo "| API Gateway integration | already existed, skipped |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # --- API Gateway route ---
+          ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$API_ID" \
+            --query "Items[?RouteKey=='GET /api/v1/hansard/search'].RouteId | [0]" \
+            --output text)
+          if [ "$ROUTE_ID" = "None" ] || [ -z "$ROUTE_ID" ]; then
+            aws apigatewayv2 create-route \
+              --api-id "$API_ID" \
+              --route-key "GET /api/v1/hansard/search" \
+              --target "integrations/${INTEGRATION_ID}"
+            echo "| GET /api/v1/hansard/search route | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| GET /api/v1/hansard/search route | already existed, skipped |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # --- Lambda permission ---
+          aws lambda add-permission \
+            --function-name epac-hansard-search-production \
+            --statement-id apigw-invoke-hansard-search \
+            --action lambda:InvokeFunction \
+            --principal apigateway.amazonaws.com \
+            --source-arn "arn:aws:execute-api:us-east-1:${ACCOUNT_ID}:${API_ID}/*/GET/api/v1/hansard/search" \
+            2>/dev/null || true
+          echo "| Lambda permission (apigw-invoke-hansard-search) | ensured |" >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
-    name: Deploy ${{ matrix.service }} to production
-    needs: prepare
+    name: Promote ${{ matrix.service }} to production
+    needs: [prepare, provision-search]
     if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
     runs-on: ubuntu-latest
     strategy:
@@ -123,93 +191,62 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - name: Configure AWS credentials (staging — read artifact)
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          go-version-file: backend/${{ matrix.service }}/go.mod
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
 
-      - name: Configure AWS credentials
+      - name: Fetch staging Lambda code URL
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        id: staging-code
+        env:
+          STAGING_FUNCTION_NAME: epac-${{ matrix.service }}-staging
+        run: |
+          set -euo pipefail
+          CODE_URL=$(aws lambda get-function \
+            --function-name "$STAGING_FUNCTION_NAME" \
+            --query 'Code.Location' \
+            --output text 2>/dev/null) || {
+            echo "::error title=Staging Lambda not found::${STAGING_FUNCTION_NAME} does not exist. Deploy to staging first."
+            exit 1
+          }
+          if [ -z "$CODE_URL" ] || [ "$CODE_URL" = "None" ]; then
+            echo "::error title=Staging Lambda has no code::${STAGING_FUNCTION_NAME} exists but Code.Location is empty."
+            exit 1
+          fi
+          echo "code_url=$CODE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Download staging artifact
+        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
+        run: |
+          curl -fsSL -o /tmp/function-${{ matrix.service }}.zip \
+            "${{ steps.staging-code.outputs.code_url }}"
+
+      - name: Configure AWS credentials (production — deploy)
         if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Test and package Lambda
+      - name: Promote Lambda to production
         if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
-        working-directory: backend
-        run: make test package SERVICE=${{ matrix.service }}
-
-      - name: Update production Lambda
-        if: ${{ inputs.service == 'all' || inputs.service == matrix.service }}
-        working-directory: backend/${{ matrix.service }}
         env:
-          SERVICE: ${{ matrix.service }}
-          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
-          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
+          FUNCTION_NAME: epac-${{ matrix.service }}-production
         run: |
           set -euo pipefail
-          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
-          fi
-
           aws lambda update-function-code \
             --function-name "$FUNCTION_NAME" \
-            --zip-file fileb://function.zip
-          aws lambda wait function-updated \
-            --function-name "$FUNCTION_NAME"
-
-      - name: Sync production DATABASE_URL from Parameter Store
-        if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJson(needs.prepare.outputs.database_services), matrix.service) }}
-        env:
-          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
-          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
-          DATABASE_URL_PARAMETER_NAME: /epac/database-url
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
-        run: |
-          set -euo pipefail
-
-          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
-          fi
-
-          DATABASE_URL=$(aws ssm get-parameter \
-            --name "$DATABASE_URL_PARAMETER_NAME" \
-            --with-decryption \
-            --query Parameter.Value \
-            --output text)
-          if printf '%s' "$DATABASE_URL" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
-            DATABASE_URL=$(printf '%s' "$DATABASE_URL" | jq -r '.DATABASE_URL')
-          fi
-          if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "None" ]; then
-            echo "Secret ${DATABASE_URL_PARAMETER_NAME} did not contain a DATABASE_URL value"
-            exit 1
-          fi
-
-          CURRENT_ENV=$(aws lambda get-function-configuration \
-            --function-name "$FUNCTION_NAME" \
-            --query 'Environment.Variables' \
-            --output json)
-          UPDATED_ENV=$(jq -cn \
-            --argjson current "${CURRENT_ENV:-null}" \
-            --arg database_url "$DATABASE_URL" \
-            --arg sentry_dsn "$SENTRY_DSN" \
-            '{Variables: (($current // {}) + {DATABASE_URL: $database_url} + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
-
-          aws lambda update-function-configuration \
-            --function-name "$FUNCTION_NAME" \
-            --environment "$UPDATED_ENV" \
-            >/dev/null
-          aws lambda wait function-updated \
-            --function-name "$FUNCTION_NAME"
+            --zip-file fileb:///tmp/function-${{ matrix.service }}.zip
+          aws lambda wait function-updated --function-name "$FUNCTION_NAME"
 
       - name: Sync production artifact environment
         if: ${{ (inputs.service == 'all' || inputs.service == matrix.service) && contains(fromJson(needs.prepare.outputs.artifact_services), matrix.service) }}
         env:
           SERVICE: ${{ matrix.service }}
-          CANONICAL_FUNCTION_NAME: epac-${{ matrix.service }}-production
-          LEGACY_FUNCTION_NAME: ${{ matrix.service }}
+          FUNCTION_NAME: epac-${{ matrix.service }}-production
           ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
           ARTIFACT_PREFIX: ${{ vars.EPAC_ARTIFACT_PREFIX_PRODUCTION || vars.EPAC_ARTIFACT_PREFIX }}
           HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
@@ -218,16 +255,6 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
         run: |
           set -euo pipefail
-
-          FUNCTION_NAME="$CANONICAL_FUNCTION_NAME"
-          if ! aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
-            FUNCTION_NAME="$LEGACY_FUNCTION_NAME"
-          fi
-          if [ -z "$ARTIFACT_BUCKET" ]; then
-            echo "EPAC_ARTIFACT_BUCKET_PRODUCTION, EPAC_ARTIFACT_BUCKET, or ARTIFACTS_BUCKET variable is required"
-            exit 1
-          fi
-
           CURRENT_ENV=$(aws lambda get-function-configuration \
             --function-name "$FUNCTION_NAME" \
             --query 'Environment.Variables' \
@@ -242,10 +269,8 @@ jobs:
             --arg session_number "$SESSION_NUMBER" \
             --arg sentry_dsn "$SENTRY_DSN" \
             '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end) + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
-
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \
             --environment "$UPDATED_ENV" \
             >/dev/null
-          aws lambda wait function-updated \
-            --function-name "$FUNCTION_NAME"
+          aws lambda wait function-updated --function-name "$FUNCTION_NAME"

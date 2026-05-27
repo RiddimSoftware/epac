@@ -81,7 +81,7 @@ jobs:
               --handler bootstrap \
               --architectures arm64 \
               --role "$LAMBDA_ROLE" \
-              --zip-file fileb://infra/terraform/staging/placeholder.zip \
+              --zip-file fileb://infra/placeholder.zip \
               --timeout 900 \
               --memory-size 1024
             aws lambda wait function-active-v2 --function-name epac-hansard-search-index-staging
@@ -104,7 +104,7 @@ jobs:
               --handler bootstrap \
               --architectures arm64 \
               --role "$LAMBDA_ROLE" \
-              --zip-file fileb://infra/terraform/staging/placeholder.zip \
+              --zip-file fileb://infra/placeholder.zip \
               --timeout 30 \
               --memory-size 128
             aws lambda wait function-active-v2 --function-name epac-hansard-search-staging
