@@ -3,6 +3,50 @@ import Foundation
 import SwiftData
 import Testing
 
+private struct ExpendituresFetchCall: Equatable, Sendable {
+	let year: Int
+	let quarter: Int
+}
+
+private struct TestFetchError: Error {}
+
+private actor MockExpendituresFetch: ExpendituresFetching {
+	private var expenditureCalls: [ExpendituresFetchCall] = []
+	private var downloadCalls: [ExpendituresFetchCall] = []
+	private var shouldFailExpenditures = false
+	private var shouldFailDownloads = false
+
+	func failExpenditures() {
+		shouldFailExpenditures = true
+	}
+
+	func failDownloads() {
+		shouldFailDownloads = true
+	}
+
+	func recordedExpenditureCalls() -> [ExpendituresFetchCall] {
+		expenditureCalls
+	}
+
+	func recordedDownloadCalls() -> [ExpendituresFetchCall] {
+		downloadCalls
+	}
+
+	func expenditures(year: Int, quarter: Int) async throws {
+		expenditureCalls.append(ExpendituresFetchCall(year: year, quarter: quarter))
+		if shouldFailExpenditures {
+			throw TestFetchError()
+		}
+	}
+
+	func downloadExpenditures(year: Int, quarter: Int) async throws {
+		downloadCalls.append(ExpendituresFetchCall(year: year, quarter: quarter))
+		if shouldFailDownloads {
+			throw TestFetchError()
+		}
+	}
+}
+
 @MainActor
 struct ExpendituresViewModelTests {
 
@@ -126,6 +170,36 @@ struct ExpendituresViewModelTests {
 		#expect(vm.filteredExpenditures(from: expenditures).count == 2)
 	}
 
+	@Test func selectionIsRetainedWhenVisibleAfterFiltering() throws {
+		let ctx = ModelContext(try makeContainer())
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+		vm.searchText = "ali"
+
+		let selected = expenditure(firstName: "Alice", lastName: "Smith", year: 2024, quarter: 1, context: ctx)
+		let hidden = expenditure(firstName: "Bob", lastName: "Jones", year: 2024, quarter: 1, context: ctx)
+		let visible = vm.filteredExpenditures(from: [selected, hidden])
+		let retained = ExpendituresSelectionPolicy.retainedSelection(selected, visibleExpenditures: visible)
+
+		#expect(retained?.persistentModelID == selected.persistentModelID)
+	}
+
+	@Test func selectionIsClearedWhenFilteredOut() throws {
+		let ctx = ModelContext(try makeContainer())
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+		vm.searchText = "bob"
+
+		let selected = expenditure(firstName: "Alice", lastName: "Smith", year: 2024, quarter: 1, context: ctx)
+		let visibleMatch = expenditure(firstName: "Bob", lastName: "Jones", year: 2024, quarter: 1, context: ctx)
+		let visible = vm.filteredExpenditures(from: [selected, visibleMatch])
+		let retained = ExpendituresSelectionPolicy.retainedSelection(selected, visibleExpenditures: visible)
+
+		#expect(retained == nil)
+	}
+
 	// MARK: - filteredExpenditures — sort orders
 
 	@Test func sortByTotalDescending() throws {
@@ -219,7 +293,7 @@ struct ExpendituresViewModelTests {
 	@Test func loadFailedClearedWhenDataAlreadyExists() async throws {
 		let container = try makeContainer()
 		let ctx = ModelContext(container)
-		let fetch = Fetch(modelContainer: container)
+		let fetch = MockExpendituresFetch()
 
 		let vm = ExpendituresViewModel()
 		vm.selectedYear = 2024
@@ -232,7 +306,67 @@ struct ExpendituresViewModelTests {
 
 		await vm.loadData(expenditures: [cached], fetch: fetch)
 
+		let calls = await fetch.recordedExpenditureCalls()
 		#expect(vm.loadFailed == false)
+		#expect(vm.isLoading == false)
+		#expect(calls.isEmpty)
+	}
+
+	@Test func loadDataFetchesMissingPeriod() async {
+		let fetch = MockExpendituresFetch()
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		await vm.loadData(expenditures: [], fetch: fetch)
+
+		let calls = await fetch.recordedExpenditureCalls()
+		#expect(calls == [ExpendituresFetchCall(year: 2024, quarter: 1)])
+		#expect(vm.loadFailed == false)
+		#expect(vm.isLoading == false)
+	}
+
+	@Test func loadDataMarksFailureWhenFetchThrows() async {
+		let fetch = MockExpendituresFetch()
+		await fetch.failExpenditures()
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		await vm.loadData(expenditures: [], fetch: fetch)
+
+		let calls = await fetch.recordedExpenditureCalls()
+		#expect(calls == [ExpendituresFetchCall(year: 2024, quarter: 1)])
+		#expect(vm.loadFailed == true)
+		#expect(vm.isLoading == false)
+	}
+
+	@Test func refreshDownloadsCurrentPeriod() async {
+		let fetch = MockExpendituresFetch()
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		await vm.refresh(fetch: fetch)
+
+		let calls = await fetch.recordedDownloadCalls()
+		#expect(calls == [ExpendituresFetchCall(year: 2024, quarter: 1)])
+		#expect(vm.loadFailed == false)
+		#expect(vm.isLoading == false)
+	}
+
+	@Test func refreshMarksFailureWhenDownloadThrows() async {
+		let fetch = MockExpendituresFetch()
+		await fetch.failDownloads()
+		let vm = ExpendituresViewModel()
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		await vm.refresh(fetch: fetch)
+
+		let calls = await fetch.recordedDownloadCalls()
+		#expect(calls == [ExpendituresFetchCall(year: 2024, quarter: 1)])
+		#expect(vm.loadFailed == true)
 		#expect(vm.isLoading == false)
 	}
 

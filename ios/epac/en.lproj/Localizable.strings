@@ -84,6 +84,7 @@
 "Couldn't Load Expenditures" = "Couldn't Load Expenditures";
 
 /* Expenditure detail view */
+"expenditures.detail.placeholder" = "Select an Expenditure";
 "No detailed travel records found." = "No detailed travel records found.";
 "No detailed hospitality records found." = "No detailed hospitality records found.";
 "No detailed contract records found." = "No detailed contract records found.";

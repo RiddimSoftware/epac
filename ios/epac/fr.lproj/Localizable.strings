@@ -86,6 +86,7 @@
 "Couldn't Load Expenditures" = "Impossible de charger les dépenses";
 
 /* Expenditure detail view */
+"expenditures.detail.placeholder" = "Sélectionnez une dépense";
 "No detailed travel records found." = "Aucun enregistrement de voyage détaillé trouvé.";
 "No detailed hospitality records found." = "Aucun enregistrement d'accueil détaillé trouvé.";
 "No detailed contract records found." = "Aucun enregistrement de contrat détaillé trouvé.";

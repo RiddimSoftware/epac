@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct AccountabilityHubView: View {
+	@State private var selectedExpenditure: SummaryExpenditure?
+
 	var body: some View {
 		NavigationStack {
 			List {
@@ -24,7 +26,7 @@ struct AccountabilityHubView: View {
 						Label("TRC Calls to Action", systemImage: "figure.stand.line.dotted.figure.stand")
 					}
 					.accessibilityHint("Opens Truth and Reconciliation Commission Calls to Action tracker")
-					NavigationLink(destination: ExpendituresView()) {
+					NavigationLink(destination: ExpendituresView(selection: $selectedExpenditure)) {
 						Label(NSLocalizedString("Expenditures", comment: ""), systemImage: "dollarsign.circle.fill")
 					}
 					.accessibilityHint("Opens MP quarterly expenditures")

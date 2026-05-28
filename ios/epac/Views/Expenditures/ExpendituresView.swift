@@ -23,6 +23,10 @@ private enum ExpendituresLayout {
 	static let searchButtonTrailingPadding = EpacSpacing.s
 	static let searchBarHorizontalPadding: CGFloat = 10
 	static let searchBarVerticalPadding: CGFloat = 5
+	static let listColumnMinWidth: CGFloat = 320
+	static let listColumnIdealWidth: CGFloat = 360
+	static let listColumnMaxWidth: CGFloat = 420
+	static let selectedRowOpacity = 0.12
 	static let rowSpacing: CGFloat = 12
 	static let avatarSize: CGFloat = 44
 	static let avatarTintOpacity = EpacOpacity.tintStrong
@@ -39,19 +43,114 @@ private enum ExpendituresLayout {
 
 struct ExpendituresView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject var fetch: Fetch
     @Query private var expenditures: [SummaryExpenditure]
     @Query private var members: [ParliamentMember]
 
+    @Binding private var selectedExpenditure: SummaryExpenditure?
     @State private var viewModel = ExpendituresViewModel()
     @State private var item: ActivityItem?
     @State private var isRetryDisabled = false
+
+    init(selection: Binding<SummaryExpenditure?> = .constant(nil)) {
+        self._selectedExpenditure = selection
+    }
 
     private var filteredExpenditures: [SummaryExpenditure] {
         viewModel.filteredExpenditures(from: expenditures)
     }
 
+    private var usesTwoPaneLayout: Bool {
+        #if targetEnvironment(macCatalyst)
+        return true
+        #else
+        return horizontalSizeClass == .regular
+        #endif
+    }
+
+    private var visibleSelectedExpenditure: SummaryExpenditure? {
+        ExpendituresSelectionPolicy.retainedSelection(selectedExpenditure, visibleExpenditures: filteredExpenditures)
+    }
+
     var body: some View {
+        Group {
+            if usesTwoPaneLayout {
+                regularLayout
+            } else {
+                compactLayout
+            }
+        }
+        .activitySheet($item)
+        .task(id: viewModel.selectedYear * ExpendituresLayout.taskIDQuarterMultiplier + viewModel.selectedQuarter) {
+            await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
+        }
+        .onAppear {
+            Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
+            reconcileSelection()
+        }
+        .onChange(of: expenditures) { _, newValue in
+            Log.debug("Expenditures query updated. New count: \(newValue.count)")
+            reconcileSelection()
+        }
+        .onChange(of: viewModel.searchText) {
+            reconcileSelection()
+        }
+        .onChange(of: viewModel.selectedYear) {
+            reconcileSelection()
+        }
+        .onChange(of: viewModel.selectedQuarter) {
+            reconcileSelection()
+        }
+        .onChange(of: viewModel.sortOrder) {
+            reconcileSelection()
+        }
+    }
+
+    private var compactLayout: some View {
+        expenditureList(rowContent: compactRow)
+            .listStyle(.plain)
+            .refreshable {
+                await viewModel.refresh(fetch: fetch)
+            }
+            .listBottomChrome(searchBar: searchBar)
+            .navigationTitle("Expenditures")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar { toolbarContent }
+    }
+
+    private var regularLayout: some View {
+        NavigationSplitView {
+            expenditureList(rowContent: regularRow)
+                .listStyle(.plain)
+                .refreshable {
+                    await viewModel.refresh(fetch: fetch)
+                }
+                .listBottomChrome(searchBar: searchBar)
+                .navigationTitle("Expenditures")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar { toolbarContent }
+                .navigationSplitViewColumnWidth(
+                    min: ExpendituresLayout.listColumnMinWidth,
+                    ideal: ExpendituresLayout.listColumnIdealWidth,
+                    max: ExpendituresLayout.listColumnMaxWidth
+                )
+        } detail: {
+            if let expenditure = visibleSelectedExpenditure {
+                ExpenditureDetailView(expenditure: expenditure)
+            } else {
+                Text("expenditures.detail.placeholder")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+
+    private func expenditureList<RowContent: View>(
+        @ViewBuilder rowContent: @escaping (SummaryExpenditure, ParliamentMember?) -> RowContent
+    ) -> some View {
         Group {
             if filteredExpenditures.isEmpty && viewModel.isLoading {
                 VStack(spacing: ExpendituresLayout.loadingStackSpacing) {
@@ -88,68 +187,69 @@ struct ExpendituresView: View {
                     } else {
                         ForEach(filteredExpenditures) { expenditure in
                             let member = members.first { $0.firstName == expenditure.firstName && $0.lastName == expenditure.lastName }
-                            NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
-                                ExpenditureRow(expenditure: expenditure, member: member)
-                            }
+                            rowContent(expenditure, member)
                         }
                     }
                 }
-                .listStyle(.plain)
-                .refreshable {
-                    await viewModel.refresh(fetch: fetch)
+            }
+        }
+    }
+
+    private func compactRow(expenditure: SummaryExpenditure, member: ParliamentMember?) -> some View {
+        NavigationLink(destination: ExpenditureDetailView(expenditure: expenditure)) {
+            ExpenditureRow(expenditure: expenditure, member: member)
+        }
+    }
+
+    private func regularRow(expenditure: SummaryExpenditure, member: ParliamentMember?) -> some View {
+        Button {
+            selectedExpenditure = expenditure
+        } label: {
+            ExpenditureRow(expenditure: expenditure, member: member)
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(rowBackground(for: expenditure))
+        .accessibilityAddTraits(isSelected(expenditure) ? [.isSelected] : [])
+    }
+
+    private func rowBackground(for expenditure: SummaryExpenditure) -> Color {
+        isSelected(expenditure) ? Color.accentColor.opacity(ExpendituresLayout.selectedRowOpacity) : Color.clear
+    }
+
+    private func isSelected(_ expenditure: SummaryExpenditure) -> Bool {
+        visibleSelectedExpenditure?.persistentModelID == expenditure.persistentModelID
+    }
+
+    private func reconcileSelection() {
+        selectedExpenditure = visibleSelectedExpenditure
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            periodSelector
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            HStack {
+                NavigationLink(destination: PoliticalDonationsView()) {
+                    Image(systemName: "dollarsign.circle")
+                }
+                .accessibilityLabel("Political Donations")
+                NavigationLink(destination: FederalProjectCostView()) {
+                    Image(systemName: "building.2.crop.circle")
+                }
+                .accessibilityLabel("Federal Project Costs")
+                NavigationLink(destination: FederalFinancesView()) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                }
+                .accessibilityLabel("Federal Finances")
+                sortSelector
+                Button {
+                    item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
                 }
             }
-        }
-        .safeAreaInset(edge: .bottom) {
-            VStack {
-                HStack {
-                    Spacer()
-                    DataSourceBadge(source: .expenditures())
-                }
-                .padding(.horizontal)
-                .padding(.bottom, ExpendituresLayout.badgeBottomPadding)
-                searchBar
-            }
-            .padding(.bottom, ExpendituresLayout.insetBottomPadding)
-        }
-        .navigationTitle("Expenditures")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                periodSelector
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack {
-                    NavigationLink(destination: PoliticalDonationsView()) {
-                        Image(systemName: "dollarsign.circle")
-                    }
-                    .accessibilityLabel("Political Donations")
-                    NavigationLink(destination: FederalProjectCostView()) {
-                        Image(systemName: "building.2.crop.circle")
-                    }
-                    .accessibilityLabel("Federal Project Costs")
-                    NavigationLink(destination: FederalFinancesView()) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                    }
-                    .accessibilityLabel("Federal Finances")
-                    sortSelector
-                    Button {
-                        item = viewModel.shareExpenditures(expenditures: filteredExpenditures, members: Array(members))
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                }
-            }
-        }
-        .activitySheet($item)
-        .task(id: viewModel.selectedYear * ExpendituresLayout.taskIDQuarterMultiplier + viewModel.selectedQuarter) {
-            await viewModel.loadData(expenditures: Array(expenditures), fetch: fetch)
-        }
-        .onAppear {
-            Log.debug("ExpendituresView appeared. Query count: \(expenditures.count)")
-        }
-        .onChange(of: expenditures) { _, newValue in
-            Log.debug("Expenditures query updated. New count: \(newValue.count)")
         }
     }
 
@@ -217,6 +317,33 @@ struct ExpendituresView: View {
         .padding(.vertical, ExpendituresLayout.searchBarVerticalPadding)
         .glassHeaderStyle()
         .padding(.horizontal)
+    }
+}
+
+enum ExpendituresSelectionPolicy {
+    static func retainedSelection(
+        _ selection: SummaryExpenditure?,
+        visibleExpenditures: [SummaryExpenditure]
+    ) -> SummaryExpenditure? {
+        guard let selection else { return nil }
+        return visibleExpenditures.first { $0.persistentModelID == selection.persistentModelID }
+    }
+}
+
+private extension View {
+    func listBottomChrome(searchBar: some View) -> some View {
+        safeAreaInset(edge: .bottom) {
+            VStack {
+                HStack {
+                    Spacer()
+                    DataSourceBadge(source: .expenditures())
+                }
+                .padding(.horizontal)
+                .padding(.bottom, ExpendituresLayout.badgeBottomPadding)
+                searchBar
+            }
+            .padding(.bottom, ExpendituresLayout.insetBottomPadding)
+        }
     }
 }
 
