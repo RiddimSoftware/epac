@@ -53,6 +53,7 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 class NavigationRouter {
 	var selectedTab: AppTab = AppEnvironment.isEvidenceCaptureMode ? .home : .parliament
 	var selectedMember: ParliamentMember?
+	var selectedBill: Bill?
 	// Pre-fills the Search tab search bar when set; cleared after SearchView reads it.
 	var pendingSearchQuery: String?
 	// Triggers postal code setup sheet when true; caller resets to false after handling.

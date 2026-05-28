@@ -9,14 +9,22 @@
 
 import XCTest
 
+private enum UITestLayout {
+    static let iPadWidthThreshold: CGFloat = 700
+    // Normalized midpoint for XCUITest coordinate taps.
+    // swiftlint:disable:next no_magic_numbers
+    static let elementCenter = CGVector(dx: 0.5, dy: 0.5)
+}
+
 final class epacUITests: XCTestCase {
 
-    private var app: XCUIApplication!
+    private var app = XCUIApplication()
 
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-UIAnimationsDisabled", "YES"]
+        app.launchEnvironment["XCTestConfigurationFilePath"] = "epacUITests"
         if name.contains("testCaptureAppStoreScreenshotSources") {
             return
         }
@@ -27,7 +35,47 @@ final class epacUITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        app = nil
+        app = XCUIApplication()
+    }
+
+    private func openAccountabilitySurface() {
+        let tabButton = app.tabBars.buttons["Accountability"]
+        if tabButton.waitForExistence(timeout: 5) {
+            tabButton.tap()
+            return
+        }
+
+        let sidebarButton = app.buttons["Accountability"].firstMatch
+        XCTAssertTrue(sidebarButton.waitForExistence(timeout: 5),
+                      "Accountability entry should exist")
+        tap(sidebarButton)
+    }
+
+    private func tap(_ element: XCUIElement) {
+        if element.isHittable {
+            element.tap()
+        } else {
+            element.coordinate(withNormalizedOffset: UITestLayout.elementCenter).tap()
+        }
+    }
+
+    private func attachScreenshot(named name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func attachLandscapeScreenshotIfNeeded() {
+        guard app.windows.firstMatch.frame.width >= UITestLayout.iPadWidthThreshold else { return }
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let billsNavigationBar = app.navigationBars["Bills"]
+        let billsPlaceholder = app.staticTexts["bills-detail-placeholder"]
+        _ = billsNavigationBar.waitForExistence(timeout: 5)
+        _ = billsPlaceholder.waitForExistence(timeout: 5)
+        attachScreenshot(named: "Bills destination landscape")
+        XCUIDevice.shared.orientation = .portrait
     }
 
     // MARK: - Flow 1: Cold launch → Parliament tab visible
@@ -70,18 +118,24 @@ final class epacUITests: XCTestCase {
     // MARK: - Flow 3: Accountability tab → Bills list visible
 
     func testAccountabilityTab_BillsListVisible() throws {
-        let accountabilityTab = app.tabBars.buttons["Accountability"]
-        XCTAssertTrue(accountabilityTab.waitForExistence(timeout: 5),
-                      "Accountability tab should exist")
-        accountabilityTab.tap()
+        openAccountabilitySurface()
 
-        let billsLink = app.tables.cells.staticTexts["Bills"].firstMatch
-        XCTAssertTrue(billsLink.waitForExistence(timeout: 5),
+        let billsButton = app.buttons["Bills"].firstMatch
+        let billsCell = app.cells.containing(.staticText, identifier: "Bills").firstMatch
+        let billsRow = billsButton.waitForExistence(timeout: 5) ? billsButton : billsCell
+        XCTAssertTrue(billsRow.exists || billsRow.waitForExistence(timeout: 5),
                       "Bills row should appear in Accountability hub")
-        billsLink.tap()
+        tap(billsRow)
 
-        XCTAssertTrue(app.navigationBars["Bills"].waitForExistence(timeout: 5),
-                      "Bills navigation bar should appear")
+        let billsNavigationBar = app.navigationBars["Bills"]
+        let billsPlaceholder = app.staticTexts["bills-detail-placeholder"]
+        _ = billsNavigationBar.waitForExistence(timeout: 5)
+        _ = billsPlaceholder.waitForExistence(timeout: 5)
+        let billsDestinationAppeared = billsNavigationBar.exists || billsPlaceholder.exists
+        attachScreenshot(named: "Bills destination")
+        XCTAssertTrue(billsDestinationAppeared,
+                      "Bills destination should appear")
+        attachLandscapeScreenshotIfNeeded()
     }
 
     // MARK: - Flow 4: Home tab → postal code onboarding

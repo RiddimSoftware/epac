@@ -9,6 +9,10 @@ import ActivityView
 import SwiftUI
 
 private enum BillsLayout {
+    static let listColumnMinWidth: CGFloat = 320
+    static let listColumnIdealWidth: CGFloat = 360
+    static let listColumnMaxWidth: CGFloat = 420
+    static let selectedRowOpacity = 0.14
     static let skeletonRows = 5
     static let retryDelaySeconds: Int64 = 2
     static let rowSpacing = EpacSpacing.xs
@@ -17,6 +21,49 @@ private enum BillsLayout {
     static let newIndicatorFontSize: CGFloat = 6
     static let statusBadgeHorizontalPadding: CGFloat = 6
     static let statusBadgeVerticalPadding = EpacSpacing.xxs
+}
+
+struct BillsTabRoot: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Binding var selectedBill: Bill?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+
+    var body: some View {
+        if horizontalSizeClass == .compact {
+            BillsView()
+        } else {
+            regularBillsSplitView
+        }
+    }
+
+    private var regularBillsSplitView: some View {
+        NavigationSplitView(
+            columnVisibility: $columnVisibility,
+            preferredCompactColumn: $preferredCompactColumn
+        ) {
+            BillsView(selection: $selectedBill)
+                .navigationSplitViewColumnWidth(
+                    min: BillsLayout.listColumnMinWidth,
+                    ideal: BillsLayout.listColumnIdealWidth,
+                    max: BillsLayout.listColumnMaxWidth
+                )
+        } detail: {
+            NavigationStack {
+                if let selectedBill {
+                    BillDetailView(bill: selectedBill)
+                        .id(BillsSelection.identity(for: selectedBill))
+                } else {
+                    Text(NSLocalizedString("bills.detail.placeholder", comment: ""))
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityIdentifier("bills-detail-placeholder")
+                }
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
 }
 
 struct BillsView: View {
@@ -31,6 +78,11 @@ struct BillsView: View {
     @State private var newSince: Date? = UserDefaults.standard.object(forKey: "epac.bills.newSince") as? Date
     @State private var isRetryDisabled = false
     @Environment(NavigationRouter.self) private var router
+    private let selection: Binding<Bill?>?
+
+    init(selection: Binding<Bill?>? = nil) {
+        self.selection = selection
+    }
 
     private var filtered: [Bill] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -81,32 +133,7 @@ struct BillsView: View {
                 )
             } else {
                 List(filtered) { bill in
-                    NavigationLink(destination: BillDetailView(bill: bill)) {
-                        BillRow(bill: bill, newSince: newSince)
-                    }
-                    .contextMenu {
-                        Button {
-                            billStore.toggle(bill)
-                        } label: {
-                            Label(
-                                billStore.isFollowing(bill.number)
-                                    ? NSLocalizedString("bill.unfollow", comment: "")
-                                    : NSLocalizedString("bill.follow", comment: ""),
-                                systemImage: billStore.isFollowing(bill.number) ? "doc.badge.clock.fill" : "doc.badge.clock"
-                            )
-                        }
-                        Button {
-                            shareItems = BillSharer.activityItem(for: bill)
-                        } label: {
-                            Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
-                        }
-                        Button {
-                            router.pendingSearchQuery = bill.number
-                            router.selectedTab = .search
-                        } label: {
-                            Label(NSLocalizedString("bill.contextMenu.seeVotes", comment: ""), systemImage: "checkmark.ballot")
-                        }
-                    }
+                    billRow(for: bill)
                 }
                 .listStyle(.plain)
                 .refreshable {
@@ -157,6 +184,64 @@ struct BillsView: View {
 
     private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }
 
+    @ViewBuilder
+    private func billRow(for bill: Bill) -> some View {
+        if let selection {
+            Button {
+                BillsSelection.select(bill, selection: selection)
+            } label: {
+                BillRow(bill: bill, newSince: newSince)
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .listRowBackground(
+                BillsSelection.isSelected(bill, selectedBill: selection.wrappedValue)
+                    ? Color.accentColor.opacity(BillsLayout.selectedRowOpacity)
+                    : Color.clear
+            )
+            .accessibilityAddTraits(
+                BillsSelection.isSelected(bill, selectedBill: selection.wrappedValue)
+                    ? [.isSelected]
+                    : []
+            )
+            .contextMenu {
+                billContextMenuItems(for: bill)
+            }
+        } else {
+            NavigationLink(destination: BillDetailView(bill: bill)) {
+                BillRow(bill: bill, newSince: newSince)
+            }
+            .contextMenu {
+                billContextMenuItems(for: bill)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func billContextMenuItems(for bill: Bill) -> some View {
+        Button {
+            billStore.toggle(bill)
+        } label: {
+            Label(
+                billStore.isFollowing(bill.number)
+                    ? NSLocalizedString("bill.unfollow", comment: "")
+                    : NSLocalizedString("bill.follow", comment: ""),
+                systemImage: billStore.isFollowing(bill.number) ? "doc.badge.clock.fill" : "doc.badge.clock"
+            )
+        }
+        Button {
+            shareItems = BillSharer.activityItem(for: bill)
+        } label: {
+            Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+        }
+        Button {
+            router.pendingSearchQuery = bill.number
+            router.selectedTab = .search
+        } label: {
+            Label(NSLocalizedString("bill.contextMenu.seeVotes", comment: ""), systemImage: "checkmark.ballot")
+        }
+    }
+
     // MARK: - Filter persistence
 
     private static let statusFilterKey = "bills.filter.status.persisted"
@@ -192,6 +277,7 @@ struct BillsView: View {
         defer { isLoading = false }
         do {
             bills = try await BillsService.fetchBills()
+            refreshSelectedBill(from: bills)
             UserDefaults.standard.set(Date(), forKey: "epac.sync.bills")
             // Track the newest introduction date so the next session knows what's "new".
             if let maxDate = bills.compactMap(\.introducedDate).max() {
@@ -204,6 +290,16 @@ struct BillsView: View {
         } catch {
             loadFailed = true
         }
+    }
+
+    private func refreshSelectedBill(from loadedBills: [Bill]) {
+        guard let selection,
+              let selectedBill = selection.wrappedValue,
+              let refreshedBill = BillsSelection.matching(selectedBill, in: loadedBills) else {
+            return
+        }
+
+        selection.wrappedValue = refreshedBill
     }
 }
 
@@ -222,6 +318,25 @@ enum BillTypeGroup: Equatable {
                                  || bill.billType == .senatePublic
                                  || bill.billType == .senatePrivate
         }
+    }
+}
+
+enum BillsSelection {
+    static func select(_ bill: Bill, selection: Binding<Bill?>) {
+        selection.wrappedValue = bill
+    }
+
+    static func isSelected(_ bill: Bill, selectedBill: Bill?) -> Bool {
+        guard let selectedBill else { return false }
+        return identity(for: bill) == identity(for: selectedBill)
+    }
+
+    static func matching(_ selectedBill: Bill, in bills: [Bill]) -> Bill? {
+        bills.first { identity(for: $0) == identity(for: selectedBill) }
+    }
+
+    static func identity(for bill: Bill) -> String {
+        "\(bill.parliament)-\(bill.session)-\(bill.number.lowercased())"
     }
 }
 

@@ -281,6 +281,7 @@
 "bills.empty.description" = "No bills are available.";
 "bills.noMatch.title" = "No Bills Found";
 "bills.noMatch.description" = "No bills match the current filters. Try clearing filters to see all bills.";
+"bills.detail.placeholder" = "Select a Bill";
 "bills.detail.number" = "Number";
 "bills.detail.parliament" = "Parliament";
 "bills.detail.parliament.value" = "%d-%d";

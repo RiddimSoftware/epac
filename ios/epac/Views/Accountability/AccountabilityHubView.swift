@@ -9,12 +9,15 @@ import SwiftUI
 
 struct AccountabilityHubView: View {
 	@State private var selectedExpenditure: SummaryExpenditure?
+	@Environment(NavigationRouter.self) private var router
 
 	var body: some View {
+		@Bindable var router = router
+
 		NavigationStack {
 			List {
 				Section {
-					NavigationLink(destination: BillsView()) {
+					NavigationLink(destination: BillsTabRoot(selectedBill: $router.selectedBill)) {
 						Label(NSLocalizedString("bills.navTitle", comment: ""), systemImage: "doc.text.fill")
 					}
 					.accessibilityHint("Opens federal bill tracker")
