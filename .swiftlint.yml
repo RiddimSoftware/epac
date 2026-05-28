@@ -25,6 +25,7 @@ excluded:
   - ios/epac/cabinet-positions.json
   - ios/epacTests/__Snapshots__
   - ios/fastlane
+  - ios/epacUITests/SnapshotHelper.swift
 
 included:
   - ios

@@ -1,7 +1,9 @@
 # Devices to capture (required App Store sizes)
 devices([
-  "iPhone 16 Pro Max",   # 6.9" — required
-  "iPhone 16",           # 6.1" — required for older devices
+  "iPhone 16 Pro Max",       # 6.9" — required
+  "iPhone 16",               # 6.1" — required for older devices
+  "iPad Pro 13-inch (M4)",   # 13" iPad — required
+  "iPad Pro 11-inch (M4)",   # 11" iPad — required
 ])
 
 languages(["en-CA"])
