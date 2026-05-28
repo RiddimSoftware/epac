@@ -48,7 +48,7 @@ struct DataSourceBadge: View {
         }
         .accessibilityLabel("\(source.name) — \(badgeText)")
         .accessibilityHint("Opens source details")
-        .sheet(isPresented: $showDetail) {
+        .regularSizeClassFormSheet(isPresented: $showDetail) {
             DataSourceDetailSheet(source: source)
         }
     }

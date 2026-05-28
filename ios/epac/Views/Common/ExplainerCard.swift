@@ -121,7 +121,7 @@ struct ExplainerTipModifier: ViewModifier {
                 .buttonStyle(.plain)
                 .accessibilityLabel("What is \(term)?")
             }
-            .sheet(isPresented: $showExplainer) {
+            .regularSizeClassFormSheet(isPresented: $showExplainer) {
                 ExplainerCard(explainer: explainer)
             }
         } else {

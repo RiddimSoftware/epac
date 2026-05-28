@@ -178,7 +178,7 @@ struct MyMPView: View {
                 Task { await loadActivities() }
             }
         }
-        .sheet(isPresented: $showPostalCodeSetup) {
+        .regularSizeClassFormSheet(isPresented: $showPostalCodeSetup) {
             PostalCodeSetupView { showPostalCodeSetup = false }
         }
     }

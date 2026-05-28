@@ -427,7 +427,7 @@ struct MemberProfileView: View {
 				.environmentObject(fetch)
 		}
 		.activitySheet($shareItem)
-		.sheet(isPresented: $showingComparePicker) {
+		.regularSizeClassFormSheet(isPresented: $showingComparePicker) {
 			NavigationStack {
 				List(pickableMembers) { other in
 					Button {

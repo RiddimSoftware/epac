@@ -50,7 +50,7 @@ struct PartyLineScoreView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(EpacCornerRadius.m)
-        .sheet(isPresented: $showInfo) { infoSheet }
+        .regularSizeClassFormSheet(isPresented: $showInfo) { infoSheet }
     }
 
     private var infoSheet: some View {
