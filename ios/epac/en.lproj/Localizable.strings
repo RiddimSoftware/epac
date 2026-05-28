@@ -116,6 +116,7 @@
 
 /* Members view */
 "Search by name or riding" = "Search by name or riding";
+"members.detail.placeholder" = "Select a Member";
 "Loading members..." = "Loading members...";
 "Parliamentary portraits are being synced." = "Parliamentary portraits are being synced.";
 "No Members Found" = "No Members Found";
