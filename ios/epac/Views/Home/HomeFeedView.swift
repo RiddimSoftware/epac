@@ -95,6 +95,7 @@ struct HomeFeedView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .adaptiveReadingWidth()
             .accessibilityIdentifier("home-feed-scroll")
             .refreshable {
                 await loadFeed()

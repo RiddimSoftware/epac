@@ -77,6 +77,7 @@ struct PetitionsView: View {
                     }
                 }
                 .listStyle(.plain)
+                .adaptiveReadingWidth()
                 .refreshable {
                     petitions = []
                     await load()

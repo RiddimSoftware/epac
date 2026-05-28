@@ -97,6 +97,7 @@ struct PetitionDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .adaptiveReadingWidth()
         .navigationTitle(petition.id)
         .navigationBarTitleDisplayMode(.inline)
     }

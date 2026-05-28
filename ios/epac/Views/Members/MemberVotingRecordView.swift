@@ -172,6 +172,7 @@ struct MemberVotingRecordView: View {
 					}
 				}
 				.listStyle(.insetGrouped)
+				.adaptiveReadingWidth()
 				.accessibilityIdentifier("vote-detail-mp-list")
 				.refreshable {
 					guard member.memberID > 0 else { return }

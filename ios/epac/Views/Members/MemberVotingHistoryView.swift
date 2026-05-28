@@ -86,6 +86,7 @@ struct MemberVotingHistoryView: View {
                     }
                 }
                 .listStyle(.plain)
+                .adaptiveReadingWidth()
                 .accessibilityIdentifier("vote-detail-mp-list")
                 .refreshable {
                     await loadVotes(forceRefresh: true)

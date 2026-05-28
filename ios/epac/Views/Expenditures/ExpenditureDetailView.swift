@@ -162,6 +162,7 @@ struct ExpenditureDetailView: View {
                 }
             }
             .listStyle(.plain)
+            .adaptiveReadingWidth()
             .navigationTitle("\(expenditure.firstName) \(expenditure.lastName) (\(String(expenditure.year)) Q\(expenditure.quarter))")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
