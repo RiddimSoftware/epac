@@ -184,6 +184,7 @@ struct SearchView: View {
                         .accessibilityElement(children: .combine)
                     }
                 }
+                .adaptiveReadingWidth()
             }
 
             if !viewModel.searchResults.bills.isEmpty {
@@ -200,6 +201,7 @@ struct SearchView: View {
                         }
                     }
                 }
+                .adaptiveReadingWidth()
             }
 
             if !viewModel.searchResults.debates.isEmpty {
@@ -222,6 +224,7 @@ struct SearchView: View {
                         .accessibilityHint(result.hansardDate.formatted(date: .long, time: .omitted))
                     }
                 }
+                .adaptiveReadingWidth()
             }
         }
         .listStyle(.insetGrouped)

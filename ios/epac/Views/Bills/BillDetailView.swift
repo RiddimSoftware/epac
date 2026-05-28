@@ -134,6 +134,7 @@ struct BillDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .adaptiveReadingWidth()
         .navigationTitle(bill.number)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

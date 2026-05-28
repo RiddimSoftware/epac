@@ -143,124 +143,186 @@ struct MemberProfileView: View {
 
 	var body: some View {
 		ScrollView {
-			VStack(alignment: .center, spacing: MemberProfileLayout.profileStackSpacing) {
-				MemberAvatar(member: member)
-					.frame(width: MemberProfileLayout.avatarSize, height: MemberProfileLayout.avatarSize)
-					.padding(.top, MemberProfileLayout.avatarTopPadding)
+			Group {
+				VStack(alignment: .center, spacing: MemberProfileLayout.profileStackSpacing) {
+					MemberAvatar(member: member)
+						.frame(width: MemberProfileLayout.avatarSize, height: MemberProfileLayout.avatarSize)
+						.padding(.top, MemberProfileLayout.avatarTopPadding)
 
-				MemberHighlightsCard(member: member)
+					MemberHighlightsCard(member: member)
 
-				PartyLineScoreView(member: member)
+					PartyLineScoreView(member: member)
 
-				VStack(alignment: .leading, spacing: MemberProfileLayout.cardSpacing) {
-					NavigationLink(destination: partyDestination(for: member.party)) {
-						HStack(spacing: 0) {
-							ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
+					VStack(alignment: .leading, spacing: MemberProfileLayout.cardSpacing) {
+						NavigationLink(destination: partyDestination(for: member.party)) {
+							HStack(spacing: 0) {
+								ProfileDetailRow(icon: "flag.fill", label: "Party", value: member.party.fullName)
+								Image(systemName: "chevron.right")
+									.font(.caption)
+									.foregroundStyle(.tertiary)
+							}
+						}
+						.foregroundStyle(.primary)
+						.accessibilityIdentifier("mp-profile-party-link")
+						ProfileDetailRow(icon: "mappin.and.ellipse", label: "Riding", value: member.riding)
+						ProfileDetailRow(icon: "location.fill", label: "Province", value: member.province.rawValue)
+					}
+					.padding()
+					.background(Color(.secondarySystemBackground))
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
+
+					if let position = cabinetPosition {
+						CabinetPositionSection(position: position)
+					}
+
+					if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
+						contactSection
+					} else if !member.contactFetched {
+						HStack(spacing: MemberProfileLayout.inlineSpacing) {
+							ProgressView().scaleEffect(MemberProfileLayout.loadingScale)
+							Text(NSLocalizedString("member.contact.loading", comment: ""))
+								.font(.caption)
+								.foregroundStyle(.secondary)
+						}
+						.padding()
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.background(Color(.secondarySystemBackground))
+						.cornerRadius(MemberProfileLayout.cardCornerRadius)
+					}
+
+					NavigationLink(destination: MemberVotingRecordView(member: member)) {
+						HStack {
+							Label(NSLocalizedString("voting.title", comment: ""), systemImage: "checkmark.ballot")
+							Spacer()
 							Image(systemName: "chevron.right")
 								.font(.caption)
 								.foregroundStyle(.tertiary)
 						}
+						.padding()
+						.background(Color(.secondarySystemBackground))
+						.cornerRadius(MemberProfileLayout.cardCornerRadius)
 					}
 					.foregroundStyle(.primary)
-					.accessibilityIdentifier("mp-profile-party-link")
-					ProfileDetailRow(icon: "mappin.and.ellipse", label: "Riding", value: member.riding)
-					ProfileDetailRow(icon: "location.fill", label: "Province", value: member.province.rawValue)
-				}
-				.padding()
-				.background(Color(.secondarySystemBackground))
-				.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
-				if let position = cabinetPosition {
-					CabinetPositionSection(position: position)
-				}
-
-				if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
-					contactSection
-				} else if !member.contactFetched {
-					HStack(spacing: MemberProfileLayout.inlineSpacing) {
-						ProgressView().scaleEffect(MemberProfileLayout.loadingScale)
-						Text(NSLocalizedString("member.contact.loading", comment: ""))
-							.font(.caption)
-							.foregroundStyle(.secondary)
-					}
-					.padding()
-					.frame(maxWidth: .infinity, alignment: .leading)
-					.background(Color(.secondarySystemBackground))
-					.cornerRadius(MemberProfileLayout.cardCornerRadius)
-				}
-
-				NavigationLink(destination: MemberVotingRecordView(member: member)) {
-					HStack {
-						Label(NSLocalizedString("voting.title", comment: ""), systemImage: "checkmark.ballot")
-						Spacer()
-						Image(systemName: "chevron.right")
-							.font(.caption)
-							.foregroundStyle(.tertiary)
-					}
-					.padding()
-					.background(Color(.secondarySystemBackground))
-					.cornerRadius(MemberProfileLayout.cardCornerRadius)
-				}
-				.foregroundStyle(.primary)
-
-				NavigationLink(destination: RidingElectionHistoryView(member: member)) {
-					HStack {
-						Label("Riding History", systemImage: "chart.bar.xaxis.ascending")
-						Spacer()
-						Image(systemName: "chevron.right")
-							.font(.caption)
-							.foregroundStyle(.tertiary)
-					}
-					.padding()
-					.background(Color(.secondarySystemBackground))
-					.cornerRadius(MemberProfileLayout.cardCornerRadius)
-				}
-				.foregroundStyle(.primary)
-
-				// MARK: Lobbying section
-				DisclosureGroup(
-					isExpanded: $showLobbying,
-					content: {
-						if lobbyingComms.isEmpty && lobbyingLoaded {
-							Text(NSLocalizedString("lobbying.empty.title", comment: ""))
+					NavigationLink(destination: RidingElectionHistoryView(member: member)) {
+						HStack {
+							Label("Riding History", systemImage: "chart.bar.xaxis.ascending")
+							Spacer()
+							Image(systemName: "chevron.right")
 								.font(.caption)
-								.foregroundStyle(.secondary)
-								.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
-						} else {
-							ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
-								VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
-									Text(comm.organizationName)
-										.font(.subheadline)
-										.fixedSize(horizontal: false, vertical: true)
-									if !comm.subjectMatter.isEmpty {
-										Text(comm.subjectMatter)
-											.font(.caption2)
-											.foregroundStyle(.secondary)
+								.foregroundStyle(.tertiary)
+						}
+						.padding()
+						.background(Color(.secondarySystemBackground))
+						.cornerRadius(MemberProfileLayout.cardCornerRadius)
+					}
+					.foregroundStyle(.primary)
+
+					// MARK: Lobbying section
+					DisclosureGroup(
+						isExpanded: $showLobbying,
+						content: {
+							if lobbyingComms.isEmpty && lobbyingLoaded {
+								Text(NSLocalizedString("lobbying.empty.title", comment: ""))
+									.font(.caption)
+									.foregroundStyle(.secondary)
+									.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
+							} else {
+								ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
+									VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
+										Text(comm.organizationName)
+											.font(.subheadline)
 											.fixedSize(horizontal: false, vertical: true)
+										if !comm.subjectMatter.isEmpty {
+											Text(comm.subjectMatter)
+												.font(.caption2)
+												.foregroundStyle(.secondary)
+												.fixedSize(horizontal: false, vertical: true)
+										}
+										if let d = comm.communicationDate {
+											Text(d, style: .date)
+												.font(.caption2)
+												.foregroundStyle(.secondary)
+										}
 									}
-									if let d = comm.communicationDate {
-										Text(d, style: .date)
-											.font(.caption2)
-											.foregroundStyle(.secondary)
+									.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
+								}
+								if !lobbyingComms.isEmpty {
+									NavigationLink(destination: LobbyingView(member: member)) {
+										Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
+											.font(.caption)
+											.foregroundStyle(.tint)
 									}
+									.accessibilityIdentifier("accountability-lobbying-link")
+								}
+							}
+						},
+						label: {
+							HStack {
+								Image(systemName: "person.fill.badge.plus")
+									.foregroundStyle(.tint)
+								Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+									.font(.subheadline)
+									.fontWeight(.semibold)
+							}
+						}
+					)
+					.padding()
+					.background(Color.appSurface)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
+					.onChange(of: showLobbying) { _, isExpanded in
+						if isExpanded && !lobbyingLoaded {
+							// Capture primitive name values on the main actor before async hop.
+							let ln = member.lastName
+							let fn = member.firstName
+							Task {
+								lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
+								lobbyingLoaded = true
+							}
+						}
+					}
+				}
+
+				// MARK: Ethics disclosures
+				let ethicsInvestigations = EthicsInvestigationsDatabase.investigations(for: member.lastName)
+				DisclosureGroup(
+					isExpanded: $showEthics,
+					content: {
+						if ethicsInvestigations.isEmpty {
+							VStack(alignment: .leading, spacing: MemberProfileLayout.badgeHorizontalPadding) {
+								Text("No Commissioner reports found for this MP.")
+									.font(.caption)
+									.foregroundStyle(.secondary)
+									.padding(.vertical, MemberProfileLayout.sectionTopPadding)
+								Link("View annual compliance status (CIEC)", destination: EthicsInvestigationsDatabase.complianceStatusURL)
+									.font(.caption)
+								Link("Public registry — disclosures and statements", destination: EthicsInvestigationsDatabase.registryURL)
+									.font(.caption)
+							}
+						} else {
+							ForEach(ethicsInvestigations) { investigation in
+								VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
+									Text(investigation.reportTitle)
+										.font(.subheadline)
+									Text("\(investigation.type) · \(EthicsInvestigationsDatabase.formattedDate(investigation.date))")
+										.font(.caption2)
+										.foregroundStyle(.secondary)
+									Link("Read report →", destination: investigation.pageURL)
+										.font(.caption2)
+										.foregroundStyle(.tint)
 								}
 								.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
 							}
-							if !lobbyingComms.isEmpty {
-								NavigationLink(destination: LobbyingView(member: member)) {
-									Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
-										.font(.caption)
-										.foregroundStyle(.tint)
-								}
-								.accessibilityIdentifier("accountability-lobbying-link")
-							}
+							Link("All Commissioner reports", destination: EthicsInvestigationsDatabase.commissionerURL)
+								.font(.caption)
+								.foregroundStyle(.tint)
 						}
 					},
 					label: {
 						HStack {
-							Image(systemName: "person.fill.badge.plus")
+							Image(systemName: "checkmark.shield.fill")
 								.foregroundStyle(.tint)
-							Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+							Text("Ethics Disclosures")
 								.font(.subheadline)
 								.fontWeight(.semibold)
 						}
@@ -269,84 +331,25 @@ struct MemberProfileView: View {
 				.padding()
 				.background(Color.appSurface)
 				.cornerRadius(MemberProfileLayout.cardCornerRadius)
-				.onChange(of: showLobbying) { _, isExpanded in
-					if isExpanded && !lobbyingLoaded {
-						// Capture primitive name values on the main actor before async hop.
-						let ln = member.lastName
-						let fn = member.firstName
-						Task {
-							lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
-							lobbyingLoaded = true
-						}
-					}
-				}
+
+				// MARK: Written Questions
+				WrittenQuestionsSection(member: member)
+
+				// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
+				ShortcutsLink()
+					.shortcutsLinkStyle(.automaticOutline)
+					.padding(.top, MemberProfileLayout.sectionTopPadding)
+					.accessibilityLabel("Add epac to Siri and Shortcuts")
+
+				#if DEBUG
+				Text("Member ID: \(member.memberID)")
+					.font(.caption2)
+					.foregroundStyle(.tertiary)
+					.padding(.top, MemberProfileLayout.sectionTopPadding)
+					.frame(maxWidth: .infinity)
+				#endif
 			}
-
-			// MARK: Ethics disclosures
-			let ethicsInvestigations = EthicsInvestigationsDatabase.investigations(for: member.lastName)
-			DisclosureGroup(
-				isExpanded: $showEthics,
-				content: {
-					if ethicsInvestigations.isEmpty {
-						VStack(alignment: .leading, spacing: MemberProfileLayout.badgeHorizontalPadding) {
-							Text("No Commissioner reports found for this MP.")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-								.padding(.vertical, MemberProfileLayout.sectionTopPadding)
-							Link("View annual compliance status (CIEC)", destination: EthicsInvestigationsDatabase.complianceStatusURL)
-								.font(.caption)
-							Link("Public registry — disclosures and statements", destination: EthicsInvestigationsDatabase.registryURL)
-								.font(.caption)
-						}
-					} else {
-						ForEach(ethicsInvestigations) { investigation in
-							VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
-								Text(investigation.reportTitle)
-									.font(.subheadline)
-								Text("\(investigation.type) · \(EthicsInvestigationsDatabase.formattedDate(investigation.date))")
-									.font(.caption2)
-									.foregroundStyle(.secondary)
-								Link("Read report →", destination: investigation.pageURL)
-									.font(.caption2)
-									.foregroundStyle(.tint)
-							}
-							.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
-						}
-						Link("All Commissioner reports", destination: EthicsInvestigationsDatabase.commissionerURL)
-							.font(.caption)
-							.foregroundStyle(.tint)
-					}
-				},
-				label: {
-					HStack {
-						Image(systemName: "checkmark.shield.fill")
-							.foregroundStyle(.tint)
-						Text("Ethics Disclosures")
-							.font(.subheadline)
-							.fontWeight(.semibold)
-					}
-				}
-			)
-			.padding()
-			.background(Color.appSurface)
-			.cornerRadius(MemberProfileLayout.cardCornerRadius)
-
-			// MARK: Written Questions
-			WrittenQuestionsSection(member: member)
-
-			// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
-			ShortcutsLink()
-				.shortcutsLinkStyle(.automaticOutline)
-				.padding(.top, MemberProfileLayout.sectionTopPadding)
-				.accessibilityLabel("Add epac to Siri and Shortcuts")
-
-			#if DEBUG
-			Text("Member ID: \(member.memberID)")
-				.font(.caption2)
-				.foregroundStyle(.tertiary)
-				.padding(.top, MemberProfileLayout.sectionTopPadding)
-				.frame(maxWidth: .infinity)
-			#endif
+			.adaptiveReadingWidth()
 		}
 		.accessibilityIdentifier("mp-profile-scroll")
 		.padding()
