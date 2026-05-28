@@ -283,6 +283,7 @@
 "bills.empty.description" = "Aucun projet de loi n'est disponible.";
 "bills.noMatch.title" = "Aucun résultat";
 "bills.noMatch.description" = "Aucun projet de loi ne correspond aux filtres actuels. Effacez les filtres pour tout afficher.";
+"bills.detail.placeholder" = "Sélectionnez un projet de loi";
 "bills.detail.number" = "Numéro";
 "bills.detail.parliament" = "Parlement";
 "bills.detail.parliament.value" = "%d-%d";
