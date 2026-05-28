@@ -1,37 +1,56 @@
 # App Store Screenshots
 
-EPAC-109 screenshot exports live here.
+## Capture pipeline
 
-Generate source captures with the App Store screenshot UI test:
+Screenshots are captured natively on each target device using Fastlane Snapshot.
+The Snapfile at `ios/fastlane/Snapfile` lists 4 devices:
+
+- iPhone 16 Pro Max (6.9-inch, 1320×2868)
+- iPhone 16 (6.1-inch, 1290×2796)
+- iPad Pro 13-inch M4 (2064×2752)
+- iPad Pro 11-inch M4 (1668×2388)
+
+Each device captures 6 scenes via `AppStoreScreenshotTests.testCaptureAppStoreScreenshotSources`,
+producing 24 PNGs total in `ios/fastlane/screenshots/en-CA/`.
+
+### Running a capture
 
 ```sh
-APPSTORE_SCREENSHOT_DIR=/tmp/epac-appstore-screenshots \
+cd ios && bundle exec fastlane snapshot
+```
+
+This launches the showcase UI (`AppStoreScreenshotShowcaseView`) with the
+`-AppStoreScreenshots` and `-AppStoreScreenshotPage <0-5>` launch arguments on
+each device. The showcase is fully offline — it uses bundled `NSLocalizedString`
+keys and Color literals with no backend dependency.
+
+On iPad simulators the showcase automatically renders a two-column layout
+(headline/subtitle on the left, content card on the right) via
+`horizontalSizeClass == .regular`, producing screenshots that are visually
+distinct from the phone captures.
+
+### Output
+
+Fastlane writes PNGs named `<Device>-<scene>.png` into
+`ios/fastlane/screenshots/en-CA/`. The `clear_previous_screenshots(true)`
+Snapfile directive removes stale files before each run.
+
+### Refreshing the App Store upload set
+
+Copy the Fastlane output into the delivery directory:
+
+```sh
+cp -f ios/fastlane/screenshots/en-CA/*.png docs/marketing/screenshots/
+```
+
+### Manual single-device capture
+
+To capture a single device outside Fastlane:
+
+```sh
 xcodebuild test \
-  -project epac.xcodeproj \
+  -project ios/epac.xcodeproj \
   -scheme epac \
-  -destination 'platform=iOS Simulator,name=EPAC App Store 16 Pro Max' \
-  -derivedDataPath ~/Library/Developer/Xcode/DerivedData/epac-afnetyeysumivgfzkpjhhfcnazhs \
-  -only-testing:epacUITests/epacUITests/testCaptureAppStoreScreenshotSources
+  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)' \
+  -only-testing:epacUITests/AppStoreScreenshotTests/testCaptureAppStoreScreenshotSources
 ```
-
-Render App Store-ready assets:
-
-```sh
-scripts/marketing/render_app_store_screenshots.sh /tmp/epac-appstore-screenshots docs/marketing/screenshots
-```
-
-The capture route uses `Evidence.ScreenshotPlan`, the app's `-AppStoreScreenshots` launch argument, and official-record sample data from the House of Commons Hansard fixture already committed in the test suite. Resizing is delegated to `evidence resize` through `scripts/marketing/render_app_store_screenshots.sh`.
-
-The render script writes:
-
-- 6 iPhone 6.9-inch screenshots using the base scene filenames.
-- 6 iPad Pro 13-inch screenshots prefixed with `APP_IPAD_PRO_3GEN_129_`.
-- 6 iPad Pro 12.9-inch screenshots prefixed with `APP_IPAD_PRO_129_`.
-
-To refresh the App Store upload directory from the committed marketing set:
-
-```sh
-scripts/marketing/render_app_store_screenshots.sh docs/marketing/screenshots ios/fastlane/screenshots/en-CA
-```
-
-See `docs/marketing/evidence-workflows.md` for the full local workflow.

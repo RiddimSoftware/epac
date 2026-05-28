@@ -645,10 +645,21 @@ private enum AppStoreScreenshotSpec {
 	static let sourceBadgeFontSize: CGFloat = 11
 	static let sourceBadgeHorizontalPadding: CGFloat = 12
 	static let sourceBadgeVerticalPadding: CGFloat = 8
+
+	// iPad two-column layout
+	static let iPadHeadlineFontSize: CGFloat = 44
+	static let iPadSubtitleFontSize: CGFloat = 18
+	static let iPadColumnSpacing: CGFloat = 40
+	static let iPadContentPadding: CGFloat = 48
+	static let iPadTopPadding: CGFloat = 64
+	static let iPadPhoneFrameMaxWidth: CGFloat = 420
 }
 
 private struct AppStoreScreenshotShowcaseView: View {
+	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@State private var selection = Self.initialSelection()
+
+	private var isIPad: Bool { horizontalSizeClass == .regular }
 
 	private static func initialSelection() -> Int {
 		let arguments = ProcessInfo.processInfo.arguments
@@ -716,15 +727,30 @@ private struct AppStoreScreenshotShowcaseView: View {
 	}
 
 	var body: some View {
+		Group {
+			if isIPad {
+				iPadBody
+			} else {
+				phoneBody
+			}
+		}
+		.dynamicTypeSize(.large)
+		.preferredColorScheme(.light)
+	}
+
+	private var phoneBody: some View {
 		TabView(selection: $selection) {
 			ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
-				AppStoreScreenshotPageView(page: page)
+				AppStoreScreenshotPageView(page: page, isIPad: false)
 					.tag(index)
 			}
 		}
 		.tabViewStyle(.page(indexDisplayMode: .never))
-		.dynamicTypeSize(.large)
-		.preferredColorScheme(.light)
+	}
+
+	private var iPadBody: some View {
+		let page = pages[selection]
+		return AppStoreScreenshotPageView(page: page, isIPad: true)
 	}
 }
 
@@ -746,6 +772,7 @@ private struct AppStoreScreenshotPage {
 
 private struct AppStoreScreenshotPageView: View {
 	let page: AppStoreScreenshotPage
+	var isIPad = false
 
 	private func t(_ key: String) -> String {
 		NSLocalizedString(key, comment: "")
@@ -764,31 +791,59 @@ private struct AppStoreScreenshotPageView: View {
 			)
 			.ignoresSafeArea()
 
-			VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.pageVerticalSpacing) {
-				VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.titleVerticalSpacing) {
-					Text(page.headline)
-						.font(.system(size: AppStoreScreenshotSpec.headlineFontSize, weight: .heavy, design: .rounded))
-						.foregroundStyle(.primary)
-						.minimumScaleFactor(AppStoreScreenshotSpec.headlineMinimumScaleFactor)
-						.lineLimit(AppStoreScreenshotSpec.headlineLineLimit)
-						.fixedSize(horizontal: false, vertical: true)
-						.accessibilityIdentifier("appStoreScreenshotHeadline")
+			if isIPad {
+				iPadContent
+			} else {
+				phoneContent
+			}
+		}
+	}
 
-					Text(page.subtitle)
-						.font(.system(size: AppStoreScreenshotSpec.subtitleFontSize, weight: .medium, design: .rounded))
-						.foregroundStyle(.secondary)
-						.lineLimit(AppStoreScreenshotSpec.subtitleLineLimit)
-						.fixedSize(horizontal: false, vertical: true)
-				}
+	private var phoneContent: some View {
+		VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.pageVerticalSpacing) {
+			titleSection(headlineSize: AppStoreScreenshotSpec.headlineFontSize, subtitleSize: AppStoreScreenshotSpec.subtitleFontSize)
 				.padding(.horizontal, AppStoreScreenshotSpec.titleHorizontalPadding)
 
-				showcaseContent
-					.padding(.horizontal, AppStoreScreenshotSpec.showcaseHorizontalPadding)
+			showcaseContent
+				.padding(.horizontal, AppStoreScreenshotSpec.showcaseHorizontalPadding)
 
-				Spacer(minLength: AppStoreScreenshotSpec.bottomSpacerMinLength)
+			Spacer(minLength: AppStoreScreenshotSpec.bottomSpacerMinLength)
+		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+		.padding(.top, AppStoreScreenshotSpec.pageTopPadding)
+	}
+
+	private var iPadContent: some View {
+		HStack(alignment: .top, spacing: AppStoreScreenshotSpec.iPadColumnSpacing) {
+			VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.pageVerticalSpacing) {
+				titleSection(headlineSize: AppStoreScreenshotSpec.iPadHeadlineFontSize, subtitleSize: AppStoreScreenshotSpec.iPadSubtitleFontSize)
+				Spacer()
 			}
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-			.padding(.top, AppStoreScreenshotSpec.pageTopPadding)
+			.frame(maxWidth: .infinity, alignment: .topLeading)
+
+			showcaseContent
+				.frame(maxWidth: AppStoreScreenshotSpec.iPadPhoneFrameMaxWidth)
+		}
+		.padding(AppStoreScreenshotSpec.iPadContentPadding)
+		.padding(.top, AppStoreScreenshotSpec.iPadTopPadding)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+	}
+
+	private func titleSection(headlineSize: CGFloat, subtitleSize: CGFloat) -> some View {
+		VStack(alignment: .leading, spacing: AppStoreScreenshotSpec.titleVerticalSpacing) {
+			Text(page.headline)
+				.font(.system(size: headlineSize, weight: .heavy, design: .rounded))
+				.foregroundStyle(.primary)
+				.minimumScaleFactor(AppStoreScreenshotSpec.headlineMinimumScaleFactor)
+				.lineLimit(AppStoreScreenshotSpec.headlineLineLimit)
+				.fixedSize(horizontal: false, vertical: true)
+				.accessibilityIdentifier("appStoreScreenshotHeadline")
+
+			Text(page.subtitle)
+				.font(.system(size: subtitleSize, weight: .medium, design: .rounded))
+				.foregroundStyle(.secondary)
+				.lineLimit(AppStoreScreenshotSpec.subtitleLineLimit)
+				.fixedSize(horizontal: false, vertical: true)
 		}
 	}
 
