@@ -50,6 +50,44 @@ private struct RegularSizeClassItemFormSheetModifier<Item: Identifiable, SheetCo
     }
 }
 
+private struct FormSheetPresentationConfigurator: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Controller {
+        Controller()
+    }
+
+    func updateUIViewController(_ uiViewController: Controller, context: Context) {
+        uiViewController.applyFormSheetPresentation()
+    }
+
+    final class Controller: UIViewController {
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            applyFormSheetPresentation()
+        }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            applyFormSheetPresentation()
+        }
+
+        func applyFormSheetPresentation() {
+            guard let presentationHost else { return }
+            presentationHost.modalPresentationStyle = .formSheet
+        }
+
+        private var presentationHost: UIViewController? {
+            var controller = parent
+            while let current = controller {
+                if current.presentingViewController != nil {
+                    return current
+                }
+                controller = current.parent
+            }
+            return parent
+        }
+    }
+}
+
 extension View {
     /// Constrains long-form reading surfaces to `AdaptiveLayout.readingWidth` in a regular
     /// horizontal size class while leaving compact layouts unchanged.
@@ -63,8 +101,8 @@ extension View {
         modifier(AdaptiveReadingWidthModifier())
     }
 
-    /// Presents a sheet normally in compact width and with medium/large detents plus a visible
-    /// drag indicator in a regular horizontal size class.
+    /// Presents a sheet normally in compact width and as a form-sized sheet with medium/large
+    /// detents plus a visible drag indicator in a regular horizontal size class.
     ///
     /// Use this as the Stage-2 drop-in replacement for `.sheet(isPresented:content:)` when a
     /// modal should adapt to iPad and Mac Catalyst form-sheet ergonomics. Do not use it for flows
@@ -76,8 +114,8 @@ extension View {
         regularSizeClassFormSheet(isPresented: isPresented, onDismiss: nil, content: content)
     }
 
-    /// Presents a sheet normally in compact width and with medium/large detents plus a visible
-    /// drag indicator in a regular horizontal size class.
+    /// Presents a sheet normally in compact width and as a form-sized sheet with medium/large
+    /// detents plus a visible drag indicator in a regular horizontal size class.
     ///
     /// Use this as the Stage-2 drop-in replacement for `.sheet(isPresented:onDismiss:content:)`
     /// when a modal should adapt to iPad and Mac Catalyst form-sheet ergonomics. Do not use it for
@@ -96,8 +134,8 @@ extension View {
         )
     }
 
-    /// Presents an item-driven sheet normally in compact width and with medium/large detents plus
-    /// a visible drag indicator in a regular horizontal size class.
+    /// Presents an item-driven sheet normally in compact width and as a form-sized sheet with
+    /// medium/large detents plus a visible drag indicator in a regular horizontal size class.
     ///
     /// Use this as the Stage-2 drop-in replacement for `.sheet(item:onDismiss:content:)` when a
     /// modal should adapt to iPad and Mac Catalyst form-sheet ergonomics. Do not use it for flows
@@ -121,8 +159,15 @@ private extension View {
     @ViewBuilder
     func regularSizeClassSheetChrome(isEnabled: Bool) -> some View {
         if isEnabled {
-            presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+            if #available(iOS 18.0, *) {
+                presentationSizing(.form)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            } else {
+                background(FormSheetPresentationConfigurator())
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
         } else {
             self
         }

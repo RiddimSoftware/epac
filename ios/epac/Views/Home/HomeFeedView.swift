@@ -129,13 +129,13 @@ struct HomeFeedView: View {
             .task {
                 await loadFeed()
             }
-            .sheet(isPresented: $showPostalCodeSetup) {
+            .regularSizeClassFormSheet(isPresented: $showPostalCodeSetup) {
                 PostalCodeSetupView { showPostalCodeSetup = false }
             }
             .onChange(of: postalCodeStore.savedMemberName) {
                 Task { await loadFeed() }
             }
-            .sheet(isPresented: $showSettings) {
+            .regularSizeClassFormSheet(isPresented: $showSettings) {
                 SettingsView()
             }
         }

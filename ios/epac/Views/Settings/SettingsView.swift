@@ -36,7 +36,7 @@ struct SettingsView: View {
                     Button(NSLocalizedString("settings.done", comment: "")) { dismiss() }
                 }
             }
-            .sheet(isPresented: $showPostalCodeChange) {
+            .regularSizeClassFormSheet(isPresented: $showPostalCodeChange) {
                 PostalCodeSetupView { showPostalCodeChange = false }
             }
         }

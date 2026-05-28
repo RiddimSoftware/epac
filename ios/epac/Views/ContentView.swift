@@ -146,7 +146,7 @@ struct ContentView: View {
 			}
 			.interactiveDismissDisabled()
 		}
-		.sheet(isPresented: $showMyMPSetup) {
+		.regularSizeClassFormSheet(isPresented: $showMyMPSetup) {
 			PostalCodeSetupView { showMyMPSetup = false }
 		}
 		.onChange(of: router.pendingShowPostalCodeSetup) { _, pending in
@@ -160,7 +160,7 @@ struct ContentView: View {
 			handleQuickAction(action)
 			router.pendingQuickAction = nil
 		}
-		.sheet(isPresented: $showWhatsNew) {
+		.regularSizeClassFormSheet(isPresented: $showWhatsNew) {
 			WhatsNewView { showWhatsNew = false }
 				.presentationDetents([.medium])
 				.presentationDragIndicator(.visible)
