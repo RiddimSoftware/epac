@@ -10,6 +10,10 @@ import SwiftUI
 import UIKit
 
 private enum MembersLayout {
+	static let listColumnMinWidth: CGFloat = 320
+	static let listColumnIdealWidth: CGFloat = 360
+	static let listColumnMaxWidth: CGFloat = 420
+	static let selectedRowOpacity = 0.14
 	static let sourceBadgeVerticalPadding: CGFloat = 6
 	static let activeFilterBadgeMinSize = EpacIconSize.xs
 	static let activeFilterBadgeOffset: CGFloat = 7
@@ -27,12 +31,72 @@ private enum MembersLayout {
 	static let popoverMinWidth: CGFloat = 150
 }
 
+struct MembersTabRoot: View {
+	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
+	@Binding var selectedMember: ParliamentMember?
+	let showMyMPSetup: () -> Void
+	@State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
+	@State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+
+	var body: some View {
+		if horizontalSizeClass == .compact {
+			compactMembersStack
+		} else {
+			regularMembersSplitView
+		}
+	}
+
+	private var compactMembersStack: some View {
+		NavigationStack {
+			MembersView()
+				.membersMyMPToolbar(showMyMPSetup)
+				.navigationDestination(item: $selectedMember) { member in
+					MemberProfileView(member: member)
+				}
+		}
+	}
+
+	private var regularMembersSplitView: some View {
+		NavigationSplitView(
+			columnVisibility: $columnVisibility,
+			preferredCompactColumn: $preferredCompactColumn
+		) {
+			MembersView(selection: $selectedMember)
+				.membersMyMPToolbar(showMyMPSetup)
+				.navigationSplitViewColumnWidth(
+					min: MembersLayout.listColumnMinWidth,
+					ideal: MembersLayout.listColumnIdealWidth,
+					max: MembersLayout.listColumnMaxWidth
+				)
+		} detail: {
+			NavigationStack {
+				if let selectedMember {
+					MemberProfileView(member: selectedMember)
+				} else {
+					Text("members.detail.placeholder")
+						.font(.title3.weight(.semibold))
+						.foregroundStyle(.secondary)
+						.frame(maxWidth: .infinity, maxHeight: .infinity)
+						.accessibilityIdentifier("members-detail-placeholder")
+				}
+			}
+			.id(selectedMember?.directoryKey)
+		}
+		.navigationSplitViewStyle(.balanced)
+	}
+}
+
 struct MembersView: View {
 	@Query(sort: [SortDescriptor(\ParliamentMember.lastName, order: .forward)]) private var members: [ParliamentMember]
 	@Query private var cabinetPositions: [CabinetPosition]
 	@State private var viewModel = MembersViewModel()
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@EnvironmentObject private var fetch: Fetch
+	private let selection: Binding<ParliamentMember?>?
+
+	init(selection: Binding<ParliamentMember?>? = nil) {
+		self.selection = selection
+	}
 
 	// Match minister to MP on the (firstName, lastName) pair rather than lastName
 	// alone, otherwise common surnames (Thompson, Sidhu, MacDonald, Miller) would
@@ -156,6 +220,7 @@ struct MembersView: View {
 			}
 		}
 		.listStyle(.plain)
+		.accessibilityIdentifier("members-list")
 	}
 
 	private var memberList: some View {
@@ -177,15 +242,42 @@ struct MembersView: View {
 				}
 			} else {
 				ForEach(filteredMembers, id: \.id) { member in
-					NavigationLink(destination: MemberProfileView(member: member)) {
-						MemberRow(member: member, isCabinetMinister: ministerKeys.contains(CabinetMatch.key(firstName: member.firstName, lastName: member.lastName)))
-					}
+					memberRow(for: member)
 				}
 			}
 		}
 		.listStyle(.plain)
+		.accessibilityIdentifier("members-list")
 		.refreshable {
 			try? await fetch.downloadMembers()
+		}
+	}
+
+	@ViewBuilder
+	private func memberRow(for member: ParliamentMember) -> some View {
+		let isCabinetMinister = ministerKeys.contains(CabinetMatch.key(firstName: member.firstName, lastName: member.lastName))
+		if let selection {
+			Button {
+				MembersSelection.select(member, selection: selection)
+			} label: {
+				MemberRow(member: member, isCabinetMinister: isCabinetMinister)
+			}
+			.buttonStyle(.plain)
+			.contentShape(Rectangle())
+			.listRowBackground(
+				MembersSelection.isSelected(member, selectedMember: selection.wrappedValue)
+					? Color.accentColor.opacity(MembersLayout.selectedRowOpacity)
+					: Color.clear
+			)
+			.accessibilityAddTraits(
+				MembersSelection.isSelected(member, selectedMember: selection.wrappedValue)
+					? [.isSelected]
+					: []
+			)
+		} else {
+			NavigationLink(destination: MemberProfileView(member: member)) {
+				MemberRow(member: member, isCabinetMinister: isCabinetMinister)
+			}
 		}
 	}
 }
@@ -236,6 +328,29 @@ enum CabinetMatch {
 	static func key(firstName: String, lastName: String) -> String {
 		let firstToken = firstName.split(separator: " ").first.map(String.init) ?? firstName
 		return "\(firstToken.lowercased()) \(lastName.lowercased())"
+	}
+}
+
+enum MembersSelection {
+	static func select(_ member: ParliamentMember, selection: Binding<ParliamentMember?>) {
+		selection.wrappedValue = member
+	}
+
+	static func isSelected(_ member: ParliamentMember, selectedMember: ParliamentMember?) -> Bool {
+		member == selectedMember
+	}
+}
+
+private extension View {
+	func membersMyMPToolbar(_ action: @escaping () -> Void) -> some View {
+		toolbar {
+			ToolbarItem(placement: .topBarTrailing) {
+				Button(action: action) {
+					Label(NSLocalizedString("riding.myMP.toolbarLabel", comment: ""), systemImage: "mappin.and.ellipse")
+				}
+				.accessibilityLabel(NSLocalizedString("riding.setup.navTitle", comment: ""))
+			}
+		}
 	}
 }
 

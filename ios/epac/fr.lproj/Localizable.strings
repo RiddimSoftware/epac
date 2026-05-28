@@ -117,6 +117,7 @@
 
 /* Members view */
 "Search by name or riding" = "Rechercher par nom ou circonscription";
+"members.detail.placeholder" = "Sélectionner un membre";
 "Loading members..." = "Chargement des membres...";
 "Parliamentary portraits are being synced." = "Les portraits parlementaires sont synchronisés.";
 "No Members Found" = "Aucun membre trouvé";

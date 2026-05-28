@@ -296,21 +296,8 @@ struct ContentView: View {
 	// MARK: - Members navigation stack
 
 	private var membersStack: some View {
-		NavigationStack {
-			MembersView()
-				.toolbar {
-					ToolbarItem(placement: .topBarTrailing) {
-						Button {
-							showMyMPSetup = true
-						} label: {
-							Label(NSLocalizedString("riding.myMP.toolbarLabel", comment: ""), systemImage: "mappin.and.ellipse")
-						}
-						.accessibilityLabel(NSLocalizedString("riding.setup.navTitle", comment: ""))
-					}
-				}
-				.navigationDestination(item: $router.selectedMember) { member in
-					MemberProfileView(member: member)
-				}
+		MembersTabRoot(selectedMember: $router.selectedMember) {
+			showMyMPSetup = true
 		}
 	}
 
