@@ -10,8 +10,10 @@ import Kanna
 import SwiftData
 import SWXMLHash
 
-	@ModelActor
-actor Fetch: ObservableObject {
+actor Fetch: ModelActor, ObservableObject {
+	nonisolated let modelExecutor: any ModelExecutor
+	nonisolated let modelContainer: ModelContainer
+
         private let hosturl: URL = URL(string: "https://www.ourcommons.ca")!
         private let calendarPath: String = "en/sitting-calendar/%d"
         private let dailyPath: String = "en/parliamentary-business/"
@@ -41,11 +43,19 @@ actor Fetch: ObservableObject {
 	private let openAPIURL = URL(string: "https://api.openparliament.ca")!
 	private let openParliamentAPIURL = URL(string: "https://api.openparliament.ca")!
 	private let votePageSize = 200
+	private let networkService: NetworkService
 	private let voteDateFormatter: ISO8601DateFormatter = {
 		let f = ISO8601DateFormatter()
 		f.formatOptions = [.withFullDate, .withDashSeparatorInDate]
 		return f
 	}()
+
+	init(modelContainer: ModelContainer, networkService: NetworkService = .shared) {
+		let modelContext = ModelContext(modelContainer)
+		self.modelExecutor = DefaultSerialModelExecutor(modelContext: modelContext)
+		self.modelContainer = modelContainer
+		self.networkService = networkService
+	}
 
 	private enum Constants {
 		static let secondsPerMinute: TimeInterval = 60
@@ -313,7 +323,7 @@ actor Fetch: ObservableObject {
 		let path = String(format: expenditurePath, year, quarter)
 		let url = hosturl.appending(path: path)
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 
 		let doc = try parseExpendituresHTML(from: data)
 		let allLinks = doc.css("a")
@@ -327,7 +337,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
+		let (csvData, _) = try await networkService.data(from: csvURL)
 		Log.debug("Downloaded \(csvData.count) bytes of CSV data")
 		
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("expenditures-\(year)-Q\(quarter).csv")
@@ -507,7 +517,7 @@ actor Fetch: ObservableObject {
 	private func downloadDetail(url: URL, type: DetailType, member: SummaryExpenditure) async throws {
 		Log.debug("Downloading detail from \(url.absoluteString)")
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
@@ -522,7 +532,7 @@ actor Fetch: ObservableObject {
 		}
 		
 		Log.debug("Found detailed CSV URL: \(csvURL.absoluteString)")
-		let (csvData, _) = try await NetworkService.shared.data(from: csvURL)
+		let (csvData, _) = try await networkService.data(from: csvURL)
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("detail-\(UUID().uuidString).csv")
 		try csvData.write(to: tempURL)
 		
@@ -686,7 +696,7 @@ actor Fetch: ObservableObject {
 		let hansardDoc = try await downloadHTMLDocument(from: publicationURL)
 		let xmlURL = try xmlExportURL(from: hansardDoc, relativeTo: hosturl)
 		let request = URLRequest(url: xmlURL, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
 		}
@@ -698,7 +708,7 @@ actor Fetch: ObservableObject {
 		cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
 	) async throws -> HTMLDocument {
 		let request = URLRequest(url: url, cachePolicy: cachePolicy)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			throw NSError(domain: "", code: Constants.htmlParseErrorCode)
@@ -761,7 +771,7 @@ actor Fetch: ObservableObject {
 		Log.debug("Downloading calendar \(year)")
 		let path = String(format: calendarPath, year)
 		let request = URLRequest(url: hosturl.appending(path: path), cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		Log.debug("Downloaded \(data.count) bytes")
 
 		if let htmlstring = String(data: data, encoding: .utf8),
@@ -813,7 +823,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		Log.debug("got data \(data.count)")
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
@@ -860,7 +870,7 @@ actor Fetch: ObservableObject {
 		request.httpBody = try! JSONSerialization.data(withJSONObject: ["searchText": "\(firstName) \(lastName)"])
 		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		guard let responseBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			failedDownloads.insert(identifier)
 			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
@@ -897,7 +907,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "", code: Constants.urlBuildErrorCode)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		guard let utfstringvalue = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "", code: Constants.invalidUTF8ErrorCode)
 		}
@@ -972,7 +982,7 @@ actor Fetch: ObservableObject {
 			.folding(options: .diacriticInsensitive, locale: .current)
 		let path = String(format: memberPath, first, last, String(member.memberID))
 		guard let url = URL(string: path, relativeTo: hosturl) else { return }
-		let (data, response) = try await NetworkService.shared.data(from: url)
+		let (data, response) = try await networkService.data(from: url)
 		guard let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let xmlString = String(data: data, encoding: .utf8) else { return }
 		let contact = XMLBro.parseMemberContact(xmlString)
@@ -1048,7 +1058,7 @@ actor Fetch: ObservableObject {
 			throw NSError(domain: "OntarioVotes", code: Constants.urlBuildErrorCode)
 		}
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-		let (data, _) = try await NetworkService.shared.data(for: request)
+		let (data, _) = try await networkService.data(for: request)
 		guard let document = String(data: data, encoding: .utf8) else {
 			throw NSError(domain: "OntarioVotes", code: Constants.invalidUTF8ErrorCode)
 		}
@@ -1202,7 +1212,7 @@ actor Fetch: ObservableObject {
 	}
 
 	private func fetchJSONDictionary(from url: URL) async throws -> [String: Any]? {
-		let (data, response) = try await NetworkService.shared.data(from: url)
+		let (data, response) = try await networkService.data(from: url)
 		guard let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return nil
@@ -1403,7 +1413,7 @@ actor Fetch: ObservableObject {
 	private func openParliamentSlugMatches(memberID: Int, slug: String) async -> Bool {
 		guard !slug.isEmpty else { return false }
 		guard let url = URL(string: "/politicians/\(slug)/?format=json", relativeTo: openParliamentAPIURL) else { return false }
-		guard let (data, response) = try? await NetworkService.shared.data(from: url),
+		guard let (data, response) = try? await networkService.data(from: url),
 			  let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
 			return false
@@ -1418,7 +1428,7 @@ actor Fetch: ObservableObject {
 		),
 			  let url = components.url else { return nil }
 
-		guard let (data, response) = try? await NetworkService.shared.data(from: url),
+		guard let (data, response) = try? await networkService.data(from: url),
 			  let http = response as? HTTPURLResponse, Constants.successfulHTTPStatusCodes.contains(http.statusCode),
 			  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
 			  let objects = json["objects"] as? [[String: Any]] else {
