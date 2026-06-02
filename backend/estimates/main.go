@@ -33,8 +33,6 @@ func main() {
 }
 
 func handleLambda(ctx context.Context, raw json.RawMessage) (any, error) {
-	_ = observability.Init(ctx)
-
 	var probe struct {
 		Version        string `json:"version"`
 		RequestContext struct {
