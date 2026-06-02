@@ -64,6 +64,29 @@ struct ReviewRequestManagerTests {
         #expect(payloads.last?["trigger_source"] == "followed_mp_profile_repeat_view")
     }
 
+    @Test func defaultRecorderUsesInjectedTelemetryProvider() async throws {
+        let defaults = makeDefaults()
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        defaults.set(now.addingTimeInterval(-8 * 86_400), forKey: "epac.review.installDate")
+        defaults.set(6, forKey: "epac.review.openCount")
+        let telemetry = RecordingTelemetryProvider()
+
+        let manager = ReviewRequestManager(
+            defaults: defaults,
+            now: { now },
+            requestReview: { true },
+            telemetry: telemetry
+        )
+
+        manager.recordFollowedMemberProfileView(memberID: 42)
+        manager.recordFollowedMemberProfileView(memberID: 42)
+
+        #expect(telemetry.store.events.count == 1)
+        #expect(telemetry.store.events.first?.0 == "review_prompt_shown")
+        #expect(telemetry.store.events.first?.1["event"] == "review_prompt_shown")
+        #expect(telemetry.store.events.first?.1["trigger_source"] == "followed_mp_profile_repeat_view")
+    }
+
     @Test func appOpenUpdatesLocalSessionState() async throws {
         let defaults = makeDefaults()
         let now = Date(timeIntervalSince1970: 1_800_000_000)

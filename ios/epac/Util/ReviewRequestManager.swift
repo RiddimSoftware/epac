@@ -57,12 +57,15 @@ final class ReviewRequestManager {
             }
             return true
         },
-        telemetryRecorder: @escaping (String, [String: String]) -> Void = ReviewRequestManager.defaultTelemetryRecorder
+        telemetry: any TelemetryProvider = CurrentTelemetryProvider(),
+        telemetryRecorder: ((String, [String: String]) -> Void)? = nil
     ) {
         self.defaults = defaults
         self.now = now
         self.requestReview = requestReview
-        self.telemetryRecorder = telemetryRecorder
+        self.telemetryRecorder = telemetryRecorder ?? { event, payload in
+            Self.defaultTelemetryRecorder(event, payload, telemetry: telemetry)
+        }
     }
 
     func recordAppOpen() {
@@ -128,11 +131,15 @@ final class ReviewRequestManager {
         return true
     }
 
-    private nonisolated static func defaultTelemetryRecorder(_ event: String, _ payload: [String: String]) {
+    private nonisolated static func defaultTelemetryRecorder(
+        _ event: String,
+        _ payload: [String: String],
+        telemetry: any TelemetryProvider
+    ) {
         Log.info("\(event) trigger=\(payload["trigger_source"] ?? "unknown")")
 
         var attributes = payload
         attributes["event"] = event
-        Telemetry.recordEvent(event, attributes: attributes)
+        telemetry.recordEvent(event, attributes: attributes)
     }
 }

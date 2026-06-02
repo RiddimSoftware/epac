@@ -12,6 +12,12 @@ import UIKit
 class SpeakerImageViewModel {
 	var imageData: Data?
 
+	private let telemetry: any TelemetryProvider
+
+	init(telemetry: any TelemetryProvider = CurrentTelemetryProvider()) {
+		self.telemetry = telemetry
+	}
+
 	func loadImage(speaker: ParliamentMember, parliamentNumber: Int, modelContext: ModelContext) async {
 		guard speaker.imageData == nil else {
 			imageData = speaker.imageData
@@ -65,7 +71,7 @@ class SpeakerImageViewModel {
 				}
 			} catch {
 				Log.debug("Failed to updateImageData \(speaker.name)")
-				Telemetry.recordError(error)
+				telemetry.recordError(error)
 			}
 		} else {
 			throw NSError(domain: "", code: 100)

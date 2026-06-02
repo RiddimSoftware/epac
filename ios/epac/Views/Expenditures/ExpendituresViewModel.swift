@@ -71,6 +71,12 @@ class ExpendituresViewModel {
 	var isLoading = false
 	var loadFailed = false
 
+	private let telemetry: any TelemetryProvider
+
+	init(telemetry: any TelemetryProvider = CurrentTelemetryProvider()) {
+		self.telemetry = telemetry
+	}
+
 	func filteredExpenditures(from expenditures: [SummaryExpenditure]) -> [SummaryExpenditure] {
 		let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 		let filtered = expenditures.filter { expenditure in
@@ -100,7 +106,7 @@ class ExpendituresViewModel {
 				try await fetch.expenditures(year: selectedYear, quarter: selectedQuarter)
 			} catch {
 				Log.error("Failed to load expenditures: \(error.localizedDescription)")
-				Telemetry.recordError(error)
+				telemetry.recordError(error)
 				loadFailed = true
 			}
 			isLoading = false
@@ -117,7 +123,7 @@ class ExpendituresViewModel {
 			try await fetch.downloadExpenditures(year: selectedYear, quarter: selectedQuarter)
 		} catch {
 			Log.error("ExpendituresViewModel.refresh failed: \(error.localizedDescription)")
-			Telemetry.recordError(error)
+			telemetry.recordError(error)
 			loadFailed = true
 		}
 	}

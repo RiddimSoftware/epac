@@ -19,6 +19,7 @@ class SittingCalendarViewModel {
 	}
 	private var loadGeneration = 0
 	private var browseHansardSitting: (any BrowseHansardSittingUseCase)?
+	private let telemetry: any TelemetryProvider
 	@ObservationIgnored private var deferredFetchTask: Task<Void, Never>?
 
 	private enum CalendarBoundary {
@@ -28,8 +29,12 @@ class SittingCalendarViewModel {
 		static let lastDayOfDecember = 31
 	}
 
-	init(browseHansardSitting: (any BrowseHansardSittingUseCase)? = nil) {
+	init(
+		browseHansardSitting: (any BrowseHansardSittingUseCase)? = nil,
+		telemetry: any TelemetryProvider = CurrentTelemetryProvider()
+	) {
 		self.browseHansardSitting = browseHansardSitting
+		self.telemetry = telemetry
 	}
 
 	deinit {
@@ -110,7 +115,7 @@ class SittingCalendarViewModel {
 		} catch {
 			guard !Task.isCancelled, isCurrentLoad(generation) else { return }
 			Log.debug("Failed to fetch SittingCalendar count")
-			Telemetry.recordError(error)
+			telemetry.recordError(error)
 			loadFailed = true
 		}
 	}
@@ -132,7 +137,7 @@ class SittingCalendarViewModel {
 		} catch {
 			guard isCurrentLoad(generation) else { return }
 			Log.debug("SittingCalendarViewModel.refresh failed: \(error.localizedDescription)")
-			Telemetry.recordError(error)
+			telemetry.recordError(error)
 			loadFailed = true
 		}
 	}
@@ -220,7 +225,7 @@ class SittingCalendarViewModel {
 			replaceSittingDates(for: year, with: cachedDates)
 		} catch {
 			Log.debug("Failed to load cached SittingCalendar count")
-			Telemetry.recordError(error)
+			telemetry.recordError(error)
 			loadFailed = true
 		}
 	}

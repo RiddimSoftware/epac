@@ -9,6 +9,10 @@ import Testing
 // tests deterministic.
 @MainActor
 struct SittingCalendarViewModelTests {
+	private enum AsyncWait {
+		static let retryCount = 10
+		static let retryDelayMs: Int64 = 20
+	}
 
     // Helpers
 
@@ -30,6 +34,12 @@ struct SittingCalendarViewModelTests {
         let container = try ModelContainer(for: Schema(SchemaV5.models), configurations: config)
         return (ModelContext(container), Fetch(modelContainer: container))
     }
+
+	private func waitUntil(_ condition: () -> Bool) async throws {
+		for _ in 0..<AsyncWait.retryCount where !condition() {
+			try await Task.sleep(for: .milliseconds(AsyncWait.retryDelayMs))
+		}
+	}
 
     // MARK: - sittingDayCount
 
@@ -94,7 +104,9 @@ struct SittingCalendarViewModelTests {
 		#expect(containsYMD(viewModel.sittingDateComponents, year: year, month: 1, day: 1))
 		#expect(!containsYMD(viewModel.sittingDateComponents, year: year, month: 12, day: 2))
 
-		try await Task.sleep(for: .milliseconds(120))
+		try await waitUntil {
+			containsYMD(viewModel.sittingDateComponents, year: year, month: 12, day: 2)
+		}
 
 		#expect(browseUseCase.calls == 1)
 		#expect(!containsYMD(viewModel.sittingDateComponents, year: year, month: 1, day: 1))
@@ -114,7 +126,7 @@ struct SittingCalendarViewModelTests {
 		viewModel.loadSittingCalendarCacheFirst(year, modelContext: context, fetch: fetch)
 		#expect(!viewModel.loadFailed)
 
-		try await Task.sleep(for: .milliseconds(60))
+		try await waitUntil { viewModel.loadFailed }
 
 		#expect(browseUseCase.calls == 1)
 		#expect(viewModel.loadFailed)

@@ -12,6 +12,11 @@ class PostalCodeViewModel {
 
     private let service = RidingLookupService()
     private let store = PostalCodeStore.shared
+    private let telemetry: any TelemetryProvider
+
+    init(telemetry: any TelemetryProvider = CurrentTelemetryProvider()) {
+        self.telemetry = telemetry
+    }
 
     static var savedRidingName: String? { PostalCodeStore.shared.savedRidingName }
     static var savedMemberName: String? { PostalCodeStore.shared.savedMemberName }
@@ -43,7 +48,7 @@ class PostalCodeViewModel {
             errorMessage = error.errorDescription
         } catch {
             errorMessage = NSLocalizedString("riding.error.networkError", comment: "")
-            Telemetry.recordError(error)
+            telemetry.recordError(error)
         }
     }
 
