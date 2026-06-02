@@ -30,6 +30,12 @@ class ExpenditureDetailViewModel {
 	var contractsCollapsed = false
 	var visibleIds: Set<String> = []
 
+	private let telemetry: any TelemetryProvider
+
+	init(telemetry: any TelemetryProvider = CurrentTelemetryProvider()) {
+		self.telemetry = telemetry
+	}
+
 	func sortedTravelClaims(for expenditure: SummaryExpenditure) -> [TravelClaim] {
 		expenditure.travelClaims.sorted {
 			switch sortOption {
@@ -78,7 +84,7 @@ class ExpenditureDetailViewModel {
 			try await fetch.downloadDetailedExpenditures(identifier: expenditure.id)
 		} catch {
 			Log.error("Failed to download details: \(error.localizedDescription)")
-			Telemetry.recordError(error)
+			telemetry.recordError(error)
 		}
 		isLoading = false
 	}

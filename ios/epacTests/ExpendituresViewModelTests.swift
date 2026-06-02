@@ -341,6 +341,20 @@ struct ExpendituresViewModelTests {
 		#expect(vm.isLoading == false)
 	}
 
+	@Test func loadDataRecordsFetchErrorThroughInjectedTelemetry() async {
+		let fetch = MockExpendituresFetch()
+		await fetch.failExpenditures()
+		let telemetry = RecordingTelemetryProvider()
+		let vm = ExpendituresViewModel(telemetry: telemetry)
+		vm.selectedYear = 2024
+		vm.selectedQuarter = 1
+
+		await vm.loadData(expenditures: [], fetch: fetch)
+
+		#expect(telemetry.store.errors.count == 1)
+		#expect(telemetry.store.errors.first?.1.isEmpty == true)
+	}
+
 	@Test func refreshDownloadsCurrentPeriod() async {
 		let fetch = MockExpendituresFetch()
 		let vm = ExpendituresViewModel()
