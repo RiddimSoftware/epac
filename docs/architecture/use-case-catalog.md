@@ -40,30 +40,35 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 
 ## Ports
 
-| Name | Direction | Description |
-|---|---|---|
-| `HansardRepository` | outbound | Load and store parsed Hansard records. |
-| `MemberRepository` | outbound | Resolve member records by ID, name, or riding. |
-| `SittingRepository` | outbound | List sitting dates and load speeches for a sitting date. |
-| `BillRepository` | outbound | List bills and resolve bill details by number. |
-| `MemberContentRepository` | outbound | Load per-member append-only content feeds such as speeches and recorded votes. |
-| `TopicPreferenceStore` | outbound | Read and persist a device's followed topics and granularity settings. |
-| `DeviceRegistrationClient` | outbound | Persist a device's APNs token and subscription preferences to the backend. |
-| `LiveParliamentStatusFetching` | outbound | Fetch the current House sitting status from the backend cache. |
-| `NotificationDelivering` | outbound | Send push notifications to subscribed devices via APNs. |
-| `SubjectsRepository` | outbound | Read Hansard subject records for artifact generation. |
-| `Clock` | outbound | Provide the current timestamp for scheduling and cache-freshness checks. |
-| `ArtifactStore` | outbound | Backend publishers and Lambdas list artifact keys, read object data, and write manifest.json back to object storage. |
-| `StatisticsSink` | outbound | Backend statistics pipelines write deterministic JSON dataset artifacts without coupling parser logic to stdout, local files, Postgres, or S3 SDK details. |
-| `EstimatesReader` | outbound | Fetch published Main Estimates rows by fiscal year, organization, or full artifact export. |
-| `RidingBoundaryRepository` | outbound | Read federal riding boundary artifacts by slug. |
-| `CalendarArtifactRepository` | outbound | Read the published House sitting calendar ICS artifact. |
-| `AppConfigRepository` | outbound | Read backend-provided app configuration artifacts. |
-| `HansardXMLSource` | outbound | Fetch authoritative ourcommons.ca Hansard XML by parliament, session, and sitting number. |
-| `HansardParser` | outbound | Parse Hansard XML into intervention and paragraph values without coupling the use case to `encoding/xml`. |
-| `HansardSearchIndexBuilder` | outbound | Build and self-check a local SQLite FTS5 index from parsed interventions. |
-| `HansardSearchArtifactStore` | outbound | Upload the SQLite search index and write the manifest pointer to S3. |
-| `TelemetryProvider` | outbound | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
+This table records whether each cataloged port is a real Swift `protocol` or Go
+`interface` today. Planned iOS ports are explicitly linked to the issue that
+will build the missing artifact.
+
+| Name | Stack | Direction | Artifact status | Description |
+|---|---|---|---|---|
+| `HansardRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/HansardRepository.swift`; conformers include `ios/epac/Data/Repositories/SwiftDataHansardRepository.swift` and `ios/epac/Data/Adapters/Hansard/JurisdictionRoutedHansardRepository.swift`. | Load and store jurisdiction-aware parsed Hansard transcripts. |
+| `HansardRepository` | backend Go | outbound | Implemented: `backend/daily-fetch/internal/usecase/usecase.go`, `backend/on-this-day/internal/usecase/usecase.go`; adapters include `backend/daily-fetch/internal/adapter/postgres/postgres.go` and `backend/on-this-day/internal/adapter/artifacts/artifacts.go`. | Load and store canonical Hansard records for backend ingestion and historical-content use cases. |
+| `MemberRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | Resolve member records by ID, name, postal code, or riding. |
+| `SittingRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | List sitting dates and load speeches for a sitting date. |
+| `BillRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | List bills and resolve bill details by number. |
+| `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
+| `TopicPreferenceStore` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | Read and persist a device's followed topics and granularity settings as a Domain-layer port. |
+| `TopicFollowingStore` | iOS Swift | outbound | Implemented: `ios/epac/Application/FollowTopic.swift`; conformer: `ios/epac/Util/TopicFollowStore.swift`. | Persist selected topic IDs for the current `FollowTopic` use case. |
+| `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
+| `HansardSearchRepository` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/search_hansard.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefts5/repository.go`. | Query the verified SQLite FTS5 Hansard search index. |
+| `ManifestLoader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/s3manifest/manifest_loader.go`. | Load the current Hansard search-index manifest. |
+| `IndexDownloader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefile/index_downloader.go`. | Download and verify the current Hansard search SQLite artifact. |
+| `SubjectsRepository` | backend Go | outbound | Implemented: `backend/hansard-subjects-index/application/usecase.go`; adapter: `backend/hansard-subjects-index/repository/postgres.go`. | Read Hansard subject records for artifact generation. |
+| `Clock` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/Ports.swift`; conformer: `SystemClock`. | Provide the current timestamp for iOS use cases. |
+| `Clock` | backend Go | outbound | Implemented: `backend/daily-fetch/internal/usecase/usecase.go`, `backend/hansard-subjects-index/application/usecase.go`; conformers include `systemClock` and `SystemClock`. | Provide the current timestamp for backend scheduling and cache-freshness checks. |
+| `ArtifactStore` | backend Go | outbound | Implemented: `backend/manifest/manifest.go`; adapter: `backend/manifest/s3.go`. | List artifact keys, read object metadata, and write manifest.json back to object storage. |
+| `EstimatesReader` | backend Go | outbound | Implemented: `backend/estimates/internal/usecase/usecase.go`; adapters include `backend/estimates/internal/adapter/artifacts/artifacts.go` and `backend/estimates/internal/adapter/postgres/postgres.go`. | Fetch published Main Estimates rows by fiscal year, organization, or full artifact export. |
+| `HansardXMLSource` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/ourcommons/source.go`. | Fetch authoritative ourcommons.ca Hansard XML by parliament, session, and sitting number. |
+| `HansardParser` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/ourcommons/parser.go`. | Parse Hansard XML into intervention and paragraph values without coupling the use case to `encoding/xml`. |
+| `IndexBuilder` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/sqlitefts5/builder.go`. | Build and self-check a local SQLite FTS5 index from parsed interventions. |
+| `IndexUploader` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Upload the SQLite search index artifact. |
+| `ManifestWriter` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Write the search-index manifest pointer. |
+| `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 
 ---
 
@@ -75,9 +80,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 Actor: User (iOS app, foreground)
 Goal: View the sitting calendar and today's scheduled subjects of business.
 Inputs: Selected date (defaults to today), calendar window (visible month range).
-Outputs: List of sittings with subjects, sitting status (scheduled / cancelled / in-progress).
-Entities / values: Hansard, SubjectOfBusiness, LiveParliamentStatus.
-Ports: HansardRepository, LiveParliamentStatusFetching, Clock.
+Outputs: List of sittings with subjects.
+Entities / values: Hansard, SubjectOfBusiness.
+Ports: iOS Swift: `HansardRepository`.
 Primary adapters: SittingCalendarViewModel, SittingCalendarView, Fetch (ourcommons.ca sitting calendar parsing), SwiftDataHansardRepository.
 Current implementation:
   ios/epac/Application/BrowseHansardSitting.swift
@@ -100,7 +105,7 @@ Goal: Load one jurisdiction's Hansard transcript for a sitting date and persist 
 Inputs: Jurisdiction, sitting date.
 Outputs: HansardTranscript.
 Entities / values: HansardTranscript, SubjectOfBusinessRecord, SpeechMessageRecord, Jurisdiction.
-Ports: HansardRepository.
+Ports: iOS Swift: `HansardRepository`.
 Primary adapters: SwiftDataHansardRepository, Fetch (downloadHansard), SwiftData (Hansard / SubjectOfBusiness / Message models).
 Current implementation:
   ios/epac/Application/LoadDailyHansard.swift
@@ -120,7 +125,7 @@ Goal: Browse jurisdiction-aware sitting dates available in a calendar window.
 Inputs: Jurisdiction, start date, end date.
 Outputs: Sitting dates.
 Entities / values: Jurisdiction, Date.
-Ports: HansardRepository.
+Ports: iOS Swift: `HansardRepository`.
 Primary adapters: SittingCalendarViewModel, SittingCalendarView, SwiftDataHansardRepository.
 Current implementation:
   ios/epac/Application/BrowseHansardSitting.swift
@@ -140,7 +145,7 @@ Goal: Read a Hansard debate as a group-chat conversation thread.
 Inputs: Sitting date, subject-of-business selection.
 Outputs: Ordered list of SpeechMessages with speaker names, photos, and text; resume position; replay state.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, ParliamentMember.
-Ports: HansardRepository, MemberRepository, Clock.
+Ports: iOS Swift: `HansardRepository`; iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)).
 Primary adapters: SpeechViewModel, SpeechView, SpeakerImageViewModel, MemberDownloadCoordinator, SwiftDataHansardRepository, Fetch (downloadHansard), SwiftData (Hansard / SubjectOfBusiness / Message models).
 Current implementation:
   ios/epac/Application/ReadHansardSpeech.swift
@@ -164,14 +169,16 @@ Goal: Find Hansard debates, members, bills, or votes matching a text query.
 Inputs: Query string, optional entity-type filter.
 Outputs: Ranked list of matching results with entity type, title, and navigation hint.
 Entities / values: Hansard, SubjectOfBusiness, ParliamentMember.
-Ports: HansardRepository, MemberRepository.
+Ports: backend Go: `ManifestLoader`, `IndexDownloader`, `HansardSearchRepository`; iOS Swift: `HansardSearchProviding`.
 Primary adapters (backend): hansard-search Lambda startup/wiring in `backend/hansard-search`, plus the SQLite FTS5 repository adapter in `internal/adapter/sqlitefts5`.
 Primary adapters (iOS): SearchViewModel, SearchView, NetworkService.
 Current implementation:
+  backend/hansard-search/internal/usecase/open_search_index.go
   backend/hansard-search/internal/usecase/search_hansard.go
   backend/hansard-search/internal/adapter/sqlitefts5/repository.go
   ios/epac/Views/Search/SearchViewModel.swift
   ios/epac/Views/Search/SearchView.swift
+  ios/epac/Util/HansardSearchService.swift
   ios/epac/Util/NetworkService.swift
 ```
 
@@ -187,7 +194,7 @@ Goal: Build the current-session Hansard SQLite FTS5 index and publish its manife
 Inputs: Parliament number, session number, artifact bucket, artifact prefix.
 Outputs: index.sqlite and manifest.json under the configured S3 prefix.
 Entities / values: HansardSearchIntervention, HansardSearchManifest, ArtifactKey.
-Ports: HansardXMLSource, HansardParser, HansardSearchIndexBuilder, HansardSearchArtifactStore.
+Ports: backend Go: `HansardXMLSource`, `HansardParser`, `IndexBuilder`, `IndexUploader`, `ManifestWriter`.
 Primary adapters: ourcommons.ca XML source/parser, modernc.org/sqlite FTS5 builder, AWS S3 artifact writer.
 Current implementation:
   backend/hansard-search-index/main.go
@@ -211,7 +218,7 @@ Goal: Identify the user's Member of Parliament by postal code and save the resul
 Inputs: Postal code string.
 Outputs: Matched ParliamentMember (or not-found); persisted "my MP" preference.
 Entities / values: ParliamentMember.
-Ports: MemberRepository.
+Ports: iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)).
 Primary adapters: PostalCodeViewModel, PostalCodeSetupView, MyMPView, RidingLookupService (calls represent.opennorth.ca), TopicFollowStore (persists myMPMemberId).
 Current implementation:
   ios/epac/Views/MyMP/PostalCodeViewModel.swift
@@ -231,7 +238,7 @@ Goal: Browse members of Parliament with optional province and party filters.
 Inputs: Province filter, party filter.
 Outputs: MembersResponse with ParliamentMember records.
 Entities / values: ParliamentMember.
-Ports: MemberRepository.
+Ports: iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named member repository port; current handlers read published artifacts directly through the shared artifact store.
 Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts, iOS Fetch (ourcommons.ca member XML parsing).
 Current implementation:
   backend/members/main.go
@@ -250,7 +257,7 @@ Goal: Browse House sitting dates and their source metadata.
 Inputs: Page, per-page, optional from_date and to_date filters.
 Outputs: SittingsResponse with Sitting records.
 Entities / values: Sitting.
-Ports: SittingRepository.
+Ports: iOS Swift planned: `SittingRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
 Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS Fetch (ourcommons.ca sitting calendar parsing).
 Current implementation:
   backend/sittings/main.go
@@ -269,7 +276,7 @@ Goal: Read paginated Hansard interventions for one sitting date.
 Inputs: Sitting date, page, per-page.
 Outputs: SpeechesResponse with source-derived intervention IDs and speech content.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, Sitting.
-Ports: HansardRepository, SittingRepository.
+Ports: iOS Swift: `HansardRepository`; iOS Swift planned: `SittingRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
 Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS Fetch (ourcommons.ca Hansard XML parsing).
 Current implementation:
   backend/sittings/main.go
@@ -288,7 +295,7 @@ Goal: Browse current-session bills with optional status and parliament filters.
 Inputs: Status filter, Parliament number.
 Outputs: BillsResponse with Bill records.
 Entities / values: Bill.
-Ports: BillRepository.
+Ports: iOS Swift planned: `BillRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named bill repository port; current handlers read published artifacts directly through the shared artifact store.
 Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS BillsService (LEGISinfo JSON).
 Current implementation:
   backend/bills/main.go
@@ -307,7 +314,7 @@ Goal: Serve prior-year Parliament moments for the same calendar day while backen
 Inputs: Reference date, item limit.
 Outputs: OnThisDayResponse with ranked OnThisDayItem records.
 Entities / values: OnThisDayItem, SpeechMessage.
-Ports: HansardRepository.
+Ports: backend Go: `HansardRepository`.
 Primary adapters: on-this-day Lambda (GET /api/v1/on-this-day), on-this-day publisher, S3 on-this-day/v1/all.json artifact.
 Current implementation:
   backend/on-this-day/main.go
@@ -331,7 +338,7 @@ Goal: Read Main Estimates rows by fiscal year or organization.
 Inputs: Fiscal year, optional organization id.
 Outputs: EstimatesResponse with GC InfoBase-derived Estimate rows.
 Entities / values: EstimateOrg.
-Ports: EstimatesReader.
+Ports: backend Go: `EstimatesReader`.
 Primary adapters: estimates Lambda (GET /api/v1/estimates, GET /api/v1/estimates/{org_id}), estimates publisher, S3 estimates/v1 artifacts.
 Current implementation:
   backend/estimates/main.go
@@ -352,7 +359,7 @@ Goal: Read a simplified federal riding boundary by slug.
 Inputs: Riding slug.
 Outputs: RidingBoundary GeoJSON payload with source metadata.
 Entities / values: RidingBoundary.
-Ports: RidingBoundaryRepository.
+Ports: backend Go: no named riding-boundary repository port; current handlers read published artifacts directly through the shared artifact store.
 Primary adapters: riding-boundary Lambda (GET /api/v1/ridings/{slug}/boundary), riding-boundary publisher, S3 ridings/v1 artifacts.
 Current implementation:
   backend/riding-boundary/main.go
@@ -372,7 +379,7 @@ Goal: Serve the existing RFC 5545 House sitting calendar artifact.
 Inputs: None.
 Outputs: Raw text/calendar response.
 Entities / values: CalendarEntry.
-Ports: CalendarArtifactRepository.
+Ports: backend Go: no named calendar repository port; current handler reads the published ICS artifact directly through the shared artifact store.
 Primary adapters: calendar Lambda (GET /api/v1/calendar/house.ics), S3 calendar/v1/house.ics artifact.
 Current implementation:
   backend/calendar/main.go
@@ -390,7 +397,7 @@ Goal: Fetch backend-provided minimum supported app version and feature flags.
 Inputs: None.
 Outputs: AppConfig.
 Entities / values: AppConfig.
-Ports: AppConfigRepository.
+Ports: backend Go: no named app-config repository port; current handler reads the published config artifact directly through the shared artifact store.
 Primary adapters: config Lambda (GET /api/v1/config), config publisher, S3 config/v1/app.json artifact.
 Current implementation:
   backend/config/main.go
@@ -405,12 +412,12 @@ Current implementation:
 
 ```
 Actor: User (iOS app, Topics tab or notifications prompt)
-Goal: Opt in to receive notifications when Parliament debates a followed topic.
-Inputs: Topic selection, notification granularity (every speech / summary only).
-Outputs: Updated followed-topics list; registration sent to backend.
-Entities / values: ParliamentaryTopic, DeviceSubscription.
-Ports: TopicPreferenceStore, DeviceRegistrationClient.
-Primary adapters: TopicsView, TopicFollowStore. The backend device registration route was retired by EPAC-1921.
+Goal: Follow a parliamentary topic locally so topic-aware app surfaces can prioritize it.
+Inputs: Topic selection.
+Outputs: Updated followed-topics list.
+Entities / values: ParliamentaryTopic.
+Ports: iOS Swift: `TopicFollowingStore`; iOS Swift planned: `TopicPreferenceStore` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)).
+Primary adapters: TopicsView, TopicFollowStore. The backend device registration route was retired by EPAC-1921, so there is no active device-registration port.
 Current implementation:
   ios/epac/Views/Topics/TopicsView.swift
   ios/epac/Util/TopicFollowStore.swift
@@ -462,7 +469,7 @@ Goal: Browse a member's recorded voting history.
 Inputs: Member ID, page number.
 Outputs: Paginated list of recorded votes with ballot, date, bill number, summary, and source URL.
 Entities / values: RecordedVote, ParliamentMember, MemberID.
-Ports: MemberContentRepository.
+Ports: backend Go: `MemberContentRepository`. iOS Swift: no member-content protocol exists today; the current member vote UI uses view/adapters directly.
 Primary adapters: MemberVotingHistoryView, MemberVotingRecordView, member-votes Lambda (GET /api/v1/members/{id}/votes), S3ArtifactMemberContentRepository, member-votes-publisher.
 Current implementation:
   ios/epac/Views/Members/MemberVotingHistoryView.swift
@@ -488,7 +495,7 @@ Goal: Fetch the latest Hansard XML from ourcommons.ca, parse interventions, and 
 Inputs: Target parliament number, session number, sitting date (EventBridge payload).
 Outputs: Upserted speech records in speeches table; structured JSON log on stderr.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage.
-Ports: HansardRepository, Clock.
+Ports: backend Go: `HansardRepository`, `Clock`.
 Primary adapters: daily-fetch Lambda, loader Lambda, PostgreSQL speeches table (intervention_id PK), hansard-backfill Lambda (historical).
 Current implementation:
   backend/daily-fetch/internal/usecase/usecase.go
@@ -518,7 +525,7 @@ Goal: Produce a deterministic manifest.json listing every artifact in the S3 buc
 Inputs: S3 bucket name.
 Outputs: manifest.json written to s3://<bucket>/manifest.json with Cache-Control: public, max-age=60; fails if any artifact is missing required x-amz-meta-content-hash-sha256 metadata.
 Entities / values: Manifest, ManifestEntry.
-Ports: ArtifactStore.
+Ports: backend Go: `ArtifactStore`.
 Primary adapters: S3ArtifactStore (AWS SDK v2 — ListObjectsV2 + HeadObject + PutObject), cmd/generate-manifest CLI entrypoint.
 Current implementation:
   backend/manifest/manifest.go     (entities + ArtifactStore port)
@@ -539,7 +546,7 @@ Goal: Fetch authoritative government statistics sources, compose JSON snapshots,
 Inputs: Pipeline name, upstream source data, artifacts bucket, publish cadence.
 Outputs: `statistics/v1/<pipeline-name>/<dataset>.json` objects with SHA-256 content-hash metadata.
 Entities / values: ArtifactKey.
-Ports: StatisticsSink, Clock.
+Ports: backend Python: no named port artifact; `backend/statistics_artifacts.py` is the shared publishing adapter helper. Backend Go: no `Clock` interface is involved in this Python pipeline.
 Primary adapters: statistics pipeline CLIs, statistics_artifacts.py, boto3 S3 client.
 Current implementation:
   backend/cpi-statistics/cpi_statistics.py
@@ -565,7 +572,7 @@ Goal: Publish a compact JSON index of searchable Hansard subjects for iOS pre-wa
 Inputs: Date window, parliament-count window (default current parliament plus previous two).
 Outputs: Deterministic subjects JSON artifact with schema version, generation time, window, and subject rows.
 Entities / values: Hansard, SubjectOfBusiness.
-Ports: SubjectsRepository, Clock.
+Ports: backend Go: `SubjectsRepository`, `Clock`.
 Primary adapters: hansard-subjects-index CLI, PostgreSQL speeches table.
 Current implementation:
   backend/hansard-subjects-index/application/usecase.go
