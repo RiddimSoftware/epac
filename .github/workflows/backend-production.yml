@@ -252,7 +252,6 @@ jobs:
           HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
           PARLIAMENT_NUMBER: ${{ vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
           SESSION_NUMBER: ${{ vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_PRODUCTION }}
         run: |
           set -euo pipefail
           CURRENT_ENV=$(aws lambda get-function-configuration \
@@ -267,8 +266,7 @@ jobs:
             --arg hansard_search_prefix "$HANSARD_SEARCH_PREFIX" \
             --arg parliament_number "$PARLIAMENT_NUMBER" \
             --arg session_number "$SESSION_NUMBER" \
-            --arg sentry_dsn "$SENTRY_DSN" \
-            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end) + (if $sentry_dsn != "" then {SENTRY_DSN: $sentry_dsn} else {} end))}')
+            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end))}')
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \
             --environment "$UPDATED_ENV" \

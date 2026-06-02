@@ -134,9 +134,8 @@ platform :ios do
     # ------------------------------------------------------------------
     # 3. Archive and export — no ASC API calls during the build.
     # ------------------------------------------------------------------
-    sentry_dsn = ENV.fetch("SENTRY_DSN", "")
     backend_base_url = ENV.fetch("BACKEND_BASE_URL", "")
-    extra_xcargs = "DEVELOPMENT_TEAM=#{ENV["APPLE_TEAM_ID"]} SENTRY_DSN=#{sentry_dsn}"
+    extra_xcargs = "DEVELOPMENT_TEAM=#{ENV["APPLE_TEAM_ID"]}"
     unless new_version.empty?
       extra_xcargs += " MARKETING_VERSION=#{new_version}"
     end
