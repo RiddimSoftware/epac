@@ -32,6 +32,18 @@ Failure remediation:
 
 > This file is in the Application layer. Framework imports must move to ios/epac/Util/ or ios/epac/Views/. See docs/architecture/use-case-catalog.md.
 
+## iOS Domain Layer Imports
+
+The sibling `domain_layer_framework_imports` custom rule fails any file under
+`ios/epac/Domain/` that imports `Foundation.URLSession`, `UIKit`, `SwiftData`,
+or `SwiftUI`. The Domain layer is the innermost ring, and a framework leak
+here is the most expensive smell on the rubric — entities, value objects,
+ports, and use cases must stay testable without a runtime container.
+
+Failure remediation:
+
+> This file is in the Domain layer and imports a framework. Domain must stay pure. Move framework usage to an adapter under ios/epac/Data/. See docs/architecture/enforcement.md.
+
 ## Manifest Contract
 
 The backend manifest package owns the cross-language schema at
@@ -50,9 +62,20 @@ iOS `ArtifactManifest` together when the manifest envelope changes.
 
 ## Use-Case Catalog Drift
 
-CI runs `scripts/ci/check_catalog_drift.sh` from `backend-pr.yml`. It reads the
-`Current implementation` blocks in `docs/architecture/use-case-catalog.md` and
-fails if any listed source path no longer exists.
+CI runs `scripts/ci/check_catalog_drift.sh` from `backend-pr.yml`. It reads
+`docs/architecture/use-case-catalog.md` and enforces two invariants:
+
+1. Every path listed in a `Current implementation:` block must still exist on
+   disk.
+2. Every row in the `## Ports` table whose `Stack` column is `iOS Swift` and
+   whose `Artifact status` column begins with `Implemented:` must point to a
+   file that declares `protocol <Name>`. This closes the gap where a Swift
+   port row in the catalog could drift away from its real protocol definition
+   without breaking the build.
 
 Failure remediation: update the catalog entry in the same PR that creates,
-renames, removes, or materially changes a cataloged implementation path.
+renames, removes, or materially changes a cataloged implementation path. For
+Swift port drift, either add `protocol <Name>` to the file the catalog names,
+move the row's implementation path to the file that actually declares the
+protocol, or update the row to `Planned / not yet implemented:` if the port
+no longer has an iOS implementation.
