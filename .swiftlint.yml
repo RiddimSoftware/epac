@@ -86,5 +86,11 @@ custom_rules:
     regex: "^\\s*import\\s+(Foundation\\.URLSession|UIKit|SwiftData|SwiftUI)\\b"
     message: "This file is in the Application layer. Framework imports must move to ios/epac/Util/ or ios/epac/Views/. See docs/architecture/use-case-catalog.md."
     severity: error
+  domain_layer_framework_imports:
+    name: Domain Layer Framework Imports
+    included: "ios/epac/Domain/.*\\.swift"
+    regex: "^\\s*import\\s+(Foundation\\.URLSession|UIKit|SwiftData|SwiftUI)\\b"
+    message: "This file is in the Domain layer and imports a framework. Domain must stay pure. Move framework usage to an adapter under ios/epac/Data/. See docs/architecture/enforcement.md."
+    severity: error
 
 reporter: "xcode"
