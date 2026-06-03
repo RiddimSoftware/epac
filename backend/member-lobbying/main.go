@@ -34,7 +34,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		return jsonError(http.StatusBadRequest, "missing member id"), nil
 	}
 
-	page := usecase.ParsePositiveInt(req.QueryStringParameters["page"], usecase.DefaultPerPage)
+	page := usecase.ParsePositiveInt(req.QueryStringParameters["page"], 1)
 	perPage := usecase.ParsePositiveInt(req.QueryStringParameters["per_page"], usecase.DefaultPerPage)
 	rangeFilter := req.QueryStringParameters["range"]
 	subject := strings.TrimSpace(req.QueryStringParameters["subject"])

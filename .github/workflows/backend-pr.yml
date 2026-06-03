@@ -33,6 +33,7 @@ jobs:
         service:
           - _shared
           - member-content
+          - member-lobbying
           - members
           - sittings
           - bills

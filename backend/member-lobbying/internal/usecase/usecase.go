@@ -24,20 +24,20 @@ var ErrNotFound = errors.New("lobbying exposure not found")
 type DateRange string
 
 const (
-	DateRange30Days DateRange = "30d"
-	DateRange3Months DateRange = "3m"
+	DateRange30Days   DateRange = "30d"
+	DateRange3Months  DateRange = "3m"
 	DateRange12Months DateRange = "365d"
-	DateRangeAll    DateRange = "all"
+	DateRangeAll      DateRange = "all"
 )
 
 func ParseDateRange(raw string) DateRange {
 	r := strings.ToLower(strings.TrimSpace(raw))
 	switch r {
-	case string(DateRange30Days), "30", "30d", "last30", "last_30_days":
+	case string(DateRange30Days), "30", "last30", "last_30_days":
 		return DateRange30Days
-	case string(DateRange3Months), "90", "90d", "3m", "3months", "three_months":
+	case string(DateRange3Months), "90", "90d", "3months", "three_months":
 		return DateRange3Months
-	case string(DateRange12Months), "365", "365d", "12m", "12months", "12_months":
+	case string(DateRange12Months), "365", "12m", "12months", "12_months":
 		return DateRange12Months
 	case string(DateRangeAll):
 		return DateRangeAll
@@ -75,23 +75,23 @@ func (e MPLobbyingTimelineEntry) Date() (time.Time, bool) {
 type TopLobbyingOrganization struct {
 	OrganizationName       string `json:"organization_name"`
 	OrganizationSector     string `json:"organization_sector,omitempty"`
-	Count                 int    `json:"count"`
-	OrganizationID        string `json:"organization_id,omitempty"`
+	Count                  int    `json:"count"`
+	OrganizationID         string `json:"organization_id,omitempty"`
 	OrganizationProfileURL string `json:"organization_profile_url,omitempty"`
 }
 
 type LobbyingSubjectDistribution struct {
 	Subject    string  `json:"subject"`
-	Count     int     `json:"count"`
+	Count      int     `json:"count"`
 	Percentage float64 `json:"percentage"`
 }
 
 type MPLobbyingSummary struct {
-	TotalCommunications           int    `json:"total_communications"`
-	UniqueOrganizations           int    `json:"unique_organizations"`
-	MostFrequentSubject           string `json:"most_frequent_subject"`
-	PreviousParliamentCommunications int   `json:"previous_parliament_communications,omitempty"`
-	TrendVsPreviousParliament     float64 `json:"trend_vs_previous_parliament,omitempty"`
+	TotalCommunications              int     `json:"total_communications"`
+	UniqueOrganizations              int     `json:"unique_organizations"`
+	MostFrequentSubject              string  `json:"most_frequent_subject"`
+	PreviousParliamentCommunications int     `json:"previous_parliament_communications,omitempty"`
+	TrendVsPreviousParliament        float64 `json:"trend_vs_previous_parliament,omitempty"`
 }
 
 type CohortComparisonBaseline struct {
@@ -101,35 +101,35 @@ type CohortComparisonBaseline struct {
 }
 
 type CohortComparison struct {
-	Party            string  `json:"party"`
-	PartyAverage     float64 `json:"party_average"`
-	NationalAverage  float64 `json:"national_average"`
-	PartyRatio       float64 `json:"party_ratio"`
-	NationalRatio    float64 `json:"national_ratio"`
+	Party           string  `json:"party"`
+	PartyAverage    float64 `json:"party_average"`
+	NationalAverage float64 `json:"national_average"`
+	PartyRatio      float64 `json:"party_ratio"`
+	NationalRatio   float64 `json:"national_ratio"`
 }
 
 type MPLobbyingResponse struct {
-	MemberID            string                      `json:"member_id"`
-	Page                int                         `json:"page"`
-	PerPage             int                         `json:"per_page"`
-	Total               int                         `json:"total"`
-	Pages               int                         `json:"pages"`
-	Summary             MPLobbyingSummary           `json:"summary"`
-	Timeline            []MPLobbyingTimelineEntry   `json:"timeline"`
+	MemberID            string                        `json:"member_id"`
+	Page                int                           `json:"page"`
+	PerPage             int                           `json:"per_page"`
+	Total               int                           `json:"total"`
+	Pages               int                           `json:"pages"`
+	Summary             MPLobbyingSummary             `json:"summary"`
+	Timeline            []MPLobbyingTimelineEntry     `json:"timeline"`
 	SubjectDistribution []LobbyingSubjectDistribution `json:"subject_distribution"`
-	TopOrganizations    []TopLobbyingOrganization    `json:"top_organizations"`
-	CohortComparison    CohortComparison            `json:"cohort_comparison"`
-	AvailableSubjects   []string                    `json:"available_subjects"`
+	TopOrganizations    []TopLobbyingOrganization     `json:"top_organizations"`
+	CohortComparison    CohortComparison              `json:"cohort_comparison"`
+	AvailableSubjects   []string                      `json:"available_subjects"`
 }
 
 type MPLobbyingArtifact struct {
-	MemberID            string                      `json:"member_id"`
-	Summary             MPLobbyingSummary           `json:"summary"`
-	Timeline            []MPLobbyingTimelineEntry   `json:"timeline"`
+	MemberID            string                        `json:"member_id"`
+	Summary             MPLobbyingSummary             `json:"summary"`
+	Timeline            []MPLobbyingTimelineEntry     `json:"timeline"`
 	SubjectDistribution []LobbyingSubjectDistribution `json:"subject_distribution"`
-	TopOrganizations    []TopLobbyingOrganization    `json:"top_organizations"`
-	CohortBaseline      CohortComparisonBaseline    `json:"cohort_baseline"`
-	AvailableSubjects   []string                    `json:"available_subjects"`
+	TopOrganizations    []TopLobbyingOrganization     `json:"top_organizations"`
+	CohortBaseline      CohortComparisonBaseline      `json:"cohort_baseline"`
+	AvailableSubjects   []string                      `json:"available_subjects"`
 }
 
 type MPLobbyingRepository interface {
@@ -188,7 +188,7 @@ func (u *LoadMPLobbyingExposure) Execute(ctx context.Context, memberID string, p
 		Pages:               pageCount(total, perPage),
 		Summary:             summary,
 		Timeline:            entries,
-		SubjectDistribution:  copyDistribution(artifact.SubjectDistribution),
+		SubjectDistribution: copyDistribution(artifact.SubjectDistribution),
 		TopOrganizations:    topOrganizations,
 		CohortComparison:    comparison,
 		AvailableSubjects:   copySubjects(artifact.AvailableSubjects),
@@ -204,8 +204,8 @@ func (CompareMPLobbyingToCohort) Execute(totalCommunications int, baseline Cohor
 		Party:           baseline.Party,
 		PartyAverage:    partyAverage,
 		NationalAverage: nationalAverage,
-		PartyRatio:      safeRatio(totalCommunications, partyAverage),
-		NationalRatio:   safeRatio(totalCommunications, nationalAverage),
+		PartyRatio:      safeRatio(float64(totalCommunications), partyAverage),
+		NationalRatio:   safeRatio(float64(totalCommunications), nationalAverage),
 	}
 }
 
@@ -276,9 +276,9 @@ func emptyExposureResponse(memberID string, page, perPage int) MPLobbyingRespons
 		Summary:             MPLobbyingSummary{},
 		Timeline:            []MPLobbyingTimelineEntry{},
 		SubjectDistribution: []LobbyingSubjectDistribution{},
-		TopOrganizations:   []TopLobbyingOrganization{},
-		CohortComparison:   CohortComparison{},
-		AvailableSubjects:  []string{},
+		TopOrganizations:    []TopLobbyingOrganization{},
+		CohortComparison:    CohortComparison{},
+		AvailableSubjects:   []string{},
 	}
 }
 
@@ -342,11 +342,11 @@ func (u *LoadMPLobbyingExposure) ParseDateRange(value string) DateRange {
 }
 
 func DebugThreshold(raw string) (string, error) {
-	range := ParseDateRange(raw)
-	if range == DateRangeAll {
+	dateRange := ParseDateRange(raw)
+	if dateRange == DateRangeAll {
 		return "", nil
 	}
-	t := subjectThreshold(range)
+	t := subjectThreshold(dateRange)
 	if t.IsZero() {
 		return "", nil
 	}
