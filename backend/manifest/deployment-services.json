@@ -610,6 +610,48 @@
       }
     },
     {
+      "name": "lobbying",
+      "deploy": {
+        "staging": true,
+        "production": false
+      },
+      "http": {
+        "payload_format_version": "2.0",
+        "routes": {
+          "staging": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/by-topic/{slug}"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/by-topic/{slug}"
+            }
+          ],
+          "production": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/by-topic/{slug}"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/by-topic/{slug}"
+            }
+          ]
+        }
+      },
+      "sync": {
+        "staging": {
+          "database": true,
+          "artifact": false
+        },
+        "production": {
+          "database": true,
+          "artifact": false
+        }
+      }
+    },
+    {
       "name": "telemetry",
       "deploy": {
         "staging": true,

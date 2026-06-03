@@ -43,6 +43,7 @@ jobs:
           - on-this-day
           - estimates
           - health
+          - lobbying
           - riding-boundary
           - calendar
           - config
