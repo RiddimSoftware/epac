@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"epac/lobbying/application"
 	"epac/lobbying/domain"
-	"github.com/jackc/pgx/v5"
 )
 
 type PostgresMPLobbyingRepository struct {
@@ -23,7 +21,7 @@ func NewPostgresMPLobbyingRepository(db Queryer) *PostgresMPLobbyingRepository {
 }
 
 func (r *PostgresMPLobbyingRepository) LoadMPLobbyingSummary(ctx context.Context, input application.LoadMPLobbyingSummaryInput) (domain.MPLobbyingSummary, bool, error) {
-	row := r.db.QueryRow(ctx, `
+	rows, err := r.db.Query(ctx, `
 		SELECT
 			member_id,
 			parliament,
@@ -45,13 +43,24 @@ func (r *PostgresMPLobbyingRepository) LoadMPLobbyingSummary(ctx context.Context
 		ORDER BY quarter_start DESC
 		LIMIT 1
 	`, input.MemberID, input.Parliament, string(input.Window))
+	if err != nil {
+		return domain.MPLobbyingSummary{}, false, fmt.Errorf("load MP lobbying summary: %w", err)
+	}
+	defer rows.Close()
 
-	summary, err := scanMPLobbyingSummary(row)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return domain.MPLobbyingSummary{}, false, fmt.Errorf("load MP lobbying summary: %w", err)
+		}
 		return domain.MPLobbyingSummary{}, false, nil
 	}
+
+	summary, err := scanMPLobbyingSummary(rows)
 	if err != nil {
 		return domain.MPLobbyingSummary{}, false, err
+	}
+	if err := rows.Err(); err != nil {
+		return domain.MPLobbyingSummary{}, false, fmt.Errorf("iterate MP lobbying summary: %w", err)
 	}
 	return summary, true, nil
 }

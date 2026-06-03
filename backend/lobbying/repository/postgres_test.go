@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"epac/lobbying/application"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func TestNewPostgresLobbyistOrganizationRepositoryStoresQueryer(t *testing.T) {
@@ -74,8 +72,8 @@ type capturingQueryer struct {
 	err  error
 }
 
-func (q *capturingQueryer) Query(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
-	q.sql = sql
+func (q *capturingQueryer) Query(_ context.Context, query string, args ...any) (QueryRows, error) {
+	q.sql = query
 	q.args = args
 	return nil, q.err
 }

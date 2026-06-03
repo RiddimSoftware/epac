@@ -159,7 +159,7 @@ func newProductionOrganizationServices(ctx context.Context) (organizationService
 	if err != nil {
 		return organizationServices{}, noopClose, err
 	}
-	repo := lobbyingrepo.NewPostgresLobbyistOrganizationRepository(conn)
+	repo := lobbyingrepo.NewPostgresLobbyistOrganizationRepository(newLobbyingQueryer(conn))
 	browser, err := application.NewBrowseLobbyistOrganizations(repo)
 	if err != nil {
 		_ = conn.Close(ctx)

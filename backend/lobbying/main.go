@@ -221,7 +221,7 @@ func newProductionMPLobbyingExposureService(ctx context.Context) (mpLobbyingExpo
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := lobbyrepo.NewPostgresMPLobbyingRepository(conn)
+	repo := lobbyrepo.NewPostgresMPLobbyingRepository(newLobbyingQueryer(conn))
 	service, err := application.NewLoadMPLobbyingExposure(repo, repo)
 	if err != nil {
 		_ = conn.Close(ctx)
