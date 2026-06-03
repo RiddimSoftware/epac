@@ -311,6 +311,8 @@ struct MemberProfileView: View {
 				// MARK: Written Questions
 				WrittenQuestionsSection(member: member)
 
+				MemberCommitteeWitnessesSection(member: member)
+
 				// Siri shortcut tip — lets users add "Open MP profile in epac" to Shortcuts
 				ShortcutsLink()
 					.shortcutsLinkStyle(.automaticOutline)
@@ -635,4 +637,59 @@ struct CabinetPositionSection: View {
 		formatter.timeStyle = .none
 		return formatter
 	}()
+}
+
+// MARK: - Committee Witnesses Section
+
+/// Shows organizations that testified at committee hearings where this MP
+/// tabled witness invitations. Best-effort: hidden when attribution data
+/// is unavailable (tabling member is not consistently present in committee records).
+private struct MemberCommitteeWitnessesSection: View {
+	let member: ParliamentMember
+	@State private var organizations: [WitnessOrganization] = []
+
+	var body: some View {
+		Group {
+			if !organizations.isEmpty {
+				DisclosureGroup {
+					ForEach(organizations.prefix(5)) { org in
+						NavigationLink(
+							destination: WitnessOrganizationView(
+								organizationName: org.displayName,
+								committeeId: org.appearances.first?.committeeId ?? ""
+							)
+						) {
+							VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
+								Text(org.displayName)
+									.font(.subheadline)
+								Text(
+									"\(org.totalAppearances) appearance\(org.totalAppearances == 1 ? "" : "s")"
+								)
+								.font(.caption2)
+								.foregroundStyle(.secondary)
+							}
+							.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
+						}
+						.foregroundStyle(.primary)
+					}
+				} label: {
+					HStack {
+						Image(systemName: "person.3.fill")
+							.foregroundStyle(.tint)
+						Text("Committee Witnesses")
+							.font(.subheadline)
+							.fontWeight(.semibold)
+					}
+				}
+				.padding()
+				.background(Color.appSurface)
+				.cornerRadius(MemberProfileLayout.cardCornerRadius)
+			}
+		}
+		.task(id: member.memberID) {
+			// Tabling member attribution is not yet tracked in the ingestion
+			// pipeline. Populate `organizations` here when committee membership
+			// data is available for this MP.
+		}
+	}
 }

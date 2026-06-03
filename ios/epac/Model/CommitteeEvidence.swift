@@ -96,7 +96,54 @@ struct CommitteeMeeting: Identifiable, Codable, Sendable {
 struct CommitteeWitness: Identifiable, Codable, Equatable, Sendable {
     var id: String { "\(name)-\(organization)" }
     let name: String
+    let title: String           // e.g. "President", "Director General"
     let organization: String
+
+    init(name: String, title: String = "", organization: String) {
+        self.name = name
+        self.title = title
+        self.organization = organization
+    }
+
+    enum CodingKeys: CodingKey { case name, title, organization }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name         = try c.decode(String.self, forKey: .name)
+        title        = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        organization = try c.decode(String.self, forKey: .organization)
+    }
+}
+
+struct CommitteeAppearance: Identifiable, Equatable, Sendable {
+    var id: String { "\(committeeId)-\(parliament)-\(sessionNumber)-\(meetingNumber)" }
+    let committeeId: String
+    let committeeName: String
+    let hearingDate: Date?
+    let subjects: [String]
+    let meetingNumber: Int
+    let parliament: Int
+    let sessionNumber: Int
+    let publicationURL: URL?
+    let witnesses: [CommitteeWitness]   // org's witnesses in this hearing
+}
+
+struct WitnessOrganization: Identifiable, Equatable, Sendable {
+    let id: String                      // lowercased normalized key
+    let displayName: String
+    let appearances: [CommitteeAppearance]
+    let individualWitnesses: [CommitteeWitness]
+    var lobbyingCount: Int              // OCL communications count (0 if unknown)
+
+    var totalAppearances: Int { appearances.count }
+
+    var committees: [String] {
+        Array(Set(appearances.map(\.committeeName))).sorted()
+    }
+
+    var subjects: [String] {
+        Array(Set(appearances.flatMap(\.subjects))).sorted()
+    }
 }
 
 struct CommitteeIntervention: Identifiable, Codable, Sendable {

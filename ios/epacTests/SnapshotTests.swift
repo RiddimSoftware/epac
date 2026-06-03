@@ -1031,4 +1031,105 @@ final class SnapshotTests: XCTestCase {
             name: "MinisterialExpenseRow_hospitalityOnly"
         )
     }
+
+    // MARK: - WitnessOrganizationContent (EPAC-614)
+
+    private static func makeAppearance(
+        committee: String,
+        committeeName: String,
+        date: Date?,
+        subjects: [String],
+        meetingNumber: Int,
+        witnesses: [CommitteeWitness]
+    ) -> CommitteeAppearance {
+        CommitteeAppearance(
+            committeeId: committee,
+            committeeName: committeeName,
+            hearingDate: date,
+            subjects: subjects,
+            meetingNumber: meetingNumber,
+            parliament: 45,
+            sessionNumber: 1,
+            publicationURL: nil,
+            witnesses: witnesses
+        )
+    }
+
+    private static func makeWitnessOrg(
+        name: String,
+        witnesses: [CommitteeWitness],
+        appearances: [CommitteeAppearance],
+        lobbyingCount: Int = 0
+    ) -> WitnessOrganization {
+        WitnessOrganization(
+            id: name.lowercased(),
+            displayName: name,
+            appearances: appearances,
+            individualWitnesses: witnesses,
+            lobbyingCount: lobbyingCount
+        )
+    }
+
+    func testWitnessOrganizationContent_withAppearances() {
+        let witnesses = [
+            CommitteeWitness(name: "Dr. Jane Smith", title: "President", organization: "Canadian Medical Association"),
+            CommitteeWitness(name: "Dr. Amir Patel", title: "Board Member", organization: "Canadian Medical Association")
+        ]
+        let appearances = [
+            Self.makeAppearance(
+                committee: "HESA", committeeName: "Standing Committee on Health",
+                date: Date(timeIntervalSince1970: 1_748_000_000),
+                subjects: ["Health funding", "Physician workforce"],
+                meetingNumber: 12, witnesses: [witnesses[0]]
+            ),
+            Self.makeAppearance(
+                committee: "FINA", committeeName: "Standing Committee on Finance",
+                date: Date(timeIntervalSince1970: 1_740_000_000),
+                subjects: ["Federal health transfers"],
+                meetingNumber: 8, witnesses: [witnesses[1]]
+            )
+        ]
+        let org = Self.makeWitnessOrg(name: "Canadian Medical Association", witnesses: witnesses, appearances: appearances)
+        snapshot(
+            NavigationStack {
+                WitnessOrganizationContent(org: org, lobbyingCount: 0)
+            }
+            .frame(width: 375, height: 700),
+            name: "WitnessOrganizationContent_withAppearances"
+        )
+    }
+
+    func testWitnessOrganizationContent_noAppearances() {
+        snapshot(
+            ContentUnavailableView(
+                "No appearances found",
+                systemImage: "person.fill.questionmark",
+                description: Text("No committee evidence found for this organization.")
+            )
+            .frame(width: 375, height: 300),
+            name: "WitnessOrganizationContent_noAppearances"
+        )
+    }
+
+    func testWitnessOrganizationContent_withLobbyingBadge() {
+        let witnesses = [
+            CommitteeWitness(name: "Alex Dupont", title: "VP Government Relations", organization: "Pharma Corp Canada")
+        ]
+        let appearances = [
+            Self.makeAppearance(
+                committee: "HESA", committeeName: "Standing Committee on Health",
+                date: Date(timeIntervalSince1970: 1_748_000_000),
+                subjects: ["Drug pricing", "Patented medicine regulations"],
+                meetingNumber: 5, witnesses: witnesses
+            )
+        ]
+        let org = Self.makeWitnessOrg(name: "Pharma Corp Canada", witnesses: witnesses, appearances: appearances, lobbyingCount: 7)
+        snapshot(
+            NavigationStack {
+                WitnessOrganizationContent(org: org, lobbyingCount: 7)
+            }
+            .frame(width: 375, height: 700),
+            name: "WitnessOrganizationContent_withLobbyingBadge"
+        )
+    }
 }
