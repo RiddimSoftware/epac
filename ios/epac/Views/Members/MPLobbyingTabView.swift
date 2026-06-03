@@ -80,7 +80,7 @@ struct MPLobbyingTabView: View {
         autoLoadOnAppear: Bool = true
     ) {
         self.init(
-            memberID: memberID,
+            memberID: member.memberID,
             service: service,
             preloadedResponse: preloadedResponse,
             initialSubject: initialSubject,
