@@ -21,6 +21,7 @@ PERF_BUDGET_DIR = ../.github/perf-budgets
 SIGNPOST_PERF_BUDGET_FILE = ../.github/perf-budgets/signpost-phase-durations.json
 LAUNCH_PERF_LAUNCH_BUDGET_FILE = ../.github/perf-budgets/launch-time-seconds.sim.txt
 LAUNCH_PERF_MEMORY_BUDGET_FILE = ../.github/perf-budgets/memory-physical-kb.sim.txt
+IN_PROCESS_PERF_BUDGET_MANIFEST = ../.github/perf-budgets/in-process-sim/manifest.json
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
 DESTINATION = 'platform=iOS Simulator,id=$(SIM_UUID)'
@@ -53,6 +54,7 @@ perf-sim:
 	python3 ../scripts/ci/perf_parse.py $(PERF_RESULT_BUNDLE) --budget-dir $(PERF_BUDGET_DIR) --platform sim
 	python3 ../scripts/ci/verify_signpost_perf_metrics.py $(PERF_RESULT_BUNDLE) $(SIGNPOST_PERF_BUDGET_FILE)
 	python3 ../scripts/ci/verify_launch_perf_metrics.py $(PERF_RESULT_BUNDLE) $(LAUNCH_PERF_LAUNCH_BUDGET_FILE) $(LAUNCH_PERF_MEMORY_BUDGET_FILE)
+	python3 ../scripts/perf/check_in_process_metrics.py --xcresult $(PERF_RESULT_BUNDLE) --manifest $(IN_PROCESS_PERF_BUDGET_MANIFEST)
 
 perf-device:
 	@if [ -z "$(PERF_DEVICE_UDID)" ]; then \
