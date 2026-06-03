@@ -2,6 +2,13 @@ name: Performance Suite
 
 on:
   pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/perf-budgets/**'
+      - 'scripts/ci/*perf*.py'
+      - 'scripts/ci/run_sim_perf_suite.sh'
+      - 'scripts/ci/verify_signpost_perf_metrics.py'
+      - 'scripts/perf/**'
   workflow_dispatch:
 
 permissions:

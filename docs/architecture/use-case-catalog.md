@@ -62,12 +62,13 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `OrganizationSector` | OCL subject matter type description carried verbatim as the organization's sector label for profile browsing. |
 | `CommunicationCount` | Current-vs-prior Parliament communication count pair used for organization profile trend display. |
 | `ParliamentSession` | Date-window value defining a Parliament/session boundary for trend aggregation. |
+| `CohortComparison` | Backend-only MP lobbying comparison values: MP total, party average, national average, and ratios. |
 
 ## Ports
 
-This table records whether each cataloged port is a real Swift `protocol` or Go
-`interface` today. Planned iOS ports are explicitly linked to the issue that
-will build the missing artifact.
+This table records whether each cataloged port is a real Swift `protocol`, Go
+`interface`, or Python `Protocol` today. Planned iOS ports are explicitly linked
+to the issue that will build the missing artifact.
 
 | Name | Stack | Direction | Artifact status | Description |
 |---|---|---|---|---|
@@ -109,6 +110,7 @@ will build the missing artifact.
 | `PortfolioBoundaryGapLogger` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/main.go` with Postgres run-history recording. | Log `portfolio_boundary_gap` warnings when portfolio-period boundaries are not safe to use. |
 | `CabinetLobbyingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/CabinetLobbyingRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift`. | Load minister portfolio-period lobbying rows and cabinet-wide overview data from backend lobbying endpoints. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
+| `CohortStatisticsRepository` | backend Python | outbound | Implemented: `backend/lobbying/cohort_averages.py`; adapter: `PostgresCohortStatisticsRepository`. | Read current MP membership and per-MP lobbying totals, then persist and read precomputed cohort averages. |
 
 ## Use Cases
 
@@ -755,6 +757,27 @@ Current implementation:
 
 > Schema rationale: `docs/architecture/parsed-speech-schema-epac464.md`.
 > All content must trace to authoritative source data. No AI-generated or summarized text is persisted.
+
+---
+
+### CompareMPLobbyingToCohort
+
+```
+Actor: Scheduler (after quarterly OCL ingest) / Backend API caller
+Goal: Compare one MP's lobbying communication volume with their party cohort and the national MP average.
+Inputs: Parliament number, member ID, current MP membership, per-MP lobbying communication totals.
+Outputs: `lobbying_cohort_averages` rows and comparison rows with mp_total, party_avg, national_avg, ratio_vs_party, and ratio_vs_national.
+Entities / values: CohortComparison, ParliamentMember, MemberID.
+Ports: backend Python: `CohortStatisticsRepository`.
+Primary adapters: backend/lobbying/cohort_averages.py, PostgreSQL members table, per-MP lobbying totals table, lobbying_cohort_averages table.
+Current implementation:
+  backend/lobbying/cohort_averages.py
+  backend/migrations/013_lobbying_cohort_averages.sql
+```
+
+> Boundary rule: cohort averaging and ratio calculation stay in the use case;
+> the Postgres adapter owns table names, SQL, and the optional `psycopg`
+> dependency.
 
 ---
 
