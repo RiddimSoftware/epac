@@ -212,6 +212,7 @@ struct SpeechView: View {
 			.padding(.bottom, SpeechLayout.bottomBadgePadding)
 		}
 		.adaptiveReadingWidth()
+		.perfSignpostInterval(.speechView)
 		.simultaneousGesture(
 			TapGesture()
 				.onEnded {

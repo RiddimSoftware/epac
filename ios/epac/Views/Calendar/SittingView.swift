@@ -70,6 +70,7 @@ struct SittingView: View {
 	var body: some View {
 		let pairs = viewModel.visibleOrderSubjects(from: hansard)
 		let oralQuestions = viewModel.oralQuestionsSummary(from: hansard)
+		let longestSubjectID = longestSubjectID(in: pairs)
 		Group {
 			if pairs.isEmpty && !viewModel.searchText.isEmpty {
 				ContentUnavailableView.search(text: viewModel.searchText)
@@ -119,6 +120,9 @@ struct SittingView: View {
 									.accessibilityLabel(subject.title)
 									.accessibilityHint("Open debate")
 									.accessibilityAddTraits(.isButton)
+									.accessibilityIdentifier(subject.hansardID == longestSubjectID
+										? "debate-longest-subject-row"
+										: "debate-subject-row-\(subject.hansardID)")
 									.onTapGesture {
 										selectedSubject = subject
 									}
@@ -143,6 +147,19 @@ struct SittingView: View {
 			}
 		}
 		.searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search debates")
+	}
+
+	private func longestSubjectID(in pairs: [(order: OrderOfBusiness, subjects: [SubjectOfBusiness])]) -> String? {
+		pairs
+			.flatMap(\.subjects)
+			.max { lhs, rhs in
+				messageCount(in: lhs) < messageCount(in: rhs)
+			}?
+			.hansardID
+	}
+
+	private func messageCount(in subject: SubjectOfBusiness) -> Int {
+		subject.speeches.reduce(0) { $0 + $1.messages.count }
 	}
 
 	private func resolveAndScrollToIntervention(proxy: ScrollViewProxy, fallbackSubjectID: String?) {

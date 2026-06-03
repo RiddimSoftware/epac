@@ -139,6 +139,7 @@ struct HomeFeedView: View {
             .regularSizeClassFormSheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .perfSignpostInterval(.homeFeedView)
         }
     }
 

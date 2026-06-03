@@ -109,6 +109,9 @@ struct ContentView: View {
 			// land on populated state instead of empty placeholders. See
 			// EvidenceFixtureSeed for the fixture selection logic.
 			await EvidenceFixtureSeed.seedIfNeeded(via: fetch)
+			if let target = AppEnvironment.evidencePerfNavigationTarget {
+				await viewModel.navigateToSeededEvidenceTarget(target, modelContext: modelContext)
+			}
 		}
 		.task {
 			performanceHarnessCompleted = await PerformanceLaunchHarness.runIfRequested(
