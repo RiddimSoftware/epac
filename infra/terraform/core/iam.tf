@@ -263,3 +263,26 @@ resource "aws_iam_role_policy" "lambda_hansard_search_index_artifacts" {
   role   = var.lambda_role_name
   policy = data.aws_iam_policy_document.lambda_hansard_search_index_artifacts.json
 }
+
+data "aws_iam_policy_document" "lambda_lobbying_index_artifacts" {
+  statement {
+    sid    = "LobbyingIndexArtifactReadWrite"
+    effect = "Allow"
+
+    actions = [
+      # s3:GetObject covers HeadObject; there is no separate s3:HeadObject IAM action.
+      "s3:GetObject",
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.artifacts_bucket_name}/lobbying-index/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_lobbying_index_artifacts" {
+  name   = "epac-lobbying-index-artifacts"
+  role   = var.lambda_role_name
+  policy = data.aws_iam_policy_document.lambda_lobbying_index_artifacts.json
+}

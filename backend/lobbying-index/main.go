@@ -16,34 +16,91 @@ import (
 	"epac/lobbying-index/internal/adapter/legisinfo"
 	"epac/lobbying-index/internal/adapter/ocl"
 	mycommons "epac/lobbying-index/internal/adapter/ourcommons"
+	s3adapter "epac/lobbying-index/internal/adapter/s3"
 	sqlite "epac/lobbying-index/internal/adapter/sqlite"
 	subjects "epac/lobbying-index/internal/adapter/subjects"
 	"epac/lobbying-index/internal/domain"
 	"epac/lobbying-index/internal/usecase"
+	"epac/observability"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 const (
-	defaultDBPath    = "/tmp/ocl-index.sqlite"
+	defaultDBPath    = "/tmp/lobbying-index.sqlite"
 	defaultUserAgent = "epac-lobbying-index/1.0 (+https://riddimsoftware.com; contact: sunny@riddimsoftware.com)"
 )
 
-func main() {
-	ctx := context.Background()
-	if err := run(ctx); err != nil {
-		logger := NewJSONLogger()
-		logger.Error("pipeline failed", err)
-		os.Exit(1)
-	}
-}
-
-func run(ctx context.Context) error {
-	dbPath := os.Getenv("DB_PATH")
+func HandleRequest(ctx context.Context) error {
+	dbPath := strings.TrimSpace(os.Getenv("DB_PATH"))
 	if dbPath == "" {
 		dbPath = defaultDBPath
 	}
+
+	bucket := strings.TrimSpace(os.Getenv("EPAC_ARTIFACT_BUCKET"))
+	if bucket == "" {
+		return fmt.Errorf("EPAC_ARTIFACT_BUCKET is required")
+	}
+
+	prefix := strings.TrimSpace(os.Getenv("LOBBYING_INDEX_PREFIX"))
+
 	parliament := envInt("PARLIAMENT_NUM", 45)
 	session := envInt("SESSION_NUM", 1)
 
+	if err := build(ctx, dbPath, parliament, session); err != nil {
+		return err
+	}
+
+	awsCfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("load AWS config: %w", err)
+	}
+	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix)
+
+	s3Key := store.Prefix() + "/index.sqlite"
+	hash, sizeBytes, err := store.Upload(ctx, dbPath, s3Key)
+	if err != nil {
+		return fmt.Errorf("upload sqlite artifact: %w", err)
+	}
+
+	tableCounts, err := countTables(dbPath)
+	if err != nil {
+		logJSON(map[string]any{
+			"pipeline": "lobbying-index",
+			"level":    "warn",
+			"event":    "table_count_failed",
+			"error":    err.Error(),
+		})
+	}
+
+	manifest := domain.Manifest{
+		Version:         domain.ManifestVersion,
+		BuiltAt:         time.Now().UTC().Format(time.RFC3339),
+		SQLiteKey:       s3Key,
+		SQLiteSizeBytes: sizeBytes,
+		SQLiteSHA256:    hash,
+		TableCounts:     tableCounts,
+	}
+
+	if err := store.Write(ctx, manifest); err != nil {
+		return fmt.Errorf("write manifest: %w", err)
+	}
+
+	logJSON(map[string]any{
+		"pipeline":          "lobbying-index",
+		"event":             "artifact_uploaded",
+		"sqlite_key":        manifest.SQLiteKey,
+		"sqlite_size_bytes": manifest.SQLiteSizeBytes,
+		"sqlite_sha256":     manifest.SQLiteSHA256,
+		"table_counts":      manifest.TableCounts,
+	})
+
+	return nil
+}
+
+func build(ctx context.Context, dbPath string, parliament, session int) error {
 	client := &http.Client{Timeout: 45 * time.Second}
 
 	fetcher := ocl.NewFetcher(ocl.WithHTTPClient(client), ocl.WithUserAgent(defaultUserAgent))
@@ -67,9 +124,9 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	printResult(ingestResult)
+	logIngestResult(ingestResult)
 
-	if err := aggregateMPLobbyingTables(dbPath); err != nil {
+	if err := aggregateMPLobbyingTables(dbPath, parliament); err != nil {
 		return err
 	}
 
@@ -82,22 +139,16 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("build organization tables: %w", err)
 	}
-	printOrgResult(orgResult)
-
-	ministerUC, err := usecase.NewPreBakeMinisterCommunications(cabinetSource, aggregator, dbPath, parliament)
-	if err != nil {
-		return err
-	}
-	ministerResult, err := ministerUC.Execute(ctx)
-	if err != nil {
-		return fmt.Errorf("pre-bake minister communications: %w", err)
-	}
-	printMinisterResult(ministerResult)
-	printMinisterWarnings(ministerResult)
+	logOrgResult(orgResult)
 
 	topicMap, err := loadTopicMap()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, `{"pipeline":"lobbying-index","level":"warn","message":"topic map not loaded","error":"%v"}`+"\n", err)
+		logJSON(map[string]any{
+			"pipeline": "lobbying-index",
+			"level":    "warn",
+			"event":    "topic_map_not_loaded",
+			"error":    err.Error(),
+		})
 	}
 
 	legisFetcher := legisinfo.NewFetcher(legisinfo.WithHTTPClient(client), legisinfo.WithUserAgent(defaultUserAgent))
@@ -109,12 +160,23 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("build bill context tables: %w", err)
 	}
-	printBillResult(billResult)
+	logBillResult(billResult)
+
+	ministerUC, err := usecase.NewPreBakeMinisterCommunications(cabinetSource, aggregator, dbPath, parliament)
+	if err != nil {
+		return err
+	}
+	ministerResult, err := ministerUC.Execute(ctx)
+	if err != nil {
+		return fmt.Errorf("pre-bake minister communications: %w", err)
+	}
+	logMinisterResult(ministerResult)
+	logMinisterWarnings(ministerResult)
 
 	return nil
 }
 
-func aggregateMPLobbyingTables(dbPath string) error {
+func aggregateMPLobbyingTables(dbPath string, parliament int) error {
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return fmt.Errorf("open sqlite for MP lobbying aggregation: %w", err)
@@ -125,21 +187,58 @@ func aggregateMPLobbyingTables(dbPath string) error {
 		return fmt.Errorf("enable foreign keys for MP lobbying aggregation: %w", err)
 	}
 
-	aggregationRunner := sqlite.NewAggregationRunner()
+	aggregationRunner := sqlite.NewAggregationRunner(sqlite.WithParliament(parliament))
 	if err := usecase.BuildMPLobbyingTables(db, aggregationRunner); err != nil {
 		return err
 	}
 	return nil
 }
 
-// loadTopicMap reads ocl_topic_map.json from the binary's directory or the working directory.
+func countTables(dbPath string) (map[string]int, error) {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite for table counts: %w", err)
+	}
+	defer db.Close()
+
+	// Names come from sqlite_master (not user input), so dynamic SQL is safe here.
+	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+	if err != nil {
+		return nil, fmt.Errorf("list tables: %w", err)
+	}
+	defer rows.Close()
+
+	var tableNames []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scan table name: %w", err)
+		}
+		tableNames = append(tableNames, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate tables: %w", err)
+	}
+
+	counts := make(map[string]int, len(tableNames))
+	for _, name := range tableNames {
+		var count int
+		if err := db.QueryRow("SELECT COUNT(*) FROM " + name).Scan(&count); err != nil { //nolint:gosec
+			counts[name] = -1
+			continue
+		}
+		counts[name] = count
+	}
+	return counts, nil
+}
+
 func loadTopicMap() ([]domain.TopicMapping, error) {
 	candidates := []string{"ocl_topic_map.json"}
 	if exe, err := os.Executable(); err == nil {
 		candidates = append([]string{filepath.Join(filepath.Dir(exe), "ocl_topic_map.json")}, candidates...)
 	}
-	for _, path := range candidates {
-		data, err := os.ReadFile(path)
+	for _, p := range candidates {
+		data, err := os.ReadFile(p)
 		if err != nil {
 			continue
 		}
@@ -152,7 +251,7 @@ func loadTopicMap() ([]domain.TopicMapping, error) {
 	return nil, fmt.Errorf("ocl_topic_map.json not found")
 }
 
-func printResult(result usecase.IngestOCLDataResult) {
+func logIngestResult(result usecase.IngestOCLDataResult) {
 	logJSON(map[string]any{
 		"pipeline":                     "lobbying-index",
 		"event":                        "ingest_ocl_data_completed",
@@ -169,7 +268,7 @@ func printResult(result usecase.IngestOCLDataResult) {
 	})
 }
 
-func printOrgResult(result usecase.BuildOrganizationTablesResult) {
+func logOrgResult(result usecase.BuildOrganizationTablesResult) {
 	logJSON(map[string]any{
 		"pipeline":      "lobbying-index",
 		"event":         "build_organization_tables_completed",
@@ -177,7 +276,7 @@ func printOrgResult(result usecase.BuildOrganizationTablesResult) {
 	})
 }
 
-func printBillResult(result usecase.BuildBillContextTablesResult) {
+func logBillResult(result usecase.BuildBillContextTablesResult) {
 	logJSON(map[string]any{
 		"pipeline":      "lobbying-index",
 		"event":         "build_bill_context_tables_completed",
@@ -186,7 +285,7 @@ func printBillResult(result usecase.BuildBillContextTablesResult) {
 	})
 }
 
-func printMinisterResult(result usecase.PreBakeMinisterCommunicationsResult) {
+func logMinisterResult(result usecase.PreBakeMinisterCommunicationsResult) {
 	logJSON(map[string]any{
 		"pipeline":                         "lobbying-index",
 		"event":                            "prebake_minister_communications_completed",
@@ -200,7 +299,7 @@ func printMinisterResult(result usecase.PreBakeMinisterCommunicationsResult) {
 	})
 }
 
-func printMinisterWarnings(result usecase.PreBakeMinisterCommunicationsResult) {
+func logMinisterWarnings(result usecase.PreBakeMinisterCommunicationsResult) {
 	for _, name := range result.UnresolvedMinisters {
 		logJSON(map[string]any{
 			"pipeline":      "lobbying-index",
@@ -221,27 +320,6 @@ func logJSON(payload map[string]any) {
 	fmt.Printf("{\"pipeline\":\"lobbying-index\",\"event\":\"marshaling_error\",\"error\":\"%v\"}\n", err)
 }
 
-func (l jsonLogger) Error(message string, err error) {
-	payload := map[string]any{
-		"pipeline": "lobbying-index",
-		"level":    "error",
-		"message":  message,
-		"error":    err.Error(),
-	}
-	encoded, marshalErr := json.Marshal(payload)
-	if marshalErr != nil {
-		fmt.Printf(`{"pipeline":"lobbying-index","level":"error","message":"%v","error":"%v"}`+"\n", message, err)
-		return
-	}
-	fmt.Println(string(encoded))
-}
-
-func NewJSONLogger() jsonLogger {
-	return jsonLogger{}
-}
-
-type jsonLogger struct{}
-
 func envInt(name string, fallback int) int {
 	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
 		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
@@ -249,4 +327,8 @@ func envInt(name string, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+func main() {
+	lambda.Start(observability.WrapNoEvent("lobbying-index", HandleRequest))
 }

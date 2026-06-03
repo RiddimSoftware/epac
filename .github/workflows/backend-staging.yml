@@ -300,9 +300,58 @@ jobs:
             2>/dev/null || true
           echo "| Lambda permission (apigw-invoke-lobbying) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
+  provision-lobbying-index:
+    name: Provision staging lobbying-index Lambda
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Provision lobbying-index Lambda
+        env:
+          LAMBDA_ROLE: arn:aws:iam::227530433709:role/epac-lambda-role
+          ACCOUNT_ID: '227530433709'
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Provision staging lobbying-index resources"
+            echo ""
+            echo "| Resource | Outcome |"
+            echo "|----------|---------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # --- epac-lobbying-index-staging Lambda ---
+          if ! aws lambda get-function --function-name epac-lobbying-index-staging > /dev/null 2>&1; then
+            aws lambda create-function \
+              --function-name epac-lobbying-index-staging \
+              --runtime provided.al2023 \
+              --handler bootstrap \
+              --architectures arm64 \
+              --role "$LAMBDA_ROLE" \
+              --zip-file fileb://infra/placeholder.zip \
+              --timeout 900 \
+              --memory-size 1024
+            aws lambda wait function-active-v2 --function-name epac-lobbying-index-staging
+            echo "| epac-lobbying-index-staging | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            aws lambda update-function-configuration \
+              --function-name epac-lobbying-index-staging \
+              --timeout 900 \
+              --memory-size 1024 \
+              >/dev/null
+            aws lambda wait function-updated --function-name epac-lobbying-index-staging
+            echo "| epac-lobbying-index-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   deploy:
     name: Deploy ${{ matrix.service }} to staging
-    needs: [prepare, provision-search, provision-lobbying]
+    needs: [prepare, provision-search, provision-lobbying, provision-lobbying-index]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -428,6 +477,7 @@ jobs:
           HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
           PARLIAMENT_NUMBER: ${{ vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
           SESSION_NUMBER: ${{ vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
+          LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
         run: |
           set -euo pipefail
 
@@ -448,7 +498,8 @@ jobs:
             --arg hansard_search_prefix "$HANSARD_SEARCH_PREFIX" \
             --arg parliament_number "$PARLIAMENT_NUMBER" \
             --arg session_number "$SESSION_NUMBER" \
-            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end))}')
+            --arg lobbying_index_prefix "$LOBBYING_INDEX_PREFIX" \
+            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end) + (if $service == "lobbying-index" or $service == "lobbying" then {LOBBYING_INDEX_PREFIX: $lobbying_index_prefix} else {} end))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

@@ -1,0 +1,78 @@
+name: Lobbying Index Reindex
+
+on:
+  # OCL open data updates approximately quarterly (Jan, Apr, Jul, Oct).
+  # The Monday-at-noon run fires the week after each quarterly drop so the
+  # index is refreshed promptly after new data appears.
+  # The 1st-of-every-3rd-month run provides a reliable calendar anchor so
+  # the index is never more than one quarter stale even if the Monday run
+  # is missed or the OCL cadence shifts slightly.
+  # Scheduled runs always target production; use workflow_dispatch for staging.
+  schedule:
+    - cron: '0 12 * * 1'    # Monday 08:00 EDT — first weekday run after quarterly OCL updates
+    - cron: '0 12 1 */3 *'  # 1st of every 3rd month — quarterly calendar anchor
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to reindex
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: lobbying-reindex-${{ inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ inputs.environment || 'production' }}
+      FUNCTION_NAME: epac-lobbying-index-${{ inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ (inputs.environment || 'production') == 'production' && secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN || secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Invoke indexer
+        run: |
+          set -euo pipefail
+
+          aws lambda invoke \
+            --function-name "$FUNCTION_NAME" \
+            --payload '{}' \
+            --cli-binary-format raw-in-base64-out \
+            --cli-read-timeout 0 \
+            /tmp/lobbying-reindex.out.json \
+            > /tmp/lobbying-reindex.invoke.json
+
+          {
+            echo "## Lobbying index reindex"
+            echo ""
+            echo "- Environment: \`$ENVIRONMENT\`"
+            echo "- Function: \`$FUNCTION_NAME\`"
+            echo ""
+            echo "### Invoke response"
+            echo '```json'
+            jq . /tmp/lobbying-reindex.invoke.json
+            echo '```'
+            echo ""
+            echo "### Function payload"
+            echo '```json'
+            jq . /tmp/lobbying-reindex.out.json 2>/dev/null || cat /tmp/lobbying-reindex.out.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if jq -e '.FunctionError? // empty' /tmp/lobbying-reindex.invoke.json >/dev/null; then
+            exit 1
+          fi
