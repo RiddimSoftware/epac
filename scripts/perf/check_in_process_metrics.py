@@ -15,6 +15,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--xcresult", required=True, type=Path)
     parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--summary-markdown", type=Path)
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
@@ -33,20 +34,32 @@ def main() -> int:
     )
     tests = collect_tests(json.loads(metrics_json))
     failures: list[str] = []
-    rows: list[tuple[str, str, str, float, float, str]] = []
+    rows: list[tuple[str, str, str, float | None, float, str, int, str]] = []
 
     for expected_test in manifest["tests"]:
-        test = find_test(tests, expected_test["test_identifier"])
-        if test is None:
-            failures.append(f"missing test metrics for {expected_test['test_identifier']}")
-            continue
-
-        available_metrics = [
-            metric
-            for run in test.get("testRuns", [])
-            for metric in run.get("metrics", [])
-        ]
         for expected_metric in expected_test["metrics"]:
+            budget_path = args.manifest.parent / expected_metric["budget"]
+            budget = float(budget_path.read_text(encoding="utf-8").strip())
+            test = find_test(tests, expected_test["test_identifier"])
+            if test is None:
+                failures.append(f"missing test metrics for {expected_test['test_identifier']}")
+                rows.append((
+                    expected_test["test_identifier"],
+                    expected_metric["key"],
+                    "missing test",
+                    None,
+                    budget,
+                    "",
+                    0,
+                    "missing",
+                ))
+                continue
+
+            available_metrics = [
+                metric
+                for run in test.get("testRuns", [])
+                for metric in run.get("metrics", [])
+            ]
             matches = matching_metrics(available_metrics, expected_metric["match"])
             matches_with_measurements = [
                 metric for metric in matches if metric.get("measurements")
@@ -63,13 +76,23 @@ def main() -> int:
                     f"{expected_metric['key']} for {expected_test['test_identifier']} "
                     f"(available: {available_names or 'none'})"
                 )
+                rows.append((
+                    expected_test["test_identifier"],
+                    expected_metric["key"],
+                    "missing",
+                    None,
+                    budget,
+                    "",
+                    0,
+                    "missing",
+                ))
                 continue
 
-            budget_path = args.manifest.parent / expected_metric["budget"]
-            budget = float(budget_path.read_text(encoding="utf-8").strip())
             for metric in matches_with_measurements:
                 average = mean(float(value) for value in metric["measurements"])
                 unit = metric.get("unitOfMeasurement", "")
+                sample_count = len(metric["measurements"])
+                status = "passed" if average <= budget else "failed"
                 rows.append((
                     expected_test["test_identifier"],
                     expected_metric["key"],
@@ -77,6 +100,8 @@ def main() -> int:
                     average,
                     budget,
                     unit,
+                    sample_count,
+                    status,
                 ))
                 if average > budget:
                     failures.append(
@@ -85,10 +110,16 @@ def main() -> int:
                     )
 
     print("In-process performance metrics")
-    print("| Test | Expected metric | Reported metric | Average | Budget | Unit |")
-    print("| --- | --- | --- | ---: | ---: | --- |")
-    for test_id, key, label, average, budget, unit in rows:
-        print(f"| {test_id} | {key} | {label} | {average:.6g} | {budget:.6g} | {unit} |")
+    print("| Test | Expected metric | Reported metric | Average | Budget | Unit | Samples | Status |")
+    print("| --- | --- | --- | ---: | ---: | --- | ---: | --- |")
+    for test_id, key, label, average, budget, unit, sample_count, status in rows:
+        print(
+            f"| {test_id} | {key} | {label} | {format_value(average)} | "
+            f"{budget:.6g} | {unit} | {sample_count} | {status} |"
+        )
+
+    if args.summary_markdown is not None:
+        write_summary(args.summary_markdown, rows)
 
     if failures:
         for failure in failures:
@@ -140,6 +171,55 @@ def metric_label(metric: dict) -> str:
 
 def normalize(value: str) -> str:
     return value.lower().replace("_", " ").replace("-", " ")
+
+
+def write_summary(
+    path: Path,
+    rows: list[tuple[str, str, str, float | None, float, str, int, str]],
+) -> None:
+    lines = ["### In-process performance metrics", ""]
+    lines.extend(markdown_table(rows))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def markdown_table(
+    rows: list[tuple[str, str, str, float | None, float, str, int, str]],
+) -> list[str]:
+    if not rows:
+        return ["No in-process performance metrics were reported."]
+
+    lines = [
+        "| Test | Metric | Reported metric | Budget | Measured average | Unit | Samples | Status |",
+        "| --- | --- | --- | ---: | ---: | --- | ---: | --- |",
+    ]
+    for test_id, key, label, average, budget, unit, sample_count, status in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_escape(test_id),
+                    markdown_escape(key),
+                    markdown_escape(label),
+                    f"{budget:.6g}",
+                    format_value(average),
+                    markdown_escape(unit),
+                    str(sample_count),
+                    status,
+                ]
+            )
+            + " |"
+        )
+    return lines
+
+
+def format_value(value: float | None) -> str:
+    if value is None:
+        return "missing"
+    return f"{value:.6g}"
+
+
+def markdown_escape(value: str) -> str:
+    return value.replace("|", "\\|")
 
 
 if __name__ == "__main__":

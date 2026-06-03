@@ -1,0 +1,40 @@
+name: Performance Suite
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs for the same ref so rapid pushes don't stack macOS runners.
+concurrency:
+  group: perf-suite-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perf-suite:
+    name: Simulator performance suite
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runs Performance.xctestplan on the iOS simulator and compares every
+      # sim-gated metric (launch, memory, network bytes, signpost durations,
+      # in-process SwiftData/parse) against its budget under .github/perf-budgets/.
+      # The runner skips the device-only hitch suite (ScrollHitchPerfTests) and the
+      # live-network fresh-install suite (FreshInstallPerfTests), and fails on any
+      # budget breach OR missing measurement line. It writes the per-metric tables
+      # to $GITHUB_STEP_SUMMARY itself.
+      - name: Run simulator performance suite
+        shell: bash
+        run: scripts/ci/run_sim_perf_suite.sh
+
+      - name: Upload performance result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-suite-xcresult-${{ github.run_number }}
+          path: ${{ runner.temp }}/Performance.xcresult
+          if-no-files-found: error
