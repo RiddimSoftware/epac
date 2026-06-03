@@ -149,6 +149,10 @@ struct MemberProfileView: View {
 						.frame(width: MemberProfileLayout.avatarSize, height: MemberProfileLayout.avatarSize)
 						.padding(.top, MemberProfileLayout.avatarTopPadding)
 
+					if let position = cabinetPosition {
+						CabinetPositionSection(position: position)
+					}
+
 					MemberHighlightsCard(member: member)
 
 					PartyLineScoreView(member: member)
@@ -170,10 +174,6 @@ struct MemberProfileView: View {
 					.padding()
 					.background(Color(.secondarySystemBackground))
 					.cornerRadius(MemberProfileLayout.cardCornerRadius)
-
-					if let position = cabinetPosition {
-						CabinetPositionSection(position: position)
-					}
 
 					if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 						contactSection
@@ -219,65 +219,70 @@ struct MemberProfileView: View {
 					.foregroundStyle(.primary)
 
 					// MARK: Lobbying section
-					DisclosureGroup(
-						isExpanded: $showLobbying,
-						content: {
-							if lobbyingComms.isEmpty && lobbyingLoaded {
-								Text(NSLocalizedString("lobbying.empty.title", comment: ""))
-									.font(.caption)
-									.foregroundStyle(.secondary)
-									.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
-							} else {
-								ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
-									VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
-										Text(comm.organizationName)
-											.font(.subheadline)
-											.fixedSize(horizontal: false, vertical: true)
-										if !comm.subjectMatter.isEmpty {
-											Text(comm.subjectMatter)
-												.font(.caption2)
-												.foregroundStyle(.secondary)
+					if cabinetPosition != nil {
+						MinisterLobbyingTabView(memberID: member.memberID)
+					} else {
+						DisclosureGroup(
+							isExpanded: $showLobbying,
+							content: {
+								if lobbyingComms.isEmpty && lobbyingLoaded {
+									Text(NSLocalizedString("lobbying.empty.title", comment: ""))
+										.font(.caption)
+										.foregroundStyle(.secondary)
+										.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
+								} else {
+									ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
+										VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
+											Text(comm.organizationName)
+												.font(.subheadline)
 												.fixedSize(horizontal: false, vertical: true)
+											if !comm.subjectMatter.isEmpty {
+												Text(comm.subjectMatter)
+													.font(.caption2)
+													.foregroundStyle(.secondary)
+													.fixedSize(horizontal: false, vertical: true)
+											}
+											if let d = comm.communicationDate {
+												Text(d, style: .date)
+													.font(.caption2)
+													.foregroundStyle(.secondary)
+											}
+											LobbyingSourceCitationView(url: comm.registryURL)
 										}
-										if let d = comm.communicationDate {
-											Text(d, style: .date)
-												.font(.caption2)
-												.foregroundStyle(.secondary)
-										}
+										.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
 									}
-									.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
+									if !lobbyingComms.isEmpty {
+										NavigationLink(destination: LobbyingView(member: member)) {
+											Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
+												.font(.caption)
+												.foregroundStyle(.tint)
+										}
+										.accessibilityIdentifier("accountability-lobbying-link")
+									}
 								}
-								if !lobbyingComms.isEmpty {
-									NavigationLink(destination: LobbyingView(member: member)) {
-										Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
-											.font(.caption)
-											.foregroundStyle(.tint)
-									}
-									.accessibilityIdentifier("accountability-lobbying-link")
+							},
+							label: {
+								HStack {
+									Image(systemName: "person.fill.badge.plus")
+										.foregroundStyle(.tint)
+									Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+										.font(.subheadline)
+										.fontWeight(.semibold)
 								}
 							}
-						},
-						label: {
-							HStack {
-								Image(systemName: "person.fill.badge.plus")
-									.foregroundStyle(.tint)
-								Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
-									.font(.subheadline)
-									.fontWeight(.semibold)
-							}
-						}
-					)
-					.padding()
-					.background(Color.appSurface)
-					.cornerRadius(MemberProfileLayout.cardCornerRadius)
-					.onChange(of: showLobbying) { _, isExpanded in
-						if isExpanded && !lobbyingLoaded {
-							// Capture primitive name values on the main actor before async hop.
-							let ln = member.lastName
-							let fn = member.firstName
-							Task {
-								lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
-								lobbyingLoaded = true
+						)
+						.padding()
+						.background(Color.appSurface)
+						.cornerRadius(MemberProfileLayout.cardCornerRadius)
+						.onChange(of: showLobbying) { _, isExpanded in
+							if isExpanded && !lobbyingLoaded {
+								// Capture primitive name values on the main actor before async hop.
+								let ln = member.lastName
+								let fn = member.firstName
+								Task {
+									lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
+									lobbyingLoaded = true
+								}
 							}
 						}
 					}
@@ -612,6 +617,10 @@ struct CabinetPositionSection: View {
 				.foregroundStyle(.primary)
 				.fixedSize(horizontal: false, vertical: true)
 
+			Label("Current portfolio as of \(Self.dateFormatter.string(from: position.asOfDate))", systemImage: "calendar")
+				.font(.caption)
+				.foregroundStyle(.secondary)
+
 			if let urlString = position.mandateLetterURL, let url = URL(string: urlString) {
 				Link(destination: url) {
 					HStack {
@@ -648,4 +657,12 @@ struct CabinetPositionSection: View {
 		.accessibilityIdentifier("cabinet-position-section")
 		.accessibilityLabel("\(position.isPrimeMinister ? "Prime Minister" : "Cabinet Minister"). Portfolio: \(position.portfolio)")
 	}
+
+	private static let dateFormatter: DateFormatter = {
+		let formatter = DateFormatter()
+		formatter.timeZone = TimeZone(secondsFromGMT: 0)
+		formatter.dateStyle = .medium
+		formatter.timeStyle = .none
+		return formatter
+	}()
 }

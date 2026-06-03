@@ -267,4 +267,165 @@ final class SnapshotTests: XCTestCase {
             name: "DesignSystem_typographyScale"
         )
     }
+
+    // MARK: - Minister lobbying (EPAC-2157)
+
+    @MainActor
+    func testMinisterLobbying_twoPortfolios() {
+        snapshot(
+            MinisterLobbyingTabView(
+                memberID: 317577,
+                initialPeriods: Self.ministerLobbyingPeriods,
+                initialLoadCompleted: true,
+                autoload: false
+            )
+            .frame(width: 375)
+            .padding(),
+            name: "MinisterLobbying_twoPortfolios"
+        )
+    }
+
+    @MainActor
+    func testMinisterLobbying_empty() {
+        snapshot(
+            MinisterLobbyingTabView(
+                memberID: 42,
+                initialPeriods: [],
+                initialLoadCompleted: true,
+                autoload: false
+            )
+            .frame(width: 375, height: 360)
+            .padding(),
+            name: "MinisterLobbying_empty"
+        )
+    }
+
+    @MainActor
+    func testCabinetLobbyingOverview() {
+        snapshot(
+            CabinetLobbyingOverviewView(
+                initialOverview: Self.cabinetLobbyingOverview,
+                initialLoadCompleted: true,
+                autoload: false
+            )
+            .frame(width: 375, height: 780),
+            name: "CabinetLobbyingOverview"
+        )
+    }
+
+    private static var ministerLobbyingPeriods: [MinisterPortfolioLobbyingPeriod] {
+        [
+            MinisterPortfolioLobbyingPeriod(
+                portfolioName: "Minister of Environment",
+                startDate: date("2023-11-01"),
+                endDate: date("2024-09-30"),
+                communications: [
+                    MinisterLobbyingCommunication(
+                        id: "env-1",
+                        organizationName: "Canadian Clean Energy Association",
+                        lobbyistName: "Alex Morgan",
+                        communicationDate: date("2024-04-16"),
+                        subjectMatter: "Climate policy, clean electricity regulations",
+                        registrantType: "In-house (organization)",
+                        registryURL: CabinetLobbyingSource.url,
+                        mandateMatch: true,
+                        communicationType: "Meeting"
+                    ),
+                    MinisterLobbyingCommunication(
+                        id: "env-2",
+                        organizationName: "North Coast Infrastructure Council",
+                        lobbyistName: "Priya Shah",
+                        communicationDate: date("2024-02-20"),
+                        subjectMatter: "Ports, environmental assessment",
+                        registrantType: "Consultant",
+                        registryURL: CabinetLobbyingSource.url,
+                        mandateMatch: false,
+                        communicationType: "Written"
+                    )
+                ]
+            ),
+            MinisterPortfolioLobbyingPeriod(
+                portfolioName: "Minister of Natural Resources",
+                startDate: date("2024-10-01"),
+                endDate: nil,
+                communications: [
+                    MinisterLobbyingCommunication(
+                        id: "nr-1",
+                        organizationName: "Critical Minerals Alliance",
+                        lobbyistName: "Jordan Lee",
+                        communicationDate: date("2025-01-12"),
+                        subjectMatter: "Critical minerals supply chains",
+                        registrantType: "In-house (corporation)",
+                        registryURL: CabinetLobbyingSource.url,
+                        mandateMatch: true,
+                        communicationType: "Meeting"
+                    )
+                ]
+            )
+        ]
+    }
+
+    private static var cabinetLobbyingOverview: CabinetLobbyingOverview {
+        CabinetLobbyingOverview(
+            parliament: 45,
+            ministers: [
+                CabinetLobbyingMinisterSummary(
+                    memberID: 317577,
+                    ministerName: "Mark Carney",
+                    portfolioName: "Prime Minister of Canada",
+                    totalCommunications: 42,
+                    mandateMatchCount: 9
+                ),
+                CabinetLobbyingMinisterSummary(
+                    memberID: 314774,
+                    ministerName: "Anita Anand",
+                    portfolioName: "Minister of Foreign Affairs",
+                    totalCommunications: 31,
+                    mandateMatchCount: 4
+                ),
+                CabinetLobbyingMinisterSummary(
+                    memberID: 322130,
+                    ministerName: "Steven Guilbeault",
+                    portfolioName: "Minister of Environment",
+                    totalCommunications: 27,
+                    mandateMatchCount: 6
+                )
+            ],
+            portfolioFilters: [
+                "Minister of Environment",
+                "Minister of Foreign Affairs",
+                "Prime Minister of Canada"
+            ],
+            mostActiveOrganizations: [
+                CabinetLobbyingOrganizationSummary(
+                    portfolioName: "Minister of Environment",
+                    organizationName: "Canadian Clean Energy Association",
+                    communicationCount: 12
+                ),
+                CabinetLobbyingOrganizationSummary(
+                    portfolioName: "Minister of Environment",
+                    organizationName: "Critical Minerals Alliance",
+                    communicationCount: 8
+                ),
+                CabinetLobbyingOrganizationSummary(
+                    portfolioName: "Minister of Foreign Affairs",
+                    organizationName: "Global Trade Council",
+                    communicationCount: 10
+                )
+            ]
+        )
+    }
+
+    private static func date(_ rawValue: String) -> Date {
+        dateFormatter.date(from: rawValue) ?? Date(timeIntervalSince1970: 0)
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }

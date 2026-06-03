@@ -102,6 +102,8 @@ struct LobbyistRow: View {
 
             Link(NSLocalizedString("lobbying.viewRecord", comment: ""), destination: comm.registryURL)
                 .font(.caption2)
+
+            LobbyingSourceCitationView(url: comm.registryURL)
         }
         .padding(.vertical, EpacSpacing.xs)
         .accessibilityElement(children: .combine)
