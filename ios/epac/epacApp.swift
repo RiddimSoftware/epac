@@ -69,6 +69,12 @@ struct epacApp: App {
 	@MainActor private static var didInstallBackendTelemetryProvider = false
 
 	private static func makeModelContainer() -> ModelContainer {
+		let span = Telemetry.startSpan(
+			name: PerformanceSignpostContract.SpanName.launchModelContainer,
+			operation: "launch.model-container"
+		)
+		defer { span.finish() }
+
 		do {
 			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try SwiftDataStoreRecovery.makeContainer(usesInMemoryStore: usesInMemoryStore) { configuration in
@@ -93,7 +99,10 @@ struct epacApp: App {
 
 		await Task.yield()
 		guard !didInstallBackendTelemetryProvider else { return }
-		Telemetry.provider = BackendTelemetryProvider(osVersion: UIDevice.current.systemVersion)
+		Telemetry.provider = MultiplexTelemetryProvider(providers: [
+			OSSignpostTelemetryProvider(),
+			BackendTelemetryProvider(osVersion: UIDevice.current.systemVersion)
+		])
 		didInstallBackendTelemetryProvider = true
 	}
 
@@ -101,6 +110,7 @@ struct epacApp: App {
 
 	init() {
 		UITestFreshState.resetIfRequested()
+		Telemetry.provider = OSSignpostTelemetryProvider()
 		let modelContainer = Self.makeModelContainer()
 		let fetch = Fetch(modelContainer: modelContainer)
 		let swiftDataHansardRepository = SwiftDataHansardRepository(

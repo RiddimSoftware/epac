@@ -27,9 +27,24 @@ struct SearchHansard: SearchHansardUseCase {
     private static let minimumQueryLength = 2
 
     let store: any HansardSearchStore
+    private let telemetry: any TelemetryProvider
+
+    init(
+        store: any HansardSearchStore,
+        telemetry: any TelemetryProvider = CurrentTelemetryProvider()
+    ) {
+        self.store = store
+        self.telemetry = telemetry
+    }
 
     @MainActor
     func execute(query: String) -> [Match] {
+        let span = telemetry.startSpan(
+            name: PerformanceSignpostContract.SpanName.searchHansardRoundTrip,
+            operation: "search.hansard-round-trip"
+        )
+        defer { span.finish() }
+
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedQuery.count >= Self.minimumQueryLength,
               let documents = try? store.loadDocuments() else {

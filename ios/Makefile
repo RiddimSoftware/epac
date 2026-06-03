@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build deploy-simulator simulator test ipad-build ipad-deploy-simulator ipad-simulator side-by-side catalyst-build catalyst-run
+.PHONY: build deploy-simulator simulator test perf-sim ipad-build ipad-deploy-simulator ipad-simulator side-by-side catalyst-build catalyst-run
 
 OUTPUT_DIR = .build
 # Dynamically detect an available iPhone simulator
@@ -15,6 +15,8 @@ SIM_UUID = $(shell xcrun simctl list devices available | grep -v unavailable | g
 IPAD_SIM_NAME ?= $(DETECTED_IPAD_SIM_NAME)
 IPAD_SIM_UUID = $(shell if [ -n "$(IPAD_SIM_NAME)" ]; then xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "$(IPAD_SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_IPAD_SIM_UUID)"; else echo "$(DETECTED_IPAD_SIM_UUID)"; fi)
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
+SIGNPOST_PERF_RESULT_BUNDLE = $(OUTPUT_DIR)/SignpostPerf.xcresult
+SIGNPOST_PERF_BUDGET_FILE = ../.github/perf-budgets/signpost-phase-durations.json
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
 DESTINATION = 'platform=iOS Simulator,id=$(SIM_UUID)'
@@ -34,6 +36,16 @@ test:
 	@echo "\n--- Code Coverage Summary (App Source Files) ---"
 	@xcrun xccov view --report --json $(OUTPUT_DIR)/TestResults.xcresult > $(OUTPUT_DIR)/coverage.json
 	@jq -r '.targets[] | select(.name == "epac.app" or .name == "epac-clip.app") | .files[] | select(.path | endswith(".swift")) | "\(.path | split("/") | last): \((.lineCoverage * 10000 | round / 100))%"' $(OUTPUT_DIR)/coverage.json | sort -u | column -t -s ":"
+
+perf-sim:
+	@test -n "$(SIM_UUID)" || { echo "$(IPHONE_SIM_ERROR)" >&2; exit 1; }
+	xcrun simctl boot $(SIM_UUID) >/dev/null 2>&1 || true
+	xcrun simctl bootstatus $(SIM_UUID) -b
+	xcrun simctl terminate $(SIM_UUID) $(BUNDLE_ID) >/dev/null 2>&1 || true
+	xcrun simctl terminate $(SIM_UUID) com.riddimsoftware.epacUITests.xctrunner >/dev/null 2>&1 || true
+	rm -rf $(SIGNPOST_PERF_RESULT_BUNDLE)
+	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(SIGNPOST_PERF_RESULT_BUNDLE) -only-testing:epacUITests/SignpostPerfTests | xcbeautify
+	python3 ../scripts/ci/verify_signpost_perf_metrics.py $(SIGNPOST_PERF_RESULT_BUNDLE) $(SIGNPOST_PERF_BUDGET_FILE)
 
 deploy-simulator:
 	xcrun simctl install $(SIM_UUID) $(APP_PATH)
