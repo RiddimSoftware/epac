@@ -15,6 +15,7 @@ Each file contains a single numeric budget in the metric's canonical unit. Curre
 | --- | --- |
 | `launch-time-seconds` | seconds |
 | `memory-physical-kb` | peak physical memory in kilobytes |
+| `debate-load-network-bytes` | request + response transfer bytes |
 
 `scripts/ci/perf_parse.py` treats `*.sim.txt` and `*.device.txt` files as the expected metric list for the selected platform and fails if the matching `.xcresult` contains no measurements for any expected metric.
 
