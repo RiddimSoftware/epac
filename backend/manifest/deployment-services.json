@@ -645,6 +645,14 @@
             },
             {
               "method": "GET",
+              "path": "/api/v1/bills/{legisinfo_id}/lobbying-context"
+            },
+            {
+              "method": "GET",
+              "path": "/bills/{legisinfo_id}/lobbying-context"
+            },
+            {
+              "method": "GET",
               "path": "/api/v1/lobbying/organizations"
             },
             {
@@ -692,6 +700,14 @@
             {
               "method": "GET",
               "path": "/cabinet/lobbying-overview"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/bills/{legisinfo_id}/lobbying-context"
+            },
+            {
+              "method": "GET",
+              "path": "/bills/{legisinfo_id}/lobbying-context"
             },
             {
               "method": "GET",

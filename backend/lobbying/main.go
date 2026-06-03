@@ -1,4 +1,4 @@
-// lobbying Lambda - GET /api/v1/lobbying/by-topic/{slug}
+// lobbying Lambda - OCL lobbying context and profile endpoints.
 package main
 
 import (
@@ -51,6 +51,9 @@ var newCabinetOverviewService = newProductionCabinetOverviewService
 var newMPLobbyingExposureService = newProductionMPLobbyingExposureService
 
 func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	if legisInfoID := billLobbyingContextIDFromRequest(req); legisInfoID != "" {
+		return handleBillLobbyingContext(ctx, req, legisInfoID)
+	}
 	if isOrganizationRequest(req) {
 		return handleOrganizationRequest(ctx, req)
 	}
