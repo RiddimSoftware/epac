@@ -828,6 +828,160 @@
         }
       }
     },
+    "/api/v1/lobbying/organizations": {
+      "get": {
+        "tags": ["Lobbying"],
+        "summary": "Browse OCL lobbyist organizations",
+        "description": "Returns a paged directory of canonical Office of the Commissioner of Lobbying organizations for profile discovery.",
+        "operationId": "browseLobbyistOrganizations",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive organization name or canonical ID search.",
+            "schema": { "type": "string", "example": "energy" }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive exact sector filter.",
+            "schema": { "type": "string", "example": "Energy" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Directory sort key. Defaults to communication volume in the current Parliament.",
+            "schema": { "type": "string", "enum": ["communication_volume", "communication_volume_current_parliament"], "default": "communication_volume" }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction for communication volume.",
+            "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "One-based page number.",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Items per page. Defaults to 50 and caps at 200.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paged lobbyist organization directory",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LobbyistOrganizationDirectoryResponse" },
+                "examples": {
+                  "results": {
+                    "value": {
+                      "page": 1,
+                      "per_page": 50,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "rows": [
+                        {
+                          "id": "ocl:42",
+                          "name": "Canadian Housing Alliance",
+                          "type": "association",
+                          "sector": "Housing",
+                          "communication_volume_current_parliament": 17
+                        }
+                      ]
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "page": 1,
+                      "per_page": 50,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "rows": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/lobbying/organizations/{id}": {
+      "get": {
+        "tags": ["Lobbying"],
+        "summary": "Load an OCL lobbyist organization profile",
+        "description": "Returns a full canonical Office of the Commissioner of Lobbying organization profile, including lobbyists, active subject matters, Parliament communication trend, and top DPOHs contacted.",
+        "operationId": "loadLobbyistOrganizationProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Canonical organization ID from the directory response.",
+            "schema": { "type": "string", "example": "ocl:42" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lobbyist organization profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LobbyistOrganizationProfile" },
+                "examples": {
+                  "profile": {
+                    "value": {
+                      "id": "ocl:42",
+                      "ocl_organization_id": "42",
+                      "name": "Canadian Housing Alliance",
+                      "type": "association",
+                      "sector": "Housing",
+                      "registered_lobbyists": [
+                        { "name": "Jane Lobbyist", "kind": "consultant" }
+                      ],
+                      "active_subject_matters": ["Housing", "Infrastructure"],
+                      "communication_volume": {
+                        "current_parliament": 8,
+                        "prior_parliament": 5
+                      },
+                      "top_dpohs_contacted": [
+                        {
+                          "member_id": "278707",
+                          "name": "Example Minister",
+                          "institution": "House of Commons",
+                          "count": 4
+                        }
+                      ],
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/estimates": {
       "get": {
         "tags": ["Fiscal"],
@@ -1535,6 +1689,85 @@
           "portfolio_name": { "type": "string" },
           "start_date": { "type": "string" },
           "end_date": { "type": "string" }
+        }
+      },
+      "LobbyistOrganizationDirectoryResponse": {
+        "type": "object",
+        "required": ["page", "per_page", "citation", "source_url", "rows"],
+        "properties": {
+          "page": { "type": "integer", "minimum": 1 },
+          "per_page": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" },
+          "rows": { "type": "array", "items": { "$ref": "#/components/schemas/LobbyistOrganizationDirectoryRow" } }
+        }
+      },
+      "LobbyistOrganizationDirectoryRow": {
+        "type": "object",
+        "required": ["id", "name", "type", "communication_volume_current_parliament"],
+        "properties": {
+          "id": { "type": "string", "example": "ocl:42" },
+          "name": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/LobbyistOrganizationType" },
+          "sector": { "type": "string" },
+          "communication_volume_current_parliament": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "LobbyistOrganizationProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "registered_lobbyists",
+          "active_subject_matters",
+          "communication_volume",
+          "top_dpohs_contacted",
+          "citation",
+          "source_url"
+        ],
+        "properties": {
+          "id": { "type": "string", "example": "ocl:42" },
+          "ocl_organization_id": { "type": "string", "example": "42" },
+          "name": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/LobbyistOrganizationType" },
+          "sector": { "type": "string" },
+          "registered_lobbyists": { "type": "array", "items": { "$ref": "#/components/schemas/RegisteredLobbyist" } },
+          "active_subject_matters": { "type": "array", "items": { "type": "string" } },
+          "communication_volume": { "$ref": "#/components/schemas/LobbyistOrganizationCommunicationVolume" },
+          "top_dpohs_contacted": { "type": "array", "maxItems": 5, "items": { "$ref": "#/components/schemas/DPOHContact" } },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+        }
+      },
+      "LobbyistOrganizationType": {
+        "type": "string",
+        "enum": ["corporation", "non_profit", "association", "indigenous_organization"]
+      },
+      "RegisteredLobbyist": {
+        "type": "object",
+        "required": ["name", "kind"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string", "enum": ["consultant", "in_house"] }
+        }
+      },
+      "LobbyistOrganizationCommunicationVolume": {
+        "type": "object",
+        "required": ["current_parliament", "prior_parliament"],
+        "properties": {
+          "current_parliament": { "type": "integer", "minimum": 0 },
+          "prior_parliament": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "DPOHContact": {
+        "type": "object",
+        "required": ["name", "institution", "count"],
+        "properties": {
+          "member_id": { "type": "string", "description": "House of Commons member/person ID when the contacted DPOH can be linked to an MP or minister profile." },
+          "name": { "type": "string" },
+          "institution": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 }
         }
       },
       "EstimatesResponse": {

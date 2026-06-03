@@ -29,6 +29,7 @@ type CommunicationCount struct {
 }
 
 type DPOHContact struct {
+	MemberID    string `json:"member_id,omitempty"`
 	Name        string `json:"name"`
 	Institution string `json:"institution"`
 	Count       int    `json:"count"`

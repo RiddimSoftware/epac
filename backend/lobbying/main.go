@@ -44,6 +44,9 @@ var newMinisterPortfolioService = newProductionMinisterPortfolioService
 var newCabinetOverviewService = newProductionCabinetOverviewService
 
 func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	if isOrganizationRequest(req) {
+		return handleOrganizationRequest(ctx, req)
+	}
 	if memberID := ministerMemberIDFromRequest(req); memberID != "" {
 		return handleMinisterPortfolio(ctx, req, memberID)
 	}

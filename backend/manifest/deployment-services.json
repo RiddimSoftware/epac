@@ -642,6 +642,22 @@
             {
               "method": "GET",
               "path": "/cabinet/lobbying-overview"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/organizations"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/organizations/{id}"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/organizations"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/organizations/{id}"
             }
           ],
           "production": [
@@ -668,6 +684,22 @@
             {
               "method": "GET",
               "path": "/cabinet/lobbying-overview"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/organizations"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/lobbying/organizations/{id}"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/organizations"
+            },
+            {
+              "method": "GET",
+              "path": "/lobbying/organizations/{id}"
             }
           ]
         }
