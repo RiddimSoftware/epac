@@ -278,6 +278,10 @@ struct CommitteesService {
             keys: ["nameEn", "fullNameEn", "personNameEn", "witnessNameEn", "name", "fullName", "personName"]
         )
         guard let name, !name.isEmpty else { return nil }
+        let title = firstString(
+            in: item,
+            keys: ["titleEn", "title", "roleNameEn", "roleName", "positionEn", "position"]
+        ) ?? ""
         let organization = firstString(
             in: item,
             keys: [
@@ -285,7 +289,7 @@ struct CommitteesService {
                 "organization", "organizationName", "affiliation"
             ]
         ) ?? ""
-        return CommitteeWitness(name: name, organization: organization)
+        return CommitteeWitness(name: name, title: title, organization: organization)
     }
 
     private static func firstString(in item: [String: Any], keys: [String]) -> String? {

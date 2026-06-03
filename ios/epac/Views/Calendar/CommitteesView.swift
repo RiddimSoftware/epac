@@ -346,6 +346,9 @@ struct CommitteeEvidenceView: View {
                 metadataFallback
             } else {
                 List {
+                    if !meeting.witnesses.isEmpty {
+                        witnessSection
+                    }
                     if CommitteeSummaryService.isAvailable {
                         summarySection
                     }
@@ -381,6 +384,37 @@ struct CommitteeEvidenceView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var witnessSection: some View {
+        Section {
+            ForEach(meeting.witnesses) { witness in
+                let orgName = witness.organization.isEmpty ? witness.name : witness.organization
+                NavigationLink(
+                    destination: WitnessOrganizationView(
+                        organizationName: orgName,
+                        committeeId: meeting.committee
+                    )
+                ) {
+                    WitnessDetailRow(witness: witness)
+                }
+                .accessibilityLabel(witnessAccessibilityLabel(witness))
+            }
+        } header: {
+            Text("Witnesses")
+        } footer: {
+            Link("Source: parl.ca committee evidence",
+                 destination: URL(string: "https://www.ourcommons.ca/Committees/en/Overview")!)
+                .font(.caption2)
+        }
+    }
+
+    private func witnessAccessibilityLabel(_ witness: CommitteeWitness) -> String {
+        var parts = [witness.name]
+        if !witness.title.isEmpty { parts.append(witness.title) }
+        if !witness.organization.isEmpty { parts.append(witness.organization) }
+        return parts.joined(separator: ", ")
     }
 
     @ViewBuilder
@@ -462,11 +496,22 @@ struct CommitteeEvidenceView: View {
             if !meeting.witnesses.isEmpty {
                 Section(NSLocalizedString("committees.confirmedWitnesses", comment: "")) {
                     ForEach(meeting.witnesses) { witness in
-                        VStack(alignment: .leading, spacing: CommitteesLayout.compactTextSpacing) {
-                            Text(witness.name)
-                                .font(.subheadline.weight(.semibold))
-                            if !witness.organization.isEmpty {
-                                NavigationLink(destination: LobbyistOrganizationView(organizationName: witness.organization)) {
+                        let orgName = witness.organization.isEmpty ? witness.name : witness.organization
+                        NavigationLink(
+                            destination: WitnessOrganizationView(
+                                organizationName: orgName,
+                                committeeId: meeting.committee
+                            )
+                        ) {
+                            VStack(alignment: .leading, spacing: CommitteesLayout.compactTextSpacing) {
+                                Text(witness.name)
+                                    .font(.subheadline.weight(.semibold))
+                                if !witness.title.isEmpty {
+                                    Text(witness.title)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                if !witness.organization.isEmpty {
                                     Text(witness.organization)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)

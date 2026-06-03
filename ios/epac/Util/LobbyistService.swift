@@ -149,6 +149,16 @@ struct LobbyistService {
         func cached(key: String) -> [LobbyistCommunication]? { commsPerMP[key] }
 
         func store(_ comms: [LobbyistCommunication], key: String) { commsPerMP[key] = comms }
+
+        /// Returns the number of OCL communication records for the given organization name,
+        /// or nil if the dataset has not been loaded yet.
+        func communicationCount(forOrganization name: String) -> Int? {
+            guard isLoaded, !loadError else { return nil }
+            let query = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            return primaryTable.values.filter {
+                $0.organizationName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == query
+            }.count
+        }
     }
 
     private static let cache = Cache()
@@ -183,6 +193,13 @@ struct LobbyistService {
         let result = await buildCommunications(lastName: lastName, firstName: firstName)
         await cache.store(result, key: key)
         return result
+    }
+
+    /// Returns the number of OCL communications for `organizationName` if the dataset is already
+    /// loaded, or nil when it has not yet been fetched. Used for witness cross-reference badges
+    /// to avoid triggering a 22 MB download solely for badge population.
+    static func communicationCount(forOrganization name: String) async -> Int? {
+        await cache.communicationCount(forOrganization: name)
     }
 
     /// Convenience overload that extracts name components from a ParliamentMember.
