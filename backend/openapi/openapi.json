@@ -262,6 +262,142 @@
         }
       }
     },
+    "/api/v1/members/{id}/lobbying-exposure": {
+      "get": {
+        "tags": ["Lobbying", "Members"],
+        "summary": "Get MP lobbying exposure",
+        "description": "Returns the precomputed Office of the Commissioner of Lobbying exposure summary, subject breakdown, and paged communication timeline for one MP.",
+        "operationId": "getMemberLobbyingExposure",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" },
+          {
+            "name": "parliament",
+            "in": "query",
+            "required": true,
+            "description": "Parliament number for the exposure cohort.",
+            "schema": { "type": "integer", "minimum": 1, "example": 45 }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "description": "Timeline and summary window. Defaults to 3m.",
+            "schema": { "type": "string", "enum": ["30d", "3m", "12m", "all"], "default": "3m" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "One-based timeline page number. Timeline pages are fixed at 50 rows.",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MP lobbying exposure summary and paged communication timeline",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MPLobbyingExposureResponse" },
+                "examples": {
+                  "populated": {
+                    "value": {
+                      "member_id": "278707",
+                      "parliament": 45,
+                      "window": "3m",
+                      "page": 1,
+                      "per_page": 50,
+                      "total": 1,
+                      "pages": 1,
+                      "summary": {
+                        "member_id": "278707",
+                        "parliament": 45,
+                        "quarter_start": "2026-04-01T00:00:00Z",
+                        "window": "3m",
+                        "total_communication_count": 1,
+                        "unique_organizations_count": 1,
+                        "most_frequent_subject_matter": "Housing",
+                        "top_organizations": [
+                          { "name": "Example Housing Association", "sector": "Housing", "communication_count": 1 }
+                        ],
+                        "trend_vs_previous_parliament": {
+                          "current_parliament": 1,
+                          "previous_parliament": 0,
+                          "delta": 1
+                        },
+                        "party_average_communications": 1.25,
+                        "national_average_communications": 0.75,
+                        "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                        "updated_at": "2026-06-30T12:00:00Z"
+                      },
+                      "subject_breakdown": [
+                        { "subject_matter": "Housing", "communication_count": 1 }
+                      ],
+                      "timeline": [
+                        {
+                          "communication_id": "558142",
+                          "date": "2026-05-20",
+                          "organization_name": "Example Housing Association",
+                          "organization_sector": "Housing",
+                          "subject_matter": "Housing",
+                          "communication_type": "meeting",
+                          "bill_cross_reference": {
+                            "bill_number": "C-1",
+                            "bill_title": "Example Bill",
+                            "url": "https://www.parl.ca/legisinfo/en/bill/45-1/c-1",
+                            "mapping_confidence": 0.93
+                          },
+                          "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                          "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                        }
+                      ],
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "member_id": "278707",
+                      "parliament": 45,
+                      "window": "all",
+                      "page": 1,
+                      "per_page": 50,
+                      "total": 0,
+                      "pages": 0,
+                      "summary": {
+                        "member_id": "278707",
+                        "parliament": 45,
+                        "quarter_start": "2026-04-01T00:00:00Z",
+                        "window": "all",
+                        "total_communication_count": 0,
+                        "unique_organizations_count": 0,
+                        "top_organizations": [],
+                        "trend_vs_previous_parliament": {
+                          "current_parliament": 0,
+                          "previous_parliament": 0,
+                          "delta": 0
+                        },
+                        "party_average_communications": 0,
+                        "national_average_communications": 0,
+                        "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                        "updated_at": "2026-06-30T12:00:00Z"
+                      },
+                      "subject_breakdown": [],
+                      "timeline": [],
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/members/{id}/speeches": {
       "get": {
         "tags": ["Members"],
@@ -1333,6 +1469,137 @@
           "province": { "type": "string" },
           "party": { "type": "string" },
           "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MPLobbyingExposureResponse": {
+        "type": "object",
+        "required": [
+          "member_id",
+          "parliament",
+          "window",
+          "page",
+          "per_page",
+          "total",
+          "pages",
+          "summary",
+          "subject_breakdown",
+          "timeline",
+          "citation",
+          "source_url"
+        ],
+        "properties": {
+          "member_id": { "type": "string" },
+          "parliament": { "type": "integer" },
+          "window": { "type": "string", "enum": ["30d", "3m", "12m", "all"] },
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer", "const": 50 },
+          "total": { "type": "integer" },
+          "pages": { "type": "integer" },
+          "summary": { "$ref": "#/components/schemas/MPLobbyingSummary" },
+          "subject_breakdown": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MPLobbyingSubjectDistribution" }
+          },
+          "timeline": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MPLobbyingTimelineEntry" }
+          },
+          "citation": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MPLobbyingSummary": {
+        "type": "object",
+        "required": [
+          "member_id",
+          "parliament",
+          "quarter_start",
+          "window",
+          "total_communication_count",
+          "unique_organizations_count",
+          "top_organizations",
+          "trend_vs_previous_parliament",
+          "party_average_communications",
+          "national_average_communications",
+          "citation",
+          "updated_at"
+        ],
+        "properties": {
+          "member_id": { "type": "string" },
+          "parliament": { "type": "integer" },
+          "quarter_start": { "type": "string", "format": "date-time" },
+          "window": { "type": "string", "enum": ["30d", "3m", "12m", "all"] },
+          "total_communication_count": { "type": "integer" },
+          "unique_organizations_count": { "type": "integer" },
+          "most_frequent_subject_matter": { "type": "string" },
+          "top_organizations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TopLobbyingOrganization" }
+          },
+          "trend_vs_previous_parliament": { "$ref": "#/components/schemas/MPLobbyingTrend" },
+          "party_average_communications": { "type": "number", "format": "double" },
+          "national_average_communications": { "type": "number", "format": "double" },
+          "citation": { "type": "string" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TopLobbyingOrganization": {
+        "type": "object",
+        "required": ["name", "communication_count"],
+        "properties": {
+          "name": { "type": "string" },
+          "sector": { "type": "string" },
+          "communication_count": { "type": "integer" }
+        }
+      },
+      "MPLobbyingTrend": {
+        "type": "object",
+        "required": ["current_parliament", "previous_parliament", "delta"],
+        "properties": {
+          "current_parliament": { "type": "integer" },
+          "previous_parliament": { "type": "integer" },
+          "delta": { "type": "integer" }
+        }
+      },
+      "MPLobbyingSubjectDistribution": {
+        "type": "object",
+        "required": ["subject_matter", "communication_count"],
+        "properties": {
+          "subject_matter": { "type": "string" },
+          "communication_count": { "type": "integer" }
+        }
+      },
+      "MPLobbyingTimelineEntry": {
+        "type": "object",
+        "required": [
+          "communication_id",
+          "date",
+          "organization_name",
+          "subject_matter",
+          "communication_type",
+          "citation",
+          "source_url"
+        ],
+        "properties": {
+          "communication_id": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "organization_name": { "type": "string" },
+          "organization_sector": { "type": "string" },
+          "subject_matter": { "type": "string" },
+          "communication_type": { "type": "string", "enum": ["meeting", "written"] },
+          "bill_cross_reference": { "$ref": "#/components/schemas/BillCrossReference" },
+          "citation": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "BillCrossReference": {
+        "type": "object",
+        "required": ["bill_number", "url", "mapping_confidence"],
+        "properties": {
+          "bill_number": { "type": "string" },
+          "bill_title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "mapping_confidence": { "type": "number", "format": "double" }
         }
       },
       "MemberVotesResponse": {

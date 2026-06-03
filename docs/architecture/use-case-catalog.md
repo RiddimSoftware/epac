@@ -33,6 +33,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MinisterTenure` | Date-window value for a minister's cabinet service, used when portfolio boundaries are incomplete. |
 | `LobbyingByPortfolio` | Backend-only minister lobbying response grouped by portfolio period or cabinet tenure fallback. |
 | `CabinetLobbyingSummary` | Backend-only cabinet overview row ranking a minister by OCL communication count. |
+| `MPLobbyingSummary` | Backend-only precomputed MP lobbying exposure summary for a parliament, quarter, and window. |
+| `LobbyingTimelineEntry` | Backend-only source-cited OCL communication row attributed to an MP for exposure timelines. |
+| `LobbyingSubjectDistribution` | Backend-only per-subject communication count row for MP lobbying exposure charts. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -81,6 +84,8 @@ will build the missing artifact.
 | `ManifestWriter` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Write the search-index manifest pointer. |
 | `LobbyistOrganizationRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Persist and load lobbyist organization aggregates independent of HTTP delivery. |
 | `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Read OCL registration and communication source rows, including seeded aliases and pending alias observations. |
+| `MPLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load precomputed MP lobbying summaries and paged timeline rows; refresh timeline and quarterly summary read models from OCL communication records. |
+| `LobbyingSubjectDistributionQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load the all-subject communication breakdown for an MP lobbying exposure response. |
 | `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
@@ -426,6 +431,28 @@ Current implementation:
 ```
 
 > **Boundary rule:** Ranking and empty-overview behavior live in the use case. HTTP query parsing, DPOH row matching, and persistent run-history writes stay in adapters.
+
+---
+
+### LoadMPLobbyingExposure
+
+```
+Actor: Backend API caller / iOS MP profile
+Goal: Load one MP's precomputed OCL lobbying exposure summary, all-subject distribution, and paged communication timeline.
+Inputs: Member ID, parliament number, exposure window (`30d`, `3m`, `12m`, or `all`), timeline page.
+Outputs: MPLobbyingExposureResult with summary, subject breakdown, 50-row timeline page, OCL citation, and source URL.
+Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, MemberID.
+Ports: backend Go: `MPLobbyingRepository`, `LobbyingSubjectDistributionQuery`.
+Primary adapters: lobbying Lambda (GET /api/v1/members/{id}/lobbying-exposure), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables.
+Current implementation:
+  backend/lobbying/main.go
+  backend/lobbying/application/mp_exposure.go
+  backend/lobbying/domain/mp_exposure.go
+  backend/lobbying/repository/mp_exposure_postgres.go
+  backend/migrations/013_mp_lobbying_exposure.sql
+```
+
+> **Boundary rule:** The use case computes request policy such as allowed windows, 50-row paging, empty responses, citations, and low-confidence bill-link suppression. The Postgres adapter owns read-model SQL, quarterly summary refresh, and table shape.
 
 ---
 

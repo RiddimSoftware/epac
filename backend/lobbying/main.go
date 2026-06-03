@@ -13,9 +13,11 @@ import (
 	"strconv"
 	"strings"
 
+	"epac/lobbying/application"
 	ocltopicmap "epac/lobbying/internal/adapter/ocltopicmap"
 	postgresadapter "epac/lobbying/internal/adapter/postgres"
 	"epac/lobbying/internal/usecase"
+	lobbyrepo "epac/lobbying/repository"
 	"epac/observability"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -37,15 +39,23 @@ type cabinetOverviewExecutor interface {
 	Execute(context.Context, usecase.CabinetLobbyingOverviewInput) (usecase.CabinetLobbyingOverviewResult, error)
 }
 
+type mpLobbyingExposureExecutor interface {
+	Execute(context.Context, application.LoadMPLobbyingExposureInput) (application.MPLobbyingExposureResult, error)
+}
+
 type closeFunc func(context.Context)
 
 var newByTopicService = newProductionByTopicService
 var newMinisterPortfolioService = newProductionMinisterPortfolioService
 var newCabinetOverviewService = newProductionCabinetOverviewService
+var newMPLobbyingExposureService = newProductionMPLobbyingExposureService
 
 func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	if isOrganizationRequest(req) {
 		return handleOrganizationRequest(ctx, req)
+	}
+	if memberID, ok := exposureMemberIDFromRequest(req); ok {
+		return handleMPLobbyingExposure(ctx, req, memberID)
 	}
 	if memberID := ministerMemberIDFromRequest(req); memberID != "" {
 		return handleMinisterPortfolio(ctx, req, memberID)
@@ -100,6 +110,32 @@ func handleMinisterPortfolio(ctx context.Context, _ events.APIGatewayV2HTTPReque
 		slog.Error("minister lobbying by-portfolio request failed", "error", err, "member_id", memberID)
 		return jsonError(http.StatusInternalServerError, "internal error"), nil
 	}
+	body, err := json.Marshal(result)
+	if err != nil {
+		return jsonError(http.StatusInternalServerError, "marshal error"), nil
+	}
+	return jsonResponse(http.StatusOK, body), nil
+}
+
+func handleMPLobbyingExposure(ctx context.Context, req events.APIGatewayV2HTTPRequest, memberID string) (events.APIGatewayV2HTTPResponse, error) {
+	input, err := parseMPLobbyingExposureInput(memberID, req.QueryStringParameters)
+	if err != nil {
+		return jsonError(http.StatusBadRequest, err.Error()), nil
+	}
+
+	service, closeService, err := newMPLobbyingExposureService(ctx)
+	if err != nil {
+		slog.Error("MP lobbying exposure service initialization failed", "error", err)
+		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+	}
+	defer closeService(ctx)
+
+	result, err := service.Execute(ctx, input)
+	if err != nil {
+		slog.Error("MP lobbying exposure request failed", "error", err, "member_id", input.MemberID, "parliament", input.Parliament)
+		return jsonError(http.StatusInternalServerError, "internal error"), nil
+	}
+
 	body, err := json.Marshal(result)
 	if err != nil {
 		return jsonError(http.StatusInternalServerError, "marshal error"), nil
@@ -177,6 +213,22 @@ func newProductionCabinetOverviewService(ctx context.Context) (cabinetOverviewEx
 	}, nil
 }
 
+func newProductionMPLobbyingExposureService(ctx context.Context) (mpLobbyingExposureExecutor, closeFunc, error) {
+	conn, err := postgresadapter.Connect(ctx)
+	if err != nil {
+		return nil, noopClose, err
+	}
+	repo := lobbyrepo.NewPostgresMPLobbyingRepository(conn)
+	service, err := application.NewLoadMPLobbyingExposure(repo, repo)
+	if err != nil {
+		_ = conn.Close(ctx)
+		return nil, noopClose, err
+	}
+	return service, func(closeCtx context.Context) {
+		_ = conn.Close(closeCtx)
+	}, nil
+}
+
 type slogLowConfidenceLogger struct{}
 
 func (slogLowConfidenceLogger) WarnLowConfidenceMapping(ctx context.Context, mapping usecase.OCLTopicMapping) {
@@ -248,6 +300,54 @@ func parsePositiveInt(raw string, defaultValue int, name string) (int, error) {
 		return 0, fmt.Errorf("%s must be an integer greater than or equal to 1", name)
 	}
 	return value, nil
+}
+
+func parseRequiredPositiveInt(params map[string]string, name string) (int, error) {
+	if strings.TrimSpace(params[name]) == "" {
+		return 0, fmt.Errorf("%s is required", name)
+	}
+	return parsePositiveInt(params[name], 0, name)
+}
+
+func parseMPLobbyingExposureInput(memberID string, params map[string]string) (application.LoadMPLobbyingExposureInput, error) {
+	memberID = strings.TrimSpace(memberID)
+	if memberID == "" {
+		return application.LoadMPLobbyingExposureInput{}, fmt.Errorf("missing member id")
+	}
+	parliament, err := parseRequiredPositiveInt(params, "parliament")
+	if err != nil {
+		return application.LoadMPLobbyingExposureInput{}, err
+	}
+	page, err := parsePositiveInt(params["page"], 1, "page")
+	if err != nil {
+		return application.LoadMPLobbyingExposureInput{}, err
+	}
+	window, err := application.ParseLobbyingWindow(params["window"])
+	if err != nil {
+		return application.LoadMPLobbyingExposureInput{}, err
+	}
+	return application.LoadMPLobbyingExposureInput{
+		MemberID:   memberID,
+		Parliament: parliament,
+		Window:     window,
+		Page:       page,
+	}, nil
+}
+
+func exposureMemberIDFromRequest(req events.APIGatewayV2HTTPRequest) (string, bool) {
+	path := requestPath(req)
+	for _, prefix := range []string{"/api/v1/members/", "/members/"} {
+		if strings.HasPrefix(path, prefix) && strings.HasSuffix(path, "/lobbying-exposure") {
+			for _, key := range []string{"member_id", "memberId", "id"} {
+				if memberID := strings.TrimSpace(req.PathParameters[key]); memberID != "" {
+					return unescapePathPart(memberID), true
+				}
+			}
+			memberID := strings.TrimSuffix(strings.TrimPrefix(path, prefix), "/lobbying-exposure")
+			return unescapePathPart(memberID), true
+		}
+	}
+	return "", false
 }
 
 func slugFromRequest(req events.APIGatewayV2HTTPRequest) string {

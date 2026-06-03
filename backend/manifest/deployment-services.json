@@ -658,6 +658,14 @@
             {
               "method": "GET",
               "path": "/lobbying/organizations/{id}"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}/lobbying-exposure"
+            },
+            {
+              "method": "GET",
+              "path": "/members/{memberId}/lobbying-exposure"
             }
           ],
           "production": [
@@ -700,6 +708,14 @@
             {
               "method": "GET",
               "path": "/lobbying/organizations/{id}"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}/lobbying-exposure"
+            },
+            {
+              "method": "GET",
+              "path": "/members/{memberId}/lobbying-exposure"
             }
           ]
         }
