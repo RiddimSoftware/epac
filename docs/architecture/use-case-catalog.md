@@ -36,9 +36,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MinisterTenure` | Date-window value for a minister's cabinet service, used when portfolio boundaries are incomplete. |
 | `LobbyingByPortfolio` | Backend-only minister lobbying response grouped by portfolio period or cabinet tenure fallback. |
 | `CabinetLobbyingSummary` | Backend-only cabinet overview row ranking a minister by OCL communication count. |
-| `MPLobbyingSummary` | Backend-only precomputed MP lobbying exposure summary for a parliament, quarter, and window. |
-| `LobbyingTimelineEntry` | Backend-only source-cited OCL communication row attributed to an MP for exposure timelines. |
-| `LobbyingSubjectDistribution` | Backend-only per-subject communication count row for MP lobbying exposure charts. |
+| `MPLobbyingSummary` | Precomputed MP lobbying exposure summary for a parliament, quarter, and window. |
+| `LobbyingTimelineEntry` | Source-cited OCL communication row attributed to an MP for exposure timelines. |
+| `LobbyingSubjectDistribution` | Per-subject communication count row for MP lobbying exposure charts. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -98,6 +98,7 @@ will build the missing artifact.
 | `BillSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read bill subject tags and the latest bill reading anchor used for bill-level lobbying context. |
 | `BillLobbyingCommunicationsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read OCL communication rows matching mapped bill subject codes within a date window. |
 | `BillLobbyingContextRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillLobbyingContextRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillLobbyingContextRepository.swift`. | Load bill-level lobbying context summaries from the backend lobbying endpoint. |
+| `MPLobbyingExposureRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/MPLobbyingExposureRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendMPLobbyingExposureRepository.swift`. | Load MP lobbying exposure summaries, subject breakdowns, and paged OCL communication timelines from the backend endpoint. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
 | `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
@@ -482,9 +483,14 @@ Goal: Load one MP's precomputed OCL lobbying exposure summary, all-subject distr
 Inputs: Member ID, parliament number, exposure window (`30d`, `3m`, `12m`, or `all`), timeline page.
 Outputs: MPLobbyingExposureResult with summary, subject breakdown, 50-row timeline page, OCL citation, and source URL.
 Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, MemberID.
-Ports: backend Go: `MPLobbyingRepository`, `LobbyingSubjectDistributionQuery`.
-Primary adapters: lobbying Lambda (GET /api/v1/members/{id}/lobbying-exposure), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables.
+Ports: backend Go: `MPLobbyingRepository`, `LobbyingSubjectDistributionQuery`; iOS Swift: `MPLobbyingExposureRepository`.
+Primary adapters: lobbying Lambda (GET /api/v1/members/{id}/lobbying-exposure), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables, iOS BackendMPLobbyingExposureRepository, LobbyingView.
 Current implementation:
+  ios/epac/Application/LoadMPLobbyingExposure.swift
+  ios/epac/Domain/Entities/MPLobbyingExposure.swift
+  ios/epac/Domain/Ports/MPLobbyingExposureRepository.swift
+  ios/epac/Data/Repositories/BackendMPLobbyingExposureRepository.swift
+  ios/epac/Views/Members/LobbyingView.swift
   backend/lobbying/main.go
   backend/lobbying/application/mp_exposure.go
   backend/lobbying/domain/mp_exposure.go

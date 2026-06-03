@@ -20,7 +20,6 @@ private enum MemberProfileLayout {
 	static let avatarTopPadding: CGFloat = 20
 	static let inlineSpacing = EpacSpacing.s
 	static let loadingScale = 0.8
-	static let lobbyingPreviewLimit = 3
 	static let compactTextSpacing: CGFloat = 3
 	static let rowVerticalPadding = EpacSpacing.xxs
 	static let sectionTopPadding = EpacSpacing.xs
@@ -60,10 +59,7 @@ struct MemberProfileView: View {
 	@State private var pickerSearch = ""
 	@State private var showVotingHistory = false
 	@State private var followStore = MemberFollowStore.shared
-	@State private var showLobbying = false
-	@State private var lobbyingComms: [LobbyistCommunication] = []
 	@State private var showCopiedConfirmation = false
-	@State private var lobbyingLoaded = false
 	@State private var showEthics = false
 	@State private var shareItem: ActivityItem?
 
@@ -218,73 +214,11 @@ struct MemberProfileView: View {
 					}
 					.foregroundStyle(.primary)
 
-					// MARK: Lobbying section
+					// MARK: Lobbying tab
+					LobbyingView(memberID: member.memberID)
+
 					if cabinetPosition != nil {
 						MinisterLobbyingTabView(memberID: member.memberID)
-					} else {
-						DisclosureGroup(
-							isExpanded: $showLobbying,
-							content: {
-								if lobbyingComms.isEmpty && lobbyingLoaded {
-									Text(NSLocalizedString("lobbying.empty.title", comment: ""))
-										.font(.caption)
-										.foregroundStyle(.secondary)
-										.padding(.vertical, MemberProfileLayout.statCardVerticalPadding)
-								} else {
-									ForEach(lobbyingComms.prefix(MemberProfileLayout.lobbyingPreviewLimit)) { comm in
-										VStack(alignment: .leading, spacing: MemberProfileLayout.compactTextSpacing) {
-											Text(comm.organizationName)
-												.font(.subheadline)
-												.fixedSize(horizontal: false, vertical: true)
-											if !comm.subjectMatter.isEmpty {
-												Text(comm.subjectMatter)
-													.font(.caption2)
-													.foregroundStyle(.secondary)
-													.fixedSize(horizontal: false, vertical: true)
-											}
-											if let d = comm.communicationDate {
-												Text(d, style: .date)
-													.font(.caption2)
-													.foregroundStyle(.secondary)
-											}
-											LobbyingSourceCitationView(url: comm.registryURL)
-										}
-										.padding(.vertical, MemberProfileLayout.rowVerticalPadding)
-									}
-									if !lobbyingComms.isEmpty {
-										NavigationLink(destination: LobbyingView(member: member)) {
-											Text(String(format: NSLocalizedString("lobbying.seeAll", comment: ""), lobbyingComms.count))
-												.font(.caption)
-												.foregroundStyle(.tint)
-										}
-										.accessibilityIdentifier("accountability-lobbying-link")
-									}
-								}
-							},
-							label: {
-								HStack {
-									Image(systemName: "person.fill.badge.plus")
-										.foregroundStyle(.tint)
-									Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
-										.font(.subheadline)
-										.fontWeight(.semibold)
-								}
-							}
-						)
-						.padding()
-						.background(Color.appSurface)
-						.cornerRadius(MemberProfileLayout.cardCornerRadius)
-						.onChange(of: showLobbying) { _, isExpanded in
-							if isExpanded && !lobbyingLoaded {
-								// Capture primitive name values on the main actor before async hop.
-								let ln = member.lastName
-								let fn = member.firstName
-								Task {
-									lobbyingComms = await LobbyistService.fetchCommunications(lastName: ln, firstName: fn)
-									lobbyingLoaded = true
-								}
-							}
-						}
 					}
 				}
 
@@ -358,7 +292,6 @@ struct MemberProfileView: View {
 		}
 		.accessibilityIdentifier("mp-profile-scroll")
 		.padding()
-		.animation(.none, value: showLobbying)
 		.animation(.none, value: showEthics)
 		.task(id: member.memberID) {
 			try? await fetch.downloadMemberContact(identifier: member.persistentModelID)
