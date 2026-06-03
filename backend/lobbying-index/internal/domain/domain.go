@@ -123,3 +123,28 @@ type TopicMapping struct {
 	EpacTopicSlug string  `json:"epac_topic_slug"`
 	Confidence    float64 `json:"confidence"`
 }
+
+// CabinetPortfolioPeriod is one minister + portfolio row scraped from pm.gc.ca.
+type CabinetPortfolioPeriod struct {
+	MinisterName     string
+	FirstName        string
+	LastName         string
+	PortfolioName    string
+	StartDate        *time.Time
+	EndDate          *time.Time
+	ParliamentNumber int
+	SourceURL        string
+}
+
+// CabinetMandateTopic is one epac topic inferred from the current mandate letter.
+type CabinetMandateTopic struct {
+	EpacTopicSlug string
+	Confidence    float64
+	SourceURL     string
+}
+
+// CabinetSnapshot is the current Cabinet plus mandate-letter-derived topics.
+type CabinetSnapshot struct {
+	PortfolioPeriods []CabinetPortfolioPeriod
+	MandateTopics    []CabinetMandateTopic
+}

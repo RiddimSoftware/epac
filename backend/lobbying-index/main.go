@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	cabinet "epac/lobbying-index/internal/adapter/cabinet"
 	"epac/lobbying-index/internal/adapter/legisinfo"
 	"epac/lobbying-index/internal/adapter/ocl"
 	mycommons "epac/lobbying-index/internal/adapter/ourcommons"
@@ -48,6 +49,7 @@ func run(ctx context.Context) error {
 	fetcher := ocl.NewFetcher(ocl.WithHTTPClient(client), ocl.WithUserAgent(defaultUserAgent))
 	memberSource := mycommons.NewFetcher(mycommons.WithHTTPClient(client), mycommons.WithUserAgent(defaultUserAgent))
 	subjectSource := subjects.NewFetcher(subjects.WithHTTPClient(client), subjects.WithUserAgent(defaultUserAgent))
+	cabinetSource := cabinet.NewFetcher(cabinet.WithHTTPClient(client), cabinet.WithUserAgent(defaultUserAgent))
 	writer := sqlite.NewWriter()
 
 	ingestUC, err := usecase.NewIngestOCLData(
@@ -81,6 +83,17 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("build organization tables: %w", err)
 	}
 	printOrgResult(orgResult)
+
+	ministerUC, err := usecase.NewPreBakeMinisterCommunications(cabinetSource, aggregator, dbPath, parliament)
+	if err != nil {
+		return err
+	}
+	ministerResult, err := ministerUC.Execute(ctx)
+	if err != nil {
+		return fmt.Errorf("pre-bake minister communications: %w", err)
+	}
+	printMinisterResult(ministerResult)
+	printMinisterWarnings(ministerResult)
 
 	topicMap, err := loadTopicMap()
 	if err != nil {
@@ -171,6 +184,32 @@ func printBillResult(result usecase.BuildBillContextTablesResult) {
 		"database_path": result.DatabasePath,
 		"bill_count":    result.BillCount,
 	})
+}
+
+func printMinisterResult(result usecase.PreBakeMinisterCommunicationsResult) {
+	logJSON(map[string]any{
+		"pipeline":                         "lobbying-index",
+		"event":                            "prebake_minister_communications_completed",
+		"database_path":                    result.DatabasePath,
+		"ministers_processed":              result.MinistersProcessed,
+		"portfolio_rows":                   result.PortfolioRows,
+		"mandate_rows":                     result.MandateRows,
+		"communication_rows":               result.CommunicationRows,
+		"member_resolution_miss_count":     result.MemberResolutionMissCount,
+		"ministers_without_communications": result.MinistersWithoutCommunications,
+	})
+}
+
+func printMinisterWarnings(result usecase.PreBakeMinisterCommunicationsResult) {
+	for _, name := range result.UnresolvedMinisters {
+		logJSON(map[string]any{
+			"pipeline":      "lobbying-index",
+			"level":         "warn",
+			"event":         "minister_member_resolution_missing",
+			"minister_name": name,
+			"message":       "could not resolve member_id from members table; wrote portfolio rows with member_id=''",
+		})
+	}
 }
 
 func logJSON(payload map[string]any) {

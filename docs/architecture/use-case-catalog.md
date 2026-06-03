@@ -120,6 +120,8 @@ to the issue that will build the missing artifact.
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 | `CohortStatisticsRepository` | backend Python | outbound | Implemented: `backend/lobbying/cohort_averages.py`; adapter: `PostgresCohortStatisticsRepository`. | Read current MP membership and per-MP lobbying totals, then persist and read precomputed cohort averages. |
 | `MPLobbyingAggregator` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/mp_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go`. | Populate MP lobbying timeline, summary, subject-breakdown, and cohort-average read tables in the build-time SQLite artifact. |
+| `CabinetSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/minister_prebake.go`; adapter: `backend/lobbying-index/internal/adapter/cabinet/fetcher.go`. | Scrape the current Cabinet roster and current mandate-letter topics from pm.gc.ca into typed builder rows. |
+| `MinisterTableWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/minister_prebake.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go`. | Resolve minister member IDs and pre-bake minister portfolio, mandate-topic, and denormalized communication tables in the build-time SQLite artifact. |
 
 ## Use Cases
 
@@ -810,6 +812,26 @@ Current implementation:
 ```
 
 > **Boundary rule:** Use-case policy must not import net/http or parl.ca-specific JSON structs — these belong in the legisinfo adapter.
+
+---
+
+### PreBakeMinisterCommunications
+
+```
+Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Goal: Scrape the current Cabinet, resolve each minister to a House member ID, and pre-bake minister lobbying tables in the build-time SQLite artifact.
+Inputs: pm.gc.ca Cabinet page, pm.gc.ca mandate-letter page/article, build-time SQLite database containing OCL communications and members, parliament number.
+Outputs: `minister_portfolio_periods`, `minister_mandate_topic_mappings`, and `minister_communications`.
+Entities / values: Minister, Portfolio, MemberID, EpacTopicSlug.
+Ports: `CabinetSource`, `MinisterTableWriter`.
+Primary adapters: backend/lobbying-index/main.go, cabinet.Fetcher, sqlite minister prebake writer.
+Current implementation:
+  backend/lobbying-index/internal/usecase/minister_prebake.go
+  backend/lobbying-index/internal/adapter/cabinet/fetcher.go
+  backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go
+```
+
+> **Boundary rule:** The use case owns the named builder operation and the `CabinetSource` / `MinisterTableWriter` ports. pm.gc.ca HTML parsing, keyword inference from mandate-letter text, SQLite DDL, and the DPOH fuzzy-name join stay in adapters.
 
 ---
 
