@@ -1,6 +1,16 @@
 name: Hansard Search Reindex
 
 on:
+  # Twice-daily schedule to keep Hansard search current against ourcommons.ca.
+  # Mon–Thu sittings: XML published overnight, typically midnight–4am EDT (04:00–08:00 UTC).
+  # The 12:00 UTC run (8am EDT) safely catches all of these every morning.
+  # Friday sittings: XML published ~9pm EDT (01:00 UTC Sat).
+  # The 03:00 UTC run (11pm EDT) picks those up the same night so Saturday
+  # morning searchers see the latest debates.
+  # Scheduled runs always target production; use workflow_dispatch for staging.
+  schedule:
+    - cron: '0 12 * * *'  # 08:00 EDT — primary morning run
+    - cron: '0 3 * * *'   # 11:00 PM EDT — overnight run, catches Friday publications
   workflow_dispatch:
     inputs:
       environment:
@@ -20,7 +30,7 @@ on:
         type: string
 
 concurrency:
-  group: hansard-search-reindex-${{ inputs.environment }}
+  group: hansard-search-reindex-${{ inputs.environment || 'production' }}
   cancel-in-progress: false
 
 permissions:
@@ -31,8 +41,8 @@ jobs:
   reindex:
     runs-on: ubuntu-latest
     env:
-      ENVIRONMENT: ${{ inputs.environment }}
-      FUNCTION_NAME: epac-hansard-search-index-${{ inputs.environment }}
+      ENVIRONMENT: ${{ inputs.environment || 'production' }}
+      FUNCTION_NAME: epac-hansard-search-index-${{ inputs.environment || 'production' }}
       PARLIAMENT_NUMBER: ${{ inputs.parliament_number }}
       SESSION_NUMBER: ${{ inputs.session_number }}
     steps:
@@ -41,7 +51,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN || secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          role-to-assume: ${{ (inputs.environment || 'production') == 'production' && secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN || secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
       - name: Apply optional session override
