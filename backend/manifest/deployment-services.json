@@ -626,6 +626,22 @@
             {
               "method": "GET",
               "path": "/lobbying/by-topic/{slug}"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/ministers/{member_id}/lobbying-by-portfolio"
+            },
+            {
+              "method": "GET",
+              "path": "/ministers/{member_id}/lobbying-by-portfolio"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/cabinet/lobbying-overview"
+            },
+            {
+              "method": "GET",
+              "path": "/cabinet/lobbying-overview"
             }
           ],
           "production": [
@@ -636,6 +652,22 @@
             {
               "method": "GET",
               "path": "/lobbying/by-topic/{slug}"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/ministers/{member_id}/lobbying-by-portfolio"
+            },
+            {
+              "method": "GET",
+              "path": "/ministers/{member_id}/lobbying-by-portfolio"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/cabinet/lobbying-overview"
+            },
+            {
+              "method": "GET",
+              "path": "/cabinet/lobbying-overview"
             }
           ]
         }

@@ -40,6 +40,30 @@ func TestCodesForTopicMiss(t *testing.T) {
 	}
 }
 
+func TestTopicMappingsForOCLCodeReturnsCopy(t *testing.T) {
+	source, err := NewSource([]byte(`[
+		{"ocl_code":"SMT-18","epac_topic_slug":"healthcare","confidence":1.0},
+		{"ocl_code":"SMT-18","epac_topic_slug":"publichealth","confidence":0.83}
+	]`))
+	if err != nil {
+		t.Fatalf("NewSource: %v", err)
+	}
+
+	mappings := source.TopicMappingsForOCLCode("18")
+	if len(mappings) != 2 {
+		t.Fatalf("len(mappings) = %d, want 2", len(mappings))
+	}
+	if mappings[0].EpacTopicSlug != "healthcare" || mappings[1].EpacTopicSlug != "publichealth" {
+		t.Fatalf("unexpected mapping order: %#v", mappings)
+	}
+
+	mappings[0].EpacTopicSlug = "mutated"
+	again := source.TopicMappingsForOCLCode("SMT-18")
+	if again[0].EpacTopicSlug != "healthcare" {
+		t.Fatalf("second lookup mutated: %#v", again)
+	}
+}
+
 func TestNewSourceRejectsInvalidConfidence(t *testing.T) {
 	if _, err := NewSource([]byte(`[
 		{"ocl_code":"SMT-44","epac_topic_slug":"housing","confidence":1.2}

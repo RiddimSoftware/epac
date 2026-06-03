@@ -42,6 +42,8 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 		"/api/v1/config",
 		"/api/v1/on-this-day",
 		"/api/v1/lobbying/by-topic/{slug}",
+		"/api/v1/ministers/{member_id}/lobbying-by-portfolio",
+		"/api/v1/cabinet/lobbying-overview",
 		"/health",
 	}
 	for _, path := range requiredPaths {
@@ -66,6 +68,8 @@ func TestRequiredPathsHaveResponseSchemasAndExamples(t *testing.T) {
 		"/api/v1/config",
 		"/api/v1/on-this-day",
 		"/api/v1/lobbying/by-topic/{slug}",
+		"/api/v1/ministers/{member_id}/lobbying-by-portfolio",
+		"/api/v1/cabinet/lobbying-overview",
 		"/health",
 	}
 

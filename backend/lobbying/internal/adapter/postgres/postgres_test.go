@@ -16,3 +16,13 @@ func TestRepositoryListByOCLCodesEmptyMappingsDoesNotRequireConnection(t *testin
 		t.Fatalf("page = %#v, want empty", page)
 	}
 }
+
+func TestRepositoryListMinisterCommunicationsWithoutLastNameDoesNotRequireConnection(t *testing.T) {
+	rows, err := New(nil).ListMinisterCommunications(context.Background(), usecase.MinisterCommunicationsFilter{})
+	if err != nil {
+		t.Fatalf("ListMinisterCommunications: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Fatalf("rows = %#v, want empty", rows)
+	}
+}

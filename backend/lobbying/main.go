@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -28,11 +29,28 @@ type byTopicExecutor interface {
 	Execute(context.Context, string, usecase.Pagination) (usecase.LobbyingByTopicResult, error)
 }
 
+type ministerPortfolioExecutor interface {
+	Execute(context.Context, string) (usecase.MinisterLobbyingByPortfolioResult, error)
+}
+
+type cabinetOverviewExecutor interface {
+	Execute(context.Context, usecase.CabinetLobbyingOverviewInput) (usecase.CabinetLobbyingOverviewResult, error)
+}
+
 type closeFunc func(context.Context)
 
 var newByTopicService = newProductionByTopicService
+var newMinisterPortfolioService = newProductionMinisterPortfolioService
+var newCabinetOverviewService = newProductionCabinetOverviewService
 
 func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	if memberID := ministerMemberIDFromRequest(req); memberID != "" {
+		return handleMinisterPortfolio(ctx, req, memberID)
+	}
+	if isCabinetOverviewRequest(req) {
+		return handleCabinetOverview(ctx, req)
+	}
+
 	slug := slugFromRequest(req)
 	if slug == "" {
 		return jsonError(http.StatusBadRequest, "missing topic slug"), nil
@@ -63,6 +81,54 @@ func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 	return jsonResponse(http.StatusOK, body), nil
 }
 
+func handleMinisterPortfolio(ctx context.Context, _ events.APIGatewayV2HTTPRequest, memberID string) (events.APIGatewayV2HTTPResponse, error) {
+	service, closeService, err := newMinisterPortfolioService(ctx)
+	if err != nil {
+		slog.Error("minister lobbying service initialization failed", "error", err)
+		return jsonError(http.StatusServiceUnavailable, "minister lobbying data unavailable"), nil
+	}
+	defer closeService(ctx)
+
+	result, err := service.Execute(ctx, memberID)
+	if err != nil {
+		if errors.Is(err, usecase.ErrMinisterNotFound) {
+			return jsonError(http.StatusNotFound, "minister not found"), nil
+		}
+		slog.Error("minister lobbying by-portfolio request failed", "error", err, "member_id", memberID)
+		return jsonError(http.StatusInternalServerError, "internal error"), nil
+	}
+	body, err := json.Marshal(result)
+	if err != nil {
+		return jsonError(http.StatusInternalServerError, "marshal error"), nil
+	}
+	return jsonResponse(http.StatusOK, body), nil
+}
+
+func handleCabinetOverview(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	input, err := parseCabinetOverviewInput(req.QueryStringParameters)
+	if err != nil {
+		return jsonError(http.StatusBadRequest, err.Error()), nil
+	}
+
+	service, closeService, err := newCabinetOverviewService(ctx)
+	if err != nil {
+		slog.Error("cabinet lobbying service initialization failed", "error", err)
+		return jsonError(http.StatusServiceUnavailable, "cabinet lobbying data unavailable"), nil
+	}
+	defer closeService(ctx)
+
+	result, err := service.Execute(ctx, input)
+	if err != nil {
+		slog.Error("cabinet lobbying overview request failed", "error", err, "parliament", input.Parliament)
+		return jsonError(http.StatusInternalServerError, "internal error"), nil
+	}
+	body, err := json.Marshal(result)
+	if err != nil {
+		return jsonError(http.StatusInternalServerError, "marshal error"), nil
+	}
+	return jsonResponse(http.StatusOK, body), nil
+}
+
 func newProductionByTopicService(ctx context.Context) (byTopicExecutor, closeFunc, error) {
 	source, err := ocltopicmap.NewSource(topicMapJSON)
 	if err != nil {
@@ -78,6 +144,36 @@ func newProductionByTopicService(ctx context.Context) (byTopicExecutor, closeFun
 	}, nil
 }
 
+func newProductionMinisterPortfolioService(ctx context.Context) (ministerPortfolioExecutor, closeFunc, error) {
+	source, err := ocltopicmap.NewSource(topicMapJSON)
+	if err != nil {
+		return nil, noopClose, err
+	}
+	conn, err := postgresadapter.Connect(ctx)
+	if err != nil {
+		return nil, noopClose, err
+	}
+	repo := postgresadapter.New(conn)
+	logger := slogPortfolioBoundaryGapLogger{recorder: repo}
+	service := usecase.NewLoadMinisterLobbyingByPortfolio(repo, repo, repo, source, logger)
+	return service, func(closeCtx context.Context) {
+		_ = conn.Close(closeCtx)
+	}, nil
+}
+
+func newProductionCabinetOverviewService(ctx context.Context) (cabinetOverviewExecutor, closeFunc, error) {
+	conn, err := postgresadapter.Connect(ctx)
+	if err != nil {
+		return nil, noopClose, err
+	}
+	repo := postgresadapter.New(conn)
+	logger := slogPortfolioBoundaryGapLogger{recorder: repo}
+	service := usecase.NewLoadCabinetLobbyingOverview(repo, repo, logger)
+	return service, func(closeCtx context.Context) {
+		_ = conn.Close(closeCtx)
+	}, nil
+}
+
 type slogLowConfidenceLogger struct{}
 
 func (slogLowConfidenceLogger) WarnLowConfidenceMapping(ctx context.Context, mapping usecase.OCLTopicMapping) {
@@ -87,6 +183,29 @@ func (slogLowConfidenceLogger) WarnLowConfidenceMapping(ctx context.Context, map
 		"epac_topic_slug", mapping.EpacTopicSlug,
 		"confidence", mapping.Confidence,
 	)
+}
+
+type portfolioBoundaryGapRecorder interface {
+	RecordPortfolioBoundaryGap(ctx context.Context, gap usecase.PortfolioBoundaryGap) error
+}
+
+type slogPortfolioBoundaryGapLogger struct {
+	recorder portfolioBoundaryGapRecorder
+}
+
+func (l slogPortfolioBoundaryGapLogger) WarnPortfolioBoundaryGap(ctx context.Context, gap usecase.PortfolioBoundaryGap) {
+	slog.WarnContext(ctx,
+		"portfolio_boundary_gap",
+		"member_id", gap.MemberID,
+		"minister_name", gap.MinisterName,
+		"reason", gap.Reason,
+	)
+	if l.recorder == nil {
+		return
+	}
+	if err := l.recorder.RecordPortfolioBoundaryGap(ctx, gap); err != nil {
+		slog.WarnContext(ctx, "portfolio_boundary_gap_run_history_write_failed", "error", err)
+	}
 }
 
 func noopClose(context.Context) {}
@@ -101,6 +220,20 @@ func parsePagination(params map[string]string) (usecase.Pagination, error) {
 		return usecase.Pagination{}, err
 	}
 	return usecase.NewPagination(page, perPage)
+}
+
+func parseCabinetOverviewInput(params map[string]string) (usecase.CabinetLobbyingOverviewInput, error) {
+	if strings.TrimSpace(params["parliament"]) == "" {
+		return usecase.CabinetLobbyingOverviewInput{}, fmt.Errorf("parliament must be an integer greater than or equal to 1")
+	}
+	parliament, err := parsePositiveInt(params["parliament"], 0, "parliament")
+	if err != nil {
+		return usecase.CabinetLobbyingOverviewInput{}, err
+	}
+	return usecase.CabinetLobbyingOverviewInput{
+		Parliament: parliament,
+		Portfolio:  strings.TrimSpace(params["portfolio"]),
+	}, nil
 }
 
 func parsePositiveInt(raw string, defaultValue int, name string) (int, error) {
@@ -130,6 +263,48 @@ func slugFromRequest(req events.APIGatewayV2HTTPRequest) string {
 		}
 	}
 	return ""
+}
+
+func ministerMemberIDFromRequest(req events.APIGatewayV2HTTPRequest) string {
+	for _, key := range []string{"member_id", "memberId", "id"} {
+		if memberID := strings.TrimSpace(req.PathParameters[key]); memberID != "" {
+			return unescapePathPart(memberID)
+		}
+	}
+
+	path := requestPath(req)
+	for _, prefix := range []string{"/api/v1/ministers/", "/ministers/"} {
+		if !strings.HasPrefix(path, prefix) {
+			continue
+		}
+		remainder := strings.TrimPrefix(path, prefix)
+		if !strings.HasSuffix(remainder, "/lobbying-by-portfolio") {
+			continue
+		}
+		memberID := strings.TrimSuffix(remainder, "/lobbying-by-portfolio")
+		if strings.Contains(memberID, "/") {
+			continue
+		}
+		return unescapePathPart(memberID)
+	}
+	return ""
+}
+
+func isCabinetOverviewRequest(req events.APIGatewayV2HTTPRequest) bool {
+	switch requestPath(req) {
+	case "/api/v1/cabinet/lobbying-overview", "/cabinet/lobbying-overview":
+		return true
+	default:
+		return false
+	}
+}
+
+func requestPath(req events.APIGatewayV2HTTPRequest) string {
+	path := req.RawPath
+	if path == "" {
+		path = req.RequestContext.HTTP.Path
+	}
+	return normalizedPath(path)
 }
 
 func normalizedPath(raw string) string {

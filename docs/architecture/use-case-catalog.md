@@ -28,6 +28,11 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `OCLSubjectMatter` | An Office of the Commissioner of Lobbying subject-matter code used on communication reports and registrations. |
 | `EpacTopicSlug` | The stable epac topic identifier used to group parliamentary and lobbying records. |
 | `LobbyingByTopicResult` | Backend-only paged lobbying result set for an epac topic, including source citation metadata. |
+| `Minister` | Backend-only cabinet minister identity resolved by House of Commons member ID and name. |
+| `Portfolio` | A cabinet portfolio title held by a minister during a known date period. |
+| `MinisterTenure` | Date-window value for a minister's cabinet service, used when portfolio boundaries are incomplete. |
+| `LobbyingByPortfolio` | Backend-only minister lobbying response grouped by portfolio period or cabinet tenure fallback. |
+| `CabinetLobbyingSummary` | Backend-only cabinet overview row ranking a minister by OCL communication count. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -78,6 +83,11 @@ will build the missing artifact.
 | `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Read OCL registration and communication source rows, including seeded aliases and pending alias observations. |
 | `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
+| `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
+| `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
+| `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
+| `OCLTopicMapper` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go`. | Resolve OCL subject-matter codes back to epac topic slugs for mandate-match flagging. |
+| `PortfolioBoundaryGapLogger` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/main.go` with Postgres run-history recording. | Log `portfolio_boundary_gap` warnings when portfolio-period boundaries are not safe to use. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 
 ---
@@ -373,6 +383,49 @@ Current implementation:
 ```
 
 > **Boundary rule:** The use case depends on the `OCLSubjectsSource` and `LobbyingSubjectsRepository` ports. The checked-in mapping JSON, Postgres tables, and Lambda request/response details stay in adapters.
+
+---
+
+### LoadMinisterLobbyingByPortfolio
+
+```
+Actor: Backend API caller / downstream minister-profile clients
+Goal: Load OCL communication reports for one cabinet minister grouped by cabinet portfolio period.
+Inputs: House of Commons member ID.
+Outputs: LobbyingByPortfolio response with portfolio periods, top three organizations per period, communications, and mandate-match flags.
+Entities / values: Minister, Portfolio, MinisterTenure, LobbyingByPortfolio, OCLSubjectMatter, EpacTopicSlug.
+Ports: MinisterRepository, MinisterLobbyingRepository, MandateLetterRepository, OCLTopicMapper, PortfolioBoundaryGapLogger.
+Primary adapters: lobbying Lambda (GET /api/v1/ministers/{member_id}/lobbying-by-portfolio), Postgres minister portfolio tables, OCL communication tables, ocl_topic_map.json source, pipeline_health run-history warning row.
+Current implementation:
+  backend/lobbying/main.go
+  backend/lobbying/internal/usecase/minister_portfolio.go
+  backend/lobbying/internal/adapter/postgres/minister_portfolio.go
+  backend/lobbying/internal/adapter/ocltopicmap/source.go
+  backend/migrations/014_minister_lobbying.sql
+```
+
+> **Boundary rule:** The use case owns portfolio-period grouping, mandate-match flagging, top-organization ranking, and tenure fallback policy. Postgres table names, OCL DPOH columns, checked-in topic mapping JSON, and API Gateway request details stay in adapters.
+
+---
+
+### LoadCabinetLobbyingOverview
+
+```
+Actor: Backend API caller / downstream cabinet dashboards
+Goal: Rank cabinet ministers by total OCL communication reports received during a Parliament.
+Inputs: Parliament number, optional portfolio filter.
+Outputs: CabinetLobbyingSummary rows sorted by communication count, including minister portfolios and top organizations.
+Entities / values: Minister, Portfolio, MinisterTenure, CabinetLobbyingSummary.
+Ports: MinisterRepository, MinisterLobbyingRepository, PortfolioBoundaryGapLogger.
+Primary adapters: lobbying Lambda (GET /api/v1/cabinet/lobbying-overview), Postgres minister portfolio tables, OCL communication tables, pipeline_health run-history warning row.
+Current implementation:
+  backend/lobbying/main.go
+  backend/lobbying/internal/usecase/minister_portfolio.go
+  backend/lobbying/internal/adapter/postgres/minister_portfolio.go
+  backend/migrations/014_minister_lobbying.sql
+```
+
+> **Boundary rule:** Ranking and empty-overview behavior live in the use case. HTTP query parsing, DPOH row matching, and persistent run-history writes stay in adapters.
 
 ---
 
