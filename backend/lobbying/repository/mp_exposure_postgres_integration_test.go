@@ -12,6 +12,7 @@ import (
 	"epac/lobbying/domain"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestPostgresMPLobbyingRepositoryRefreshesAndLoadsExposure(t *testing.T) {
@@ -19,7 +20,7 @@ func TestPostgresMPLobbyingRepositoryRefreshesAndLoadsExposure(t *testing.T) {
 		resetMPLobbyingRows(t, conn)
 		seedMPLobbyingRows(t, conn)
 
-		repo := NewPostgresMPLobbyingRepository(conn)
+		repo := NewPostgresMPLobbyingRepository(&pgxQueryer{conn: conn})
 		err := repo.RefreshMPLobbyingSummaries(context.Background(), application.RefreshMPLobbyingSummariesInput{
 			Parliament:   45,
 			QuarterStart: mustRepoDate(t, "2026-04-01"),
@@ -100,6 +101,66 @@ func TestPostgresMPLobbyingRepositoryRefreshesAndLoadsExposure(t *testing.T) {
 			t.Fatalf("empty timeline page = %#v", emptyPage)
 		}
 	})
+}
+
+type pgxQueryer struct {
+	conn *pgx.Conn
+}
+
+func (q *pgxQueryer) Exec(ctx context.Context, query string, args ...any) (QueryExecResult, error) {
+	tag, err := q.conn.Exec(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return pgxQueryResult{tag: tag}, nil
+}
+
+func (q *pgxQueryer) Query(ctx context.Context, query string, args ...any) (QueryRows, error) {
+	rows, err := q.conn.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &pgxQueryRows{rows: rows}, nil
+}
+
+func (q *pgxQueryer) QueryRow(ctx context.Context, query string, args ...any) QueryRow {
+	return pgxQueryRow{row: q.conn.QueryRow(ctx, query, args...)}
+}
+
+type pgxQueryResult struct {
+	tag pgconn.CommandTag
+}
+
+func (r pgxQueryResult) RowsAffected() (int64, error) {
+	return int64(r.tag.RowsAffected()), nil
+}
+
+type pgxQueryRows struct {
+	rows pgx.Rows
+}
+
+func (r pgxQueryRows) Close() {
+	r.rows.Close()
+}
+
+func (r pgxQueryRows) Next() bool {
+	return r.rows.Next()
+}
+
+func (r pgxQueryRows) Scan(dest ...any) error {
+	return r.rows.Scan(dest...)
+}
+
+func (r pgxQueryRows) Err() error {
+	return r.rows.Err()
+}
+
+type pgxQueryRow struct {
+	row pgx.Row
+}
+
+func (r pgxQueryRow) Scan(dest ...any) error {
+	return r.row.Scan(dest...)
 }
 
 func resetMPLobbyingRows(t *testing.T, conn *pgx.Conn) {

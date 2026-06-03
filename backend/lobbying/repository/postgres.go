@@ -10,14 +10,27 @@ import (
 
 	"epac/lobbying/application"
 	"epac/lobbying/domain"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type Queryer interface {
-	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, query string, args ...any) (QueryExecResult, error)
+	Query(ctx context.Context, query string, args ...any) (QueryRows, error)
+	QueryRow(ctx context.Context, query string, args ...any) QueryRow
+}
+
+type QueryExecResult interface {
+	RowsAffected() (int64, error)
+}
+
+type QueryRow interface {
+	Scan(dest ...any) error
+}
+
+type QueryRows interface {
+	QueryRow
+	Close()
+	Next() bool
+	Err() error
 }
 
 type PostgresLobbyistOrganizationRepository struct {
@@ -384,7 +397,7 @@ func scanOrganization(row interface {
 	return organization, nil
 }
 
-func scanRegistration(rows pgx.Rows) (application.OrganizationRegistration, error) {
+func scanRegistration(rows QueryRows) (application.OrganizationRegistration, error) {
 	var registration application.OrganizationRegistration
 	var effectiveDate sql.NullString
 	var endDate sql.NullString
@@ -410,7 +423,7 @@ func scanRegistration(rows pgx.Rows) (application.OrganizationRegistration, erro
 	return registration, nil
 }
 
-func scanCommunication(rows pgx.Rows) (application.OrganizationCommunication, error) {
+func scanCommunication(rows QueryRows) (application.OrganizationCommunication, error) {
 	var communication application.OrganizationCommunication
 	var communicationDate sql.NullString
 	var subjectMatterRefsJSON []byte
