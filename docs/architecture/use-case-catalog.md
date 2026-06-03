@@ -484,13 +484,11 @@ Inputs: Member ID, parliament number, exposure window (`30d`, `3m`, `12m`, or `a
 Outputs: MPLobbyingExposureResult with summary, subject breakdown, 50-row timeline page, OCL citation, and source URL.
 Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, MemberID.
 Ports: backend Go: `MPLobbyingRepository`, `LobbyingSubjectDistributionQuery`; iOS Swift: `MPLobbyingExposureRepository`.
-Primary adapters: lobbying Lambda (GET /api/v1/members/{id}/lobbying-exposure), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables, iOS BackendMPLobbyingExposureRepository, LobbyingView.
+Primary adapters: member-lobbying Lambda (GET /api/v1/members/{id}/lobbying), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables, iOS MPLobbyingService, MPLobbyingTabView.
 Current implementation:
-  ios/epac/Application/LoadMPLobbyingExposure.swift
-  ios/epac/Domain/Entities/MPLobbyingExposure.swift
-  ios/epac/Domain/Ports/MPLobbyingExposureRepository.swift
-  ios/epac/Data/Repositories/BackendMPLobbyingExposureRepository.swift
-  ios/epac/Views/Members/LobbyingView.swift
+  ios/epac/Domain/MPLobbyingExposure.swift
+  ios/epac/Util/MPLobbyingService.swift
+  ios/epac/Views/Members/MPLobbyingTabView.swift
   backend/lobbying/main.go
   backend/lobbying/application/mp_exposure.go
   backend/lobbying/domain/mp_exposure.go
