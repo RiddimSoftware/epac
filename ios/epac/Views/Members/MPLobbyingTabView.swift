@@ -523,65 +523,70 @@ struct MPLobbyingTabView: View {
 
     @MainActor
     private func load(reset: Bool) async {
-        if isLoading || isLoadingMore { return }
-
-        let subject = selectedSubject?.isEmpty == false ? selectedSubject : nil
-
+        guard !isLoading, !isLoadingMore else { return }
         if reset {
-            isLoading = true
-            errorMessage = nil
-
-            if !autoLoadOnAppear {
-                isLoading = false
-                return
-            }
+            await loadInitial()
         } else {
-            isLoadingMore = true
+            await appendNextPage()
         }
+    }
 
+    @MainActor
+    private func loadInitial() async {
+        guard autoLoadOnAppear else { return }
+        isLoading = true
+        errorMessage = nil
+        let subject = selectedSubject?.isEmpty == false ? selectedSubject : nil
         do {
-            let requestPage = reset ? 1 : (response.page + 1)
-            let newResponse = try await service.fetchExposure(
+            response = try await service.fetchExposure(
                 memberID: member.memberID,
-                page: requestPage,
+                page: 1,
                 range: selectedRange,
                 subject: subject
             )
-
-            if reset {
-                response = newResponse
-            } else {
-                let mergedTimeline = response.timeline + newResponse.timeline
-                response = MPLobbyingExposureResponse(
-                    memberID: newResponse.memberID,
-                    page: newResponse.page,
-                    perPage: newResponse.perPage,
-                    total: newResponse.total,
-                    pages: newResponse.pages,
-                    summary: newResponse.summary,
-                    timeline: mergedTimeline,
-                    subjectDistribution: newResponse.subjectDistribution,
-                    topOrganizations: newResponse.topOrganizations,
-                    cohortComparison: newResponse.cohortComparison,
-                    availableSubjects: newResponse.availableSubjects
-                )
-            }
-
-            if let selectedSubject,
-               !response.availableSubjects.contains(selectedSubject) {
-                self.selectedSubject = nil
-            }
-
-            if reset {
-                isLoading = false
-            } else {
-                isLoadingMore = false
-            }
+            pruneSubjectFilterIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
-            isLoading = false
-            isLoadingMore = false
         }
+        isLoading = false
+    }
+
+    @MainActor
+    private func appendNextPage() async {
+        isLoadingMore = true
+        let subject = selectedSubject?.isEmpty == false ? selectedSubject : nil
+        do {
+            let newResponse = try await service.fetchExposure(
+                memberID: member.memberID,
+                page: response.page + 1,
+                range: selectedRange,
+                subject: subject
+            )
+            let mergedTimeline = response.timeline + newResponse.timeline
+            response = MPLobbyingExposureResponse(
+                memberID: newResponse.memberID,
+                page: newResponse.page,
+                perPage: newResponse.perPage,
+                total: newResponse.total,
+                pages: newResponse.pages,
+                summary: newResponse.summary,
+                timeline: mergedTimeline,
+                subjectDistribution: newResponse.subjectDistribution,
+                topOrganizations: newResponse.topOrganizations,
+                cohortComparison: newResponse.cohortComparison,
+                availableSubjects: newResponse.availableSubjects
+            )
+            pruneSubjectFilterIfNeeded()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoadingMore = false
+    }
+
+    private func pruneSubjectFilterIfNeeded() {
+        guard let subject = selectedSubject,
+              !response.availableSubjects.contains(subject) else { return }
+        selectedSubject = nil
     }
 
     private func loadMoreIfPossible() async {
