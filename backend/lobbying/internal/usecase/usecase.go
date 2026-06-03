@@ -1,7 +1,7 @@
 // Package usecase implements the LoadLobbyingByTopic application policy.
 //
 // It depends only on ports for OCL topic mapping and lobbying records. Lambda,
-// Postgres, and JSON-file details stay in adapters.
+// SQLite, S3, and JSON-file details stay in adapters.
 package usecase
 
 import (

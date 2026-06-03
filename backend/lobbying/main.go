@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -12,12 +13,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"epac/lobbying/application"
 	ocltopicmap "epac/lobbying/internal/adapter/ocltopicmap"
-	postgresadapter "epac/lobbying/internal/adapter/postgres"
+	s3adapter "epac/lobbying/internal/adapter/s3"
+	sqliteadapter "epac/lobbying/internal/adapter/sqlite"
 	"epac/lobbying/internal/usecase"
-	lobbyrepo "epac/lobbying/repository"
 	"epac/observability"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -45,10 +47,49 @@ type mpLobbyingExposureExecutor interface {
 
 type closeFunc func(context.Context)
 
+type openLobbyingIndexFunc func(context.Context) (usecase.LobbyingIndex, error)
+type openLobbyingDBFunc func(context.Context, string) (*sql.DB, error)
+
+type lobbyingRuntime struct {
+	mu        sync.Mutex
+	openIndex openLobbyingIndexFunc
+	openDB    openLobbyingDBFunc
+	db        *sql.DB
+}
+
+const (
+	lobbyingRetryAfter = "5"
+	sqliteReadOnlyDSN  = "file:%s?mode=ro&_pragma=query_only(1)"
+)
+
 var newByTopicService = newProductionByTopicService
 var newMinisterPortfolioService = newProductionMinisterPortfolioService
 var newCabinetOverviewService = newProductionCabinetOverviewService
 var newMPLobbyingExposureService = newProductionMPLobbyingExposureService
+var lobbyingDB = newLobbyingRuntime(openLobbyingIndexFromEnv, openSQLiteReadOnly)
+
+func newLobbyingRuntime(openIndex openLobbyingIndexFunc, openDB openLobbyingDBFunc) *lobbyingRuntime {
+	return &lobbyingRuntime{openIndex: openIndex, openDB: openDB}
+}
+
+func (r *lobbyingRuntime) DB(ctx context.Context) (*sql.DB, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.db != nil {
+		return r.db, nil
+	}
+	index, err := r.openIndex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	db, err := r.openDB(ctx, index.LocalPath)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite index: %w", err)
+	}
+	r.db = db
+	return db, nil
+}
 
 func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	if legisInfoID := billLobbyingContextIDFromRequest(req); legisInfoID != "" {
@@ -80,7 +121,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 	service, closeService, err := newByTopicService(ctx)
 	if err != nil {
 		slog.Error("lobbying service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeService(ctx)
 
@@ -101,7 +142,7 @@ func handleMinisterPortfolio(ctx context.Context, _ events.APIGatewayV2HTTPReque
 	service, closeService, err := newMinisterPortfolioService(ctx)
 	if err != nil {
 		slog.Error("minister lobbying service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "minister lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeService(ctx)
 
@@ -129,7 +170,7 @@ func handleMPLobbyingExposure(ctx context.Context, req events.APIGatewayV2HTTPRe
 	service, closeService, err := newMPLobbyingExposureService(ctx)
 	if err != nil {
 		slog.Error("MP lobbying exposure service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeService(ctx)
 
@@ -155,7 +196,7 @@ func handleCabinetOverview(ctx context.Context, req events.APIGatewayV2HTTPReque
 	service, closeService, err := newCabinetOverviewService(ctx)
 	if err != nil {
 		slog.Error("cabinet lobbying service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "cabinet lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeService(ctx)
 
@@ -176,14 +217,12 @@ func newProductionByTopicService(ctx context.Context) (byTopicExecutor, closeFun
 	if err != nil {
 		return nil, noopClose, err
 	}
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := postgresadapter.New(conn)
-	return usecase.New(repo, source, slogLowConfidenceLogger{}), func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	repo := sqliteadapter.New(db)
+	return usecase.New(repo, source, slogLowConfidenceLogger{}), noopClose, nil
 }
 
 func newProductionMinisterPortfolioService(ctx context.Context) (ministerPortfolioExecutor, closeFunc, error) {
@@ -191,45 +230,62 @@ func newProductionMinisterPortfolioService(ctx context.Context) (ministerPortfol
 	if err != nil {
 		return nil, noopClose, err
 	}
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := postgresadapter.New(conn)
+	repo := sqliteadapter.New(db)
 	logger := slogPortfolioBoundaryGapLogger{recorder: repo}
 	service := usecase.NewLoadMinisterLobbyingByPortfolio(repo, repo, repo, source, logger)
-	return service, func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	return service, noopClose, nil
 }
 
 func newProductionCabinetOverviewService(ctx context.Context) (cabinetOverviewExecutor, closeFunc, error) {
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := postgresadapter.New(conn)
+	repo := sqliteadapter.New(db)
 	logger := slogPortfolioBoundaryGapLogger{recorder: repo}
 	service := usecase.NewLoadCabinetLobbyingOverview(repo, repo, logger)
-	return service, func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	return service, noopClose, nil
 }
 
 func newProductionMPLobbyingExposureService(ctx context.Context) (mpLobbyingExposureExecutor, closeFunc, error) {
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := lobbyrepo.NewPostgresMPLobbyingRepository(newLobbyingQueryer(conn))
+	repo := sqliteadapter.New(db)
 	service, err := application.NewLoadMPLobbyingExposure(repo, repo)
 	if err != nil {
-		_ = conn.Close(ctx)
 		return nil, noopClose, err
 	}
-	return service, func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	return service, noopClose, nil
+}
+
+func openLobbyingIndexFromEnv(ctx context.Context) (usecase.LobbyingIndex, error) {
+	manifestLoader, err := s3adapter.NewManifestLoaderFromEnv(ctx)
+	if err != nil {
+		return usecase.LobbyingIndex{}, err
+	}
+	indexDownloader, err := s3adapter.NewIndexDownloaderFromEnv(ctx)
+	if err != nil {
+		return usecase.LobbyingIndex{}, err
+	}
+	return usecase.NewOpenLobbyingIndex(manifestLoader, indexDownloader).Execute(ctx)
+}
+
+func openSQLiteReadOnly(ctx context.Context, path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", fmt.Sprintf(sqliteReadOnlyDSN, path))
+	if err != nil {
+		return nil, err
+	}
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return db, nil
 }
 
 type slogLowConfidenceLogger struct{}
@@ -440,13 +496,28 @@ func jsonResponse(status int, body []byte) events.APIGatewayV2HTTPResponse {
 	}
 }
 
-func jsonError(status int, message string) events.APIGatewayV2HTTPResponse {
+func jsonError(status int, message string, extraHeaders ...map[string]string) events.APIGatewayV2HTTPResponse {
 	body, _ := json.Marshal(map[string]string{"error": message})
+	headers := map[string]string{"Content-Type": "application/json"}
+	if len(extraHeaders) > 0 {
+		for key, value := range extraHeaders[0] {
+			headers[key] = value
+		}
+	}
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: status,
-		Headers:    map[string]string{"Content-Type": "application/json"},
+		Headers:    headers,
 		Body:       string(body),
 	}
+}
+
+func serviceUnavailableError(err error) events.APIGatewayV2HTTPResponse {
+	if errors.Is(err, usecase.ErrManifestNotFound) ||
+		errors.Is(err, usecase.ErrChecksumMismatch) ||
+		errors.Is(err, usecase.ErrSchemaMismatch) {
+		return jsonError(http.StatusServiceUnavailable, err.Error(), map[string]string{"Retry-After": lobbyingRetryAfter})
+	}
+	return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable")
 }
 
 func main() {
