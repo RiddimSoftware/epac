@@ -45,6 +45,11 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 | `HansardSearchIntervention` | Backend-only parsed Hansard intervention value used while building the SQLite FTS5 search artifact. |
 | `HansardSearchManifest` | Backend-only manifest pointer for the current-session Hansard search SQLite artifact. |
+| `MinisterPortfolioLobbyingPeriod` | A cabinet portfolio tenure window with the OCL communications recorded while a minister held that portfolio. |
+| `MinisterLobbyingCommunication` | One OCL communication row for a minister, including organization, subject matter, date, citation URL, and mandate-letter match flag. |
+| `CabinetLobbyingOverview` | A cabinet-wide lobbying exposure summary with ranked ministers and most-active organizations per portfolio. |
+| `CabinetLobbyingMinisterSummary` | A ranked cabinet minister communication total for the overview screen. |
+| `CabinetLobbyingOrganizationSummary` | A portfolio-scoped organization communication total for the overview screen. |
 | `LobbyistOrganization` | Backend-only aggregate for an OCL client/organization/corporation with canonical ID, type, sector, lobbyists, subject matters, communication trend counts, and top DPOHs contacted. |
 | `OrganizationSector` | OCL subject matter type description carried verbatim as the organization's sector label for profile browsing. |
 | `CommunicationCount` | Current-vs-prior Parliament communication count pair used for organization profile trend display. |
@@ -88,6 +93,7 @@ will build the missing artifact.
 | `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
 | `OCLTopicMapper` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go`. | Resolve OCL subject-matter codes back to epac topic slugs for mandate-match flagging. |
 | `PortfolioBoundaryGapLogger` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/main.go` with Postgres run-history recording. | Log `portfolio_boundary_gap` warnings when portfolio-period boundaries are not safe to use. |
+| `CabinetLobbyingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/CabinetLobbyingRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift`. | Load minister portfolio-period lobbying rows and cabinet-wide overview data from backend lobbying endpoints. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 
 ---
@@ -580,6 +586,52 @@ Current implementation:
   backend/member-content/content.go
   backend/member-votes-publisher/main.go
 ```
+
+---
+
+### LoadMinisterLobbyingByPortfolio (iOS)
+
+```
+Actor: User (iOS app, Members tab -> cabinet minister profile)
+Goal: Browse OCL communications grouped by the cabinet portfolio period in which they occurred.
+Inputs: Member ID.
+Outputs: Portfolio-period sections with lobbying communications and mandate-letter match flags.
+Entities / values: MemberID, MinisterPortfolioLobbyingPeriod, MinisterLobbyingCommunication.
+Ports: CabinetLobbyingRepository.
+Primary adapters: MinisterLobbyingTabView, MemberProfileView, BackendCabinetLobbyingRepository, GET /api/v1/ministers/{member_id}/lobbying-by-portfolio.
+Current implementation:
+  ios/epac/Application/LoadMinisterLobbyingByPortfolio.swift
+  ios/epac/Domain/Ports/CabinetLobbyingRepository.swift
+  ios/epac/Domain/Entities/CabinetLobbying.swift
+  ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift
+  ios/epac/Views/Members/MinisterLobbyingTabView.swift
+  ios/epac/Views/Members/MemberProfileView.swift
+```
+
+> **Boundary note:** Portfolio grouping and mandate matching are backend policy outputs; the iOS use case only loads those values and the SwiftUI adapter renders sectioning, highlighting, and OCL citations.
+
+---
+
+### LoadCabinetLobbyingOverview (iOS)
+
+```
+Actor: User (iOS app, Accountability tab -> Cabinet Lobbying)
+Goal: Compare lobbying exposure across cabinet ministers and portfolios.
+Inputs: Parliament number.
+Outputs: Ranked ministers, available portfolio filters, and most-active organizations per portfolio.
+Entities / values: CabinetLobbyingOverview, CabinetLobbyingMinisterSummary, CabinetLobbyingOrganizationSummary.
+Ports: CabinetLobbyingRepository.
+Primary adapters: CabinetLobbyingOverviewView, AccountabilityHubView, BackendCabinetLobbyingRepository, GET /api/v1/cabinet/lobbying-overview.
+Current implementation:
+  ios/epac/Application/LoadCabinetLobbyingOverview.swift
+  ios/epac/Domain/Ports/CabinetLobbyingRepository.swift
+  ios/epac/Domain/Entities/CabinetLobbying.swift
+  ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift
+  ios/epac/Views/Accountability/CabinetLobbyingOverviewView.swift
+  ios/epac/Views/Accountability/AccountabilityHubView.swift
+```
+
+> **Boundary note:** Ranking and portfolio aggregate values are loaded as backend response values; SwiftUI owns presentation filtering and navigation from the accountability hub.
 
 ---
 

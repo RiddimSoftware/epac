@@ -73,6 +73,10 @@ struct AccountabilityHubView: View {
 						Label("GIC Appointments", systemImage: "person.crop.circle.badge.checkmark")
 					}
 					.accessibilityHint("Opens Governor in Council appointment tracker")
+					NavigationLink(destination: CabinetLobbyingOverviewView()) {
+						Label("Cabinet Lobbying", systemImage: "person.2.wave.2.fill")
+					}
+					.accessibilityHint("Opens cabinet minister lobbying overview")
 				}
 			}
 			.listStyle(.insetGrouped)
