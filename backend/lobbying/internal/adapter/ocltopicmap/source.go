@@ -20,6 +20,7 @@ type jsonMapping struct {
 
 type Source struct {
 	bySlug map[string][]usecase.OCLTopicMapping
+	byCode map[string][]usecase.OCLTopicMapping
 }
 
 func NewSource(data []byte) (*Source, error) {
@@ -28,6 +29,7 @@ func NewSource(data []byte) (*Source, error) {
 		return nil, fmt.Errorf("decode OCL topic map: %w", err)
 	}
 	bySlug := make(map[string][]usecase.OCLTopicMapping)
+	byCode := make(map[string][]usecase.OCLTopicMapping)
 	seen := make(map[string]bool, len(raw))
 	for i, item := range raw {
 		mapping, err := normalizeMapping(item)
@@ -40,13 +42,19 @@ func NewSource(data []byte) (*Source, error) {
 		}
 		seen[key] = true
 		bySlug[mapping.EpacTopicSlug] = append(bySlug[mapping.EpacTopicSlug], mapping)
+		byCode[mapping.OCLCode] = append(byCode[mapping.OCLCode], mapping)
 	}
 	for slug := range bySlug {
 		sort.Slice(bySlug[slug], func(i, j int) bool {
 			return compareOCLCodes(bySlug[slug][i].OCLCode, bySlug[slug][j].OCLCode) < 0
 		})
 	}
-	return &Source{bySlug: bySlug}, nil
+	for code := range byCode {
+		sort.Slice(byCode[code], func(i, j int) bool {
+			return byCode[code][i].EpacTopicSlug < byCode[code][j].EpacTopicSlug
+		})
+	}
+	return &Source{bySlug: bySlug, byCode: byCode}, nil
 }
 
 func (s *Source) CodesForTopic(slug string) ([]usecase.OCLTopicMapping, bool) {
@@ -60,6 +68,15 @@ func (s *Source) CodesForTopic(slug string) ([]usecase.OCLTopicMapping, bool) {
 	}
 	out := append([]usecase.OCLTopicMapping(nil), mappings...)
 	return out, true
+}
+
+func (s *Source) TopicMappingsForOCLCode(oclCode string) []usecase.OCLTopicMapping {
+	if s == nil {
+		return []usecase.OCLTopicMapping{}
+	}
+	mappings := s.byCode[usecase.NormalizeOCLCode(oclCode)]
+	out := append([]usecase.OCLTopicMapping(nil), mappings...)
+	return out
 }
 
 func normalizeMapping(item jsonMapping) (usecase.OCLTopicMapping, error) {

@@ -25,6 +25,28 @@ func (s *stubByTopicService) Execute(_ context.Context, slug string, pagination 
 	return s.result, s.err
 }
 
+type stubMinisterPortfolioService struct {
+	gotMemberID string
+	result      usecase.MinisterLobbyingByPortfolioResult
+	err         error
+}
+
+func (s *stubMinisterPortfolioService) Execute(_ context.Context, memberID string) (usecase.MinisterLobbyingByPortfolioResult, error) {
+	s.gotMemberID = memberID
+	return s.result, s.err
+}
+
+type stubCabinetOverviewService struct {
+	gotInput usecase.CabinetLobbyingOverviewInput
+	result   usecase.CabinetLobbyingOverviewResult
+	err      error
+}
+
+func (s *stubCabinetOverviewService) Execute(_ context.Context, input usecase.CabinetLobbyingOverviewInput) (usecase.CabinetLobbyingOverviewResult, error) {
+	s.gotInput = input
+	return s.result, s.err
+}
+
 func TestHandleRequestReturnsTopicRows(t *testing.T) {
 	stub := &stubByTopicService{
 		result: usecase.LobbyingByTopicResult{
@@ -166,6 +188,116 @@ func TestHandleRequestMapsServiceInitError(t *testing.T) {
 	}
 }
 
+func TestHandleRequestReturnsMinisterLobbyingByPortfolio(t *testing.T) {
+	stub := &stubMinisterPortfolioService{
+		result: usecase.MinisterLobbyingByPortfolioResult{
+			MemberID:            "314774",
+			MinisterName:        "Mark Carney",
+			TotalCommunications: 1,
+			Citation:            usecase.Citation,
+			SourceURL:           usecase.SourceURL,
+			Portfolios: []usecase.MinisterPortfolioLobbyingPeriod{
+				{
+					PortfolioName: "Prime Minister of Canada",
+					StartDate:     "2026-04-28",
+					EndDate:       "",
+					Communications: []usecase.MinisterLobbyingCommunication{
+						{ID: "COM-1", OrganizationName: "Example Org", Citation: usecase.Citation, SourceURL: usecase.SourceURL},
+					},
+				},
+			},
+		},
+	}
+	setMinisterPortfolioServiceForTest(t, stub, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath: "/api/v1/ministers/314774/lobbying-by-portfolio",
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	if stub.gotMemberID != "314774" {
+		t.Fatalf("member id = %q, want 314774", stub.gotMemberID)
+	}
+
+	var body usecase.MinisterLobbyingByPortfolioResult
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.TotalCommunications != 1 || len(body.Portfolios) != 1 {
+		t.Fatalf("unexpected body: %#v", body)
+	}
+}
+
+func TestHandleRequestMapsMissingMinisterToNotFound(t *testing.T) {
+	setMinisterPortfolioServiceForTest(t, &stubMinisterPortfolioService{err: usecase.ErrMinisterNotFound}, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		PathParameters: map[string]string{"member_id": "missing"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestHandleRequestReturnsCabinetLobbyingOverview(t *testing.T) {
+	stub := &stubCabinetOverviewService{
+		result: usecase.CabinetLobbyingOverviewResult{
+			Parliament:      45,
+			PortfolioFilter: "Finance",
+			Citation:        usecase.Citation,
+			SourceURL:       usecase.SourceURL,
+			Ministers: []usecase.CabinetLobbyingSummary{
+				{MemberID: "123", MinisterName: "Finance Minister", TotalCommunications: 3},
+			},
+		},
+	}
+	setCabinetOverviewServiceForTest(t, stub, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath: "/api/v1/cabinet/lobbying-overview",
+		QueryStringParameters: map[string]string{
+			"parliament": "45",
+			"portfolio":  "Finance",
+		},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	if stub.gotInput != (usecase.CabinetLobbyingOverviewInput{Parliament: 45, Portfolio: "Finance"}) {
+		t.Fatalf("input = %#v", stub.gotInput)
+	}
+
+	var body usecase.CabinetLobbyingOverviewResult
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if len(body.Ministers) != 1 || body.Ministers[0].TotalCommunications != 3 {
+		t.Fatalf("unexpected body: %#v", body)
+	}
+}
+
+func TestHandleRequestRequiresCabinetParliament(t *testing.T) {
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath: "/cabinet/lobbying-overview",
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+}
+
 func setByTopicServiceForTest(t *testing.T, service byTopicExecutor, err error) {
 	t.Helper()
 	original := newByTopicService
@@ -173,4 +305,22 @@ func setByTopicServiceForTest(t *testing.T, service byTopicExecutor, err error) 
 		return service, noopClose, err
 	}
 	t.Cleanup(func() { newByTopicService = original })
+}
+
+func setMinisterPortfolioServiceForTest(t *testing.T, service ministerPortfolioExecutor, err error) {
+	t.Helper()
+	original := newMinisterPortfolioService
+	newMinisterPortfolioService = func(context.Context) (ministerPortfolioExecutor, closeFunc, error) {
+		return service, noopClose, err
+	}
+	t.Cleanup(func() { newMinisterPortfolioService = original })
+}
+
+func setCabinetOverviewServiceForTest(t *testing.T, service cabinetOverviewExecutor, err error) {
+	t.Helper()
+	original := newCabinetOverviewService
+	newCabinetOverviewService = func(context.Context) (cabinetOverviewExecutor, closeFunc, error) {
+		return service, noopClose, err
+	}
+	t.Cleanup(func() { newCabinetOverviewService = original })
 }

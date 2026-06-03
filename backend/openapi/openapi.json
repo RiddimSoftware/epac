@@ -688,6 +688,146 @@
         }
       }
     },
+    "/api/v1/ministers/{member_id}/lobbying-by-portfolio": {
+      "get": {
+        "tags": ["Lobbying"],
+        "summary": "Group a cabinet minister's lobbying communications by portfolio period",
+        "description": "Returns Office of the Commissioner of Lobbying communication reports for one cabinet minister, grouped by minister portfolio periods. When portfolio boundaries are incomplete, the response falls back to a cabinet-tenure group and records a portfolio_boundary_gap warning.",
+        "operationId": "loadMinisterLobbyingByPortfolio",
+        "parameters": [
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "description": "Hansard Affiliation DbId for the cabinet minister.",
+            "schema": { "type": "string", "example": "314774" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Minister lobbying communications grouped by portfolio period",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MinisterLobbyingByPortfolioResponse" },
+                "examples": {
+                  "portfolioPeriods": {
+                    "value": {
+                      "member_id": "314774",
+                      "minister_name": "Mark Carney",
+                      "total_communications": 1,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "portfolios": [
+                        {
+                          "portfolio_name": "Prime Minister of Canada",
+                          "start_date": "2026-04-28",
+                          "end_date": "",
+                          "top_organizations": [
+                            { "organization_name": "Example Housing Association", "count": 1 }
+                          ],
+                          "communications": [
+                            {
+                              "id": "558142",
+                              "organization_name": "Example Housing Association",
+                              "registrant_name": "Jane Registrant",
+                              "registrant_type": "Consultant",
+                              "communication_date": "2026-05-15",
+                              "subject_matters": ["Housing"],
+                              "ocl_codes": ["SMT-44"],
+                              "mandate_match": true,
+                              "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                              "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/cabinet/lobbying-overview": {
+      "get": {
+        "tags": ["Lobbying"],
+        "summary": "Rank cabinet ministers by lobbying communications received",
+        "description": "Returns cabinet ministers ranked by total OCL communication reports received in the requested Parliament, optionally filtered to ministers who held a matching portfolio.",
+        "operationId": "loadCabinetLobbyingOverview",
+        "parameters": [
+          {
+            "name": "parliament",
+            "in": "query",
+            "required": true,
+            "description": "Parliament number to rank.",
+            "schema": { "type": "integer", "minimum": 1, "example": 45 }
+          },
+          {
+            "name": "portfolio",
+            "in": "query",
+            "required": false,
+            "description": "Optional case-insensitive portfolio name filter.",
+            "schema": { "type": "string", "example": "Finance" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cabinet lobbying overview",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CabinetLobbyingOverviewResponse" },
+                "examples": {
+                  "ranked": {
+                    "value": {
+                      "parliament": 45,
+                      "portfolio_filter": "Finance",
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "ministers": [
+                        {
+                          "member_id": "314774",
+                          "minister_name": "Mark Carney",
+                          "portfolios": [
+                            {
+                              "portfolio_name": "Prime Minister of Canada",
+                              "start_date": "2026-04-28",
+                              "end_date": ""
+                            }
+                          ],
+                          "total_communications": 12,
+                          "top_organizations": [
+                            { "organization_name": "Example Housing Association", "count": 3 }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "parliament": 45,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "ministers": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/estimates": {
       "get": {
         "tags": ["Fiscal"],
@@ -1294,6 +1434,107 @@
           "end_date": { "type": "string", "format": "date" },
           "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
           "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+        }
+      },
+      "MinisterLobbyingByPortfolioResponse": {
+        "type": "object",
+        "required": ["member_id", "minister_name", "total_communications", "citation", "source_url", "portfolios"],
+        "properties": {
+          "member_id": { "type": "string" },
+          "minister_name": { "type": "string" },
+          "total_communications": { "type": "integer", "minimum": 0 },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" },
+          "portfolios": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MinisterPortfolioLobbyingPeriod" }
+          }
+        }
+      },
+      "MinisterPortfolioLobbyingPeriod": {
+        "type": "object",
+        "required": ["portfolio_name", "start_date", "end_date", "top_organizations", "communications"],
+        "properties": {
+          "portfolio_name": { "type": "string" },
+          "start_date": { "type": "string", "description": "ISO date or empty string when the source model lacks a safe boundary." },
+          "end_date": { "type": "string", "description": "ISO date or empty string for an open-ended current portfolio." },
+          "top_organizations": {
+            "type": "array",
+            "maxItems": 3,
+            "items": { "$ref": "#/components/schemas/LobbyingTopOrganization" }
+          },
+          "communications": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MinisterLobbyingCommunication" }
+          }
+        }
+      },
+      "MinisterLobbyingCommunication": {
+        "type": "object",
+        "required": ["id", "subject_matters", "ocl_codes", "mandate_match", "citation", "source_url"],
+        "properties": {
+          "id": { "type": "string", "description": "OCL COMLOG_ID." },
+          "organization_name": { "type": "string" },
+          "registrant_name": { "type": "string" },
+          "registrant_type": { "type": "string" },
+          "communication_date": { "type": "string", "format": "date" },
+          "subject_matters": { "type": "array", "items": { "type": "string" } },
+          "ocl_codes": { "type": "array", "items": { "type": "string", "example": "SMT-44" } },
+          "mandate_match": {
+            "type": "boolean",
+            "description": "True when a high-confidence EPAC mandate topic maps to a high-confidence OCL subject mapping on the communication."
+          },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+        }
+      },
+      "LobbyingTopOrganization": {
+        "type": "object",
+        "required": ["organization_name", "count"],
+        "properties": {
+          "organization_name": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "CabinetLobbyingOverviewResponse": {
+        "type": "object",
+        "required": ["parliament", "citation", "source_url", "ministers"],
+        "properties": {
+          "parliament": { "type": "integer", "minimum": 1 },
+          "portfolio_filter": { "type": "string" },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" },
+          "ministers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CabinetLobbyingSummary" }
+          }
+        }
+      },
+      "CabinetLobbyingSummary": {
+        "type": "object",
+        "required": ["member_id", "minister_name", "portfolios", "total_communications", "top_organizations"],
+        "properties": {
+          "member_id": { "type": "string" },
+          "minister_name": { "type": "string" },
+          "portfolios": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MinisterPortfolioPeriod" }
+          },
+          "total_communications": { "type": "integer", "minimum": 0 },
+          "top_organizations": {
+            "type": "array",
+            "maxItems": 3,
+            "items": { "$ref": "#/components/schemas/LobbyingTopOrganization" }
+          }
+        }
+      },
+      "MinisterPortfolioPeriod": {
+        "type": "object",
+        "required": ["portfolio_name", "start_date", "end_date"],
+        "properties": {
+          "portfolio_name": { "type": "string" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" }
         }
       },
       "EstimatesResponse": {
