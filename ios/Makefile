@@ -9,11 +9,13 @@ DETECTED_SIM_UUID := $(shell echo '$(AVAILABLE_SIM)' | grep -oE '[A-F0-9-]{36}')
 AVAILABLE_IPAD_SIM := $(shell match=$$(xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "iPad Pro (13-inch)" | head -1); if [ -z "$$match" ]; then match=$$(xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "iPad Pro (12.9-inch)" | head -1); fi; if [ -z "$$match" ]; then match=$$(xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "iPad" | head -1); fi; echo "$$match")
 DETECTED_IPAD_SIM_NAME := $(shell echo '$(AVAILABLE_IPAD_SIM)' | sed -E 's/^[[:space:]]+(.*) \([A-F0-9-]{36}\).*/\1/')
 DETECTED_IPAD_SIM_UUID := $(shell echo '$(AVAILABLE_IPAD_SIM)' | grep -oE '[A-F0-9-]{36}')
+AVAILABLE_IOS_DEVICE_UDID := $(shell python3 ../scripts/ci/find_ios_perf_device.py 2>/dev/null)
 
 SIM_NAME ?= $(DETECTED_SIM_NAME)
 SIM_UUID = $(shell xcrun simctl list devices available | grep -v unavailable | grep "$(SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_SIM_UUID)")
 IPAD_SIM_NAME ?= $(DETECTED_IPAD_SIM_NAME)
 IPAD_SIM_UUID = $(shell if [ -n "$(IPAD_SIM_NAME)" ]; then xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "$(IPAD_SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_IPAD_SIM_UUID)"; else echo "$(DETECTED_IPAD_SIM_UUID)"; fi)
+PERF_DEVICE_UDID ?= $(AVAILABLE_IOS_DEVICE_UDID)
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
 PERF_RESULT_BUNDLE = $(OUTPUT_DIR)/Performance.xcresult
 PERF_DEVICE_RESULT_BUNDLE = $(OUTPUT_DIR)/Performance-device.xcresult
@@ -29,6 +31,8 @@ PERF_DEVICE_DESTINATION = 'platform=iOS,id=$(PERF_DEVICE_UDID)'
 IPAD_DESTINATION = 'platform=iOS Simulator,id=$(IPAD_SIM_UUID)'
 IPHONE_SIM_ERROR = No iPhone simulator available. Install one via Xcode → Settings → Platforms.
 IPAD_SIM_ERROR = No iPad Pro simulator available. Install one via Xcode → Settings → Platforms.
+IOS_DEVICE_ERROR = No connected iOS 26+ iPhone or iPad detected. Connect and trust a compatible device, then rerun make perf-device.
+HITCH_BUDGET_FILE = ../.github/perf-budgets/hitch-ratio-ms-per-s.device.txt
 CATALYST_ARCH = $(if $(filter arm64,$(shell uname -m)),arm64,x86_64)
 CATALYST_DESTINATION = 'platform=macOS,variant=Mac Catalyst,arch=$(CATALYST_ARCH)'
 CATALYST_APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-maccatalyst/epac.app
@@ -57,14 +61,11 @@ perf-sim:
 	python3 ../scripts/perf/check_in_process_metrics.py --xcresult $(PERF_RESULT_BUNDLE) --manifest $(IN_PROCESS_PERF_BUDGET_MANIFEST)
 
 perf-device:
-	@if [ -z "$(PERF_DEVICE_UDID)" ]; then \
-		echo "no device configured"; \
-	else \
-		set -e -o pipefail; \
-		rm -rf $(PERF_DEVICE_RESULT_BUNDLE); \
-		xcodebuild test -project epac.xcodeproj -scheme epac -configuration Release -destination $(PERF_DEVICE_DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_DEVICE_RESULT_BUNDLE) -testPlan Performance ENABLE_TESTABILITY=YES | xcbeautify; \
-		python3 ../scripts/ci/perf_parse.py $(PERF_DEVICE_RESULT_BUNDLE) --budget-dir $(PERF_BUDGET_DIR) --platform device; \
-	fi
+	@test -n "$(PERF_DEVICE_UDID)" || { echo "$(IOS_DEVICE_ERROR)" >&2; exit 1; }
+	rm -rf $(PERF_DEVICE_RESULT_BUNDLE) $(OUTPUT_DIR)/Performance-device.log
+	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -configuration Release -destination $(PERF_DEVICE_DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_DEVICE_RESULT_BUNDLE) -testPlan Performance ENABLE_TESTABILITY=YES 2>&1 | tee $(OUTPUT_DIR)/Performance-device.log | xcbeautify
+	python3 ../scripts/ci/perf_parse.py $(PERF_DEVICE_RESULT_BUNDLE) --budget-dir $(PERF_BUDGET_DIR) --platform device
+	python3 ../scripts/ci/guard_hitch_ratio.py --log $(OUTPUT_DIR)/Performance-device.log --budget $(HITCH_BUDGET_FILE)
 
 deploy-simulator:
 	xcrun simctl install $(SIM_UUID) $(APP_PATH)

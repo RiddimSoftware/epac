@@ -29,6 +29,7 @@
     {
       "selectedTests" : [
         "LaunchPerfTests",
+        "ScrollHitchPerfTests",
         "SignpostPerfTests"
       ],
       "target" : {

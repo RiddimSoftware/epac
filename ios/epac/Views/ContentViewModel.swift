@@ -70,6 +70,23 @@ class ContentViewModel {
 		                  modelContext: modelContext, fetch: fetch)
 	}
 
+	func navigateToSeededEvidenceTarget(
+		_ target: AppEnvironment.EvidencePerfNavigationTarget,
+		modelContext: ModelContext
+	) async {
+		guard let hansard = seededEvidenceHansard(modelContext: modelContext) else { return }
+		selectedSubject = nil
+		selectedHansard = hansard
+
+		guard target == .longestSpeech,
+		      let subject = longestSubject(in: hansard) else {
+			return
+		}
+
+		await Task.yield()
+		selectedSubject = subject
+	}
+
 	private func navigateToHansard(date: Date, subjectID: String?, speechID: String?, messageID: String?,
 	                               modelContext: ModelContext, fetch: Fetch) {
 		func applyNavigation(hansard: Hansard) {
@@ -102,6 +119,34 @@ class ContentViewModel {
 				}
 			}
 		}
+	}
+
+	private func seededEvidenceHansard(modelContext: ModelContext) -> Hansard? {
+		let fixture = EvidenceFixtureSeed.selectedFixture()
+		let formatter = DateFormatter()
+		formatter.dateFormat = "yyyy-MM-dd"
+		formatter.locale = Locale(identifier: "en_US_POSIX")
+		let fixtureDate = formatter.date(from: fixture.sittingDate)
+
+		let hansards = (try? modelContext.fetch(FetchDescriptor<Hansard>())) ?? []
+		if let fixtureDate,
+		   let exact = hansards.first(where: { Calendar.current.isDate($0.date, inSameDayAs: fixtureDate) }) {
+			return exact
+		}
+
+		return hansards.sorted { $0.date > $1.date }.first
+	}
+
+	private func longestSubject(in hansard: Hansard) -> SubjectOfBusiness? {
+		hansard.orders
+			.flatMap(\.subjects)
+			.max { lhs, rhs in
+				messageCount(in: lhs) < messageCount(in: rhs)
+			}
+	}
+
+	private func messageCount(in subject: SubjectOfBusiness) -> Int {
+		subject.speeches.reduce(0) { $0 + $1.messages.count }
 	}
 
 	func downloadInitialData(members: [ParliamentMember], constituencies: [Constituency], modelContext: ModelContext, fetch: Fetch) async {
