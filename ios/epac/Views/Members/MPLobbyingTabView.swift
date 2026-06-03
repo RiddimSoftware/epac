@@ -25,7 +25,7 @@ private enum MPLobbyingTabLayout {
 }
 
 struct MPLobbyingTabView: View {
-    let member: ParliamentMember
+    let memberID: Int
     let service: MPLobbyingServiceProviding
     private let preloadedResponse: MPLobbyingExposureResponse?
     private let autoLoadOnAppear: Bool
@@ -57,19 +57,35 @@ struct MPLobbyingTabView: View {
     }
 
     init(
-        member: ParliamentMember,
+        memberID: Int,
         service: MPLobbyingServiceProviding = BackendMPLobbyingService(),
         preloadedResponse: MPLobbyingExposureResponse? = nil,
         initialSubject: String? = nil,
         autoLoadOnAppear: Bool = true
     ) {
-        self.member = member
+        self.memberID = memberID
         self.service = service
         self.preloadedResponse = preloadedResponse
         self.autoLoadOnAppear = autoLoadOnAppear && preloadedResponse == nil
         self._response = State(initialValue: preloadedResponse ?? .empty)
         self._selectedSubject = State(initialValue: initialSubject)
         self._selectedRange = State(initialValue: .defaultRange)
+    }
+
+    init(
+        member: ParliamentMember,
+        service: MPLobbyingServiceProviding = BackendMPLobbyingService(),
+        preloadedResponse: MPLobbyingExposureResponse? = nil,
+        initialSubject: String? = nil,
+        autoLoadOnAppear: Bool = true
+    ) {
+        self.init(
+            memberID: memberID,
+            service: service,
+            preloadedResponse: preloadedResponse,
+            initialSubject: initialSubject,
+            autoLoadOnAppear: autoLoadOnAppear
+        )
     }
 
     var body: some View {
@@ -539,7 +555,7 @@ struct MPLobbyingTabView: View {
         let subject = selectedSubject?.isEmpty == false ? selectedSubject : nil
         do {
             response = try await service.fetchExposure(
-                memberID: member.memberID,
+                memberID: memberID,
                 page: 1,
                 range: selectedRange,
                 subject: subject
@@ -557,7 +573,7 @@ struct MPLobbyingTabView: View {
         let subject = selectedSubject?.isEmpty == false ? selectedSubject : nil
         do {
             let newResponse = try await service.fetchExposure(
-                memberID: member.memberID,
+                memberID: memberID,
                 page: response.page + 1,
                 range: selectedRange,
                 subject: subject

@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS mp_lobbying_summaries (
     member_id                                TEXT NOT NULL,
     parliament                               INTEGER NOT NULL,
     quarter_start                            DATE NOT NULL,
-    window                                   TEXT NOT NULL CHECK (window IN ('30d', '3m', '12m', 'all')),
+    "window"                                 TEXT NOT NULL CHECK ("window" IN ('30d', '3m', '12m', 'all')),
     total_communication_count                INTEGER NOT NULL DEFAULT 0,
     unique_organizations_count               INTEGER NOT NULL DEFAULT 0,
     most_frequent_subject_matter             TEXT,
@@ -41,22 +41,22 @@ CREATE TABLE IF NOT EXISTS mp_lobbying_summaries (
     party_average_communications             NUMERIC(10, 2) NOT NULL DEFAULT 0,
     national_average_communications          NUMERIC(10, 2) NOT NULL DEFAULT 0,
     updated_at                               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (member_id, parliament, quarter_start, window)
+    PRIMARY KEY (member_id, parliament, quarter_start, "window")
 );
 
 CREATE INDEX IF NOT EXISTS mp_lobbying_summaries_lookup_idx
-    ON mp_lobbying_summaries (member_id, parliament, window, quarter_start DESC);
+    ON mp_lobbying_summaries (member_id, parliament, "window", quarter_start DESC);
 
 CREATE TABLE IF NOT EXISTS mp_lobbying_subject_breakdowns (
     member_id             TEXT NOT NULL,
     parliament            INTEGER NOT NULL,
     quarter_start         DATE NOT NULL,
-    window                TEXT NOT NULL CHECK (window IN ('30d', '3m', '12m', 'all')),
+    "window"              TEXT NOT NULL CHECK ("window" IN ('30d', '3m', '12m', 'all')),
     subject_matter        TEXT NOT NULL,
     communication_count   INTEGER NOT NULL DEFAULT 0,
     updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (member_id, parliament, quarter_start, window, subject_matter)
+    PRIMARY KEY (member_id, parliament, quarter_start, "window", subject_matter)
 );
 
 CREATE INDEX IF NOT EXISTS mp_lobbying_subject_breakdowns_lookup_idx
-    ON mp_lobbying_subject_breakdowns (member_id, parliament, window, quarter_start DESC, communication_count DESC);
+    ON mp_lobbying_subject_breakdowns (member_id, parliament, "window", quarter_start DESC, communication_count DESC);
