@@ -48,12 +48,11 @@ will build the missing artifact.
 |---|---|---|---|---|
 | `HansardRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/HansardRepository.swift`; conformers include `ios/epac/Data/Repositories/SwiftDataHansardRepository.swift` and `ios/epac/Data/Adapters/Hansard/JurisdictionRoutedHansardRepository.swift`. | Load and store jurisdiction-aware parsed Hansard transcripts. |
 | `HansardRepository` | backend Go | outbound | Implemented: `backend/daily-fetch/internal/usecase/usecase.go`, `backend/on-this-day/internal/usecase/usecase.go`; adapters include `backend/daily-fetch/internal/adapter/postgres/postgres.go` and `backend/on-this-day/internal/adapter/artifacts/artifacts.go`. | Load and store canonical Hansard records for backend ingestion and historical-content use cases. |
-| `MemberRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | Resolve member records by ID, name, postal code, or riding. |
-| `SittingRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | List sitting dates and load speeches for a sitting date. |
-| `BillRepository` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | List bills and resolve bill details by number. |
+| `MemberRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/MemberRepository.swift`; adapter: `ios/epac/Data/Adapters/RidingLookupMemberRepository.swift`. | Resolve member-related lookups, starting with riding lookup by postal code for FindMyMP. |
+| `SittingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/SittingRepository.swift`; adapter: `ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift`. | List sitting dates and load transcripts for a sitting date. |
+| `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
-| `TopicPreferenceStore` | iOS Swift | outbound | Planned / not yet implemented: [EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic). | Read and persist a device's followed topics and granularity settings as a Domain-layer port. |
-| `TopicFollowingStore` | iOS Swift | outbound | Implemented: `ios/epac/Application/FollowTopic.swift`; conformer: `ios/epac/Util/TopicFollowStore.swift`. | Persist selected topic IDs for the current `FollowTopic` use case. |
+| `TopicPreferenceStore` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/TopicPreferenceStore.swift`; adapter: `ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift`. | Read and persist followed topic IDs as a Domain-layer port. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
 | `HansardSearchRepository` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/search_hansard.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefts5/repository.go`. | Query the verified SQLite FTS5 Hansard search index. |
 | `ManifestLoader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/s3manifest/manifest_loader.go`. | Load the current Hansard search-index manifest. |
@@ -218,13 +217,15 @@ Goal: Identify the user's Member of Parliament by postal code and save the resul
 Inputs: Postal code string.
 Outputs: Matched ParliamentMember (or not-found); persisted "my MP" preference.
 Entities / values: ParliamentMember.
-Ports: iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)).
-Primary adapters: PostalCodeViewModel, PostalCodeSetupView, MyMPView, RidingLookupService (calls represent.opennorth.ca), TopicFollowStore (persists myMPMemberId).
+Ports: iOS Swift: `MemberRepository`.
+Primary adapters: PostalCodeViewModel, PostalCodeSetupView, MyMPView, RidingLookupMemberRepository wrapping RidingLookupService (calls represent.opennorth.ca), TopicFollowStore (persists myMPMemberId).
 Current implementation:
+  ios/epac/Domain/Ports/MemberRepository.swift
+  ios/epac/Data/Adapters/RidingLookupMemberRepository.swift
+  ios/epac/Data/Adapters/RidingLookupService.swift
   ios/epac/Views/MyMP/PostalCodeViewModel.swift
   ios/epac/Views/MyMP/PostalCodeSetupView.swift
   ios/epac/Views/MyMP/MyMPView.swift
-  ios/epac/Util/RidingLookupService.swift
   ios/epac/Util/TopicFollowStore.swift (myMPMemberId storage)
 ```
 
@@ -257,9 +258,13 @@ Goal: Browse House sitting dates and their source metadata.
 Inputs: Page, per-page, optional from_date and to_date filters.
 Outputs: SittingsResponse with Sitting records.
 Entities / values: Sitting.
-Ports: iOS Swift planned: `SittingRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
-Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS Fetch (ourcommons.ca sitting calendar parsing).
+Ports: iOS Swift: `SittingRepository`. Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
+Primary adapters: sittings Lambda (GET /api/v1/sittings), sittings-publisher S3 artifact job, S3 sittings/v1 artifacts, iOS HansardSittingRepositoryAdapter over SwiftDataHansardRepository / Fetch (ourcommons.ca sitting calendar parsing).
 Current implementation:
+  ios/epac/Domain/Ports/SittingRepository.swift
+  ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift
+  ios/epac/Application/BrowseHansardSitting.swift
+  ios/epac/Views/Calendar/SittingCalendarViewModel.swift
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
@@ -276,9 +281,12 @@ Goal: Read paginated Hansard interventions for one sitting date.
 Inputs: Sitting date, page, per-page.
 Outputs: SpeechesResponse with source-derived intervention IDs and speech content.
 Entities / values: Hansard, SubjectOfBusiness, SpeechMessage, Sitting.
-Ports: iOS Swift: `HansardRepository`; iOS Swift planned: `SittingRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
-Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS Fetch (ourcommons.ca Hansard XML parsing).
+Ports: iOS Swift: `SittingRepository`. Backend Go: no named sitting repository port; current handlers read published artifacts directly through the shared artifact store.
+Primary adapters: sittings Lambda (GET /api/v1/sittings/{date}/speeches), sittings-publisher S3 by-date artifacts, iOS HansardSittingRepositoryAdapter over SwiftDataHansardRepository / Fetch (ourcommons.ca Hansard XML parsing).
 Current implementation:
+  ios/epac/Domain/Ports/SittingRepository.swift
+  ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift
+  ios/epac/Application/ReadHansardSpeech.swift
   backend/sittings/main.go
   backend/sittings-publisher/main.go
 ```
@@ -295,9 +303,14 @@ Goal: Browse current-session bills with optional status and parliament filters.
 Inputs: Status filter, Parliament number.
 Outputs: BillsResponse with Bill records.
 Entities / values: Bill.
-Ports: iOS Swift planned: `BillRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named bill repository port; current handlers read published artifacts directly through the shared artifact store.
-Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS BillsService (LEGISinfo JSON).
+Ports: iOS Swift: `BillRepository`. Backend Go: no named bill repository port; current handlers read published artifacts directly through the shared artifact store.
+Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS LEGISinfoBillRepository wrapping BillsService (LEGISinfo JSON).
 Current implementation:
+  ios/epac/Domain/Ports/BillRepository.swift
+  ios/epac/Data/Adapters/LEGISinfoBillRepository.swift
+  ios/epac/Data/Adapters/BillsService.swift
+  ios/epac/Views/Bills/BillsView.swift
+  ios/epac/Views/Search/SearchView.swift
   backend/bills/main.go
   backend/bills-publisher/main.go
 ```
@@ -416,9 +429,12 @@ Goal: Follow a parliamentary topic locally so topic-aware app surfaces can prior
 Inputs: Topic selection.
 Outputs: Updated followed-topics list.
 Entities / values: ParliamentaryTopic.
-Ports: iOS Swift: `TopicFollowingStore`; iOS Swift planned: `TopicPreferenceStore` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)).
-Primary adapters: TopicsView, TopicFollowStore. The backend device registration route was retired by EPAC-1921, so there is no active device-registration port.
+Ports: iOS Swift: `TopicPreferenceStore`.
+Primary adapters: TopicsView, TopicFollowStoreAdapter wrapping TopicFollowStore. The backend device registration route was retired by EPAC-1921, so there is no active device-registration port.
 Current implementation:
+  ios/epac/Domain/Ports/TopicPreferenceStore.swift
+  ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift
+  ios/epac/Application/FollowTopic.swift
   ios/epac/Views/Topics/TopicsView.swift
   ios/epac/Util/TopicFollowStore.swift
 ```

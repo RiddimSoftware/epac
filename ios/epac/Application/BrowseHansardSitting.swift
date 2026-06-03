@@ -20,9 +20,9 @@ struct BrowseHansardSitting: BrowseHansardSittingUseCase {
 		let sittingDates: [Date]
 	}
 
-	private let repository: any HansardRepository
+	private let repository: any SittingRepository
 
-	init(repository: any HansardRepository) {
+	init(repository: any SittingRepository) {
 		self.repository = repository
 	}
 

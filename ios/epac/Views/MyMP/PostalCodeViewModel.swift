@@ -2,6 +2,12 @@ import Observation
 import SwiftData
 import SwiftUI
 
+struct RidingLookupResult {
+    let memberName: String
+    let ridingName: String
+    let partyName: String
+}
+
 @MainActor
 @Observable
 class PostalCodeViewModel {
@@ -10,11 +16,15 @@ class PostalCodeViewModel {
     var result: RidingLookupResult?
     var errorMessage: String?
 
-    private let service = RidingLookupService()
+    private let memberRepository: any MemberRepository
     private let store = PostalCodeStore.shared
     private let telemetry: any TelemetryProvider
 
-    init(telemetry: any TelemetryProvider = CurrentTelemetryProvider()) {
+    init(
+        memberRepository: any MemberRepository = RidingLookupMemberRepository(),
+        telemetry: any TelemetryProvider = CurrentTelemetryProvider()
+    ) {
+        self.memberRepository = memberRepository
         self.telemetry = telemetry
     }
 
@@ -30,7 +40,7 @@ class PostalCodeViewModel {
         result = nil
         defer { isLoading = false }
         do {
-            let ridingName = try await service.lookupRiding(postalCode: trimmed)
+            let ridingName = try await memberRepository.lookupRiding(postalCode: trimmed)
 
             // Resolve MP from local SwiftData — stays on @MainActor, no data race.
             let descriptor = FetchDescriptor<ParliamentMember>(
@@ -53,11 +63,11 @@ class PostalCodeViewModel {
     }
 
     static func currentMember(for ridingName: String, in members: [ParliamentMember]) -> ParliamentMember? {
-        let normalized = RidingLookupService.normalizeRidingName(ridingName)
+        let normalized = RidingNameNormalizer.normalize(ridingName)
         return members
             .filter {
                 $0.toDateTime == nil
-                    && RidingLookupService.normalizeRidingName($0.riding) == normalized
+                    && RidingNameNormalizer.normalize($0.riding) == normalized
             }
             .sorted { lhs, rhs in
                 switch (lhs.fromDateTime, rhs.fromDateTime) {

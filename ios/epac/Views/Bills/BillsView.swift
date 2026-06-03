@@ -79,9 +79,11 @@ struct BillsView: View {
     @State private var isRetryDisabled = false
     @Environment(NavigationRouter.self) private var router
     private let selection: Binding<Bill?>?
+    private let billRepository: any BillRepository
 
-    init(selection: Binding<Bill?>? = nil) {
+    init(selection: Binding<Bill?>? = nil, billRepository: any BillRepository = LEGISinfoBillRepository()) {
         self.selection = selection
+        self.billRepository = billRepository
     }
 
     private var filtered: [Bill] {
@@ -276,7 +278,7 @@ struct BillsView: View {
         loadFailed = false
         defer { isLoading = false }
         do {
-            bills = try await BillsService.fetchBills()
+            bills = try await billRepository.fetchBills()
             refreshSelectedBill(from: bills)
             UserDefaults.standard.set(Date(), forKey: "epac.sync.bills")
             // Track the newest introduction date so the next session knows what's "new".

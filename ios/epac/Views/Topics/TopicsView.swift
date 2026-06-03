@@ -3,6 +3,7 @@
 //  epac
 //
 
+import Observation
 import SwiftUI
 
 private enum TopicsLayout {
@@ -19,20 +20,14 @@ private enum TopicsLayout {
 }
 
 struct TopicsView: View {
-    @State private var store = TopicFollowStore.shared
-    @State private var searchText = ""
+    @State private var viewModel: TopicsViewModel
 
-    private var filtered: [ParliamentaryTopic] {
-        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard q.count >= TopicsLayout.minimumSearchLength else { return ParliamentaryTopic.all }
-        return ParliamentaryTopic.all.filter {
-            $0.localizedName.localizedCaseInsensitiveContains(q) ||
-            $0.keywords.contains { $0.localizedCaseInsensitiveContains(q) }
-        }
+    init(topicPreferenceStore: any TopicPreferenceStore = TopicFollowStoreAdapter()) {
+        _viewModel = State(initialValue: TopicsViewModel(preferences: topicPreferenceStore))
     }
 
     var body: some View {
-        List(filtered) { topic in
+        List(viewModel.filteredTopics) { topic in
             VStack(alignment: .leading, spacing: TopicsLayout.rowSpacing) {
                 HStack {
                     if topic.id == "transport" {
@@ -44,13 +39,13 @@ struct TopicsView: View {
                     }
                     Spacer()
                     Button {
-                        store.toggle(topic.id)
+                        viewModel.toggle(topic)
                     } label: {
-                        Image(systemName: store.isFollowing(topic.id) ? "star.fill" : "star")
-                            .foregroundStyle(store.isFollowing(topic.id) ? Color.accentColor : Color.secondary)
+                        Image(systemName: viewModel.isFollowing(topic) ? "star.fill" : "star")
+                            .foregroundStyle(viewModel.isFollowing(topic) ? Color.accentColor : Color.secondary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(store.isFollowing(topic.id)
+                    .accessibilityLabel(viewModel.isFollowing(topic)
                         ? NSLocalizedString("topic.unfollow", comment: "")
                         : NSLocalizedString("topic.follow", comment: ""))
                 }
@@ -58,9 +53,9 @@ struct TopicsView: View {
             }
             .padding(.vertical, TopicsLayout.rowVerticalPadding)
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if store.isFollowing(topic.id) {
+                if viewModel.isFollowing(topic) {
                     Button(role: .destructive) {
-                        store.unfollow(topic.id)
+                        viewModel.unfollow(topic)
                     } label: {
                         Label(NSLocalizedString("topic.unfollow", comment: ""), systemImage: "star.slash")
                     }
@@ -69,7 +64,7 @@ struct TopicsView: View {
         }
         .listStyle(.plain)
         .searchable(
-            text: $searchText,
+            text: $viewModel.searchText,
             placement: .navigationBarDrawer(displayMode: .automatic),
             prompt: NSLocalizedString("topics.search.prompt", comment: "")
         )
@@ -136,5 +131,45 @@ struct TopicsView: View {
 
     private func percentLabel(_ value: Double) -> String {
         "\(value.formatted(.number.precision(.fractionLength(1))))%"
+    }
+}
+
+@MainActor
+@Observable
+final class TopicsViewModel {
+    var searchText = ""
+    private let preferences: any TopicPreferenceStore
+    private var followedIDs: Set<String>
+
+    init(preferences: any TopicPreferenceStore = TopicFollowStoreAdapter()) {
+        self.preferences = preferences
+        self.followedIDs = preferences.followedTopicIDs()
+    }
+
+    var filteredTopics: [ParliamentaryTopic] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard query.count >= TopicsLayout.minimumSearchLength else { return ParliamentaryTopic.all }
+        return ParliamentaryTopic.all.filter {
+            $0.localizedName.localizedCaseInsensitiveContains(query) ||
+                $0.keywords.contains { $0.localizedCaseInsensitiveContains(query) }
+        }
+    }
+
+    func isFollowing(_ topic: ParliamentaryTopic) -> Bool {
+        followedIDs.contains(topic.id)
+    }
+
+    func toggle(_ topic: ParliamentaryTopic) {
+        preferences.toggle(topic.id)
+        refreshFollowedIDs()
+    }
+
+    func unfollow(_ topic: ParliamentaryTopic) {
+        preferences.unfollow(topic.id)
+        refreshFollowedIDs()
+    }
+
+    private func refreshFollowedIDs() {
+        followedIDs = preferences.followedTopicIDs()
     }
 }

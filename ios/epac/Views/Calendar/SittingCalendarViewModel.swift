@@ -245,7 +245,9 @@ class SittingCalendarViewModel {
 		}
 
 		let useCase = browseHansardSitting ?? BrowseHansardSitting(
-			repository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+			repository: HansardSittingRepositoryAdapter(
+				hansardRepository: SwiftDataHansardRepository(modelContext: modelContext, fetch: fetch)
+			)
 		)
 		return try await useCase.execute(jurisdiction: .federal, from: startDate, through: endDate)
 	}

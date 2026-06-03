@@ -66,5 +66,3 @@ final class TopicFollowStore {
         }
     }
 }
-
-extension TopicFollowStore: TopicFollowingStore {}

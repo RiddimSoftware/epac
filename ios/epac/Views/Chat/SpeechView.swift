@@ -224,7 +224,7 @@ struct SpeechView: View {
 			guard viewModel.messages.isEmpty else { return }
 			do {
 				viewModel.configure(readHansardSpeech: ReadHansardSpeech(
-					repository: hansardRepository
+					repository: HansardSittingRepositoryAdapter(hansardRepository: hansardRepository)
 				))
 				try await viewModel.loadSpeech(
 					jurisdiction: .federal,

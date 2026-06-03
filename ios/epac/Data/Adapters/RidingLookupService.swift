@@ -1,32 +1,6 @@
 import Foundation
 
-struct RidingLookupResult {
-    let memberName: String
-    let ridingName: String
-    let partyName: String
-}
-
-enum RidingLookupError: LocalizedError, Equatable {
-    case invalidPostalCode
-    case networkError
-    case noFederalRepresentative
-    case noResults
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidPostalCode:
-            return NSLocalizedString("riding.error.invalidPostalCode", comment: "")
-        case .networkError:
-            return NSLocalizedString("riding.error.networkError", comment: "")
-        case .noFederalRepresentative:
-            return NSLocalizedString("riding.error.noFederalRepresentative", comment: "")
-        case .noResults:
-            return NSLocalizedString("riding.error.noResults", comment: "")
-        }
-    }
-}
-
-struct RidingLookupService {
+struct RidingLookupService: Sendable {
     private enum Constants {
         static let successStatusLowerBound = 200
         static let successStatusUpperBound = 300
@@ -57,10 +31,7 @@ struct RidingLookupService {
 
     /// Normalize for fuzzy match: lowercase, collapse em/en-dashes to hyphens, strip diacritics.
     static func normalizeRidingName(_ name: String) -> String {
-        name.lowercased()
-            .replacingOccurrences(of: "\u{2014}", with: "-")
-            .replacingOccurrences(of: "\u{2013}", with: "-")
-            .folding(options: .diacriticInsensitive, locale: nil)
+        RidingNameNormalizer.normalize(name)
     }
 
     private func isValidCanadianPostalCode(_ code: String) -> Bool {
