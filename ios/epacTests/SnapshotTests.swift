@@ -402,6 +402,197 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Lobbyist organization profile (EPAC-996)
+
+    @MainActor
+    func testLobbyistOrganization_activeWithCommunications() {
+        snapshot(
+            NavigationStack {
+                LobbyistOrganizationView(profile: Self.lobbyistOrganizationActive)
+            }
+            .frame(width: 375, height: 900),
+            name: "LobbyistOrganization_active"
+        )
+    }
+
+    @MainActor
+    func testLobbyistOrganization_expired() {
+        snapshot(
+            NavigationStack {
+                LobbyistOrganizationView(profile: Self.lobbyistOrganizationExpired)
+            }
+            .frame(width: 375, height: 680),
+            name: "LobbyistOrganization_expired"
+        )
+    }
+
+    @MainActor
+    func testLobbyistOrganization_noCommunications() {
+        snapshot(
+            NavigationStack {
+                LobbyistOrganizationView(profile: Self.lobbyistOrganizationNoCommunications)
+            }
+            .frame(width: 375, height: 680),
+            name: "LobbyistOrganization_noCommunications"
+        )
+    }
+
+    private static var lobbyistOrganizationActive: LobbyistOrganization {
+        LobbyistOrganization(
+            id: "ocl:42",
+            oclOrganizationID: "42",
+            name: "Canadian Housing Alliance",
+            type: .association,
+            sector: "Housing",
+            registeredLobbyists: [
+                RegisteredLobbyist(name: "Jane Lobbyist", kind: .consultant),
+                RegisteredLobbyist(name: "Sam Policy", kind: .inHouse)
+            ],
+            activeSubjectMatters: ["Housing", "Infrastructure"],
+            communicationVolume: LobbyistOrganizationCommunicationVolume(
+                currentParliament: 12,
+                priorParliament: 5
+            ),
+            topDPOHsContacted: [
+                LobbyistOrganizationDPOHContact(
+                    memberID: "278707",
+                    name: "Example Minister",
+                    institution: "House of Commons",
+                    count: 4
+                )
+            ],
+            registrationStatus: .active,
+            registrations: [
+                LobbyistRegistration(
+                    id: "990018",
+                    status: .active,
+                    kind: .consultant,
+                    subjectMatters: ["Housing", "Infrastructure"],
+                    targetedInstitutions: ["House of Commons", "Infrastructure Canada"],
+                    sourceURL: CabinetLobbyingSource.url
+                )
+            ],
+            recentCommunications: [
+                LobbyistOrganizationCommunication(
+                    id: "558142",
+                    date: date("2026-05-20"),
+                    dpohMemberID: "278707",
+                    dpohName: "Example Minister",
+                    institution: "House of Commons",
+                    subjectMatters: ["Housing"],
+                    sourceURL: CabinetLobbyingSource.url
+                ),
+                LobbyistOrganizationCommunication(
+                    id: "558143",
+                    date: date("2026-05-18"),
+                    dpohMemberID: nil,
+                    dpohName: "Assistant Deputy Minister",
+                    institution: "Infrastructure Canada",
+                    subjectMatters: ["Infrastructure"],
+                    sourceURL: CabinetLobbyingSource.url
+                )
+            ],
+            subjectMatters: [
+                LobbyistOrganizationSubjectMatter(
+                    subjectMatter: "Housing",
+                    communicationCount: 8,
+                    topicSlug: "housing"
+                ),
+                LobbyistOrganizationSubjectMatter(
+                    subjectMatter: "Infrastructure",
+                    communicationCount: 4,
+                    topicSlug: "transport"
+                )
+            ],
+            citation: CabinetLobbyingSource.citation,
+            sourceURL: CabinetLobbyingSource.url
+        )
+    }
+
+    private static var lobbyistOrganizationExpired: LobbyistOrganization {
+        LobbyistOrganization(
+            id: "ocl:expired",
+            oclOrganizationID: "77",
+            name: "Former Energy Council",
+            type: .corporation,
+            sector: "Energy",
+            registeredLobbyists: [
+                RegisteredLobbyist(name: "Alex Morgan", kind: .inHouse)
+            ],
+            activeSubjectMatters: [],
+            communicationVolume: LobbyistOrganizationCommunicationVolume(
+                currentParliament: 0,
+                priorParliament: 9
+            ),
+            topDPOHsContacted: [],
+            registrationStatus: .expired,
+            registrations: [
+                LobbyistRegistration(
+                    id: "881100",
+                    status: .expired,
+                    kind: .inHouse,
+                    subjectMatters: ["Energy"],
+                    targetedInstitutions: ["Natural Resources Canada"],
+                    sourceURL: CabinetLobbyingSource.url
+                )
+            ],
+            recentCommunications: [
+                LobbyistOrganizationCommunication(
+                    id: "449900",
+                    date: date("2024-11-05"),
+                    dpohMemberID: nil,
+                    dpohName: "Policy Director",
+                    institution: "Natural Resources Canada",
+                    subjectMatters: ["Energy"],
+                    sourceURL: CabinetLobbyingSource.url
+                )
+            ],
+            subjectMatters: [
+                LobbyistOrganizationSubjectMatter(
+                    subjectMatter: "Energy",
+                    communicationCount: 9,
+                    topicSlug: "energy"
+                )
+            ],
+            citation: CabinetLobbyingSource.citation,
+            sourceURL: CabinetLobbyingSource.url
+        )
+    }
+
+    private static var lobbyistOrganizationNoCommunications: LobbyistOrganization {
+        LobbyistOrganization(
+            id: "ocl:quiet",
+            oclOrganizationID: "88",
+            name: "Quiet Public Policy Institute",
+            type: .nonProfit,
+            sector: "Research",
+            registeredLobbyists: [
+                RegisteredLobbyist(name: "Casey Nguyen", kind: .consultant)
+            ],
+            activeSubjectMatters: ["Research and development"],
+            communicationVolume: LobbyistOrganizationCommunicationVolume(
+                currentParliament: 0,
+                priorParliament: 0
+            ),
+            topDPOHsContacted: [],
+            registrationStatus: .active,
+            registrations: [
+                LobbyistRegistration(
+                    id: "991122",
+                    status: .active,
+                    kind: .consultant,
+                    subjectMatters: ["Research and development"],
+                    targetedInstitutions: [],
+                    sourceURL: CabinetLobbyingSource.url
+                )
+            ],
+            recentCommunications: [],
+            subjectMatters: [],
+            citation: CabinetLobbyingSource.citation,
+            sourceURL: CabinetLobbyingSource.url
+        )
+    }
+
     private static var ministerLobbyingPeriods: [MinisterPortfolioLobbyingPeriod] {
         [
             MinisterPortfolioLobbyingPeriod(

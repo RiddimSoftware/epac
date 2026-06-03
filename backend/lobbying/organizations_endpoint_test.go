@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
+const testRegistrationSourceURL = "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId=990018"
+
 type stubOrganizationBrowser struct {
 	gotInput      application.BrowseLobbyistOrganizationsInput
 	organizations []domain.LobbyistOrganization
@@ -133,6 +135,31 @@ func TestHandleRequestReturnsPopulatedOrganizationProfile(t *testing.T) {
 			TopDPOHsContacted: []domain.DPOHContact{
 				{MemberID: "278707", Name: "Example Minister", Institution: "House of Commons", Count: 4},
 			},
+			RegistrationStatus: domain.RegistrationStatusActive,
+			Registrations: []domain.LobbyistRegistration{
+				{
+					ID:                   "990018",
+					Status:               domain.RegistrationStatusActive,
+					Kind:                 domain.LobbyistKindConsultant,
+					SubjectMatters:       []string{"Housing", "Infrastructure"},
+					TargetedInstitutions: []string{"House of Commons"},
+					SourceURL:            testRegistrationSourceURL,
+				},
+			},
+			RecentCommunications: []domain.LobbyistOrganizationCommunication{
+				{
+					ID:             "558142",
+					Date:           "2026-05-20",
+					DPOHMemberID:   "278707",
+					DPOHName:       "Example Minister",
+					Institution:    "House of Commons",
+					SubjectMatters: []string{"Housing"},
+					SourceURL:      usecase.SourceURL,
+				},
+			},
+			SubjectMatters: []domain.LobbyistOrganizationSubjectMatter{
+				{SubjectMatter: "Housing", CommunicationCount: 6, TopicSlug: "housing"},
+			},
 		},
 	}
 	setOrganizationServicesForTest(t, &stubOrganizationBrowser{}, profile, nil)
@@ -154,11 +181,24 @@ func TestHandleRequestReturnsPopulatedOrganizationProfile(t *testing.T) {
 	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if body.Citation != usecase.Citation || body.CommunicationVolume.CurrentParliament != 8 {
+	if body.Citation != usecase.Citation || body.SourceURL != testRegistrationSourceURL ||
+		body.CommunicationVolume.CurrentParliament != 8 {
 		t.Fatalf("profile body = %#v", body)
 	}
 	if len(body.TopDPOHsContacted) != 1 || body.TopDPOHsContacted[0].MemberID != "278707" {
 		t.Fatalf("top dpohs = %#v", body.TopDPOHsContacted)
+	}
+	if body.RegistrationStatus != domain.RegistrationStatusActive {
+		t.Fatalf("registration status = %q", body.RegistrationStatus)
+	}
+	if len(body.Registrations) != 1 || body.Registrations[0].Status != domain.RegistrationStatusActive {
+		t.Fatalf("registrations = %#v", body.Registrations)
+	}
+	if len(body.RecentCommunications) != 1 || body.RecentCommunications[0].DPOHMemberID != "278707" {
+		t.Fatalf("recent communications = %#v", body.RecentCommunications)
+	}
+	if len(body.SubjectMatters) != 1 || body.SubjectMatters[0].TopicSlug != "housing" {
+		t.Fatalf("subject matters = %#v", body.SubjectMatters)
 	}
 }
 
@@ -193,7 +233,11 @@ func TestHandleRequestReturnsProfileWithNoCommunications(t *testing.T) {
 	if body.CommunicationVolume.CurrentParliament != 0 || body.CommunicationVolume.PriorParliament != 0 {
 		t.Fatalf("communication volume = %#v", body.CommunicationVolume)
 	}
-	if len(body.TopDPOHsContacted) != 0 || len(body.RegisteredLobbyists) != 0 || len(body.ActiveSubjectMatters) != 0 {
+	if body.RegistrationStatus != domain.RegistrationStatusExpired {
+		t.Fatalf("registration status = %q, want expired", body.RegistrationStatus)
+	}
+	if len(body.TopDPOHsContacted) != 0 || len(body.RegisteredLobbyists) != 0 || len(body.ActiveSubjectMatters) != 0 ||
+		len(body.Registrations) != 0 || len(body.RecentCommunications) != 0 || len(body.SubjectMatters) != 0 {
 		t.Fatalf("expected empty arrays in no-communications profile: %#v", body)
 	}
 }

@@ -56,7 +56,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `CabinetLobbyingOverview` | A cabinet-wide lobbying exposure summary with ranked ministers and most-active organizations per portfolio. |
 | `CabinetLobbyingMinisterSummary` | A ranked cabinet minister communication total for the overview screen. |
 | `CabinetLobbyingOrganizationSummary` | A portfolio-scoped organization communication total for the overview screen. |
-| `LobbyistOrganization` | Backend-only aggregate for an OCL client/organization/corporation with canonical ID, type, sector, lobbyists, subject matters, communication trend counts, and top DPOHs contacted. |
+| `LobbyistOrganization` | Aggregate for an OCL client/organization/corporation with canonical ID, type, sector, lobbyists, registrations, recent communications, subject matters, communication trend counts, and top DPOHs contacted. |
 | `OrganizationSector` | OCL subject matter type description carried verbatim as the organization's sector label for profile browsing. |
 | `CommunicationCount` | Current-vs-prior Parliament communication count pair used for organization profile trend display. |
 | `ParliamentSession` | Date-window value defining a Parliament/session boundary for trend aggregation. |
@@ -828,34 +828,42 @@ Current implementation:
 ### LoadLobbyistOrganizationProfile
 
 ```
-Actor: Backend caller
+Actor: Backend caller / User (iOS app)
 Goal: Load one canonical lobbyist organization profile by organization ID.
-Inputs: Canonical organization ID.
-Outputs: LobbyistOrganization aggregate with name, type, sector, registered lobbyists, active subject matters, communication trend, and top DPOHs contacted.
-Entities / values: LobbyistOrganization, OrganizationSector, CommunicationCount.
-Ports: backend Go: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations/{id}).
+Inputs: Canonical organization ID; iOS may first resolve an organization name through the directory endpoint when an entry point lacks the canonical ID.
+Outputs: LobbyistOrganization aggregate with name, type, sector, registration status, registrations, registered lobbyists, active subject matters, recent communications, subject-matter counts, communication trend, and top DPOHs contacted.
+Entities / values: LobbyistOrganization, LobbyistRegistration, LobbyistOrganizationCommunication, LobbyistOrganizationSubjectMatter, OrganizationSector, CommunicationCount.
+Ports: backend Go: `LobbyistOrganizationRepository`; iOS Swift: `LobbyistOrganizationRepository`.
+Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations/{id}), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationView.
 Current implementation:
+  ios/epac/Application/LoadLobbyistOrganizationProfile.swift
+  ios/epac/Domain/Entities/LobbyistOrganization.swift
+  ios/epac/Domain/Ports/LobbyistOrganizationRepository.swift
+  ios/epac/Data/Repositories/BackendLobbyistOrganizationRepository.swift
+  ios/epac/Views/Accountability/LobbyistOrganizationView.swift
   backend/lobbying/application/aggregate.go
   backend/lobbying/organizations_endpoint.go
   backend/lobbying/repository/postgres.go
 ```
 
-> Boundary rule: HTTP request/response types are intentionally absent until the endpoint issue lands.
+> Boundary rule: HTTP request/response types stay in the backend Lambda and iOS REST adapter. SwiftUI imports stay in `LobbyistOrganizationView`; the iOS view-model consumes domain/use-case values.
 
 ---
 
 ### BrowseLobbyistOrganizations
 
 ```
-Actor: Backend caller
+Actor: Backend caller / User (iOS app)
 Goal: Browse canonical lobbyist organizations for profile discovery.
 Inputs: Search text, sector filter, communication-volume sort direction, limit, offset.
 Outputs: Ordered LobbyistOrganization aggregates.
 Entities / values: LobbyistOrganization, CommunicationCount.
-Ports: backend Go: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations).
+Ports: backend Go: `LobbyistOrganizationRepository`; iOS Swift: `LobbyistOrganizationRepository`.
+Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationDirectoryView.
 Current implementation:
+  ios/epac/Domain/Ports/LobbyistOrganizationRepository.swift
+  ios/epac/Data/Repositories/BackendLobbyistOrganizationRepository.swift
+  ios/epac/Views/Accountability/LobbyistOrganizationDirectoryView.swift
   backend/lobbying/application/aggregate.go
   backend/lobbying/organizations_endpoint.go
   backend/lobbying/repository/postgres.go

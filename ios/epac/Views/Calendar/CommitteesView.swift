@@ -466,9 +466,11 @@ struct CommitteeEvidenceView: View {
                             Text(witness.name)
                                 .font(.subheadline.weight(.semibold))
                             if !witness.organization.isEmpty {
-                                Text(witness.organization)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                NavigationLink(destination: LobbyistOrganizationView(organizationName: witness.organization)) {
+                                    Text(witness.organization)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }

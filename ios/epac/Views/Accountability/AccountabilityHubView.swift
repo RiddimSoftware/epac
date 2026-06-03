@@ -77,6 +77,10 @@ struct AccountabilityHubView: View {
 						Label("Cabinet Lobbying", systemImage: "person.2.wave.2.fill")
 					}
 					.accessibilityHint("Opens cabinet minister lobbying overview")
+					NavigationLink(destination: LobbyistOrganizationDirectoryView()) {
+						Label("Lobbyist Organizations", systemImage: "building.2.fill")
+					}
+					.accessibilityHint("Opens OCL lobbyist organization directory")
 				}
 			}
 			.listStyle(.insetGrouped)

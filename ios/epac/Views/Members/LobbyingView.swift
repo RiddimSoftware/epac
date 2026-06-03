@@ -81,7 +81,7 @@ struct LobbyingView: View {
 					emptyState(sourceURL: exposure.sourceURL)
 				} else {
 					summaryCard(exposure.summary)
-					topOrganizations(exposure.summary.topOrganizations, sourceURL: exposure.sourceURL)
+					topOrganizations(exposure.summary.topOrganizations)
 					subjectChart(exposure.subjectBreakdown)
 					filters
 					timeline(exposure: exposure)
@@ -177,13 +177,13 @@ struct LobbyingView: View {
 		}
 	}
 
-	private func topOrganizations(_ organizations: [MPLobbyingTopOrganization], sourceURL: URL) -> some View {
+	private func topOrganizations(_ organizations: [MPLobbyingTopOrganization]) -> some View {
 		VStack(alignment: .leading, spacing: MPLobbyingLayout.sectionSpacing) {
 			Text("Top Lobbying Organizations")
 				.font(.subheadline.weight(.semibold))
 
 			ForEach(Array(organizations.prefix(MPLobbyingLayout.topOrganizationsLimit))) { organization in
-				NavigationLink(destination: LobbyistOrganizationProfilePreview(organization: organization, sourceURL: sourceURL)) {
+				NavigationLink(destination: LobbyistOrganizationView(organizationName: organization.name)) {
 					HStack(alignment: .firstTextBaseline, spacing: MPLobbyingLayout.rowSpacing) {
 						VStack(alignment: .leading, spacing: MPLobbyingLayout.compactSpacing) {
 							Text(organization.name)
@@ -427,39 +427,6 @@ private struct MPLobbyingTimelineRow: View {
 		formatter.timeStyle = .none
 		return formatter
 	}()
-}
-
-private struct LobbyistOrganizationProfilePreview: View {
-	let organization: MPLobbyingTopOrganization
-	let sourceURL: URL
-
-	var body: some View {
-		List {
-			Section {
-				VStack(alignment: .leading, spacing: MPLobbyingLayout.sectionSpacing) {
-					Text(organization.name)
-						.font(.title3.weight(.semibold))
-						.fixedSize(horizontal: false, vertical: true)
-					if let sector = organization.sector, !sector.isEmpty {
-						Text(sector)
-							.font(.subheadline)
-							.foregroundStyle(.secondary)
-					}
-				}
-				.padding(.vertical, EpacSpacing.xs)
-			}
-
-			Section("Current Parliament") {
-				LabeledContent("Communications", value: "\(organization.communicationCount)")
-			}
-
-			Section("Source") {
-				LobbyingSourceCitationView(url: sourceURL)
-			}
-		}
-		.navigationTitle("Organization Profile")
-		.navigationBarTitleDisplayMode(.inline)
-	}
 }
 
 struct MPLobbyingSubjectFilter: Identifiable, Equatable {
