@@ -14,6 +14,7 @@ from typing import Any
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--summary-markdown", type=Path)
     parser.add_argument("paths", type=Path, nargs="+")
     return parser.parse_args()
 
@@ -90,30 +91,109 @@ def main() -> int:
 
     failures: list[str] = []
     summaries: list[str] = []
+    rows: list[tuple[str, str, float | None, float, str, int, str]] = []
     for expected in expected_metrics:
+        max_seconds = float(expected["max_seconds"])
         test = matching_test(tests, expected["test_method"])
         if test is None:
             failures.append(f"{expected['name']}: missing test method {expected['test_method']}")
+            rows.append((
+                expected["name"],
+                expected["test_method"],
+                None,
+                max_seconds,
+                "s",
+                0,
+                "missing",
+            ))
             continue
 
         measurements = duration_measurements(test, expected["name"])
         if not measurements:
             failures.append(f"{expected['name']}: missing duration measurements")
+            rows.append((
+                expected["name"],
+                expected["test_method"],
+                None,
+                max_seconds,
+                "s",
+                0,
+                "missing",
+            ))
             continue
 
         average = mean(measurements)
-        max_seconds = float(expected["max_seconds"])
+        status = "passed" if average <= max_seconds else "failed"
+        rows.append((
+            expected["name"],
+            expected["test_method"],
+            average,
+            max_seconds,
+            "s",
+            len(measurements),
+            status,
+        ))
         summaries.append(f"{expected['name']}: average={average:.3f}s budget={max_seconds:.3f}s samples={len(measurements)}")
         if average > max_seconds:
             failures.append(f"{expected['name']}: average {average:.3f}s exceeded budget {max_seconds:.3f}s")
 
     print("\n".join(summaries))
+    if args.summary_markdown is not None:
+        write_summary(args.summary_markdown, rows)
     if failures:
         print("\nSignpost performance guard failed:", file=sys.stderr)
         for failure in failures:
             print(f"- {failure}", file=sys.stderr)
         return 1
     return 0
+
+
+def write_summary(
+    path: Path,
+    rows: list[tuple[str, str, float | None, float, str, int, str]],
+) -> None:
+    lines = ["### Signpost performance metrics", ""]
+    lines.extend(markdown_table(rows))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def markdown_table(
+    rows: list[tuple[str, str, float | None, float, str, int, str]],
+) -> list[str]:
+    if not rows:
+        return ["No signpost performance metrics were reported."]
+
+    lines = [
+        "| Metric | Test | Budget | Measured average | Unit | Samples | Status |",
+        "| --- | --- | ---: | ---: | --- | ---: | --- |",
+    ]
+    for name, test_method, average, budget, unit, sample_count, status in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_escape(name),
+                    markdown_escape(test_method),
+                    f"{budget:.6g}",
+                    format_value(average),
+                    markdown_escape(unit),
+                    str(sample_count),
+                    status,
+                ]
+            )
+            + " |"
+        )
+    return lines
+
+
+def format_value(value: float | None) -> str:
+    if value is None:
+        return "missing"
+    return f"{value:.6g}"
+
+
+def markdown_escape(value: str) -> str:
+    return value.replace("|", "\\|")
 
 
 if __name__ == "__main__":
