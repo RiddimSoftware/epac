@@ -28,6 +28,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `OCLSubjectMatter` | An Office of the Commissioner of Lobbying subject-matter code used on communication reports and registrations. |
 | `EpacTopicSlug` | The stable epac topic identifier used to group parliamentary and lobbying records. |
 | `LobbyingByTopicResult` | Backend-only paged lobbying result set for an epac topic, including source citation metadata. |
+| `BillLobbyingContext` | Backend-only bill-level lobbying cross-reference result with communication counts by organization and subject matter. |
+| `LobbyingSubjectMatch` | Backend-only link between a bill subject tag, high-confidence epac topic mapping, and OCL subject-matter code. |
+| `OrganizationCommunicationCount` | Backend-only count of OCL communication reports grouped by organization name. |
 | `Minister` | Backend-only cabinet minister identity resolved by House of Commons member ID and name. |
 | `Portfolio` | A cabinet portfolio title held by a minister during a known date period. |
 | `MinisterTenure` | Date-window value for a minister's cabinet service, used when portfolio boundaries are incomplete. |
@@ -92,6 +95,8 @@ will build the missing artifact.
 | `MPLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load precomputed MP lobbying summaries and paged timeline rows; refresh timeline and quarterly summary read models from OCL communication records. |
 | `LobbyingSubjectDistributionQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load the all-subject communication breakdown for an MP lobbying exposure response. |
 | `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
+| `BillSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read bill subject tags and the latest bill reading anchor used for bill-level lobbying context. |
+| `BillLobbyingCommunicationsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read OCL communication rows matching mapped bill subject codes within a date window. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
 | `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
@@ -394,6 +399,28 @@ Current implementation:
 ```
 
 > **Boundary rule:** The use case depends on the `OCLSubjectsSource` and `LobbyingSubjectsRepository` ports. The checked-in mapping JSON, Postgres tables, and Lambda request/response details stay in adapters.
+
+---
+
+### LoadBillLobbyingContext
+
+```
+Actor: Backend API caller / iOS bill detail surface
+Goal: Summarize OCL communication reports whose high-confidence subject-matter mappings match a bill's subject tags.
+Inputs: LEGISinfo bill ID, window in months.
+Outputs: BillLobbyingContext with total communications, counts by organization, counts by subject matter, and top organizations.
+Entities / values: Bill, BillLobbyingContext, LobbyingSubjectMatch, OrganizationCommunicationCount, OCLSubjectMatter.
+Ports: backend Go: `BillSubjectsRepository`, `BillLobbyingCommunicationsRepository`, `OCLSubjectsSource`, `Clock`.
+Primary adapters: lobbying Lambda (GET /api/v1/bills/{legisinfo_id}/lobbying-context), Postgres bill/lobbying context adapter, ocl_topic_map.json source.
+Current implementation:
+  backend/lobbying/bill_lobbying_context_endpoint.go
+  backend/lobbying/internal/usecase/bill_lobbying_context.go
+  backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go
+  backend/lobbying/internal/adapter/ocltopicmap/source.go
+  backend/lobbying/ocl_topic_map.json
+```
+
+> **Boundary rule:** The use case filters to high-confidence topic mappings and computes the date window/count aggregation without importing Lambda, Postgres, or JSON mapping details. LEGISinfo bill subject/readings storage stays in read-side Postgres tables owned by the ingestion adapter.
 
 ---
 

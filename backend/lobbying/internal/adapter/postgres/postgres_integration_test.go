@@ -65,6 +65,74 @@ func TestRepositoryListByOCLCodesEmpty(t *testing.T) {
 	})
 }
 
+func TestRepositoryLoadBillSubjectContextFromLegisInfoRows(t *testing.T) {
+	_testdb.WithTx(t, func(conn *pgx.Conn) {
+		resetBillContextRows(t, conn)
+
+		_, err := conn.Exec(context.Background(), `
+			INSERT INTO legisinfo_bill_subject_tags (
+				legisinfo_id, subject_tag, epac_topic_slug, confidence
+			) VALUES
+				('13854949', 'Housing', 'housing', 1.0),
+				('13854949', 'Infrastructure', 'infrastructure', 0.95),
+				('13854949', 'Low confidence', 'economy', 0.55),
+				('other', 'Healthcare', 'healthcare', 1.0);
+
+			INSERT INTO legisinfo_bill_readings (
+				legisinfo_id, reading_date, stage_name
+			) VALUES
+				('13854949', '2026-03-01', 'First Reading'),
+				('13854949', '2026-05-15', 'Second Reading'),
+				('other', '2026-06-01', 'First Reading')
+		`)
+		if err != nil {
+			t.Fatalf("seed bill subject context: %v", err)
+		}
+
+		context, err := New(conn).LoadBillSubjectContext(context.Background(), "13854949")
+		if err != nil {
+			t.Fatalf("LoadBillSubjectContext: %v", err)
+		}
+		if context.MostRecentReadingDate != "2026-05-15" {
+			t.Fatalf("most recent reading date = %q", context.MostRecentReadingDate)
+		}
+		if len(context.SubjectTags) != 2 || context.SubjectTags[0] != "Housing" || context.SubjectTags[1] != "Infrastructure" {
+			t.Fatalf("subject tags = %#v", context.SubjectTags)
+		}
+		if len(context.TopicSlugs) != 2 || context.TopicSlugs[0] != "housing" || context.TopicSlugs[1] != "infrastructure" {
+			t.Fatalf("topic slugs = %#v", context.TopicSlugs)
+		}
+	})
+}
+
+func TestRepositoryListBillLobbyingCommunicationsFiltersToWindowAndCommunications(t *testing.T) {
+	_testdb.WithTx(t, func(conn *pgx.Conn) {
+		resetLobbyingRows(t, conn)
+		seedLobbyingRows(t, conn)
+
+		rows, err := New(conn).ListBillLobbyingCommunications(context.Background(), []usecase.OCLTopicMapping{
+			{OCLCode: "SMT-44", EpacTopicSlug: "housing", Confidence: 1},
+		}, usecase.DateWindow{StartDate: "2026-03-01", EndDate: "2026-03-31"})
+		if err != nil {
+			t.Fatalf("ListBillLobbyingCommunications: %v", err)
+		}
+		if len(rows) != 1 {
+			t.Fatalf("rows = %#v, want one communication", rows)
+		}
+		if rows[0].ID != "COM-2" || rows[0].OrganizationName != "Newer Housing Org" || rows[0].SubjectMatter != "Housing" {
+			t.Fatalf("unexpected row: %#v", rows[0])
+		}
+	})
+}
+
+func resetBillContextRows(t *testing.T, conn *pgx.Conn) {
+	t.Helper()
+	_, err := conn.Exec(context.Background(), `TRUNCATE TABLE legisinfo_bill_subject_tags, legisinfo_bill_readings`)
+	if err != nil {
+		t.Fatalf("reset bill context rows: %v", err)
+	}
+}
+
 func resetLobbyingRows(t *testing.T, conn *pgx.Conn) {
 	t.Helper()
 	_, err := conn.Exec(context.Background(), `

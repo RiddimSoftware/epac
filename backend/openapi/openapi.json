@@ -545,6 +545,82 @@
         }
       }
     },
+    "/api/v1/bills/{legisinfo_id}/lobbying-context": {
+      "get": {
+        "tags": ["Bills", "Lobbying"],
+        "summary": "Load bill lobbying context",
+        "description": "Returns Office of the Commissioner of Lobbying communication counts whose high-confidence OCL subject-matter mappings match the bill's subject tags within the requested pre-reading window.",
+        "operationId": "loadBillLobbyingContext",
+        "parameters": [
+          {
+            "name": "legisinfo_id",
+            "in": "path",
+            "required": true,
+            "description": "LEGISinfo bill identifier.",
+            "schema": { "type": "string", "example": "13854949" }
+          },
+          {
+            "name": "window_months",
+            "in": "query",
+            "required": false,
+            "description": "Months before the bill's most recent reading date to include. Defaults to 12.",
+            "schema": { "type": "integer", "minimum": 1, "default": 12 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bill lobbying communication counts",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillLobbyingContextResponse" },
+                "examples": {
+                  "populated": {
+                    "value": {
+                      "legisinfo_id": "13854949",
+                      "window_months": 12,
+                      "window_start_date": "2025-05-15",
+                      "window_end_date": "2026-05-15",
+                      "subject_tags": ["Housing"],
+                      "total_communications": 2,
+                      "count_by_organization": [
+                        { "organization_name": "Example Housing Association", "count": 2 }
+                      ],
+                      "count_by_subject_matter": [
+                        { "ocl_code": "SMT-44", "subject_matter": "Housing", "count": 2 }
+                      ],
+                      "top_organizations": [
+                        { "organization_name": "Example Housing Association", "count": 2 }
+                      ],
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "legisinfo_id": "13854949",
+                      "window_months": 12,
+                      "window_start_date": "2025-05-15",
+                      "window_end_date": "2026-05-15",
+                      "subject_tags": [],
+                      "total_communications": 0,
+                      "count_by_organization": [],
+                      "count_by_subject_matter": [],
+                      "top_organizations": [],
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/calendar/house.ics": {
       "get": {
         "tags": ["Parliament"],
@@ -1909,11 +1985,59 @@
           "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
         }
       },
+      "BillLobbyingContextResponse": {
+        "type": "object",
+        "required": [
+          "legisinfo_id",
+          "window_months",
+          "window_start_date",
+          "window_end_date",
+          "subject_tags",
+          "total_communications",
+          "count_by_organization",
+          "count_by_subject_matter",
+          "top_organizations",
+          "citation",
+          "source_url"
+        ],
+        "properties": {
+          "legisinfo_id": { "type": "string", "example": "13854949" },
+          "window_months": { "type": "integer", "minimum": 1, "example": 12 },
+          "window_start_date": { "type": "string", "format": "date" },
+          "window_end_date": { "type": "string", "format": "date" },
+          "subject_tags": { "type": "array", "items": { "type": "string" } },
+          "total_communications": { "type": "integer", "minimum": 0 },
+          "count_by_organization": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LobbyingTopOrganization" }
+          },
+          "count_by_subject_matter": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LobbyingSubjectMatterCount" }
+          },
+          "top_organizations": {
+            "type": "array",
+            "maxItems": 3,
+            "items": { "$ref": "#/components/schemas/LobbyingTopOrganization" }
+          },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+        }
+      },
       "LobbyingTopOrganization": {
         "type": "object",
         "required": ["organization_name", "count"],
         "properties": {
           "organization_name": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "LobbyingSubjectMatterCount": {
+        "type": "object",
+        "required": ["ocl_code", "subject_matter", "count"],
+        "properties": {
+          "ocl_code": { "type": "string", "example": "SMT-44" },
+          "subject_matter": { "type": "string", "example": "Housing" },
           "count": { "type": "integer", "minimum": 1 }
         }
       },

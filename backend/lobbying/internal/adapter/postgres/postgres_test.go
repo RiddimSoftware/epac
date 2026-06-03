@@ -17,6 +17,19 @@ func TestRepositoryListByOCLCodesEmptyMappingsDoesNotRequireConnection(t *testin
 	}
 }
 
+func TestRepositoryListBillLobbyingCommunicationsEmptyMappingsDoesNotRequireConnection(t *testing.T) {
+	rows, err := New(nil).ListBillLobbyingCommunications(context.Background(), nil, usecase.DateWindow{
+		StartDate: "2025-05-15",
+		EndDate:   "2026-05-15",
+	})
+	if err != nil {
+		t.Fatalf("ListBillLobbyingCommunications: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Fatalf("rows = %#v, want empty", rows)
+	}
+}
+
 func TestRepositoryListMinisterCommunicationsWithoutLastNameDoesNotRequireConnection(t *testing.T) {
 	rows, err := New(nil).ListMinisterCommunications(context.Background(), usecase.MinisterCommunicationsFilter{})
 	if err != nil {
