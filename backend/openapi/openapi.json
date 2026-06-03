@@ -398,6 +398,117 @@
         }
       }
     },
+    "/api/v1/members/{id}/lobbying": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "Get MP lobbying exposure and recent communications",
+        "operationId": "getMemberLobbyingDashboard",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          {
+            "name": "range",
+            "in": "query",
+            "description": "Optional date window for timeline filtering.",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "30d", "3m", "12m"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "description": "Optional case-insensitive subject filter.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated lobbying communications with precomputed summary and comparison metrics.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MPLobbyingDashboardResponse" },
+                "examples": {
+                  "lobbying": {
+                    "value": {
+                      "member_id": "278707",
+                      "page": 1,
+                      "per_page": 50,
+                      "total": 3,
+                      "pages": 1,
+                      "summary": {
+                        "total_communications": 3,
+                        "unique_organizations": 2,
+                        "most_frequent_subject": "Taxation",
+                        "previous_parliament_communications": 1,
+                        "trend_vs_previous_parliament": 3.0
+                      },
+                      "timeline": [
+                        {
+                          "communication_date": "2026-04-02",
+                          "organization_name": "ABC Ltd",
+                          "organization_sector": "Finance",
+                          "subject_matter": "Tax policy",
+                          "communication_type": "meeting",
+                          "organization_id": "abc-1",
+                          "organization_profile_url": "https://example.com/orgs/abc-1",
+                          "related_bill_title": "Tax Fairness Act",
+                          "related_bill_url": "https://www.parl.ca/bill",
+                          "related_bill_confidence": 0.94,
+                          "related_bill_confidence_used": true,
+                          "record_url": "https://lobbycanada.gc.ca/record/abc"
+                        },
+                        {
+                          "communication_date": "2026-03-20",
+                          "organization_name": "DEF Corp",
+                          "organization_sector": "Health",
+                          "subject_matter": "Healthcare spending",
+                          "communication_type": "written",
+                          "organization_id": "def-2",
+                          "organization_profile_url": "https://example.com/orgs/def-2",
+                          "record_url": "https://lobbycanada.gc.ca/record/def"
+                        }
+                      ],
+                      "subject_distribution": [
+                        { "subject": "Taxation", "count": 2, "percentage": 67 },
+                        { "subject": "Health", "count": 1, "percentage": 33 }
+                      ],
+                      "top_organizations": [
+                        {
+                          "organization_name": "ABC Ltd",
+                          "organization_sector": "Finance",
+                          "count": 2,
+                          "organization_id": "abc-1",
+                          "organization_profile_url": "https://example.com/orgs/abc-1"
+                        },
+                        {
+                          "organization_name": "DEF Corp",
+                          "organization_sector": "Health",
+                          "count": 1,
+                          "organization_id": "def-2",
+                          "organization_profile_url": "https://example.com/orgs/def-2"
+                        }
+                      ],
+                      "cohort_comparison": {
+                        "party": "Liberal",
+                        "party_average": 12,
+                        "national_average": 18,
+                        "party_ratio": 3.0,
+                        "national_ratio": 2.3
+                      },
+                      "available_subjects": ["Taxation", "Health"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/api/v1/members/{id}/speeches": {
       "get": {
         "tags": ["Members"],
@@ -1808,6 +1919,110 @@
           "total": { "type": "integer" },
           "pages": { "type": "integer" },
           "votes": { "type": "array", "items": { "$ref": "#/components/schemas/Vote" } }
+        }
+      },
+      "MPLobbyingDashboardResponse": {
+        "type": "object",
+        "required": [
+          "member_id",
+          "page",
+          "per_page",
+          "total",
+          "pages",
+          "summary",
+          "timeline",
+          "subject_distribution",
+          "top_organizations",
+          "cohort_comparison",
+          "available_subjects"
+        ],
+        "properties": {
+          "member_id": { "type": "string" },
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "pages": { "type": "integer" },
+          "summary": { "$ref": "#/components/schemas/MPLobbyingDashboardSummary" },
+          "timeline": { "type": "array", "items": { "$ref": "#/components/schemas/MPLobbyingDashboardTimelineEntry" } },
+          "subject_distribution": { "type": "array", "items": { "$ref": "#/components/schemas/MPLobbyingDashboardSubjectDistribution" } },
+          "top_organizations": { "type": "array", "items": { "$ref": "#/components/schemas/MPLobbyingDashboardTopOrganization" } },
+          "cohort_comparison": { "$ref": "#/components/schemas/MPLobbyingDashboardCohortComparison" },
+          "available_subjects": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "MPLobbyingDashboardSummary": {
+        "type": "object",
+        "required": [
+          "total_communications",
+          "unique_organizations",
+          "most_frequent_subject",
+          "previous_parliament_communications",
+          "trend_vs_previous_parliament"
+        ],
+        "properties": {
+          "total_communications": { "type": "integer" },
+          "unique_organizations": { "type": "integer" },
+          "most_frequent_subject": { "type": "string" },
+          "previous_parliament_communications": { "type": "integer" },
+          "trend_vs_previous_parliament": { "type": "number", "format": "double" }
+        }
+      },
+      "MPLobbyingDashboardTimelineEntry": {
+        "type": "object",
+        "required": [
+          "communication_date",
+          "organization_name",
+          "subject_matter",
+          "communication_type",
+          "record_url"
+        ],
+        "properties": {
+          "communication_date": { "type": "string", "format": "date" },
+          "organization_name": { "type": "string" },
+          "organization_sector": { "type": "string" },
+          "subject_matter": { "type": "string" },
+          "communication_type": { "type": "string", "example": "meeting" },
+          "organization_id": { "type": "string" },
+          "organization_profile_url": { "type": "string", "format": "uri" },
+          "related_bill_title": { "type": "string" },
+          "related_bill_url": { "type": "string", "format": "uri" },
+          "related_bill_confidence": { "type": "number", "format": "double" },
+          "related_bill_confidence_used": { "type": "boolean" },
+          "record_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MPLobbyingDashboardSubjectDistribution": {
+        "type": "object",
+        "required": ["subject", "count", "percentage"],
+        "properties": {
+          "subject": { "type": "string" },
+          "count": { "type": "integer" },
+          "percentage": { "type": "number" }
+        }
+      },
+      "MPLobbyingDashboardTopOrganization": {
+        "type": "object",
+        "required": [
+          "organization_name",
+          "count"
+        ],
+        "properties": {
+          "organization_name": { "type": "string" },
+          "organization_sector": { "type": "string" },
+          "count": { "type": "integer" },
+          "organization_id": { "type": "string" },
+          "organization_profile_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "MPLobbyingDashboardCohortComparison": {
+        "type": "object",
+        "required": ["party", "party_average", "national_average", "party_ratio", "national_ratio"],
+        "properties": {
+          "party": { "type": "string" },
+          "party_average": { "type": "number" },
+          "national_average": { "type": "number" },
+          "party_ratio": { "type": "number" },
+          "national_ratio": { "type": "number" }
         }
       },
       "Vote": {

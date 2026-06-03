@@ -380,6 +380,17 @@
 "lobbying.error.title" = "Impossible de charger les données de lobbying";
 "lobbying.error.description" = "Vérifiez votre connexion et réessayez.";
 "lobbying.subject.unspecified" = "Sujet non précisé";
+"lobbying.sourceLabel" = "Source : registre du Commissaire au lobbying";
+"lobbying.relatedBill" = "Voir le projet de loi connexe";
+"lobbying.range.all" = "Toute la période";
+"lobbying.range.30" = "30 derniers jours";
+"lobbying.range.3m" = "3 mois";
+"lobbying.range.12" = "12 mois";
+"lobbying.retry" = "Réessayer";
+"lobbying.trend.more" = "Ce député a reçu %@ de communications de lobbying par rapport au Parlement précédent.";
+"lobbying.trend.less" = "Ce député n'a reçu que %@ de communications de lobbying par rapport au Parlement précédent.";
+"lobbying.trend.same" = "Ce député a reçu la même quantité de communications que le Parlement précédent.";
+"lobbying.trend.noComparable" = "Ce député n'avait pas d'activité comparable au Parlement précédent.";
 
 /* Fil d'accueil personnalisé */
 "home.debates.title" = "Débats passés";

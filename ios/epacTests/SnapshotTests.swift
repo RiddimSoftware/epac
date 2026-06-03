@@ -350,58 +350,6 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
-    // MARK: - MP lobbying (EPAC-2155)
-
-    @MainActor
-    func testMPLobbying_present() {
-        snapshot(
-            ScrollView {
-                LobbyingView(
-                    memberID: 278707,
-                    initialExposure: Self.mpLobbyingExposure,
-                    initialLoadCompleted: true,
-                    autoload: false
-                )
-                .padding()
-            }
-            .frame(width: 375, height: 980),
-            name: "MPLobbying_present"
-        )
-    }
-
-    @MainActor
-    func testMPLobbying_empty() {
-        snapshot(
-            LobbyingView(
-                memberID: 42,
-                initialExposure: Self.mpLobbyingEmptyExposure,
-                initialLoadCompleted: true,
-                autoload: false
-            )
-            .frame(width: 375, height: 420)
-            .padding(),
-            name: "MPLobbying_empty"
-        )
-    }
-
-    @MainActor
-    func testMPLobbying_filtered() {
-        snapshot(
-            ScrollView {
-                LobbyingView(
-                    memberID: 278707,
-                    initialExposure: Self.mpLobbyingExposure,
-                    initialSubjectSlug: MPLobbyingSubjectDistribution.slug(for: "Housing"),
-                    initialLoadCompleted: true,
-                    autoload: false
-                )
-                .padding()
-            }
-            .frame(width: 375, height: 860),
-            name: "MPLobbying_filtered"
-        )
-    }
-
     // MARK: - Lobbyist organization profile (EPAC-996)
 
     @MainActor
@@ -696,134 +644,6 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
-    private static var mpLobbyingExposure: MPLobbyingExposure {
-        MPLobbyingExposure(
-            memberID: "278707",
-            parliament: 45,
-            window: .threeMonths,
-            page: 1,
-            perPage: MPLobbyingExposureDefaults.pageSize,
-            total: 75,
-            pages: 2,
-            summary: MPLobbyingSummary(
-                memberID: "278707",
-                parliament: 45,
-                quarterStart: date("2026-04-01"),
-                window: .threeMonths,
-                totalCommunicationCount: 12,
-                uniqueOrganizationsCount: 5,
-                mostFrequentSubjectMatter: "Housing",
-                topOrganizations: [
-                    MPLobbyingTopOrganization(
-                        name: "Example Housing Association",
-                        sector: "Housing",
-                        communicationCount: 6
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "National Builders Council",
-                        sector: "Infrastructure",
-                        communicationCount: 4
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Tenant Rights Network",
-                        sector: "Housing",
-                        communicationCount: 2
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Urban Infrastructure Forum",
-                        sector: "Transport",
-                        communicationCount: 1
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Clean Grid Coalition",
-                        sector: "Energy",
-                        communicationCount: 1
-                    )
-                ],
-                trendVsPreviousParliament: MPLobbyingTrend(
-                    currentParliament: 12,
-                    previousParliament: 4,
-                    delta: 8
-                ),
-                partyAverageCommunications: 4.0,
-                nationalAverageCommunications: 3.75,
-                citation: CabinetLobbyingSource.citation,
-                updatedAt: date("2026-06-03")
-            ),
-            subjectBreakdown: [
-                MPLobbyingSubjectDistribution(subjectMatter: "Housing", communicationCount: 8),
-                MPLobbyingSubjectDistribution(subjectMatter: "Infrastructure", communicationCount: 4),
-                MPLobbyingSubjectDistribution(subjectMatter: "Energy", communicationCount: 2)
-            ],
-            timeline: [
-                MPLobbyingTimelineEntry(
-                    communicationID: "558142",
-                    date: date("2026-05-20"),
-                    organizationName: "Example Housing Association",
-                    organizationSector: "Housing",
-                    subjectMatter: "Housing",
-                    communicationType: "meeting",
-                    billCrossReference: MPLobbyingBillCrossReference(
-                        billNumber: "C-1",
-                        billTitle: "Example Bill",
-                        url: URL(string: "https://www.parl.ca/legisinfo/en/bill/45-1/c-1")!,
-                        mappingConfidence: 0.93
-                    ),
-                    citation: CabinetLobbyingSource.citation,
-                    sourceURL: CabinetLobbyingSource.url
-                ),
-                MPLobbyingTimelineEntry(
-                    communicationID: "558143",
-                    date: date("2026-05-18"),
-                    organizationName: "National Builders Council",
-                    organizationSector: "Infrastructure",
-                    subjectMatter: "Infrastructure",
-                    communicationType: "written",
-                    billCrossReference: nil,
-                    citation: CabinetLobbyingSource.citation,
-                    sourceURL: CabinetLobbyingSource.url
-                )
-            ],
-            citation: CabinetLobbyingSource.citation,
-            sourceURL: CabinetLobbyingSource.url
-        )
-    }
-
-    private static var mpLobbyingEmptyExposure: MPLobbyingExposure {
-        MPLobbyingExposure(
-            memberID: "42",
-            parliament: 45,
-            window: .allTime,
-            page: 1,
-            perPage: MPLobbyingExposureDefaults.pageSize,
-            total: 0,
-            pages: 0,
-            summary: MPLobbyingSummary(
-                memberID: "42",
-                parliament: 45,
-                quarterStart: date("2026-04-01"),
-                window: .allTime,
-                totalCommunicationCount: 0,
-                uniqueOrganizationsCount: 0,
-                mostFrequentSubjectMatter: nil,
-                topOrganizations: [],
-                trendVsPreviousParliament: MPLobbyingTrend(
-                    currentParliament: 0,
-                    previousParliament: 0,
-                    delta: 0
-                ),
-                partyAverageCommunications: 0,
-                nationalAverageCommunications: 0,
-                citation: CabinetLobbyingSource.citation,
-                updatedAt: date("2026-06-03")
-            ),
-            subjectBreakdown: [],
-            timeline: [],
-            citation: CabinetLobbyingSource.citation,
-            sourceURL: CabinetLobbyingSource.url
-        )
-    }
-
     private static var billLobbyingContext: BillLobbyingContext {
         BillLobbyingContext(
             billID: "C-2",
@@ -1013,6 +833,139 @@ final class SnapshotTests: XCTestCase {
             }
             .frame(width: 375, height: 700),
             name: "ContractDetail_withAmendments"
+        )
+    }
+
+    // MARK: - MP Lobbying dashboard (EPAC-694)
+
+    @MainActor
+    func testMPLobbyingTab_communicationsPresent() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .liberal),
+                    preloadedResponse: Self.sampleLobbyingExposureResponse()
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_communicationsPresent"
+        )
+    }
+
+    @MainActor
+    func testMPLobbyingTab_emptyState() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .green),
+                    preloadedResponse: .empty
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_emptyState"
+        )
+    }
+
+    @MainActor
+    func testMPLobbyingTab_filteredState() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .conservative),
+                    preloadedResponse: Self.sampleLobbyingExposureResponse(filterMode: true),
+                    initialSubject: "Health"
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_filteredState"
+        )
+    }
+
+    private static func sampleLobbyingExposureResponse(filterMode: Bool = false) -> MPLobbyingExposureResponse {
+        let timeline: [MPLobbyingTimelineEntry] = [
+            MPLobbyingTimelineEntry(
+                communicationDate: "2026-04-02",
+                organizationName: "Fiscal Policy Group",
+                organizationSector: "Finance",
+                subjectMatter: "Banking oversight",
+                communicationType: "meeting",
+                organizationID: "fpg",
+                organizationProfileURL: "https://example.com/org/fpg",
+                relatedBillTitle: "Financial Institutions Reform Act",
+                relatedBillURL: "https://www.parl.ca/legisinfo/en/bill/44-1/c-14",
+                relatedBillConfidence: 0.91,
+                relatedBillConfidenceUsed: true,
+                recordURL: "https://lobbycanada.gc.ca/record/12"
+            ),
+            MPLobbyingTimelineEntry(
+                communicationDate: "2026-03-15",
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                subjectMatter: filterMode ? "Health policy" : "Health policy",
+                communicationType: "written",
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp",
+                relatedBillTitle: "",
+                relatedBillURL: "",
+                relatedBillConfidence: 0,
+                relatedBillConfidenceUsed: false,
+                recordURL: "https://lobbycanada.gc.ca/record/13"
+            )
+        ]
+
+        let subjects = filterMode ? ["Health"] : ["Health", "Finance"]
+        let topOrganizations = filterMode ? [
+            MPLobbyingTopOrganization(
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                count: 2,
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp"
+            )
+        ] : [
+            MPLobbyingTopOrganization(
+                organizationName: "Fiscal Policy Group",
+                organizationSector: "Finance",
+                count: 5,
+                organizationID: "fpg",
+                organizationProfileURL: "https://example.com/org/fpg"
+            ),
+            MPLobbyingTopOrganization(
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                count: 2,
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp"
+            )
+        ]
+
+        return MPLobbyingExposureResponse(
+            memberID: "278707",
+            page: 1,
+            perPage: 50,
+            total: timeline.count,
+            pages: 1,
+            summary: MPLobbyingSummary(
+                totalCommunications: 7,
+                uniqueOrganizations: 2,
+                mostFrequentSubject: "Finance",
+                previousParliamentCommunications: 2,
+                trendVsPreviousParliament: filterMode ? 0 : 3.0
+            ),
+            timeline: timeline,
+            subjectDistribution: [
+                MPLobbyingSubjectDistribution(subject: "Finance", count: 1, percentage: 50),
+                MPLobbyingSubjectDistribution(subject: "Health", count: 1, percentage: 50)
+            ],
+            topOrganizations: topOrganizations,
+            cohortComparison: MPLobbyingCohortComparison(
+                party: "Liberal",
+                partyAverage: 4,
+                nationalAverage: 3,
+                partyRatio: 1.8,
+                nationalRatio: 2.3
+            ),
+            availableSubjects: subjects
         )
     }
 }
