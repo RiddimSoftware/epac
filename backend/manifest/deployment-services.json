@@ -648,6 +648,23 @@
       }
     },
     {
+      "name": "lobbying-index",
+      "deploy": {
+        "staging": true,
+        "production": true
+      },
+      "sync": {
+        "staging": {
+          "database": false,
+          "artifact": true
+        },
+        "production": {
+          "database": false,
+          "artifact": true
+        }
+      }
+    },
+    {
       "name": "lobbying",
       "deploy": {
         "staging": true,
@@ -776,12 +793,12 @@
       },
       "sync": {
         "staging": {
-          "database": true,
-          "artifact": false
+          "database": false,
+          "artifact": true
         },
         "production": {
-          "database": true,
-          "artifact": false
+          "database": false,
+          "artifact": true
         }
       }
     },
