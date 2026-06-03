@@ -25,6 +25,7 @@ use (
 	./member-votes-publisher
 	./members
 	./members-publisher
+	./lobbying-index
 	./observability
 	./on-this-day
 	./openapi
