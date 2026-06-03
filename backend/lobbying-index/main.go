@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -58,7 +59,29 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	if err := aggregateMPLobbyingTables(dbPath); err != nil {
+		return err
+	}
+
 	printResult(result)
+	return nil
+}
+
+func aggregateMPLobbyingTables(dbPath string) error {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return fmt.Errorf("open sqlite for MP lobbying aggregation: %w", err)
+	}
+	defer db.Close()
+
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		return fmt.Errorf("enable foreign keys for MP lobbying aggregation: %w", err)
+	}
+
+	aggregator := sqlite.NewAggregationRunner()
+	if err := usecase.BuildMPLobbyingTables(db, aggregator); err != nil {
+		return err
+	}
 	return nil
 }
 
