@@ -93,3 +93,33 @@ type OCLIngestionBatch struct {
 	RegistrationInHouseLobbyists    []OCLRegistrationInHouseLobbyist
 	RegistrationConsultantLobbyists []OCLRegistrationConsultantLobbyist
 }
+
+// LegisInfoReading is a single parliamentary stage reading for a bill.
+type LegisInfoReading struct {
+	LegisInfoID string
+	ReadingDate string
+	StageName   string
+}
+
+// LegisInfoBill is bill metadata from the parl.ca/legisinfo bulk JSON endpoint.
+type LegisInfoBill struct {
+	Number                            string
+	Parliament                        int
+	Session                           int
+	LongTitleEn                       string
+	BillTypeEn                        string
+	PassedHouseFirstReadingDateTime   string
+	PassedHouseSecondReadingDateTime  string
+	PassedHouseThirdReadingDateTime   string
+	PassedSenateFirstReadingDateTime  string
+	PassedSenateSecondReadingDateTime string
+	PassedSenateThirdReadingDateTime  string
+	ReceivedRoyalAssentDateTime       string
+}
+
+// TopicMapping maps an OCL subject code to an epac topic slug with a confidence score.
+type TopicMapping struct {
+	OCLCode       string  `json:"ocl_code"`
+	EpacTopicSlug string  `json:"epac_topic_slug"`
+	Confidence    float64 `json:"confidence"`
+}
