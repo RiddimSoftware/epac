@@ -132,16 +132,23 @@ func (r *PostgresLobbyistOrganizationRepository) BrowseLobbyistOrganizations(ctx
 		limit = 200
 	}
 	search := strings.TrimSpace(input.Search)
-	rows, err := r.db.Query(ctx, `
+	sector := strings.TrimSpace(input.Sector)
+	direction := "DESC"
+	if strings.EqualFold(strings.TrimSpace(input.SortDirection), "asc") {
+		direction = "ASC"
+	}
+	query := `
 		SELECT organization_id, COALESCE(ocl_organization_id, ''), name, type, COALESCE(sector, ''),
 			registered_lobbyists, active_subject_matters,
 			communication_volume_current_parliament, communication_volume_prior_parliament,
 			top_dpohs, updated_at
 		FROM lobbyist_organizations
 		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%' OR organization_id ILIKE '%' || $1 || '%')
-		ORDER BY communication_volume_current_parliament DESC, name ASC
-		LIMIT $2 OFFSET $3
-	`, search, limit, max(input.Offset, 0))
+			AND ($2 = '' OR LOWER(sector) = LOWER($2))
+		ORDER BY communication_volume_current_parliament ` + direction + `, name ASC
+		LIMIT $3 OFFSET $4
+	`
+	rows, err := r.db.Query(ctx, query, search, sector, limit, max(input.Offset, 0))
 	if err != nil {
 		return nil, fmt.Errorf("browse lobbyist organizations: %w", err)
 	}
@@ -240,6 +247,7 @@ func (r *PostgresLobbyistOrganizationRepository) ListOrganizationCommunications(
 				comlog_id::TEXT AS source_id,
 				JSONB_AGG(
 					JSONB_BUILD_OBJECT(
+						'member_id', COALESCE(m.person_id, ''),
 						'name', BTRIM(CONCAT(dpoh_first_nm_prenom_tcpd, ' ', dpoh_last_nm_tcpd)),
 						'institution', COALESCE(NULLIF(institution, 'null'), ''),
 						'count', 1
@@ -247,6 +255,8 @@ func (r *PostgresLobbyistOrganizationRepository) ListOrganizationCommunications(
 					ORDER BY dpoh_last_nm_tcpd, dpoh_first_nm_prenom_tcpd, institution
 				) AS dpohs
 			FROM ocl_communication_dpohs
+			LEFT JOIN members m
+				ON LOWER(BTRIM(CONCAT(m.first_name, ' ', m.last_name))) = LOWER(BTRIM(CONCAT(dpoh_first_nm_prenom_tcpd, ' ', dpoh_last_nm_tcpd)))
 			GROUP BY comlog_id::TEXT
 		)
 		SELECT

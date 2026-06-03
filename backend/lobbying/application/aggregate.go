@@ -56,9 +56,11 @@ type AggregateLobbyistOrganizationsInput struct {
 }
 
 type BrowseLobbyistOrganizationsInput struct {
-	Search string
-	Limit  int
-	Offset int
+	Search        string
+	Sector        string
+	Limit         int
+	Offset        int
+	SortDirection string
 }
 
 type AggregateLobbyistOrganizations struct {
@@ -255,15 +257,22 @@ func (b *organizationBuilder) applyCommunication(
 		}
 	}
 	for _, dpoh := range communication.DPOHs {
+		dpoh.MemberID = cleanNullableString(dpoh.MemberID)
 		dpoh.Name = cleanNullableString(dpoh.Name)
 		dpoh.Institution = cleanNullableString(dpoh.Institution)
 		if dpoh.Name == "" {
 			continue
 		}
 		key := NormalizeOrganizationName(dpoh.Name) + "|" + NormalizeOrganizationName(dpoh.Institution)
+		if dpoh.MemberID != "" {
+			key = "member:" + dpoh.MemberID
+		}
 		existing := b.dpohCounts[key]
 		if existing.Count == 0 {
-			existing = domain.DPOHContact{Name: dpoh.Name, Institution: dpoh.Institution}
+			existing = domain.DPOHContact{MemberID: dpoh.MemberID, Name: dpoh.Name, Institution: dpoh.Institution}
+		}
+		if existing.MemberID == "" {
+			existing.MemberID = dpoh.MemberID
 		}
 		increment := dpoh.Count
 		if increment <= 0 {

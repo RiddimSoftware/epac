@@ -709,15 +709,16 @@ Current implementation:
 ### LoadLobbyistOrganizationProfile
 
 ```
-Actor: Backend caller (REST endpoint added by a later issue)
+Actor: Backend caller
 Goal: Load one canonical lobbyist organization profile by organization ID.
 Inputs: Canonical organization ID.
 Outputs: LobbyistOrganization aggregate with name, type, sector, registered lobbyists, active subject matters, communication trend, and top DPOHs contacted.
 Entities / values: LobbyistOrganization, OrganizationSector, CommunicationCount.
 Ports: backend Go: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository.
+Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations/{id}).
 Current implementation:
   backend/lobbying/application/aggregate.go
+  backend/lobbying/organizations_endpoint.go
   backend/lobbying/repository/postgres.go
 ```
 
@@ -728,15 +729,16 @@ Current implementation:
 ### BrowseLobbyistOrganizations
 
 ```
-Actor: Backend caller (REST endpoint added by a later issue)
+Actor: Backend caller
 Goal: Browse canonical lobbyist organizations for profile discovery.
-Inputs: Search text, limit, offset.
+Inputs: Search text, sector filter, communication-volume sort direction, limit, offset.
 Outputs: Ordered LobbyistOrganization aggregates.
 Entities / values: LobbyistOrganization, CommunicationCount.
 Ports: backend Go: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository.
+Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations).
 Current implementation:
   backend/lobbying/application/aggregate.go
+  backend/lobbying/organizations_endpoint.go
   backend/lobbying/repository/postgres.go
 ```
 
