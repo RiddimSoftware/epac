@@ -200,6 +200,44 @@
       }
     },
     {
+      "name": "member-lobbying",
+      "deploy": {
+        "staging": false,
+        "production": false
+      },
+      "http": {
+        "payload_format_version": "1.0",
+        "routes": {
+          "staging": [
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}/lobbying"
+            }
+          ],
+          "production": [
+            {
+              "method": "GET",
+              "path": "/members/{memberId}/lobbying"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}/lobbying"
+            }
+          ]
+        }
+      },
+      "sync": {
+        "staging": {
+          "database": false,
+          "artifact": false
+        },
+        "production": {
+          "database": false,
+          "artifact": false
+        }
+      }
+    },
+    {
       "name": "member-votes",
       "deploy": {
         "staging": false,

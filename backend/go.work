@@ -18,6 +18,7 @@ use (
 	./lobbying
 	./manifest
 	./member-content
+	./member-lobbying
 	./member-speeches
 	./member-speeches-publisher
 	./member-votes

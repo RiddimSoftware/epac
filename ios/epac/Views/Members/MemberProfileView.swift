@@ -231,8 +231,24 @@ struct MemberProfileView: View {
 					}
 					.foregroundStyle(.primary)
 
-					// MARK: Lobbying tab
-					LobbyingView(memberID: member.memberID)
+					// MARK: Lobbying dashboard
+					NavigationLink(destination: MPLobbyingTabView(member: member)) {
+						HStack {
+							Image(systemName: "person.fill.badge.plus")
+								.foregroundStyle(.tint)
+							Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+								.font(.subheadline)
+								.fontWeight(.semibold)
+							Spacer()
+							Image(systemName: "chevron.right")
+								.font(.caption)
+								.foregroundStyle(.tertiary)
+						}
+					}
+					.padding()
+					.background(Color.appSurface)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
+					.accessibilityIdentifier("accountability-lobbying-link")
 
 					if cabinetPosition != nil {
 						MinisterLobbyingTabView(memberID: member.memberID)
