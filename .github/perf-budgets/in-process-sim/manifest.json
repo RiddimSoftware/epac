@@ -1,0 +1,64 @@
+{
+  "tests": [
+    {
+      "test_identifier": "SwiftDataPerfTests/testSittingCalendarReadMetrics()",
+      "metrics": [
+        {
+          "key": "clock",
+          "match": ["clock"],
+          "budget": "swiftdata-read-clock.txt"
+        },
+        {
+          "key": "cpu",
+          "match": ["cpu"],
+          "budget": "swiftdata-read-cpu.txt"
+        },
+        {
+          "key": "memory",
+          "match": ["memory"],
+          "budget": "swiftdata-read-memory.txt"
+        }
+      ]
+    },
+    {
+      "test_identifier": "SwiftDataPerfTests/testEarliestSchemaMigrationOpenMetrics()",
+      "metrics": [
+        {
+          "key": "clock",
+          "match": ["clock"],
+          "budget": "swiftdata-migration-clock.txt"
+        },
+        {
+          "key": "cpu",
+          "match": ["cpu"],
+          "budget": "swiftdata-migration-cpu.txt"
+        },
+        {
+          "key": "memory",
+          "match": ["memory"],
+          "budget": "swiftdata-migration-memory.txt"
+        },
+        {
+          "key": "storage",
+          "match": ["disk", "storage"],
+          "budget": "swiftdata-migration-storage.txt"
+        }
+      ]
+    },
+    {
+      "test_identifier": "HansardParsePerfTests/testFederalHansardXMLParseMetrics()",
+      "metrics": [
+        {
+          "key": "clock",
+          "match": ["clock"],
+          "budget": "hansard-parse-clock.txt"
+        },
+        {
+          "key": "cpu",
+          "match": ["cpu"],
+          "budget": "hansard-parse-cpu.txt"
+        }
+      ]
+    }
+  ]
+}
