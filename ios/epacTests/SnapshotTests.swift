@@ -149,6 +149,43 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Bill lobbying context (EPAC-2159)
+
+    func testBillLobbyingContextPanel_populated() {
+        snapshot(
+            List {
+                BillLobbyingContextPanel(context: Self.billLobbyingContext)
+            }
+            .listStyle(.insetGrouped)
+            .frame(width: 375, height: 420),
+            name: "BillLobbyingContextPanel_populated"
+        )
+    }
+
+    func testBillLobbyingContextPanel_hiddenWhenZero() {
+        snapshot(
+            List {
+                Text("Before")
+                BillLobbyingContextPanel(context: .empty)
+                Text("After")
+            }
+            .listStyle(.insetGrouped)
+            .frame(width: 375, height: 220),
+            name: "BillLobbyingContextPanel_hiddenWhenZero"
+        )
+    }
+
+    func testBillLobbyingContextPanel_topThreeOrganizations() {
+        snapshot(
+            List {
+                BillLobbyingContextPanel(context: Self.billLobbyingContextWithFiveOrganizations)
+            }
+            .listStyle(.insetGrouped)
+            .frame(width: 375, height: 420),
+            name: "BillLobbyingContextPanel_topThreeOrganizations"
+        )
+    }
+
     // MARK: - EmptyStateView
 
     func testEmptyStateView_noAction() {
@@ -413,6 +450,54 @@ final class SnapshotTests: XCTestCase {
                     communicationCount: 10
                 )
             ]
+        )
+    }
+
+    private static var billLobbyingContext: BillLobbyingContext {
+        BillLobbyingContext(
+            billID: "C-2",
+            windowMonths: 12,
+            windowStartDate: date("2025-05-15"),
+            windowEndDate: date("2026-05-15"),
+            subjectTags: ["Housing"],
+            totalCommunications: 8,
+            organizations: [
+                BillLobbyingOrganization(name: "Example Housing Association", communicationCount: 4),
+                BillLobbyingOrganization(name: "National Builders Council", communicationCount: 2),
+                BillLobbyingOrganization(name: "Tenant Rights Network", communicationCount: 2)
+            ],
+            topOrganizations: [
+                BillLobbyingOrganization(name: "Example Housing Association", communicationCount: 4),
+                BillLobbyingOrganization(name: "National Builders Council", communicationCount: 2),
+                BillLobbyingOrganization(name: "Tenant Rights Network", communicationCount: 2)
+            ],
+            sourceURL: CabinetLobbyingSource.url
+        )
+    }
+
+    private static var billLobbyingContextWithFiveOrganizations: BillLobbyingContext {
+        BillLobbyingContext(
+            billID: "C-3",
+            windowMonths: 12,
+            windowStartDate: date("2025-05-15"),
+            windowEndDate: date("2026-05-15"),
+            subjectTags: ["Environment"],
+            totalCommunications: 18,
+            organizations: [
+                BillLobbyingOrganization(name: "Canadian Clean Energy Association", communicationCount: 6),
+                BillLobbyingOrganization(name: "Critical Minerals Alliance", communicationCount: 5),
+                BillLobbyingOrganization(name: "North Coast Infrastructure Council", communicationCount: 4),
+                BillLobbyingOrganization(name: "Prairie Grid Operators", communicationCount: 2),
+                BillLobbyingOrganization(name: "Northern Transit Coalition", communicationCount: 1)
+            ],
+            topOrganizations: [
+                BillLobbyingOrganization(name: "Canadian Clean Energy Association", communicationCount: 6),
+                BillLobbyingOrganization(name: "Critical Minerals Alliance", communicationCount: 5),
+                BillLobbyingOrganization(name: "North Coast Infrastructure Council", communicationCount: 4),
+                BillLobbyingOrganization(name: "Prairie Grid Operators", communicationCount: 2),
+                BillLobbyingOrganization(name: "Northern Transit Coalition", communicationCount: 1)
+            ],
+            sourceURL: CabinetLobbyingSource.url
         )
     }
 

@@ -298,6 +298,8 @@
 "bills.detail.legisinfo" = "Voir sur LEGISinfo";
 "bills.detail.keyFacts" = "Faits clés";
 "bills.detail.originatingChamber" = "Chambre d'origine";
+"billLobbying.title" = "Contexte de lobbying";
+"billLobbying.summary" = "%d communications aux députés et aux ministres à propos de ce sujet dans l'année précédant ce vote.";
 "bills.chamber.house" = "Chambre des communes";
 "bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";

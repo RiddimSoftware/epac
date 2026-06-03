@@ -296,6 +296,8 @@
 "bills.detail.legisinfo" = "View on LEGISinfo";
 "bills.detail.keyFacts" = "Key Facts";
 "bills.detail.originatingChamber" = "Originating Chamber";
+"billLobbying.title" = "Lobbying context";
+"billLobbying.summary" = "%d communications to MPs and ministers about this subject matter in the year before this vote.";
 "bills.chamber.house" = "House of Commons";
 "bills.chamber.senate" = "Senate";
 "bills.stage.houseFirst" = "House — First Reading";
