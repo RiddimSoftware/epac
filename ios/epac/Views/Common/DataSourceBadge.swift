@@ -302,4 +302,15 @@ struct DataSource {
             stalenessThreshold: nil
         )
     }
+
+    static func proactiveContracts() -> DataSource {
+        DataSource(
+            name: "open.canada.ca",
+            description: "Proactive Disclosure of Contracts over $10,000, published by Treasury Board Secretariat under the Proactive Disclosure Act. Covers all federal departments and agencies.",
+            url: GovernmentContract.datasetURL,
+            lastSyncDate: nil,
+            vintage: "Current — TBS",
+            stalenessThreshold: nil
+        )
+    }
 }

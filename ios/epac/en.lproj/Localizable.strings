@@ -614,7 +614,7 @@
 "gazette.detail.fullText" = "Read full text on gazette.gc.ca";
 "gazette.detail.sourceLabel" = "Official source";
 
-/* Federal Contracts (EPAC-117) */
+/* Federal Contracts (EPAC-722) */
 "contracts.navTitle" = "Federal Contracts";
 "contracts.loading" = "Loading federal contracts";
 "contracts.error.title" = "Couldn't load contracts";
@@ -625,7 +625,9 @@
 "contracts.detail.navTitle" = "Contract";
 "contracts.detail.info" = "Details";
 "contracts.detail.date" = "Contract date";
+"contracts.detail.endDate" = "End date";
 "contracts.detail.fiscal" = "Fiscal year";
+"contracts.detail.contractType" = "Contract type";
 "contracts.detail.original" = "Original value";
 "contracts.detail.refNumber" = "Reference number";
 "contracts.detail.amendments" = "%d amendment(s)";
@@ -634,6 +636,22 @@
 "contracts.detail.openData" = "View on open.canada.ca";
 "contracts.detail.sourceLabel" = "Official source";
 "contracts.detail.sourceName" = "Treasury Board Secretariat — Proactive Disclosure of Contracts";
+"contracts.filter.button" = "Filters";
+"contracts.filter.active" = "Filters are active";
+"contracts.filter.title" = "Filter Contracts";
+"contracts.filter.department" = "Department";
+"contracts.filter.department.placeholder" = "e.g. Public Services and Procurement";
+"contracts.filter.contractType" = "Contract Type";
+"contracts.filter.contractType.placeholder" = "e.g. Services";
+"contracts.filter.amount" = "Amount Range";
+"contracts.filter.minAmount" = "Minimum ($)";
+"contracts.filter.maxAmount" = "Maximum ($)";
+"contracts.filter.noLimit" = "No limit";
+"contracts.filter.dateRange" = "Date Range";
+"contracts.filter.fromDate" = "From date";
+"contracts.filter.toDate" = "To date";
+"contracts.filter.clearAll" = "Clear All Filters";
+"contracts.minister.link" = "Department Contracts";
 
 /* Fiscal Monitor (EPAC-118) */
 "fiscalMonitor.navTitle" = "Federal Finances";

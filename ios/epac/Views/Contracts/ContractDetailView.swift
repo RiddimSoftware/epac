@@ -30,9 +30,17 @@ struct FederalContractDetailView: View {
             Section(NSLocalizedString("contracts.detail.info", comment: "")) {
                 LabeledContent(NSLocalizedString("contracts.detail.date", comment: ""),
                                value: contract.contractDate.formatted(date: .long, time: .omitted))
+                if let end = contract.endDate {
+                    LabeledContent(NSLocalizedString("contracts.detail.endDate", comment: ""),
+                                   value: end.formatted(date: .long, time: .omitted))
+                }
                 if !contract.fiscalYear.isEmpty {
                     LabeledContent(NSLocalizedString("contracts.detail.fiscal", comment: ""),
                                    value: contract.fiscalYear)
+                }
+                if !contract.contractType.isEmpty {
+                    LabeledContent(NSLocalizedString("contracts.detail.contractType", comment: ""),
+                                   value: contract.contractType)
                 }
                 if contract.originalValue != contract.value {
                     LabeledContent(NSLocalizedString("contracts.detail.original", comment: ""),
@@ -52,20 +60,7 @@ struct FederalContractDetailView: View {
             }
 
             Section(NSLocalizedString("contracts.detail.source", comment: "")) {
-                Link(destination: GovernmentContract.datasetURL) {
-                    Label {
-                        Text(NSLocalizedString("contracts.detail.openData", comment: ""))
-                            .foregroundStyle(.primary)
-                    } icon: {
-                        Image(systemName: "link")
-                    }
-                }
-                LabeledContent(
-                    NSLocalizedString("contracts.detail.sourceLabel", comment: ""),
-                    value: NSLocalizedString("contracts.detail.sourceName", comment: "")
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                DataSourceBadge(source: .proactiveContracts())
             }
         }
         .listStyle(.insetGrouped)
