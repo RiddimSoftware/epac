@@ -22,10 +22,13 @@ final class LaunchPerfTests: XCTestCase {
     @MainActor
     func testLaunchAndMemoryBaseline() {
         let app = XCUIApplication()
-        measure(metrics: [
-            XCTApplicationLaunchMetric(),
-            XCTMemoryMetric(application: app)
-        ]) {
+        PerfMeasurementGuard.measure(
+            in: self,
+            metrics: [
+                .init(name: "launch-time-seconds", metric: XCTApplicationLaunchMetric()),
+                .init(name: "memory-physical-kb", metric: XCTMemoryMetric(application: app))
+            ]
+        ) {
             app.launch()
         }
     }

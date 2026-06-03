@@ -2,7 +2,7 @@
   "configurations" : [
     {
       "id" : "B3F0A9A0-EE51-4F31-A22A-A3E7D9D5B11A",
-      "name" : "Performance",
+      "name" : "iOS Simulator",
       "options" : {
 
       }

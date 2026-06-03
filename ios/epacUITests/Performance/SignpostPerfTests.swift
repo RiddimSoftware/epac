@@ -119,12 +119,16 @@ final class SignpostPerfTests: XCTestCase {
         let options = XCTMeasureOptions()
         options.iterationCount = Constants.singleIteration
 
-        measure(
+        PerfMeasurementGuard.measure(
+            in: self,
             metrics: [
-                XCTOSSignpostMetric(
+                .init(
+                    name: name,
+                    metric: XCTOSSignpostMetric(
                     subsystem: Constants.subsystem,
                     category: Constants.category,
                     name: name
+                    )
                 )
             ],
             options: options,

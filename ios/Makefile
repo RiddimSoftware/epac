@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build deploy-simulator simulator test perf-sim ipad-build ipad-deploy-simulator ipad-simulator side-by-side catalyst-build catalyst-run
+.PHONY: build deploy-simulator simulator test perf-sim perf-device ipad-build ipad-deploy-simulator ipad-simulator side-by-side catalyst-build catalyst-run
 
 OUTPUT_DIR = .build
 # Dynamically detect an available iPhone simulator
@@ -16,12 +16,15 @@ IPAD_SIM_NAME ?= $(DETECTED_IPAD_SIM_NAME)
 IPAD_SIM_UUID = $(shell if [ -n "$(IPAD_SIM_NAME)" ]; then xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "$(IPAD_SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_IPAD_SIM_UUID)"; else echo "$(DETECTED_IPAD_SIM_UUID)"; fi)
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
 PERF_RESULT_BUNDLE = $(OUTPUT_DIR)/Performance.xcresult
+PERF_DEVICE_RESULT_BUNDLE = $(OUTPUT_DIR)/Performance-device.xcresult
+PERF_BUDGET_DIR = ../.github/perf-budgets
 SIGNPOST_PERF_BUDGET_FILE = ../.github/perf-budgets/signpost-phase-durations.json
 LAUNCH_PERF_LAUNCH_BUDGET_FILE = ../.github/perf-budgets/launch-time-seconds.sim.txt
 LAUNCH_PERF_MEMORY_BUDGET_FILE = ../.github/perf-budgets/memory-physical-kb.sim.txt
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
 DESTINATION = 'platform=iOS Simulator,id=$(SIM_UUID)'
+PERF_DEVICE_DESTINATION = 'platform=iOS,id=$(PERF_DEVICE_UDID)'
 IPAD_DESTINATION = 'platform=iOS Simulator,id=$(IPAD_SIM_UUID)'
 IPHONE_SIM_ERROR = No iPhone simulator available. Install one via Xcode → Settings → Platforms.
 IPAD_SIM_ERROR = No iPad Pro simulator available. Install one via Xcode → Settings → Platforms.
@@ -46,9 +49,20 @@ perf-sim:
 	xcrun simctl terminate $(SIM_UUID) $(BUNDLE_ID) >/dev/null 2>&1 || true
 	xcrun simctl terminate $(SIM_UUID) com.riddimsoftware.epacUITests.xctrunner >/dev/null 2>&1 || true
 	rm -rf $(PERF_RESULT_BUNDLE)
-	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_RESULT_BUNDLE) -testPlan Performance | xcbeautify
+	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -configuration Release -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_RESULT_BUNDLE) -testPlan Performance CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES | xcbeautify
+	python3 ../scripts/ci/perf_parse.py $(PERF_RESULT_BUNDLE) --budget-dir $(PERF_BUDGET_DIR) --platform sim
 	python3 ../scripts/ci/verify_signpost_perf_metrics.py $(PERF_RESULT_BUNDLE) $(SIGNPOST_PERF_BUDGET_FILE)
 	python3 ../scripts/ci/verify_launch_perf_metrics.py $(PERF_RESULT_BUNDLE) $(LAUNCH_PERF_LAUNCH_BUDGET_FILE) $(LAUNCH_PERF_MEMORY_BUDGET_FILE)
+
+perf-device:
+	@if [ -z "$(PERF_DEVICE_UDID)" ]; then \
+		echo "no device configured"; \
+	else \
+		set -e -o pipefail; \
+		rm -rf $(PERF_DEVICE_RESULT_BUNDLE); \
+		xcodebuild test -project epac.xcodeproj -scheme epac -configuration Release -destination $(PERF_DEVICE_DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_DEVICE_RESULT_BUNDLE) -testPlan Performance ENABLE_TESTABILITY=YES | xcbeautify; \
+		python3 ../scripts/ci/perf_parse.py $(PERF_DEVICE_RESULT_BUNDLE) --budget-dir $(PERF_BUDGET_DIR) --platform device; \
+	fi
 
 deploy-simulator:
 	xcrun simctl install $(SIM_UUID) $(APP_PATH)
