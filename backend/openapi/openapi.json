@@ -1345,6 +1345,81 @@
         }
       }
     },
+    "/api/v1/grants": {
+      "get": {
+        "tags": ["Fiscal"],
+        "summary": "List federal grants and contributions",
+        "description": "Returns federal grants and contributions from Treasury Board Secretariat Proactive Disclosure. Source: https://open.canada.ca/data/en/dataset/432527ab-7aac-45b5-81d6-7597107a7013",
+        "operationId": "listGrants",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 200, "maximum": 1000 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "fiscal_year",
+            "in": "query",
+            "schema": { "type": "string", "example": "2024-2025" },
+            "description": "Filter by fiscal year (e.g. 2024-2025). Defaults to current + prior fiscal year."
+          },
+          {
+            "name": "province",
+            "in": "query",
+            "schema": { "type": "string", "example": "Ontario" },
+            "description": "Filter by recipient province or territory (English name)."
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by awarding department name (partial match)."
+          },
+          {
+            "name": "recipient_type",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by recipient type (e.g. Non-profit organization, Post-secondary institution)."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Full-text search across recipient name, purpose, and department."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of grants and contributions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "offset": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "fiscal_years": { "type": "array", "items": { "type": "string" } },
+                    "grants": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GrantContribution" }
+                    },
+                    "citation": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["Operations"],
@@ -1493,6 +1568,22 @@
       }
     },
     "schemas": {
+      "GrantContribution": {
+        "type": "object",
+        "required": ["id", "recipient_name", "amount", "department", "fiscal_year"],
+        "properties": {
+          "id": { "type": "string", "description": "Reference number from TBS Proactive Disclosure" },
+          "recipient_name": { "type": "string" },
+          "amount": { "type": "number", "description": "Agreement value in CAD (gross, not adjusted)" },
+          "department": { "type": "string" },
+          "purpose": { "type": "string" },
+          "recipient_location": { "type": "string", "description": "City and province of recipient" },
+          "recipient_province": { "type": "string" },
+          "recipient_type": { "type": "string", "description": "Recipient type as reported in TBS dataset" },
+          "fiscal_year": { "type": "string", "example": "2024-2025" },
+          "agreement_date": { "type": "string", "format": "date" }
+        }
+      },
       "ErrorResponse": {
         "type": "object",
         "required": ["error"],

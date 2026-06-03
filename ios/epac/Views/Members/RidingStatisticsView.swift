@@ -18,6 +18,9 @@ struct RidingStatisticsView: View {
 	let member: ParliamentMember
 	@Environment(\.openURL) private var openURL
 
+	@State private var provincialGrants: [GrantContribution] = []
+	@State private var grantsLoading = false
+
 	private enum Layout {
 		static let rowSpacing: CGFloat = 12
 		static let inlineRowSpacing: CGFloat = 8
@@ -150,6 +153,8 @@ struct RidingStatisticsView: View {
 			cppOasSection
 			veteransAffairsSection
 
+			federalFundingSection
+
 			Section {
 				VStack(alignment: .leading, spacing: Layout.groupSpacing) {
 					Text("About this data")
@@ -164,6 +169,12 @@ struct RidingStatisticsView: View {
 		.listStyle(.insetGrouped)
 		.navigationTitle("Riding Statistics")
 		.navigationBarTitleDisplayMode(.inline)
+		.task(id: member.riding) {
+			guard provincialGrants.isEmpty else { return }
+			grantsLoading = true
+			provincialGrants = (try? await GrantsService.fetchGrantsForProvince(member.province.rawValue)) ?? []
+			grantsLoading = false
+		}
 	}
 
 	// MARK: - Sub-views
@@ -1041,6 +1052,71 @@ struct RidingStatisticsView: View {
 					.font(.caption2)
 					.foregroundStyle(.secondary)
 			}
+		}
+	}
+
+	// MARK: - Federal Funding section
+
+	private static let grantsTopRowLimit = 5
+
+	@ViewBuilder
+	private var federalFundingSection: some View {
+		let topGrants = Array(provincialGrants.prefix(Self.grantsTopRowLimit))
+		Section {
+			if grantsLoading {
+				HStack {
+					ProgressView()
+					Text("Loading federal funding data…")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				.padding(.vertical, Layout.compactVerticalPadding)
+			} else if provincialGrants.isEmpty {
+				HStack(spacing: Layout.inlineRowSpacing) {
+					Image(systemName: "info.circle")
+						.foregroundStyle(.secondary)
+						.accessibilityHidden(true)
+					Text("No federal grant data available for \(member.province.rawValue) in the current fiscal year.")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				.padding(.vertical, Layout.compactVerticalPadding)
+			} else {
+				VStack(alignment: .leading, spacing: Layout.compactTextSpacing) {
+					Text("Top federal grants in \(member.province.rawValue) — \(GrantsService.currentFiscalYear())")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				.padding(.vertical, Layout.compactVerticalPadding)
+				ForEach(topGrants) { grant in
+					VStack(alignment: .leading, spacing: Layout.textSpacing) {
+						HStack {
+							Text(grant.formattedAmount)
+								.font(.caption.bold())
+								.foregroundStyle(.accentColor)
+							Spacer()
+						}
+						Text(grant.recipientName)
+							.font(.caption)
+							.lineLimit(1)
+						Text(grant.department)
+							.font(.caption2)
+							.foregroundStyle(.secondary)
+							.lineLimit(1)
+					}
+					.padding(.vertical, Layout.rowVerticalPadding)
+				}
+				NavigationLink(destination: GrantsView()) {
+					Label("Browse all federal grants", systemImage: "arrow.right.circle")
+						.font(.caption)
+				}
+			}
+		} header: {
+			Text("Federal Funding")
+		} footer: {
+			Text("Source: Treasury Board Secretariat Proactive Disclosure, \(GrantsService.currentFiscalYear()). Filtered by province; riding-level attribution requires geocoding not available on-device. Data reflects program spending awarded to organizations, not MP office budgets.")
+				.font(.caption2)
+				.foregroundStyle(.secondary)
 		}
 	}
 

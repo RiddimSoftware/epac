@@ -884,4 +884,56 @@ final class SnapshotTests: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    // MARK: - GrantRow
+
+    private static func makeGrant() -> GrantContribution {
+        GrantContribution(
+            id: "GC-2025-001",
+            recipientName: "University of Ottawa",
+            amount: 2_500_000,
+            department: "Natural Sciences and Engineering Research Council",
+            purpose: "Advanced Research in Renewable Energy Systems",
+            recipientLocation: "Ottawa, Ontario",
+            recipientProvince: "Ontario",
+            recipientType: "Post-secondary institution",
+            fiscalYear: "2024-2025",
+            agreementDate: Date(timeIntervalSince1970: 1_704_067_200)
+        )
+    }
+
+    func testGrantRow_populated() {
+        snapshot(
+            GrantRow(grant: Self.makeGrant())
+                .frame(width: 375)
+                .padding(),
+            name: "GrantRow_populated"
+        )
+    }
+
+    func testGrantsView_empty() {
+        snapshot(
+            EmptyStateView(
+                icon: "doc.text.magnifyingglass",
+                title: "No Grants Found",
+                message: "No grants or contributions match your current filters.",
+                action: nil
+            )
+            .frame(width: 375, height: 300),
+            name: "GrantsView_empty"
+        )
+    }
+
+    func testGrantsView_loadError() {
+        snapshot(
+            EmptyStateView(
+                icon: "exclamationmark.triangle",
+                title: "Could Not Load Grants",
+                message: "Federal grants data could not be loaded. Check your connection and try again.",
+                action: EmptyStateAction(label: "Retry", handler: {})
+            )
+            .frame(width: 375, height: 300),
+            name: "GrantsView_loadError"
+        )
+    }
 }
