@@ -28,7 +28,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `OCLSubjectMatter` | An Office of the Commissioner of Lobbying subject-matter code used on communication reports and registrations. |
 | `EpacTopicSlug` | The stable epac topic identifier used to group parliamentary and lobbying records. |
 | `LobbyingByTopicResult` | Backend-only paged lobbying result set for an epac topic, including source citation metadata. |
-| `BillLobbyingContext` | Backend-only bill-level lobbying cross-reference result with communication counts by organization and subject matter. |
+| `BillLobbyingContext` | Bill-level lobbying cross-reference result with communication counts by organization and subject matter. |
 | `LobbyingSubjectMatch` | Backend-only link between a bill subject tag, high-confidence epac topic mapping, and OCL subject-matter code. |
 | `OrganizationCommunicationCount` | Backend-only count of OCL communication reports grouped by organization name. |
 | `Minister` | Backend-only cabinet minister identity resolved by House of Commons member ID and name. |
@@ -97,6 +97,7 @@ will build the missing artifact.
 | `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
 | `BillSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read bill subject tags and the latest bill reading anchor used for bill-level lobbying context. |
 | `BillLobbyingCommunicationsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read OCL communication rows matching mapped bill subject codes within a date window. |
+| `BillLobbyingContextRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillLobbyingContextRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillLobbyingContextRepository.swift`. | Load bill-level lobbying context summaries from the backend lobbying endpoint. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
 | `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
@@ -410,9 +411,15 @@ Goal: Summarize OCL communication reports whose high-confidence subject-matter m
 Inputs: LEGISinfo bill ID, window in months.
 Outputs: BillLobbyingContext with total communications, counts by organization, counts by subject matter, and top organizations.
 Entities / values: Bill, BillLobbyingContext, LobbyingSubjectMatch, OrganizationCommunicationCount, OCLSubjectMatter.
-Ports: backend Go: `BillSubjectsRepository`, `BillLobbyingCommunicationsRepository`, `OCLSubjectsSource`, `Clock`.
-Primary adapters: lobbying Lambda (GET /api/v1/bills/{legisinfo_id}/lobbying-context), Postgres bill/lobbying context adapter, ocl_topic_map.json source.
+Ports: backend Go: `BillSubjectsRepository`, `BillLobbyingCommunicationsRepository`, `OCLSubjectsSource`, `Clock`; iOS Swift: `BillLobbyingContextRepository`.
+Primary adapters: lobbying Lambda (GET /api/v1/bills/{legisinfo_id}/lobbying-context), Postgres bill/lobbying context adapter, ocl_topic_map.json source, iOS BackendBillLobbyingContextRepository, BillLobbyingContextPanel.
 Current implementation:
+  ios/epac/Application/LoadBillLobbyingContext.swift
+  ios/epac/Domain/Entities/BillLobbyingContext.swift
+  ios/epac/Domain/Ports/BillLobbyingContextRepository.swift
+  ios/epac/Data/Repositories/BackendBillLobbyingContextRepository.swift
+  ios/epac/Views/Bills/BillLobbyingContextPanel.swift
+  ios/epac/Views/Bills/BillDetailView.swift
   backend/lobbying/bill_lobbying_context_endpoint.go
   backend/lobbying/internal/usecase/bill_lobbying_context.go
   backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go

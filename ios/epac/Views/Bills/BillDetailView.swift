@@ -28,12 +28,28 @@ struct BillDetailView: View {
     let bill: Bill
     @Environment(\.modelContext) private var modelContext
 
+    private let loadBillLobbyingContext: LoadBillLobbyingContext
+    private let autoloadLobbyingContext: Bool
+
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
+    @State private var lobbyingContext: BillLobbyingContext?
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
     @State private var sponsorMember: ParliamentMember?
+
+    init(
+        bill: Bill,
+        loadBillLobbyingContext: LoadBillLobbyingContext = LoadBillLobbyingContext(
+            repository: BackendBillLobbyingContextRepository()
+        ),
+        autoloadLobbyingContext: Bool = true
+    ) {
+        self.bill = bill
+        self.loadBillLobbyingContext = loadBillLobbyingContext
+        self.autoloadLobbyingContext = autoloadLobbyingContext
+    }
 
     var body: some View {
         List {
@@ -42,6 +58,11 @@ struct BillDetailView: View {
 
             // MARK: PBO independent cost analysis
             PBOCostCard(bill: bill)
+
+            // MARK: Pre-vote lobbying context
+            if let lobbyingContext {
+                BillLobbyingContextPanel(context: lobbyingContext)
+            }
 
             // MARK: Stage timeline
             Section(NSLocalizedString("bills.detail.timeline", comment: "")) {
@@ -162,7 +183,10 @@ struct BillDetailView: View {
                     : NSLocalizedString("bill.follow", comment: ""))
             }
         }
-        .task { await loadCrossReferences() }
+        .task {
+            await loadCrossReferences()
+            await loadLobbyingContext()
+        }
         .activitySheet($shareItem)
     }
 
@@ -361,6 +385,18 @@ struct BillDetailView: View {
                 $0.lastName.localizedCaseInsensitiveCompare(lastName) == .orderedSame &&
                 bill.sponsorName.localizedCaseInsensitiveContains($0.firstName.prefix(BillDetailLayout.sponsorMatchPrefixLength))
             })
+        }
+    }
+
+    @MainActor
+    private func loadLobbyingContext() async {
+        guard autoloadLobbyingContext else { return }
+
+        do {
+            let context = try await loadBillLobbyingContext.execute(billID: bill.id)
+            lobbyingContext = context.hasCommunications ? context : nil
+        } catch {
+            lobbyingContext = nil
         }
     }
 }
