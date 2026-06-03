@@ -17,6 +17,7 @@
     {
       "selectedTests" : [
         "HansardParsePerfTests",
+        "NetworkBytesPerfTests",
         "SwiftDataPerfTests"
       ],
       "target" : {
