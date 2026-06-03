@@ -36,8 +36,25 @@ def hitch_ratio_measurements(log_text: str) -> list[float]:
 
 def main() -> int:
     args = parse_args()
-    budget = float(args.budget.read_text(encoding="utf-8").strip())
     measurements = hitch_ratio_measurements(args.log.read_text(encoding="utf-8", errors="replace"))
+
+    if not args.budget.exists():
+        if measurements:
+            worst = max(measurements)
+            print(
+                f"Record baseline: device budget {args.budget} is missing. "
+                f"Observed worst hitch ratio {worst:g} ms/s; save this value into "
+                f"{args.budget.name} to enforce on subsequent runs."
+            )
+        else:
+            print(
+                f"Record baseline: device budget {args.budget} is missing and no "
+                f"hitch-ratio measurement was observed yet. Re-run on a device once "
+                f"the metric emits, then commit {args.budget.name}."
+            )
+        return 0
+
+    budget = float(args.budget.read_text(encoding="utf-8").strip())
 
     if not measurements:
         print("Missing non-empty hitch-ratio measurement in device performance output.", file=sys.stderr)

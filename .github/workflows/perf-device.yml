@@ -1,0 +1,88 @@
+name: Nightly Perf Device
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-device-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check-device-config:
+    name: Check device configuration
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'RiddimSoftware/epac' }}
+    outputs:
+      device_configured: ${{ steps.check.outputs.device_configured }}
+    steps:
+      - name: Check PERF_DEVICE_UDID
+        id: check
+        env:
+          PERF_DEVICE_UDID: ${{ vars.PERF_DEVICE_UDID || secrets.PERF_DEVICE_UDID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${PERF_DEVICE_UDID:-}" ]; then
+            echo "device_configured=true" >> "$GITHUB_OUTPUT"
+            echo "PERF_DEVICE_UDID is configured; nightly perf-device run will proceed."
+            {
+              echo "## Nightly perf-device proceeding"
+              echo ""
+              echo "PERF_DEVICE_UDID is configured. Running \`make perf-device\` on the self-hosted device runner."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "device_configured=false" >> "$GITHUB_OUTPUT"
+            echo "PERF_DEVICE_UDID is not configured; skipping perf-device run (no-op success)."
+            {
+              echo "## Nightly perf-device skipped"
+              echo ""
+              echo "\`PERF_DEVICE_UDID\` is not configured. Set the repository variable (or secret) once the physical device is registered and the signing profile is installed."
+              echo ""
+              echo "See the Human Handoff Linear issue for device provisioning steps."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  perf-device:
+    name: Run Performance.xctestplan on device
+    needs: check-device-config
+    if: ${{ needs.check-device-config.outputs.device_configured == 'true' }}
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS_PERF_DEVICE || '["self-hosted","macOS","perf-device"]') }}
+    timeout-minutes: 90
+    env:
+      PERF_DEVICE_UDID: ${{ vars.PERF_DEVICE_UDID || secrets.PERF_DEVICE_UDID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git for package resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ci-gitconfig" <<'EOF'
+          [url "https://github.com/"]
+            insteadOf = git@github.com:
+            insteadOf = ssh://git@github.com/
+            insteadOf = git://github.com/
+          EOF
+          echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/ci-gitconfig" >> "$GITHUB_ENV"
+
+      - name: Run perf-device
+        shell: bash
+        working-directory: ios
+        run: |
+          set -euo pipefail
+          make perf-device
+
+      - name: Upload device performance result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-device-xcresult-${{ github.run_number }}
+          path: |
+            ios/.build/Performance-device.xcresult
+            ios/.build/Performance-device.log
+          if-no-files-found: warn
