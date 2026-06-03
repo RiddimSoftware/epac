@@ -15,6 +15,7 @@ use (
 	./hansard-subjects-index
 	./health
 	./loader
+	./lobbying
 	./manifest
 	./member-content
 	./member-speeches
