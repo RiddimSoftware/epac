@@ -9,6 +9,10 @@ on:
       - 'scripts/ci/backend_staging_smoke.py'
       - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["PR Build"]
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: backend-staging-deploy
@@ -22,6 +26,7 @@ jobs:
   prepare:
     name: Resolve backend service manifest
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     outputs:
       services: ${{ steps.resolve.outputs.services }}
       database_services: ${{ steps.resolve.outputs.database_services }}
@@ -49,6 +54,7 @@ jobs:
   provision-search:
     name: Provision staging search Lambdas and API route
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
 
