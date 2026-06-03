@@ -19,6 +19,7 @@ backend/health/health
 backend/daily-fetch/daily-fetch
 *.log
 *.txt
+!.github/perf-budgets/*.txt
 *.xml
 *.csv
 hansard/

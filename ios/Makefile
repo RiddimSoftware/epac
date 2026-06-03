@@ -15,8 +15,10 @@ SIM_UUID = $(shell xcrun simctl list devices available | grep -v unavailable | g
 IPAD_SIM_NAME ?= $(DETECTED_IPAD_SIM_NAME)
 IPAD_SIM_UUID = $(shell if [ -n "$(IPAD_SIM_NAME)" ]; then xcrun simctl list devices available 2>/dev/null | grep -v unavailable | grep "$(IPAD_SIM_NAME)" | head -1 | grep -oE '[A-F0-9-]{36}' || echo "$(DETECTED_IPAD_SIM_UUID)"; else echo "$(DETECTED_IPAD_SIM_UUID)"; fi)
 APP_PATH = $(OUTPUT_DIR)/Build/Products/Debug-iphonesimulator/epac.app
-SIGNPOST_PERF_RESULT_BUNDLE = $(OUTPUT_DIR)/SignpostPerf.xcresult
+PERF_RESULT_BUNDLE = $(OUTPUT_DIR)/Performance.xcresult
 SIGNPOST_PERF_BUDGET_FILE = ../.github/perf-budgets/signpost-phase-durations.json
+LAUNCH_PERF_LAUNCH_BUDGET_FILE = ../.github/perf-budgets/launch-time-seconds.sim.txt
+LAUNCH_PERF_MEMORY_BUDGET_FILE = ../.github/perf-budgets/memory-physical-kb.sim.txt
 SDK ?= iphonesimulator
 BUNDLE_ID = net.dinglebox.cabinetdoor
 DESTINATION = 'platform=iOS Simulator,id=$(SIM_UUID)'
@@ -43,9 +45,10 @@ perf-sim:
 	xcrun simctl bootstatus $(SIM_UUID) -b
 	xcrun simctl terminate $(SIM_UUID) $(BUNDLE_ID) >/dev/null 2>&1 || true
 	xcrun simctl terminate $(SIM_UUID) com.riddimsoftware.epacUITests.xctrunner >/dev/null 2>&1 || true
-	rm -rf $(SIGNPOST_PERF_RESULT_BUNDLE)
-	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(SIGNPOST_PERF_RESULT_BUNDLE) -only-testing:epacUITests/SignpostPerfTests | xcbeautify
-	python3 ../scripts/ci/verify_signpost_perf_metrics.py $(SIGNPOST_PERF_RESULT_BUNDLE) $(SIGNPOST_PERF_BUDGET_FILE)
+	rm -rf $(PERF_RESULT_BUNDLE)
+	set -o pipefail && xcodebuild test -project epac.xcodeproj -scheme epac -destination $(DESTINATION) -derivedDataPath $(OUTPUT_DIR) -resultBundlePath $(PERF_RESULT_BUNDLE) -testPlan Performance | xcbeautify
+	python3 ../scripts/ci/verify_signpost_perf_metrics.py $(PERF_RESULT_BUNDLE) $(SIGNPOST_PERF_BUDGET_FILE)
+	python3 ../scripts/ci/verify_launch_perf_metrics.py $(PERF_RESULT_BUNDLE) $(LAUNCH_PERF_LAUNCH_BUDGET_FILE) $(LAUNCH_PERF_MEMORY_BUDGET_FILE)
 
 deploy-simulator:
 	xcrun simctl install $(SIM_UUID) $(APP_PATH)

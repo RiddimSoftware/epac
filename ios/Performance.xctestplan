@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "B3F0A9A0-EE51-4F31-A22A-A3E7D9D5B11A",
+      "name" : "Performance",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "defaultTestExecutionTimeAllowance" : 600,
+    "maximumTestExecutionTimeAllowance" : 1200,
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "selectedTests" : [
+        "LaunchPerfTests",
+        "SignpostPerfTests"
+      ],
+      "target" : {
+        "containerPath" : "container:epac.xcodeproj",
+        "identifier" : "A38427DF2D062C8E00271C34",
+        "name" : "epacUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

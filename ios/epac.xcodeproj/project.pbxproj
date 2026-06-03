@@ -69,6 +69,7 @@
 		A38427E02D062C8E00271C34 /* epacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = epacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38CF0E12F351DF500668136 /* icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = icon.icon; sourceTree = "<group>"; };
 		A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		A3E22A012E22A0010001A001 /* Performance.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Performance.xctestplan; sourceTree = "<group>"; };
 		E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = epacComplicationBundle.swift; sourceTree = "<group>"; };
 		E12325D90C1AC7ABC45C8F8D /* ParliamentComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParliamentComplication.swift; sourceTree = "<group>"; };
 		E12339D75D63B226E71FC425 /* epacWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epacWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -255,6 +256,7 @@
 				A31410002FABC14100000000 /* data */,
 				A31560032FABC15600000003 /* Config */,
 				A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */,
+				A3E22A012E22A0010001A001 /* Performance.xctestplan */,
 				A38427C52D062C8D00271C34 /* epac */,
 				A38427D92D062C8E00271C34 /* epacTests */,
 				A38427E32D062C8E00271C34 /* epacUITests */,
