@@ -195,7 +195,11 @@ struct SittingCalendarView: View {
 		.frame(maxWidth: .infinity)
 		.task(id: viewModel.currentYear) {
 			// id-based task cancels any in-flight load when year changes via the chevron picker.
-			viewModel.configure(browseHansardSitting: BrowseHansardSitting(repository: hansardRepository))
+			viewModel.configure(
+				browseHansardSitting: BrowseHansardSitting(
+					repository: HansardSittingRepositoryAdapter(hansardRepository: hansardRepository)
+				)
+			)
 			viewModel.loadSittingCalendarCacheFirst(
 				viewModel.currentYear,
 				modelContext: modelContext,

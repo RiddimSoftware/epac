@@ -109,7 +109,7 @@ struct SpeakerImageView: View {
 	let speaker: ParliamentMember
 	let parliamentNumber: Int
 	@Environment(\.modelContext) var modelContext
-	@State private var viewModel = SpeakerImageViewModel()
+	@State private var viewModel = SpeakerImageViewModel(telemetry: CurrentTelemetryProvider())
 	@State private var photo: UIImage?
 
 	var body: some View {

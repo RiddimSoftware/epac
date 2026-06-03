@@ -16,11 +16,11 @@ protocol ReadHansardSpeechUseCase: Sendable {
 
 @MainActor
 struct ReadHansardSpeech: ReadHansardSpeechUseCase {
-	private let repository: any HansardRepository
+	private let repository: any SittingRepository
 	private let telemetry: any TelemetryProvider
 
 	init(
-		repository: any HansardRepository,
+		repository: any SittingRepository,
 		telemetry: any TelemetryProvider = CurrentTelemetryProvider()
 	) {
 		self.repository = repository

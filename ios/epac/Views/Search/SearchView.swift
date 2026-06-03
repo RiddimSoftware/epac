@@ -35,6 +35,11 @@ struct SearchView: View {
     // Debounced query — updated 300ms after the user stops typing to avoid
     // running 6000+ string comparisons on every keystroke.
     @State private var debouncedQuery = ""
+    private let billRepository: any BillRepository
+
+    init(billRepository: any BillRepository = LEGISinfoBillRepository()) {
+        self.billRepository = billRepository
+    }
 
     private func updateSearch() {
         viewModel.updateResults(members: members, votes: votes, bills: bills, query: debouncedQuery)
@@ -96,7 +101,7 @@ struct SearchView: View {
                 )
             )
             if bills.isEmpty {
-                bills = (try? await BillsService.fetchBills()) ?? []
+                bills = (try? await billRepository.fetchBills()) ?? []
                 updateSearchInputs()
             }
         }

@@ -2,7 +2,7 @@
 import Foundation
 
 @MainActor
-final class FixtureHansardRepository: HansardRepository {
+final class FixtureHansardRepository: HansardRepository, SittingRepository {
 	private var transcripts: [Key: HansardTranscript]
 	var sittingDates: [Date]
 	var fetchError: Error?

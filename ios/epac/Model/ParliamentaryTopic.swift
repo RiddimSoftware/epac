@@ -9,7 +9,7 @@
 
 import Foundation
 
-struct ParliamentaryTopic: Identifiable, Codable, Hashable {
+struct ParliamentaryTopic: Identifiable, Codable, Hashable, Sendable {
     let id: String          // stable lowercase slug, e.g. "housing"
     let nameKey: String     // localization key, e.g. "topic.housing"
     let keywords: [String]  // case-insensitive substrings to match in titles

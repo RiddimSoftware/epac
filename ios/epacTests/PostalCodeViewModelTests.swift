@@ -1,5 +1,6 @@
 @testable import epac
 import Foundation
+import SwiftData
 import Testing
 
 @MainActor
@@ -70,6 +71,30 @@ struct PostalCodeViewModelTests {
         #expect(resolved?.name == "Current MP")
     }
 
+    @Test func lookupUsesInjectedMemberRepositoryAndLocalMembers() async throws {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(SchemaV10.models), configurations: config)
+        let context = ModelContext(container)
+        let member = makeMember(
+            name: "Current MP",
+            riding: "Burlington",
+            fromDateTime: date(year: 2025),
+            toDateTime: nil
+        )
+        context.insert(member)
+        try context.save()
+        let repository = StubMemberRepository(ridingName: "Burlington")
+        let viewModel = PostalCodeViewModel(memberRepository: repository)
+        viewModel.postalCode = " K1A 0A6 "
+
+        await viewModel.lookup(modelContext: context)
+
+        #expect(repository.requestedPostalCodes == ["K1A 0A6"])
+        #expect(viewModel.result?.ridingName == "Burlington")
+        #expect(viewModel.result?.memberName == "Current MP")
+        #expect(viewModel.errorMessage == nil)
+    }
+
     private func makeMember(
         name: String,
         riding: String,
@@ -92,5 +117,20 @@ struct PostalCodeViewModelTests {
 
     private func date(year: Int) -> Date {
         DateComponents(calendar: Calendar(identifier: .gregorian), year: year, month: 1, day: 1).date!
+    }
+}
+
+@MainActor
+private final class StubMemberRepository: MemberRepository {
+    private let ridingName: String
+    private(set) var requestedPostalCodes: [String] = []
+
+    init(ridingName: String) {
+        self.ridingName = ridingName
+    }
+
+    func lookupRiding(postalCode: String) async throws -> String {
+        requestedPostalCodes.append(postalCode)
+        return ridingName
     }
 }

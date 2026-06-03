@@ -475,7 +475,7 @@ bills/v1/current.json                                 # symlink-equivalent: late
 
 **Proposed JSON schema:** Matches `#/components/schemas/BillsResponse`. No structural changes needed.
 
-**iOS runtime path after EPAC-1939:** `ios/epac/Util/BillsService.swift` reads the authoritative LEGISinfo JSON endpoint directly. Do not add a direct iOS S3/CloudFront artifact reader.
+**iOS runtime path after EPAC-1939:** `ios/epac/Data/Adapters/BillsService.swift` reads the authoritative LEGISinfo JSON endpoint directly. Do not add a direct iOS S3/CloudFront artifact reader.
 
 ---
 
