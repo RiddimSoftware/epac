@@ -7,11 +7,11 @@ import SwiftData
 
 enum EpacMigrationPlan: SchemaMigrationPlan {
 	static var schemas: [any VersionedSchema.Type] {
-		[SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self, SchemaV7.self, SchemaV8.self, SchemaV9.self, SchemaV10.self]
+		[SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self, SchemaV7.self, SchemaV8.self, SchemaV9.self, SchemaV10.self, SchemaV11.self]
 	}
 
 	static var stages: [MigrationStage] {
-		[migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7, migrateV7toV8, migrateV8toV9, migrateV9toV10]
+		[migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7, migrateV7toV8, migrateV8toV9, migrateV9toV10, migrateV10toV11]
 	}
 
     // Custom stage: V4 added contact fields to ParliamentMember, including the
@@ -95,5 +95,12 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 			}
 			try context.save()
 		}
+	)
+
+	// Lightweight stage: V11 adds MinisterialExpenseRecord. Pure new table, no
+	// existing model changes. Data is re-seeded from the bundled JSON on next launch.
+	static let migrateV10toV11 = MigrationStage.lightweight(
+		fromVersion: SchemaV10.self,
+		toVersion: SchemaV11.self
 	)
 }

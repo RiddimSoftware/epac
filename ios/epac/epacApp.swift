@@ -79,7 +79,7 @@ struct epacApp: App {
 			let usesInMemoryStore = AppRuntime.isRunningTests || AppEnvironment.isMarketingCaptureMode
 			return try SwiftDataStoreRecovery.makeContainer(usesInMemoryStore: usesInMemoryStore) { configuration in
 				try ModelContainer(
-					for: Schema(versionedSchema: SchemaV10.self),
+					for: Schema(versionedSchema: SchemaV11.self),
 					migrationPlan: EpacMigrationPlan.self,
 					configurations: [configuration]
 				)

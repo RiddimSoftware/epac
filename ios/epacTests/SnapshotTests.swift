@@ -63,7 +63,7 @@ final class SnapshotTests: XCTestCase {
 
     private func makeSnapshotModelContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Schema(SchemaV10.models), configurations: config)
+        return try ModelContainer(for: Schema(SchemaV11.models), configurations: config)
     }
 
     private static func member(party: Party) -> ParliamentMember {
@@ -966,6 +966,69 @@ final class SnapshotTests: XCTestCase {
                 nationalRatio: 2.3
             ),
             availableSubjects: subjects
+        )
+    }
+
+    // MARK: - MinisterialExpenseRow (EPAC-817)
+
+    private static func makeMinisterialExpenseRecord(
+        ministerName: String = "Mark Carney",
+        department: String = "Finance Canada",
+        purpose: String = "G7 Finance Ministers Meeting",
+        destination: String = "Stresa, Italy",
+        totalCost: Double = 18420.50,
+        travelCost: Double = 18420.50,
+        hospitalityCost: Double = 0.0,
+        fiscalYear: String = "2025-2026",
+        quarter: Int = 1
+    ) -> MinisterialExpenseRecord {
+        let cal = Calendar(identifier: .gregorian)
+        let startDate = cal.date(from: DateComponents(year: 2025, month: 5, day: 23)) ?? Date()
+        let endDate = cal.date(from: DateComponents(year: 2025, month: 5, day: 25))
+        return MinisterialExpenseRecord(
+            recordID: "test-\(ministerName.lowercased().filter(\.isLetter))-\(destination.lowercased().filter(\.isLetter))",
+            ministerName: ministerName,
+            department: department,
+            eventPurpose: purpose,
+            destination: destination,
+            startDate: startDate,
+            endDate: endDate,
+            travelCost: travelCost,
+            hospitalityCost: hospitalityCost,
+            totalCost: totalCost,
+            fiscalYear: fiscalYear,
+            quarter: quarter,
+            sourceURL: "https://www.canada.ca/en/department-finance/corporate/proactive-disclosure/travel.html"
+        )
+    }
+
+    @MainActor
+    func testMinisterialExpenseRow_withDisclosures() throws {
+        let container = try makeSnapshotModelContainer()
+        let context = ModelContext(container)
+        context.insert(Self.makeMinisterialExpenseRecord())
+
+        snapshot(
+            MinisterialExpenseRow(record: Self.makeMinisterialExpenseRecord())
+                .frame(width: 375)
+                .padding(),
+            name: "MinisterialExpenseRow_withDisclosures"
+        )
+    }
+
+    @MainActor
+    func testMinisterialExpenseRow_hospitalityOnly() throws {
+        snapshot(
+            MinisterialExpenseRow(record: Self.makeMinisterialExpenseRecord(
+                purpose: "Budget 2025 stakeholder reception",
+                destination: "Ottawa, Ontario",
+                totalCost: 4850.0,
+                travelCost: 0.0,
+                hospitalityCost: 4850.0
+            ))
+            .frame(width: 375)
+            .padding(),
+            name: "MinisterialExpenseRow_hospitalityOnly"
         )
     }
 }

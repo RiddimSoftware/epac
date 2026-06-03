@@ -19,6 +19,7 @@ private enum SchemaVersionComponent {
 	static let v8Major = 8
 	static let v9Major = 9
 	static let v10Major = 10
+	static let v11Major = 11
 }
 
 private enum WrittenQuestionConstants {
@@ -43,6 +44,7 @@ typealias MemberVote = SchemaV10.MemberVote
 typealias WrittenQuestion = SchemaV6.WrittenQuestion
 typealias FiscalMonitorEntry = SchemaV7.FiscalMonitorEntry
 typealias CabinetPosition = SchemaV8.CabinetPosition
+typealias MinisterialExpenseRecord = SchemaV11.MinisterialExpenseRecord
 
 enum SchemaV3: VersionedSchema {
 	static var versionIdentifier: Schema.Version {
@@ -1426,6 +1428,91 @@ enum SchemaV10: VersionedSchema {
 			self.memberID = memberID
 			self.recordedVote = recordedVote
 			self.jurisdiction = jurisdiction
+		}
+	}
+}
+
+// MARK: - SchemaV11
+
+enum SchemaV11: VersionedSchema {
+	static var versionIdentifier: Schema.Version {
+		.init(SchemaVersionComponent.v11Major, SchemaVersionComponent.initialMinor, SchemaVersionComponent.initialPatch)
+	}
+
+	static var models: [any PersistentModel.Type] {
+		[
+			SchemaV5.SittingCalendar.self,
+			SchemaV5.Hansard.self,
+			SchemaV5.OrderOfBusiness.self,
+			SchemaV5.SubjectOfBusiness.self,
+			SchemaV9.ParliamentMember.self,
+			SchemaV5.Speech.self,
+			SchemaV5.SpeechMessage.self,
+			SchemaV5.Constituency.self,
+			SchemaV5.SummaryExpenditure.self,
+			SchemaV5.TravelClaim.self,
+			SchemaV5.TravelExpenditureDetail.self,
+			SchemaV5.HospitalityExpenditure.self,
+			SchemaV5.ContractExpenditure.self,
+			SchemaV10.RecordedVote.self,
+			SchemaV10.MemberVote.self,
+			SchemaV6.WrittenQuestion.self,
+			SchemaV7.FiscalMonitorEntry.self,
+			SchemaV8.CabinetPosition.self,
+			MinisterialExpenseRecord.self,
+		]
+	}
+
+	// A single expense event record from TBS proactive disclosure. One record
+	// maps to one disclosed travel or hospitality event for a cabinet minister,
+	// as published quarterly at each department's proactive-disclosure page.
+	@Model
+	final class MinisterialExpenseRecord {
+		// Stable identity: department slug + fiscal year + quarter + minister + event hash.
+		@Attribute(.unique) var recordID: String
+		var ministerName: String
+		var department: String
+		var eventPurpose: String
+		var destination: String
+		var startDate: Date
+		var endDate: Date?
+		var travelCost: Double
+		var hospitalityCost: Double
+		var totalCost: Double
+		// ISO fiscal year label, e.g. "2024-2025".
+		var fiscalYear: String
+		// Fiscal quarter within the year (1–4).
+		var quarter: Int
+		var sourceURL: String
+
+		init(
+			recordID: String,
+			ministerName: String,
+			department: String,
+			eventPurpose: String,
+			destination: String,
+			startDate: Date,
+			endDate: Date? = nil,
+			travelCost: Double,
+			hospitalityCost: Double,
+			totalCost: Double,
+			fiscalYear: String,
+			quarter: Int,
+			sourceURL: String
+		) {
+			self.recordID = recordID
+			self.ministerName = ministerName
+			self.department = department
+			self.eventPurpose = eventPurpose
+			self.destination = destination
+			self.startDate = startDate
+			self.endDate = endDate
+			self.travelCost = travelCost
+			self.hospitalityCost = hospitalityCost
+			self.totalCost = totalCost
+			self.fiscalYear = fiscalYear
+			self.quarter = quarter
+			self.sourceURL = sourceURL
 		}
 	}
 }

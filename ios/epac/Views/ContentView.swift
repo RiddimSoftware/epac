@@ -136,6 +136,9 @@ struct ContentView: View {
 			// app, so this is offline-safe; backgroundRefresh re-seeds on subsequent
 			// launches to absorb shipped Cabinet shuffles.
 			try? await fetch.loadCabinetPositions()
+			// Seed ministerial expenses from the bundled snapshot. Quarterly TBS
+			// proactive disclosure data is bundled at build time and re-seeded here.
+			try? await fetch.loadMinisterialExpenses()
 			// Snapshot lightweight name data on @MainActor (no imageData access).
 			let nameEntries = members.map {
 				MemberNameCache.Entry(memberID: $0.memberID, name: $0.name, lastName: $0.lastName)

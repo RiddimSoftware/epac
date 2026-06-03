@@ -15,8 +15,8 @@ struct MigrationPlanTests {
 
     @Test func schemasAreInChronologicalOrder() {
         let schemas = EpacMigrationPlan.schemas
-        #expect(schemas.count == 8)
-        // Confirm the ordering: V3 < V4 < V5 < V6 < V7 < V8 < V9 < V10
+        #expect(schemas.count == 9)
+        // Confirm the ordering: V3 < V4 < V5 < V6 < V7 < V8 < V9 < V10 < V11
         let v3 = SchemaV3.versionIdentifier
         let v4 = SchemaV4.versionIdentifier
         let v5 = SchemaV5.versionIdentifier
@@ -25,6 +25,7 @@ struct MigrationPlanTests {
         let v8 = SchemaV8.versionIdentifier
         let v9 = SchemaV9.versionIdentifier
         let v10 = SchemaV10.versionIdentifier
+        let v11 = SchemaV11.versionIdentifier
         #expect(v3 < v4)
         #expect(v4 < v5)
         #expect(v5 < v6)
@@ -32,6 +33,7 @@ struct MigrationPlanTests {
         #expect(v7 < v8)
         #expect(v8 < v9)
         #expect(v9 < v10)
+        #expect(v10 < v11)
         // Confirm the plan lists them in the same order
         #expect(schemas[0] == SchemaV3.self)
         #expect(schemas[1] == SchemaV4.self)
@@ -41,6 +43,7 @@ struct MigrationPlanTests {
         #expect(schemas[5] == SchemaV8.self)
         #expect(schemas[6] == SchemaV9.self)
         #expect(schemas[7] == SchemaV10.self)
+        #expect(schemas[8] == SchemaV11.self)
     }
 
     @Test func stagesCountIsOnePerSchemaBoundary() {
@@ -54,7 +57,7 @@ struct MigrationPlanTests {
         // Verifies that epacApp's container initialisation doesn't throw on an empty store.
         // Uses an in-memory configuration so tests don't touch disk.
         let container = try ModelContainer(
-            for: Schema(versionedSchema: SchemaV10.self),
+            for: Schema(versionedSchema: SchemaV11.self),
             migrationPlan: EpacMigrationPlan.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -68,5 +71,7 @@ struct MigrationPlanTests {
         #expect(fiscalEntries.isEmpty)
         let cabinetPositions = try context.fetch(FetchDescriptor<CabinetPosition>())
         #expect(cabinetPositions.isEmpty)
+        let ministerialExpenses = try context.fetch(FetchDescriptor<MinisterialExpenseRecord>())
+        #expect(ministerialExpenses.isEmpty)
     }
 }
