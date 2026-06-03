@@ -37,6 +37,10 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 | `HansardSearchIntervention` | Backend-only parsed Hansard intervention value used while building the SQLite FTS5 search artifact. |
 | `HansardSearchManifest` | Backend-only manifest pointer for the current-session Hansard search SQLite artifact. |
+| `LobbyistOrganization` | Backend-only aggregate for an OCL client/organization/corporation with canonical ID, type, sector, lobbyists, subject matters, communication trend counts, and top DPOHs contacted. |
+| `OrganizationSector` | OCL subject matter type description carried verbatim as the organization's sector label for profile browsing. |
+| `CommunicationCount` | Current-vs-prior Parliament communication count pair used for organization profile trend display. |
+| `ParliamentSession` | Date-window value defining a Parliament/session boundary for trend aggregation. |
 
 ## Ports
 
@@ -67,6 +71,8 @@ will build the missing artifact.
 | `IndexBuilder` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/sqlitefts5/builder.go`. | Build and self-check a local SQLite FTS5 index from parsed interventions. |
 | `IndexUploader` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Upload the SQLite search index artifact. |
 | `ManifestWriter` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Write the search-index manifest pointer. |
+| `LobbyistOrganizationRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Persist and load lobbyist organization aggregates independent of HTTP delivery. |
+| `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Read OCL registration and communication source rows, including seeded aliases and pending alias observations. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 
 ---
@@ -596,6 +602,65 @@ Current implementation:
 ```
 
 > Boundary rule: artifact publishing, S3, CloudFront, and manifest concerns stay outside the use case; the use case only reads source subjects and emits deterministic JSON.
+
+---
+
+### AggregateLobbyistOrganizations
+
+```
+Actor: Scheduler / backend data operator
+Goal: Build canonical lobbyist organization aggregates from OCL registration and communication source rows.
+Inputs: Current Parliament session window, prior Parliament session window, OCL registration rows, OCL communication rows, seeded organization aliases.
+Outputs: Upserted `lobbyist_organizations` rows and pending alias observations for ambiguous name-only matches.
+Entities / values: LobbyistOrganization, OrganizationSector, CommunicationCount, ParliamentSession.
+Ports: backend Go: `OrganizationDirectoryQuery`, `LobbyistOrganizationRepository`.
+Primary adapters: backend/lobbying Postgres repository, organization_aliases seeded fixture, pending_organization_aliases log table.
+Current implementation:
+  backend/lobbying/application/aggregate.go
+  backend/lobbying/application/normalizer.go
+  backend/lobbying/repository/postgres.go
+  backend/migrations/012_lobbyist_organizations.sql
+```
+
+> Boundary rule: OCL table names, alias persistence, and Postgres JSON/array storage stay in the repository adapter. The use case sees registration/communication source values and domain aggregates only.
+
+---
+
+### LoadLobbyistOrganizationProfile
+
+```
+Actor: Backend caller (REST endpoint added by a later issue)
+Goal: Load one canonical lobbyist organization profile by organization ID.
+Inputs: Canonical organization ID.
+Outputs: LobbyistOrganization aggregate with name, type, sector, registered lobbyists, active subject matters, communication trend, and top DPOHs contacted.
+Entities / values: LobbyistOrganization, OrganizationSector, CommunicationCount.
+Ports: backend Go: `LobbyistOrganizationRepository`.
+Primary adapters: backend/lobbying Postgres repository.
+Current implementation:
+  backend/lobbying/application/aggregate.go
+  backend/lobbying/repository/postgres.go
+```
+
+> Boundary rule: HTTP request/response types are intentionally absent until the endpoint issue lands.
+
+---
+
+### BrowseLobbyistOrganizations
+
+```
+Actor: Backend caller (REST endpoint added by a later issue)
+Goal: Browse canonical lobbyist organizations for profile discovery.
+Inputs: Search text, limit, offset.
+Outputs: Ordered LobbyistOrganization aggregates.
+Entities / values: LobbyistOrganization, CommunicationCount.
+Ports: backend Go: `LobbyistOrganizationRepository`.
+Primary adapters: backend/lobbying Postgres repository.
+Current implementation:
+  backend/lobbying/application/aggregate.go
+  backend/lobbying/repository/postgres.go
+```
+
+> Boundary rule: pagination/search policy is represented as plain input values; no HTTP adapter types leak inward.
 
 ---
 
