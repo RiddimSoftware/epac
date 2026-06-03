@@ -157,7 +157,7 @@ struct GrantRow: View {
             HStack(spacing: GrantsLayout.metadataSpacing) {
                 Text(grant.formattedAmount)
                     .font(.caption.bold())
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 Spacer()
                 if !grant.fiscalYear.isEmpty {
                     Text(grant.fiscalYear)

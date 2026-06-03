@@ -1093,7 +1093,7 @@ struct RidingStatisticsView: View {
 						HStack {
 							Text(grant.formattedAmount)
 								.font(.caption.bold())
-								.foregroundStyle(.accentColor)
+								.foregroundStyle(Color.accentColor)
 							Spacer()
 						}
 						Text(grant.recipientName)
