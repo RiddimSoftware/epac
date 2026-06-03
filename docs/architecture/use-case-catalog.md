@@ -108,6 +108,9 @@ to the issue that will build the missing artifact.
 | `MembersSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/ourcommons/fetcher.go`. | Fetch and normalize active MP records from ourcommons.ca members XML. |
 | `SubjectMatterSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/subjects/fetcher.go`. | Fetch and parse OCL subject-matter controlled-vocabulary rows. |
 | `RawTableWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/writer.go`. | Load parsed OCL, member, and subject-matter rows into local SQLite raw tables. |
+| `OrgAggregator` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Run build-time SQLite aggregation to produce derived organization and subject-matter tables. |
+| `LegisInfoSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/legisinfo/fetcher.go`. | Fetch bill metadata (reading dates, titles) from the parl.ca/legisinfo JSON API. |
+| `BillContextWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Persist bill subject tags and reading dates into build-time SQLite tables. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
 | `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
 | `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
@@ -769,6 +772,44 @@ Current implementation:
 ```
 
 > **Boundary rule:** Use-case policy owns the orchestration and row counting. Feed-specific transport/parsing and SQL schema details remain in adapters.
+
+---
+
+### BuildOrganizationTables
+
+```
+Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Goal: Aggregate raw OCL tables into derived lobbyist organization and subject-matter tables for the serving Lambda.
+Inputs: Populated raw OCL SQLite tables (ocl_registration_primary, ocl_communication_primary, etc.).
+Outputs: lobbyist_organizations, lobbyist_communications, lobbyist_registrations, lobbyist_subject_matters.
+Ports: `OrgAggregator`.
+Primary adapters: backend/lobbying-index/main.go, sqlite.Aggregator.
+Current implementation:
+  backend/lobbying-index/internal/usecase/org_aggregation.go
+  backend/lobbying-index/internal/adapter/sqlite/aggregator.go
+```
+
+> **Boundary rule:** Use-case policy invokes the aggregator port only. All SQLite CTE logic stays in the adapter.
+
+---
+
+### BuildBillContextTables
+
+```
+Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Goal: Fetch bill metadata from parl.ca/legisinfo and build bill lobbying context tables for the serving Lambda.
+Inputs: parl.ca/legisinfo JSON API, ocl_topic_map.json, parliament/session numbers.
+Outputs: legisinfo_bill_subject_tags, legisinfo_bill_readings.
+Ports: `LegisInfoSource`, `BillContextWriter`.
+Primary adapters: backend/lobbying-index/main.go, legisinfo.Fetcher, sqlite.Aggregator.
+Current implementation:
+  backend/lobbying-index/internal/usecase/org_aggregation.go
+  backend/lobbying-index/internal/adapter/legisinfo/fetcher.go
+  backend/lobbying-index/internal/adapter/sqlite/aggregator.go
+  backend/lobbying-index/ocl_topic_map.json
+```
+
+> **Boundary rule:** Use-case policy must not import net/http or parl.ca-specific JSON structs — these belong in the legisinfo adapter.
 
 ---
 

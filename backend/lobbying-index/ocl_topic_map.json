@@ -1,0 +1,212 @@
+[
+  {
+    "ocl_code": "SMT-1",
+    "epac_topic_slug": "digital",
+    "confidence": 0.72
+  },
+  {
+    "ocl_code": "SMT-2",
+    "epac_topic_slug": "indigenous",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-3",
+    "epac_topic_slug": "agriculture",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-7",
+    "epac_topic_slug": "economy",
+    "confidence": 0.55
+  },
+  {
+    "ocl_code": "SMT-8",
+    "epac_topic_slug": "defence",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-9",
+    "epac_topic_slug": "education",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-10",
+    "epac_topic_slug": "labour",
+    "confidence": 0.82
+  },
+  {
+    "ocl_code": "SMT-11",
+    "epac_topic_slug": "energy",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-13",
+    "epac_topic_slug": "climate",
+    "confidence": 0.92
+  },
+  {
+    "ocl_code": "SMT-14",
+    "epac_topic_slug": "economy",
+    "confidence": 0.78
+  },
+  {
+    "ocl_code": "SMT-15",
+    "epac_topic_slug": "naturalresources",
+    "confidence": 0.75
+  },
+  {
+    "ocl_code": "SMT-16",
+    "epac_topic_slug": "naturalresources",
+    "confidence": 0.9
+  },
+  {
+    "ocl_code": "SMT-17",
+    "epac_topic_slug": "economy",
+    "confidence": 0.56
+  },
+  {
+    "ocl_code": "SMT-18",
+    "epac_topic_slug": "healthcare",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-19",
+    "epac_topic_slug": "immigration",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-20",
+    "epac_topic_slug": "economy",
+    "confidence": 0.68
+  },
+  {
+    "ocl_code": "SMT-21",
+    "epac_topic_slug": "transport",
+    "confidence": 0.95
+  },
+  {
+    "ocl_code": "SMT-22",
+    "epac_topic_slug": "digital",
+    "confidence": 0.63
+  },
+  {
+    "ocl_code": "SMT-23",
+    "epac_topic_slug": "trade",
+    "confidence": 0.82
+  },
+  {
+    "ocl_code": "SMT-24",
+    "epac_topic_slug": "foreign",
+    "confidence": 0.9
+  },
+  {
+    "ocl_code": "SMT-25",
+    "epac_topic_slug": "trade",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-26",
+    "epac_topic_slug": "justice",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-27",
+    "epac_topic_slug": "labour",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-28",
+    "epac_topic_slug": "naturalresources",
+    "confidence": 0.95
+  },
+  {
+    "ocl_code": "SMT-29",
+    "epac_topic_slug": "economy",
+    "confidence": 0.64
+  },
+  {
+    "ocl_code": "SMT-30",
+    "epac_topic_slug": "digital",
+    "confidence": 0.8
+  },
+  {
+    "ocl_code": "SMT-31",
+    "epac_topic_slug": "economy",
+    "confidence": 0.73
+  },
+  {
+    "ocl_code": "SMT-33",
+    "epac_topic_slug": "taxation",
+    "confidence": 0.95
+  },
+  {
+    "ocl_code": "SMT-34",
+    "epac_topic_slug": "economy",
+    "confidence": 0.52
+  },
+  {
+    "ocl_code": "SMT-35",
+    "epac_topic_slug": "transport",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-36",
+    "epac_topic_slug": "economy",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-37",
+    "epac_topic_slug": "foreign",
+    "confidence": 0.9
+  },
+  {
+    "ocl_code": "SMT-38",
+    "epac_topic_slug": "seniors",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-39",
+    "epac_topic_slug": "justice",
+    "confidence": 0.92
+  },
+  {
+    "ocl_code": "SMT-40",
+    "epac_topic_slug": "digital",
+    "confidence": 0.58
+  },
+  {
+    "ocl_code": "SMT-41",
+    "epac_topic_slug": "climate",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-43",
+    "epac_topic_slug": "digital",
+    "confidence": 0.82
+  },
+  {
+    "ocl_code": "SMT-44",
+    "epac_topic_slug": "housing",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-45",
+    "epac_topic_slug": "economy",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-50",
+    "epac_topic_slug": "childcare",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-53",
+    "epac_topic_slug": "naturalresources",
+    "confidence": 1.0
+  },
+  {
+    "ocl_code": "SMT-54",
+    "epac_topic_slug": "foreign",
+    "confidence": 1.0
+  }
+]
