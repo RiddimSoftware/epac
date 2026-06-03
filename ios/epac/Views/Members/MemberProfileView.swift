@@ -171,6 +171,23 @@ struct MemberProfileView: View {
 					.background(Color(.secondarySystemBackground))
 					.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
+					if let position = cabinetPosition {
+						NavigationLink(destination: ContractsView(initialDepartmentFilter: position.departmentKeyword)) {
+							HStack {
+								Label(NSLocalizedString("contracts.minister.link", comment: ""), systemImage: "building.columns.fill")
+								Spacer()
+								Image(systemName: "chevron.right")
+									.font(.caption)
+									.foregroundStyle(.tertiary)
+							}
+							.padding()
+							.background(Color(.secondarySystemBackground))
+							.cornerRadius(MemberProfileLayout.cardCornerRadius)
+						}
+						.foregroundStyle(.primary)
+						.accessibilityIdentifier("minister-contracts-link")
+					}
+
 					if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 						contactSection
 					} else if !member.contactFetched {

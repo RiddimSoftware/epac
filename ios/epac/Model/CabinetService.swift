@@ -69,3 +69,30 @@ struct CabinetService {
 		throw CabinetServiceError.invalidAsOfDate(string)
 	}
 }
+
+// MARK: - CabinetPosition convenience
+
+extension CabinetPosition {
+    /// Extracts a department keyword from the portfolio title for use as a
+    /// contracts browser pre-filter. Strips common title prefixes so that e.g.
+    /// "Minister of Finance" → "Finance" and "President of the Treasury Board"
+    /// → "Treasury Board".
+    var departmentKeyword: String {
+        let prefixes = [
+            "Minister of ", "Minister for ", "Minister responsible for ",
+            "President of the ", "President of ", "Secretary of State for ",
+            "Prime Minister"
+        ]
+        for prefix in prefixes {
+            if portfolio.hasPrefix(prefix) {
+                let stripped = String(portfolio.dropFirst(prefix.count))
+                    .replacingOccurrences(of: " and Attorney General of Canada", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                return stripped
+            }
+        }
+        // Prime Minister maps to no specific department.
+        if portfolio == "Prime Minister" || isPrimeMinister { return "" }
+        return portfolio
+    }
+}

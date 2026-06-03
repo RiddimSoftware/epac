@@ -13,9 +13,11 @@ struct GovernmentContract: Identifiable, Codable {
     let value: Double
     let purpose: String
     let contractDate: Date
+    let endDate: Date?
     let amendmentCount: Int
     let originalValue: Double
     let fiscalYear: String
+    let contractType: String
 
     static let datasetURL = URL(string: "https://open.canada.ca/data/en/dataset/d8f85d91-7dec-4fd1-8055-483b77225d8b")!
 

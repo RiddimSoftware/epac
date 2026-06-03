@@ -936,4 +936,83 @@ final class SnapshotTests: XCTestCase {
             name: "GrantsView_loadError"
         )
     }
+
+    // MARK: - Contracts browser (EPAC-722)
+
+    private static func makeContract(
+        id: String = "REF-001",
+        vendor: String = "Acme Consulting Inc.",
+        department: String = "Public Services and Procurement Canada",
+        value: Double = 250_000,
+        purpose: String = "Professional advisory services",
+        amendmentCount: Int = 0,
+        originalValue: Double? = nil,
+        endDate: Date? = nil,
+        contractType: String = "Services"
+    ) -> GovernmentContract {
+        GovernmentContract(
+            id: id,
+            department: department,
+            vendor: vendor,
+            value: value,
+            purpose: purpose,
+            contractDate: Calendar.current.date(from: DateComponents(year: 2024, month: 6, day: 15))!,
+            endDate: endDate,
+            amendmentCount: amendmentCount,
+            originalValue: originalValue ?? value,
+            fiscalYear: "2024-2025",
+            contractType: contractType
+        )
+    }
+
+    func testContractsBrowser_empty() {
+        snapshot(
+            EmptyStateView(
+                icon: "doc.text.magnifyingglass",
+                title: "No contracts found",
+                message: "No contracts match your search. Try a vendor or department name.",
+                action: nil
+            )
+            .frame(width: 375, height: 400),
+            name: "ContractsBrowser_empty"
+        )
+    }
+
+    func testContractsBrowser_withResults() {
+        let contracts = [
+            Self.makeContract(id: "REF-001", vendor: "McKinsey & Company", department: "Public Services and Procurement Canada", value: 4_500_000),
+            Self.makeContract(id: "REF-002", vendor: "Deloitte Canada", department: "Treasury Board of Canada Secretariat", value: 875_000),
+            Self.makeContract(id: "REF-003", vendor: "KPMG LLP", department: "Health Canada", value: 120_000, amendmentCount: 2)
+        ]
+        let rows = VStack(spacing: 0) {
+            ForEach(contracts) { contract in
+                Divider()
+                FederalContractRow(contract: contract)
+                    .padding(.horizontal)
+            }
+        }
+        .frame(width: 375)
+        snapshot(rows, name: "ContractsBrowser_withResults")
+    }
+
+    func testContractDetail_withAmendments() {
+        let contract = Self.makeContract(
+            id: "REF-2024-0042",
+            vendor: "McKinsey & Company Canada",
+            department: "Public Services and Procurement Canada",
+            value: 4_500_000,
+            purpose: "Transformation advisory services for federal procurement modernization initiative.",
+            amendmentCount: 3,
+            originalValue: 2_000_000,
+            endDate: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 31)),
+            contractType: "Services"
+        )
+        snapshot(
+            NavigationStack {
+                FederalContractDetailView(contract: contract)
+            }
+            .frame(width: 375, height: 700),
+            name: "ContractDetail_withAmendments"
+        )
+    }
 }
