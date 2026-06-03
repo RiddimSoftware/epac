@@ -16,6 +16,7 @@
     { "name": "Members", "description": "MP metadata, votes, and speech feeds." },
     { "name": "Bills", "description": "Bill list and status metadata." },
     { "name": "Fiscal", "description": "Government spending, estimates, and budgetary records." },
+    { "name": "Lobbying", "description": "Office of the Commissioner of Lobbying records mapped to epac topics." },
     { "name": "Telemetry", "description": "Client telemetry ingestion." },
     { "name": "Operations", "description": "Health and API documentation endpoints." }
   ],
@@ -601,6 +602,92 @@
         }
       }
     },
+    "/api/v1/lobbying/by-topic/{slug}": {
+      "get": {
+        "tags": ["Lobbying"],
+        "summary": "List OCL lobbying records mapped to an epac topic",
+        "description": "Returns paged Office of the Commissioner of Lobbying communication reports and registrations whose OCL subject-matter codes are mapped to the requested epac topic slug.",
+        "operationId": "listLobbyingByTopic",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Stable epac topic slug.",
+            "schema": { "type": "string", "example": "housing" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "One-based page number.",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Items per page. Defaults to 50 and caps at 200.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paged lobbying records for the topic",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LobbyingByTopicResponse" },
+                "examples": {
+                  "results": {
+                    "value": {
+                      "topic_slug": "housing",
+                      "page": 1,
+                      "per_page": 50,
+                      "total": 1,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "rows": [
+                        {
+                          "kind": "communication",
+                          "ocl_id": "558142",
+                          "ocl_code": "SMT-44",
+                          "epac_topic_slug": "housing",
+                          "mapping_confidence": 1,
+                          "subject_matter": "Housing",
+                          "subject_description": "Housing",
+                          "organization_name": "Example Housing Association",
+                          "registrant_name": "Jane Registrant",
+                          "registrant_type": "Consultant",
+                          "communication_date": "2026-03-15",
+                          "posted_date": "2026-03-20",
+                          "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                          "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                        }
+                      ]
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "topic_slug": "pharma",
+                      "page": 1,
+                      "per_page": 50,
+                      "total": 0,
+                      "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
+                      "source_url": "https://lobbycanada.gc.ca/en/open-data/",
+                      "rows": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/estimates": {
       "get": {
         "tags": ["Fiscal"],
@@ -1172,6 +1259,41 @@
           "expected_interval_hours": { "type": "integer" },
           "healthy": { "type": "boolean" },
           "stale_for": { "type": "string" }
+        }
+      },
+      "LobbyingByTopicResponse": {
+        "type": "object",
+        "required": ["topic_slug", "page", "per_page", "total", "citation", "source_url", "rows"],
+        "properties": {
+          "topic_slug": { "type": "string", "example": "housing" },
+          "page": { "type": "integer", "minimum": 1 },
+          "per_page": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "total": { "type": "integer", "minimum": 0 },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" },
+          "rows": { "type": "array", "items": { "$ref": "#/components/schemas/LobbyingByTopicRow" } }
+        }
+      },
+      "LobbyingByTopicRow": {
+        "type": "object",
+        "required": ["kind", "ocl_id", "ocl_code", "epac_topic_slug", "mapping_confidence", "subject_matter", "citation", "source_url"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["communication", "registration"] },
+          "ocl_id": { "type": "string", "description": "COMLOG_ID for communication rows or REG_ID_ENR for registration rows." },
+          "ocl_code": { "type": "string", "example": "SMT-44" },
+          "epac_topic_slug": { "type": "string", "example": "housing" },
+          "mapping_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "subject_matter": { "type": "string", "example": "Housing" },
+          "subject_description": { "type": "string", "example": "Housing" },
+          "organization_name": { "type": "string" },
+          "registrant_name": { "type": "string" },
+          "registrant_type": { "type": "string" },
+          "communication_date": { "type": "string", "format": "date" },
+          "posted_date": { "type": "string", "format": "date" },
+          "effective_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
         }
       },
       "EstimatesResponse": {

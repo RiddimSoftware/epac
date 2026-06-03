@@ -25,6 +25,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
+| `OCLSubjectMatter` | An Office of the Commissioner of Lobbying subject-matter code used on communication reports and registrations. |
+| `EpacTopicSlug` | The stable epac topic identifier used to group parliamentary and lobbying records. |
+| `LobbyingByTopicResult` | Backend-only paged lobbying result set for an epac topic, including source citation metadata. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -73,6 +76,8 @@ will build the missing artifact.
 | `ManifestWriter` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Write the search-index manifest pointer. |
 | `LobbyistOrganizationRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Persist and load lobbyist organization aggregates independent of HTTP delivery. |
 | `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Read OCL registration and communication source rows, including seeded aliases and pending alias observations. |
+| `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
+| `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 
 ---
@@ -346,6 +351,28 @@ Current implementation:
 > The backend endpoint and artifact publisher remain listed because their removal is tracked outside this app change.
 
 > **Adapter note:** EPAC-1916 moves API reads to `on-this-day/v1/all.json`. The publisher remains the only Postgres reader and computes the current-MP / bill / vote ranking order at publish time.
+
+---
+
+### LoadLobbyingByTopic
+
+```
+Actor: Backend API caller / downstream lobbying dashboards
+Goal: Load OCL communication reports and registrations mapped to an epac parliamentary topic.
+Inputs: Epac topic slug, page, per-page.
+Outputs: LobbyingByTopicResult with source-cited communication and registration rows.
+Entities / values: OCLSubjectMatter, EpacTopicSlug, LobbyingByTopicResult.
+Ports: LobbyingSubjectsRepository, OCLSubjectsSource.
+Primary adapters: lobbying Lambda (GET /api/v1/lobbying/by-topic/{slug}), PostgresLobbyingSubjectsRepository, ocl_topic_map.json source.
+Current implementation:
+  backend/lobbying/main.go
+  backend/lobbying/internal/usecase/usecase.go
+  backend/lobbying/internal/adapter/postgres/postgres.go
+  backend/lobbying/internal/adapter/ocltopicmap/source.go
+  backend/lobbying/ocl_topic_map.json
+```
+
+> **Boundary rule:** The use case depends on the `OCLSubjectsSource` and `LobbyingSubjectsRepository` ports. The checked-in mapping JSON, Postgres tables, and Lambda request/response details stay in adapters.
 
 ---
 
