@@ -485,7 +485,7 @@ struct MPLobbyingTabView: View {
                 Button {
                     openURL(billURL)
                 } label: {
-                    Text("\(NSLocalizedString(\"lobbying.relatedBill\", comment: \"\")): \(entry.relatedBillTitle)")
+                    Text(NSLocalizedString("lobbying.relatedBill", comment: "") + ": " + entry.relatedBillTitle)
                         .font(.caption)
                         .foregroundStyle(.tint)
                         .multilineTextAlignment(.leading)
