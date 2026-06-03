@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"testing"
 
+	"epac/lobbying/application"
+	"epac/lobbying/domain"
 	"epac/lobbying/internal/usecase"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -43,6 +45,17 @@ type stubCabinetOverviewService struct {
 }
 
 func (s *stubCabinetOverviewService) Execute(_ context.Context, input usecase.CabinetLobbyingOverviewInput) (usecase.CabinetLobbyingOverviewResult, error) {
+	s.gotInput = input
+	return s.result, s.err
+}
+
+type stubMPLobbyingExposureService struct {
+	gotInput application.LoadMPLobbyingExposureInput
+	result   application.MPLobbyingExposureResult
+	err      error
+}
+
+func (s *stubMPLobbyingExposureService) Execute(_ context.Context, input application.LoadMPLobbyingExposureInput) (application.MPLobbyingExposureResult, error) {
 	s.gotInput = input
 	return s.result, s.err
 }
@@ -99,6 +112,125 @@ func TestHandleRequestReturnsTopicRows(t *testing.T) {
 	}
 	if body.Rows[0].Citation != usecase.Citation || body.Rows[0].SourceURL != usecase.SourceURL {
 		t.Fatalf("row missing source citation: %#v", body.Rows[0])
+	}
+}
+
+func TestHandleRequestReturnsMPLobbyingExposure(t *testing.T) {
+	stub := &stubMPLobbyingExposureService{
+		result: application.MPLobbyingExposureResult{
+			MemberID:   "278707",
+			Parliament: 45,
+			Window:     domain.LobbyingExposureWindow3M,
+			Page:       2,
+			PerPage:    application.MPLobbyingTimelinePerPage,
+			Total:      1,
+			Pages:      1,
+			Summary: domain.MPLobbyingSummary{
+				MemberID:                 "278707",
+				Parliament:               45,
+				Window:                   domain.LobbyingExposureWindow3M,
+				TotalCommunicationCount:  1,
+				UniqueOrganizationsCount: 1,
+				TopOrganizations: []domain.TopLobbyingOrganization{
+					{Name: "Example Org", Sector: "Housing", CommunicationCount: 1},
+				},
+				Citation: domain.OCLCitation,
+			},
+			SubjectBreakdown: []domain.LobbyingSubjectDistribution{
+				{SubjectMatter: "Housing", CommunicationCount: 1},
+			},
+			Timeline: []domain.LobbyingTimelineEntry{
+				{
+					CommunicationID:   "COM-1",
+					Date:              "2026-05-20",
+					OrganizationName:  "Example Org",
+					SubjectMatter:     "Housing",
+					CommunicationType: "meeting",
+					Citation:          domain.OCLCitation,
+					SourceURL:         domain.OCLSourceURL,
+				},
+			},
+			Citation:  domain.OCLCitation,
+			SourceURL: domain.OCLSourceURL,
+		},
+	}
+	setMPLobbyingExposureServiceForTest(t, stub, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath: "/api/v1/members/278707/lobbying-exposure",
+		QueryStringParameters: map[string]string{
+			"parliament": "45",
+			"window":     "3m",
+			"page":       "2",
+		},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	if stub.gotInput.MemberID != "278707" ||
+		stub.gotInput.Parliament != 45 ||
+		stub.gotInput.Window != domain.LobbyingExposureWindow3M ||
+		stub.gotInput.Page != 2 {
+		t.Fatalf("service input = %#v", stub.gotInput)
+	}
+
+	var body application.MPLobbyingExposureResult
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Summary.TotalCommunicationCount != 1 || len(body.Timeline) != 1 || len(body.SubjectBreakdown) != 1 {
+		t.Fatalf("unexpected body: %#v", body)
+	}
+	if body.Timeline[0].Citation != domain.OCLCitation {
+		t.Fatalf("row missing citation: %#v", body.Timeline[0])
+	}
+}
+
+func TestHandleRequestSupportsUnversionedMPLobbyingExposurePath(t *testing.T) {
+	stub := &stubMPLobbyingExposureService{
+		result: application.MPLobbyingExposureResult{
+			MemberID:         "278707",
+			Parliament:       45,
+			Window:           domain.LobbyingExposureWindowAll,
+			Page:             1,
+			PerPage:          application.MPLobbyingTimelinePerPage,
+			Summary:          domain.MPLobbyingSummary{TopOrganizations: []domain.TopLobbyingOrganization{}, Citation: domain.OCLCitation},
+			SubjectBreakdown: []domain.LobbyingSubjectDistribution{},
+			Timeline:         []domain.LobbyingTimelineEntry{},
+			Citation:         domain.OCLCitation,
+			SourceURL:        domain.OCLSourceURL,
+		},
+	}
+	setMPLobbyingExposureServiceForTest(t, stub, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath:               "/members/278707/lobbying-exposure",
+		QueryStringParameters: map[string]string{"parliament": "45", "window": "all"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	if stub.gotInput.MemberID != "278707" || stub.gotInput.Window != domain.LobbyingExposureWindowAll {
+		t.Fatalf("service input = %#v", stub.gotInput)
+	}
+}
+
+func TestHandleRequestRejectsInvalidMPLobbyingExposureQuery(t *testing.T) {
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath:               "/api/v1/members/278707/lobbying-exposure",
+		QueryStringParameters: map[string]string{"window": "90d"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
 	}
 }
 
@@ -323,4 +455,13 @@ func setCabinetOverviewServiceForTest(t *testing.T, service cabinetOverviewExecu
 		return service, noopClose, err
 	}
 	t.Cleanup(func() { newCabinetOverviewService = original })
+}
+
+func setMPLobbyingExposureServiceForTest(t *testing.T, service mpLobbyingExposureExecutor, err error) {
+	t.Helper()
+	original := newMPLobbyingExposureService
+	newMPLobbyingExposureService = func(context.Context) (mpLobbyingExposureExecutor, closeFunc, error) {
+		return service, noopClose, err
+	}
+	t.Cleanup(func() { newMPLobbyingExposureService = original })
 }

@@ -20,6 +20,15 @@ func TestNewPostgresLobbyistOrganizationRepositoryStoresQueryer(t *testing.T) {
 	}
 }
 
+func TestNewPostgresMPLobbyingRepositoryStoresQueryer(t *testing.T) {
+	queryer := stubQueryer{}
+	repo := NewPostgresMPLobbyingRepository(queryer)
+
+	if repo.db != queryer {
+		t.Fatal("repository did not store queryer")
+	}
+}
+
 type stubQueryer struct {
 	Queryer
 }
