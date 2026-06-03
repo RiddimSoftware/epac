@@ -63,15 +63,15 @@ func TestHandleRequest_ReadsLobbyingFixture(t *testing.T) {
 	artifact := usecase.MPLobbyingArtifact{
 		MemberID: "278707",
 		Summary: usecase.MPLobbyingSummary{
-			TotalCommunications:           2,
-			UniqueOrganizations:           2,
-			MostFrequentSubject:           "Taxation",
+			TotalCommunications:              2,
+			UniqueOrganizations:              2,
+			MostFrequentSubject:              "Taxation",
 			PreviousParliamentCommunications: 1,
-			TrendVsPreviousParliament:     2,
+			TrendVsPreviousParliament:        2,
 		},
 		CohortBaseline: usecase.CohortComparisonBaseline{
-			Party: "Liberal",
-			PartyAverage: 12,
+			Party:           "Liberal",
+			PartyAverage:    12,
 			NationalAverage: 15,
 		},
 		AvailableSubjects: []string{"Taxation", "Transport"},
@@ -85,23 +85,23 @@ func TestHandleRequest_ReadsLobbyingFixture(t *testing.T) {
 		},
 		Timeline: []usecase.MPLobbyingTimelineEntry{
 			{
-				CommunicationDate:     "2026-04-02",
-				OrganizationName:      "ABC Corp",
-				OrganizationSector:    "Finance",
-				SubjectMatter:         "Tax policy",
-				CommunicationType:     "meeting",
-				OrganizationProfileURL: "https://example.com/org/abc",
-				RecordURL:             "https://lobbycanada.gc.ca/record/1",
+				CommunicationDate:         "2026-04-02",
+				OrganizationName:          "ABC Corp",
+				OrganizationSector:        "Finance",
+				SubjectMatter:             "Tax policy",
+				CommunicationType:         "meeting",
+				OrganizationProfileURL:    "https://example.com/org/abc",
+				RecordURL:                 "https://lobbycanada.gc.ca/record/1",
 				RelatedBillConfidenceUsed: true,
 			},
 			{
-				CommunicationDate:     "2025-01-10",
-				OrganizationName:      "DEF Ltd",
-				OrganizationSector:    "Health",
-				SubjectMatter:         "Medical devices",
-				CommunicationType:     "written",
-				OrganizationProfileURL: "",
-				RecordURL:             "https://lobbycanada.gc.ca/record/2",
+				CommunicationDate:         "2025-01-10",
+				OrganizationName:          "DEF Ltd",
+				OrganizationSector:        "Health",
+				SubjectMatter:             "Medical devices",
+				CommunicationType:         "written",
+				OrganizationProfileURL:    "",
+				RecordURL:                 "https://lobbycanada.gc.ca/record/2",
 				RelatedBillConfidenceUsed: false,
 			},
 		},
@@ -117,10 +117,10 @@ func TestHandleRequest_ReadsLobbyingFixture(t *testing.T) {
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		PathParameters: map[string]string{"id": "278707"},
 		QueryStringParameters: map[string]string{
-			"page":    "1",
+			"page":     "1",
 			"per_page": "1",
-			"subject": "tax",
-			"range":   "all",
+			"subject":  "tax",
+			"range":    "all",
 		},
 	})
 	if err != nil {
@@ -137,8 +137,8 @@ func TestHandleRequest_ReadsLobbyingFixture(t *testing.T) {
 	if got.Total != 1 {
 		t.Fatalf("total = %d, want 1", got.Total)
 	}
-	if got.Pages != 2 {
-		t.Fatalf("pages = %d, want 2", got.Pages)
+	if got.Pages != 1 {
+		t.Fatalf("pages = %d, want 1", got.Pages)
 	}
 	if got.Summary.TotalCommunications != 2 {
 		t.Fatalf("total communications = %d, want 2", got.Summary.TotalCommunications)
@@ -168,7 +168,7 @@ func TestHandleRequest_UnknownMemberReturnsEmptyShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(resp.Body), &got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.Total != 0 || len(got.Timeline) != 0 || got.MemberID != "unknown" {
+	if got.Total != 0 || len(got.Timeline) != 0 || got.MemberID != "unknown" || got.Page != 1 {
 		t.Fatalf("got = %+v, want empty response for unknown member", got)
 	}
 }
