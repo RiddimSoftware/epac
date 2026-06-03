@@ -16,23 +16,78 @@ private enum ContractsLayout {
     static let skeletonTitleHeight: CGFloat = 14
     static let skeletonDetailWidth: CGFloat = 180
     static let skeletonVerticalPadding: CGFloat = 6
+    static let filterSheetDetent: PresentationDetent = .medium
 }
 
 struct ContractsView: View {
+    let initialDepartmentFilter: String
+
     @State private var contracts: [GovernmentContract] = []
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var searchText = ""
     @State private var isRetryDisabled = false
+    @State private var showFilters = false
+
+    // Filter state
+    @State private var filterDepartment: String
+    @State private var filterMinAmount: String = ""
+    @State private var filterMaxAmount: String = ""
+    @State private var filterStartDate: Date? = nil
+    @State private var filterEndDate: Date? = nil
+    @State private var filterContractType: String = ""
+
+    private var hasActiveFilters: Bool {
+        !filterDepartment.isEmpty ||
+        !filterMinAmount.isEmpty ||
+        !filterMaxAmount.isEmpty ||
+        filterStartDate != nil ||
+        filterEndDate != nil ||
+        !filterContractType.isEmpty
+    }
+
+    init(initialDepartmentFilter: String = "") {
+        self.initialDepartmentFilter = initialDepartmentFilter
+        self._filterDepartment = State(initialValue: initialDepartmentFilter)
+    }
 
     private var filtered: [GovernmentContract] {
+        var result = contracts
+
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return contracts }
-        return contracts.filter {
-            $0.vendor.localizedCaseInsensitiveContains(q) ||
-            $0.department.localizedCaseInsensitiveContains(q) ||
-            $0.purpose.localizedCaseInsensitiveContains(q)
+        if !q.isEmpty {
+            result = result.filter {
+                $0.vendor.localizedCaseInsensitiveContains(q) ||
+                $0.department.localizedCaseInsensitiveContains(q) ||
+                $0.purpose.localizedCaseInsensitiveContains(q)
+            }
         }
+
+        let dept = filterDepartment.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !dept.isEmpty {
+            result = result.filter { $0.department.localizedCaseInsensitiveContains(dept) }
+        }
+
+        if let min = Double(filterMinAmount) {
+            result = result.filter { $0.value >= min }
+        }
+        if let max = Double(filterMaxAmount) {
+            result = result.filter { $0.value <= max }
+        }
+
+        if let start = filterStartDate {
+            result = result.filter { $0.contractDate >= start }
+        }
+        if let end = filterEndDate {
+            result = result.filter { $0.contractDate <= end }
+        }
+
+        let ctype = filterContractType.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !ctype.isEmpty {
+            result = result.filter { $0.contractType.localizedCaseInsensitiveContains(ctype) }
+        }
+
+        return result
     }
 
     var body: some View {
@@ -80,6 +135,27 @@ struct ContractsView: View {
             placement: .navigationBarDrawer(displayMode: .automatic),
             prompt: NSLocalizedString("contracts.search.prompt", comment: "")
         )
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showFilters = true
+                } label: {
+                    Label(NSLocalizedString("contracts.filter.button", comment: ""), systemImage: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                }
+                .accessibilityLabel(NSLocalizedString("contracts.filter.button", comment: ""))
+                .accessibilityHint(hasActiveFilters ? NSLocalizedString("contracts.filter.active", comment: "") : "")
+            }
+        }
+        .sheet(isPresented: $showFilters) {
+            ContractFiltersView(
+                department: $filterDepartment,
+                minAmount: $filterMinAmount,
+                maxAmount: $filterMaxAmount,
+                startDate: $filterStartDate,
+                endDate: $filterEndDate,
+                contractType: $filterContractType
+            )
+        }
         .task { await load() }
     }
 
@@ -95,9 +171,105 @@ struct ContractsView: View {
     }
 }
 
+// MARK: - Filter sheet
+
+private struct ContractFiltersView: View {
+    @Binding var department: String
+    @Binding var minAmount: String
+    @Binding var maxAmount: String
+    @Binding var startDate: Date?
+    @Binding var endDate: Date?
+    @Binding var contractType: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var useStartDate = false
+    @State private var useEndDate = false
+    @State private var localStart = Date()
+    @State private var localEnd = Date()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(NSLocalizedString("contracts.filter.department", comment: "")) {
+                    TextField(NSLocalizedString("contracts.filter.department.placeholder", comment: ""), text: $department)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                }
+
+                Section(NSLocalizedString("contracts.filter.contractType", comment: "")) {
+                    TextField(NSLocalizedString("contracts.filter.contractType.placeholder", comment: ""), text: $contractType)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                }
+
+                Section(NSLocalizedString("contracts.filter.amount", comment: "")) {
+                    LabeledContent(NSLocalizedString("contracts.filter.minAmount", comment: "")) {
+                        TextField("0", text: $minAmount)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numberPad)
+                    }
+                    LabeledContent(NSLocalizedString("contracts.filter.maxAmount", comment: "")) {
+                        TextField(NSLocalizedString("contracts.filter.noLimit", comment: ""), text: $maxAmount)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numberPad)
+                    }
+                }
+
+                Section(NSLocalizedString("contracts.filter.dateRange", comment: "")) {
+                    Toggle(NSLocalizedString("contracts.filter.fromDate", comment: ""), isOn: $useStartDate)
+                    if useStartDate {
+                        DatePicker("", selection: $localStart, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                            .onChange(of: localStart) { _, v in startDate = v }
+                    }
+                    Toggle(NSLocalizedString("contracts.filter.toDate", comment: ""), isOn: $useEndDate)
+                    if useEndDate {
+                        DatePicker("", selection: $localEnd, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                            .onChange(of: localEnd) { _, v in endDate = v }
+                    }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        department = ""
+                        minAmount = ""
+                        maxAmount = ""
+                        contractType = ""
+                        startDate = nil
+                        endDate = nil
+                        useStartDate = false
+                        useEndDate = false
+                    } label: {
+                        Text(NSLocalizedString("contracts.filter.clearAll", comment: ""))
+                    }
+                }
+            }
+            .navigationTitle(NSLocalizedString("contracts.filter.title", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(NSLocalizedString("dataSource.done", comment: "")) {
+                        if useStartDate { startDate = localStart }
+                        if useEndDate { endDate = localEnd }
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                if let s = startDate { useStartDate = true; localStart = s }
+                if let e = endDate { useEndDate = true; localEnd = e }
+            }
+        }
+        .presentationDetents([ContractsLayout.filterSheetDetent, .large])
+    }
+}
+
 // MARK: - Row
 
-private struct FederalContractRow: View {
+struct FederalContractRow: View {
     let contract: GovernmentContract
 
     var body: some View {

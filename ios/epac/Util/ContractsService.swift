@@ -64,11 +64,12 @@ struct ContractsService {
         formatter.locale = Locale(identifier: "en_US_POSIX")
 
         return records.compactMap { record -> GovernmentContract? in
-            let id         = record["reference_number"] as? String ?? UUID().uuidString
-            let dept       = (record["owner_org_title"] as? String ?? "").trimmingCharacters(in: .whitespaces)
-            let vendor     = (record["vendor_name"] as? String ?? "").trimmingCharacters(in: .whitespaces)
-            let purpose    = ((record["description_en"] as? String) ?? "").trimmingCharacters(in: .whitespaces)
-            let amendments = record["amendment_count"] as? Int ?? 0
+            let id           = record["reference_number"] as? String ?? UUID().uuidString
+            let dept         = (record["owner_org_title"] as? String ?? "").trimmingCharacters(in: .whitespaces)
+            let vendor       = (record["vendor_name"] as? String ?? "").trimmingCharacters(in: .whitespaces)
+            let purpose      = ((record["description_en"] as? String) ?? "").trimmingCharacters(in: .whitespaces)
+            let amendments   = record["amendment_count"] as? Int ?? 0
+            let contractType = (record["commodity_type"] as? String ?? "").trimmingCharacters(in: .whitespaces)
 
             let valueStr  = record["contract_value"] as? String ?? "0"
             let origStr   = record["original_value"] as? String ?? valueStr
@@ -79,6 +80,8 @@ struct ContractsService {
 
             let dateStr  = record["contract_date"] as? String ?? ""
             let date     = formatter.date(from: dateStr) ?? .now
+            let endStr   = record["contract_period_end"] as? String ?? ""
+            let endDate  = formatter.date(from: endStr)
             let fiscal   = record["fiscal_year"] as? String ?? ""
 
             return GovernmentContract(
@@ -88,9 +91,11 @@ struct ContractsService {
                 value: value,
                 purpose: purpose,
                 contractDate: date,
+                endDate: endDate,
                 amendmentCount: amendments,
                 originalValue: orig,
-                fiscalYear: fiscal
+                fiscalYear: fiscal,
+                contractType: contractType
             )
         }
     }

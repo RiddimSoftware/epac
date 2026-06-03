@@ -171,6 +171,27 @@ struct MemberProfileView: View {
 					.background(Color(.secondarySystemBackground))
 					.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
+					if let position = cabinetPosition {
+						NavigationLink(destination: ContractsView(initialDepartmentFilter: position.departmentKeyword)) {
+							HStack {
+								Label(NSLocalizedString("contracts.minister.link", comment: ""), systemImage: "building.columns.fill")
+								Spacer()
+								Image(systemName: "chevron.right")
+									.font(.caption)
+									.foregroundStyle(.tertiary)
+							}
+							.padding()
+							.background(Color(.secondarySystemBackground))
+							.cornerRadius(MemberProfileLayout.cardCornerRadius)
+						}
+						.foregroundStyle(.primary)
+						.accessibilityIdentifier("minister-contracts-link")
+						MinisterialExpensesSectionView(
+							ministerName: position.ministerName,
+							member: member
+						)
+					}
+
 					if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
 						contactSection
 					} else if !member.contactFetched {
@@ -214,8 +235,24 @@ struct MemberProfileView: View {
 					}
 					.foregroundStyle(.primary)
 
-					// MARK: Lobbying tab
-					LobbyingView(memberID: member.memberID)
+					// MARK: Lobbying dashboard
+					NavigationLink(destination: MPLobbyingTabView(member: member)) {
+						HStack {
+							Image(systemName: "person.fill.badge.plus")
+								.foregroundStyle(.tint)
+							Text(NSLocalizedString("lobbying.sectionTitle", comment: ""))
+								.font(.subheadline)
+								.fontWeight(.semibold)
+							Spacer()
+							Image(systemName: "chevron.right")
+								.font(.caption)
+								.foregroundStyle(.tertiary)
+						}
+					}
+					.padding()
+					.background(Color.appSurface)
+					.cornerRadius(MemberProfileLayout.cardCornerRadius)
+					.accessibilityIdentifier("accountability-lobbying-link")
 
 					if cabinetPosition != nil {
 						MinisterLobbyingTabView(memberID: member.memberID)

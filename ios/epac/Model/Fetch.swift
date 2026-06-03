@@ -153,6 +153,7 @@ actor Fetch: ModelActor, ObservableObject {
 		try? await downloadSittingCalendar(year - 1)
 		try? await downloadFiscalMonitorEntries()
 		try? loadCabinetPositions()
+		try? loadMinisterialExpenses()
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {
@@ -1648,5 +1649,51 @@ actor Fetch: ModelActor, ObservableObject {
 		let existing = try modelContext.fetch(FetchDescriptor<CabinetPosition>())
 		guard existing.isEmpty else { return }
 		try loadCabinetPositions()
+	}
+
+	// MARK: - Ministerial expenses
+
+	// Loads the bundled ministerial-expenses.json snapshot into SwiftData.
+	// Re-seeds on every call: the bundled file is regenerated quarterly by
+	// backend/expenses/ministerial_ingest.py, and full replacement is cheaper
+	// than diffing records across department format changes.
+	func loadMinisterialExpenses() throws {
+		Log.debug("Fetch.loadMinisterialExpenses()")
+		let snapshot = try MinisterialExpensesService().loadSnapshot()
+
+		let existing = try modelContext.fetch(FetchDescriptor<MinisterialExpenseRecord>())
+		for record in existing {
+			modelContext.delete(record)
+		}
+
+		for record in snapshot.records {
+			let startDate = MinisterialExpensesService.parseDate(record.startDate) ?? Date.distantPast
+			let endDate = record.endDate.flatMap { MinisterialExpensesService.parseDate($0) }
+			modelContext.insert(MinisterialExpenseRecord(
+				recordID: record.recordID,
+				ministerName: record.ministerName,
+				department: record.department,
+				eventPurpose: record.eventPurpose,
+				destination: record.destination,
+				startDate: startDate,
+				endDate: endDate,
+				travelCost: record.travelCost,
+				hospitalityCost: record.hospitalityCost,
+				totalCost: record.totalCost,
+				fiscalYear: record.fiscalYear,
+				quarter: record.quarter,
+				sourceURL: record.sourceURL
+			))
+		}
+		try modelContext.save()
+	}
+
+	// Best-effort seeding on first launch; backgroundRefresh re-seeds on
+	// subsequent launches to absorb updated quarterly disclosures shipped with
+	// new app versions.
+	func ensureMinisterialExpensesSeeded() throws {
+		let existing = try modelContext.fetch(FetchDescriptor<MinisterialExpenseRecord>())
+		guard existing.isEmpty else { return }
+		try loadMinisterialExpenses()
 	}
 }

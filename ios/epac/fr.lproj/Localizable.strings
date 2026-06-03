@@ -380,6 +380,17 @@
 "lobbying.error.title" = "Impossible de charger les données de lobbying";
 "lobbying.error.description" = "Vérifiez votre connexion et réessayez.";
 "lobbying.subject.unspecified" = "Sujet non précisé";
+"lobbying.sourceLabel" = "Source : registre du Commissaire au lobbying";
+"lobbying.relatedBill" = "Voir le projet de loi connexe";
+"lobbying.range.all" = "Toute la période";
+"lobbying.range.30" = "30 derniers jours";
+"lobbying.range.3m" = "3 mois";
+"lobbying.range.12" = "12 mois";
+"lobbying.retry" = "Réessayer";
+"lobbying.trend.more" = "Ce député a reçu %@ de communications de lobbying par rapport au Parlement précédent.";
+"lobbying.trend.less" = "Ce député n'a reçu que %@ de communications de lobbying par rapport au Parlement précédent.";
+"lobbying.trend.same" = "Ce député a reçu la même quantité de communications que le Parlement précédent.";
+"lobbying.trend.noComparable" = "Ce député n'avait pas d'activité comparable au Parlement précédent.";
 
 /* Fil d'accueil personnalisé */
 "home.debates.title" = "Débats passés";
@@ -616,7 +627,7 @@
 "gazette.detail.fullText" = "Lire le texte intégral sur gazette.gc.ca";
 "gazette.detail.sourceLabel" = "Source officielle";
 
-/* Federal Contracts (EPAC-117) */
+/* Federal Contracts (EPAC-722) */
 "contracts.navTitle" = "Contrats fédéraux";
 "contracts.loading" = "Chargement des contrats fédéraux";
 "contracts.error.title" = "Impossible de charger les contrats";
@@ -627,7 +638,9 @@
 "contracts.detail.navTitle" = "Contrat";
 "contracts.detail.info" = "Détails";
 "contracts.detail.date" = "Date du contrat";
+"contracts.detail.endDate" = "Date de fin";
 "contracts.detail.fiscal" = "Exercice financier";
+"contracts.detail.contractType" = "Type de contrat";
 "contracts.detail.original" = "Valeur originale";
 "contracts.detail.refNumber" = "Numéro de référence";
 "contracts.detail.amendments" = "%d modification(s)";
@@ -636,6 +649,22 @@
 "contracts.detail.openData" = "Voir sur données.canada.ca";
 "contracts.detail.sourceLabel" = "Source officielle";
 "contracts.detail.sourceName" = "Secrétariat du Conseil du Trésor — Divulgation proactive des contrats";
+"contracts.filter.button" = "Filtres";
+"contracts.filter.active" = "Des filtres sont actifs";
+"contracts.filter.title" = "Filtrer les contrats";
+"contracts.filter.department" = "Ministère";
+"contracts.filter.department.placeholder" = "ex. Services publics et Approvisionnement";
+"contracts.filter.contractType" = "Type de contrat";
+"contracts.filter.contractType.placeholder" = "ex. Services";
+"contracts.filter.amount" = "Plage de valeur";
+"contracts.filter.minAmount" = "Minimum ($)";
+"contracts.filter.maxAmount" = "Maximum ($)";
+"contracts.filter.noLimit" = "Sans limite";
+"contracts.filter.dateRange" = "Plage de dates";
+"contracts.filter.fromDate" = "Date de début";
+"contracts.filter.toDate" = "Date de fin";
+"contracts.filter.clearAll" = "Effacer tous les filtres";
+"contracts.minister.link" = "Contrats du ministère";
 
 /* Fiscal Monitor (EPAC-118) */
 "fiscalMonitor.navTitle" = "Finances fédérales";

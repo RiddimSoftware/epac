@@ -175,7 +175,7 @@ struct LobbyistOrganizationView: View {
 					if let memberID = communication.dpohMemberID.flatMap(Int.init) {
 						NavigationLink {
 							ScrollView {
-								LobbyingView(memberID: memberID)
+								MPLobbyingTabView(memberID: memberID)
 									.padding()
 							}
 							.navigationTitle(communication.dpohName)

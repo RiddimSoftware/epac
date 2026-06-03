@@ -63,7 +63,7 @@ final class SnapshotTests: XCTestCase {
 
     private func makeSnapshotModelContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Schema(SchemaV10.models), configurations: config)
+        return try ModelContainer(for: Schema(SchemaV11.models), configurations: config)
     }
 
     private static func member(party: Party) -> ParliamentMember {
@@ -347,58 +347,6 @@ final class SnapshotTests: XCTestCase {
             )
             .frame(width: 375, height: 780),
             name: "CabinetLobbyingOverview"
-        )
-    }
-
-    // MARK: - MP lobbying (EPAC-2155)
-
-    @MainActor
-    func testMPLobbying_present() {
-        snapshot(
-            ScrollView {
-                LobbyingView(
-                    memberID: 278707,
-                    initialExposure: Self.mpLobbyingExposure,
-                    initialLoadCompleted: true,
-                    autoload: false
-                )
-                .padding()
-            }
-            .frame(width: 375, height: 980),
-            name: "MPLobbying_present"
-        )
-    }
-
-    @MainActor
-    func testMPLobbying_empty() {
-        snapshot(
-            LobbyingView(
-                memberID: 42,
-                initialExposure: Self.mpLobbyingEmptyExposure,
-                initialLoadCompleted: true,
-                autoload: false
-            )
-            .frame(width: 375, height: 420)
-            .padding(),
-            name: "MPLobbying_empty"
-        )
-    }
-
-    @MainActor
-    func testMPLobbying_filtered() {
-        snapshot(
-            ScrollView {
-                LobbyingView(
-                    memberID: 278707,
-                    initialExposure: Self.mpLobbyingExposure,
-                    initialSubjectSlug: MPLobbyingSubjectDistribution.slug(for: "Housing"),
-                    initialLoadCompleted: true,
-                    autoload: false
-                )
-                .padding()
-            }
-            .frame(width: 375, height: 860),
-            name: "MPLobbying_filtered"
         )
     }
 
@@ -696,134 +644,6 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
-    private static var mpLobbyingExposure: MPLobbyingExposure {
-        MPLobbyingExposure(
-            memberID: "278707",
-            parliament: 45,
-            window: .threeMonths,
-            page: 1,
-            perPage: MPLobbyingExposureDefaults.pageSize,
-            total: 75,
-            pages: 2,
-            summary: MPLobbyingSummary(
-                memberID: "278707",
-                parliament: 45,
-                quarterStart: date("2026-04-01"),
-                window: .threeMonths,
-                totalCommunicationCount: 12,
-                uniqueOrganizationsCount: 5,
-                mostFrequentSubjectMatter: "Housing",
-                topOrganizations: [
-                    MPLobbyingTopOrganization(
-                        name: "Example Housing Association",
-                        sector: "Housing",
-                        communicationCount: 6
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "National Builders Council",
-                        sector: "Infrastructure",
-                        communicationCount: 4
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Tenant Rights Network",
-                        sector: "Housing",
-                        communicationCount: 2
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Urban Infrastructure Forum",
-                        sector: "Transport",
-                        communicationCount: 1
-                    ),
-                    MPLobbyingTopOrganization(
-                        name: "Clean Grid Coalition",
-                        sector: "Energy",
-                        communicationCount: 1
-                    )
-                ],
-                trendVsPreviousParliament: MPLobbyingTrend(
-                    currentParliament: 12,
-                    previousParliament: 4,
-                    delta: 8
-                ),
-                partyAverageCommunications: 4.0,
-                nationalAverageCommunications: 3.75,
-                citation: CabinetLobbyingSource.citation,
-                updatedAt: date("2026-06-03")
-            ),
-            subjectBreakdown: [
-                MPLobbyingSubjectDistribution(subjectMatter: "Housing", communicationCount: 8),
-                MPLobbyingSubjectDistribution(subjectMatter: "Infrastructure", communicationCount: 4),
-                MPLobbyingSubjectDistribution(subjectMatter: "Energy", communicationCount: 2)
-            ],
-            timeline: [
-                MPLobbyingTimelineEntry(
-                    communicationID: "558142",
-                    date: date("2026-05-20"),
-                    organizationName: "Example Housing Association",
-                    organizationSector: "Housing",
-                    subjectMatter: "Housing",
-                    communicationType: "meeting",
-                    billCrossReference: MPLobbyingBillCrossReference(
-                        billNumber: "C-1",
-                        billTitle: "Example Bill",
-                        url: URL(string: "https://www.parl.ca/legisinfo/en/bill/45-1/c-1")!,
-                        mappingConfidence: 0.93
-                    ),
-                    citation: CabinetLobbyingSource.citation,
-                    sourceURL: CabinetLobbyingSource.url
-                ),
-                MPLobbyingTimelineEntry(
-                    communicationID: "558143",
-                    date: date("2026-05-18"),
-                    organizationName: "National Builders Council",
-                    organizationSector: "Infrastructure",
-                    subjectMatter: "Infrastructure",
-                    communicationType: "written",
-                    billCrossReference: nil,
-                    citation: CabinetLobbyingSource.citation,
-                    sourceURL: CabinetLobbyingSource.url
-                )
-            ],
-            citation: CabinetLobbyingSource.citation,
-            sourceURL: CabinetLobbyingSource.url
-        )
-    }
-
-    private static var mpLobbyingEmptyExposure: MPLobbyingExposure {
-        MPLobbyingExposure(
-            memberID: "42",
-            parliament: 45,
-            window: .allTime,
-            page: 1,
-            perPage: MPLobbyingExposureDefaults.pageSize,
-            total: 0,
-            pages: 0,
-            summary: MPLobbyingSummary(
-                memberID: "42",
-                parliament: 45,
-                quarterStart: date("2026-04-01"),
-                window: .allTime,
-                totalCommunicationCount: 0,
-                uniqueOrganizationsCount: 0,
-                mostFrequentSubjectMatter: nil,
-                topOrganizations: [],
-                trendVsPreviousParliament: MPLobbyingTrend(
-                    currentParliament: 0,
-                    previousParliament: 0,
-                    delta: 0
-                ),
-                partyAverageCommunications: 0,
-                nationalAverageCommunications: 0,
-                citation: CabinetLobbyingSource.citation,
-                updatedAt: date("2026-06-03")
-            ),
-            subjectBreakdown: [],
-            timeline: [],
-            citation: CabinetLobbyingSource.citation,
-            sourceURL: CabinetLobbyingSource.url
-        )
-    }
-
     private static var billLobbyingContext: BillLobbyingContext {
         BillLobbyingContext(
             billID: "C-2",
@@ -934,6 +754,281 @@ final class SnapshotTests: XCTestCase {
             )
             .frame(width: 375, height: 300),
             name: "GrantsView_loadError"
+        )
+    }
+
+    // MARK: - Contracts browser (EPAC-722)
+
+    private static func makeContract(
+        id: String = "REF-001",
+        vendor: String = "Acme Consulting Inc.",
+        department: String = "Public Services and Procurement Canada",
+        value: Double = 250_000,
+        purpose: String = "Professional advisory services",
+        amendmentCount: Int = 0,
+        originalValue: Double? = nil,
+        endDate: Date? = nil,
+        contractType: String = "Services"
+    ) -> GovernmentContract {
+        GovernmentContract(
+            id: id,
+            department: department,
+            vendor: vendor,
+            value: value,
+            purpose: purpose,
+            contractDate: Calendar.current.date(from: DateComponents(year: 2024, month: 6, day: 15))!,
+            endDate: endDate,
+            amendmentCount: amendmentCount,
+            originalValue: originalValue ?? value,
+            fiscalYear: "2024-2025",
+            contractType: contractType
+        )
+    }
+
+    func testContractsBrowser_empty() {
+        snapshot(
+            EmptyStateView(
+                icon: "doc.text.magnifyingglass",
+                title: "No contracts found",
+                message: "No contracts match your search. Try a vendor or department name.",
+                action: nil
+            )
+            .frame(width: 375, height: 400),
+            name: "ContractsBrowser_empty"
+        )
+    }
+
+    func testContractsBrowser_withResults() {
+        let contracts = [
+            Self.makeContract(id: "REF-001", vendor: "McKinsey & Company", department: "Public Services and Procurement Canada", value: 4_500_000),
+            Self.makeContract(id: "REF-002", vendor: "Deloitte Canada", department: "Treasury Board of Canada Secretariat", value: 875_000),
+            Self.makeContract(id: "REF-003", vendor: "KPMG LLP", department: "Health Canada", value: 120_000, amendmentCount: 2)
+        ]
+        let rows = VStack(spacing: 0) {
+            ForEach(contracts) { contract in
+                Divider()
+                FederalContractRow(contract: contract)
+                    .padding(.horizontal)
+            }
+        }
+        .frame(width: 375)
+        snapshot(rows, name: "ContractsBrowser_withResults")
+    }
+
+    func testContractDetail_withAmendments() {
+        let contract = Self.makeContract(
+            id: "REF-2024-0042",
+            vendor: "McKinsey & Company Canada",
+            department: "Public Services and Procurement Canada",
+            value: 4_500_000,
+            purpose: "Transformation advisory services for federal procurement modernization initiative.",
+            amendmentCount: 3,
+            originalValue: 2_000_000,
+            endDate: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 31)),
+            contractType: "Services"
+        )
+        snapshot(
+            NavigationStack {
+                FederalContractDetailView(contract: contract)
+            }
+            .frame(width: 375, height: 700),
+            name: "ContractDetail_withAmendments"
+        )
+    }
+
+    // MARK: - MP Lobbying dashboard (EPAC-694)
+
+    @MainActor
+    func testMPLobbyingTab_communicationsPresent() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .liberal),
+                    preloadedResponse: Self.sampleLobbyingExposureResponse()
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_communicationsPresent"
+        )
+    }
+
+    @MainActor
+    func testMPLobbyingTab_emptyState() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .green),
+                    preloadedResponse: .empty
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_emptyState"
+        )
+    }
+
+    @MainActor
+    func testMPLobbyingTab_filteredState() {
+        snapshot(
+            NavigationView {
+                MPLobbyingTabView(
+                    member: Self.member(party: .conservative),
+                    preloadedResponse: Self.sampleLobbyingExposureResponse(filterMode: true),
+                    initialSubject: "Health"
+                )
+            }
+            .frame(width: 375),
+            name: "MPLobbyingTab_filteredState"
+        )
+    }
+
+    private static func sampleLobbyingExposureResponse(filterMode: Bool = false) -> MPLobbyingExposureResponse {
+        let timeline: [MPLobbyingTimelineEntry] = [
+            MPLobbyingTimelineEntry(
+                communicationDate: "2026-04-02",
+                organizationName: "Fiscal Policy Group",
+                organizationSector: "Finance",
+                subjectMatter: "Banking oversight",
+                communicationType: "meeting",
+                organizationID: "fpg",
+                organizationProfileURL: "https://example.com/org/fpg",
+                relatedBillTitle: "Financial Institutions Reform Act",
+                relatedBillURL: "https://www.parl.ca/legisinfo/en/bill/44-1/c-14",
+                relatedBillConfidence: 0.91,
+                relatedBillConfidenceUsed: true,
+                recordURL: "https://lobbycanada.gc.ca/record/12"
+            ),
+            MPLobbyingTimelineEntry(
+                communicationDate: "2026-03-15",
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                subjectMatter: filterMode ? "Health policy" : "Health policy",
+                communicationType: "written",
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp",
+                relatedBillTitle: "",
+                relatedBillURL: "",
+                relatedBillConfidence: 0,
+                relatedBillConfidenceUsed: false,
+                recordURL: "https://lobbycanada.gc.ca/record/13"
+            )
+        ]
+
+        let subjects = filterMode ? ["Health"] : ["Health", "Finance"]
+        let topOrganizations = filterMode ? [
+            MPLobbyingTopOrganization(
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                count: 2,
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp"
+            )
+        ] : [
+            MPLobbyingTopOrganization(
+                organizationName: "Fiscal Policy Group",
+                organizationSector: "Finance",
+                count: 5,
+                organizationID: "fpg",
+                organizationProfileURL: "https://example.com/org/fpg"
+            ),
+            MPLobbyingTopOrganization(
+                organizationName: "North Health Partners",
+                organizationSector: "Health",
+                count: 2,
+                organizationID: "nhp",
+                organizationProfileURL: "https://example.com/org/nhp"
+            )
+        ]
+
+        return MPLobbyingExposureResponse(
+            memberID: "278707",
+            page: 1,
+            perPage: 50,
+            total: timeline.count,
+            pages: 1,
+            summary: MPLobbyingSummary(
+                totalCommunications: 7,
+                uniqueOrganizations: 2,
+                mostFrequentSubject: "Finance",
+                previousParliamentCommunications: 2,
+                trendVsPreviousParliament: filterMode ? 0 : 3.0
+            ),
+            timeline: timeline,
+            subjectDistribution: [
+                MPLobbyingSubjectDistribution(subject: "Finance", count: 1, percentage: 50),
+                MPLobbyingSubjectDistribution(subject: "Health", count: 1, percentage: 50)
+            ],
+            topOrganizations: topOrganizations,
+            cohortComparison: MPLobbyingCohortComparison(
+                party: "Liberal",
+                partyAverage: 4,
+                nationalAverage: 3,
+                partyRatio: 1.8,
+                nationalRatio: 2.3
+            ),
+            availableSubjects: subjects
+        )
+    }
+
+    // MARK: - MinisterialExpenseRow (EPAC-817)
+
+    private static func makeMinisterialExpenseRecord(
+        ministerName: String = "Mark Carney",
+        department: String = "Finance Canada",
+        purpose: String = "G7 Finance Ministers Meeting",
+        destination: String = "Stresa, Italy",
+        totalCost: Double = 18420.50,
+        travelCost: Double = 18420.50,
+        hospitalityCost: Double = 0.0,
+        fiscalYear: String = "2025-2026",
+        quarter: Int = 1
+    ) -> MinisterialExpenseRecord {
+        let cal = Calendar(identifier: .gregorian)
+        let startDate = cal.date(from: DateComponents(year: 2025, month: 5, day: 23)) ?? Date()
+        let endDate = cal.date(from: DateComponents(year: 2025, month: 5, day: 25))
+        return MinisterialExpenseRecord(
+            recordID: "test-\(ministerName.lowercased().filter(\.isLetter))-\(destination.lowercased().filter(\.isLetter))",
+            ministerName: ministerName,
+            department: department,
+            eventPurpose: purpose,
+            destination: destination,
+            startDate: startDate,
+            endDate: endDate,
+            travelCost: travelCost,
+            hospitalityCost: hospitalityCost,
+            totalCost: totalCost,
+            fiscalYear: fiscalYear,
+            quarter: quarter,
+            sourceURL: "https://www.canada.ca/en/department-finance/corporate/proactive-disclosure/travel.html"
+        )
+    }
+
+    @MainActor
+    func testMinisterialExpenseRow_withDisclosures() throws {
+        let container = try makeSnapshotModelContainer()
+        let context = ModelContext(container)
+        context.insert(Self.makeMinisterialExpenseRecord())
+
+        snapshot(
+            MinisterialExpenseRow(record: Self.makeMinisterialExpenseRecord())
+                .frame(width: 375)
+                .padding(),
+            name: "MinisterialExpenseRow_withDisclosures"
+        )
+    }
+
+    @MainActor
+    func testMinisterialExpenseRow_hospitalityOnly() throws {
+        snapshot(
+            MinisterialExpenseRow(record: Self.makeMinisterialExpenseRecord(
+                purpose: "Budget 2025 stakeholder reception",
+                destination: "Ottawa, Ontario",
+                totalCost: 4850.0,
+                travelCost: 0.0,
+                hospitalityCost: 4850.0
+            ))
+            .frame(width: 375)
+            .padding(),
+            name: "MinisterialExpenseRow_hospitalityOnly"
         )
     }
 }

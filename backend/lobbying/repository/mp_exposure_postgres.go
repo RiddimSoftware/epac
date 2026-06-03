@@ -28,7 +28,7 @@ func (r *PostgresMPLobbyingRepository) LoadMPLobbyingSummary(ctx context.Context
 			member_id,
 			parliament,
 			quarter_start,
-			window,
+			"window",
 			total_communication_count,
 			unique_organizations_count,
 			COALESCE(most_frequent_subject_matter, ''),
@@ -41,7 +41,7 @@ func (r *PostgresMPLobbyingRepository) LoadMPLobbyingSummary(ctx context.Context
 		FROM mp_lobbying_summaries
 		WHERE member_id = $1
 			AND parliament = $2
-			AND window = $3
+			AND "window" = $3
 		ORDER BY quarter_start DESC
 		LIMIT 1
 	`, input.MemberID, input.Parliament, string(input.Window))
@@ -148,7 +148,7 @@ func (r *PostgresMPLobbyingRepository) ListMPLobbyingSubjectDistribution(ctx con
 			FROM mp_lobbying_summaries
 			WHERE member_id = $1
 				AND parliament = $2
-				AND window = $3
+				AND "window" = $3
 			ORDER BY quarter_start DESC
 			LIMIT 1
 		)
@@ -157,7 +157,7 @@ func (r *PostgresMPLobbyingRepository) ListMPLobbyingSubjectDistribution(ctx con
 		JOIN latest USING (quarter_start)
 		WHERE member_id = $1
 			AND parliament = $2
-			AND window = $3
+			AND "window" = $3
 		ORDER BY communication_count DESC, subject_matter ASC
 	`, input.MemberID, input.Parliament, string(input.Window))
 	if err != nil {
@@ -215,7 +215,7 @@ func (r *PostgresMPLobbyingRepository) refreshSummaryWindow(ctx context.Context,
 	fromDate := application.WindowStart(window, input.QuarterEnd)
 	if _, err := r.db.Exec(ctx, `
 		DELETE FROM mp_lobbying_summaries
-		WHERE parliament = $1 AND quarter_start = $2 AND window = $3
+		WHERE parliament = $1 AND quarter_start = $2 AND "window" = $3
 	`, input.Parliament, dateOnlyForSQL(input.QuarterStart), string(window)); err != nil {
 		return fmt.Errorf("delete MP lobbying summaries: %w", err)
 	}
@@ -238,20 +238,20 @@ func (r *PostgresMPLobbyingRepository) refreshSubjectWindow(ctx context.Context,
 	fromDate := application.WindowStart(window, input.QuarterEnd)
 	if _, err := r.db.Exec(ctx, `
 		DELETE FROM mp_lobbying_subject_breakdowns
-		WHERE parliament = $1 AND quarter_start = $2 AND window = $3
+		WHERE parliament = $1 AND quarter_start = $2 AND "window" = $3
 	`, input.Parliament, dateOnlyForSQL(input.QuarterStart), string(window)); err != nil {
 		return fmt.Errorf("delete MP lobbying subject breakdowns: %w", err)
 	}
 
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO mp_lobbying_subject_breakdowns (
-			member_id, parliament, quarter_start, window, subject_matter, communication_count, updated_at
+			member_id, parliament, quarter_start, "window", subject_matter, communication_count, updated_at
 		)
 		SELECT
 			member_id,
 			parliament,
 			$2::date AS quarter_start,
-			$4::text AS window,
+			$4::text AS "window",
 			subject_matter,
 			COUNT(DISTINCT communication_id)::int AS communication_count,
 			$6::timestamptz AS updated_at
@@ -260,7 +260,7 @@ func (r *PostgresMPLobbyingRepository) refreshSubjectWindow(ctx context.Context,
 			AND communication_date <= $3::date
 			AND ($5::date IS NULL OR communication_date >= $5::date)
 		GROUP BY member_id, parliament, subject_matter
-		ON CONFLICT (member_id, parliament, quarter_start, window, subject_matter)
+		ON CONFLICT (member_id, parliament, quarter_start, "window", subject_matter)
 		DO UPDATE SET
 			communication_count = EXCLUDED.communication_count,
 			updated_at = EXCLUDED.updated_at
@@ -503,7 +503,7 @@ INSERT INTO mp_lobbying_summaries (
 	member_id,
 	parliament,
 	quarter_start,
-	window,
+	"window",
 	total_communication_count,
 	unique_organizations_count,
 	most_frequent_subject_matter,
@@ -518,7 +518,7 @@ SELECT
 	cc.member_id,
 	$1::int AS parliament,
 	$2::date AS quarter_start,
-	$4::text AS window,
+	$4::text AS "window",
 	cc.total_count,
 	cc.unique_org_count,
 	sc.subject_matter,
@@ -534,7 +534,7 @@ LEFT JOIN subject_counts sc
 LEFT JOIN top_organizations tops ON tops.member_id = cc.member_id
 LEFT JOIN previous_counts pc ON pc.member_id = cc.member_id
 LEFT JOIN party_averages pa ON pa.party = cc.party
-ON CONFLICT (member_id, parliament, quarter_start, window)
+ON CONFLICT (member_id, parliament, quarter_start, "window")
 DO UPDATE SET
 	total_communication_count = EXCLUDED.total_communication_count,
 	unique_organizations_count = EXCLUDED.unique_organizations_count,
