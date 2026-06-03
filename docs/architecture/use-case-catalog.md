@@ -41,6 +41,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `LobbyingSubjectDistribution` | Per-subject communication count row for MP lobbying exposure charts. |
 | `MPLobbyingTopOrganization` | MP-level lobbying dashboard row for top-ranked organizations and communication counts. |
 | `MPLobbyingCohortComparison` | Party and national cohort comparison metrics for an MP exposure summary. |
+| `LobbyingCohortAverage` | Build-time party or national average communication count for a parliament. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -115,6 +116,7 @@ to the issue that will build the missing artifact.
 | `CabinetLobbyingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/CabinetLobbyingRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift`. | Load minister portfolio-period lobbying rows and cabinet-wide overview data from backend lobbying endpoints. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 | `CohortStatisticsRepository` | backend Python | outbound | Implemented: `backend/lobbying/cohort_averages.py`; adapter: `PostgresCohortStatisticsRepository`. | Read current MP membership and per-MP lobbying totals, then persist and read precomputed cohort averages. |
+| `MPLobbyingAggregator` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/mp_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go`. | Populate MP lobbying timeline, summary, subject-breakdown, and cohort-average read tables in the build-time SQLite artifact. |
 
 ## Use Cases
 
@@ -812,6 +814,27 @@ Current implementation:
 > Boundary rule: cohort averaging and ratio calculation stay in the use case;
 > the Postgres adapter owns table names, SQL, and the optional `psycopg`
 > dependency.
+
+---
+
+### BuildMPLobbyingTables
+
+```
+Actor: Lobbying index builder
+Goal: Populate MP lobbying exposure read tables from raw OCL SQLite tables.
+Inputs: Build-time SQLite database containing OCL communications, DPOHs, subject matters, and members.
+Outputs: `mp_lobbying_timeline_entries`, `mp_lobbying_summaries`, `mp_lobbying_subject_breakdowns`, and `lobbying_cohort_averages` rows.
+Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, LobbyingCohortAverage.
+Ports: backend Go: `MPLobbyingAggregator`.
+Primary adapters: SQLite aggregation runner.
+Current implementation:
+  backend/lobbying-index/internal/usecase/mp_aggregation.go
+  backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go
+```
+
+> Boundary rule: the use case owns the named builder operation and the
+> aggregator port; SQLite DDL, SQL dialect differences, JSON aggregation, and
+> window-function details remain in the adapter.
 
 ---
 
