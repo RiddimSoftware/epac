@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -317,6 +318,49 @@ func TestHandleRequestMapsServiceInitError(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", resp.StatusCode)
+	}
+}
+
+func TestHandleRequestMapsArtifactLoadErrorToRetryableUnavailable(t *testing.T) {
+	setByTopicServiceForTest(t, nil, usecase.ErrChecksumMismatch)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath: "/api/v1/lobbying/by-topic/housing",
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusServiceUnavailable || resp.Headers["Retry-After"] != lobbyingRetryAfter {
+		t.Fatalf("response = %#v", resp)
+	}
+}
+
+func TestLobbyingRuntimeCachesSQLiteDB(t *testing.T) {
+	openIndexCalls := 0
+	openDBCalls := 0
+	runtime := newLobbyingRuntime(
+		func(context.Context) (usecase.LobbyingIndex, error) {
+			openIndexCalls++
+			return usecase.LobbyingIndex{LocalPath: ":memory:"}, nil
+		},
+		func(context.Context, string) (*sql.DB, error) {
+			openDBCalls++
+			return sql.Open("sqlite", ":memory:")
+		},
+	)
+
+	first, err := runtime.DB(context.Background())
+	if err != nil {
+		t.Fatalf("first DB: %v", err)
+	}
+	second, err := runtime.DB(context.Background())
+	if err != nil {
+		t.Fatalf("second DB: %v", err)
+	}
+	t.Cleanup(func() { _ = first.Close() })
+
+	if first != second || openIndexCalls != 1 || openDBCalls != 1 {
+		t.Fatalf("cached db=%v openIndex=%d openDB=%d", first == second, openIndexCalls, openDBCalls)
 	}
 }
 

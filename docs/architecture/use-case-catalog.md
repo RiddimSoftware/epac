@@ -94,13 +94,13 @@ to the issue that will build the missing artifact.
 | `IndexBuilder` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/sqlitefts5/builder.go`. | Build and self-check a local SQLite FTS5 index from parsed interventions. |
 | `IndexUploader` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Upload the SQLite search index artifact. |
 | `ManifestWriter` | backend Go | outbound | Implemented: `backend/hansard-search-index/internal/usecase/usecase.go`; adapter: `backend/hansard-search-index/internal/adapter/s3/s3.go`. | Write the search-index manifest pointer. |
-| `LobbyistOrganizationRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Persist and load lobbyist organization aggregates independent of HTTP delivery. |
-| `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; adapter: `backend/lobbying/repository/postgres.go`. | Read OCL registration and communication source rows, including seeded aliases and pending alias observations. |
-| `MPLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load precomputed MP lobbying summaries and paged timeline rows; refresh timeline and quarterly summary read models from OCL communication records. |
-| `LobbyingSubjectDistributionQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; adapter: `backend/lobbying/repository/mp_exposure_postgres.go`. | Load the all-subject communication breakdown for an MP lobbying exposure response. |
-| `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/postgres/postgres.go`. | Read OCL communication and registration records by mapped subject-matter code. |
-| `BillSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read bill subject tags and the latest bill reading anchor used for bill-level lobbying context. |
-| `BillLobbyingCommunicationsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; adapter: `backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go`. | Read OCL communication rows matching mapped bill subject codes within a date window. |
+| `LobbyistOrganizationRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`; build-time aggregation adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Load lobbyist organization aggregates independent of HTTP delivery. |
+| `OrganizationDirectoryQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/aggregate.go`; build-time adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Read OCL registration and communication source rows during artifact assembly. |
+| `MPLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`; build-time read-model writer: `backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go`. | Load precomputed MP lobbying summaries and paged timeline rows from the SQLite artifact. |
+| `LobbyingSubjectDistributionQuery` | backend Go | outbound | Implemented: `backend/lobbying/application/mp_exposure.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Load the all-subject communication breakdown for an MP lobbying exposure response. |
+| `LobbyingSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Read OCL communication and registration records by mapped subject-matter code. |
+| `BillSubjectsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Read bill subject tags and the latest bill reading anchor used for bill-level lobbying context. |
+| `BillLobbyingCommunicationsRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/bill_lobbying_context.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Read OCL communication rows matching mapped bill subject codes within a date window. |
 | `BillLobbyingContextRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillLobbyingContextRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillLobbyingContextRepository.swift`. | Load bill-level lobbying context summaries from the backend lobbying endpoint. |
 | `MPLobbyingServiceProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/MPLobbyingService.swift`; conformer: `ios/epac/Util/BackendMPLobbyingService`. | Load MP lobbying dashboard payloads, including summary, timeline, subject filters, cohort comparison, and pagination settings from the backend endpoint. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
@@ -111,11 +111,11 @@ to the issue that will build the missing artifact.
 | `OrgAggregator` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Run build-time SQLite aggregation to produce derived organization and subject-matter tables. |
 | `LegisInfoSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/legisinfo/fetcher.go`. | Fetch bill metadata (reading dates, titles) from the parl.ca/legisinfo JSON API. |
 | `BillContextWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/org_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/aggregator.go`. | Persist bill subject tags and reading dates into build-time SQLite tables. |
-| `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
-| `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
-| `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
+| `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
+| `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Read pre-baked minister communication rows from the SQLite artifact. |
+| `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; serving adapter: `backend/lobbying/internal/adapter/sqlite/repository.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
 | `OCLTopicMapper` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go`. | Resolve OCL subject-matter codes back to epac topic slugs for mandate-match flagging. |
-| `PortfolioBoundaryGapLogger` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/main.go` with Postgres run-history recording. | Log `portfolio_boundary_gap` warnings when portfolio-period boundaries are not safe to use. |
+| `PortfolioBoundaryGapLogger` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/main.go` structured logging. | Log `portfolio_boundary_gap` warnings when portfolio-period boundaries are not safe to use. |
 | `CabinetLobbyingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/CabinetLobbyingRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendCabinetLobbyingRepository.swift`. | Load minister portfolio-period lobbying rows and cabinet-wide overview data from backend lobbying endpoints. |
 | `TelemetryProvider` | iOS Swift | outbound | Implemented: `ios/epac/Util/Telemetry.swift`; conformers include `NoopTelemetryProvider` and `BackendTelemetryProvider`. | Record errors, events, performance spans, and opaque payloads without coupling app code to a third-party SDK. Default implementation is no-op; `BackendTelemetryProvider` batches small events to `POST /api/v1/telemetry`, while `MetricKitSubscriber` emits daily metric and diagnostic payloads into this port. |
 | `CohortStatisticsRepository` | backend Python | outbound | Implemented: `backend/lobbying/cohort_averages.py`; adapter: `PostgresCohortStatisticsRepository`. | Read current MP membership and per-MP lobbying totals, then persist and read precomputed cohort averages. |
@@ -404,16 +404,18 @@ Inputs: Epac topic slug, page, per-page.
 Outputs: LobbyingByTopicResult with source-cited communication and registration rows.
 Entities / values: OCLSubjectMatter, EpacTopicSlug, LobbyingByTopicResult.
 Ports: LobbyingSubjectsRepository, OCLSubjectsSource.
-Primary adapters: lobbying Lambda (GET /api/v1/lobbying/by-topic/{slug}), PostgresLobbyingSubjectsRepository, ocl_topic_map.json source.
+Primary adapters: lobbying Lambda (GET /api/v1/lobbying/by-topic/{slug}), SQLite lobbying-index repository, ocl_topic_map.json source, S3 artifact loader.
 Current implementation:
   backend/lobbying/main.go
   backend/lobbying/internal/usecase/usecase.go
-  backend/lobbying/internal/adapter/postgres/postgres.go
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
   backend/lobbying/internal/adapter/ocltopicmap/source.go
   backend/lobbying/ocl_topic_map.json
 ```
 
-> **Boundary rule:** The use case depends on the `OCLSubjectsSource` and `LobbyingSubjectsRepository` ports. The checked-in mapping JSON, Postgres tables, and Lambda request/response details stay in adapters.
+> **Boundary rule:** The use case depends on the `OCLSubjectsSource` and `LobbyingSubjectsRepository` ports. The checked-in mapping JSON, SQLite artifact, S3 manifest/download details, and Lambda request/response details stay in adapters.
 
 ---
 
@@ -426,7 +428,7 @@ Inputs: LEGISinfo bill ID, window in months.
 Outputs: BillLobbyingContext with total communications, counts by organization, counts by subject matter, and top organizations.
 Entities / values: Bill, BillLobbyingContext, LobbyingSubjectMatch, OrganizationCommunicationCount, OCLSubjectMatter.
 Ports: backend Go: `BillSubjectsRepository`, `BillLobbyingCommunicationsRepository`, `OCLSubjectsSource`, `Clock`; iOS Swift: `BillLobbyingContextRepository`.
-Primary adapters: lobbying Lambda (GET /api/v1/bills/{legisinfo_id}/lobbying-context), Postgres bill/lobbying context adapter, ocl_topic_map.json source, iOS BackendBillLobbyingContextRepository, BillLobbyingContextPanel.
+Primary adapters: lobbying Lambda (GET /api/v1/bills/{legisinfo_id}/lobbying-context), SQLite lobbying-index repository, ocl_topic_map.json source, S3 artifact loader, iOS BackendBillLobbyingContextRepository, BillLobbyingContextPanel.
 Current implementation:
   ios/epac/Application/LoadBillLobbyingContext.swift
   ios/epac/Domain/Entities/BillLobbyingContext.swift
@@ -436,12 +438,14 @@ Current implementation:
   ios/epac/Views/Bills/BillDetailView.swift
   backend/lobbying/bill_lobbying_context_endpoint.go
   backend/lobbying/internal/usecase/bill_lobbying_context.go
-  backend/lobbying/internal/adapter/postgres/bill_lobbying_context.go
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
   backend/lobbying/internal/adapter/ocltopicmap/source.go
   backend/lobbying/ocl_topic_map.json
 ```
 
-> **Boundary rule:** The use case filters to high-confidence topic mappings and computes the date window/count aggregation without importing Lambda, Postgres, or JSON mapping details. LEGISinfo bill subject/readings storage stays in read-side Postgres tables owned by the ingestion adapter.
+> **Boundary rule:** The use case filters to high-confidence topic mappings and computes the date window/count aggregation without importing Lambda, SQLite, S3, or JSON mapping details. LEGISinfo bill subject/readings storage stays in the read-side SQLite artifact built by `backend/lobbying-index`.
 
 ---
 
@@ -454,16 +458,18 @@ Inputs: House of Commons member ID.
 Outputs: LobbyingByPortfolio response with portfolio periods, top three organizations per period, communications, and mandate-match flags.
 Entities / values: Minister, Portfolio, MinisterTenure, LobbyingByPortfolio, OCLSubjectMatter, EpacTopicSlug.
 Ports: MinisterRepository, MinisterLobbyingRepository, MandateLetterRepository, OCLTopicMapper, PortfolioBoundaryGapLogger.
-Primary adapters: lobbying Lambda (GET /api/v1/ministers/{member_id}/lobbying-by-portfolio), Postgres minister portfolio tables, OCL communication tables, ocl_topic_map.json source, pipeline_health run-history warning row.
+Primary adapters: lobbying Lambda (GET /api/v1/ministers/{member_id}/lobbying-by-portfolio), SQLite lobbying-index repository, pre-baked minister communication tables, ocl_topic_map.json source, structured portfolio-boundary logging.
 Current implementation:
   backend/lobbying/main.go
   backend/lobbying/internal/usecase/minister_portfolio.go
-  backend/lobbying/internal/adapter/postgres/minister_portfolio.go
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
   backend/lobbying/internal/adapter/ocltopicmap/source.go
-  backend/migrations/014_minister_lobbying.sql
+  backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go
 ```
 
-> **Boundary rule:** The use case owns portfolio-period grouping, mandate-match flagging, top-organization ranking, and tenure fallback policy. Postgres table names, OCL DPOH columns, checked-in topic mapping JSON, and API Gateway request details stay in adapters.
+> **Boundary rule:** The use case owns portfolio-period grouping, mandate-match flagging, top-organization ranking, and tenure fallback policy. SQLite table names, checked-in topic mapping JSON, S3 artifact loading, and API Gateway request details stay in adapters.
 
 ---
 
@@ -476,15 +482,17 @@ Inputs: Parliament number, optional portfolio filter.
 Outputs: CabinetLobbyingSummary rows sorted by communication count, including minister portfolios and top organizations.
 Entities / values: Minister, Portfolio, MinisterTenure, CabinetLobbyingSummary.
 Ports: MinisterRepository, MinisterLobbyingRepository, PortfolioBoundaryGapLogger.
-Primary adapters: lobbying Lambda (GET /api/v1/cabinet/lobbying-overview), Postgres minister portfolio tables, OCL communication tables, pipeline_health run-history warning row.
+Primary adapters: lobbying Lambda (GET /api/v1/cabinet/lobbying-overview), SQLite lobbying-index repository, pre-baked minister portfolio and communication tables, structured portfolio-boundary logging.
 Current implementation:
   backend/lobbying/main.go
   backend/lobbying/internal/usecase/minister_portfolio.go
-  backend/lobbying/internal/adapter/postgres/minister_portfolio.go
-  backend/migrations/014_minister_lobbying.sql
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
+  backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go
 ```
 
-> **Boundary rule:** Ranking and empty-overview behavior live in the use case. HTTP query parsing, DPOH row matching, and persistent run-history writes stay in adapters.
+> **Boundary rule:** Ranking and empty-overview behavior live in the use case. HTTP query parsing, artifact loading, and pre-baked minister communication lookups stay in adapters.
 
 ---
 
@@ -497,7 +505,7 @@ Inputs: Member ID, parliament number, exposure window (`30d`, `3m`, `12m`, or `a
 Outputs: MPLobbyingExposureResult with summary, subject breakdown, 50-row timeline page, OCL citation, and source URL.
 Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, MemberID.
 Ports: backend Go: `MPLobbyingRepository`, `LobbyingSubjectDistributionQuery`; iOS Swift: `MPLobbyingExposureRepository`.
-Primary adapters: member-lobbying Lambda (GET /api/v1/members/{id}/lobbying), PostgresMPLobbyingRepository, `mp_lobbying_*` read-model tables, iOS MPLobbyingService, MPLobbyingTabView.
+Primary adapters: lobbying Lambda (GET /api/v1/members/{id}/lobbying-exposure), SQLite lobbying-index repository, `mp_lobbying_*` read-model tables, S3 artifact loader, iOS MPLobbyingService, MPLobbyingTabView.
 Current implementation:
   ios/epac/Domain/MPLobbyingExposure.swift
   ios/epac/Util/MPLobbyingService.swift
@@ -505,11 +513,13 @@ Current implementation:
   backend/lobbying/main.go
   backend/lobbying/application/mp_exposure.go
   backend/lobbying/domain/mp_exposure.go
-  backend/lobbying/repository/mp_exposure_postgres.go
-  backend/migrations/013_mp_lobbying_exposure.sql
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
+  backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go
 ```
 
-> **Boundary rule:** The use case computes request policy such as allowed windows, 50-row paging, empty responses, citations, and low-confidence bill-link suppression. The Postgres adapter owns read-model SQL, quarterly summary refresh, and table shape.
+> **Boundary rule:** The use case computes request policy such as allowed windows, 50-row paging, empty responses, citations, and low-confidence bill-link suppression. The serving SQLite adapter owns read-model SQL; quarterly summary refresh and table assembly live in `backend/lobbying-index`.
 
 ---
 
@@ -982,15 +992,14 @@ Inputs: Current Parliament session window, prior Parliament session window, OCL 
 Outputs: Upserted `lobbyist_organizations` rows and pending alias observations for ambiguous name-only matches.
 Entities / values: LobbyistOrganization, OrganizationSector, CommunicationCount, ParliamentSession.
 Ports: backend Go: `OrganizationDirectoryQuery`, `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository, organization_aliases seeded fixture, pending_organization_aliases log table.
+Primary adapters: backend/lobbying-index SQLite aggregator, lobbying-index artifact tables.
 Current implementation:
   backend/lobbying/application/aggregate.go
   backend/lobbying/application/normalizer.go
-  backend/lobbying/repository/postgres.go
-  backend/migrations/012_lobbyist_organizations.sql
+  backend/lobbying-index/internal/adapter/sqlite/aggregator.go
 ```
 
-> Boundary rule: OCL table names, alias persistence, and Postgres JSON/array storage stay in the repository adapter. The use case sees registration/communication source values and domain aggregates only.
+> Boundary rule: OCL table names and SQLite JSON storage stay in the build-time adapter. The use case sees registration/communication source values and domain aggregates only.
 
 ---
 
@@ -1003,7 +1012,7 @@ Inputs: Canonical organization ID; iOS may first resolve an organization name th
 Outputs: LobbyistOrganization aggregate with name, type, sector, registration status, registrations, registered lobbyists, active subject matters, recent communications, subject-matter counts, communication trend, and top DPOHs contacted.
 Entities / values: LobbyistOrganization, LobbyistRegistration, LobbyistOrganizationCommunication, LobbyistOrganizationSubjectMatter, OrganizationSector, CommunicationCount.
 Ports: backend Go: `LobbyistOrganizationRepository`; iOS Swift: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations/{id}), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationView.
+Primary adapters: backend/lobbying SQLite artifact repository, S3 artifact loader, lobbying Lambda (GET /api/v1/lobbying/organizations/{id}), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationView.
 Current implementation:
   ios/epac/Application/LoadLobbyistOrganizationProfile.swift
   ios/epac/Domain/Entities/LobbyistOrganization.swift
@@ -1012,7 +1021,9 @@ Current implementation:
   ios/epac/Views/Accountability/LobbyistOrganizationView.swift
   backend/lobbying/application/aggregate.go
   backend/lobbying/organizations_endpoint.go
-  backend/lobbying/repository/postgres.go
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
 ```
 
 > Boundary rule: HTTP request/response types stay in the backend Lambda and iOS REST adapter. SwiftUI imports stay in `LobbyistOrganizationView`; the iOS view-model consumes domain/use-case values.
@@ -1028,14 +1039,16 @@ Inputs: Search text, sector filter, communication-volume sort direction, limit, 
 Outputs: Ordered LobbyistOrganization aggregates.
 Entities / values: LobbyistOrganization, CommunicationCount.
 Ports: backend Go: `LobbyistOrganizationRepository`; iOS Swift: `LobbyistOrganizationRepository`.
-Primary adapters: backend/lobbying Postgres repository, lobbying Lambda (GET /api/v1/lobbying/organizations), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationDirectoryView.
+Primary adapters: backend/lobbying SQLite artifact repository, S3 artifact loader, lobbying Lambda (GET /api/v1/lobbying/organizations), iOS BackendLobbyistOrganizationRepository, LobbyistOrganizationDirectoryView.
 Current implementation:
   ios/epac/Domain/Ports/LobbyistOrganizationRepository.swift
   ios/epac/Data/Repositories/BackendLobbyistOrganizationRepository.swift
   ios/epac/Views/Accountability/LobbyistOrganizationDirectoryView.swift
   backend/lobbying/application/aggregate.go
   backend/lobbying/organizations_endpoint.go
-  backend/lobbying/repository/postgres.go
+  backend/lobbying/internal/usecase/open_lobbying_index.go
+  backend/lobbying/internal/adapter/sqlite/repository.go
+  backend/lobbying/internal/adapter/s3/
 ```
 
 > Boundary rule: pagination/search policy is represented as plain input values; no HTTP adapter types leak inward.

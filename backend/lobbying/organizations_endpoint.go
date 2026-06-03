@@ -10,9 +10,8 @@ import (
 
 	"epac/lobbying/application"
 	"epac/lobbying/domain"
-	postgresadapter "epac/lobbying/internal/adapter/postgres"
+	sqliteadapter "epac/lobbying/internal/adapter/sqlite"
 	"epac/lobbying/internal/usecase"
-	lobbyingrepo "epac/lobbying/repository"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -89,7 +88,7 @@ func handleOrganizationDirectory(ctx context.Context, req events.APIGatewayV2HTT
 	services, closeServices, err := newOrganizationServices(ctx)
 	if err != nil {
 		slog.Error("organization service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeServices(ctx)
 
@@ -137,7 +136,7 @@ func handleOrganizationProfile(ctx context.Context, _ events.APIGatewayV2HTTPReq
 	services, closeServices, err := newOrganizationServices(ctx)
 	if err != nil {
 		slog.Error("organization service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeServices(ctx)
 
@@ -155,24 +154,20 @@ func handleOrganizationProfile(ctx context.Context, _ events.APIGatewayV2HTTPReq
 }
 
 func newProductionOrganizationServices(ctx context.Context) (organizationServices, closeFunc, error) {
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return organizationServices{}, noopClose, err
 	}
-	repo := lobbyingrepo.NewPostgresLobbyistOrganizationRepository(newLobbyingQueryer(conn))
+	repo := sqliteadapter.New(db)
 	browser, err := application.NewBrowseLobbyistOrganizations(repo)
 	if err != nil {
-		_ = conn.Close(ctx)
 		return organizationServices{}, noopClose, err
 	}
 	profile, err := application.NewLoadLobbyistOrganizationProfile(repo)
 	if err != nil {
-		_ = conn.Close(ctx)
 		return organizationServices{}, noopClose, err
 	}
-	return organizationServices{browser: browser, profile: profile}, func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	return organizationServices{browser: browser, profile: profile}, noopClose, nil
 }
 
 func parseOrganizationSort(params map[string]string) (string, error) {

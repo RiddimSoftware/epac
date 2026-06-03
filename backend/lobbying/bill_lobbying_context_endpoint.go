@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	ocltopicmap "epac/lobbying/internal/adapter/ocltopicmap"
-	postgresadapter "epac/lobbying/internal/adapter/postgres"
+	sqliteadapter "epac/lobbying/internal/adapter/sqlite"
 	"epac/lobbying/internal/usecase"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -34,7 +34,7 @@ func handleBillLobbyingContext(ctx context.Context, req events.APIGatewayV2HTTPR
 	service, closeService, err := newBillLobbyingContextService(ctx)
 	if err != nil {
 		slog.Error("bill lobbying context service initialization failed", "error", err)
-		return jsonError(http.StatusServiceUnavailable, "lobbying data unavailable"), nil
+		return serviceUnavailableError(err), nil
 	}
 	defer closeService(ctx)
 
@@ -62,15 +62,13 @@ func newProductionBillLobbyingContextService(ctx context.Context) (billLobbyingC
 	if err != nil {
 		return nil, noopClose, err
 	}
-	conn, err := postgresadapter.Connect(ctx)
+	db, err := lobbyingDB.DB(ctx)
 	if err != nil {
 		return nil, noopClose, err
 	}
-	repo := postgresadapter.New(conn)
+	repo := sqliteadapter.New(db)
 	service := usecase.NewLoadBillLobbyingContext(repo, repo, source, usecase.SystemClock{})
-	return service, func(closeCtx context.Context) {
-		_ = conn.Close(closeCtx)
-	}, nil
+	return service, noopClose, nil
 }
 
 func billLobbyingContextIDFromRequest(req events.APIGatewayV2HTTPRequest) string {
