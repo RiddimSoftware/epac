@@ -59,10 +59,18 @@ type PBOPublication struct {
 	ContentHash         string  `json:"content_hash"`
 }
 
+type OCLSubjectMatter struct {
+	OCLCode int    `json:"ocl_code"`
+	LabelEN string `json:"label_en"`
+	LabelFR string `json:"label_fr"`
+	Active  bool   `json:"active"`
+}
+
 func main() {
 	membersPath := flag.String("members", "../../data/members/all.xml", "path to members all.xml")
 	speechesDir := flag.String("speeches", "../../data/hansard", "directory containing Hansard XML files")
 	pboPath := flag.String("pbo", "", "path to PBO publications JSON file")
+	lobbyingPath := flag.String("lobbying", "", "path to OCL subject-matter JSON file")
 	flag.Parse()
 
 	passedFlags := make(map[string]bool)
@@ -133,6 +141,16 @@ func main() {
 			recordHealth(ctx, conn, "pbo-publications", 0, err)
 		} else {
 			recordHealth(ctx, conn, "pbo-publications", n, nil)
+		}
+	}
+
+	if passedFlags["lobbying"] {
+		fmt.Printf("Loading OCL subject matters from %s...\n", *lobbyingPath)
+		if n, err := loadLobbyistSubjectMatters(ctx, conn, *lobbyingPath); err != nil {
+			fmt.Printf("Error loading OCL subject matters: %v\n", err)
+			recordHealth(ctx, conn, "lobbyist-subject-matters", 0, err)
+		} else {
+			recordHealth(ctx, conn, "lobbyist-subject-matters", n, nil)
 		}
 	}
 }
@@ -540,6 +558,49 @@ func loadPBO(ctx context.Context, conn *pgx.Conn, filename string) (int, error) 
 	return inserted, nil
 }
 
+func loadLobbyistSubjectMatters(ctx context.Context, conn *pgx.Conn, filename string) (int, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	var subjects []OCLSubjectMatter
+	if err := json.NewDecoder(f).Decode(&subjects); err != nil {
+		return 0, err
+	}
+
+	batch := &pgx.Batch{}
+	for _, s := range subjects {
+		batch.Queue(`
+            INSERT INTO lobbyist_subject_matter_codes
+                (ocl_code, label_en, label_fr, active, ingested_at)
+            VALUES ($1, $2, $3, $4, NOW())
+            ON CONFLICT (ocl_code) DO UPDATE SET
+                label_en    = EXCLUDED.label_en,
+                label_fr    = EXCLUDED.label_fr,
+                active      = EXCLUDED.active,
+                ingested_at = NOW()
+            WHERE lobbyist_subject_matter_codes.label_en <> EXCLUDED.label_en
+               OR lobbyist_subject_matter_codes.label_fr <> EXCLUDED.label_fr
+               OR lobbyist_subject_matter_codes.active   <> EXCLUDED.active
+        `, s.OCLCode, s.LabelEN, s.LabelFR, s.Active)
+	}
+
+	br := conn.SendBatch(ctx, batch)
+	defer br.Close()
+
+	inserted := 0
+	for i := 0; i < len(subjects); i++ {
+		if _, err := br.Exec(); err != nil {
+			return inserted, fmt.Errorf("upsert ocl_code %d: %w", subjects[i].OCLCode, err)
+		}
+		inserted++
+	}
+	fmt.Printf("  Successfully upserted %d OCL subject matters\n", inserted)
+	return inserted, nil
+}
+
 func recordHealth(ctx context.Context, conn *pgx.Conn, name string, count int, runErr error) {
 	now := time.Now().UTC()
 	var errMsg *string
@@ -619,6 +680,14 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
             ingested_at           TIMESTAMPTZ NOT NULL DEFAULT now()
         );
 
+        CREATE TABLE IF NOT EXISTS lobbyist_subject_matter_codes (
+            ocl_code     INTEGER PRIMARY KEY,
+            label_en     TEXT NOT NULL,
+            label_fr     TEXT NOT NULL,
+            active       BOOLEAN NOT NULL DEFAULT TRUE,
+            ingested_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+
 		ALTER TABLE speeches
 			ADD COLUMN IF NOT EXISTS subject_id TEXT,
 			ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en',
@@ -664,6 +733,9 @@ func ensureSchema(ctx context.Context, conn *pgx.Conn) error {
 
         CREATE INDEX IF NOT EXISTS idx_pbo_pub_date ON pbo_publications(publication_date DESC);
         CREATE INDEX IF NOT EXISTS idx_pbo_category ON pbo_publications(methodology_category);
+
+        CREATE INDEX IF NOT EXISTS idx_lobbyist_subject_matter_codes_active
+            ON lobbyist_subject_matter_codes(active);
 	`)
 	return err
 }

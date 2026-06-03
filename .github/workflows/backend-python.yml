@@ -9,6 +9,7 @@ on:
       - 'backend/cpp-oas-statistics/**'
       - 'backend/ei-statistics/**'
       - 'backend/fiscal-monitor/**'
+      - 'backend/lobbying/**'
       - 'backend/pbo/**'
       - 'backend/student-finance-statistics/**'
       - 'backend/transport-safety-statistics/**'
@@ -35,7 +36,7 @@ jobs:
           if echo "$CHANGED" | grep -Eq '^backend/(statistics_artifacts.py|statistics-requirements.txt)$'; then
             PIPELINES=(corrections-statistics cpi-statistics cpp-oas-statistics ei-statistics fiscal-monitor student-finance-statistics transport-safety-statistics vac-statistics)
           else
-            for pipeline in cabinet corrections-statistics cpi-statistics cpp-oas-statistics ei-statistics fiscal-monitor pbo student-finance-statistics transport-safety-statistics vac-statistics; do
+            for pipeline in cabinet corrections-statistics cpi-statistics cpp-oas-statistics ei-statistics fiscal-monitor lobbying pbo student-finance-statistics transport-safety-statistics vac-statistics; do
               if echo "$CHANGED" | grep -q "^backend/$pipeline/"; then
                 PIPELINES+=("$pipeline")
               fi
