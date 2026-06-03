@@ -47,3 +47,31 @@ need an EPAC topic assignment.
 ```bash
 cd backend/lobbying && python3 -m unittest
 ```
+
+# Lobbying cohort averages
+
+`cohort_averages.py` precomputes the comparison rows used by the MP lobbying
+dashboard:
+
+- one national row per parliament with `party = NULL`
+- one row per current-party caucus
+- `avg_communications = NULL` when fewer than five MPs in a party have at
+  least one communication
+
+Run this job after the quarterly OCL ingestion has refreshed the per-MP
+aggregate table:
+
+```bash
+DATABASE_URL=postgres://... \
+LOBBYING_MEMBER_TOTALS_TABLE=lobbying_member_communication_totals \
+python3 cohort_averages.py --parliament 45
+```
+
+The source table is expected to expose `parliament`, `member_id`, and
+`total_communications` columns. The job writes `lobbying_cohort_averages`.
+
+Install the optional runtime dependency before running against Postgres:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
