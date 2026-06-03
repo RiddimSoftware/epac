@@ -49,17 +49,21 @@ type organizationDirectoryRow struct {
 }
 
 type organizationProfileResponse struct {
-	ID                   string                      `json:"id"`
-	OCLOrganizationID    string                      `json:"ocl_organization_id,omitempty"`
-	Name                 string                      `json:"name"`
-	Type                 domain.OrganizationType     `json:"type"`
-	Sector               string                      `json:"sector,omitempty"`
-	RegisteredLobbyists  []domain.RegisteredLobbyist `json:"registered_lobbyists"`
-	ActiveSubjectMatters []string                    `json:"active_subject_matters"`
-	CommunicationVolume  domain.CommunicationCount   `json:"communication_volume"`
-	TopDPOHsContacted    []domain.DPOHContact        `json:"top_dpohs_contacted"`
-	Citation             string                      `json:"citation"`
-	SourceURL            string                      `json:"source_url"`
+	ID                   string                                     `json:"id"`
+	OCLOrganizationID    string                                     `json:"ocl_organization_id,omitempty"`
+	Name                 string                                     `json:"name"`
+	Type                 domain.OrganizationType                    `json:"type"`
+	Sector               string                                     `json:"sector,omitempty"`
+	RegisteredLobbyists  []domain.RegisteredLobbyist                `json:"registered_lobbyists"`
+	ActiveSubjectMatters []string                                   `json:"active_subject_matters"`
+	CommunicationVolume  domain.CommunicationCount                  `json:"communication_volume"`
+	TopDPOHsContacted    []domain.DPOHContact                       `json:"top_dpohs_contacted"`
+	RegistrationStatus   domain.RegistrationStatus                  `json:"registration_status"`
+	Registrations        []domain.LobbyistRegistration              `json:"registrations"`
+	RecentCommunications []domain.LobbyistOrganizationCommunication `json:"recent_communications"`
+	SubjectMatters       []domain.LobbyistOrganizationSubjectMatter `json:"subject_matters"`
+	Citation             string                                     `json:"citation"`
+	SourceURL            string                                     `json:"source_url"`
 }
 
 func handleOrganizationRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
@@ -198,8 +202,12 @@ func profileResponseFor(organization domain.LobbyistOrganization) organizationPr
 		ActiveSubjectMatters: nonNilStrings(organization.ActiveSubjectMatters),
 		CommunicationVolume:  organization.CommunicationVolume,
 		TopDPOHsContacted:    nonNilDPOHs(organization.TopDPOHsContacted),
+		RegistrationStatus:   normalizedRegistrationStatus(organization.RegistrationStatus),
+		Registrations:        nonNilRegistrations(organization.Registrations),
+		RecentCommunications: nonNilCommunications(organization.RecentCommunications),
+		SubjectMatters:       nonNilSubjectMatters(organization.SubjectMatters),
 		Citation:             usecase.Citation,
-		SourceURL:            usecase.SourceURL,
+		SourceURL:            organizationSourceURL(organization),
 	}
 }
 
@@ -251,4 +259,45 @@ func nonNilDPOHs(values []domain.DPOHContact) []domain.DPOHContact {
 		return []domain.DPOHContact{}
 	}
 	return values
+}
+
+func normalizedRegistrationStatus(value domain.RegistrationStatus) domain.RegistrationStatus {
+	if value == "" {
+		return domain.RegistrationStatusExpired
+	}
+	return value
+}
+
+func nonNilRegistrations(values []domain.LobbyistRegistration) []domain.LobbyistRegistration {
+	if values == nil {
+		return []domain.LobbyistRegistration{}
+	}
+	return values
+}
+
+func nonNilCommunications(
+	values []domain.LobbyistOrganizationCommunication,
+) []domain.LobbyistOrganizationCommunication {
+	if values == nil {
+		return []domain.LobbyistOrganizationCommunication{}
+	}
+	return values
+}
+
+func nonNilSubjectMatters(
+	values []domain.LobbyistOrganizationSubjectMatter,
+) []domain.LobbyistOrganizationSubjectMatter {
+	if values == nil {
+		return []domain.LobbyistOrganizationSubjectMatter{}
+	}
+	return values
+}
+
+func organizationSourceURL(organization domain.LobbyistOrganization) string {
+	for _, registration := range organization.Registrations {
+		if registration.SourceURL != "" {
+			return registration.SourceURL
+		}
+	}
+	return usecase.SourceURL
 }

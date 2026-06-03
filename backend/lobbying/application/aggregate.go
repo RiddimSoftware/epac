@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -14,6 +15,8 @@ var (
 	ErrDirectoryRequired  = errors.New("organization directory query is required")
 	ErrRepositoryRequired = errors.New("lobbyist organization repository is required")
 )
+
+const oclRegistrationReportsURL = "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId="
 
 type OrganizationDirectoryQuery interface {
 	ListOrganizationRegistrations(ctx context.Context) ([]OrganizationRegistration, error)
@@ -27,15 +30,16 @@ type LobbyistOrganizationRepository interface {
 }
 
 type OrganizationRegistration struct {
-	SourceID          string
-	OCLOrganizationID string
-	OrganizationName  string
-	RegistrationType  string
-	Sector            string
-	EffectiveDate     *time.Time
-	EndDate           *time.Time
-	Lobbyists         []domain.RegisteredLobbyist
-	SubjectMatters    []string
+	SourceID             string
+	OCLOrganizationID    string
+	OrganizationName     string
+	RegistrationType     string
+	Sector               string
+	EffectiveDate        *time.Time
+	EndDate              *time.Time
+	Lobbyists            []domain.RegisteredLobbyist
+	SubjectMatters       []string
+	TargetedInstitutions []string
 }
 
 type OrganizationCommunication struct {
@@ -46,7 +50,22 @@ type OrganizationCommunication struct {
 	RegistrantType    string
 	CommunicationDate *time.Time
 	SubjectMatters    []string
+	SubjectMatterRefs []OrganizationSubjectMatter
 	DPOHs             []domain.DPOHContact
+}
+
+type OrganizationSubjectMatter struct {
+	OCLCode string `json:"ocl_code"`
+	Name    string `json:"name"`
+}
+
+type SubjectTopicMapping struct {
+	TopicSlug  string
+	Confidence float64
+}
+
+type OCLSubjectTopicSource interface {
+	TopicMappingsForOCLCode(oclCode string) []SubjectTopicMapping
 }
 
 type AggregateLobbyistOrganizationsInput struct {
@@ -67,12 +86,22 @@ type AggregateLobbyistOrganizations struct {
 	directory  OrganizationDirectoryQuery
 	repository LobbyistOrganizationRepository
 	normalizer NameAliasNormalizer
+	topics     OCLSubjectTopicSource
+}
+
+type AggregateLobbyistOrganizationsOption func(*AggregateLobbyistOrganizations)
+
+func WithOCLSubjectTopicSource(source OCLSubjectTopicSource) AggregateLobbyistOrganizationsOption {
+	return func(u *AggregateLobbyistOrganizations) {
+		u.topics = source
+	}
 }
 
 func NewAggregateLobbyistOrganizations(
 	directory OrganizationDirectoryQuery,
 	repository LobbyistOrganizationRepository,
 	normalizer NameAliasNormalizer,
+	options ...AggregateLobbyistOrganizationsOption,
 ) (*AggregateLobbyistOrganizations, error) {
 	if directory == nil {
 		return nil, ErrDirectoryRequired
@@ -80,7 +109,11 @@ func NewAggregateLobbyistOrganizations(
 	if repository == nil {
 		return nil, ErrRepositoryRequired
 	}
-	return &AggregateLobbyistOrganizations{directory: directory, repository: repository, normalizer: normalizer}, nil
+	useCase := &AggregateLobbyistOrganizations{directory: directory, repository: repository, normalizer: normalizer}
+	for _, option := range options {
+		option(useCase)
+	}
+	return useCase, nil
 }
 
 func (u *AggregateLobbyistOrganizations) Execute(ctx context.Context, input AggregateLobbyistOrganizationsInput) ([]domain.LobbyistOrganization, error) {
@@ -124,7 +157,7 @@ func (u *AggregateLobbyistOrganizations) Execute(ctx context.Context, input Aggr
 			return nil, err
 		}
 		builder := builderFor(builders, resolution.OrganizationID, communication.OCLOrganizationID, communication.OrganizationName)
-		builder.applyCommunication(communication, input.CurrentParliament, input.PriorParliament)
+		builder.applyCommunication(communication, input.CurrentParliament, input.PriorParliament, u.topics)
 	}
 
 	organizations := make([]domain.LobbyistOrganization, 0, len(builders))
@@ -181,6 +214,14 @@ type organizationBuilder struct {
 	activeSubjectMatters map[string]struct{}
 	communicationVolume  domain.CommunicationCount
 	dpohCounts           map[string]domain.DPOHContact
+	registrations        map[string]domain.LobbyistRegistration
+	recentCommunications []domain.LobbyistOrganizationCommunication
+	subjectCounts        map[string]subjectMatterCount
+}
+
+type subjectMatterCount struct {
+	count     int
+	topicSlug string
 }
 
 func builderFor(builders map[string]*organizationBuilder, id, oclOrganizationID, name string) *organizationBuilder {
@@ -193,6 +234,8 @@ func builderFor(builders map[string]*organizationBuilder, id, oclOrganizationID,
 			lobbyists:            map[string]domain.RegisteredLobbyist{},
 			activeSubjectMatters: map[string]struct{}{},
 			dpohCounts:           map[string]domain.DPOHContact{},
+			registrations:        map[string]domain.LobbyistRegistration{},
+			subjectCounts:        map[string]subjectMatterCount{},
 		}
 		builders[id] = builder
 	}
@@ -235,12 +278,14 @@ func (b *organizationBuilder) applyRegistration(registration OrganizationRegistr
 			}
 		}
 	}
+	b.applyRegistrationProfileRow(registration, activeOn)
 }
 
 func (b *organizationBuilder) applyCommunication(
 	communication OrganizationCommunication,
 	current domain.ParliamentSession,
 	prior domain.ParliamentSession,
+	topics OCLSubjectTopicSource,
 ) {
 	if name := cleanNullableString(communication.RegistrantName); name != "" {
 		b.lobbyists[NormalizeOrganizationName(name)+"|"+string(lobbyistKindForRegistration(communication.RegistrantType))] = domain.RegisteredLobbyist{
@@ -255,6 +300,12 @@ func (b *organizationBuilder) applyCommunication(
 		case prior.Contains(*communication.CommunicationDate):
 			b.communicationVolume.PriorParliament++
 		}
+	}
+	subjects := communicationSubjectMatters(communication, topics)
+	subjectNames := make([]string, 0, len(subjects))
+	for _, subject := range subjects {
+		subjectNames = append(subjectNames, subject.name)
+		b.countSubjectMatter(subject)
 	}
 	for _, dpoh := range communication.DPOHs {
 		dpoh.MemberID = cleanNullableString(dpoh.MemberID)
@@ -280,6 +331,43 @@ func (b *organizationBuilder) applyCommunication(
 		}
 		existing.Count += increment
 		b.dpohCounts[key] = existing
+		b.recentCommunications = append(b.recentCommunications, domain.LobbyistOrganizationCommunication{
+			ID:             communication.SourceID,
+			Date:           dateString(communication.CommunicationDate),
+			DPOHMemberID:   dpoh.MemberID,
+			DPOHName:       dpoh.Name,
+			Institution:    dpoh.Institution,
+			SubjectMatters: subjectNames,
+			SourceURL:      domain.OCLSourceURL,
+		})
+	}
+}
+
+func (b *organizationBuilder) countSubjectMatter(subject countedSubjectMatter) {
+	existing := b.subjectCounts[subject.name]
+	existing.count++
+	if existing.topicSlug == "" && subject.topicSlug != "" {
+		existing.topicSlug = subject.topicSlug
+	}
+	b.subjectCounts[subject.name] = existing
+}
+
+func (b *organizationBuilder) applyRegistrationProfileRow(registration OrganizationRegistration, activeOn time.Time) {
+	registrationID := cleanNullableString(registration.SourceID)
+	if registrationID == "" {
+		return
+	}
+	status := domain.RegistrationStatusExpired
+	if isRegistrationActive(registration, activeOn) {
+		status = domain.RegistrationStatusActive
+	}
+	b.registrations[registrationID] = domain.LobbyistRegistration{
+		ID:                   registrationID,
+		Status:               status,
+		Kind:                 lobbyistKindForRegistration(registration.RegistrationType),
+		SubjectMatters:       cleanStringList(registration.SubjectMatters),
+		TargetedInstitutions: cleanStringList(registration.TargetedInstitutions),
+		SourceURL:            registrationSourceURL(registrationID),
 	}
 }
 
@@ -294,6 +382,10 @@ func (b organizationBuilder) organization(updatedAt time.Time) domain.LobbyistOr
 		ActiveSubjectMatters: sortedStringsFromSet(b.activeSubjectMatters),
 		CommunicationVolume:  b.communicationVolume,
 		TopDPOHsContacted:    topDPOHs(b.dpohCounts, 5),
+		RegistrationStatus:   registrationStatus(b.registrations),
+		Registrations:        sortedRegistrations(b.registrations),
+		RecentCommunications: recentCommunications(b.recentCommunications, 10),
+		SubjectMatters:       topSubjectMatters(b.subjectCounts, 10),
 		UpdatedAt:            updatedAt.UTC(),
 	}
 }
@@ -415,6 +507,154 @@ func sortedStringsFromSet(values map[string]struct{}) []string {
 	return out
 }
 
+type countedSubjectMatter struct {
+	name      string
+	topicSlug string
+}
+
+func communicationSubjectMatters(
+	communication OrganizationCommunication,
+	topics OCLSubjectTopicSource,
+) []countedSubjectMatter {
+	byName := map[string]countedSubjectMatter{}
+	for _, subject := range communication.SubjectMatterRefs {
+		name := cleanNullableString(subject.Name)
+		if name == "" {
+			continue
+		}
+		counted := byName[name]
+		if counted.name == "" {
+			counted.name = name
+		}
+		if counted.topicSlug == "" {
+			counted.topicSlug = preferredTopicSlug(subject.OCLCode, topics)
+		}
+		byName[name] = counted
+	}
+	if len(byName) == 0 {
+		for _, subject := range cleanStringList(communication.SubjectMatters) {
+			byName[subject] = countedSubjectMatter{name: subject}
+		}
+	}
+	out := make([]countedSubjectMatter, 0, len(byName))
+	for _, subject := range byName {
+		out = append(out, subject)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].name < out[j].name
+	})
+	return out
+}
+
+func preferredTopicSlug(oclCode string, topics OCLSubjectTopicSource) string {
+	if topics == nil {
+		return ""
+	}
+	mappings := topics.TopicMappingsForOCLCode(oclCode)
+	bestSlug := ""
+	bestConfidence := -1.0
+	for _, mapping := range mappings {
+		slug := strings.TrimSpace(mapping.TopicSlug)
+		if slug == "" {
+			continue
+		}
+		if bestSlug == "" || mapping.Confidence > bestConfidence ||
+			(mapping.Confidence == bestConfidence && slug < bestSlug) {
+			bestSlug = slug
+			bestConfidence = mapping.Confidence
+		}
+	}
+	return bestSlug
+}
+
+func cleanStringList(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = cleanNullableString(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func registrationStatus(values map[string]domain.LobbyistRegistration) domain.RegistrationStatus {
+	for _, value := range values {
+		if value.Status == domain.RegistrationStatusActive {
+			return domain.RegistrationStatusActive
+		}
+	}
+	return domain.RegistrationStatusExpired
+}
+
+func sortedRegistrations(values map[string]domain.LobbyistRegistration) []domain.LobbyistRegistration {
+	out := make([]domain.LobbyistRegistration, 0, len(values))
+	for _, value := range values {
+		out = append(out, value)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Status != out[j].Status {
+			return out[i].Status == domain.RegistrationStatusActive
+		}
+		if out[i].Kind != out[j].Kind {
+			return out[i].Kind < out[j].Kind
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out
+}
+
+func recentCommunications(
+	values []domain.LobbyistOrganizationCommunication,
+	limit int,
+) []domain.LobbyistOrganizationCommunication {
+	out := append([]domain.LobbyistOrganizationCommunication(nil), values...)
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Date != out[j].Date {
+			return out[i].Date > out[j].Date
+		}
+		if out[i].ID != out[j].ID {
+			return out[i].ID > out[j].ID
+		}
+		return out[i].DPOHName < out[j].DPOHName
+	})
+	if len(out) > limit {
+		return out[:limit]
+	}
+	return out
+}
+
+func topSubjectMatters(
+	counts map[string]subjectMatterCount,
+	limit int,
+) []domain.LobbyistOrganizationSubjectMatter {
+	out := make([]domain.LobbyistOrganizationSubjectMatter, 0, len(counts))
+	for subject, count := range counts {
+		out = append(out, domain.LobbyistOrganizationSubjectMatter{
+			SubjectMatter:      subject,
+			CommunicationCount: count.count,
+			TopicSlug:          count.topicSlug,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].CommunicationCount != out[j].CommunicationCount {
+			return out[i].CommunicationCount > out[j].CommunicationCount
+		}
+		return out[i].SubjectMatter < out[j].SubjectMatter
+	})
+	if len(out) > limit {
+		return out[:limit]
+	}
+	return out
+}
+
 func topDPOHs(values map[string]domain.DPOHContact, limit int) []domain.DPOHContact {
 	out := make([]domain.DPOHContact, 0, len(values))
 	for _, value := range values {
@@ -433,6 +673,21 @@ func topDPOHs(values map[string]domain.DPOHContact, limit int) []domain.DPOHCont
 		return out[:limit]
 	}
 	return out
+}
+
+func dateString(value *time.Time) string {
+	if value == nil || value.IsZero() {
+		return ""
+	}
+	return value.UTC().Format("2006-01-02")
+}
+
+func registrationSourceURL(registrationID string) string {
+	registrationID = cleanNullableString(registrationID)
+	if registrationID == "" {
+		return domain.OCLSourceURL
+	}
+	return oclRegistrationReportsURL + url.QueryEscape(registrationID)
 }
 
 func cleanNullableString(value string) string {

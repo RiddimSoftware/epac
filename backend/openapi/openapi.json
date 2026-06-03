@@ -1138,7 +1138,7 @@
       "get": {
         "tags": ["Lobbying"],
         "summary": "Load an OCL lobbyist organization profile",
-        "description": "Returns a full canonical Office of the Commissioner of Lobbying organization profile, including lobbyists, active subject matters, Parliament communication trend, and top DPOHs contacted.",
+        "description": "Returns a full canonical Office of the Commissioner of Lobbying organization profile, including status, type, sector, registrations, recent communications, subject matters, lobbyists, and Parliament communication trend.",
         "operationId": "loadLobbyistOrganizationProfile",
         "parameters": [
           {
@@ -1179,8 +1179,37 @@
                           "count": 4
                         }
                       ],
+                      "registration_status": "active",
+                      "registrations": [
+                        {
+                          "id": "990018",
+                          "status": "active",
+                          "kind": "consultant",
+                          "subject_matters": ["Housing", "Infrastructure"],
+                          "targeted_institutions": ["House of Commons"],
+                          "source_url": "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId=990018"
+                        }
+                      ],
+                      "recent_communications": [
+                        {
+                          "id": "558142",
+                          "date": "2026-05-20",
+                          "dpoh_member_id": "278707",
+                          "dpoh_name": "Example Minister",
+                          "institution": "House of Commons",
+                          "subject_matters": ["Housing"],
+                          "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                        }
+                      ],
+                      "subject_matters": [
+                        {
+                          "subject_matter": "Housing",
+                          "communication_count": 6,
+                          "topic_slug": "housing"
+                        }
+                      ],
                       "citation": "Source: Office of the Commissioner of Lobbying (OCL)",
-                      "source_url": "https://lobbycanada.gc.ca/en/open-data/"
+                      "source_url": "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId=990018"
                     }
                   }
                 }
@@ -2114,6 +2143,10 @@
           "active_subject_matters",
           "communication_volume",
           "top_dpohs_contacted",
+          "registration_status",
+          "registrations",
+          "recent_communications",
+          "subject_matters",
           "citation",
           "source_url"
         ],
@@ -2127,8 +2160,12 @@
           "active_subject_matters": { "type": "array", "items": { "type": "string" } },
           "communication_volume": { "$ref": "#/components/schemas/LobbyistOrganizationCommunicationVolume" },
           "top_dpohs_contacted": { "type": "array", "maxItems": 5, "items": { "$ref": "#/components/schemas/DPOHContact" } },
+          "registration_status": { "$ref": "#/components/schemas/LobbyistRegistrationStatus" },
+          "registrations": { "type": "array", "items": { "$ref": "#/components/schemas/LobbyistRegistration" } },
+          "recent_communications": { "type": "array", "maxItems": 10, "items": { "$ref": "#/components/schemas/LobbyistOrganizationCommunication" } },
+          "subject_matters": { "type": "array", "items": { "$ref": "#/components/schemas/LobbyistOrganizationSubjectMatter" } },
           "citation": { "type": "string", "example": "Source: Office of the Commissioner of Lobbying (OCL)" },
-          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+          "source_url": { "type": "string", "format": "uri", "example": "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId=990018" }
         }
       },
       "LobbyistOrganizationType": {
@@ -2141,6 +2178,44 @@
         "properties": {
           "name": { "type": "string" },
           "kind": { "type": "string", "enum": ["consultant", "in_house"] }
+        }
+      },
+      "LobbyistRegistrationStatus": {
+        "type": "string",
+        "enum": ["active", "expired"]
+      },
+      "LobbyistRegistration": {
+        "type": "object",
+        "required": ["id", "status", "kind", "subject_matters", "targeted_institutions", "source_url"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/LobbyistRegistrationStatus" },
+          "kind": { "type": "string", "enum": ["consultant", "in_house"] },
+          "subject_matters": { "type": "array", "items": { "type": "string" } },
+          "targeted_institutions": { "type": "array", "items": { "type": "string" } },
+          "source_url": { "type": "string", "format": "uri", "example": "https://www.lobbycanada.gc.ca/app/secure/ocl/lrs/do/rgstrnCmmnctnRprts?lang=eng&regId=990018" }
+        }
+      },
+      "LobbyistOrganizationCommunication": {
+        "type": "object",
+        "required": ["id", "dpoh_name", "institution", "subject_matters", "source_url"],
+        "properties": {
+          "id": { "type": "string", "description": "OCL COMLOG_ID." },
+          "date": { "type": "string", "format": "date" },
+          "dpoh_member_id": { "type": "string", "description": "House of Commons member/person ID when linkable." },
+          "dpoh_name": { "type": "string" },
+          "institution": { "type": "string" },
+          "subject_matters": { "type": "array", "items": { "type": "string" } },
+          "source_url": { "type": "string", "format": "uri", "example": "https://lobbycanada.gc.ca/en/open-data/" }
+        }
+      },
+      "LobbyistOrganizationSubjectMatter": {
+        "type": "object",
+        "required": ["subject_matter", "communication_count"],
+        "properties": {
+          "subject_matter": { "type": "string" },
+          "communication_count": { "type": "integer", "minimum": 0 },
+          "topic_slug": { "type": "string", "description": "Mapped epac topic slug when EPAC's OCL topic map has a high-confidence mapping." }
         }
       },
       "LobbyistOrganizationCommunicationVolume": {

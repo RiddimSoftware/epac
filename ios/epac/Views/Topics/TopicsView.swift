@@ -22,8 +22,16 @@ private enum TopicsLayout {
 struct TopicsView: View {
     @State private var viewModel: TopicsViewModel
 
-    init(topicPreferenceStore: any TopicPreferenceStore = TopicFollowStoreAdapter()) {
-        _viewModel = State(initialValue: TopicsViewModel(preferences: topicPreferenceStore))
+    init(
+        topicPreferenceStore: any TopicPreferenceStore = TopicFollowStoreAdapter(),
+        initialSearchText: String = ""
+    ) {
+        _viewModel = State(
+            initialValue: TopicsViewModel(
+                preferences: topicPreferenceStore,
+                initialSearchText: initialSearchText
+            )
+        )
     }
 
     var body: some View {
@@ -141,9 +149,13 @@ final class TopicsViewModel {
     private let preferences: any TopicPreferenceStore
     private var followedIDs: Set<String>
 
-    init(preferences: any TopicPreferenceStore = TopicFollowStoreAdapter()) {
+    init(
+        preferences: any TopicPreferenceStore = TopicFollowStoreAdapter(),
+        initialSearchText: String = ""
+    ) {
         self.preferences = preferences
         self.followedIDs = preferences.followedTopicIDs()
+        self.searchText = initialSearchText
     }
 
     var filteredTopics: [ParliamentaryTopic] {

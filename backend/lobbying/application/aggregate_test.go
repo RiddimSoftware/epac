@@ -44,6 +44,12 @@ func (r *fakeOrganizationRepo) BrowseLobbyistOrganizations(context.Context, Brow
 	return append([]domain.LobbyistOrganization(nil), r.saved...), nil
 }
 
+type fakeSubjectTopicSource map[string][]SubjectTopicMapping
+
+func (s fakeSubjectTopicSource) TopicMappingsForOCLCode(oclCode string) []SubjectTopicMapping {
+	return append([]SubjectTopicMapping(nil), s[oclCode]...)
+}
+
 type fakeAliases struct {
 	matches map[string][]string
 	pending []PendingOrganizationAlias
@@ -92,7 +98,10 @@ func TestAggregateFromFixtureRegistrations(t *testing.T) {
 				RegistrantType:    "Consultant",
 				CommunicationDate: &currentComm,
 				SubjectMatters:    []string{"Aboriginal Affairs"},
-				DPOHs:             []domain.DPOHContact{{Name: "Alex Minister", Institution: "Indigenous Services Canada"}},
+				SubjectMatterRefs: []OrganizationSubjectMatter{
+					{OCLCode: "SMT-44", Name: "Aboriginal Affairs"},
+				},
+				DPOHs: []domain.DPOHContact{{Name: "Alex Minister", Institution: "Indigenous Services Canada"}},
 			},
 			{
 				SourceID:          "c-2",
@@ -113,7 +122,12 @@ func TestAggregateFromFixtureRegistrations(t *testing.T) {
 				DPOHs:             []domain.DPOHContact{{Name: "Blair Official", Institution: "Crown-Indigenous Relations"}},
 			},
 		},
-	}, repo, NewNameAliasNormalizer(nil))
+	}, repo, NewNameAliasNormalizer(nil), WithOCLSubjectTopicSource(fakeSubjectTopicSource{
+		"SMT-44": {
+			{TopicSlug: "indigenous-affairs", Confidence: 0.92},
+			{TopicSlug: "infrastructure", Confidence: 0.72},
+		},
+	}))
 	if err != nil {
 		t.Fatalf("new aggregate use case: %v", err)
 	}
@@ -151,6 +165,26 @@ func TestAggregateFromFixtureRegistrations(t *testing.T) {
 	}
 	if len(got.TopDPOHsContacted) != 2 || got.TopDPOHsContacted[0].Name != "Alex Minister" || got.TopDPOHsContacted[0].Count != 2 {
 		t.Fatalf("top dpohs = %#v", got.TopDPOHsContacted)
+	}
+	if got.RegistrationStatus != domain.RegistrationStatusActive {
+		t.Fatalf("registration status = %q, want active", got.RegistrationStatus)
+	}
+	if len(got.Registrations) != 1 || got.Registrations[0].ID != "990018" ||
+		got.Registrations[0].Status != domain.RegistrationStatusActive ||
+		got.Registrations[0].Kind != domain.LobbyistKindConsultant ||
+		got.Registrations[0].SourceURL != registrationSourceURL("990018") {
+		t.Fatalf("registrations = %#v", got.Registrations)
+	}
+	if len(got.RecentCommunications) != 3 ||
+		got.RecentCommunications[0].ID != "c-2" ||
+		got.RecentCommunications[0].DPOHName != "Alex Minister" {
+		t.Fatalf("recent communications = %#v", got.RecentCommunications)
+	}
+	if len(got.SubjectMatters) != 1 ||
+		got.SubjectMatters[0].SubjectMatter != "Aboriginal Affairs" ||
+		got.SubjectMatters[0].CommunicationCount != 1 ||
+		got.SubjectMatters[0].TopicSlug != "indigenous-affairs" {
+		t.Fatalf("subject matters = %#v", got.SubjectMatters)
 	}
 	if len(repo.saved) != 1 {
 		t.Fatalf("saved organization count = %d, want 1", len(repo.saved))

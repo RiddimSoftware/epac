@@ -81,14 +81,31 @@ func (r *PostgresLobbyistOrganizationRepository) SaveLobbyistOrganizations(ctx c
 		if err != nil {
 			return fmt.Errorf("marshal top dpohs for %s: %w", organization.ID, err)
 		}
+		registrations, err := json.Marshal(organization.Registrations)
+		if err != nil {
+			return fmt.Errorf("marshal registrations for %s: %w", organization.ID, err)
+		}
+		communications, err := json.Marshal(organization.RecentCommunications)
+		if err != nil {
+			return fmt.Errorf("marshal recent communications for %s: %w", organization.ID, err)
+		}
+		subjectMatters, err := json.Marshal(organization.SubjectMatters)
+		if err != nil {
+			return fmt.Errorf("marshal subject matters for %s: %w", organization.ID, err)
+		}
+		status := organization.RegistrationStatus
+		if status == "" {
+			status = domain.RegistrationStatusExpired
+		}
 		_, err = r.db.Exec(ctx, `
 			INSERT INTO lobbyist_organizations (
 				organization_id, ocl_organization_id, name, type, sector,
 				registered_lobbyists, active_subject_matters,
 				communication_volume_current_parliament, communication_volume_prior_parliament,
-				top_dpohs, updated_at
+				top_dpohs, registration_status, registrations, recent_communications,
+				subject_matters, updated_at
 			)
-			VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10::jsonb, $11)
+			VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12::jsonb, $13::jsonb, $14::jsonb, $15)
 			ON CONFLICT (organization_id) DO UPDATE SET
 				ocl_organization_id = EXCLUDED.ocl_organization_id,
 				name = EXCLUDED.name,
@@ -99,11 +116,16 @@ func (r *PostgresLobbyistOrganizationRepository) SaveLobbyistOrganizations(ctx c
 				communication_volume_current_parliament = EXCLUDED.communication_volume_current_parliament,
 				communication_volume_prior_parliament = EXCLUDED.communication_volume_prior_parliament,
 				top_dpohs = EXCLUDED.top_dpohs,
+				registration_status = EXCLUDED.registration_status,
+				registrations = EXCLUDED.registrations,
+				recent_communications = EXCLUDED.recent_communications,
+				subject_matters = EXCLUDED.subject_matters,
 				updated_at = EXCLUDED.updated_at
 		`, organization.ID, nullString(organization.OCLOrganizationID), organization.Name, string(organization.Type),
 			nullString(organization.Sector), string(lobbyists), organization.ActiveSubjectMatters,
 			organization.CommunicationVolume.CurrentParliament, organization.CommunicationVolume.PriorParliament,
-			string(dpohs), organization.UpdatedAt)
+			string(dpohs), string(status), string(registrations), string(communications),
+			string(subjectMatters), organization.UpdatedAt)
 		if err != nil {
 			return fmt.Errorf("save lobbyist organization %s: %w", organization.ID, err)
 		}
@@ -116,7 +138,8 @@ func (r *PostgresLobbyistOrganizationRepository) LoadLobbyistOrganization(ctx co
 		SELECT organization_id, COALESCE(ocl_organization_id, ''), name, type, COALESCE(sector, ''),
 			registered_lobbyists, active_subject_matters,
 			communication_volume_current_parliament, communication_volume_prior_parliament,
-			top_dpohs, updated_at
+			top_dpohs, registration_status, registrations, recent_communications,
+			subject_matters, updated_at
 		FROM lobbyist_organizations
 		WHERE organization_id = $1
 	`, organizationID)
@@ -141,7 +164,8 @@ func (r *PostgresLobbyistOrganizationRepository) BrowseLobbyistOrganizations(ctx
 		SELECT organization_id, COALESCE(ocl_organization_id, ''), name, type, COALESCE(sector, ''),
 			registered_lobbyists, active_subject_matters,
 			communication_volume_current_parliament, communication_volume_prior_parliament,
-			top_dpohs, updated_at
+			top_dpohs, registration_status, registrations, recent_communications,
+			subject_matters, updated_at
 		FROM lobbyist_organizations
 		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%' OR organization_id ILIKE '%' || $1 || '%')
 			AND ($2 = '' OR LOWER(sector) = LOWER($2))
@@ -234,13 +258,28 @@ func (r *PostgresLobbyistOrganizationRepository) ListOrganizationRegistrations(c
 
 func (r *PostgresLobbyistOrganizationRepository) ListOrganizationCommunications(ctx context.Context) ([]application.OrganizationCommunication, error) {
 	rows, err := r.db.Query(ctx, `
-		WITH communication_subjects AS (
+		WITH communication_subject_rows AS (
 			SELECT
 				csm.comlog_id::TEXT AS source_id,
-				ARRAY_AGG(DISTINCT COALESCE(NULLIF(smt.smt_en_desc, ''), csm.subject_code_objet) ORDER BY COALESCE(NULLIF(smt.smt_en_desc, ''), csm.subject_code_objet)) AS subject_matters
+				COALESCE(NULLIF(csm.subject_code_objet::TEXT, ''), '') AS ocl_code,
+				COALESCE(NULLIF(smt.smt_en_desc, ''), csm.subject_code_objet) AS subject_matter
 			FROM ocl_communication_subject_matters csm
 			LEFT JOIN ocl_subject_matter_types smt ON smt.subject_code_objet = csm.subject_code_objet
-			GROUP BY csm.comlog_id::TEXT
+			WHERE COALESCE(NULLIF(smt.smt_en_desc, ''), csm.subject_code_objet) IS NOT NULL
+		),
+		communication_subjects AS (
+			SELECT
+				source_id,
+				ARRAY_AGG(DISTINCT subject_matter ORDER BY subject_matter) AS subject_matters,
+				JSONB_AGG(
+					JSONB_BUILD_OBJECT('ocl_code', ocl_code, 'name', subject_matter)
+					ORDER BY subject_matter, ocl_code
+				) AS subject_matter_refs
+			FROM (
+				SELECT DISTINCT source_id, ocl_code, subject_matter
+				FROM communication_subject_rows
+			) subjects
+			GROUP BY source_id
 		),
 		communication_dpohs AS (
 			SELECT
@@ -267,6 +306,7 @@ func (r *PostgresLobbyistOrganizationRepository) ListOrganizationCommunications(
 			cp.reg_type_enr::TEXT,
 			NULLIF(cp.comm_date::TEXT, 'null'),
 			COALESCE(subjects.subject_matters, ARRAY[]::TEXT[]),
+			COALESCE(subjects.subject_matter_refs, '[]'::jsonb),
 			COALESCE(dpohs.dpohs, '[]'::jsonb)
 		FROM ocl_communication_primary cp
 		LEFT JOIN communication_subjects subjects ON subjects.source_id = cp.comlog_id::TEXT
@@ -298,6 +338,10 @@ func scanOrganization(row interface {
 	var organizationType string
 	var lobbyistsJSON []byte
 	var topDPOHsJSON []byte
+	var registrationStatus string
+	var registrationsJSON []byte
+	var communicationsJSON []byte
+	var subjectMattersJSON []byte
 	if err := row.Scan(
 		&organization.ID,
 		&organization.OCLOrganizationID,
@@ -309,16 +353,33 @@ func scanOrganization(row interface {
 		&organization.CommunicationVolume.CurrentParliament,
 		&organization.CommunicationVolume.PriorParliament,
 		&topDPOHsJSON,
+		&registrationStatus,
+		&registrationsJSON,
+		&communicationsJSON,
+		&subjectMattersJSON,
 		&organization.UpdatedAt,
 	); err != nil {
 		return domain.LobbyistOrganization{}, fmt.Errorf("scan lobbyist organization: %w", err)
 	}
 	organization.Type = domain.OrganizationType(organizationType)
+	organization.RegistrationStatus = domain.RegistrationStatus(registrationStatus)
+	if organization.RegistrationStatus == "" {
+		organization.RegistrationStatus = domain.RegistrationStatusExpired
+	}
 	if err := json.Unmarshal(lobbyistsJSON, &organization.RegisteredLobbyists); err != nil {
 		return domain.LobbyistOrganization{}, fmt.Errorf("decode registered lobbyists: %w", err)
 	}
 	if err := json.Unmarshal(topDPOHsJSON, &organization.TopDPOHsContacted); err != nil {
 		return domain.LobbyistOrganization{}, fmt.Errorf("decode top dpohs: %w", err)
+	}
+	if err := json.Unmarshal(registrationsJSON, &organization.Registrations); err != nil {
+		return domain.LobbyistOrganization{}, fmt.Errorf("decode registrations: %w", err)
+	}
+	if err := json.Unmarshal(communicationsJSON, &organization.RecentCommunications); err != nil {
+		return domain.LobbyistOrganization{}, fmt.Errorf("decode recent communications: %w", err)
+	}
+	if err := json.Unmarshal(subjectMattersJSON, &organization.SubjectMatters); err != nil {
+		return domain.LobbyistOrganization{}, fmt.Errorf("decode subject matters: %w", err)
 	}
 	return organization, nil
 }
@@ -352,6 +413,7 @@ func scanRegistration(rows pgx.Rows) (application.OrganizationRegistration, erro
 func scanCommunication(rows pgx.Rows) (application.OrganizationCommunication, error) {
 	var communication application.OrganizationCommunication
 	var communicationDate sql.NullString
+	var subjectMatterRefsJSON []byte
 	var dpohsJSON []byte
 	if err := rows.Scan(
 		&communication.SourceID,
@@ -361,11 +423,15 @@ func scanCommunication(rows pgx.Rows) (application.OrganizationCommunication, er
 		&communication.RegistrantType,
 		&communicationDate,
 		&communication.SubjectMatters,
+		&subjectMatterRefsJSON,
 		&dpohsJSON,
 	); err != nil {
 		return application.OrganizationCommunication{}, fmt.Errorf("scan communication row: %w", err)
 	}
 	communication.CommunicationDate = parseDatePtr(communicationDate)
+	if err := json.Unmarshal(subjectMatterRefsJSON, &communication.SubjectMatterRefs); err != nil {
+		return application.OrganizationCommunication{}, fmt.Errorf("decode communication subject refs: %w", err)
+	}
 	if err := json.Unmarshal(dpohsJSON, &communication.DPOHs); err != nil {
 		return application.OrganizationCommunication{}, fmt.Errorf("decode communication dpohs: %w", err)
 	}
