@@ -103,6 +103,10 @@ to the issue that will build the missing artifact.
 | `BillLobbyingContextRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillLobbyingContextRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillLobbyingContextRepository.swift`. | Load bill-level lobbying context summaries from the backend lobbying endpoint. |
 | `MPLobbyingServiceProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/MPLobbyingService.swift`; conformer: `ios/epac/Util/BackendMPLobbyingService`. | Load MP lobbying dashboard payloads, including summary, timeline, subject filters, cohort comparison, and pagination settings from the backend endpoint. |
 | `OCLSubjectsSource` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/usecase.go`; adapter: `backend/lobbying/internal/adapter/ocltopicmap/source.go` reading `backend/lobbying/ocl_topic_map.json`. | Resolve an epac topic slug to the OCL subject-matter codes that should be included. |
+| `OCLSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/ocl/fetcher.go`. | Fetch and parse OCL open-data ZIPs (communications and registrations) in-memory. |
+| `MembersSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/ourcommons/fetcher.go`. | Fetch and normalize active MP records from ourcommons.ca members XML. |
+| `SubjectMatterSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/subjects/fetcher.go`. | Fetch and parse OCL subject-matter controlled-vocabulary rows. |
+| `RawTableWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/usecase.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/writer.go`. | Load parsed OCL, member, and subject-matter rows into local SQLite raw tables. |
 | `MinisterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Load minister identity, cabinet tenure, and portfolio-period history for minister lobbying endpoints. |
 | `MinisterLobbyingRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read OCL communication reports where a minister is the contacted designated public office holder. |
 | `MandateLetterRepository` | backend Go | outbound | Implemented: `backend/lobbying/internal/usecase/minister_portfolio.go`; adapter: `backend/lobbying/internal/adapter/postgres/minister_portfolio.go`. | Read high-confidence mandate-letter policy-area topic mappings for minister lobbying cross-reference. |
@@ -733,6 +737,36 @@ Current implementation:
 ### FetchLiveParliamentStatus
 
 > Retired in EPAC-1921. The backend `live-status` Lambda and `/api/v1/live` route are removed from desired state. The historical architecture note remains in `docs/architecture/live-status-backend-epac165.md`.
+
+--- 
+
+### IngestOCLData
+
+```
+Actor: Scheduler (Lambda invoke) / CI publish job
+Goal: Build raw OCL SQLite tables from authoritative source payloads for downstream lobbying processing.
+Inputs: OCL communications ZIP URL, OCL registrations ZIP URL, ourcommons members XML URL, OCL subject-matter HTML URLs.
+Outputs: SQLite database path and raw tables:
+  ocl_communication_primary,
+  ocl_communication_dpohs,
+  ocl_communication_subject_matters,
+  ocl_registration_primary,
+  ocl_registration_subject_matters,
+  ocl_registration_in_house_lobbyists,
+  ocl_registration_consultant_lobbyists,
+  ocl_subject_matter_types,
+  members.
+Ports: `OCLSource`, `MembersSource`, `SubjectMatterSource`, `RawTableWriter`.
+Primary adapters: backend/lobbying-index/main.go, ocl.Fetcher, ourcommons.Fetcher, subjects.Fetcher, sqlite.Writer.
+Current implementation:
+  backend/lobbying-index/main.go
+  backend/lobbying-index/internal/adapter/ocl/fetcher.go
+  backend/lobbying-index/internal/adapter/ourcommons/fetcher.go
+  backend/lobbying-index/internal/adapter/subjects/fetcher.go
+  backend/lobbying-index/internal/adapter/sqlite/writer.go
+```
+
+> **Boundary rule:** Use-case policy owns the orchestration and row counting. Feed-specific transport/parsing and SQL schema details remain in adapters.
 
 ---
 
