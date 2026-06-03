@@ -43,10 +43,15 @@ jobs:
           terraform validate
 
       - name: Validate Production
+        if: ${{ hashFiles('infra/terraform/production/*.tf') != '' }}
         working-directory: infra/terraform/production
         run: |
           terraform init -backend=false
           terraform validate
+
+      - name: Skip Production Validate
+        if: ${{ hashFiles('infra/terraform/production/*.tf') == '' }}
+        run: echo "No production Terraform directory found; skipping production validation."
 
   infra-plan:
     name: infra-plan
