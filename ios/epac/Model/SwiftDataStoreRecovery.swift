@@ -41,6 +41,11 @@ enum SwiftDataStoreRecovery {
 		let configuration = modelConfiguration(usesInMemoryStore: usesInMemoryStore, storeURL: storeURL)
 
 		do {
+			let span = Telemetry.startSpan(
+				name: PerformanceSignpostContract.SpanName.swiftDataMigrationOpen,
+				operation: "swiftdata.migration-open"
+			)
+			defer { span.finish() }
 			return try makeContainer(configuration)
 		} catch {
 			return try recoverContainer(

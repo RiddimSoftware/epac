@@ -47,6 +47,31 @@ struct TelemetryTests {
         span.finish()
     }
 
+    @Test func performanceSignpostContractPinsStableNames() {
+        #expect(PerformanceSignpostContract.subsystem == "com.riddimsoftware.epac")
+        #expect(PerformanceSignpostContract.category == "performance")
+        #expect(PerformanceSignpostContract.allSpanNames == [
+            "launch.model-container",
+            "launch.home-feed",
+            "hansard.fetch-transcript",
+            "swiftdata.migration-open",
+            "search.hansard-round-trip"
+        ])
+    }
+
+    @Test func multiplexProviderRoutesSpansToEachProvider() {
+        let first = RecordingTelemetryProvider()
+        let second = RecordingTelemetryProvider()
+        let provider = MultiplexTelemetryProvider(providers: [first, second])
+
+        let span = provider.startSpan(name: "sync", operation: "fetch")
+        span.finish()
+        span.finish()
+
+        #expect(first.store.spans.count == 1)
+        #expect(second.store.spans.count == 1)
+    }
+
     @Test func providerSwapRoutesToNewProvider() {
         let original = Telemetry.provider
         defer { Telemetry.provider = original }

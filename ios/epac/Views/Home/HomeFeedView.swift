@@ -734,6 +734,12 @@ struct HomeFeedView: View {
     // MARK: - Data loading
 
     private func loadFeed() async {
+        let span = Telemetry.startSpan(
+            name: PerformanceSignpostContract.SpanName.launchHomeFeed,
+            operation: "launch.home-feed"
+        )
+        defer { span.finish() }
+
         let useCase = LoadHomeFeed(
             repository: HomeFeedSwiftDataRepository(modelContext: modelContext),
             followPreferenceReading: FollowPreferenceAdapter()

@@ -18,6 +18,20 @@ struct LoadDailyHansardTests {
 		#expect(repository.storedTranscripts == [transcript])
 	}
 
+	@Test func fetchTranscriptIsTimedThroughTelemetryProvider() async throws {
+		let date = Self.date(day: 4)
+		let transcript = Self.transcript(jurisdiction: .federal, date: date)
+		let repository = FixtureHansardRepository(transcripts: [transcript])
+		let telemetry = RecordingTelemetryProvider()
+		let useCase = LoadDailyHansard(repository: repository, telemetry: telemetry)
+
+		_ = try await useCase.execute(jurisdiction: .federal, sittingDate: date)
+
+		#expect(telemetry.store.spans.count == 1)
+		#expect(telemetry.store.spans.first?.name == PerformanceSignpostContract.SpanName.hansardFetchTranscript)
+		#expect(telemetry.store.spans.first?.operation == "hansard.fetch-transcript")
+	}
+
 	@Test func propagatesFetchErrorWithoutStoring() async {
 		let date = Self.date(day: 2)
 		let repository = FixtureHansardRepository()

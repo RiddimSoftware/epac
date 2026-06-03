@@ -40,6 +40,7 @@ struct ContentView: View {
 	@State private var showMyMPSetup = !AppRuntime.shouldSuppressFirstLaunchSurfacesInTests && !AppEnvironment.isMarketingCaptureMode && UserDefaults.standard.bool(forKey: "epac.onboarding.completed") && PostalCodeViewModel.savedRidingName == nil
 	@State private var showOnboarding = !AppRuntime.shouldSuppressFirstLaunchSurfacesInTests && !AppEnvironment.isMarketingCaptureMode && !UserDefaults.standard.bool(forKey: "epac.onboarding.completed")
 	@State private var showWhatsNew = false
+	@State private var performanceHarnessCompleted = false
 
 	init(fetch: Fetch, hansardRepository: any HansardRepository, appDelegate: AppDelegate) {
 		self.fetch = fetch
@@ -85,6 +86,9 @@ struct ContentView: View {
 		.environment(\.hansardRepository, hansardRepository)
 		.environment(router)
 		.environment(networkMonitor)
+		.overlay(alignment: .topLeading) {
+			performanceHarnessCompletionMarker
+		}
 		.onOpenURL { url in
 			handleOpenURL(url)
 		}
@@ -105,6 +109,12 @@ struct ContentView: View {
 			// land on populated state instead of empty placeholders. See
 			// EvidenceFixtureSeed for the fixture selection logic.
 			await EvidenceFixtureSeed.seedIfNeeded(via: fetch)
+		}
+		.task {
+			performanceHarnessCompleted = await PerformanceLaunchHarness.runIfRequested(
+				fetch: fetch,
+				repository: hansardRepository
+			)
 		}
 		.task {
 			guard !AppRuntime.isRunningTests, !AppEnvironment.isMarketingCaptureMode else { return }
@@ -164,6 +174,17 @@ struct ContentView: View {
 			WhatsNewView { showWhatsNew = false }
 				.presentationDetents([.medium])
 				.presentationDragIndicator(.visible)
+		}
+	}
+
+	@ViewBuilder
+	private var performanceHarnessCompletionMarker: some View {
+		if performanceHarnessCompleted {
+			Color.clear
+				.frame(width: 1, height: 1)
+				.accessibilityElement()
+				.accessibilityIdentifier(PerformanceLaunchHarness.completedAccessibilityIdentifier)
+				.accessibilityLabel("Performance harness completed")
 		}
 	}
 
