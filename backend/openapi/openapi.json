@@ -560,6 +560,67 @@
         }
       }
     },
+    "/api/v1/members/{id}/ministerial-expenses": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List ministerial travel and hospitality disclosures for a cabinet minister",
+        "description": "Returns ministerial travel and hospitality expense records for the given member ID, sourced from Treasury Board Secretariat proactive disclosure pages. Only populated for current or past cabinet ministers. Records cover the most recent 4 fiscal quarters. All data originates from official TBS department proactive disclosure publications.",
+        "operationId": "listMinisterialExpenses",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" },
+          {
+            "name": "fiscal_year",
+            "in": "query",
+            "description": "Filter by fiscal year label, e.g. '2024-2025'.",
+            "schema": { "type": "string", "example": "2024-2025" }
+          },
+          {
+            "name": "quarter",
+            "in": "query",
+            "description": "Filter by fiscal quarter (1–4).",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 4 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of ministerial expense records for the member",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MinisterialExpensesResponse" },
+                "examples": {
+                  "expenses": {
+                    "value": {
+                      "member_id": "278707",
+                      "minister_name": "Mark Carney",
+                      "total_count": 2,
+                      "records": [
+                        {
+                          "record_id": "finance-2025-q1-carney-stresa-g7",
+                          "minister_name": "Mark Carney",
+                          "department": "Finance Canada",
+                          "event_purpose": "G7 Finance Ministers and Central Bank Governors Meeting",
+                          "destination": "Stresa, Italy",
+                          "start_date": "2025-05-23",
+                          "end_date": "2025-05-25",
+                          "travel_cost": 18420.50,
+                          "hospitality_cost": 0.00,
+                          "total_cost": 18420.50,
+                          "fiscal_year": "2025-2026",
+                          "quarter": 1,
+                          "source_url": "https://www.canada.ca/en/department-finance/corporate/proactive-disclosure/travel.html"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/api/v1/ridings/{slug}/boundary": {
       "get": {
         "tags": ["Members"],
@@ -2560,6 +2621,38 @@
           "vote_description": { "type": "string", "example": "Operating expenditures" },
           "authorities": { "type": "number", "example": 1234567.89 },
           "source": { "type": "string", "example": "GC InfoBase" }
+        }
+      },
+      "MinisterialExpenseRecord": {
+        "type": "object",
+        "required": ["record_id", "minister_name", "department", "event_purpose", "destination", "start_date", "travel_cost", "hospitality_cost", "total_cost", "fiscal_year", "quarter", "source_url"],
+        "properties": {
+          "record_id": { "type": "string", "description": "Stable unique identifier for the record." },
+          "minister_name": { "type": "string", "description": "Full name of the minister as published by the department." },
+          "department": { "type": "string", "description": "Name of the federal department or institution publishing the disclosure." },
+          "event_purpose": { "type": "string", "description": "Purpose of the travel or hospitality event." },
+          "destination": { "type": "string", "description": "City/country destination for travel, or location for hospitality." },
+          "start_date": { "type": "string", "format": "date", "description": "ISO-8601 start date." },
+          "end_date": { "type": "string", "format": "date", "nullable": true, "description": "ISO-8601 end date, if applicable." },
+          "travel_cost": { "type": "number", "format": "double", "description": "Travel cost component in CAD." },
+          "hospitality_cost": { "type": "number", "format": "double", "description": "Hospitality cost component in CAD." },
+          "total_cost": { "type": "number", "format": "double", "description": "Total cost in CAD (travel + hospitality)." },
+          "fiscal_year": { "type": "string", "example": "2024-2025", "description": "Government of Canada fiscal year label." },
+          "quarter": { "type": "integer", "minimum": 1, "maximum": 4, "description": "Fiscal quarter (Q1=Apr–Jun, Q2=Jul–Sep, Q3=Oct–Dec, Q4=Jan–Mar)." },
+          "source_url": { "type": "string", "format": "uri", "description": "URL of the authoritative TBS proactive disclosure page for this record." }
+        }
+      },
+      "MinisterialExpensesResponse": {
+        "type": "object",
+        "required": ["member_id", "minister_name", "total_count", "records"],
+        "properties": {
+          "member_id": { "type": "string", "description": "Parliament.ca member ID." },
+          "minister_name": { "type": "string", "description": "Minister name as matched against proactive disclosure data." },
+          "total_count": { "type": "integer", "description": "Total number of records for this minister in the dataset." },
+          "records": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MinisterialExpenseRecord" }
+          }
         }
       },
       "TelemetryRequest": {

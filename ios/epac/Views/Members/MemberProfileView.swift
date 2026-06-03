@@ -186,6 +186,10 @@ struct MemberProfileView: View {
 						}
 						.foregroundStyle(.primary)
 						.accessibilityIdentifier("minister-contracts-link")
+						MinisterialExpensesSectionView(
+							ministerName: position.ministerName,
+							member: member
+						)
 					}
 
 					if member.email != nil || member.hillPhone != nil || member.constituencyPhone != nil || member.constituencyAddress != nil {
