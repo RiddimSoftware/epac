@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -398,7 +397,7 @@ func finalizeArtifact(ctx context.Context, cfg *runtimeConfig) error {
 	}
 	logPhase("s3_upload", "completed", time.Since(t).Milliseconds())
 
-	tableCounts, err := countTables(cfg.dbPath)
+	tableCounts, err := sqlite.CountTables(ctx, cfg.dbPath)
 	if err != nil {
 		logJSON(map[string]any{
 			"pipeline": "lobbying-index",
@@ -449,44 +448,6 @@ func buildMPLobbyingTables(ctx context.Context, cfg *runtimeConfig) error {
 	}
 	logPhase("aggregate_mp_lobbying", "completed", time.Since(t).Milliseconds())
 	return nil
-}
-
-func countTables(dbPath string) (map[string]int, error) {
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("open sqlite for table counts: %w", err)
-	}
-	defer db.Close()
-
-	// Names come from sqlite_master (not user input), so dynamic SQL is safe here.
-	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
-	if err != nil {
-		return nil, fmt.Errorf("list tables: %w", err)
-	}
-	defer rows.Close()
-
-	var tableNames []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan table name: %w", err)
-		}
-		tableNames = append(tableNames, name)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate tables: %w", err)
-	}
-
-	counts := make(map[string]int, len(tableNames))
-	for _, name := range tableNames {
-		var count int
-		if err := db.QueryRow("SELECT COUNT(*) FROM " + name).Scan(&count); err != nil { //nolint:gosec
-			counts[name] = -1
-			continue
-		}
-		counts[name] = count
-	}
-	return counts, nil
 }
 
 func loadTopicMap() ([]domain.TopicMapping, error) {

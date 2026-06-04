@@ -45,6 +45,7 @@ jobs:
           - estimates
           - health
           - lobbying
+          - lobbying-index
           - riding-boundary
           - calendar
           - config
