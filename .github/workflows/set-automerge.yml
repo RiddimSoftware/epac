@@ -1,8 +1,9 @@
 # Enable auto-merge (squash) on every newly opened PR.
 #
-# Uses GITHUB_TOKEN to flip the auto-merge flag — no dev bot credentials needed
-# because enabling auto-merge only sets a repository flag and does not author
-# any commit.
+# Uses the dev-bot GitHub App token to perform the merge so that the resulting
+# push event is not suppressed by GitHub's GITHUB_TOKEN loop-prevention. This
+# allows downstream workflows (e.g. backend-staging.yml) to fire normally on
+# the merge commit.
 
 name: Set Auto-Merge
 
@@ -22,9 +23,16 @@ jobs:
     timeout-minutes: 5
     if: ${{ !github.event.pull_request.draft }}
     steps:
+      - name: Generate dev-bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DEV_BOT_APP_ID }}
+          private-key: ${{ secrets.DEV_BOT_PRIVATE_KEY }}
+
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           set -euo pipefail
