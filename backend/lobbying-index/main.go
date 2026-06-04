@@ -34,6 +34,8 @@ const (
 )
 
 func HandleRequest(ctx context.Context) error {
+	pipelineStart := time.Now()
+
 	dbPath := strings.TrimSpace(os.Getenv("DB_PATH"))
 	if dbPath == "" {
 		dbPath = defaultDBPath
@@ -53,6 +55,8 @@ func HandleRequest(ctx context.Context) error {
 		return err
 	}
 
+	t := time.Now()
+	logPhase("s3_upload", "start", 0)
 	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("load AWS config: %w", err)
@@ -64,6 +68,7 @@ func HandleRequest(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("upload sqlite artifact: %w", err)
 	}
+	logPhase("s3_upload", "completed", time.Since(t).Milliseconds())
 
 	tableCounts, err := countTables(dbPath)
 	if err != nil {
@@ -89,12 +94,13 @@ func HandleRequest(ctx context.Context) error {
 	}
 
 	logJSON(map[string]any{
-		"pipeline":          "lobbying-index",
-		"event":             "artifact_uploaded",
-		"sqlite_key":        manifest.SQLiteKey,
-		"sqlite_size_bytes": manifest.SQLiteSizeBytes,
-		"sqlite_sha256":     manifest.SQLiteSHA256,
-		"table_counts":      manifest.TableCounts,
+		"pipeline":            "lobbying-index",
+		"event":               "artifact_uploaded",
+		"sqlite_key":          manifest.SQLiteKey,
+		"sqlite_size_bytes":   manifest.SQLiteSizeBytes,
+		"sqlite_sha256":       manifest.SQLiteSHA256,
+		"table_counts":        manifest.TableCounts,
+		"pipeline_elapsed_ms": time.Since(pipelineStart).Milliseconds(),
 	})
 
 	return nil
@@ -120,26 +126,36 @@ func build(ctx context.Context, dbPath string, parliament, session int) error {
 		return err
 	}
 
+	t := time.Now()
+	logPhase("ingest_ocl_data", "start", 0)
 	ingestResult, err := ingestUC.Execute(ctx)
 	if err != nil {
 		return err
 	}
 	logIngestResult(ingestResult)
+	logPhase("ingest_ocl_data", "completed", time.Since(t).Milliseconds())
 
+	t = time.Now()
+	logPhase("aggregate_mp_lobbying", "start", 0)
 	if err := aggregateMPLobbyingTables(dbPath, parliament); err != nil {
 		return err
 	}
+	logPhase("aggregate_mp_lobbying", "completed", time.Since(t).Milliseconds())
 
 	aggregator := sqlite.NewAggregator()
 	orgUC, err := usecase.NewBuildOrganizationTables(aggregator, dbPath)
 	if err != nil {
 		return err
 	}
+
+	t = time.Now()
+	logPhase("build_organization_tables", "start", 0)
 	orgResult, err := orgUC.Execute(ctx)
 	if err != nil {
 		return fmt.Errorf("build organization tables: %w", err)
 	}
 	logOrgResult(orgResult)
+	logPhase("build_organization_tables", "completed", time.Since(t).Milliseconds())
 
 	topicMap, err := loadTopicMap()
 	if err != nil {
@@ -156,22 +172,30 @@ func build(ctx context.Context, dbPath string, parliament, session int) error {
 	if err != nil {
 		return err
 	}
+
+	t = time.Now()
+	logPhase("build_bill_context_tables", "start", 0)
 	billResult, err := billUC.Execute(ctx)
 	if err != nil {
 		return fmt.Errorf("build bill context tables: %w", err)
 	}
 	logBillResult(billResult)
+	logPhase("build_bill_context_tables", "completed", time.Since(t).Milliseconds())
 
 	ministerUC, err := usecase.NewPreBakeMinisterCommunications(cabinetSource, aggregator, dbPath, parliament)
 	if err != nil {
 		return err
 	}
+
+	t = time.Now()
+	logPhase("prebake_minister_communications", "start", 0)
 	ministerResult, err := ministerUC.Execute(ctx)
 	if err != nil {
 		return fmt.Errorf("pre-bake minister communications: %w", err)
 	}
 	logMinisterResult(ministerResult)
 	logMinisterWarnings(ministerResult)
+	logPhase("prebake_minister_communications", "completed", time.Since(t).Milliseconds())
 
 	return nil
 }
@@ -309,6 +333,18 @@ func logMinisterWarnings(result usecase.PreBakeMinisterCommunicationsResult) {
 			"message":       "could not resolve member_id from members table; wrote portfolio rows with member_id=''",
 		})
 	}
+}
+
+func logPhase(phase, status string, elapsedMs int64) {
+	entry := map[string]any{
+		"pipeline": "lobbying-index",
+		"event":    "phase_" + status,
+		"phase":    phase,
+	}
+	if status == "completed" {
+		entry["elapsed_ms"] = elapsedMs
+	}
+	logJSON(entry)
 }
 
 func logJSON(payload map[string]any) {
