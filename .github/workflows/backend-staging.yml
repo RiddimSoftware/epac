@@ -296,6 +296,7 @@ jobs:
   provision-lobbying-index:
     name: Provision staging lobbying-index Lambda
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
 
