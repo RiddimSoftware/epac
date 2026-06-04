@@ -1,13 +1,14 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"epac/lobbying-index/internal/usecase"
 
 	_ "modernc.org/sqlite"
 )
@@ -19,14 +20,8 @@ type fixedClock struct {
 func (c fixedClock) Now() time.Time { return c.now }
 
 func TestAggregationRunnerBuildsMPLobbyingReadTables(t *testing.T) {
-	db, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	defer db.Close()
-
-	execSQL(t, db, rawFixtureSchemaSQL)
-	execSQL(t, db, rawFixtureDataSQL)
+	dbPath := filepath.Join(t.TempDir(), "mp_lobbying.sqlite")
+	seedMPLobbyingFixture(t, dbPath)
 
 	quarterStart := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	quarterEnd := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
@@ -36,9 +31,15 @@ func TestAggregationRunnerBuildsMPLobbyingReadTables(t *testing.T) {
 		WithClock(fixedClock{now: time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)}),
 	)
 
-	if err := usecase.BuildMPLobbyingTables(db, runner); err != nil {
+	if err := runner.BuildMPLobbyingTables(context.Background(), dbPath); err != nil {
 		t.Fatalf("build MP lobbying tables: %v", err)
 	}
+
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open result db: %v", err)
+	}
+	defer db.Close()
 
 	var timelineRows int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM mp_lobbying_timeline_entries WHERE member_id = '1'`).Scan(&timelineRows); err != nil {
@@ -135,6 +136,51 @@ WHERE parliament = 45 AND party IS NULL`).Scan(&nationalAverage); err != nil {
 	if !nearlyEqual(nationalAverage, 3.0) {
 		t.Fatalf("expected national cohort average 3.0, got %f", nationalAverage)
 	}
+}
+
+func TestAggregationRunnerOwnsDatabaseHandle(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "mp_lobbying.sqlite")
+	seedMPLobbyingFixture(t, dbPath)
+
+	runner := NewAggregationRunner(
+		WithParliament(45),
+		WithClock(fixedClock{now: time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)}),
+	)
+
+	if err := runner.BuildMPLobbyingTables(context.Background(), dbPath); err != nil {
+		t.Fatalf("build MP lobbying tables: %v", err)
+	}
+
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		t.Fatalf("expected aggregator to create the database file: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Fatalf("expected database file to be populated, got 0 bytes")
+	}
+
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("expected reopened sqlite handle, got error: %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		t.Fatalf("ping reopened sqlite: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close reopened sqlite: %v", err)
+	}
+}
+
+func seedMPLobbyingFixture(t *testing.T, dbPath string) {
+	t.Helper()
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open seed db: %v", err)
+	}
+	defer db.Close()
+
+	execSQL(t, db, rawFixtureSchemaSQL)
+	execSQL(t, db, rawFixtureDataSQL)
 }
 
 func execSQL(t *testing.T, db *sql.DB, statement string) {

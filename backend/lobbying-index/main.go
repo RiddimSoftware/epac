@@ -229,7 +229,7 @@ func runBuildMPLobbyingTables(ctx context.Context, cfg *runtimeConfig) error {
 	if err := cfg.downloadPriorPhase(ctx, phaseBuildMPLobbyingTables); err != nil {
 		return err
 	}
-	if err := aggregateMPLobbyingTables(cfg.dbPath, cfg.parliament); err != nil {
+	if err := buildMPLobbyingTables(ctx, cfg); err != nil {
 		return err
 	}
 	return cfg.uploadPhaseOutput(ctx, phaseBuildMPLobbyingTables)
@@ -280,7 +280,7 @@ func runAll(ctx context.Context, cfg *runtimeConfig) error {
 	if err := ingestOCLData(ctx, cfg); err != nil {
 		return err
 	}
-	if err := aggregateMPLobbyingTables(cfg.dbPath, cfg.parliament); err != nil {
+	if err := buildMPLobbyingTables(ctx, cfg); err != nil {
 		return err
 	}
 	if err := buildOrganizationTables(ctx, cfg); err != nil {
@@ -436,22 +436,16 @@ func newHTTPClient() *http.Client {
 	return &http.Client{Timeout: 45 * time.Second}
 }
 
-func aggregateMPLobbyingTables(dbPath string, parliament int) error {
-	db, err := sql.Open("sqlite", dbPath)
+func buildMPLobbyingTables(ctx context.Context, cfg *runtimeConfig) error {
+	aggregationRunner := sqlite.NewAggregationRunner(sqlite.WithParliament(cfg.parliament))
+	mpUC, err := usecase.NewBuildMPLobbyingTables(aggregationRunner, cfg.dbPath)
 	if err != nil {
-		return fmt.Errorf("open sqlite for MP lobbying aggregation: %w", err)
+		return err
 	}
-	defer db.Close()
-
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		return fmt.Errorf("enable foreign keys for MP lobbying aggregation: %w", err)
-	}
-
-	aggregationRunner := sqlite.NewAggregationRunner(sqlite.WithParliament(parliament))
 	t := time.Now()
 	logPhase("aggregate_mp_lobbying", "start", 0)
-	if err := usecase.BuildMPLobbyingTables(db, aggregationRunner); err != nil {
-		return err
+	if _, err := mpUC.Execute(ctx); err != nil {
+		return fmt.Errorf("build MP lobbying tables: %w", err)
 	}
 	logPhase("aggregate_mp_lobbying", "completed", time.Since(t).Milliseconds())
 	return nil
