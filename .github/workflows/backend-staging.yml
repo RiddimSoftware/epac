@@ -298,7 +298,7 @@ jobs:
           echo "| Lambda permission (apigw-invoke-lobbying) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
   provision-lobbying-index:
-    name: Provision staging lobbying-index Lambda
+    name: Provision staging lobbying-index Lambda and state machine
     runs-on: ubuntu-latest
 
     steps:
@@ -310,12 +310,21 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Provision lobbying-index Lambda
+      - name: Provision lobbying-index Lambda and state machine
         env:
+          LOBBYING_INDEX_FUNCTION_NAME: epac-lobbying-index-staging
+          LOBBYING_INDEX_STATE_MACHINE_NAME: epac-lobbying-index-staging
+          LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME: epac-lobbying-index-staging-state-machine-role
           LAMBDA_ROLE: arn:aws:iam::227530433709:role/epac-lambda-role
           ACCOUNT_ID: '227530433709'
         run: |
           set -euo pipefail
+
+          echo "Provisioning staging lobbying-index Lambda and Step Functions state machine"
+
+          LOBBYING_INDEX_LAMBDA_ARN="arn:aws:lambda:us-east-1:${ACCOUNT_ID}:function:${LOBBYING_INDEX_FUNCTION_NAME}"
+          STATE_MACHINE_ARN="arn:aws:states:us-east-1:${ACCOUNT_ID}:stateMachine:${LOBBYING_INDEX_STATE_MACHINE_NAME}"
+          STATE_MACHINE_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME}"
 
           {
             echo "## Provision staging lobbying-index resources"
@@ -324,10 +333,11 @@ jobs:
             echo "|----------|---------|"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # --- epac-lobbying-index-staging Lambda ---
-          if ! aws lambda get-function --function-name epac-lobbying-index-staging > /dev/null 2>&1; then
+          # --- epac-lobbying-index-staging Lambda (one 900 s budget per state-machine phase) ---
+          echo "Ensuring ${LOBBYING_INDEX_FUNCTION_NAME} Lambda has 900 s timeout and 4096 MB memory"
+          if ! aws lambda get-function --function-name "$LOBBYING_INDEX_FUNCTION_NAME" > /dev/null 2>&1; then
             aws lambda create-function \
-              --function-name epac-lobbying-index-staging \
+              --function-name "$LOBBYING_INDEX_FUNCTION_NAME" \
               --runtime provided.al2023 \
               --handler bootstrap \
               --architectures arm64 \
@@ -335,17 +345,94 @@ jobs:
               --zip-file fileb://infra/placeholder.zip \
               --timeout 900 \
               --memory-size 4096
-            aws lambda wait function-active-v2 --function-name epac-lobbying-index-staging
-            echo "| epac-lobbying-index-staging | created |" >> "$GITHUB_STEP_SUMMARY"
+            aws lambda wait function-active-v2 --function-name "$LOBBYING_INDEX_FUNCTION_NAME"
+            echo "| ${LOBBYING_INDEX_FUNCTION_NAME} Lambda | created with 900 s timeout / 4096 MB |" >> "$GITHUB_STEP_SUMMARY"
           else
             aws lambda update-function-configuration \
-              --function-name epac-lobbying-index-staging \
+              --function-name "$LOBBYING_INDEX_FUNCTION_NAME" \
               --timeout 900 \
               --memory-size 4096 \
               >/dev/null
-            aws lambda wait function-updated --function-name epac-lobbying-index-staging
-            echo "| epac-lobbying-index-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
+            aws lambda wait function-updated --function-name "$LOBBYING_INDEX_FUNCTION_NAME"
+            echo "| ${LOBBYING_INDEX_FUNCTION_NAME} Lambda | already existed, per-phase config ensured |" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+          # --- Step Functions execution role (states.amazonaws.com -> Lambda invoke) ---
+          echo "Ensuring ${LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME} can be assumed by Step Functions and invoke the Lambda"
+          TRUST_POLICY=$(jq -cn '{
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Principal: {Service: "states.amazonaws.com"},
+                Action: "sts:AssumeRole"
+              }
+            ]
+          }')
+          INVOKE_POLICY=$(jq -cn --arg lambda_arn "$LOBBYING_INDEX_LAMBDA_ARN" '{
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Sid: "InvokeLobbyingIndexLambda",
+                Effect: "Allow",
+                Action: "lambda:InvokeFunction",
+                Resource: [$lambda_arn, ($lambda_arn + ":*")]
+              }
+            ]
+          }')
+
+          if ! aws iam get-role --role-name "$LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME" > /dev/null 2>&1; then
+            aws iam create-role \
+              --role-name "$LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME" \
+              --assume-role-policy-document "$TRUST_POLICY" \
+              >/dev/null
+            aws iam wait role-exists --role-name "$LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME"
+            echo "| ${LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME} | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            aws iam update-assume-role-policy \
+              --role-name "$LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME" \
+              --policy-document "$TRUST_POLICY" \
+              >/dev/null
+            echo "| ${LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME} | already existed, trust ensured |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          aws iam put-role-policy \
+            --role-name "$LOBBYING_INDEX_STATE_MACHINE_ROLE_NAME" \
+            --policy-name EpacLobbyingIndexInvokeLambda \
+            --policy-document "$INVOKE_POLICY" \
+            >/dev/null
+          echo "| Step Functions Lambda invoke policy | ensured |" >> "$GITHUB_STEP_SUMMARY"
+
+          # IAM role/policy propagation is eventually consistent.
+          echo "Waiting 10 s for IAM role and policy propagation"
+          sleep 10
+
+          echo "Rendering infra/lobbying-index.asl.json for ${LOBBYING_INDEX_LAMBDA_ARN}"
+          STATE_MACHINE_DEFINITION=$(jq -c \
+            --arg lambda_arn "$LOBBYING_INDEX_LAMBDA_ARN" \
+            '(.States[] | select(.Type == "Task") | .Parameters.FunctionName) = $lambda_arn' \
+            infra/lobbying-index.asl.json)
+
+          # --- epac-lobbying-index-staging Step Functions state machine ---
+          echo "Ensuring ${LOBBYING_INDEX_STATE_MACHINE_NAME} Step Functions state machine exists"
+          if ! aws stepfunctions describe-state-machine --state-machine-arn "$STATE_MACHINE_ARN" > /dev/null 2>&1; then
+            aws stepfunctions create-state-machine \
+              --name "$LOBBYING_INDEX_STATE_MACHINE_NAME" \
+              --definition "$STATE_MACHINE_DEFINITION" \
+              --role-arn "$STATE_MACHINE_ROLE_ARN" \
+              --type STANDARD \
+              >/dev/null
+            echo "| ${LOBBYING_INDEX_STATE_MACHINE_NAME} state machine | created |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            aws stepfunctions update-state-machine \
+              --state-machine-arn "$STATE_MACHINE_ARN" \
+              --definition "$STATE_MACHINE_DEFINITION" \
+              --role-arn "$STATE_MACHINE_ROLE_ARN" \
+              >/dev/null
+            echo "| ${LOBBYING_INDEX_STATE_MACHINE_NAME} state machine | updated |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "Provisioned staging lobbying-index Lambda and Step Functions state machine"
 
   deploy:
     name: Deploy ${{ matrix.service }} to staging
