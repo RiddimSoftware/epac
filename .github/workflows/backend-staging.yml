@@ -1,18 +1,10 @@
 name: Backend Staging Deploy
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-staging.yml'
-      - 'scripts/ci/backend_staging_smoke.py'
-      - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
-  workflow_run:
-    workflows: ["PR Build"]
-    types: [completed]
-    branches: [main]
 
 concurrency:
   group: backend-staging-deploy
@@ -26,7 +18,7 @@ jobs:
   prepare:
     name: Resolve backend service manifest
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     outputs:
       services: ${{ steps.resolve.outputs.services }}
       database_services: ${{ steps.resolve.outputs.database_services }}
@@ -54,7 +46,7 @@ jobs:
   provision-search:
     name: Provision staging search Lambdas and API route
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -209,6 +201,7 @@ jobs:
   provision-lobbying:
     name: Provision staging lobbying Lambda and API routes
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -353,6 +346,7 @@ jobs:
     name: Deploy ${{ matrix.service }} to staging
     needs: [prepare, provision-search, provision-lobbying, provision-lobbying-index]
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -512,6 +506,7 @@ jobs:
     name: Smoke test staging backend
     runs-on: ubuntu-latest
     needs: deploy
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     env:
       STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL || 'https://staging-api.epac.riddimsoftware.com' }}
     steps:
