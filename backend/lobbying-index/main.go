@@ -33,32 +33,28 @@ const (
 	defaultDBPath    = "/tmp/lobbying-index.sqlite"
 	defaultUserAgent = "epac-lobbying-index/1.0 (+https://riddimsoftware.com; contact: sunny@riddimsoftware.com)"
 
-	// Phase identifiers accepted in the Lambda event payload.
-	phaseIngestOCLData                = "IngestOCLData"
-	phaseBuildMPLobbying              = "BuildMPLobbying"
-	phaseBuildOrganizationTables      = "BuildOrganizationTables"
-	phaseBuildBillContextTables       = "BuildBillContextTables"
+	// Phase identifiers accepted through the PHASE environment variable.
+	phaseIngestOCLData                 = "IngestOCLData"
+	phaseBuildMPLobbyingTables         = "BuildMPLobbyingTables"
+	phaseBuildOrganizationTables       = "BuildOrganizationTables"
+	phaseBuildBillContextTables        = "BuildBillContextTables"
 	phasePreBakeMinisterCommunications = "PreBakeMinisterCommunications"
-	phaseFinalize                     = "Finalize"
-	phaseAll                          = "All"
+	phaseFinalize                      = "Finalize"
+	phaseAll                           = "all"
 )
-
-// Event is the Lambda invocation payload. Step Functions and direct invokers
-// pass a phase identifier; All preserves the legacy whole-pipeline behavior.
-type Event struct {
-	Phase string `json:"phase"`
-}
 
 // phaseOrder is the linear pipeline order. Each phase reads the previous
 // phase's intermediate artifact and writes its own under <prefix>/tmp/.
 var phaseOrder = []string{
 	phaseIngestOCLData,
-	phaseBuildMPLobbying,
+	phaseBuildMPLobbyingTables,
 	phaseBuildOrganizationTables,
 	phaseBuildBillContextTables,
 	phasePreBakeMinisterCommunications,
 	phaseFinalize,
 }
+
+var knownPhases = append(append([]string{}, phaseOrder...), phaseAll)
 
 // previousPhase returns the phase whose intermediate output feeds the given
 // phase. Returns empty string if the phase has no predecessor.
@@ -71,10 +67,10 @@ func previousPhase(phase string) string {
 	return ""
 }
 
-func HandleRequest(ctx context.Context, event Event) error {
-	phase := strings.TrimSpace(event.Phase)
-	if phase == "" {
-		return fmt.Errorf("phase is required; pass {\"phase\":\"<name>\"} (one of: %s)", strings.Join(validPhases(), ", "))
+func HandleRequest(ctx context.Context) error {
+	phase := strings.TrimSpace(os.Getenv("PHASE"))
+	if err := validatePhase(phase, phaseRunners(nil)); err != nil {
+		return err
 	}
 
 	cfg, err := loadRuntimeConfig(ctx)
@@ -89,41 +85,14 @@ func HandleRequest(ctx context.Context, event Event) error {
 		"dbPath":   cfg.dbPath,
 	})
 
-	switch phase {
-	case phaseIngestOCLData:
-		return runIngestOCLData(ctx, cfg)
-	case phaseBuildMPLobbying:
-		return runBuildMPLobbying(ctx, cfg)
-	case phaseBuildOrganizationTables:
-		return runBuildOrganizationTables(ctx, cfg)
-	case phaseBuildBillContextTables:
-		return runBuildBillContextTables(ctx, cfg)
-	case phasePreBakeMinisterCommunications:
-		return runPreBakeMinisterCommunications(ctx, cfg)
-	case phaseFinalize:
-		return runFinalize(ctx, cfg)
-	case phaseAll:
-		return runAll(ctx, cfg)
-	default:
-		return fmt.Errorf("unknown phase %q; valid phases: %s", phase, strings.Join(validPhases(), ", "))
-	}
+	return dispatchPhase(ctx, phase, phaseRunners(cfg))
 }
 
-func validPhases() []string {
-	out := append([]string{}, phaseOrder...)
-	out = append(out, phaseAll)
-	sort.Strings(out)
-	return out
-}
-
-// runtimeConfig holds the resolved environment-driven configuration that
-// every phase entry point needs.
 type runtimeConfig struct {
 	dbPath     string
 	parliament int
 	session    int
 	store      *s3adapter.Store
-	httpClient *http.Client
 }
 
 func loadRuntimeConfig(ctx context.Context) (*runtimeConfig, error) {
@@ -136,7 +105,6 @@ func loadRuntimeConfig(ctx context.Context) (*runtimeConfig, error) {
 	if bucket == "" {
 		return nil, fmt.Errorf("EPAC_ARTIFACT_BUCKET is required")
 	}
-
 	prefix := strings.TrimSpace(os.Getenv("LOBBYING_INDEX_PREFIX"))
 
 	awsCfg, err := config.LoadDefaultConfig(ctx)
@@ -150,8 +118,60 @@ func loadRuntimeConfig(ctx context.Context) (*runtimeConfig, error) {
 		parliament: envInt("PARLIAMENT_NUM", 45),
 		session:    envInt("SESSION_NUM", 1),
 		store:      store,
-		httpClient: &http.Client{Timeout: 45 * time.Second},
 	}, nil
+}
+
+func phaseRunners(cfg *runtimeConfig) map[string]func(context.Context) error {
+	return map[string]func(context.Context) error{
+		phaseIngestOCLData: func(ctx context.Context) error {
+			return runIngestOCLData(ctx, cfg)
+		},
+		phaseBuildMPLobbyingTables: func(ctx context.Context) error {
+			return runBuildMPLobbyingTables(ctx, cfg)
+		},
+		phaseBuildOrganizationTables: func(ctx context.Context) error {
+			return runBuildOrganizationTables(ctx, cfg)
+		},
+		phaseBuildBillContextTables: func(ctx context.Context) error {
+			return runBuildBillContextTables(ctx, cfg)
+		},
+		phasePreBakeMinisterCommunications: func(ctx context.Context) error {
+			return runPreBakeMinisterCommunications(ctx, cfg)
+		},
+		phaseFinalize: func(ctx context.Context) error {
+			return runFinalize(ctx, cfg)
+		},
+		phaseAll: func(ctx context.Context) error {
+			return runAll(ctx, cfg)
+		},
+	}
+}
+
+func dispatchPhase(ctx context.Context, phase string, runners map[string]func(context.Context) error) error {
+	if err := validatePhase(phase, runners); err != nil {
+		return err
+	}
+	return runners[strings.TrimSpace(phase)](ctx)
+}
+
+func validatePhase(phase string, runners map[string]func(context.Context) error) error {
+	phase = strings.TrimSpace(phase)
+	if phase == "" {
+		return fmt.Errorf("PHASE is required; valid phases: %s", strings.Join(validPhaseNames(runners), ", "))
+	}
+	if runners[phase] == nil {
+		return fmt.Errorf("unknown PHASE %q; valid phases: %s", phase, strings.Join(validPhaseNames(runners), ", "))
+	}
+	return nil
+}
+
+func validPhaseNames(runners map[string]func(context.Context) error) []string {
+	names := make([]string, 0, len(runners))
+	for name := range runners {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // downloadPriorPhase pulls the previous phase's intermediate working SQLite
@@ -205,14 +225,14 @@ func runIngestOCLData(ctx context.Context, cfg *runtimeConfig) error {
 	return cfg.uploadPhaseOutput(ctx, phaseIngestOCLData)
 }
 
-func runBuildMPLobbying(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseBuildMPLobbying); err != nil {
+func runBuildMPLobbyingTables(ctx context.Context, cfg *runtimeConfig) error {
+	if err := cfg.downloadPriorPhase(ctx, phaseBuildMPLobbyingTables); err != nil {
 		return err
 	}
 	if err := aggregateMPLobbyingTables(cfg.dbPath, cfg.parliament); err != nil {
 		return err
 	}
-	return cfg.uploadPhaseOutput(ctx, phaseBuildMPLobbying)
+	return cfg.uploadPhaseOutput(ctx, phaseBuildMPLobbyingTables)
 }
 
 func runBuildOrganizationTables(ctx context.Context, cfg *runtimeConfig) error {
@@ -252,10 +272,10 @@ func runFinalize(ctx context.Context, cfg *runtimeConfig) error {
 	return finalizeArtifact(ctx, cfg)
 }
 
-// runAll preserves the legacy single-invocation whole-pipeline behavior so
-// the builder can be exercised end-to-end locally without standing up the
-// Step Function. It bypasses the intermediate-transfer round trips and
-// publishes the same final artifact + manifest the old HandleRequest did.
+// runAll is a local-development-only PHASE=all escape hatch. Production
+// orchestration should invoke the named phases above through Step Functions.
+// It bypasses the intermediate-transfer round trips and publishes the same
+// final artifact + manifest the old HandleRequest did.
 func runAll(ctx context.Context, cfg *runtimeConfig) error {
 	if err := ingestOCLData(ctx, cfg); err != nil {
 		return err
@@ -276,9 +296,10 @@ func runAll(ctx context.Context, cfg *runtimeConfig) error {
 }
 
 func ingestOCLData(ctx context.Context, cfg *runtimeConfig) error {
-	fetcher := ocl.NewFetcher(ocl.WithHTTPClient(cfg.httpClient), ocl.WithUserAgent(defaultUserAgent))
-	memberSource := mycommons.NewFetcher(mycommons.WithHTTPClient(cfg.httpClient), mycommons.WithUserAgent(defaultUserAgent))
-	subjectSource := subjects.NewFetcher(subjects.WithHTTPClient(cfg.httpClient), subjects.WithUserAgent(defaultUserAgent))
+	client := newHTTPClient()
+	fetcher := ocl.NewFetcher(ocl.WithHTTPClient(client), ocl.WithUserAgent(defaultUserAgent))
+	memberSource := mycommons.NewFetcher(mycommons.WithHTTPClient(client), mycommons.WithUserAgent(defaultUserAgent))
+	subjectSource := subjects.NewFetcher(subjects.WithHTTPClient(client), subjects.WithUserAgent(defaultUserAgent))
 	writer := sqlite.NewWriter()
 
 	ingestUC, err := usecase.NewIngestOCLData(
@@ -320,6 +341,7 @@ func buildOrganizationTables(ctx context.Context, cfg *runtimeConfig) error {
 }
 
 func buildBillContextTables(ctx context.Context, cfg *runtimeConfig) error {
+	client := newHTTPClient()
 	aggregator := sqlite.NewAggregator()
 	topicMap, err := loadTopicMap()
 	if err != nil {
@@ -330,7 +352,7 @@ func buildBillContextTables(ctx context.Context, cfg *runtimeConfig) error {
 			"error":    err.Error(),
 		})
 	}
-	legisFetcher := legisinfo.NewFetcher(legisinfo.WithHTTPClient(cfg.httpClient), legisinfo.WithUserAgent(defaultUserAgent))
+	legisFetcher := legisinfo.NewFetcher(legisinfo.WithHTTPClient(client), legisinfo.WithUserAgent(defaultUserAgent))
 	billUC, err := usecase.NewBuildBillContextTables(legisFetcher, aggregator, topicMap, cfg.dbPath, cfg.parliament, cfg.session)
 	if err != nil {
 		return err
@@ -347,8 +369,9 @@ func buildBillContextTables(ctx context.Context, cfg *runtimeConfig) error {
 }
 
 func preBakeMinisterCommunications(ctx context.Context, cfg *runtimeConfig) error {
+	client := newHTTPClient()
 	aggregator := sqlite.NewAggregator()
-	cabinetSource := cabinet.NewFetcher(cabinet.WithHTTPClient(cfg.httpClient), cabinet.WithUserAgent(defaultUserAgent))
+	cabinetSource := cabinet.NewFetcher(cabinet.WithHTTPClient(client), cabinet.WithUserAgent(defaultUserAgent))
 	ministerUC, err := usecase.NewPreBakeMinisterCommunications(cabinetSource, aggregator, cfg.dbPath, cfg.parliament)
 	if err != nil {
 		return err
@@ -407,6 +430,10 @@ func finalizeArtifact(ctx context.Context, cfg *runtimeConfig) error {
 		"table_counts":      manifest.TableCounts,
 	})
 	return nil
+}
+
+func newHTTPClient() *http.Client {
+	return &http.Client{Timeout: 45 * time.Second}
 }
 
 func aggregateMPLobbyingTables(dbPath string, parliament int) error {
@@ -578,5 +605,5 @@ func envInt(name string, fallback int) int {
 }
 
 func main() {
-	lambda.Start(observability.WrapEvent("lobbying-index", HandleRequest))
+	lambda.Start(observability.WrapNoEvent("lobbying-index", HandleRequest))
 }
