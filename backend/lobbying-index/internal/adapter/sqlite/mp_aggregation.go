@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -89,26 +90,40 @@ func WithSourceURL(sourceURL string) AggregationOption {
 	}
 }
 
-func (r *AggregationRunner) BuildMPLobbyingTables(db *sql.DB) error {
-	if db == nil {
-		return fmt.Errorf("database is required")
+// BuildMPLobbyingTables opens the SQLite database at databasePath, enables
+// foreign keys, runs the MP lobbying aggregation pipeline, and closes the
+// database before returning.
+func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databasePath string) error {
+	if strings.TrimSpace(databasePath) == "" {
+		databasePath = DefaultDatabasePath
 	}
-	if err := r.defaultQuarter(db); err != nil {
+
+	db, err := sql.Open("sqlite", databasePath)
+	if err != nil {
+		return fmt.Errorf("open sqlite for MP lobbying aggregation: %w", err)
+	}
+	defer db.Close()
+
+	if _, err := db.ExecContext(ctx, "PRAGMA foreign_keys = ON"); err != nil {
+		return fmt.Errorf("enable foreign keys for MP lobbying aggregation: %w", err)
+	}
+
+	if err := r.defaultQuarter(ctx, db); err != nil {
 		return err
 	}
 
-	tx, err := db.Begin()
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin MP lobbying aggregation: %w", err)
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(readModelSchemaSQL); err != nil {
+	if _, err := tx.ExecContext(ctx, readModelSchemaSQL); err != nil {
 		return fmt.Errorf("create MP lobbying read-model schema: %w", err)
 	}
 
 	updatedAt := r.clock.Now().UTC().Format(time.RFC3339)
-	if _, err := tx.Exec(refreshTimelineSQL,
+	if _, err := tx.ExecContext(ctx, refreshTimelineSQL,
 		r.parliament,
 		dateParam(r.fromDate),
 		dateParam(r.toDate),
@@ -119,12 +134,12 @@ func (r *AggregationRunner) BuildMPLobbyingTables(db *sql.DB) error {
 	}
 
 	for _, window := range []string{window30D, window3M, window12M, windowAll} {
-		if err := r.refreshWindow(tx, window, updatedAt); err != nil {
+		if err := r.refreshWindow(ctx, tx, window, updatedAt); err != nil {
 			return err
 		}
 	}
 
-	if err := r.refreshCohortAverages(tx, updatedAt); err != nil {
+	if err := r.refreshCohortAverages(ctx, tx, updatedAt); err != nil {
 		return err
 	}
 
@@ -134,13 +149,13 @@ func (r *AggregationRunner) BuildMPLobbyingTables(db *sql.DB) error {
 	return nil
 }
 
-func (r *AggregationRunner) defaultQuarter(db *sql.DB) error {
+func (r *AggregationRunner) defaultQuarter(ctx context.Context, db *sql.DB) error {
 	if !r.quarterStart.IsZero() && !r.quarterEnd.IsZero() {
 		return nil
 	}
 
 	var maxDate sql.NullString
-	if err := db.QueryRow(`
+	if err := db.QueryRowContext(ctx, `
 SELECT MAX(date(NULLIF(NULLIF(CAST(comm_date AS TEXT), 'null'), '')))
 FROM ocl_communication_primary
 WHERE NULLIF(NULLIF(CAST(comm_date AS TEXT), 'null'), '') IS NOT NULL`).Scan(&maxDate); err != nil {
@@ -162,16 +177,16 @@ WHERE NULLIF(NULLIF(CAST(comm_date AS TEXT), 'null'), '') IS NOT NULL`).Scan(&ma
 	return nil
 }
 
-func (r *AggregationRunner) refreshWindow(tx *sql.Tx, window, updatedAt string) error {
+func (r *AggregationRunner) refreshWindow(ctx context.Context, tx *sql.Tx, window, updatedAt string) error {
 	fromDate := windowStart(window, r.quarterEnd)
-	if _, err := tx.Exec(`
+	if _, err := tx.ExecContext(ctx, `
 DELETE FROM mp_lobbying_summaries
 WHERE parliament = ? AND quarter_start = ? AND "window" = ?`,
 		r.parliament, formatDate(r.quarterStart), window); err != nil {
 		return fmt.Errorf("delete MP lobbying summaries for %s: %w", window, err)
 	}
 
-	if _, err := tx.Exec(refreshSummarySQL,
+	if _, err := tx.ExecContext(ctx, refreshSummarySQL,
 		r.parliament,
 		formatDate(r.quarterStart),
 		formatDate(r.quarterEnd),
@@ -182,14 +197,14 @@ WHERE parliament = ? AND quarter_start = ? AND "window" = ?`,
 		return fmt.Errorf("refresh MP lobbying summaries for %s: %w", window, err)
 	}
 
-	if _, err := tx.Exec(`
+	if _, err := tx.ExecContext(ctx, `
 DELETE FROM mp_lobbying_subject_breakdowns
 WHERE parliament = ? AND quarter_start = ? AND "window" = ?`,
 		r.parliament, formatDate(r.quarterStart), window); err != nil {
 		return fmt.Errorf("delete MP lobbying subject breakdowns for %s: %w", window, err)
 	}
 
-	if _, err := tx.Exec(refreshSubjectBreakdownSQL,
+	if _, err := tx.ExecContext(ctx, refreshSubjectBreakdownSQL,
 		r.parliament,
 		formatDate(r.quarterStart),
 		formatDate(r.quarterEnd),
@@ -202,13 +217,13 @@ WHERE parliament = ? AND quarter_start = ? AND "window" = ?`,
 	return nil
 }
 
-func (r *AggregationRunner) refreshCohortAverages(tx *sql.Tx, computedAt string) error {
-	if _, err := tx.Exec(`
+func (r *AggregationRunner) refreshCohortAverages(ctx context.Context, tx *sql.Tx, computedAt string) error {
+	if _, err := tx.ExecContext(ctx, `
 DELETE FROM lobbying_cohort_averages
 WHERE parliament = ?`, r.parliament); err != nil {
 		return fmt.Errorf("delete lobbying cohort averages: %w", err)
 	}
-	if _, err := tx.Exec(refreshCohortAveragesSQL, r.parliament, computedAt); err != nil {
+	if _, err := tx.ExecContext(ctx, refreshCohortAveragesSQL, r.parliament, computedAt); err != nil {
 		return fmt.Errorf("refresh lobbying cohort averages: %w", err)
 	}
 	return nil
