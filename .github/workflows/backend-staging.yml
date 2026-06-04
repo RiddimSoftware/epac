@@ -334,14 +334,14 @@ jobs:
               --role "$LAMBDA_ROLE" \
               --zip-file fileb://infra/placeholder.zip \
               --timeout 900 \
-              --memory-size 1024
+              --memory-size 4096
             aws lambda wait function-active-v2 --function-name epac-lobbying-index-staging
             echo "| epac-lobbying-index-staging | created |" >> "$GITHUB_STEP_SUMMARY"
           else
             aws lambda update-function-configuration \
               --function-name epac-lobbying-index-staging \
               --timeout 900 \
-              --memory-size 1024 \
+              --memory-size 4096 \
               >/dev/null
             aws lambda wait function-updated --function-name epac-lobbying-index-staging
             echo "| epac-lobbying-index-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
