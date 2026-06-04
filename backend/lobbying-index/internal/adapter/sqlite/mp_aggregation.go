@@ -94,11 +94,11 @@ func WithSourceURL(sourceURL string) AggregationOption {
 // foreign keys, runs the MP lobbying aggregation pipeline, and closes the
 // database before returning.
 func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databasePath string) error {
-	if strings.TrimSpace(databasePath) == "" {
-		databasePath = DefaultDatabasePath
+	path := strings.TrimSpace(databasePath)
+	if path == "" {
+		path = DefaultDatabasePath
 	}
-
-	db, err := sql.Open("sqlite", databasePath)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return fmt.Errorf("open sqlite for MP lobbying aggregation: %w", err)
 	}

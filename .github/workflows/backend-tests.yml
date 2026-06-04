@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lambda: [_shared, daily-fetch, loader, members, sittings, bills, member-content, member-lobbying, member-speeches, member-speeches-publisher, member-votes, member-votes-publisher, on-this-day, estimates, lobbying, riding-boundary, calendar, config, toronto-council, openapi, hansard-subjects-index, hansard-search-index, members-publisher, sittings-publisher, bills-publisher]
+        lambda: [_shared, daily-fetch, loader, members, sittings, bills, member-content, member-lobbying, member-speeches, member-speeches-publisher, member-votes, member-votes-publisher, on-this-day, estimates, lobbying, lobbying-index, riding-boundary, calendar, config, toronto-council, openapi, hansard-subjects-index, hansard-search-index, members-publisher, sittings-publisher, bills-publisher]
     name: Test ${{ matrix.lambda }}
     steps:
       - uses: actions/checkout@v4
