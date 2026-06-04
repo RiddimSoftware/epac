@@ -50,7 +50,7 @@ jobs:
 
           aws lambda invoke \
             --function-name "$FUNCTION_NAME" \
-            --payload '{}' \
+            --payload '{"phase":"All"}' \
             --cli-binary-format raw-in-base64-out \
             --cli-read-timeout 0 \
             /tmp/lobbying-reindex.out.json \
