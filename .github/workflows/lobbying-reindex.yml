@@ -34,45 +34,90 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENVIRONMENT: ${{ inputs.environment || 'production' }}
-      FUNCTION_NAME: epac-lobbying-index-${{ inputs.environment || 'production' }}
+      STATE_MACHINE_ARN: arn:aws:states:us-east-1:227530433709:stateMachine:epac-lobbying-index-${{ inputs.environment || 'production' }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ (inputs.environment || 'production') == 'production' && secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN || secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Invoke indexer
+      - name: Start execution
+        id: start
+        run: |
+          set -euo pipefail
+          EXECUTION_ARN=$(aws stepfunctions start-execution \
+            --state-machine-arn "$STATE_MACHINE_ARN" \
+            --input '{}' \
+            --query 'executionArn' \
+            --output text)
+          echo "execution_arn=$EXECUTION_ARN" >> "$GITHUB_OUTPUT"
+          echo "Started execution: $EXECUTION_ARN"
+
+      - name: Poll to completion
+        env:
+          EXECUTION_ARN: ${{ steps.start.outputs.execution_arn }}
         run: |
           set -euo pipefail
 
-          aws lambda invoke \
-            --function-name "$FUNCTION_NAME" \
-            --payload '{"phase":"All"}' \
-            --cli-binary-format raw-in-base64-out \
-            --cli-read-timeout 0 \
-            /tmp/lobbying-reindex.out.json \
-            > /tmp/lobbying-reindex.invoke.json
+          POLL_INTERVAL=30
+          MAX_WAIT=3600
+          ELAPSED=0
+
+          while [ "$ELAPSED" -lt "$MAX_WAIT" ]; do
+            RESULT=$(aws stepfunctions describe-execution \
+              --execution-arn "$EXECUTION_ARN" \
+              --output json)
+            STATUS=$(echo "$RESULT" | jq -r '.status')
+            echo "[${ELAPSED}s] status=$STATUS"
+
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              OUTPUT_RAW=$(echo "$RESULT" | jq -r '.output // "{}"')
+              OUTPUT=$(echo "$OUTPUT_RAW" | jq . 2>/dev/null || echo "$OUTPUT_RAW")
+              {
+                echo "## Lobbying index reindex"
+                echo ""
+                echo "- Environment: \`$ENVIRONMENT\`"
+                echo "- Execution ARN: \`$EXECUTION_ARN\`"
+                echo "- Status: **SUCCEEDED**"
+                echo ""
+                echo "### Output"
+                echo '```json'
+                echo "$OUTPUT"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            if [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "TIMED_OUT" ] || [ "$STATUS" = "ABORTED" ]; then
+              ERROR=$(echo "$RESULT" | jq -r '.error // "unknown"')
+              CAUSE_RAW=$(echo "$RESULT" | jq -r '.cause // ""')
+              CAUSE=$(echo "$CAUSE_RAW" | jq . 2>/dev/null || echo "$CAUSE_RAW")
+              {
+                echo "## Lobbying index reindex — $STATUS"
+                echo ""
+                echo "- Environment: \`$ENVIRONMENT\`"
+                echo "- Execution ARN: \`$EXECUTION_ARN\`"
+                echo "- Status: **$STATUS**"
+                echo "- Error: \`$ERROR\`"
+                echo ""
+                echo "### Cause"
+                echo '```'
+                echo "$CAUSE"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+
+            sleep "$POLL_INTERVAL"
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
 
           {
-            echo "## Lobbying index reindex"
+            echo "## Lobbying index reindex — poller ceiling exceeded"
             echo ""
             echo "- Environment: \`$ENVIRONMENT\`"
-            echo "- Function: \`$FUNCTION_NAME\`"
-            echo ""
-            echo "### Invoke response"
-            echo '```json'
-            jq . /tmp/lobbying-reindex.invoke.json
-            echo '```'
-            echo ""
-            echo "### Function payload"
-            echo '```json'
-            jq . /tmp/lobbying-reindex.out.json 2>/dev/null || cat /tmp/lobbying-reindex.out.json
-            echo '```'
+            echo "- Execution ARN: \`$EXECUTION_ARN\`"
+            echo "- Poller exceeded ceiling of ${MAX_WAIT}s without a terminal state"
           } >> "$GITHUB_STEP_SUMMARY"
-
-          if jq -e '.FunctionError? // empty' /tmp/lobbying-reindex.invoke.json >/dev/null; then
-            exit 1
-          fi
+          exit 1
