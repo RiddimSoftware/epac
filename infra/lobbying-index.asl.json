@@ -39,13 +39,13 @@
     },
     "AggregateMPLobbying": {
       "Type": "Task",
-      "Comment": "Run MP lobbying SQL aggregations. Lambda phase BuildMPLobbying consumes tmp/IngestOCLData.sqlite and writes tmp/BuildMPLobbying.sqlite.",
+      "Comment": "Run MP lobbying SQL aggregations. Lambda phase BuildMPLobbyingTables consumes tmp/IngestOCLData.sqlite and writes tmp/BuildMPLobbyingTables.sqlite.",
       "Resource": "arn:aws:states:::lambda:invoke",
       "TimeoutSeconds": 900,
       "Parameters": {
         "FunctionName": "${LobbyingIndexLambdaArn}",
         "Payload": {
-          "phase": "BuildMPLobbying"
+          "phase": "BuildMPLobbyingTables"
         }
       },
       "ResultPath": null,
@@ -74,7 +74,7 @@
     },
     "BuildOrganizationTables": {
       "Type": "Task",
-      "Comment": "Build organization profile tables from tmp/BuildMPLobbying.sqlite and write tmp/BuildOrganizationTables.sqlite.",
+      "Comment": "Build organization profile tables from tmp/BuildMPLobbyingTables.sqlite and write tmp/BuildOrganizationTables.sqlite.",
       "Resource": "arn:aws:states:::lambda:invoke",
       "TimeoutSeconds": 900,
       "Parameters": {
@@ -220,7 +220,7 @@
     "AggregateMPLobbyingFailed": {
       "Type": "Fail",
       "Error": "LobbyingIndexPhaseFailed",
-      "Cause": "AggregateMPLobbying failed. Lambda payload phase: BuildMPLobbying."
+      "Cause": "AggregateMPLobbying failed. Lambda payload phase: BuildMPLobbyingTables."
     },
     "BuildOrganizationTablesFailed": {
       "Type": "Fail",
