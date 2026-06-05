@@ -87,9 +87,22 @@ jobs:
             GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
             ENABLE_TESTABILITY=NO
 
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.work
+          cache-dependency-path: backend/go.work.sum
+      - name: Run lobbying-index tests
+        working-directory: backend/lobbying-index
+        run: go test ./...
+
   pr-build:
     name: pr-build
-    needs: [lint, localization, build]
+    needs: [lint, localization, build, backend-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -98,6 +111,7 @@ jobs:
           LINT: ${{ needs.lint.result }}
           LOC: ${{ needs.localization.result }}
           BUILD: ${{ needs.build.result }}
+          BACKEND: ${{ needs.backend-tests.result }}
         run: |
           if [ "$LINT" != 'success' ]; then
             echo "SwiftLint failed (result: $LINT)"
@@ -109,5 +123,9 @@ jobs:
           fi
           if [ "$BUILD" != 'success' ]; then
             echo "iOS build failed (result: $BUILD)"
+            exit 1
+          fi
+          if [ "$BACKEND" != 'success' ]; then
+            echo "Backend tests failed (result: $BACKEND)"
             exit 1
           fi
