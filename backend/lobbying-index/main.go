@@ -66,6 +66,8 @@ func previousPhase(phase string) string {
 	return ""
 }
 
+// HandleRequest is the Lambda entrypoint. It is invoked once per Step Functions
+// state-machine phase; the PHASE environment variable selects which phase runs.
 func HandleRequest(ctx context.Context) error {
 	phase := strings.TrimSpace(os.Getenv("PHASE"))
 	if err := validatePhase(phase, phaseRunners(nil)); err != nil {
