@@ -757,10 +757,28 @@ Current implementation:
 
 --- 
 
+### Lobbying-index builder boundary
+
+The lobbying-index build is orchestrated by `infra/lobbying-index.asl.json`.
+Production sequencing is owned by the Step Functions state-machine definition,
+not by a single sequential `backend/lobbying-index/main.go` Lambda invocation.
+The Lambda is a per-phase adapter: `PHASE` selects one phase runner, the router
+hydrates the local SQLite working DB from the predecessor phase's S3 intermediate
+when one exists, and it persists the updated DB for the next phase.
+
+Intermediate working keys live under `<LOBBYING_INDEX_PREFIX>/tmp/<Phase>.sqlite`;
+the published artifact remains `<LOBBYING_INDEX_PREFIX>/index.sqlite` with
+`manifest.json`. The working-key namespace must stay distinct from the published
+key so an incomplete run is never observed as the serving artifact. Intermediate
+downloads verify the object's `content-hash-sha256` metadata against the streamed
+SHA-256 before a phase mutates the DB; hash mismatch is a hard phase failure.
+
+---
+
 ### IngestOCLData
 
 ```
-Actor: Scheduler (Lambda invoke) / CI publish job
+Actor: Step Functions Task state `IngestOCLData`.
 Goal: Build raw OCL SQLite tables from authoritative source payloads for downstream lobbying processing.
 Inputs: OCL communications ZIP URL, OCL registrations ZIP URL, ourcommons members XML URL, OCL subject-matter HTML URLs.
 Outputs: SQLite database path and raw tables:
@@ -774,74 +792,118 @@ Outputs: SQLite database path and raw tables:
   ocl_subject_matter_types,
   members.
 Ports: `OCLSource`, `MembersSource`, `SubjectMatterSource`, `RawTableWriter`.
-Primary adapters: backend/lobbying-index/main.go, ocl.Fetcher, ourcommons.Fetcher, subjects.Fetcher, sqlite.Writer.
+Primary adapters: `PHASE=IngestOCLData` dispatch in backend/lobbying-index/main.go, S3 intermediate persist, ocl.Fetcher, ourcommons.Fetcher, subjects.Fetcher, sqlite.Writer.
 Current implementation:
   backend/lobbying-index/main.go
   backend/lobbying-index/internal/adapter/ocl/fetcher.go
   backend/lobbying-index/internal/adapter/ourcommons/fetcher.go
   backend/lobbying-index/internal/adapter/subjects/fetcher.go
   backend/lobbying-index/internal/adapter/sqlite/writer.go
+  backend/lobbying-index/internal/adapter/s3/s3.go
 ```
 
-> **Boundary rule:** Use-case policy owns the orchestration and row counting. Feed-specific transport/parsing and SQL schema details remain in adapters.
+> **Boundary rule:** The use case owns raw-feed orchestration and row counting.
+> Step Functions owns cross-phase sequencing, and the Lambda router owns S3
+> intermediate persistence. Feed-specific transport/parsing and SQL schema
+> details remain in adapters.
+
+---
+
+### BuildMPLobbyingTables
+
+```
+Actor: Step Functions Task state `AggregateMPLobbying`.
+Goal: Populate MP lobbying exposure read tables from raw OCL SQLite tables.
+Inputs: Build-time SQLite database containing OCL communications, DPOHs, subject matters, and members.
+Outputs: `mp_lobbying_timeline_entries`, `mp_lobbying_summaries`, `mp_lobbying_subject_breakdowns`, and `lobbying_cohort_averages` rows.
+Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, LobbyingCohortAverage.
+Ports: backend Go: `MPLobbyingAggregator`.
+Primary adapters: `PHASE=BuildMPLobbyingTables` dispatch in backend/lobbying-index/main.go, S3 intermediate hydrate/persist, SQLite aggregation runner.
+Current implementation:
+  backend/lobbying-index/main.go
+  backend/lobbying-index/internal/usecase/mp_aggregation.go
+  backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go
+  backend/lobbying-index/internal/adapter/s3/s3.go
+```
+
+> Boundary rule: the constructed `NewBuildMPLobbyingTables(...).Execute(...)`
+> use case owns the named builder operation and the aggregator port; SQLite DDL,
+> SQL dialect differences, JSON aggregation, and window-function details remain
+> in the adapter. Step Functions owns when this phase runs, and the Lambda router
+> owns S3 working-DB hydrate/persist.
 
 ---
 
 ### BuildOrganizationTables
 
 ```
-Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Actor: Step Functions Task state `BuildOrganizationTables`.
 Goal: Aggregate raw OCL tables into derived lobbyist organization and subject-matter tables for the serving Lambda.
 Inputs: Populated raw OCL SQLite tables (ocl_registration_primary, ocl_communication_primary, etc.).
 Outputs: lobbyist_organizations, lobbyist_communications, lobbyist_registrations, lobbyist_subject_matters.
 Ports: `OrgAggregator`.
-Primary adapters: backend/lobbying-index/main.go, sqlite.Aggregator.
+Primary adapters: `PHASE=BuildOrganizationTables` dispatch in backend/lobbying-index/main.go, S3 intermediate hydrate/persist, sqlite.Aggregator.
 Current implementation:
+  backend/lobbying-index/main.go
   backend/lobbying-index/internal/usecase/org_aggregation.go
   backend/lobbying-index/internal/adapter/sqlite/aggregator.go
+  backend/lobbying-index/internal/adapter/s3/s3.go
 ```
 
-> **Boundary rule:** Use-case policy invokes the aggregator port only. All SQLite CTE logic stays in the adapter.
+> **Boundary rule:** Use-case policy invokes the aggregator port only. All SQLite
+> CTE logic stays in the adapter. This phase consumes the MP lobbying intermediate;
+> the state-machine definition, not `main.go`, owns the cross-phase order.
 
 ---
 
 ### BuildBillContextTables
 
 ```
-Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Actor: Step Functions Task state `BuildBillContextTables`.
 Goal: Fetch bill metadata from parl.ca/legisinfo and build bill lobbying context tables for the serving Lambda.
 Inputs: parl.ca/legisinfo JSON API, ocl_topic_map.json, parliament/session numbers.
 Outputs: legisinfo_bill_subject_tags, legisinfo_bill_readings.
 Ports: `LegisInfoSource`, `BillContextWriter`.
-Primary adapters: backend/lobbying-index/main.go, legisinfo.Fetcher, sqlite.Aggregator.
+Primary adapters: `PHASE=BuildBillContextTables` dispatch in backend/lobbying-index/main.go, S3 intermediate hydrate/persist, legisinfo.Fetcher, sqlite.Aggregator.
 Current implementation:
+  backend/lobbying-index/main.go
   backend/lobbying-index/internal/usecase/org_aggregation.go
   backend/lobbying-index/internal/adapter/legisinfo/fetcher.go
   backend/lobbying-index/internal/adapter/sqlite/aggregator.go
+  backend/lobbying-index/internal/adapter/s3/s3.go
   backend/lobbying-index/ocl_topic_map.json
 ```
 
-> **Boundary rule:** Use-case policy must not import net/http or parl.ca-specific JSON structs — these belong in the legisinfo adapter.
+> **Boundary rule:** Use-case policy must not import net/http or parl.ca-specific
+> JSON structs — these belong in the legisinfo adapter. The phase consumes the
+> organization-table intermediate and writes the bill-context intermediate through
+> the Lambda router's S3 adapter.
 
 ---
 
 ### PreBakeMinisterCommunications
 
 ```
-Actor: Scheduler (Lambda invoke) / CI publish job — runs after IngestOCLData.
+Actor: Step Functions Task state `PreBakeMinisterCommunications`.
 Goal: Scrape the current Cabinet, resolve each minister to a House member ID, and pre-bake minister lobbying tables in the build-time SQLite artifact.
 Inputs: pm.gc.ca Cabinet page, pm.gc.ca mandate-letter page/article, build-time SQLite database containing OCL communications and members, parliament number.
 Outputs: `minister_portfolio_periods`, `minister_mandate_topic_mappings`, and `minister_communications`.
 Entities / values: Minister, Portfolio, MemberID, EpacTopicSlug.
 Ports: `CabinetSource`, `MinisterTableWriter`.
-Primary adapters: backend/lobbying-index/main.go, cabinet.Fetcher, sqlite minister prebake writer.
+Primary adapters: `PHASE=PreBakeMinisterCommunications` dispatch in backend/lobbying-index/main.go, S3 intermediate hydrate/persist, cabinet.Fetcher, sqlite minister prebake writer.
 Current implementation:
+  backend/lobbying-index/main.go
   backend/lobbying-index/internal/usecase/minister_prebake.go
   backend/lobbying-index/internal/adapter/cabinet/fetcher.go
   backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go
+  backend/lobbying-index/internal/adapter/s3/s3.go
 ```
 
-> **Boundary rule:** The use case owns the named builder operation and the `CabinetSource` / `MinisterTableWriter` ports. pm.gc.ca HTML parsing, keyword inference from mandate-letter text, SQLite DDL, and the DPOH fuzzy-name join stay in adapters.
+> **Boundary rule:** The use case owns the named builder operation and the
+> `CabinetSource` / `MinisterTableWriter` ports. pm.gc.ca HTML parsing, keyword
+> inference from mandate-letter text, SQLite DDL, and the DPOH fuzzy-name join
+> stay in adapters. Final publication is a separate `UploadArtifact` /
+> `PHASE=Finalize` state, not part of this use case.
 
 ---
 
@@ -887,29 +949,6 @@ Current implementation:
 > Boundary rule: cohort averaging and ratio calculation stay in the use case;
 > the Postgres adapter owns table names, SQL, and the optional `psycopg`
 > dependency.
-
----
-
-### BuildMPLobbyingTables
-
-```
-Actor: Lobbying index builder
-Goal: Populate MP lobbying exposure read tables from raw OCL SQLite tables.
-Inputs: Build-time SQLite database containing OCL communications, DPOHs, subject matters, and members.
-Outputs: `mp_lobbying_timeline_entries`, `mp_lobbying_summaries`, `mp_lobbying_subject_breakdowns`, and `lobbying_cohort_averages` rows.
-Entities / values: MPLobbyingSummary, LobbyingTimelineEntry, LobbyingSubjectDistribution, LobbyingCohortAverage.
-Ports: backend Go: `MPLobbyingAggregator`.
-Primary adapters: SQLite aggregation runner.
-Current implementation:
-  backend/lobbying-index/internal/usecase/mp_aggregation.go
-  backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go
-```
-
-> Boundary rule: the use case owns the named builder operation and the
-> aggregator port; SQLite DDL, SQL dialect differences, JSON aggregation, and
-> window-function details remain in the adapter.
-
----
 
 ### NotifyTopicFollowers
 
