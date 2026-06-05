@@ -32,7 +32,7 @@ const (
 	defaultDBPath    = "/tmp/lobbying-index.sqlite"
 	defaultUserAgent = "epac-lobbying-index/1.0 (+https://riddimsoftware.com; contact: sunny@riddimsoftware.com)"
 
-	// Phase identifiers accepted through the PHASE environment variable.
+	// Phase identifiers accepted through the Step Functions event payload or PHASE environment variable.
 	phaseIngestOCLData                 = "IngestOCLData"
 	phaseBuildMPLobbyingTables         = "BuildMPLobbyingTables"
 	phaseBuildOrganizationTables       = "BuildOrganizationTables"
@@ -55,6 +55,10 @@ var phaseOrder = []string{
 
 var knownPhases = append(append([]string{}, phaseOrder...), phaseAll)
 
+type PhaseEvent struct {
+	Phase string `json:"phase"`
+}
+
 // previousPhase returns the phase whose intermediate output feeds the given
 // phase. Returns empty string if the phase has no predecessor.
 func previousPhase(phase string) string {
@@ -67,9 +71,13 @@ func previousPhase(phase string) string {
 }
 
 // HandleRequest is the Lambda entrypoint. It is invoked once per Step Functions
-// state-machine phase; the PHASE environment variable selects which phase runs.
-func HandleRequest(ctx context.Context) error {
-	phase := strings.TrimSpace(os.Getenv("PHASE"))
+// state-machine phase; the event payload selects which phase runs, with PHASE
+// kept as a fallback for direct Lambda invocations.
+func HandleRequest(ctx context.Context, event PhaseEvent) error {
+	phase := strings.TrimSpace(event.Phase)
+	if phase == "" {
+		phase = strings.TrimSpace(os.Getenv("PHASE"))
+	}
 	if err := validatePhase(phase, phaseRunners(nil)); err != nil {
 		return err
 	}
@@ -562,5 +570,5 @@ func envInt(name string, fallback int) int {
 }
 
 func main() {
-	lambda.Start(observability.WrapNoEvent("lobbying-index", HandleRequest))
+	lambda.Start(observability.WrapEvent("lobbying-index", HandleRequest))
 }

@@ -30,7 +30,7 @@ func TestHandleRequestRequiresPhaseBeforeArtifactBucket(t *testing.T) {
 	t.Setenv("PHASE", "")
 	t.Setenv("EPAC_ARTIFACT_BUCKET", "")
 
-	err := HandleRequest(context.Background())
+	err := HandleRequest(context.Background(), PhaseEvent{})
 	if err == nil {
 		t.Fatal("HandleRequest returned nil error for empty PHASE")
 	}
@@ -43,12 +43,38 @@ func TestHandleRequestRejectsUnknownPhaseBeforeArtifactBucket(t *testing.T) {
 	t.Setenv("PHASE", "unknown")
 	t.Setenv("EPAC_ARTIFACT_BUCKET", "")
 
-	err := HandleRequest(context.Background())
+	err := HandleRequest(context.Background(), PhaseEvent{})
 	if err == nil {
 		t.Fatal("HandleRequest returned nil error for unknown PHASE")
 	}
 	if !strings.Contains(err.Error(), `unknown PHASE "unknown"`) {
 		t.Fatalf("error = %q, want unknown PHASE message", err.Error())
+	}
+}
+
+func TestHandleRequestReadsPhaseEventBeforeEnv(t *testing.T) {
+	t.Setenv("PHASE", "unknown")
+	t.Setenv("EPAC_ARTIFACT_BUCKET", "")
+
+	err := HandleRequest(context.Background(), PhaseEvent{Phase: phaseIngestOCLData})
+	if err == nil {
+		t.Fatal("HandleRequest returned nil error for missing artifact bucket")
+	}
+	if !strings.Contains(err.Error(), "EPAC_ARTIFACT_BUCKET is required") {
+		t.Fatalf("error = %q, want artifact bucket required message", err.Error())
+	}
+}
+
+func TestHandleRequestFallsBackToEnvPhase(t *testing.T) {
+	t.Setenv("PHASE", phaseIngestOCLData)
+	t.Setenv("EPAC_ARTIFACT_BUCKET", "")
+
+	err := HandleRequest(context.Background(), PhaseEvent{})
+	if err == nil {
+		t.Fatal("HandleRequest returned nil error for missing artifact bucket")
+	}
+	if !strings.Contains(err.Error(), "EPAC_ARTIFACT_BUCKET is required") {
+		t.Fatalf("error = %q, want artifact bucket required message", err.Error())
 	}
 }
 
