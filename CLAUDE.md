@@ -64,6 +64,7 @@ New ViewModel, service, manager, or model logic needs focused tests unless the P
 - Python ingest scripts under `backend/` emit structured JSON logs to stderr and reserve stdout for payloads. Use the formatter pattern in `backend/cabinet/cabinet_ingest.py` or the existing pipeline-local equivalent.
 - Go API handlers using `observability.WrapAPIGateway` or `WrapAPIGatewayV2` inherit shared `/api/v1/` rate limiting from `backend/observability/ratelimit.go`; clients should honor `Retry-After`.
 - Backend environment and deployment details live beside the workflows: `.github/workflows/deploy-staging.yml`, `.github/workflows/deploy-production.yml`, and `backend/openapi/openapi.json`.
+- When adding a new Step Functions state machine, write a Go test that parses the ASL and asserts all `"phase"` payload values are in the Lambda's valid phase set. Add the test to `pr-build.yml`'s `backend-tests` job so a phase name typo fails CI before it reaches a live execution. See `backend/lobbying-index/asl_phases_test.go` for the pattern.
 
 ## Pull Requests
 
