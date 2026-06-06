@@ -328,6 +328,9 @@ func ingestOCLData(ctx context.Context, cfg *runtimeConfig) error {
 		return err
 	}
 	logIngestResult(result)
+	if err := sqlite.EnsureOCLIndexes(ctx, cfg.dbPath); err != nil {
+		return err
+	}
 	logPhase("ingest_ocl_data", "completed", time.Since(t).Milliseconds())
 	return nil
 }
