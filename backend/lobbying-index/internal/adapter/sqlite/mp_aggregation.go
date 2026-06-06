@@ -94,6 +94,7 @@ func WithSourceURL(sourceURL string) AggregationOption {
 // foreign keys, runs the MP lobbying aggregation pipeline, and closes the
 // database before returning.
 func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databasePath string) error {
+	phaseStart := time.Now()
 	path := strings.TrimSpace(databasePath)
 	if path == "" {
 		path = DefaultDatabasePath
@@ -111,6 +112,10 @@ func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databaseP
 	if err := r.defaultQuarter(ctx, db); err != nil {
 		return err
 	}
+	logProgress("quarter_resolved", "aggregate_mp_lobbying", phaseStart, map[string]any{
+		"quarter_start": formatDate(r.quarterStart),
+		"quarter_end":   formatDate(r.quarterEnd),
+	})
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -121,6 +126,7 @@ func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databaseP
 	if _, err := tx.ExecContext(ctx, readModelSchemaSQL); err != nil {
 		return fmt.Errorf("create MP lobbying read-model schema: %w", err)
 	}
+	logProgress("schema_ready", "aggregate_mp_lobbying", phaseStart, nil)
 
 	updatedAt := r.clock.Now().UTC().Format(time.RFC3339)
 	if _, err := tx.ExecContext(ctx, refreshTimelineSQL,
@@ -132,16 +138,21 @@ func (r *AggregationRunner) BuildMPLobbyingTables(ctx context.Context, databaseP
 	); err != nil {
 		return fmt.Errorf("refresh MP lobbying timeline entries: %w", err)
 	}
+	logProgress("timeline_refreshed", "aggregate_mp_lobbying", phaseStart, nil)
 
 	for _, window := range []string{window30D, window3M, window12M, windowAll} {
 		if err := r.refreshWindow(ctx, tx, window, updatedAt); err != nil {
 			return err
 		}
+		logProgress("window_refreshed", "aggregate_mp_lobbying", phaseStart, map[string]any{
+			"window": window,
+		})
 	}
 
 	if err := r.refreshCohortAverages(ctx, tx, updatedAt); err != nil {
 		return err
 	}
+	logProgress("cohort_averages_refreshed", "aggregate_mp_lobbying", phaseStart, nil)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit MP lobbying aggregation: %w", err)

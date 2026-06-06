@@ -37,6 +37,7 @@ type memberRecord struct {
 }
 
 func (a *Aggregator) SaveMinisterTables(ctx context.Context, databasePath string, snapshot domain.CabinetSnapshot) (usecase.PreBakeMinisterCommunicationsResult, error) {
+	phaseStart := time.Now()
 	if databasePath == "" {
 		databasePath = DefaultDatabasePath
 	}
@@ -56,26 +57,39 @@ func (a *Aggregator) SaveMinisterTables(ctx context.Context, databasePath string
 	if err := createMinisterSchema(ctx, tx); err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, err
 	}
+	logProgress("schema_ready", "prebake_minister_communications", phaseStart, nil)
 
 	memberIndex, err := loadMemberIndex(ctx, tx)
 	if err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, err
 	}
+	logProgress("member_index_loaded", "prebake_minister_communications", phaseStart, map[string]any{
+		"member_count": len(memberIndex),
+	})
 
 	periods, unresolved := resolveMinisterPeriods(snapshot.PortfolioPeriods, memberIndex)
 	if err := insertMinisterPortfolioPeriods(ctx, tx, periods); err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, err
 	}
+	logProgress("portfolio_periods_inserted", "prebake_minister_communications", phaseStart, map[string]any{
+		"portfolio_period_count": len(periods),
+	})
 
 	mandateRows, err := insertMinisterMandateMappings(ctx, tx, periods, snapshot.MandateTopics)
 	if err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, err
 	}
+	logProgress("mandate_mappings_inserted", "prebake_minister_communications", phaseStart, map[string]any{
+		"mandate_rows": mandateRows,
+	})
 
 	communicationRows, zeroCommunicationCount, err := insertMinisterCommunications(ctx, tx, periods)
 	if err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, err
 	}
+	logProgress("communications_inserted", "prebake_minister_communications", phaseStart, map[string]any{
+		"communication_rows": communicationRows,
+	})
 
 	if err := tx.Commit(); err != nil {
 		return usecase.PreBakeMinisterCommunicationsResult{}, fmt.Errorf("commit minister prebake tx: %w", err)
