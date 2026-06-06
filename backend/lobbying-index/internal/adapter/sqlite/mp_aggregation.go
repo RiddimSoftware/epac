@@ -376,8 +376,8 @@ matched_candidates AS (
         -- OCL DPOH rows do not carry a stable MP ID, so the builder uses the
         -- same exact full-name match as the serving-side Postgres query. This
         -- has known false negatives for abbreviations and accents in source data.
-        ON lower(trim(COALESCE(m.first_name, '') || ' ' || COALESCE(m.last_name, ''))) =
-           lower(trim(COALESCE(dpoh.dpoh_first_nm_prenom_tcpd, '') || ' ' || COALESCE(dpoh.dpoh_last_nm_tcpd, '')))
+        ON lower(trim(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) =
+           lower(trim(COALESCE(dpoh_first_nm_prenom_tcpd, '') || ' ' || COALESCE(dpoh_last_nm_tcpd, '')))
         AND (m.from_date IS NULL OR date(m.from_date) <= cs.communication_date)
         AND (m.to_date IS NULL OR date(m.to_date) >= cs.communication_date)
     LEFT JOIN ocl_communication_subject_matters csm
