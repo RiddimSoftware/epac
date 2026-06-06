@@ -20,6 +20,7 @@ func NewAggregator() *Aggregator {
 // AggregateOrganizationTables builds lobbyist_communications, lobbyist_registrations,
 // lobbyist_subject_matters, and lobbyist_organizations from raw OCL tables.
 func (a *Aggregator) AggregateOrganizationTables(ctx context.Context, databasePath string) error {
+	phaseStart := time.Now()
 	if databasePath == "" {
 		databasePath = DefaultDatabasePath
 	}
@@ -42,18 +43,27 @@ func (a *Aggregator) AggregateOrganizationTables(ctx context.Context, databasePa
 	if err := createAggregateSchema(ctx, tx); err != nil {
 		return err
 	}
+	logProgress("schema_ready", "build_organization_tables", phaseStart, nil)
+
 	if err := populateCommunications(ctx, tx); err != nil {
 		return err
 	}
+	logProgress("communications_populated", "build_organization_tables", phaseStart, nil)
+
 	if err := populateRegistrations(ctx, tx); err != nil {
 		return err
 	}
+	logProgress("registrations_populated", "build_organization_tables", phaseStart, nil)
+
 	if err := populateSubjectMatters(ctx, tx); err != nil {
 		return err
 	}
+	logProgress("subject_matters_populated", "build_organization_tables", phaseStart, nil)
+
 	if err := populateOrganizations(ctx, tx); err != nil {
 		return err
 	}
+	logProgress("organizations_populated", "build_organization_tables", phaseStart, nil)
 
 	return tx.Commit()
 }
