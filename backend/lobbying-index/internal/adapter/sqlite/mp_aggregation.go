@@ -358,12 +358,12 @@ CREATE INDEX IF NOT EXISTS lobbying_cohort_averages_parliament_idx
 const refreshTimelineSQL = `
 WITH communication_source AS (
     SELECT
-        CAST(cp.comlog_id AS TEXT) AS communication_id,
+        cp.comlog_id AS communication_id,
         COALESCE(NULLIF(CAST(cp.client_org_corp_num AS TEXT), ''), '') AS ocl_organization_id,
         COALESCE(NULLIF(cp.en_client_org_corp_nm_an, 'null'), NULLIF(cp.fr_client_org_corp_nm, 'null'), '') AS organization_name,
-        date(NULLIF(NULLIF(CAST(cp.comm_date AS TEXT), 'null'), '')) AS communication_date
+        date(NULLIF(NULLIF(cp.comm_date, 'null'), '')) AS communication_date
     FROM ocl_communication_primary cp
-    WHERE NULLIF(NULLIF(CAST(cp.comm_date AS TEXT), 'null'), '') IS NOT NULL
+    WHERE NULLIF(NULLIF(cp.comm_date, 'null'), '') IS NOT NULL
 ),
 matched_candidates AS (
     SELECT
@@ -382,7 +382,7 @@ matched_candidates AS (
         ) AS rn
     FROM communication_source cs
     JOIN ocl_communication_dpohs dpoh
-        ON CAST(dpoh.comlog_id AS TEXT) = cs.communication_id
+        ON dpoh.comlog_id = cs.communication_id
     JOIN members m
         -- OCL DPOH rows do not carry a stable MP ID, so the builder uses the
         -- same exact full-name match as the serving-side Postgres query. This
@@ -392,7 +392,7 @@ matched_candidates AS (
         AND (m.from_date IS NULL OR date(m.from_date) <= cs.communication_date)
         AND (m.to_date IS NULL OR date(m.to_date) >= cs.communication_date)
     LEFT JOIN ocl_communication_subject_matters csm
-        ON CAST(csm.comlog_id AS TEXT) = cs.communication_id
+        ON csm.comlog_id = cs.communication_id
     LEFT JOIN ocl_subject_matter_types smt
         ON smt.subject_code_objet = csm.subject_code_objet
     WHERE (?2 IS NULL OR cs.communication_date >= date(?2))
