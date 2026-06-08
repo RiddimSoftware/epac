@@ -66,17 +66,7 @@ struct LobbyistOrganizationView: View {
 
 	var body: some View {
 		Group {
-			if viewModel.isLoading && viewModel.profile == nil {
-				ProgressView(NSLocalizedString("lobbying.loading", comment: ""))
-					.frame(maxWidth: .infinity, minHeight: LobbyistOrganizationLayout.loadingMinHeight)
-			} else if viewModel.loadFailed && viewModel.profile == nil {
-				ContentUnavailableView(
-					NSLocalizedString("lobbying.error.title", comment: ""),
-					systemImage: "exclamationmark.triangle",
-					description: Text(NSLocalizedString("lobbying.error.description", comment: ""))
-				)
-				.frame(maxWidth: .infinity, minHeight: LobbyistOrganizationLayout.loadingMinHeight)
-			} else if let profile = viewModel.profile {
+			if let profile = viewModel.profile {
 				List {
 					header(profile)
 					activeRegistrations(profile)
@@ -88,6 +78,17 @@ struct LobbyistOrganizationView: View {
 				}
 				.listStyle(.insetGrouped)
 				.accessibilityIdentifier("lobbyist-organization-profile")
+			} else if viewModel.loadFailed {
+				ContentUnavailableView(
+					NSLocalizedString("lobbying.error.title", comment: ""),
+					systemImage: "exclamationmark.triangle",
+					description: Text(NSLocalizedString("lobbying.error.description", comment: ""))
+				)
+				.frame(maxWidth: .infinity, minHeight: LobbyistOrganizationLayout.loadingMinHeight)
+			} else {
+				ProgressView(NSLocalizedString("lobbying.loading", comment: ""))
+					.frame(maxWidth: .infinity, minHeight: LobbyistOrganizationLayout.loadingMinHeight)
+					.accessibilityIdentifier("lobbyist-organization-loading")
 			}
 		}
 		.navigationTitle(viewModel.profile?.name ?? "Organization")

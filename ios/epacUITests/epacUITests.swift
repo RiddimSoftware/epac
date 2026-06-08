@@ -59,6 +59,12 @@ final class epacUITests: XCTestCase {
         }
     }
 
+    private func scrollUntilVisible(_ element: XCUIElement, maxSwipes: Int = 8) {
+        for _ in 0..<maxSwipes where !element.isHittable {
+            app.swipeUp()
+        }
+    }
+
     private func attachScreenshot(named name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
@@ -136,6 +142,38 @@ final class epacUITests: XCTestCase {
         XCTAssertTrue(billsDestinationAppeared,
                       "Bills destination should appear")
         attachLandscapeScreenshotIfNeeded()
+    }
+
+    func testAccountabilityTab_LobbyistOrganizationDetailLoads() throws {
+        openAccountabilitySurface()
+
+        let organizationsRow = app.staticTexts["Lobbyist Organizations"].firstMatch
+        scrollUntilVisible(organizationsRow)
+        XCTAssertTrue(
+            organizationsRow.exists && organizationsRow.isHittable,
+            "Lobbyist Organizations row should appear in Accountability hub"
+        )
+        tap(organizationsRow)
+
+        let directory = app.descendants(matching: .any)
+            .matching(identifier: "lobbyist-organization-directory")
+            .firstMatch
+        XCTAssertTrue(directory.waitForExistence(timeout: 30), "Lobbyist organization directory should load")
+
+        let firstOrganization = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Canadian Chamber of Commerce")
+        ).firstMatch
+        XCTAssertTrue(firstOrganization.waitForExistence(timeout: 30), "At least one lobbyist organization should be listed")
+        tap(firstOrganization)
+
+        let profile = app.descendants(matching: .any)
+            .matching(identifier: "lobbyist-organization-profile")
+            .firstMatch
+        let error = app.staticTexts["Couldn't Load Lobbying Data"].firstMatch
+        let loaded = profile.waitForExistence(timeout: 30)
+        attachScreenshot(named: "Lobbyist organization detail")
+        XCTAssertTrue(loaded, "Lobbyist organization profile should load after tapping a directory row")
+        XCTAssertFalse(error.exists, "Lobbyist organization detail should not show a lobbying data error")
     }
 
     // MARK: - Flow 4: Home tab → postal code onboarding
