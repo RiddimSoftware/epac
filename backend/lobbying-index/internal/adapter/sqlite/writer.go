@@ -60,6 +60,9 @@ func (w *Writer) Write(
 	if err := createSchema(ctx, tx); err != nil {
 		return err
 	}
+	if err := insertMetadata(ctx, tx); err != nil {
+		return err
+	}
 
 	if err := insertCommunicationPrimary(ctx, tx, batch.CommunicationsPrimary); err != nil {
 		return err
@@ -98,6 +101,16 @@ func (w *Writer) Write(
 func createSchema(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, schemaSQL); err != nil {
 		return fmt.Errorf("create schema: %w", err)
+	}
+	return nil
+}
+
+func insertMetadata(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO meta (key, value)
+VALUES ('version', ?)
+ON CONFLICT(key) DO UPDATE SET value = excluded.value`, domain.ManifestVersion); err != nil {
+		return fmt.Errorf("insert metadata: %w", err)
 	}
 	return nil
 }
@@ -408,6 +421,7 @@ func normalizeTime(value *time.Time) any {
 }
 
 const schemaSQL = `
+DROP TABLE IF EXISTS meta;
 DROP TABLE IF EXISTS ocl_communication_subject_matters;
 DROP TABLE IF EXISTS ocl_communication_dpohs;
 DROP TABLE IF EXISTS ocl_communication_primary;
@@ -417,6 +431,11 @@ DROP TABLE IF EXISTS ocl_registration_consultant_lobbyists;
 DROP TABLE IF EXISTS ocl_registration_primary;
 DROP TABLE IF EXISTS ocl_subject_matter_types;
 DROP TABLE IF EXISTS members;
+
+CREATE TABLE meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 
 CREATE TABLE members (
     person_id TEXT PRIMARY KEY,

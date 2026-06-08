@@ -40,6 +40,9 @@ func (u *OpenLobbyingIndex) Execute(ctx context.Context) (LobbyingIndex, error) 
 	if err != nil {
 		return LobbyingIndex{}, err
 	}
+	if manifest.Version != domain.LobbyingIndexManifestVersion {
+		return LobbyingIndex{}, ErrSchemaMismatch
+	}
 
 	localPath, err := u.downloader.Download(ctx, manifest.SQLiteKey, manifest.SQLiteSHA256)
 	if err != nil {

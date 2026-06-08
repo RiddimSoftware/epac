@@ -51,7 +51,7 @@ func TestManifestLoaderParsesManifest(t *testing.T) {
 }
 
 func TestIndexDownloaderVerifiesChecksumAndSchema(t *testing.T) {
-	indexBytes := sqliteIndexBytes(t, "v1")
+	indexBytes := sqliteIndexBytes(t, "v1", true)
 	sum := sha256.Sum256(indexBytes)
 	downloader := NewIndexDownloader(fakeS3{body: indexBytes}, "bucket")
 
@@ -64,8 +64,18 @@ func TestIndexDownloaderVerifiesChecksumAndSchema(t *testing.T) {
 	}
 }
 
+func TestIndexDownloaderAcceptsLegacyIndexWithoutMetaTable(t *testing.T) {
+	indexBytes := sqliteIndexBytes(t, "", true)
+	sum := sha256.Sum256(indexBytes)
+	downloader := NewIndexDownloader(fakeS3{body: indexBytes}, "bucket")
+
+	if _, err := downloader.Download(context.Background(), "lobbying/index.sqlite", hex.EncodeToString(sum[:])); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+}
+
 func TestIndexDownloaderMapsChecksumMismatch(t *testing.T) {
-	downloader := NewIndexDownloader(fakeS3{body: sqliteIndexBytes(t, "v1")}, "bucket")
+	downloader := NewIndexDownloader(fakeS3{body: sqliteIndexBytes(t, "v1", true)}, "bucket")
 
 	if _, err := downloader.Download(context.Background(), "lobbying/index.sqlite", "bad"); !errors.Is(err, usecase.ErrChecksumMismatch) {
 		t.Fatalf("err = %v, want checksum mismatch", err)
@@ -73,7 +83,7 @@ func TestIndexDownloaderMapsChecksumMismatch(t *testing.T) {
 }
 
 func TestIndexDownloaderMapsSchemaMismatch(t *testing.T) {
-	indexBytes := sqliteIndexBytes(t, "v2")
+	indexBytes := sqliteIndexBytes(t, "v2", true)
 	sum := sha256.Sum256(indexBytes)
 	downloader := NewIndexDownloader(fakeS3{body: indexBytes}, "bucket")
 
@@ -82,15 +92,34 @@ func TestIndexDownloaderMapsSchemaMismatch(t *testing.T) {
 	}
 }
 
-func sqliteIndexBytes(t *testing.T, version string) []byte {
+func TestIndexDownloaderMapsMissingRequiredTablesToSchemaMismatch(t *testing.T) {
+	indexBytes := sqliteIndexBytes(t, "v1", false)
+	sum := sha256.Sum256(indexBytes)
+	downloader := NewIndexDownloader(fakeS3{body: indexBytes}, "bucket")
+
+	if _, err := downloader.Download(context.Background(), "lobbying/index.sqlite", hex.EncodeToString(sum[:])); !errors.Is(err, usecase.ErrSchemaMismatch) {
+		t.Fatalf("err = %v, want schema mismatch", err)
+	}
+}
+
+func sqliteIndexBytes(t *testing.T, version string, includeRequiredTables bool) []byte {
 	t.Helper()
 	path := t.TempDir() + "/index.sqlite"
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if _, err := db.Exec(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL); INSERT INTO meta VALUES ('version', ?);`, version); err != nil {
-		t.Fatalf("create index: %v", err)
+	if includeRequiredTables {
+		for _, table := range requiredIndexTables {
+			if _, err := db.Exec(`CREATE TABLE ` + table + ` (id TEXT PRIMARY KEY)`); err != nil { //nolint:gosec
+				t.Fatalf("create required table %s: %v", table, err)
+			}
+		}
+	}
+	if version != "" {
+		if _, err := db.Exec(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL); INSERT INTO meta VALUES ('version', ?);`, version); err != nil {
+			t.Fatalf("create index metadata: %v", err)
+		}
 	}
 	if err := db.Close(); err != nil {
 		t.Fatalf("close sqlite: %v", err)
