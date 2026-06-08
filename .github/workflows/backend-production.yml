@@ -215,7 +215,8 @@ jobs:
               --role "$LAMBDA_ROLE" \
               --zip-file fileb://infra/placeholder.zip \
               --timeout 900 \
-              --memory-size 1024
+              --memory-size 1024 \
+              --ephemeral-storage '{"Size":2048}'
             aws lambda wait function-active-v2 --function-name epac-lobbying-index-production
             echo "| epac-lobbying-index-production | created |" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -223,6 +224,7 @@ jobs:
               --function-name epac-lobbying-index-production \
               --timeout 900 \
               --memory-size 1024 \
+              --ephemeral-storage '{"Size":2048}' \
               >/dev/null
             aws lambda wait function-updated --function-name epac-lobbying-index-production
             echo "| epac-lobbying-index-production | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
