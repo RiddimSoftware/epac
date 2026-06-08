@@ -18,6 +18,7 @@
 		A3BB28C82F2909BE00F9F1EB /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A33253CD2F2852E500531242 /* ExyteChat */; };
 		A3D516582DE4EEE600148AA8 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */; };
 		A3D516902DE4FD4C00148AA8 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = A3D5168F2DE4FD4C00148AA8 /* Logging */; };
+		A3E2251A2E22510000000001 /* debate-load-network-bytes.sim.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3E2251B2E22510000000001 /* debate-load-network-bytes.sim.txt */; };
 		E1233ED9EB500DEA6C66DDBA /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E123ACDEC874BB715CDE821E /* WatchContentView.swift */; };
 		E12343CD5D891C3BB3457474 /* epacComplicationBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */; };
 		E123B0B810D83A975B7856FB /* epacComplication.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = E123EEFB3FA3F54E7C9682AD /* epacComplication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -70,6 +71,7 @@
 		A38CF0E12F351DF500668136 /* icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = icon.icon; sourceTree = "<group>"; };
 		A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		A3E22A012E22A0010001A001 /* Performance.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Performance.xctestplan; sourceTree = "<group>"; };
+		A3E2251B2E22510000000001 /* debate-load-network-bytes.sim.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "debate-load-network-bytes.sim.txt"; sourceTree = "<group>"; };
 		E1230D8D5C0A0AF23667FFDC /* epacComplicationBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = epacComplicationBundle.swift; sourceTree = "<group>"; };
 		E12325D90C1AC7ABC45C8F8D /* ParliamentComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParliamentComplication.swift; sourceTree = "<group>"; };
 		E12339D75D63B226E71FC425 /* epacWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = epacWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -230,6 +232,14 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		A3E2251C2E22510000000001 /* perf-budgets */ = {
+			isa = PBXGroup;
+			children = (
+				A3E2251B2E22510000000001 /* debate-load-network-bytes.sim.txt */,
+			);
+			path = "../.github/perf-budgets";
+			sourceTree = "<group>";
+		};
 		E123328FBCF89F303A809478 /* epacComplication */ = {
 			isa = PBXGroup;
 			children = (
@@ -257,6 +267,7 @@
 				A31560032FABC15600000003 /* Config */,
 				A3D516572DE4EEE600148AA8 /* TestPlan.xctestplan */,
 				A3E22A012E22A0010001A001 /* Performance.xctestplan */,
+				A3E2251C2E22510000000001 /* perf-budgets */,
 				A38427C52D062C8D00271C34 /* epac */,
 				A38427D92D062C8E00271C34 /* epacTests */,
 				A38427E32D062C8E00271C34 /* epacUITests */,
@@ -515,6 +526,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3E2251A2E22510000000001 /* debate-load-network-bytes.sim.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
