@@ -35,6 +35,11 @@ locals {
       timeout     = 900
       memory_size = 1024
     }
+    "lobbying-index" = {
+      timeout                = 900
+      memory_size            = 4096
+      ephemeral_storage_size = 2048
+    }
   }
 }
 
@@ -51,6 +56,13 @@ resource "aws_lambda_function" "staging" {
   publish       = false
   timeout       = try(local.lambda_config[each.key].timeout, null)
   memory_size   = try(local.lambda_config[each.key].memory_size, null)
+
+  dynamic "ephemeral_storage" {
+    for_each = try(local.lambda_config[each.key].ephemeral_storage_size, null) != null ? [1] : []
+    content {
+      size = local.lambda_config[each.key].ephemeral_storage_size
+    }
+  }
 
   # Placeholder zip — CI overwrites code on every staging deploy.
   filename = "${path.module}/placeholder.zip"
