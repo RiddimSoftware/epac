@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the UDID for the first available physical iOS 26+ perf-test device."""
+"""Print the UDID for the first connected physical iOS 26+ perf-test device."""
 
 from __future__ import annotations
 
@@ -18,17 +18,12 @@ def major_version(value: str | None) -> int:
         return 0
 
 
-def main() -> int:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output = Path(temp_dir) / "devices.json"
-        command = ["xcrun", "devicectl", "list", "devices", "--json-output", str(output)]
-        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        data = json.loads(output.read_text(encoding="utf-8"))
-
+def find_ios_perf_device_udid(data: dict) -> str | None:
     for device in data.get("result", {}).get("devices", []):
-        hardware = device.get("hardwareProperties", {})
-        properties = device.get("deviceProperties", {})
-        if device.get("state") != "available":
+        connection = device.get("connectionProperties") or {}
+        hardware = device.get("hardwareProperties") or {}
+        properties = device.get("deviceProperties") or {}
+        if connection.get("tunnelState") != "connected":
             continue
         if hardware.get("platform") != "iOS":
             continue
@@ -38,8 +33,20 @@ def main() -> int:
             continue
         udid = hardware.get("udid")
         if udid:
-            print(udid)
-            return 0
+            return udid
+    return None
+
+
+def main() -> int:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output = Path(temp_dir) / "devices.json"
+        command = ["xcrun", "devicectl", "list", "devices", "--json-output", str(output)]
+        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        data = json.loads(output.read_text(encoding="utf-8"))
+
+    udid = find_ios_perf_device_udid(data)
+    if udid:
+        print(udid)
     return 0
 
 

@@ -100,9 +100,22 @@ jobs:
         working-directory: backend/lobbying-index
         run: go test ./...
 
+  python-ci-tests:
+    name: Python CI Tooling Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - name: Run scripts/ci tests
+        run: python3 -m pytest scripts/ci/tests scripts/ci/test_ios_coverage_report.py
+
   pr-build:
     name: pr-build
-    needs: [lint, localization, build, backend-tests]
+    needs: [lint, localization, build, backend-tests, python-ci-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -112,6 +125,7 @@ jobs:
           LOC: ${{ needs.localization.result }}
           BUILD: ${{ needs.build.result }}
           BACKEND: ${{ needs.backend-tests.result }}
+          PYTHON_CI: ${{ needs.python-ci-tests.result }}
         run: |
           if [ "$LINT" != 'success' ]; then
             echo "SwiftLint failed (result: $LINT)"
@@ -127,5 +141,9 @@ jobs:
           fi
           if [ "$BACKEND" != 'success' ]; then
             echo "Backend tests failed (result: $BACKEND)"
+            exit 1
+          fi
+          if [ "$PYTHON_CI" != 'success' ]; then
+            echo "Python CI tooling tests failed (result: $PYTHON_CI)"
             exit 1
           fi
