@@ -11,6 +11,7 @@ final class ScrollHitchPerfTests: XCTestCase {
 		static let name = "45-1-HAN050-E"
 		static let speechAdvanceTapCount = 80
 		static let elementTimeout: TimeInterval = 15
+		static let evidenceNavigationTimeout: TimeInterval = 45
 		static let shortSettle: TimeInterval = 0.25
 		static let longSettle: TimeInterval = 1.0
 	}
@@ -30,7 +31,10 @@ final class ScrollHitchPerfTests: XCTestCase {
 		try skipOnUnsupportedRuntime()
 
 		launchEvidenceMode(navigationTarget: "longestSpeech")
-		let speechScroll = waitForElement(identifier: "speech-view-scroll")
+		let speechScroll = waitForElement(
+			identifier: "speech-view-scroll",
+			timeout: Fixture.evidenceNavigationTimeout
+		)
 		advanceSpeechMessages(in: speechScroll)
 
 		if #available(iOS 26.0, *) {
@@ -57,7 +61,10 @@ final class ScrollHitchPerfTests: XCTestCase {
 		try skipOnUnsupportedRuntime()
 
 		launchEvidenceMode(navigationTarget: "sitting")
-		let debateContent = waitForElement(identifier: "debate-content")
+		let debateContent = waitForElement(
+			identifier: "debate-content",
+			timeout: Fixture.evidenceNavigationTimeout
+		)
 		XCTAssertTrue(debateContent.exists, "Seeded sitting overview should be visible before measuring navigation.")
 
 		measure(metrics: [XCTOSSignpostMetric.navigationTransitionMetric], options: measureOptions) {
@@ -94,11 +101,14 @@ final class ScrollHitchPerfTests: XCTestCase {
 		app.launch()
 	}
 
-	private func waitForElement(identifier: String) -> XCUIElement {
+	private func waitForElement(
+		identifier: String,
+		timeout: TimeInterval = Fixture.elementTimeout
+	) -> XCUIElement {
 		let element = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
 		XCTAssertTrue(
-			element.waitForExistence(timeout: Fixture.elementTimeout),
-			"Expected \(identifier). Current UI hierarchy:\n\(app.debugDescription)"
+			element.waitForExistence(timeout: timeout),
+			"Expected \(identifier) within \(timeout)s. Current UI hierarchy:\n\(app.debugDescription)"
 		)
 		return element
 	}

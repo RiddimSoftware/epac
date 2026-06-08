@@ -51,7 +51,9 @@ public enum AppTab: String, CaseIterable, Identifiable, Hashable {
 
 @Observable
 class NavigationRouter {
-	var selectedTab: AppTab = AppEnvironment.isEvidenceCaptureMode ? .home : .parliament
+	var selectedTab: AppTab = AppEnvironment.isEvidenceCaptureMode && AppEnvironment.evidencePerfNavigationTarget == nil
+		? .home
+		: .parliament
 	var selectedMember: ParliamentMember?
 	var selectedBill: Bill?
 	// Pre-fills the Search tab search bar when set; cleared after SearchView reads it.
