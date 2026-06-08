@@ -395,9 +395,11 @@ func parseMPLobbyingExposureInput(memberID string, params map[string]string) (ap
 }
 
 func exposureMemberIDFromRequest(req events.APIGatewayV2HTTPRequest) (string, bool) {
-	path := requestPath(req)
-	for _, prefix := range []string{"/api/v1/members/", "/members/"} {
-		if strings.HasPrefix(path, prefix) && strings.HasSuffix(path, "/lobbying-exposure") {
+	for _, path := range requestPaths(req) {
+		for _, prefix := range []string{"/api/v1/members/", "/members/"} {
+			if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, "/lobbying-exposure") {
+				continue
+			}
 			for _, key := range []string{"member_id", "memberId", "id"} {
 				if memberID := strings.TrimSpace(req.PathParameters[key]); memberID != "" {
 					return unescapePathPart(memberID), true
@@ -415,14 +417,11 @@ func slugFromRequest(req events.APIGatewayV2HTTPRequest) string {
 		return unescapePathPart(slug)
 	}
 
-	path := req.RawPath
-	if path == "" {
-		path = req.RequestContext.HTTP.Path
-	}
-	path = normalizedPath(path)
-	for _, prefix := range []string{"/api/v1/lobbying/by-topic/", "/lobbying/by-topic/"} {
-		if strings.HasPrefix(path, prefix) {
-			return unescapePathPart(strings.TrimPrefix(path, prefix))
+	for _, path := range requestPaths(req) {
+		for _, prefix := range []string{"/api/v1/lobbying/by-topic/", "/lobbying/by-topic/"} {
+			if strings.HasPrefix(path, prefix) {
+				return unescapePathPart(strings.TrimPrefix(path, prefix))
+			}
 		}
 	}
 	return ""
@@ -435,31 +434,33 @@ func ministerMemberIDFromRequest(req events.APIGatewayV2HTTPRequest) string {
 		}
 	}
 
-	path := requestPath(req)
-	for _, prefix := range []string{"/api/v1/ministers/", "/ministers/"} {
-		if !strings.HasPrefix(path, prefix) {
-			continue
+	for _, path := range requestPaths(req) {
+		for _, prefix := range []string{"/api/v1/ministers/", "/ministers/"} {
+			if !strings.HasPrefix(path, prefix) {
+				continue
+			}
+			remainder := strings.TrimPrefix(path, prefix)
+			if !strings.HasSuffix(remainder, "/lobbying-by-portfolio") {
+				continue
+			}
+			memberID := strings.TrimSuffix(remainder, "/lobbying-by-portfolio")
+			if strings.Contains(memberID, "/") {
+				continue
+			}
+			return unescapePathPart(memberID)
 		}
-		remainder := strings.TrimPrefix(path, prefix)
-		if !strings.HasSuffix(remainder, "/lobbying-by-portfolio") {
-			continue
-		}
-		memberID := strings.TrimSuffix(remainder, "/lobbying-by-portfolio")
-		if strings.Contains(memberID, "/") {
-			continue
-		}
-		return unescapePathPart(memberID)
 	}
 	return ""
 }
 
 func isCabinetOverviewRequest(req events.APIGatewayV2HTTPRequest) bool {
-	switch requestPath(req) {
-	case "/api/v1/cabinet/lobbying-overview", "/cabinet/lobbying-overview":
-		return true
-	default:
-		return false
+	for _, path := range requestPaths(req) {
+		switch path {
+		case "/api/v1/cabinet/lobbying-overview", "/cabinet/lobbying-overview":
+			return true
+		}
 	}
+	return false
 }
 
 func requestPath(req events.APIGatewayV2HTTPRequest) string {
@@ -468,6 +469,35 @@ func requestPath(req events.APIGatewayV2HTTPRequest) string {
 		path = req.RequestContext.HTTP.Path
 	}
 	return normalizedPath(path)
+}
+
+func requestPaths(req events.APIGatewayV2HTTPRequest) []string {
+	paths := []string{requestPath(req)}
+	if routePath := routeKeyPath(req.RouteKey); routePath != "" {
+		paths = append(paths, routePath)
+	}
+
+	unique := make([]string, 0, len(paths))
+	seen := map[string]struct{}{}
+	for _, path := range paths {
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
+		unique = append(unique, path)
+	}
+	return unique
+}
+
+func routeKeyPath(routeKey string) string {
+	routeKey = strings.TrimSpace(routeKey)
+	if routeKey == "" || routeKey == "$default" {
+		return ""
+	}
+	if index := strings.Index(routeKey, " "); index >= 0 {
+		routeKey = routeKey[index+1:]
+	}
+	return normalizedPath(routeKey)
 }
 
 func normalizedPath(raw string) string {

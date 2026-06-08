@@ -19,6 +19,36 @@ fi
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
+echo "Syncing API routes for ${ENV_NAME} using ${MANIFEST_PATH}."
+
+integration_id_for() {
+  local lambda_arn="$1"
+  local method="$2"
+
+  aws apigatewayv2 get-integrations \
+    --api-id "${API_ID}" \
+    --output json |
+    jq -r --arg lambda_arn "${lambda_arn}" --arg method "${method}" '
+      first(
+        .Items[]?
+        | select(.IntegrationUri == $lambda_arn)
+        | select($method != "ANY" or .IntegrationMethod == "ANY")
+        | .IntegrationId
+      ) // ""
+    '
+}
+
+route_id_for() {
+  local route_key="$1"
+
+  aws apigatewayv2 get-routes \
+    --api-id "${API_ID}" \
+    --output json |
+    jq -r --arg route_key "${route_key}" '
+      first(.Items[]? | select(.RouteKey == $route_key) | .RouteId) // ""
+    '
+}
+
 remove_permission_statement() {
   local function_name="$1"
   local statement_id="$2"
@@ -101,25 +131,18 @@ while IFS='|' read -r SERVICE METHOD ROUTE_KEY PAYLOAD_VERSION; do
     fi
   fi
 
-  LAMBDA_ARN=$(aws lambda get-function --function-name "${FUNCTION_NAME}" --query 'Configuration.FunctionArn' --output text)
+  if ! LAMBDA_ARN=$(aws lambda get-function --function-name "${FUNCTION_NAME}" --query 'Configuration.FunctionArn' --output text 2>/dev/null); then
+    echo "Function ${FUNCTION_NAME} not found; skipping ${ROUTE_KEY}." >&2
+    continue
+  fi
   if [ -z "${LAMBDA_ARN}" ] || [ "${LAMBDA_ARN}" = "None" ]; then
-    echo "Function ${FUNCTION_NAME} not found; skipping ${ROUTE_KEY}" >&2
+    echo "Function ${FUNCTION_NAME} not found; skipping ${ROUTE_KEY}." >&2
     continue
   fi
 
-  if [ "${METHOD}" = "ANY" ]; then
-    INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
-      --api-id "${API_ID}" \
-      --query "Items[?IntegrationUri=='${LAMBDA_ARN}' && IntegrationMethod=='ANY'].IntegrationId | [0]" \
-      --output text)
-  else
-    INTEGRATION_ID=$(aws apigatewayv2 get-integrations \
-      --api-id "${API_ID}" \
-      --query "Items[?IntegrationUri=='${LAMBDA_ARN}'].IntegrationId | [0]" \
-      --output text)
-  fi
+  INTEGRATION_ID=$(integration_id_for "${LAMBDA_ARN}" "${METHOD}")
 
-  if [ -z "${INTEGRATION_ID}" ] || [ "${INTEGRATION_ID}" = "None" ]; then
+  if [ -z "${INTEGRATION_ID}" ]; then
     PAYLOAD_VERSION="${PAYLOAD_VERSION:-2.0}"
     if [ "${METHOD}" = "ANY" ]; then
       INTEGRATION_ID=$(aws apigatewayv2 create-integration \
@@ -141,12 +164,9 @@ while IFS='|' read -r SERVICE METHOD ROUTE_KEY PAYLOAD_VERSION; do
     fi
   fi
 
-  ROUTE_ID=$(aws apigatewayv2 get-routes \
-    --api-id "${API_ID}" \
-    --query "Items[?RouteKey=='${ROUTE_KEY}'].RouteId | [0]" \
-    --output text)
+  ROUTE_ID=$(route_id_for "${ROUTE_KEY}")
 
-  if [ -z "${ROUTE_ID}" ] || [ "${ROUTE_ID}" = "None" ]; then
+  if [ -z "${ROUTE_ID}" ]; then
     aws apigatewayv2 create-route \
       --api-id "${API_ID}" \
       --route-key "${ROUTE_KEY}" \
@@ -164,6 +184,9 @@ while IFS='|' read -r SERVICE METHOD ROUTE_KEY PAYLOAD_VERSION; do
     SOURCE_PATH="${SOURCE_PATH//\{org_id\}/*}"
     SOURCE_PATH="${SOURCE_PATH//\{slug\}/*}"
     SOURCE_PATH="${SOURCE_PATH//\{date\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{member_id\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{memberId\}/*}"
+    SOURCE_PATH="${SOURCE_PATH//\{legisinfo_id\}/*}"
 
     STATEMENT_ID="apigateway-${SERVICE}-${ENV_NAME}"
     STATEMENT_PREFIX="apigateway-${SERVICE}-${ENV_NAME}"

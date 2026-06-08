@@ -215,14 +215,20 @@ func isOrganizationRequest(req events.APIGatewayV2HTTPRequest) bool {
 }
 
 func isOrganizationDirectoryRequest(req events.APIGatewayV2HTTPRequest) bool {
-	path := requestPath(req)
-	return path == "/api/v1/lobbying/organizations" || path == "/lobbying/organizations"
+	for _, path := range requestPaths(req) {
+		if path == "/api/v1/lobbying/organizations" || path == "/lobbying/organizations" {
+			return true
+		}
+	}
+	return false
 }
 
 func organizationProfileIDFromRequest(req events.APIGatewayV2HTTPRequest) (string, bool) {
-	path := requestPath(req)
-	for _, prefix := range []string{"/api/v1/lobbying/organizations/", "/lobbying/organizations/"} {
-		if strings.HasPrefix(path, prefix) {
+	for _, path := range requestPaths(req) {
+		for _, prefix := range []string{"/api/v1/lobbying/organizations/", "/lobbying/organizations/"} {
+			if !strings.HasPrefix(path, prefix) {
+				continue
+			}
 			id := strings.TrimSpace(req.PathParameters["id"])
 			if id == "" {
 				id = strings.TrimPrefix(path, prefix)
