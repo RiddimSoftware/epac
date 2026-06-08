@@ -90,10 +90,11 @@ final class NetworkBytesPerfTests: XCTestCase {
         return resultBox.value
     }
 
-    private func hansardFixtureURL() -> URL {
-        testsRootURL()
-            .appendingPathComponent("Fixtures", isDirectory: true)
-            .appendingPathComponent("45-1-HAN073-E.XML", isDirectory: false)
+    private func hansardFixtureURL() throws -> URL {
+        try XCTUnwrap(
+            Bundle(for: Self.self).url(forResource: "45-1-HAN073-E", withExtension: "XML"),
+            "Missing bundled Hansard fixture 45-1-HAN073-E.XML"
+        )
     }
 
     private func hansardRequestURL(relativeTo baseURL: URL) -> URL {
@@ -116,23 +117,11 @@ final class NetworkBytesPerfTests: XCTestCase {
         return budget
     }
 
-    private func networkBytesBudgetURL() -> URL {
-        repositoryRootURL()
-            .appendingPathComponent(".github", isDirectory: true)
-            .appendingPathComponent("perf-budgets", isDirectory: true)
-            .appendingPathComponent("debate-load-network-bytes.sim.txt", isDirectory: false)
-    }
-
-    private func testsRootURL() -> URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-    }
-
-    private func repositoryRootURL() -> URL {
-        testsRootURL()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+    private func networkBytesBudgetURL() throws -> URL {
+        try XCTUnwrap(
+            Bundle(for: Self.self).url(forResource: "debate-load-network-bytes.sim", withExtension: "txt"),
+            "Missing bundled network bytes budget debate-load-network-bytes.sim.txt"
+        )
     }
 }
 
