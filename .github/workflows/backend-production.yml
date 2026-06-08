@@ -383,7 +383,7 @@ jobs:
         env:
           SERVICE: ${{ matrix.service }}
           FUNCTION_NAME: epac-${{ matrix.service }}-production
-          ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET }}
+          ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
           ARTIFACT_PREFIX: ${{ vars.EPAC_ARTIFACT_PREFIX_PRODUCTION || vars.EPAC_ARTIFACT_PREFIX }}
           HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
           PARLIAMENT_NUMBER: ${{ vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
@@ -391,6 +391,11 @@ jobs:
           LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
         run: |
           set -euo pipefail
+          if [ -z "$ARTIFACT_BUCKET" ]; then
+            echo "EPAC_ARTIFACT_BUCKET_PRODUCTION, EPAC_ARTIFACT_BUCKET, or ARTIFACTS_BUCKET variable is required"
+            exit 1
+          fi
+
           CURRENT_ENV=$(aws lambda get-function-configuration \
             --function-name "$FUNCTION_NAME" \
             --query 'Environment.Variables' \
