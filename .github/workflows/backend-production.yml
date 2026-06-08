@@ -411,9 +411,37 @@ jobs:
             2>/dev/null || true
           echo "| Lambda permission (apigw-invoke-lobbying) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
+  activate-production-api-stage:
+    name: Activate production API Gateway stage
+    runs-on: ubuntu-latest
+    needs: [provision-search, provision-lobbying]
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Enable production API Gateway auto-deploy
+        env:
+          API_ID: bdnpz6v3c8
+          STAGE_NAME: production
+        run: |
+          set -euo pipefail
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name "$STAGE_NAME" \
+            --auto-deploy \
+            >/dev/null
+          {
+            echo "## Production API Gateway stage"
+            echo ""
+            echo "- Enabled auto-deploy for \`${STAGE_NAME}\` on API \`${API_ID}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: Promote ${{ matrix.service }} to production
-    needs: [prepare, provision-search, provision-lobbying-index, provision-lobbying]
+    needs: [prepare, provision-search, provision-lobbying-index, provision-lobbying, activate-production-api-stage]
     if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
     runs-on: ubuntu-latest
     strategy:
