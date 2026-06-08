@@ -209,6 +209,24 @@ def validate_hansard_search(status: int, payload: Any) -> None:
         raise SmokeFailure(f"hansard-search: per_page = {body['per_page']!r}, want 1")
 
 
+def validate_cabinet_lobbying_overview(_: int, payload: Any) -> None:
+    body = require_dict(payload, "cabinet-lobbying-overview")
+    require_keys(body, "cabinet-lobbying-overview", {"parliament", "citation", "source_url", "ministers"})
+    if body["parliament"] != 45:
+        raise SmokeFailure(f"cabinet-lobbying-overview: parliament = {body['parliament']!r}, want 45")
+    require_list(body, "cabinet-lobbying-overview", "ministers")
+
+
+def validate_lobbyist_organization_directory(_: int, payload: Any) -> None:
+    body = require_dict(payload, "lobbyist-organizations")
+    require_keys(body, "lobbyist-organizations", {"page", "per_page", "citation", "source_url", "rows"})
+    if body["page"] != 1:
+        raise SmokeFailure(f"lobbyist-organizations: page = {body['page']!r}, want 1")
+    if body["per_page"] != 1:
+        raise SmokeFailure(f"lobbyist-organizations: per_page = {body['per_page']!r}, want 1")
+    require_list(body, "lobbyist-organizations", "rows")
+
+
 def validate_hansard_search_manifest(status: int, payload: Any) -> None:
     if status == 404:
         return
@@ -425,6 +443,29 @@ CHECKS = [
         deterministic_note="Contract check validates the Hansard search response envelope; HTTP 503 is accepted until the index is generated in staging.",
         fixture_note="Result count is data-dependent and may be zero even after the index exists.",
     ),
+    # --- lobbying screens ---
+    SmokeCheck(
+        name="cabinet-lobbying-overview",
+        method="GET",
+        path="/api/v1/cabinet/lobbying-overview",
+        query={"parliament": "45"},
+        expected_statuses={200},
+        validator=validate_cabinet_lobbying_overview,
+        service="lobbying",
+        deterministic_note="Contract check exercises the Accountability > Cabinet Lobbying screen endpoint.",
+        fixture_note="Minister count is data-dependent, but the response envelope must be available after a staging reindex.",
+    ),
+    SmokeCheck(
+        name="lobbyist-organizations:directory",
+        method="GET",
+        path="/api/v1/lobbying/organizations",
+        query={"page": "1", "per_page": "1"},
+        expected_statuses={200},
+        validator=validate_lobbyist_organization_directory,
+        service="lobbying",
+        deterministic_note="Contract check exercises the Accountability > Lobbyist Organizations directory endpoint.",
+        fixture_note="Directory row count is data-dependent, but the response envelope must be available after a staging reindex.",
+    ),
     SmokeCheck(
         name="member-speeches:unknown-member",
         method="GET",
@@ -476,6 +517,19 @@ def load_deployed_services(manifest_path: Path) -> set[str]:
     except (OSError, json.JSONDecodeError, KeyError) as exc:
         print(f"Warning: could not read manifest at {manifest_path}: {exc}. Running all checks.", file=sys.stderr)
         return {check.service for check in CHECKS if check.service is not None}
+
+
+def parse_service_filter(raw: str) -> set[str] | None:
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return {part.strip() for part in raw.split(",") if part.strip()}
+    if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
+        raise SmokeFailure("--services must be a JSON string array or a comma-separated list")
+    return {item.strip() for item in parsed if item.strip()}
 
 
 def _default_manifest_path() -> Path:
@@ -602,13 +656,13 @@ def write_summary(
         icon = "PASS" if passed else "FAIL"
         lines.append(f"| {check.name} | {icon} | {evidence} |")
     for check in skipped:
-        lines.append(f"| {check.name} | SKIP | service `{check.service}` not deployed to staging |")
+        lines.append(f"| {check.name} | SKIP | service `{check.service}` not selected for this staging smoke run |")
 
     lines.extend(["", "### Deterministic and fixture-dependent coverage", ""])
     for check, _, _ in results:
         lines.append(f"- **{check.name}:** {check.deterministic_note} {check.fixture_note}")
     for check in skipped:
-        lines.append(f"- **{check.name}:** *(skipped — `{check.service}` not in staging manifest)*")
+        lines.append(f"- **{check.name}:** *(skipped - `{check.service}` was not selected for this staging smoke run)*")
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
@@ -633,6 +687,11 @@ def main() -> int:
         default=None,
         help="Path to deployment-services.json. Defaults to backend/manifest/deployment-services.json at the repo root.",
     )
+    parser.add_argument(
+        "--services",
+        default=os.environ.get("EPAC_STAGING_SMOKE_SERVICES", ""),
+        help="JSON array or comma-separated service names to smoke. Defaults to manifest services with deploy.staging=true.",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -641,9 +700,16 @@ def main() -> int:
 
     manifest_path = Path(args.manifest) if args.manifest else _default_manifest_path()
     deployed_services = load_deployed_services(manifest_path)
+    service_filter = parse_service_filter(args.services)
+    if service_filter is not None:
+        deployed_services &= service_filter
 
     active_checks = [c for c in CHECKS if c.service is None or c.service in deployed_services]
     skipped_checks = [c for c in CHECKS if c.service is not None and c.service not in deployed_services]
+
+    if not active_checks:
+        print("No active staging smoke checks remain after service filtering.", file=sys.stderr)
+        return 1
 
     if skipped_checks:
         skipped_names = ", ".join(c.name for c in skipped_checks)

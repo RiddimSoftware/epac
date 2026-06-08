@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
+      - 'scripts/ci/ensure-staging-api-routes.sh'
       - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
 
@@ -201,17 +202,19 @@ jobs:
               --role "$LAMBDA_ROLE" \
               --zip-file fileb://infra/placeholder.zip \
               --timeout 30 \
-              --memory-size 128
+              --memory-size 512 \
+              --ephemeral-storage '{"Size":2048}'
             aws lambda wait function-active-v2 --function-name epac-lobbying-staging
-            echo "| epac-lobbying-staging | created |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| epac-lobbying-staging | created with 2048 MB ephemeral storage |" >> "$GITHUB_STEP_SUMMARY"
           else
             aws lambda update-function-configuration \
               --function-name epac-lobbying-staging \
               --timeout 30 \
-              --memory-size 128 \
+              --memory-size 512 \
+              --ephemeral-storage '{"Size":2048}' \
               >/dev/null
             aws lambda wait function-updated --function-name epac-lobbying-staging
-            echo "| epac-lobbying-staging | already existed, config ensured |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| epac-lobbying-staging | already existed, serving config ensured |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # --- API Gateway integration for lobbying ---
@@ -575,42 +578,55 @@ jobs:
           role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Check staging smoke readiness
-        id: smoke-readiness
+      - name: Resolve staging smoke services
+        id: smoke-services
         run: |
           set -euo pipefail
-          missing=()
+          available_file="$(mktemp)"
+          missing_file="$(mktemp)"
           while IFS= read -r service; do
             function_name="epac-${service}-staging"
-            if ! aws lambda get-function --function-name "$function_name" >/dev/null 2>&1; then
-              missing+=("$function_name")
+            if aws lambda get-function --function-name "$function_name" >/dev/null 2>&1; then
+              printf '%s\n' "$service" >> "$available_file"
+            else
+              printf '%s\n' "$function_name" >> "$missing_file"
             fi
           done < <(jq -r '.services[] | select(.http != null and .deploy.staging == true) | .name' backend/manifest/deployment-services.json)
 
-          if [ "${#missing[@]}" -gt 0 ]; then
-            IFS=', '
-            echo "::warning title=Skipping staging smoke tests::Missing staging Lambda functions: ${missing[*]}. Apply staging Terraform before running full smoke coverage."
+          available_services="$(jq -R . "$available_file" | jq -cs .)"
+          missing_functions="$(jq -R . "$missing_file" | jq -cs .)"
+          available_count="$(jq 'length' <<< "$available_services")"
+          missing_count="$(jq 'length' <<< "$missing_functions")"
+
+          echo "available_services=$available_services" >> "$GITHUB_OUTPUT"
+
+          if [ "$missing_count" -gt 0 ]; then
+            missing_text="$(jq -r 'join(", ")' <<< "$missing_functions")"
+            echo "::warning title=Partial staging smoke coverage::Skipping checks for missing staging Lambda functions: ${missing_text}."
             {
               echo "## Backend staging smoke tests"
               echo
-              echo "Skipped because these staging Lambda functions are not provisioned:"
-              printf -- "- %s\n" "${missing[@]}"
+              echo "Smoke tests will run for available scripted staging services."
+              echo
+              echo "Missing Lambda functions whose checks will be skipped:"
+              jq -r '.[] | "- " + .' <<< "$missing_functions"
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$available_count" -eq 0 ]; then
+            echo "No deployed staging Lambda functions are available for smoke tests." >&2
+            exit 1
           fi
 
       - name: Ensure staging routes are synced
-        if: ${{ steps.smoke-readiness.outputs.ready == 'true' }}
         env:
           ENV_NAME: staging
           STAGE_NAME: staging
         run: ./scripts/ci/ensure-staging-api-routes.sh
 
       - name: Run staging backend smoke tests
-        if: ${{ steps.smoke-readiness.outputs.ready == 'true' }}
         env:
           EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
           EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
+          EPAC_STAGING_SMOKE_SERVICES: ${{ steps.smoke-services.outputs.available_services }}
         run: python3 scripts/ci/backend_staging_smoke.py --base-url "$STAGING_API_BASE_URL"

@@ -116,6 +116,38 @@ func TestHandleRequestReturnsEmptyOrganizationDirectory(t *testing.T) {
 	}
 }
 
+func TestHandleRequestUsesRouteKeyForOrganizationDirectory(t *testing.T) {
+	browser := &stubOrganizationBrowser{
+		organizations: []domain.LobbyistOrganization{
+			{
+				ID:   "ocl:200",
+				Name: "Clean Energy Canada",
+				Type: domain.OrganizationTypeNonProfit,
+			},
+		},
+	}
+	setOrganizationServicesForTest(t, browser, &stubOrganizationProfile{}, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath:  "/",
+		RouteKey: "GET /api/v1/lobbying/organizations",
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+
+	var body organizationDirectoryResponse
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if len(body.Rows) != 1 || body.Rows[0].Name != "Clean Energy Canada" {
+		t.Fatalf("directory rows = %#v", body.Rows)
+	}
+}
+
 func TestHandleRequestReturnsPopulatedOrganizationProfile(t *testing.T) {
 	profile := &stubOrganizationProfile{
 		organization: domain.LobbyistOrganization{

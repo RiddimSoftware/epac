@@ -462,6 +462,34 @@ func TestHandleRequestReturnsCabinetLobbyingOverview(t *testing.T) {
 	}
 }
 
+func TestHandleRequestUsesRouteKeyForCabinetLobbyingOverview(t *testing.T) {
+	stub := &stubCabinetOverviewService{
+		result: usecase.CabinetLobbyingOverviewResult{
+			Parliament: 45,
+			Citation:   usecase.Citation,
+			SourceURL:  usecase.SourceURL,
+		},
+	}
+	setCabinetOverviewServiceForTest(t, stub, nil)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
+		RawPath:  "/",
+		RouteKey: "GET /api/v1/cabinet/lobbying-overview",
+		QueryStringParameters: map[string]string{
+			"parliament": "45",
+		},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	if stub.gotInput.Parliament != 45 {
+		t.Fatalf("input = %#v", stub.gotInput)
+	}
+}
+
 func TestHandleRequestRequiresCabinetParliament(t *testing.T) {
 	resp, err := HandleRequest(context.Background(), events.APIGatewayV2HTTPRequest{
 		RawPath: "/cabinet/lobbying-overview",
