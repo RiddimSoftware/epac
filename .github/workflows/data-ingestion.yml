@@ -1,0 +1,273 @@
+name: Data Ingestion
+
+on:
+  # Legacy Hansard search schedule:
+  # - 12:00 UTC is 08:00 EDT, the primary morning run.
+  # - 03:00 UTC is 23:00 EDT, the overnight run for late Friday publications.
+  # Legacy lobbying schedule:
+  # - Monday 12:00 UTC is 08:00 EDT after quarterly OCL drops.
+  # - 1st of every third month at 12:00 UTC is the quarterly calendar anchor.
+  schedule:
+    - cron: '0 12 * * *'
+    - cron: '0 3 * * *'
+    - cron: '0 12 * * 1'
+    - cron: '0 12 1 */3 *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to ingest into
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      run_search:
+        description: Run Hansard search index ingestion
+        required: true
+        type: boolean
+        default: false
+      run_lobbying:
+        description: Run lobbying index ingestion
+        required: true
+        type: boolean
+        default: false
+      run_bills:
+        description: Run bills artifact ingestion
+        required: true
+        type: boolean
+        default: false
+      run_members:
+        description: Run members artifact ingestion
+        required: true
+        type: boolean
+        default: false
+      run_votes:
+        description: Run member votes artifact ingestion
+        required: true
+        type: boolean
+        default: false
+      parliament_number:
+        description: Optional parliament number override for search, lobbying, and bills
+        required: false
+        type: string
+      session_number:
+        description: Optional session number override for search, lobbying, and bills
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    name: Plan selected ingestors
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.plan.outputs.environment }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      should_run: ${{ steps.plan.outputs.should_run }}
+    steps:
+      - name: Build ingestion matrix
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          RUN_SEARCH: ${{ inputs.run_search }}
+          RUN_LOBBYING: ${{ inputs.run_lobbying }}
+          RUN_BILLS: ${{ inputs.run_bills }}
+          RUN_MEMBERS: ${{ inputs.run_members }}
+          RUN_VOTES: ${{ inputs.run_votes }}
+        run: |
+          set -euo pipefail
+
+          environment="${INPUT_ENVIRONMENT:-production}"
+          items='[]'
+
+          add_ingestor() {
+            local ingestor="$1"
+            local label="$2"
+            local module="$3"
+            local requires_database="$4"
+            items=$(jq -c \
+              --arg ingestor "$ingestor" \
+              --arg label "$label" \
+              --arg module "$module" \
+              --arg requires_database "$requires_database" \
+              '. + [{
+                ingestor: $ingestor,
+                label: $label,
+                module: $module,
+                requires_database: $requires_database
+              }]' <<< "$items")
+          }
+
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            case "$EVENT_SCHEDULE" in
+              "0 12 * * *"|"0 3 * * *")
+                add_ingestor "search" "Hansard search index" "hansard-search-index" "false"
+                ;;
+              "0 12 * * 1"|"0 12 1 */3 *")
+                add_ingestor "lobbying" "Lobbying index" "lobbying-index" "false"
+                ;;
+              *)
+                echo "No ingestors mapped for schedule: ${EVENT_SCHEDULE}"
+                ;;
+            esac
+          else
+            [ "$RUN_SEARCH" = "true" ] && add_ingestor "search" "Hansard search index" "hansard-search-index" "false"
+            [ "$RUN_LOBBYING" = "true" ] && add_ingestor "lobbying" "Lobbying index" "lobbying-index" "false"
+            [ "$RUN_BILLS" = "true" ] && add_ingestor "bills" "Bills artifacts" "bills-publisher" "false"
+            [ "$RUN_MEMBERS" = "true" ] && add_ingestor "members" "Members artifacts" "members-publisher" "true"
+            [ "$RUN_VOTES" = "true" ] && add_ingestor "votes" "Member votes artifacts" "member-votes-publisher" "true"
+          fi
+
+          if [ "$(jq 'length' <<< "$items")" -gt 0 ]; then
+            should_run=true
+          else
+            should_run=false
+          fi
+
+          {
+            echo "environment=$environment"
+            echo "should_run=$should_run"
+            echo "matrix=$(jq -c '{include: .}' <<< "$items")"
+          } >> "$GITHUB_OUTPUT"
+
+  ingest:
+    name: Run ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    needs: plan
+    if: ${{ needs.plan.outputs.should_run == 'true' }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    env:
+      ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+      AWS_REGION: us-east-1
+      EPAC_ARTIFACT_BUCKET: ${{ needs.plan.outputs.environment == 'production' && (vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709') || (vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709') }}
+      EPAC_ARTIFACT_PREFIX_DEFAULT: ${{ vars.EPAC_ARTIFACT_PREFIX }}
+      EPAC_ARTIFACT_PREFIX_PRODUCTION: ${{ vars.EPAC_ARTIFACT_PREFIX_PRODUCTION }}
+      EPAC_ARTIFACT_PREFIX_STAGING: ${{ vars.EPAC_ARTIFACT_PREFIX_STAGING }}
+      EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
+      LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
+      PARLIAMENT_NUMBER: ${{ inputs.parliament_number || vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
+      SESSION_NUMBER: ${{ inputs.session_number || vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
+      PARLIAMENT_NUM: ${{ inputs.parliament_number || vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
+      SESSION_NUM: ${{ inputs.session_number || vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.work
+          cache-dependency-path: backend/go.work.sum
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ needs.plan.outputs.environment == 'production' && secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN || secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve artifact prefix
+        run: |
+          set -euo pipefail
+
+          prefix="$EPAC_ARTIFACT_PREFIX_DEFAULT"
+          if [ "$ENVIRONMENT" = "production" ] && [ -n "$EPAC_ARTIFACT_PREFIX_PRODUCTION" ]; then
+            prefix="$EPAC_ARTIFACT_PREFIX_PRODUCTION"
+          elif [ "$ENVIRONMENT" = "staging" ] && [ -n "$EPAC_ARTIFACT_PREFIX_STAGING" ]; then
+            prefix="$EPAC_ARTIFACT_PREFIX_STAGING"
+          fi
+
+          echo "EPAC_ARTIFACT_PREFIX=${prefix#/}" >> "$GITHUB_ENV"
+
+      - name: Resolve database URL
+        if: ${{ matrix.requires_database == 'true' }}
+        env:
+          DATABASE_URL_PARAMETER_NAME: ${{ vars.EPAC_DATABASE_URL_PARAMETER_NAME || '/epac/database-url' }}
+        run: |
+          set -euo pipefail
+
+          database_url=$(aws ssm get-parameter \
+            --name "$DATABASE_URL_PARAMETER_NAME" \
+            --with-decryption \
+            --query Parameter.Value \
+            --output text)
+
+          if printf '%s' "$database_url" | jq -e 'type == "object" and has("DATABASE_URL")' >/dev/null 2>&1; then
+            database_url=$(printf '%s' "$database_url" | jq -r '.DATABASE_URL')
+          fi
+          if [ -z "$database_url" ] || [ "$database_url" = "None" ]; then
+            echo "Parameter ${DATABASE_URL_PARAMETER_NAME} did not contain a DATABASE_URL value"
+            exit 1
+          fi
+
+          echo "::add-mask::$database_url"
+          echo "DATABASE_URL=$database_url" >> "$GITHUB_ENV"
+
+      - name: Run ingestor
+        env:
+          INGESTOR: ${{ matrix.ingestor }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$EPAC_ARTIFACT_BUCKET" ]; then
+            echo "EPAC_ARTIFACT_BUCKET is required"
+            exit 1
+          fi
+
+          artifact_uri() {
+            local key="${1#/}"
+            local prefix="${EPAC_ARTIFACT_PREFIX:-}"
+            prefix="${prefix#/}"
+            prefix="${prefix%/}"
+            if [ -n "$prefix" ]; then
+              echo "s3://$EPAC_ARTIFACT_BUCKET/$prefix/$key"
+            else
+              echo "s3://$EPAC_ARTIFACT_BUCKET/$key"
+            fi
+          }
+
+          case "$INGESTOR" in
+            search)
+              (cd backend/hansard-search-index && go run .)
+              ;;
+            lobbying)
+              (cd backend/lobbying-index && go run .)
+              ;;
+            bills)
+              output_dir="$RUNNER_TEMP/artifacts/bills"
+              (cd backend/bills-publisher && go run . --output "$output_dir")
+              aws s3 sync "$output_dir" "$(artifact_uri bills)"
+              ;;
+            members)
+              output_dir="$RUNNER_TEMP/artifacts/members"
+              (cd backend/members-publisher && go run . --output "$output_dir")
+              aws s3 sync "$output_dir" "$(artifact_uri members)"
+              ;;
+            votes)
+              (cd backend/member-votes-publisher && go run .)
+              ;;
+            *)
+              echo "Unknown ingestor: $INGESTOR"
+              exit 1
+              ;;
+          esac
+
+      - name: Summarize ingestor
+        if: ${{ always() }}
+        env:
+          INGESTOR: ${{ matrix.ingestor }}
+          LABEL: ${{ matrix.label }}
+        run: |
+          {
+            echo "## ${LABEL}"
+            echo ""
+            echo "- Environment: \`${ENVIRONMENT}\`"
+            echo "- Ingestor: \`${INGESTOR}\`"
+            echo "- Artifact bucket: \`${EPAC_ARTIFACT_BUCKET}\`"
+            echo "- Status: \`${{ job.status }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
