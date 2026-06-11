@@ -550,7 +550,7 @@ ridings/v1/boundary/{slug}.json           # simplified boundary per riding (~20-
 ## 10. `GET /api/v1/estimates` and `GET /api/v1/estimates/{org_id}` — Main Estimates ⚠️
 
 **Lambda directory:** `backend/estimates`  
-**Current implementation status:** Lambda code exists (handles both API GET and ingest trigger in a single handler). Not wired to API Gateway routes in either staging or production Terraform.
+**Current implementation status:** Lambda code exists (handles both API GET and ingest trigger in a single handler). Not wired to API Gateway routes in the current imperative staging or production provisioning scripts.
 
 **Postgres tables:** `estimates`, `organizations`  
 **Primary queries:**

@@ -443,7 +443,7 @@ jobs:
           if aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=Skipping staging deploy::${FUNCTION_NAME} does not exist. Apply staging Terraform before deploying this service."
+            echo "::warning title=Skipping staging deploy::${FUNCTION_NAME} does not exist. Add it to the imperative staging provisioning step before deploying this service."
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
