@@ -6,6 +6,7 @@ require (
 	epac/observability v0.0.0
 	epac/shared v0.0.0
 	github.com/aws/aws-lambda-go v1.52.0
+	modernc.org/sqlite v1.39.1
 )
 
 require (
@@ -28,7 +29,16 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.1 // indirect
 	github.com/aws/smithy-go v1.23.2 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	modernc.org/libc v1.66.10 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.11.0 // indirect
 )
 
 replace epac/observability => ../observability
