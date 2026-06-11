@@ -13,6 +13,16 @@ on:
     - cron: '0 12 * * 1'
     - cron: '0 12 1 */3 *'
   workflow_dispatch:
+    # Each toggle runs one ingestor; leave a toggle off to skip it. Multiple
+    # toggles can run together in a single dispatch.
+    #
+    # Bills and Members each have two pipelines that produce different outputs:
+    # - "artifacts" (run_bills, run_members) publish legacy flat-JSON files to S3.
+    # - "SQLite index" (run_bills_indexer, run_members_indexer) publish a SQLite
+    #   .db to S3. The live Bills and Members Lambda APIs query the SQLite index
+    #   after the EPAC-2260 re-architecture, so to refresh what the public API
+    #   serves you must run the indexer toggle (the "artifacts" toggle does not).
+    # The two pipelines are independent: neither depends on the other to run first.
     inputs:
       environment:
         description: Environment to ingest into
@@ -22,37 +32,37 @@ on:
           - staging
           - production
       run_search:
-        description: Run Hansard search index ingestion
+        description: 'Hansard: SQLite FTS5 search index (.db) -> S3, read by the live Hansard search API'
         required: true
         type: boolean
         default: false
       run_lobbying:
-        description: Run lobbying index ingestion
+        description: 'Lobbying: SQLite index (.db) -> S3, read by the live Lobbying API'
         required: true
         type: boolean
         default: false
       run_bills:
-        description: Run bills artifact ingestion
+        description: 'Bills: legacy flat-JSON artifacts -> S3 (does not refresh the live Bills API; use run_bills_indexer for that)'
         required: true
         type: boolean
         default: false
       run_bills_indexer:
-        description: Run bills SQLite index ingestion
+        description: 'Bills: SQLite index (.db) -> S3, read by the live Bills API'
         required: true
         type: boolean
         default: false
       run_members:
-        description: Run members artifact ingestion
+        description: 'Members: legacy flat-JSON artifacts -> S3 (does not refresh the live Members API; use run_members_indexer for that)'
         required: true
         type: boolean
         default: false
       run_members_indexer:
-        description: Run members SQLite index ingestion
+        description: 'Members: SQLite index (.db) -> S3, read by the live Members API'
         required: true
         type: boolean
         default: false
       run_votes:
-        description: Run member votes artifact ingestion
+        description: 'Member votes: per-member recorded-vote JSON artifacts -> S3'
         required: true
         type: boolean
         default: false
