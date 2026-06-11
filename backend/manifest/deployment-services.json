@@ -18,6 +18,23 @@
       }
     },
     {
+      "name": "live-vote-poller",
+      "deploy": {
+        "staging": true,
+        "production": true
+      },
+      "sync": {
+        "staging": {
+          "database": false,
+          "artifact": true
+        },
+        "production": {
+          "database": false,
+          "artifact": true
+        }
+      }
+    },
+    {
       "name": "loader",
       "deploy": {
         "staging": false,
