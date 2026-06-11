@@ -3,8 +3,11 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,9 +16,14 @@ import (
 	"epac/shared/artifacts"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	_ "modernc.org/sqlite"
 )
 
-const billsArtifactKey = "bills/v1/all.json"
+const (
+	billsSQLiteArtifactKey = "bills/v1/index.sqlite"
+	billsJSONArtifactKey   = "bills/v1/all.json"
+	sqliteReadOnlyDSN      = "file:%s?mode=ro&_pragma=query_only(1)"
+)
 
 type BillStage struct {
 	ID            string  `json:"id,omitempty"`
@@ -71,7 +79,18 @@ func readBills(ctx context.Context) (BillsResponse, error) {
 	if err != nil {
 		return BillsResponse{}, err
 	}
-	data, err := store.Get(ctx, billsArtifactKey)
+	data, err := store.Get(ctx, billsSQLiteArtifactKey)
+	if err != nil {
+		if artifacts.IsNotFound(err) {
+			return readBillsJSON(ctx, store)
+		}
+		return BillsResponse{}, err
+	}
+	return readBillsSQLite(ctx, data)
+}
+
+func readBillsJSON(ctx context.Context, store artifacts.Store) (BillsResponse, error) {
+	data, err := store.Get(ctx, billsJSONArtifactKey)
 	if err != nil {
 		return BillsResponse{}, err
 	}
@@ -83,6 +102,157 @@ func readBills(ctx context.Context) (BillsResponse, error) {
 		resp.Bills = []Bill{}
 	}
 	return resp, nil
+}
+
+func readBillsSQLite(ctx context.Context, data []byte) (BillsResponse, error) {
+	db, cleanup, err := openSQLiteArtifact(data, "epac-bills-*.sqlite")
+	if err != nil {
+		return BillsResponse{}, err
+	}
+	defer cleanup()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT
+			id,
+			number,
+			title,
+			sponsor_name,
+			status,
+			current_stage,
+			introduced_on,
+			source_url,
+			bill_type,
+			parliament,
+			session,
+			legis_info_url
+		FROM bills
+		ORDER BY rowid`)
+	if err != nil {
+		return BillsResponse{}, fmt.Errorf("query bills sqlite artifact: %w", err)
+	}
+	defer rows.Close()
+
+	bills := make([]Bill, 0)
+	for rows.Next() {
+		var bill Bill
+		var introducedOn sql.NullString
+		var parliament sql.NullInt64
+		var session sql.NullInt64
+		if err := rows.Scan(
+			&bill.ID,
+			&bill.Number,
+			&bill.Title,
+			&bill.SponsorName,
+			&bill.Status,
+			&bill.CurrentStage,
+			&introducedOn,
+			&bill.SourceURL,
+			&bill.BillType,
+			&parliament,
+			&session,
+			&bill.LegisInfoURL,
+		); err != nil {
+			return BillsResponse{}, fmt.Errorf("scan bills sqlite artifact: %w", err)
+		}
+		bill.IntroducedOn = stringPtr(introducedOn)
+		bill.Parliament = intPtr(parliament)
+		bill.Session = intPtr(session)
+		bills = append(bills, bill)
+	}
+	if err := rows.Err(); err != nil {
+		return BillsResponse{}, fmt.Errorf("iterate bills sqlite artifact: %w", err)
+	}
+
+	stages, err := readBillStagesSQLite(ctx, db)
+	if err != nil {
+		return BillsResponse{}, err
+	}
+	for i := range bills {
+		bills[i].Stages = stages[bills[i].ID]
+	}
+	if bills == nil {
+		bills = []Bill{}
+	}
+	return BillsResponse{Bills: bills}, nil
+}
+
+func readBillStagesSQLite(ctx context.Context, db *sql.DB) (map[string][]BillStage, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT bill_id, id, name, completed_date, is_completed
+		FROM bill_stages
+		ORDER BY bill_id, sort_order, rowid`)
+	if err != nil {
+		return nil, fmt.Errorf("query bill stages sqlite artifact: %w", err)
+	}
+	defer rows.Close()
+
+	stages := make(map[string][]BillStage)
+	for rows.Next() {
+		var billID string
+		var stage BillStage
+		var completedDate sql.NullString
+		var isCompleted int
+		if err := rows.Scan(&billID, &stage.ID, &stage.Name, &completedDate, &isCompleted); err != nil {
+			return nil, fmt.Errorf("scan bill stages sqlite artifact: %w", err)
+		}
+		stage.CompletedDate = stringPtr(completedDate)
+		stage.IsCompleted = isCompleted != 0
+		stages[billID] = append(stages[billID], stage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate bill stages sqlite artifact: %w", err)
+	}
+	return stages, nil
+}
+
+func openSQLiteArtifact(data []byte, tempPattern string) (*sql.DB, func(), error) {
+	file, err := os.CreateTemp("", tempPattern)
+	if err != nil {
+		return nil, nil, fmt.Errorf("create sqlite artifact temp file: %w", err)
+	}
+	path := file.Name()
+	cleanupFile := func() {
+		_ = os.Remove(path)
+	}
+	if _, err := file.Write(data); err != nil {
+		file.Close()
+		cleanupFile()
+		return nil, nil, fmt.Errorf("write sqlite artifact temp file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		cleanupFile()
+		return nil, nil, fmt.Errorf("close sqlite artifact temp file: %w", err)
+	}
+
+	db, err := sql.Open("sqlite", fmt.Sprintf(sqliteReadOnlyDSN, path))
+	if err != nil {
+		cleanupFile()
+		return nil, nil, fmt.Errorf("open sqlite artifact: %w", err)
+	}
+	cleanup := func() {
+		_ = db.Close()
+		cleanupFile()
+	}
+	if err := db.Ping(); err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("ping sqlite artifact: %w", err)
+	}
+	return db, cleanup, nil
+}
+
+func stringPtr(value sql.NullString) *string {
+	if !value.Valid {
+		return nil
+	}
+	return &value.String
+}
+
+func intPtr(value sql.NullInt64) *int {
+	if !value.Valid {
+		return nil
+	}
+	converted := int(value.Int64)
+	return &converted
 }
 
 func filterBills(bills []Bill, statusFilter, parliamentFilter string) []Bill {
