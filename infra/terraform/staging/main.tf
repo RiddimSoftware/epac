@@ -31,15 +31,6 @@ locals {
   }
 
   lambda_config = {
-    "hansard-search-index" = {
-      timeout     = 900
-      memory_size = 1024
-    }
-    "lobbying-index" = {
-      timeout                = 900
-      memory_size            = 4096
-      ephemeral_storage_size = 2048
-    }
   }
 }
 

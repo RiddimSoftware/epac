@@ -16,9 +16,7 @@ import (
 	"epac/hansard-search-index/internal/adapter/sqlitefts5"
 	"epac/hansard-search-index/internal/domain"
 	"epac/hansard-search-index/internal/usecase"
-	"epac/observability"
 
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -122,5 +120,8 @@ func logSummary(manifest domain.Manifest) {
 }
 
 func main() {
-	lambda.Start(observability.WrapNoEvent("hansard-search-index", HandleRequest))
+	if err := HandleRequest(context.Background()); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }

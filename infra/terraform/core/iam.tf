@@ -49,8 +49,6 @@ locals {
     ]
   ])
 
-  lobbying_index_staging_state_machine_arn      = "arn:aws:states:${var.aws_region}:${local.account_id}:stateMachine:epac-lobbying-index-staging"
-  lobbying_index_staging_state_machine_role_arn = "arn:aws:iam::${local.account_id}:role/epac-lobbying-index-staging-state-machine-role"
 
   legacy_production_lambda_names = [
     "daily-fetch",
@@ -186,38 +184,7 @@ data "aws_iam_policy_document" "backend_staging_ci" {
     resources = ["arn:aws:lambda:${var.aws_region}:${local.account_id}:function:epac-*-staging"]
   }
 
-  statement {
-    sid = "ManageLobbyingIndexStateMachine"
-    actions = [
-      "states:CreateStateMachine",
-      "states:DescribeStateMachine",
-      "states:UpdateStateMachine",
-    ]
-    resources = [local.lobbying_index_staging_state_machine_arn]
-  }
 
-  statement {
-    sid = "ManageLobbyingIndexStateMachineRole"
-    actions = [
-      "iam:CreateRole",
-      "iam:GetRole",
-      "iam:PutRolePolicy",
-      "iam:UpdateAssumeRolePolicy",
-    ]
-    resources = [local.lobbying_index_staging_state_machine_role_arn]
-  }
-
-  statement {
-    sid       = "PassLobbyingIndexStateMachineRole"
-    actions   = ["iam:PassRole"]
-    resources = [local.lobbying_index_staging_state_machine_role_arn]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:PassedToService"
-      values   = ["states.amazonaws.com"]
-    }
-  }
 }
 
 data "aws_iam_policy_document" "backend_production_ci" {
@@ -262,14 +229,13 @@ resource "aws_iam_role_policy" "backend_production_ci" {
 
 data "aws_iam_policy_document" "lambda_hansard_search_index_artifacts" {
   statement {
-    sid    = "AllowHansardSearchIndexArtifactWrites"
+    sid    = "AllowHansardSearchIndexArtifactReads"
     effect = "Allow"
 
     actions = [
       # AWS authorizes HeadObject through s3:GetObject; there is no separate
       # s3:HeadObject IAM action.
       "s3:GetObject",
-      "s3:PutObject",
     ]
 
     resources = [
@@ -302,13 +268,12 @@ resource "aws_iam_role_policy" "lambda_hansard_search_index_artifacts" {
 
 data "aws_iam_policy_document" "lambda_lobbying_index_artifacts" {
   statement {
-    sid    = "LobbyingIndexArtifactReadWrite"
+    sid    = "LobbyingIndexArtifactReads"
     effect = "Allow"
 
     actions = [
       # s3:GetObject covers HeadObject; there is no separate s3:HeadObject IAM action.
       "s3:GetObject",
-      "s3:PutObject",
     ]
 
     resources = [
