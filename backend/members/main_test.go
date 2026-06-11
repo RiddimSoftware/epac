@@ -2,27 +2,27 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"epac/shared/artifacts"
+	sqliteadapter "epac/members/internal/adapter/sqlite"
+	"epac/members/internal/usecase"
 	"github.com/aws/aws-lambda-go/events"
 	_ "modernc.org/sqlite"
 )
 
 func TestHandleRequestReadsSQLiteArtifact(t *testing.T) {
 	dir := t.TempDir()
-	writeMemberFixture(t, dir, MembersResponse{Members: []Member{
-		{ID: "json", Name: "JSON fallback", Province: "ON", Party: "Liberal"},
-	}})
 	writeMemberSQLiteUnitFixture(t, dir, []Member{
 		{ID: "2269", Name: "Jane Example", Riding: "Ottawa Centre", Province: "ON", Party: "Liberal", SourceURL: "https://www.ourcommons.ca/members/en"},
 		{ID: "2270", Name: "Sam Example", Riding: "Vancouver East", Province: "BC", Party: "NDP", SourceURL: "https://www.ourcommons.ca/members/en"},
 	})
-	withLocalStore(t, dir)
+	withLocalIndex(t, dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		QueryStringParameters: map[string]string{"province": "Ontario", "party": "liberal"},
@@ -42,13 +42,45 @@ func TestHandleRequestReadsSQLiteArtifact(t *testing.T) {
 	}
 }
 
+func TestHandleRequestGetsMemberProfile(t *testing.T) {
+	dir := t.TempDir()
+	writeMemberSQLiteUnitFixture(t, dir, []Member{
+		{ID: "2269", Name: "Jane Example", Riding: "Ottawa Centre", Province: "ON", Party: "Liberal", SourceURL: "https://www.ourcommons.ca/members/en"},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path: "/api/v1/members/2269",
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	var body MemberProfileResponse
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Member.ID != "2269" || body.Member.Name != "Jane Example" {
+		t.Fatalf("member = %+v", body.Member)
+	}
+	if len(body.Member.Attendance) != 1 {
+		t.Fatalf("attendance = %+v", body.Member.Attendance)
+	}
+	record := body.Member.Attendance[0]
+	if record.SittingDate != "2026-06-01" || record.Present == nil || !*record.Present {
+		t.Fatalf("attendance record = %+v", record)
+	}
+}
+
 func TestHandleRequestFiltersMembers(t *testing.T) {
 	dir := t.TempDir()
-	writeMemberFixture(t, dir, MembersResponse{Members: []Member{
+	writeMemberSQLiteUnitFixture(t, dir, []Member{
 		{ID: "1", Name: "Ada Lovelace", Province: "ON", Party: "Liberal"},
 		{ID: "2", Name: "Grace Hopper", Province: "BC", Party: "NDP"},
-	}})
-	withLocalStore(t, dir)
+	})
+	withLocalIndex(t, dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		QueryStringParameters: map[string]string{"province": "Ontario", "party": "liberal"},
@@ -69,7 +101,7 @@ func TestHandleRequestFiltersMembers(t *testing.T) {
 }
 
 func TestHandleRequestMissingArtifactReturns404(t *testing.T) {
-	withLocalStore(t, t.TempDir())
+	withLocalIndex(t, t.TempDir())
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{})
 	if err != nil {
 		t.Fatalf("HandleRequest error: %v", err)
@@ -79,28 +111,15 @@ func TestHandleRequestMissingArtifactReturns404(t *testing.T) {
 	}
 }
 
-func withLocalStore(t *testing.T, dir string) {
+func withLocalIndex(t *testing.T, dir string) {
 	t.Helper()
-	original := newArtifactStore
-	newArtifactStore = func(context.Context) (artifacts.Store, error) {
-		return artifacts.NewLocalStore(dir), nil
-	}
-	t.Cleanup(func() { newArtifactStore = original })
-}
-
-func writeMemberFixture(t *testing.T, dir string, body MembersResponse) {
-	t.Helper()
-	path := filepath.Join(dir, "members", "v1")
-	if err := os.MkdirAll(path, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	data, err := json.Marshal(body)
-	if err != nil {
-		t.Fatalf("marshal fixture: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(path, "all.json"), data, 0o644); err != nil {
-		t.Fatalf("write fixture: %v", err)
-	}
+	t.Setenv("EPAC_ARTIFACTS_DIR", dir)
+	t.Setenv("MEMBERS_INDEX_PREFIX", "members/v1")
+	original := memberData
+	memberData = newMembersRuntime(openMembersIndexFromEnv, openSQLiteReadOnly, func(db *sql.DB) usecase.MemberRepository {
+		return sqliteadapter.New(db)
+	})
+	t.Cleanup(func() { memberData = original })
 }
 
 func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
@@ -113,7 +132,6 @@ func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
 	if err != nil {
 		t.Fatalf("open sqlite fixture: %v", err)
 	}
-	defer db.Close()
 	if _, err := db.Exec(`CREATE TABLE members (
 		id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -124,6 +142,17 @@ func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
 	)`); err != nil {
 		t.Fatalf("create members table: %v", err)
 	}
+	if _, err := db.Exec(`CREATE TABLE mp_attendance (
+		member_id TEXT NOT NULL,
+		sitting_date TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT '',
+		present INTEGER,
+		source_url TEXT NOT NULL DEFAULT '',
+		parliament INTEGER,
+		session INTEGER
+	)`); err != nil {
+		t.Fatalf("create mp attendance table: %v", err)
+	}
 	for _, member := range members {
 		if _, err := db.Exec(`
 			INSERT INTO members (id, name, riding, province, party, source_url)
@@ -132,5 +161,28 @@ func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
 		); err != nil {
 			t.Fatalf("insert member fixture: %v", err)
 		}
+	}
+	if _, err := db.Exec(`
+		INSERT INTO mp_attendance (member_id, sitting_date, status, present, source_url, parliament, session)
+		VALUES ('2269', '2026-06-01', 'present', 1, 'https://www.ourcommons.ca/attendance', 45, 1)`); err != nil {
+		t.Fatalf("insert attendance fixture: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close sqlite fixture: %v", err)
+	}
+	writeManifest(t, path, "members/v1/index.sqlite")
+}
+
+func writeManifest(t *testing.T, sqlitePath, sqliteKey string) {
+	t.Helper()
+	data, err := os.ReadFile(sqlitePath)
+	if err != nil {
+		t.Fatalf("read sqlite fixture: %v", err)
+	}
+	sum := sha256.Sum256(data)
+	manifest := fmt.Sprintf(`{"version":"v1","sqlite_key":%q,"sqlite_size_bytes":%d,"sqlite_sha256":"%x"}`, sqliteKey, len(data), sum[:])
+	path := filepath.Join(filepath.Dir(sqlitePath), "manifest.json")
+	if err := os.WriteFile(path, []byte(manifest), 0o644); err != nil {
+		t.Fatalf("write manifest fixture: %v", err)
 	}
 }

@@ -17,10 +17,8 @@ import (
 
 func TestIntegrationMembersReadsLocalArtifactFixture(t *testing.T) {
 	dir := t.TempDir()
-	writeMemberFixture(t, dir, MembersResponse{Members: []Member{
-		{ID: "278707", Name: "Example MP", Province: "ON", Party: "Liberal"},
-	}})
-	withLocalStore(t, dir)
+	writeMembersSQLiteArtifact(t, dir)
+	withLocalIndex(t, dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		Path: "/api/v1/members",
@@ -35,7 +33,7 @@ func TestIntegrationMembersReadsLocalArtifactFixture(t *testing.T) {
 	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if len(body.Members) != 1 || body.Members[0].Name != "Example MP" {
+	if len(body.Members) != 2 || body.Members[0].Name != "Jane Example" {
 		t.Fatalf("body = %+v", body)
 	}
 }
@@ -43,7 +41,7 @@ func TestIntegrationMembersReadsLocalArtifactFixture(t *testing.T) {
 func TestIntegrationMembersLambdaQueriesSQLiteArtifactFromCompositionRoot(t *testing.T) {
 	dir := t.TempDir()
 	writeMembersSQLiteArtifact(t, dir)
-	t.Setenv("EPAC_ARTIFACTS_DIR", dir)
+	withLocalIndex(t, dir)
 
 	handler := observability.WrapAPIGateway("members", HandleRequest)
 	resp, err := handler(context.Background(), events.APIGatewayProxyRequest{
@@ -87,7 +85,6 @@ func writeMembersSQLiteArtifact(t *testing.T, dir string) {
 	if err != nil {
 		t.Fatalf("open sqlite fixture: %v", err)
 	}
-	defer db.Close()
 
 	statements := []string{
 		`CREATE TABLE members (
@@ -107,4 +104,8 @@ func writeMembersSQLiteArtifact(t *testing.T, dir string) {
 			t.Fatalf("exec sqlite fixture statement: %v", err)
 		}
 	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close sqlite fixture: %v", err)
+	}
+	writeManifest(t, path, "members/v1/index.sqlite")
 }

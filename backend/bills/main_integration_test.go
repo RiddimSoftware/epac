@@ -17,10 +17,8 @@ import (
 
 func TestIntegrationBillsReadsLocalArtifactFixture(t *testing.T) {
 	dir := t.TempDir()
-	writeBillFixture(t, dir, BillsResponse{Bills: []Bill{
-		{ID: "C-12", Number: "C-12", Title: "Example Act", Status: "InProgress"},
-	}})
-	withLocalStore(t, dir)
+	writeBillsSQLiteArtifact(t, dir)
+	withLocalIndex(t, dir)
 
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		Path: "/api/v1/bills",
@@ -35,7 +33,7 @@ func TestIntegrationBillsReadsLocalArtifactFixture(t *testing.T) {
 	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if len(body.Bills) != 1 || body.Bills[0].Number != "C-12" {
+	if len(body.Bills) != 2 || body.Bills[0].Number != "C-2269" {
 		t.Fatalf("body = %+v", body)
 	}
 }
@@ -43,7 +41,7 @@ func TestIntegrationBillsReadsLocalArtifactFixture(t *testing.T) {
 func TestIntegrationBillsLambdaQueriesSQLiteArtifactFromCompositionRoot(t *testing.T) {
 	dir := t.TempDir()
 	writeBillsSQLiteArtifact(t, dir)
-	t.Setenv("EPAC_ARTIFACTS_DIR", dir)
+	withLocalIndex(t, dir)
 
 	handler := observability.WrapAPIGateway("bills", HandleRequest)
 	resp, err := handler(context.Background(), events.APIGatewayProxyRequest{
@@ -96,7 +94,6 @@ func writeBillsSQLiteArtifact(t *testing.T, dir string) {
 	if err != nil {
 		t.Fatalf("open sqlite fixture: %v", err)
 	}
-	defer db.Close()
 
 	statements := []string{
 		`CREATE TABLE bills (
@@ -144,4 +141,8 @@ func writeBillsSQLiteArtifact(t *testing.T, dir string) {
 			t.Fatalf("exec sqlite fixture statement: %v", err)
 		}
 	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close sqlite fixture: %v", err)
+	}
+	writeManifest(t, path, "bills/v1/index.sqlite")
 }

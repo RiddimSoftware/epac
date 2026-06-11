@@ -86,6 +86,8 @@ to the issue that will build the missing artifact.
 | `MemberRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/MemberRepository.swift`; adapter: `ios/epac/Data/Adapters/RidingLookupMemberRepository.swift`. | Resolve member-related lookups, starting with riding lookup by postal code for FindMyMP. |
 | `SittingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/SittingRepository.swift`; adapter: `ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift`. | List sitting dates and load transcripts for a sitting date. |
 | `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
+| `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
+| `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
 | `TopicPreferenceStore` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/TopicPreferenceStore.swift`; adapter: `ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift`. | Read and persist followed topic IDs as a Domain-layer port. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
@@ -351,14 +353,40 @@ Goal: Browse members of Parliament with optional province and party filters.
 Inputs: Province filter, party filter.
 Outputs: MembersResponse with ParliamentMember records.
 Entities / values: ParliamentMember.
-Ports: iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: no named member repository port; current handlers read published artifacts directly through the shared artifact store.
-Primary adapters: members Lambda (GET /api/v1/members), members-publisher S3 artifact job, S3 members/v1 artifacts, iOS Fetch (ourcommons.ca member XML parsing).
+Ports: iOS Swift planned: `MemberRepository` ([EPAC-2195](https://linear.app/riddimsoftware/issue/EPAC-2195/introduce-domain-repository-ports-for-members-bills-sittings-and-topic)). Backend Go: `MemberRepository`.
+Primary adapters: members Lambda (GET /api/v1/members), SQLite query adapter, S3 manifest/index downloader, members-publisher/indexer S3 artifact job, S3 members/v1 artifacts, iOS Fetch (ourcommons.ca member XML parsing).
 Current implementation:
   backend/members/main.go
+  backend/members/internal/usecase/members.go
+  backend/members/internal/adapter/sqlite/repository.go
+  backend/members/internal/adapter/s3/manifest_loader.go
+  backend/members/internal/adapter/s3/index_downloader.go
   backend/members-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path from direct Postgres reads to `members/v1/all.json` in S3. iOS member-list refresh remains on the authoritative Parliament XML source. The publisher remains the only Postgres reader for this use case.
+> **Adapter note:** EPAC-2260 moves the backend API path from `members/v1/all.json` to the manifest-selected SQLite artifact in S3. The use case depends on the backend `MemberRepository` port; AWS, local `/tmp` files, and `database/sql` stay in adapters.
+
+---
+
+### GetMemberProfile
+
+```
+Actor: User (iOS app, Members tab -> MP profile) / Backend API caller
+Goal: Load one member profile with attendance rows when the members SQLite artifact includes them.
+Inputs: Member ID.
+Outputs: MemberProfileResponse with a ParliamentMember record and attendance records.
+Entities / values: ParliamentMember, MemberID.
+Ports: backend Go: `MemberRepository`.
+Primary adapters: members Lambda (GET /api/v1/members/{id}), SQLite query adapter, S3 manifest/index downloader.
+Current implementation:
+  backend/members/main.go
+  backend/members/internal/usecase/members.go
+  backend/members/internal/adapter/sqlite/repository.go
+  backend/members/internal/adapter/s3/manifest_loader.go
+  backend/members/internal/adapter/s3/index_downloader.go
+```
+
+> **Boundary note:** `GetMemberProfile` returns domain values only. Nullable SQL columns are converted inside the SQLite adapter and do not leak into the use case or domain types.
 
 ---
 
@@ -415,8 +443,8 @@ Goal: Browse current-session bills with optional status and parliament filters.
 Inputs: Status filter, Parliament number.
 Outputs: BillsResponse with Bill records.
 Entities / values: Bill.
-Ports: iOS Swift: `BillRepository`. Backend Go: no named bill repository port; current handlers read published artifacts directly through the shared artifact store.
-Primary adapters: bills Lambda (GET /api/v1/bills), bills-publisher artifact job, S3 bills/v1 artifacts, iOS LEGISinfoBillRepository wrapping BillsService (LEGISinfo JSON).
+Ports: iOS Swift: `BillRepository`. Backend Go: `BillRepository`.
+Primary adapters: bills Lambda (GET /api/v1/bills), SQLite query adapter, S3 manifest/index downloader, bills-publisher/indexer artifact job, S3 bills/v1 artifacts, iOS LEGISinfoBillRepository wrapping BillsService (LEGISinfo JSON).
 Current implementation:
   ios/epac/Domain/Ports/BillRepository.swift
   ios/epac/Data/Adapters/LEGISinfoBillRepository.swift
@@ -424,10 +452,36 @@ Current implementation:
   ios/epac/Views/Bills/BillsView.swift
   ios/epac/Views/Search/SearchView.swift
   backend/bills/main.go
+  backend/bills/internal/usecase/bills.go
+  backend/bills/internal/adapter/sqlite/repository.go
+  backend/bills/internal/adapter/s3/manifest_loader.go
+  backend/bills/internal/adapter/s3/index_downloader.go
   backend/bills-publisher/main.go
 ```
 
-> **Adapter note:** EPAC-1914 moves the backend API path to `bills/v1/all.json` in S3. iOS bill-list reads use the authoritative LEGISinfo JSON feed directly. The current repo has no bills table, so the publisher uses the same source until a canonical backend bills table exists.
+> **Adapter note:** EPAC-2260 moves the backend API path from `bills/v1/all.json` to the manifest-selected SQLite artifact in S3. The backend list use case depends on `BillRepository`; AWS, local `/tmp` files, and `database/sql` stay in adapters.
+
+---
+
+### GetBillDepth
+
+```
+Actor: User (iOS app, bill detail) / Backend API caller
+Goal: Load one bill with relational depth rows such as versions and amendments.
+Inputs: Bill ID.
+Outputs: BillDepthResponse with Bill metadata, stages, versions, and amendments.
+Entities / values: Bill.
+Ports: backend Go: `BillRepository`.
+Primary adapters: bills Lambda (GET /api/v1/bills/{id}), SQLite query adapter, S3 manifest/index downloader.
+Current implementation:
+  backend/bills/main.go
+  backend/bills/internal/usecase/bills.go
+  backend/bills/internal/adapter/sqlite/repository.go
+  backend/bills/internal/adapter/s3/manifest_loader.go
+  backend/bills/internal/adapter/s3/index_downloader.go
+```
+
+> **Boundary note:** `GetBillDepth` returns domain values only. SQLite nulls and optional table/column handling are adapter concerns.
 
 ---
 
