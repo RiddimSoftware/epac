@@ -64,7 +64,7 @@ func run(ctx context.Context) error {
 		legisinfo.WithMaxBills(envInt("MAX_BILLS", 0)),
 		legisinfo.WithLogger(logger),
 	)
-	writer := sqliteadapter.NewWriter()
+	writer := sqliteadapter.NewWriter(sqliteadapter.WithLogger(logger))
 	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix, s3adapter.WithLogger(logger))
 	
 	dbPath := firstEnvDefault(defaultDBPath, "DB_PATH", "BILLS_DB_PATH")

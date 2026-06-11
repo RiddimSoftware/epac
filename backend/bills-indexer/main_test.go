@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"epac/bills-indexer/internal/domain"
-	"epac/bills-indexer/internal/usecase"
 )
 
 func TestLifecycleLogging(t *testing.T) {
@@ -23,12 +22,15 @@ func TestLifecycleLogging(t *testing.T) {
 		batch: domain.Batch{Bills: []domain.Bill{{ID: "13543613", Number: "C-2"}}},
 		log:   func(p map[string]any) { logJSON(p) },
 	}
-	writer := &fakeWriter{stats: domain.Stats{
-		BuiltAt:     time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
-		Parliament:  45,
-		Session:     1,
-		TableCounts: map[string]int{"bills": 1},
-	}}
+	writer := &fakeWriter{
+		stats: domain.Stats{
+			BuiltAt:     time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+			Parliament:  45,
+			Session:     1,
+			TableCounts: map[string]int{"bills": 1},
+		},
+		log: func(p map[string]any) { logJSON(p) },
+	}
 	uploader := &fakeUploader{
 		hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		size: 42,
@@ -56,8 +58,8 @@ func TestLifecycleLogging(t *testing.T) {
 	out, _ := io.ReadAll(r)
 
 	lines := bytes.Split(bytes.TrimSpace(out), []byte("\n"))
-	if len(lines) < 4 {
-		t.Fatalf("expected at least 4 log lines, got %d:\n%s", len(lines), string(out))
+	if len(lines) < 6 {
+		t.Fatalf("expected at least 6 log lines, got %d:\n%s", len(lines), string(out))
 	}
 
 	assertEvent := func(i int, expectedEvent string) {
@@ -71,9 +73,12 @@ func TestLifecycleLogging(t *testing.T) {
 	}
 
 	assertEvent(0, "ingest_started")
-	assertEvent(1, "fetch_completed")
-	assertEvent(2, "upload_started")
-	assertEvent(3, "artifact_uploaded")
+	assertEvent(1, "fetch_started")
+	assertEvent(2, "fetch_completed")
+	assertEvent(3, "write_started")
+	assertEvent(4, "write_completed")
+	assertEvent(5, "upload_started")
+	assertEvent(6, "artifact_uploaded")
 }
 
 type fakeSource struct {
@@ -83,6 +88,7 @@ type fakeSource struct {
 
 func (f *fakeSource) FetchBills(_ context.Context, _ domain.Session) (domain.Batch, error) {
 	if f.log != nil {
+		f.log(map[string]any{"pipeline": "bills-indexer", "event": "fetch_started", "count": len(f.batch.Bills)})
 		f.log(map[string]any{"pipeline": "bills-indexer", "event": "fetch_completed", "count": len(f.batch.Bills)})
 	}
 	return f.batch, nil
@@ -91,10 +97,15 @@ func (f *fakeSource) FetchBills(_ context.Context, _ domain.Session) (domain.Bat
 type fakeWriter struct {
 	path  string
 	stats domain.Stats
+	log   func(map[string]any)
 }
 
 func (f *fakeWriter) Write(_ context.Context, path string, _ domain.Batch) (domain.Stats, error) {
 	f.path = path
+	if f.log != nil {
+		f.log(map[string]any{"pipeline": "bills-indexer", "event": "write_started"})
+		f.log(map[string]any{"pipeline": "bills-indexer", "event": "write_completed"})
+	}
 	return f.stats, nil
 }
 

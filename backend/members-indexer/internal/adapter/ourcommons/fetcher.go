@@ -26,6 +26,7 @@ type Fetcher struct {
 	userAgent      string
 	maxMembers     int
 	fetchFullVotes bool
+	logger         func(map[string]any)
 }
 
 type Option func(*Fetcher)
@@ -68,6 +69,12 @@ func WithFullVotes(enabled bool) Option {
 	}
 }
 
+func WithLogger(logger func(map[string]any)) Option {
+	return func(f *Fetcher) {
+		f.logger = logger
+	}
+}
+
 func NewFetcher(opts ...Option) *Fetcher {
 	f := &Fetcher{
 		client:    &http.Client{Timeout: 45 * time.Second},
@@ -93,8 +100,17 @@ func (f *Fetcher) FetchMembers(ctx context.Context) (domain.Batch, error) {
 	if f.maxMembers > 0 && len(xmlMembers) > f.maxMembers {
 		xmlMembers = xmlMembers[:f.maxMembers]
 	}
+
+	if f.logger != nil {
+		f.logger(map[string]any{
+			"pipeline": "members-indexer",
+			"event":    "fetch_started",
+			"count":    len(xmlMembers),
+		})
+	}
+
 	members := make([]domain.Member, 0, len(xmlMembers))
-	for _, raw := range xmlMembers {
+	for i, raw := range xmlMembers {
 		member := raw.toDomain(f.baseURL)
 		if member.ID == "" {
 			continue
@@ -103,7 +119,25 @@ func (f *Fetcher) FetchMembers(ctx context.Context) (domain.Batch, error) {
 			return domain.Batch{}, fmt.Errorf("fetch member %s profile: %w", member.ID, err)
 		}
 		members = append(members, member)
+
+		if f.logger != nil && (i+1)%10 == 0 {
+			f.logger(map[string]any{
+				"pipeline": "members-indexer",
+				"event":    "fetch_progress",
+				"current":  i + 1,
+				"total":    len(xmlMembers),
+			})
+		}
 	}
+
+	if f.logger != nil {
+		f.logger(map[string]any{
+			"pipeline": "members-indexer",
+			"event":    "fetch_completed",
+			"count":    len(members),
+		})
+	}
+
 	return domain.Batch{Members: members}, nil
 }
 
