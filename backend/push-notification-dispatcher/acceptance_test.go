@@ -16,12 +16,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 
+	"epac/_testdb"
 	"epac/observability"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/jackc/pgx/v5"
 )
 
 type apnsStub struct {
@@ -52,36 +55,42 @@ func (s *apnsStub) snapshot() []map[string]any {
 }
 
 func TestAcceptancePushNotificationDispatcherCallsAPNsThroughCompositionRoot(t *testing.T) {
-	apns := &apnsStub{}
-	server := httptest.NewServer(apns)
-	defer server.Close()
+	_testdb.WithTx(t, func(conn *pgx.Conn) {
+		t.Setenv("DATABASE_URL", os.Getenv("DATABASE_URL"))
 
-	t.Setenv("EPAC_APNS_URL", server.URL)
+		_testdb.SeedDeviceSubscription(t, conn, "test-token-123", "", nil, nil)
 
-	payload := `{
-		"division_id": 42,
-		"parliament": 45,
-		"session": 1,
-		"result": "carried",
-		"status": "concluded"
-	}`
+		apns := &apnsStub{}
+		server := httptest.NewServer(apns)
+		defer server.Close()
 
-	req := events.APIGatewayProxyRequest{
-		Body: payload,
-	}
+		t.Setenv("EPAC_APNS_URL", server.URL)
 
-	wrapped := observability.WrapAPIGateway(pipelineName, HandleRequest)
-	resp, err := wrapped(context.Background(), req)
-	if err != nil {
-		t.Fatalf("wrapped HandleRequest error: %v", err)
-	}
+		payload := `{
+			"division_id": 42,
+			"parliament": 45,
+			"session": 1,
+			"result": "carried",
+			"status": "concluded"
+		}`
 
-	if resp.StatusCode != 202 {
-		t.Errorf("expected status 202, got %d", resp.StatusCode)
-	}
+		req := events.APIGatewayProxyRequest{
+			Body: payload,
+		}
 
-	hits := apns.snapshot()
-	if len(hits) != 1 {
-		t.Fatalf("apns hit count = %d, want 1", len(hits))
-	}
+		wrapped := observability.WrapAPIGateway(pipelineName, HandleRequest)
+		resp, err := wrapped(context.Background(), req)
+		if err != nil {
+			t.Fatalf("wrapped HandleRequest error: %v", err)
+		}
+
+		if resp.StatusCode != 202 {
+			t.Errorf("expected status 202, got %d. body=%v", resp.StatusCode, resp.Body)
+		}
+
+		hits := apns.snapshot()
+		if len(hits) != 1 {
+			t.Fatalf("apns hit count = %d, want 1", len(hits))
+		}
+	})
 }
