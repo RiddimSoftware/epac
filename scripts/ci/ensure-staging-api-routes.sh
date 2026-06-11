@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-API_NAME="${API_NAME:-epac-api-staging}"
 ENV_NAME="${ENV_NAME:-staging}"
 STAGE_NAME="${STAGE_NAME:-staging}"
 REGION="${AWS_REGION:-us-east-1}"
@@ -17,6 +16,7 @@ if [ "$target_env" != "staging" ] && [ "$target_env" != "production" ]; then
   exit 1
 fi
 
+API_NAME="${API_NAME:-epac-api-${target_env}}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 echo "Syncing API routes for ${ENV_NAME} using ${MANIFEST_PATH}."
@@ -109,9 +109,9 @@ fi
 
 if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
   if [ -n "${API_NAME}" ]; then
-    echo "API ${API_NAME} not resolved by name. Set API_ID or STAGING_API_BASE_URL correctly." >&2
+    echo "API ${API_NAME} not resolved by name. Set API_ID or the environment API base URL correctly." >&2
   else
-    echo "Unable to resolve API ID. Set API_ID or STAGING_API_BASE_URL and ensure API mappings exist." >&2
+    echo "Unable to resolve API ID. Set API_ID or the environment API base URL and ensure API mappings exist." >&2
   fi
   exit 1
 fi
@@ -216,7 +216,7 @@ while IFS='|' read -r SERVICE METHOD ROUTE_KEY PAYLOAD_VERSION; do
       --principal apigateway.amazonaws.com >/dev/null || true
   fi
 
-done < <(jq -r --arg env "$target_env" '.services[] | select(.http != null and .deploy[$env] == true) | .name as $service | .http.routes[$env][] | "\($service)|\(.method)|\(.method + " " + .path)|\(.payload_format_version // "2.0")"' "$MANIFEST_PATH")
+done < <(jq -r --arg env "$target_env" '.services[] | select(.http != null and .deploy[$env] == true) | .name as $service | (.http.payload_format_version // "2.0") as $payload_format_version | .http.routes[$env][] | "\($service)|\(.method)|\(.method + " " + .path)|\($payload_format_version)"' "$MANIFEST_PATH")
 
 if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${STAGE_NAME}" --output json >/dev/null 2>&1; then
   AUTO_DEPLOY=$(aws apigatewayv2 get-stage \

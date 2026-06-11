@@ -48,3 +48,34 @@ def test_lobbying_screen_checks_are_active_when_lobbying_is_selected():
 
     assert "cabinet-lobbying-overview" in active_names
     assert "lobbyist-organizations:directory" in active_names
+
+
+def test_load_deployed_services_uses_selected_environment(tmp_path):
+    smoke = load_smoke_module()
+    manifest = tmp_path / "deployment-services.json"
+    manifest.write_text(
+        """
+        {
+          "services": [
+            {"name": "staging-only", "deploy": {"staging": true, "production": false}},
+            {"name": "production-only", "deploy": {"staging": false, "production": true}}
+          ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    assert smoke.load_deployed_services(manifest, "staging") == {"staging-only"}
+    assert smoke.load_deployed_services(manifest, "production") == {"production-only"}
+
+
+def test_bills_and_members_validators_require_non_empty_lists():
+    smoke = load_smoke_module()
+
+    smoke.validate_bills(200, {"bills": [{"id": "C-1"}]})
+    smoke.validate_members(200, {"members": [{"id": "123"}]})
+
+    with pytest.raises(smoke.SmokeFailure, match="bills must not be empty"):
+        smoke.validate_bills(200, {"bills": []})
+    with pytest.raises(smoke.SmokeFailure, match="members must not be empty"):
+        smoke.validate_members(200, {"members": []})

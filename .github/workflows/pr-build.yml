@@ -117,7 +117,7 @@ jobs:
       - name: Install test dependencies
         run: python3 -m pip install -r requirements-dev.txt
       - name: Run scripts/ci tests
-        run: python3 -m pytest scripts/ci/tests scripts/ci/test_ios_coverage_report.py
+        run: python3 -m pytest scripts/ci/tests scripts/ci/test_backend_staging_smoke.py scripts/ci/test_ios_coverage_report.py
 
   pr-build:
     name: pr-build

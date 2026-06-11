@@ -411,6 +411,30 @@ jobs:
             2>/dev/null || true
           echo "| Lambda permission (apigw-invoke-lobbying) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
+  provision-s3-http:
+    name: Provision production standard S3 HTTP Lambdas
+    needs: prepare
+    if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Provision standard S3 HTTP Lambdas
+        env:
+          ENV_NAME: production
+          API_ID: bdnpz6v3c8
+          ACCOUNT_ID: '227530433709'
+          LAMBDA_ROLE: arn:aws:iam::227530433709:role/epac-lambda-role
+          SERVICE_FILTER: ${{ inputs.service || 'all' }}
+        run: ./scripts/ci/provision-s3-http-lambdas.sh
+
   activate-production-api-stage:
     name: Activate production API Gateway stage
     runs-on: ubuntu-latest
@@ -439,9 +463,43 @@ jobs:
             echo "- Enabled auto-deploy for \`${STAGE_NAME}\` on API \`${API_ID}\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
+  assert-production-topology:
+    name: Check production S3 HTTP manifest topology
+    needs: [prepare, provision-search, provision-lobbying, provision-s3-http, activate-production-api-stage]
+    if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Ensure production routes are synced
+        env:
+          ENV_NAME: production
+          STAGE_NAME: production
+          API_ID: bdnpz6v3c8
+        run: ./scripts/ci/ensure-staging-api-routes.sh
+
+      - name: Check production manifest topology
+        env:
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
+          EPAC_BACKEND_MANIFEST_SERVICES: ${{ inputs.service || 'all' }}
+        run: |
+          python3 scripts/ci/check_backend_manifest_deployment.py \
+            --environment production \
+            --api-id bdnpz6v3c8 \
+            --artifact-bucket "$EPAC_ARTIFACT_BUCKET" \
+            --services "$EPAC_BACKEND_MANIFEST_SERVICES" \
+            --phase topology
+
   deploy:
     name: Promote ${{ matrix.service }} to production
-    needs: [prepare, provision-search, provision-lobbying-index, provision-lobbying, activate-production-api-stage]
+    needs: [prepare, provision-lobbying-index, assert-production-topology]
     if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
     runs-on: ubuntu-latest
     strategy:
@@ -543,3 +601,64 @@ jobs:
             --environment "$UPDATED_ENV" \
             >/dev/null
           aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+
+  smoke:
+    name: Smoke test production backend
+    runs-on: ubuntu-latest
+    needs: [prepare, deploy]
+    if: ${{ needs.prepare.outputs.service_is_valid == 'true' }}
+
+    env:
+      PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL || 'https://api.epac.riddimsoftware.com' }}
+      SERVICE_FILTER: ${{ inputs.service || 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_PRODUCTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Ensure production routes are synced
+        env:
+          ENV_NAME: production
+          STAGE_NAME: production
+          API_ID: bdnpz6v3c8
+        run: ./scripts/ci/ensure-staging-api-routes.sh
+
+      - name: Check production S3 HTTP manifest readiness
+        env:
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
+          EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
+          LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
+          BILLS_INDEX_PREFIX: ${{ vars.EPAC_BILLS_INDEX_PREFIX || 'bills/v1' }}
+          MEMBERS_INDEX_PREFIX: ${{ vars.EPAC_MEMBERS_INDEX_PREFIX || 'members/v1' }}
+          EPAC_BACKEND_MANIFEST_SERVICES: ${{ inputs.service || 'all' }}
+        run: |
+          python3 scripts/ci/check_backend_manifest_deployment.py \
+            --environment production \
+            --api-id bdnpz6v3c8 \
+            --artifact-bucket "$EPAC_ARTIFACT_BUCKET" \
+            --services "$EPAC_BACKEND_MANIFEST_SERVICES" \
+            --phase ready
+
+      - name: Run production backend smoke tests
+        env:
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_PRODUCTION || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
+          EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
+          EPAC_BACKEND_SMOKE_ENVIRONMENT: production
+          EPAC_BACKEND_SMOKE_SERVICES: ${{ inputs.service || 'all' }}
+        run: |
+          if [ "$SERVICE_FILTER" != "all" ] && ! python3 scripts/ci/backend_staging_smoke.py --list | grep -F "[${SERVICE_FILTER}]"; then
+            echo "No production smoke checks are registered for ${SERVICE_FILTER}; skipping smoke request."
+            exit 0
+          fi
+          python3 scripts/ci/backend_staging_smoke.py \
+            --environment production \
+            --base-url "$PRODUCTION_API_BASE_URL" \
+            --services "$EPAC_BACKEND_SMOKE_SERVICES"

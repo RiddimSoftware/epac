@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Smoke-test the deployed EPAC staging backend API.
+"""Smoke-test the deployed EPAC backend API.
 
 The checks intentionally assert response contract shape instead of seeded record
-counts. Several endpoints depend on staging database contents that are not yet
+counts. Several endpoints depend on database contents that are not yet
 fixture-managed, so empty result sets are acceptable when the JSON schema is
-still recognizable.
+still recognizable. Artifact-backed list endpoints with canonical public data
+are stricter and must return non-empty lists.
 
 Checks are filtered at runtime against the deployment manifest
 (backend/manifest/deployment-services.json). A check whose ``service`` field
-names a service that is not deployed to staging is skipped automatically, so
-the script stays correct as services are added or removed from staging without
-requiring a code change. Checks with ``service=None`` always run.
+names a service that is not deployed to the selected environment is skipped
+automatically, so the script stays correct as services are added or removed
+without requiring a code change. Checks with ``service=None`` always run.
 """
 
 from __future__ import annotations
@@ -31,7 +32,10 @@ from tempfile import NamedTemporaryFile
 from typing import Any, Callable
 
 
-DEFAULT_BASE_URL = "https://staging-api.epac.riddimsoftware.com"
+DEFAULT_BASE_URLS = {
+    "staging": "https://staging-api.epac.riddimsoftware.com",
+    "production": "https://api.epac.riddimsoftware.com",
+}
 TIMEOUT_SECONDS = 20
 RETRIES = 3
 
@@ -57,7 +61,7 @@ class SmokeCheck:
     kind: str = "http"
     # Manifest service name this check belongs to. None = always run regardless
     # of which services are deployed. Set to a service name to skip automatically
-    # when that service has deploy.staging=false in the manifest.
+    # when that service has deploy.<environment>=false in the manifest.
     service: str | None = None
 
     def url(self, base_url: str) -> str:
@@ -84,6 +88,12 @@ def require_list(payload: dict[str, Any], endpoint: str, key: str) -> None:
         raise SmokeFailure(f"{endpoint}: {key} must be an array")
 
 
+def require_non_empty_list(payload: dict[str, Any], endpoint: str, key: str) -> None:
+    require_list(payload, endpoint, key)
+    if len(payload[key]) == 0:
+        raise SmokeFailure(f"{endpoint}: {key} must not be empty")
+
+
 def validate_health(status: int, payload: Any) -> None:
     body = require_dict(payload, "health")
     require_keys(body, "health", {"status", "checked_at", "pipelines"})
@@ -92,6 +102,18 @@ def validate_health(status: int, payload: Any) -> None:
     require_list(body, "health", "pipelines")
     if status == 503 and "error" in body:
         raise SmokeFailure("health: 503 error body indicates storage or Lambda failure")
+
+
+def validate_bills(_: int, payload: Any) -> None:
+    body = require_dict(payload, "bills")
+    require_keys(body, "bills", {"bills"})
+    require_non_empty_list(body, "bills", "bills")
+
+
+def validate_members(_: int, payload: Any) -> None:
+    body = require_dict(payload, "members")
+    require_keys(body, "members", {"members"})
+    require_non_empty_list(body, "members", "members")
 
 
 def validate_member_speeches(_: int, payload: Any) -> None:
@@ -256,6 +278,29 @@ CHECKS = [
         service="health",
         deterministic_note="Contract check accepts ok/degraded HealthResponse and catches DB/Lambda error bodies.",
         fixture_note="Pipeline freshness can make this degraded until staging data jobs are seeded and scheduled.",
+    ),
+    # --- artifact-backed parliamentary data ---
+    SmokeCheck(
+        name="bills:list",
+        method="GET",
+        path="/api/v1/bills",
+        query={},
+        expected_statuses={200},
+        validator=validate_bills,
+        service="bills",
+        deterministic_note="Contract check verifies the bills list endpoint is backed by a non-empty published artifact.",
+        fixture_note="No fixture required; the current Parliament bills dataset should not be empty after ingestion.",
+    ),
+    SmokeCheck(
+        name="members:list",
+        method="GET",
+        path="/api/v1/members",
+        query={},
+        expected_statuses={200},
+        validator=validate_members,
+        service="members",
+        deterministic_note="Contract check verifies the members list endpoint is backed by a non-empty published artifact.",
+        fixture_note="No fixture required; the House member dataset should not be empty after ingestion.",
     ),
     # --- hansard search index manifest (S3) ---
     SmokeCheck(
@@ -504,15 +549,15 @@ CHECKS = [
 ]
 
 
-def load_deployed_services(manifest_path: Path) -> set[str]:
-    """Return the set of service names with deploy.staging=true in the manifest."""
+def load_deployed_services(manifest_path: Path, environment: str) -> set[str]:
+    """Return the set of service names with deploy.<environment>=true in the manifest."""
     try:
         with open(manifest_path, encoding="utf-8") as f:
             manifest = json.load(f)
         return {
             svc["name"]
             for svc in manifest.get("services", [])
-            if svc.get("deploy", {}).get("staging", False)
+            if svc.get("deploy", {}).get(environment, False)
         }
     except (OSError, json.JSONDecodeError, KeyError) as exc:
         print(f"Warning: could not read manifest at {manifest_path}: {exc}. Running all checks.", file=sys.stderr)
@@ -543,8 +588,8 @@ def fetch_response(check: SmokeCheck, base_url: str) -> tuple[int, Any]:
 
     headers = {
         "Accept": "application/json",
-        "User-Agent": "epac-staging-smoke/1.0",
-        "X-Device-ID": "epac-staging-smoke",
+        "User-Agent": "epac-backend-smoke/1.0",
+        "X-Device-ID": "epac-backend-smoke",
     }
     headers.update(check.headers or {})
     request = urllib.request.Request(
@@ -641,11 +686,12 @@ def run_check(check: SmokeCheck, base_url: str) -> tuple[bool, str]:
 
 def write_summary(
     base_url: str,
+    environment: str,
     results: list[tuple[SmokeCheck, bool, str]],
     skipped: list[SmokeCheck],
 ) -> None:
     lines = [
-        "## Backend staging smoke tests",
+        f"## Backend {environment} smoke tests",
         "",
         f"Base URL: `{base_url}`",
         "",
@@ -656,13 +702,13 @@ def write_summary(
         icon = "PASS" if passed else "FAIL"
         lines.append(f"| {check.name} | {icon} | {evidence} |")
     for check in skipped:
-        lines.append(f"| {check.name} | SKIP | service `{check.service}` not selected for this staging smoke run |")
+        lines.append(f"| {check.name} | SKIP | service `{check.service}` not selected for this {environment} smoke run |")
 
     lines.extend(["", "### Deterministic and fixture-dependent coverage", ""])
     for check, _, _ in results:
         lines.append(f"- **{check.name}:** {check.deterministic_note} {check.fixture_note}")
     for check in skipped:
-        lines.append(f"- **{check.name}:** *(skipped - `{check.service}` was not selected for this staging smoke run)*")
+        lines.append(f"- **{check.name}:** *(skipped - `{check.service}` was not selected for this {environment} smoke run)*")
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
@@ -679,8 +725,13 @@ def list_checks() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run EPAC staging backend smoke tests.")
-    parser.add_argument("--base-url", default=os.environ.get("STAGING_API_BASE_URL", DEFAULT_BASE_URL))
+    parser = argparse.ArgumentParser(description="Run EPAC backend smoke tests.")
+    parser.add_argument(
+        "--environment",
+        choices=("staging", "production"),
+        default=os.environ.get("EPAC_BACKEND_SMOKE_ENVIRONMENT", "staging"),
+    )
+    parser.add_argument("--base-url", default=None)
     parser.add_argument("--list", action="store_true", help="List configured checks without making network calls.")
     parser.add_argument(
         "--manifest",
@@ -689,8 +740,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--services",
-        default=os.environ.get("EPAC_STAGING_SMOKE_SERVICES", ""),
-        help="JSON array or comma-separated service names to smoke. Defaults to manifest services with deploy.staging=true.",
+        default=os.environ.get("EPAC_BACKEND_SMOKE_SERVICES", os.environ.get("EPAC_STAGING_SMOKE_SERVICES", "")),
+        help="JSON array or comma-separated service names to smoke. Defaults to manifest services with deploy.<environment>=true.",
     )
     args = parser.parse_args()
 
@@ -699,7 +750,7 @@ def main() -> int:
         return 0
 
     manifest_path = Path(args.manifest) if args.manifest else _default_manifest_path()
-    deployed_services = load_deployed_services(manifest_path)
+    deployed_services = load_deployed_services(manifest_path, args.environment)
     service_filter = parse_service_filter(args.services)
     if service_filter is not None:
         deployed_services &= service_filter
@@ -714,11 +765,12 @@ def main() -> int:
     if skipped_checks:
         skipped_names = ", ".join(c.name for c in skipped_checks)
         print(
-            f"Skipping {len(skipped_checks)} check(s) for services not deployed to staging: {skipped_names}",
+            f"Skipping {len(skipped_checks)} check(s) for services not deployed to {args.environment}: {skipped_names}",
             file=sys.stderr,
         )
 
-    base_url = args.base_url.rstrip("/")
+    default_base_url = DEFAULT_BASE_URLS[args.environment]
+    base_url = (args.base_url or os.environ.get("STAGING_API_BASE_URL" if args.environment == "staging" else "PRODUCTION_API_BASE_URL") or default_base_url).rstrip("/")
     failures = 0
     results: list[tuple[SmokeCheck, bool, str]] = []
     for check in active_checks:
@@ -730,7 +782,7 @@ def main() -> int:
             failures += 1
             print(f"FAIL {check.name}: {evidence}", file=sys.stderr)
 
-    write_summary(base_url, results, skipped_checks)
+    write_summary(base_url, args.environment, results, skipped_checks)
     return 1 if failures else 0
 
 
