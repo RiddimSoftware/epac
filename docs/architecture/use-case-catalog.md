@@ -138,6 +138,9 @@ to the issue that will build the missing artifact.
 | `MembersSource` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/ourcommons/fetcher.go`. | Fetch House member roster details, biographies, attendance rows, and private member's bill sponsorship links for the relational members artifact. |
 | `SQLiteWriter` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/sqlite/writer.go`. | Write members, biographies, attendance records, PMB sponsorships, and build metadata into `members.db`. |
 | `SQLiteUploader` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/s3/s3.go`. | Upload the members SQLite artifact to S3 and return immutable size/hash metadata for the manifest. |
+| `DivisionsFetching` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/ourcommons/divisions_client.go`. | Fetch live parliamentary divisions from ourcommons.ca. |
+| `ArtifactRepository` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/artifacts/repository.go`. | Check existence and persist completed vote payload artifacts. |
+| `PushDispatching` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/push/dispatcher.go`. | Forward concluded division payloads to the push-notification dispatcher. |
 
 ## Use Cases
 
@@ -1205,6 +1208,28 @@ Current implementation:
 ```
 
 > Boundary rule: pagination/search policy is represented as plain input values; no HTTP adapter types leak inward.
+
+---
+
+### PollLiveDivisions
+
+```
+Actor: System (cron scheduler)
+Goal: Fetch active parliamentary divisions, identify concluded votes, save them as artifacts, and dispatch a push notification payload.
+Inputs: Current time (to verify sitting hours).
+Outputs: Concluded division artifacts written to storage, push notifications dispatched.
+Entities / values: Division.
+Ports: backend Go: `DivisionsFetching`, `ArtifactRepository`, `PushDispatching`, `Clock`.
+Primary adapters: backend/live-vote-poller Lambda handler, ourcommons API client, S3/local-disk artifact repository, HTTP push dispatcher client.
+Current implementation:
+  backend/live-vote-poller/main.go
+  backend/live-vote-poller/internal/usecase/poll_live_divisions.go
+  backend/live-vote-poller/internal/adapter/ourcommons/divisions_client.go
+  backend/live-vote-poller/internal/adapter/artifacts/repository.go
+  backend/live-vote-poller/internal/adapter/push/dispatcher.go
+```
+
+> Boundary rule: The usecase checks sitting hours and division status independently of how AWS schedules the lambda or how HTTP requests are formed.
 
 ---
 
