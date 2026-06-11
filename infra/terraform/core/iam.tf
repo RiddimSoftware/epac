@@ -310,3 +310,26 @@ resource "aws_iam_role_policy" "lambda_live_vote_poller_artifacts" {
   policy = data.aws_iam_policy_document.lambda_live_vote_poller_artifacts.json
 }
 
+data "aws_iam_policy_document" "lambda_push_dispatcher_credentials" {
+  statement {
+    sid    = "AllowPushDispatcherCredentialReads"
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "secretsmanager:GetSecretValue"
+    ]
+
+    resources = [
+      "arn:aws:ssm:${var.aws_region}:${local.account_id}:parameter/epac/apns/*",
+      "arn:aws:secretsmanager:${var.aws_region}:${local.account_id}:secret:epac/apns/*"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_push_dispatcher_credentials" {
+  name   = "epac-push-dispatcher-credentials"
+  role   = var.lambda_role_name
+  policy = data.aws_iam_policy_document.lambda_push_dispatcher_credentials.json
+}

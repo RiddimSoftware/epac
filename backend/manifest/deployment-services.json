@@ -818,6 +818,40 @@
           "artifact": false
         }
       }
+    },
+    {
+      "name": "push-notification-dispatcher",
+      "deploy": {
+        "staging": true,
+        "production": true
+      },
+      "http": {
+        "payload_format_version": "1.0",
+        "routes": {
+          "staging": [
+            {
+              "method": "POST",
+              "path": "/api/v1/push/dispatch"
+            }
+          ],
+          "production": [
+            {
+              "method": "POST",
+              "path": "/api/v1/push/dispatch"
+            }
+          ]
+        }
+      },
+      "sync": {
+        "staging": {
+          "database": false,
+          "artifact": false
+        },
+        "production": {
+          "database": false,
+          "artifact": false
+        }
+      }
     }
   ]
 }
