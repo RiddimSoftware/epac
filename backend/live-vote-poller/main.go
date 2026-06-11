@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"epac/observability"
 
@@ -23,7 +24,33 @@ func main() {
 	lambda.Start(observability.WrapNoEvent(pipelineName, HandleRequest))
 }
 
+var clock = time.Now
+
+func isSittingHours(now time.Time) bool {
+	loc, err := time.LoadLocation("America/Toronto")
+	if err != nil {
+		return true // fail open if tzdata is missing
+	}
+	t := now.In(loc)
+	offset := t.Hour()*60 + t.Minute()
+
+	switch t.Weekday() {
+	case time.Monday:
+		return offset >= 10*60+30 && offset <= 19*60
+	case time.Tuesday, time.Wednesday, time.Thursday:
+		return offset >= 9*60+30 && offset <= 19*60
+	case time.Friday:
+		return offset >= 9*60+30 && offset <= 15*60
+	default:
+		return false
+	}
+}
+
 func HandleRequest(ctx context.Context) error {
+	if !isSittingHours(clock()) {
+		return nil
+	}
+
 	parliamentURL := os.Getenv("EPAC_PARLIAMENT_DIVISIONS_URL")
 	if parliamentURL == "" {
 		parliamentURL = "https://www.ourcommons.ca/members/en/votes/api/divisions"
