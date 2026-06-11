@@ -287,3 +287,26 @@ resource "aws_iam_role_policy" "lambda_lobbying_index_artifacts" {
   role   = var.lambda_role_name
   policy = data.aws_iam_policy_document.lambda_lobbying_index_artifacts.json
 }
+
+data "aws_iam_policy_document" "lambda_live_vote_poller_artifacts" {
+  statement {
+    sid    = "LiveVotePollerArtifactWrites"
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.artifacts_bucket_name}/votes/live/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_live_vote_poller_artifacts" {
+  name   = "epac-live-vote-poller-artifacts"
+  role   = var.lambda_role_name
+  policy = data.aws_iam_policy_document.lambda_live_vote_poller_artifacts.json
+}
+

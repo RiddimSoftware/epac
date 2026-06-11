@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"epac/observability"
 )
@@ -74,6 +75,14 @@ func (d *dispatcherStub) snapshot() []map[string]any {
 }
 
 func TestAcceptanceLiveVotePollerEmitsConcludedDivisionThroughCompositionRoot(t *testing.T) {
+	// Force sitting hours to ensure the poller runs
+	originalClock := clock
+	defer func() { clock = originalClock }()
+	clock = func() time.Time {
+		loc, _ := time.LoadLocation("America/Toronto")
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, loc) // Wednesday 12pm
+	}
+
 	parliament := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(parliamentDivisionsFixture))
