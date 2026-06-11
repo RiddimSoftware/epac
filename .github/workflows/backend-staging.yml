@@ -7,7 +7,9 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-staging.yml'
       - 'scripts/ci/backend_staging_smoke.py'
+      - 'scripts/ci/check_backend_manifest_deployment.py'
       - 'scripts/ci/ensure-staging-api-routes.sh'
+      - 'scripts/ci/provision-s3-http-lambdas.sh'
       - 'backend/manifest/deployment-services.json'
   workflow_dispatch:
 
@@ -261,6 +263,27 @@ jobs:
             2>/dev/null || true
           echo "| Lambda permission (apigw-invoke-lobbying) | ensured |" >> "$GITHUB_STEP_SUMMARY"
 
+  provision-s3-http:
+    name: Provision staging standard S3 HTTP Lambdas
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Provision standard S3 HTTP Lambdas
+        env:
+          ENV_NAME: staging
+          API_ID: f4x35gduxl
+          ACCOUNT_ID: '227530433709'
+          LAMBDA_ROLE: arn:aws:iam::227530433709:role/epac-lambda-role
+        run: ./scripts/ci/provision-s3-http-lambdas.sh
+
   provision-lobbying-index:
     name: Provision staging lobbying-index Lambda and state machine
     runs-on: ubuntu-latest
@@ -398,9 +421,40 @@ jobs:
 
           echo "Provisioned staging lobbying-index Lambda and Step Functions state machine"
 
+  assert-staging-topology:
+    name: Check staging S3 HTTP manifest topology
+    needs: [provision-search, provision-lobbying, provision-s3-http]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BACKEND_STAGING_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Ensure staging routes are synced
+        env:
+          ENV_NAME: staging
+          STAGE_NAME: staging
+          API_ID: f4x35gduxl
+        run: ./scripts/ci/ensure-staging-api-routes.sh
+
+      - name: Check staging manifest topology
+        env:
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
+        run: |
+          python3 scripts/ci/check_backend_manifest_deployment.py \
+            --environment staging \
+            --api-id f4x35gduxl \
+            --artifact-bucket "$EPAC_ARTIFACT_BUCKET" \
+            --phase topology
+
   deploy:
     name: Deploy ${{ matrix.service }} to staging
-    needs: [prepare, provision-search, provision-lobbying, provision-lobbying-index]
+    needs: [prepare, provision-lobbying-index, assert-staging-topology]
     runs-on: ubuntu-latest
 
     strategy:
@@ -443,7 +497,12 @@ jobs:
           if aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=Skipping staging deploy::${FUNCTION_NAME} does not exist. Add it to the imperative staging provisioning step before deploying this service."
+            IS_S3_HTTP_ARTIFACT=$(jq -r --arg service "${{ matrix.service }}" 'first(.services[] | select(.name == $service) | select(.deploy.staging == true and .http != null and .sync.staging.artifact == true) | "true") // "false"' backend/manifest/deployment-services.json)
+            if [ "$IS_S3_HTTP_ARTIFACT" = "true" ]; then
+              echo "::error title=Missing staging Lambda::${FUNCTION_NAME} does not exist for a manifest-declared S3 HTTP service."
+              exit 1
+            fi
+            echo "::warning title=Skipping staging deploy::${FUNCTION_NAME} does not exist. This service is outside the S3 HTTP manifest enforcement scope."
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -626,11 +685,27 @@ jobs:
         env:
           ENV_NAME: staging
           STAGE_NAME: staging
+          API_ID: f4x35gduxl
         run: ./scripts/ci/ensure-staging-api-routes.sh
+
+      - name: Check staging S3 HTTP manifest readiness
+        env:
+          EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
+          EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
+          LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
+          BILLS_INDEX_PREFIX: ${{ vars.EPAC_BILLS_INDEX_PREFIX || 'bills/v1' }}
+          MEMBERS_INDEX_PREFIX: ${{ vars.EPAC_MEMBERS_INDEX_PREFIX || 'members/v1' }}
+        run: |
+          python3 scripts/ci/check_backend_manifest_deployment.py \
+            --environment staging \
+            --api-id f4x35gduxl \
+            --artifact-bucket "$EPAC_ARTIFACT_BUCKET" \
+            --phase ready
 
       - name: Run staging backend smoke tests
         env:
           EPAC_ARTIFACT_BUCKET: ${{ vars.EPAC_ARTIFACT_BUCKET_STAGING || vars.EPAC_ARTIFACT_BUCKET || vars.ARTIFACTS_BUCKET || 'epac-artifacts-227530433709' }}
           EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
-          EPAC_STAGING_SMOKE_SERVICES: ${{ steps.smoke-services.outputs.available_services }}
-        run: python3 scripts/ci/backend_staging_smoke.py --base-url "$STAGING_API_BASE_URL"
+          EPAC_BACKEND_SMOKE_ENVIRONMENT: staging
+          EPAC_BACKEND_SMOKE_SERVICES: ${{ steps.smoke-services.outputs.available_services }}
+        run: python3 scripts/ci/backend_staging_smoke.py --environment staging --base-url "$STAGING_API_BASE_URL"
