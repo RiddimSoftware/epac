@@ -99,6 +99,12 @@ jobs:
       - name: Run lobbying-index tests
         working-directory: backend/lobbying-index
         run: go test ./...
+      - name: Run bills-indexer tests
+        working-directory: backend/bills-indexer
+        run: go test ./...
+      - name: Run members-indexer tests
+        working-directory: backend/members-indexer
+        run: go test ./...
 
   python-ci-tests:
     name: Python CI Tooling Tests

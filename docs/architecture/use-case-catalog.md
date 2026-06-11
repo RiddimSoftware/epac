@@ -24,6 +24,12 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ParliamentMember` | An elected Member of Parliament with riding, party, and contact info. |
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
+| `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
+| `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
+| `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
+| `MemberBiography` | Backend-only biography details scraped from a member profile page, including preferred language and profile summary text. |
+| `MemberAttendanceRecord` | Backend-only House vote/attendance row for an MP, with vote date, subject, result, and ballot where available. |
+| `PMBSponsorship` | Backend-only private member's bill sponsorship or seconding relationship for an MP. |
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
 | `OCLSubjectMatter` | An Office of the Commissioner of Lobbying subject-matter code used on communication reports and registrations. |
 | `EpacTopicSlug` | The stable epac topic identifier used to group parliamentary and lobbying records. |
@@ -54,6 +60,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `ManifestEntry` | Metadata for one S3 artifact: key, size, SHA-256 hash, ETag, last-modified, and per-artifact schema version. |
 | `HansardSearchIntervention` | Backend-only parsed Hansard intervention value used while building the SQLite FTS5 search artifact. |
 | `HansardSearchManifest` | Backend-only manifest pointer for the current-session Hansard search SQLite artifact. |
+| `BillsIndexManifest` | Backend-only manifest pointer for the bills relational SQLite artifact. |
+| `MembersIndexManifest` | Backend-only manifest pointer for the members relational SQLite artifact. |
 | `MinisterPortfolioLobbyingPeriod` | A cabinet portfolio tenure window with the OCL communications recorded while a minister held that portfolio. |
 | `MinisterLobbyingCommunication` | One OCL communication row for a minister, including organization, subject matter, date, citation URL, and mandate-letter match flag. |
 | `CabinetLobbyingOverview` | A cabinet-wide lobbying exposure summary with ranked ministers and most-active organizations per portfolio. |
@@ -122,6 +130,12 @@ to the issue that will build the missing artifact.
 | `MPLobbyingAggregator` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/mp_aggregation.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/mp_aggregation.go`. | Populate MP lobbying timeline, summary, subject-breakdown, and cohort-average read tables in the build-time SQLite artifact. |
 | `CabinetSource` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/minister_prebake.go`; adapter: `backend/lobbying-index/internal/adapter/cabinet/fetcher.go`. | Scrape the current Cabinet roster and current mandate-letter topics from pm.gc.ca into typed builder rows. |
 | `MinisterTableWriter` | backend Go | outbound | Implemented: `backend/lobbying-index/internal/usecase/minister_prebake.go`; adapter: `backend/lobbying-index/internal/adapter/sqlite/minister_prebake.go`. | Resolve minister member IDs and pre-bake minister portfolio, mandate-topic, and denormalized communication tables in the build-time SQLite artifact. |
+| `BillSource` | backend Go | outbound | Implemented: `backend/bills-indexer/internal/usecase/usecase.go`; adapter: `backend/bills-indexer/internal/adapter/legisinfo/fetcher.go`. | Fetch LEGISinfo bill detail, publication/version links, amendments, and PBO costing references for the relational bills artifact. |
+| `SQLiteWriter` | backend Go | outbound | Implemented: `backend/bills-indexer/internal/usecase/usecase.go`; adapter: `backend/bills-indexer/internal/adapter/sqlite/writer.go`. | Write bills, stages, events, versions, diffs, amendments, PBO costings, related links, and build metadata into `bills.db`. |
+| `SQLiteUploader` | backend Go | outbound | Implemented: `backend/bills-indexer/internal/usecase/usecase.go`; adapter: `backend/bills-indexer/internal/adapter/s3/s3.go`. | Upload the bills SQLite artifact to S3 and return immutable size/hash metadata for the manifest. |
+| `MembersSource` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/ourcommons/fetcher.go`. | Fetch House member roster details, biographies, attendance rows, and private member's bill sponsorship links for the relational members artifact. |
+| `SQLiteWriter` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/sqlite/writer.go`. | Write members, biographies, attendance records, PMB sponsorships, and build metadata into `members.db`. |
+| `SQLiteUploader` | backend Go | outbound | Implemented: `backend/members-indexer/internal/usecase/usecase.go`; adapter: `backend/members-indexer/internal/adapter/s3/s3.go`. | Upload the members SQLite artifact to S3 and return immutable size/hash metadata for the manifest. |
 
 ## Use Cases
 
@@ -258,6 +272,52 @@ Current implementation:
 ```
 
 > **Boundary rule:** `backend/hansard-search-index/internal/usecase/` owns the application policy and imports only standard library packages plus the local domain package. HTTP, XML decoding, SQLite, AWS SDK, and Lambda runtime wiring stay in adapters or `main.go`.
+
+---
+
+### IngestBills
+
+```
+Actor: Operator (manual GitHub Actions dispatch)
+Goal: Build the current-session bills relational SQLite artifact and publish its manifest pointer.
+Inputs: Parliament number, session number, artifact bucket, artifact prefix.
+Outputs: bills.db/index.sqlite and manifest.json under the configured S3 prefix.
+Entities / values: Bill, BillVersion, BillAmendment, PBOCosting, BillsIndexManifest, ArtifactKey.
+Ports: backend Go: `BillSource`, `SQLiteWriter`, `SQLiteUploader`, `ManifestWriter`.
+Primary adapters: LEGISinfo/parliament.ca HTTP crawler, SQLite schema writer, AWS S3 artifact writer, `data-ingestion.yml` bills-indexer job.
+Current implementation:
+  backend/bills-indexer/main.go
+  backend/bills-indexer/internal/usecase/usecase.go
+  backend/bills-indexer/internal/domain/domain.go
+  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go
+  backend/bills-indexer/internal/adapter/sqlite/writer.go
+  backend/bills-indexer/internal/adapter/s3/s3.go
+```
+
+> **Boundary rule:** `backend/bills-indexer/internal/usecase/` owns the application policy and imports only standard library packages plus the local domain package. HTTP scraping, SQLite, AWS SDK, and GitHub Actions wiring stay in adapters or `main.go`.
+
+---
+
+### IngestMembers
+
+```
+Actor: Operator (manual GitHub Actions dispatch)
+Goal: Build the current members relational SQLite artifact and publish its manifest pointer.
+Inputs: Artifact bucket, artifact prefix, optional fetch limits/full-vote toggle.
+Outputs: members.db/index.sqlite and manifest.json under the configured S3 prefix.
+Entities / values: ParliamentMember, MemberBiography, MemberAttendanceRecord, PMBSponsorship, MembersIndexManifest, ArtifactKey.
+Ports: backend Go: `MembersSource`, `SQLiteWriter`, `SQLiteUploader`, `ManifestWriter`.
+Primary adapters: ourcommons.ca member-profile crawler, SQLite schema writer, AWS S3 artifact writer, `data-ingestion.yml` members-indexer job.
+Current implementation:
+  backend/members-indexer/main.go
+  backend/members-indexer/internal/usecase/usecase.go
+  backend/members-indexer/internal/domain/domain.go
+  backend/members-indexer/internal/adapter/ourcommons/fetcher.go
+  backend/members-indexer/internal/adapter/sqlite/writer.go
+  backend/members-indexer/internal/adapter/s3/s3.go
+```
+
+> **Boundary rule:** `backend/members-indexer/internal/usecase/` owns the application policy and imports only standard library packages plus the local domain package. HTTP scraping, SQLite, AWS SDK, and GitHub Actions wiring stay in adapters or `main.go`.
 
 ---
 
