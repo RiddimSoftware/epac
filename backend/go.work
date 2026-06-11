@@ -30,6 +30,7 @@ use (
 	./observability
 	./on-this-day
 	./openapi
+	./push-notification-dispatcher
 	./riding-boundary
 	./sittings
 	./sittings-publisher
