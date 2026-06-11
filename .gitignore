@@ -17,6 +17,7 @@ bootstrap
 # Go binaries
 backend/health/health
 backend/daily-fetch/daily-fetch
+backend/live-vote-poller/live-vote-poller
 *.log
 *.txt
 !.github/perf-budgets/*.txt

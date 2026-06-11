@@ -14,8 +14,10 @@ use (
 	./hansard-search-index
 	./hansard-subjects-index
 	./health
+	./live-vote-poller
 	./loader
 	./lobbying
+	./lobbying-index
 	./manifest
 	./member-content
 	./member-lobbying
@@ -25,7 +27,6 @@ use (
 	./member-votes-publisher
 	./members
 	./members-publisher
-	./lobbying-index
 	./observability
 	./on-this-day
 	./openapi
