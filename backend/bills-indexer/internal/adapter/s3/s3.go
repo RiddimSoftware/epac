@@ -33,14 +33,27 @@ type Store struct {
 	client PutObjectClient
 	bucket string
 	prefix string
+	logger func(map[string]any)
 }
 
-func NewStore(client PutObjectClient, bucket, prefix string) *Store {
-	return &Store{
+type Option func(*Store)
+
+func WithLogger(logger func(map[string]any)) Option {
+	return func(s *Store) {
+		s.logger = logger
+	}
+}
+
+func NewStore(client PutObjectClient, bucket, prefix string, opts ...Option) *Store {
+	s := &Store{
 		client: client,
 		bucket: strings.TrimSpace(bucket),
 		prefix: cleanPrefix(prefix),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *Store) Upload(ctx context.Context, localPath, key string) (string, int64, error) {
@@ -55,6 +68,14 @@ func (s *Store) Upload(ctx context.Context, localPath, key string) (string, int6
 		return "", 0, err
 	}
 	defer body.Close()
+
+	if s.logger != nil {
+		s.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "upload_started",
+		})
+	}
+
 	_, err = s.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket:               aws.String(s.bucket),
 		Key:                  aws.String(cleanKey(key)),

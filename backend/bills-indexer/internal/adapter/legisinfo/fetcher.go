@@ -27,6 +27,7 @@ type Fetcher struct {
 	baseURL   string
 	userAgent string
 	maxBills  int
+	logger    func(map[string]any)
 }
 
 type Option func(*Fetcher)
@@ -60,6 +61,12 @@ func WithMaxBills(max int) Option {
 		if max > 0 {
 			f.maxBills = max
 		}
+	}
+}
+
+func WithLogger(logger func(map[string]any)) Option {
+	return func(f *Fetcher) {
+		f.logger = logger
 	}
 }
 
@@ -98,6 +105,15 @@ func (f *Fetcher) FetchBills(ctx context.Context, session domain.Session) (domai
 		bill := detail.toDomain(f.baseURL, item)
 		bills = append(bills, bill)
 	}
+
+	if f.logger != nil {
+		f.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "fetch_completed",
+			"count":    len(bills),
+		})
+	}
+
 	return domain.Batch{Bills: bills}, nil
 }
 
