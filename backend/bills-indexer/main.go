@@ -57,14 +57,39 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("load AWS config: %w", err)
 	}
 	httpClient := &http.Client{Timeout: 45 * time.Second}
+	logger := func(payload map[string]any) { logJSON(payload) }
 	source := legisinfo.NewFetcher(
 		legisinfo.WithHTTPClient(httpClient),
 		legisinfo.WithBaseURL(firstEnv("LEGISINFO_BASE_URL", "PARL_BASE_URL")),
 		legisinfo.WithMaxBills(envInt("MAX_BILLS", 0)),
+		legisinfo.WithLogger(logger),
 	)
-	writer := sqliteadapter.NewWriter()
-	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix)
-	uc, err := usecase.NewIngestBills(source, writer, store, store, usecase.WithDatabasePath(firstEnvDefault(defaultDBPath, "DB_PATH", "BILLS_DB_PATH")))
+	writer := sqliteadapter.NewWriter(sqliteadapter.WithLogger(logger))
+	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix, s3adapter.WithLogger(logger))
+	
+	dbPath := firstEnvDefault(defaultDBPath, "DB_PATH", "BILLS_DB_PATH")
+	return runPipeline(ctx, session, prefix, bucket, source, writer, store, store, dbPath)
+}
+
+func runPipeline(
+	ctx context.Context,
+	session domain.Session,
+	prefix, bucket string,
+	source usecase.BillSource,
+	writer usecase.SQLiteWriter,
+	uploader usecase.SQLiteUploader,
+	manifest usecase.ManifestWriter,
+	dbPath string,
+) error {
+	logJSON(map[string]any{
+		"pipeline": "bills-indexer",
+		"event":    "ingest_started",
+		"prefix":   prefix,
+		"bucket":   bucket,
+		"session":  fmt.Sprintf("%d-%d", session.ParliamentNumber, session.SessionNumber),
+	})
+
+	uc, err := usecase.NewIngestBills(source, writer, uploader, manifest, usecase.WithDatabasePath(dbPath))
 	if err != nil {
 		return err
 	}

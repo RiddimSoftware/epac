@@ -27,6 +27,7 @@ type Fetcher struct {
 	baseURL   string
 	userAgent string
 	maxBills  int
+	logger    func(map[string]any)
 }
 
 type Option func(*Fetcher)
@@ -63,6 +64,12 @@ func WithMaxBills(max int) Option {
 	}
 }
 
+func WithLogger(logger func(map[string]any)) Option {
+	return func(f *Fetcher) {
+		f.logger = logger
+	}
+}
+
 func NewFetcher(opts ...Option) *Fetcher {
 	f := &Fetcher{
 		client:    &http.Client{Timeout: 45 * time.Second},
@@ -85,8 +92,16 @@ func (f *Fetcher) FetchBills(ctx context.Context, session domain.Session) (domai
 		list = list[:f.maxBills]
 	}
 
+	if f.logger != nil {
+		f.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "fetch_started",
+			"count":    len(list),
+		})
+	}
+
 	bills := make([]domain.Bill, 0, len(list))
-	for _, item := range list {
+	for i, item := range list {
 		number := firstNonEmpty(item.BillNumberFormatted, item.NumberCode)
 		if strings.TrimSpace(number) == "" {
 			continue
@@ -97,7 +112,25 @@ func (f *Fetcher) FetchBills(ctx context.Context, session domain.Session) (domai
 		}
 		bill := detail.toDomain(f.baseURL, item)
 		bills = append(bills, bill)
+
+		if f.logger != nil && (i+1)%10 == 0 {
+			f.logger(map[string]any{
+				"pipeline": "bills-indexer",
+				"event":    "fetch_progress",
+				"current":  i + 1,
+				"total":    len(list),
+			})
+		}
 	}
+
+	if f.logger != nil {
+		f.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "fetch_completed",
+			"count":    len(bills),
+		})
+	}
+
 	return domain.Batch{Bills: bills}, nil
 }
 

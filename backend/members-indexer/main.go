@@ -47,14 +47,25 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("load AWS config: %w", err)
 	}
+
+	logJSON(map[string]any{
+		"pipeline": "members-indexer",
+		"event":    "ingest_started",
+		"prefix":   prefix,
+		"bucket":   bucket,
+	})
+
+	logger := func(payload map[string]any) { logJSON(payload) }
+
 	source := ourcommons.NewFetcher(
 		ourcommons.WithHTTPClient(&http.Client{Timeout: 45 * time.Second}),
 		ourcommons.WithBaseURL(firstEnv("OURCOMMONS_BASE_URL")),
 		ourcommons.WithMaxMembers(envInt("MAX_MEMBERS", 0)),
 		ourcommons.WithFullVotes(envBool("MEMBERS_INDEX_FETCH_FULL_VOTES", false)),
+		ourcommons.WithLogger(logger),
 	)
-	writer := sqliteadapter.NewWriter()
-	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix)
+	writer := sqliteadapter.NewWriter(sqliteadapter.WithLogger(logger))
+	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix, s3adapter.WithLogger(logger))
 	uc, err := usecase.NewIngestMembers(source, writer, store, store, usecase.WithDatabasePath(firstEnvDefault(defaultDBPath, "DB_PATH", "MEMBERS_DB_PATH")))
 	if err != nil {
 		return err

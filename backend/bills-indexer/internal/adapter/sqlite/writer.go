@@ -24,7 +24,8 @@ type SystemClock struct{}
 func (SystemClock) Now() time.Time { return time.Now().UTC() }
 
 type Writer struct {
-	clock Clock
+	clock  Clock
+	logger func(map[string]any)
 }
 
 type Option func(*Writer)
@@ -34,6 +35,12 @@ func WithClock(clock Clock) Option {
 		if clock != nil {
 			w.clock = clock
 		}
+	}
+}
+
+func WithLogger(logger func(map[string]any)) Option {
+	return func(w *Writer) {
+		w.logger = logger
 	}
 }
 
@@ -67,6 +74,14 @@ func (w *Writer) Write(ctx context.Context, dbPath string, batch domain.Batch) (
 		return domain.Stats{}, fmt.Errorf("create schema: %w", err)
 	}
 
+	if w.logger != nil {
+		w.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "write_started",
+			"count":    len(batch.Bills),
+		})
+	}
+
 	stats := domain.Stats{BuiltAt: w.clock.Now().UTC(), TableCounts: map[string]int{}}
 	if err := w.insertBatch(ctx, db, batch, &stats); err != nil {
 		return domain.Stats{}, err
@@ -82,6 +97,14 @@ func (w *Writer) Write(ctx context.Context, dbPath string, batch domain.Batch) (
 	if err := selfCheck(ctx, db, stats); err != nil {
 		return domain.Stats{}, err
 	}
+
+	if w.logger != nil {
+		w.logger(map[string]any{
+			"pipeline": "bills-indexer",
+			"event":    "write_completed",
+		})
+	}
+
 	return stats, nil
 }
 
