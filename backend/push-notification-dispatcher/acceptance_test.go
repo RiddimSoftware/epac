@@ -24,7 +24,6 @@ import (
 	"epac/observability"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/jackc/pgx/v5"
 )
 
 type apnsStub struct {
@@ -55,18 +54,24 @@ func (s *apnsStub) snapshot() []map[string]any {
 }
 
 func TestAcceptancePushNotificationDispatcherCallsAPNsThroughCompositionRoot(t *testing.T) {
-	_testdb.WithTx(t, func(conn *pgx.Conn) {
-		t.Setenv("DATABASE_URL", os.Getenv("DATABASE_URL"))
+	conn := _testdb.Connect(t)
+	token := "test-token-epac-2275"
+	_, _ = conn.Exec(context.Background(), `DELETE FROM device_subscriptions WHERE token = $1`, token)
+	t.Cleanup(func() {
+		_, _ = conn.Exec(context.Background(), `DELETE FROM device_subscriptions WHERE token = $1`, token)
+	})
 
-		_testdb.SeedDeviceSubscription(t, conn, "test-token-123", "", nil, nil)
+	t.Setenv("DATABASE_URL", os.Getenv("DATABASE_URL"))
 
-		apns := &apnsStub{}
-		server := httptest.NewServer(apns)
-		defer server.Close()
+	_testdb.SeedDeviceSubscription(t, conn, token, "", nil, nil)
 
-		t.Setenv("EPAC_APNS_URL", server.URL)
+	apns := &apnsStub{}
+	server := httptest.NewServer(apns)
+	defer server.Close()
 
-		payload := `{
+	t.Setenv("EPAC_APNS_URL", server.URL)
+
+	payload := `{
 			"division_id": 42,
 			"parliament": 45,
 			"session": 1,
@@ -74,23 +79,22 @@ func TestAcceptancePushNotificationDispatcherCallsAPNsThroughCompositionRoot(t *
 			"status": "concluded"
 		}`
 
-		req := events.APIGatewayProxyRequest{
-			Body: payload,
-		}
+	req := events.APIGatewayProxyRequest{
+		Body: payload,
+	}
 
-		wrapped := observability.WrapAPIGateway(pipelineName, HandleRequest)
-		resp, err := wrapped(context.Background(), req)
-		if err != nil {
-			t.Fatalf("wrapped HandleRequest error: %v", err)
-		}
+	wrapped := observability.WrapAPIGateway(pipelineName, HandleRequest)
+	resp, err := wrapped(context.Background(), req)
+	if err != nil {
+		t.Fatalf("wrapped HandleRequest error: %v", err)
+	}
 
-		if resp.StatusCode != 202 {
-			t.Errorf("expected status 202, got %d. body=%v", resp.StatusCode, resp.Body)
-		}
+	if resp.StatusCode != 202 {
+		t.Errorf("expected status 202, got %d. body=%v", resp.StatusCode, resp.Body)
+	}
 
-		hits := apns.snapshot()
-		if len(hits) != 1 {
-			t.Fatalf("apns hit count = %d, want 1", len(hits))
-		}
-	})
+	hits := apns.snapshot()
+	if len(hits) != 1 {
+		t.Fatalf("apns hit count = %d, want 1", len(hits))
+	}
 }

@@ -49,6 +49,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MPLobbyingCohortComparison` | Party and national cohort comparison metrics for an MP exposure summary. |
 | `LobbyingCohortAverage` | Build-time party or national average communication count for a parliament. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
+| `PushNotificationPayload` | Backend-only internal push payload, currently carrying concluded live-vote division fields plus the original JSON document delivered to APNs. |
+| `DispatchResult` | Backend-only push dispatch outcome counts for subscription fan-out, successful deliveries, and failed delivery attempts. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
 | `EstimateOrg` | A GC InfoBase organization identifier and display name used to group Main Estimates rows. |
@@ -90,6 +92,8 @@ to the issue that will build the missing artifact.
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
 | `TopicPreferenceStore` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/TopicPreferenceStore.swift`; adapter: `ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift`. | Read and persist followed topic IDs as a Domain-layer port. |
+| `DeviceSubscriptionRepository` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/postgres/subscriptions.go`. | List device subscriptions eligible for the current internal notification fan-out. |
+| `PushNotificationClient` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/apns/client.go`. | Deliver a typed push payload to a subscribed device through APNs. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
 | `HansardSearchRepository` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/search_hansard.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefts5/repository.go`. | Query the verified SQLite FTS5 Hansard search index. |
 | `ManifestLoader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/s3manifest/manifest_loader.go`. | Load the current Hansard search-index manifest. |
@@ -759,6 +763,31 @@ Current implementation:
 ### RegisterDeviceForNotifications
 
 > Retired in EPAC-1921. The backend `device-register` Lambda and `/api/v1/device/register` route are removed from desired state. Re-introduction would require a new implementation ticket with an explicit backend registration boundary.
+
+---
+
+### DispatchPushNotification
+
+```
+Actor: Backend API caller (live-vote-poller Lambda)
+Goal: Fan out an internal push notification payload to registered device subscriptions.
+Inputs: PushNotificationPayload.
+Outputs: DispatchResult with subscription, delivered, and failed-delivery counts.
+Entities / values: PushNotificationPayload, DeviceSubscription, DispatchResult.
+Ports: backend Go: `DeviceSubscriptionRepository`, `PushNotificationClient`.
+Primary adapters: push-notification-dispatcher Lambda, Postgres/pgx device subscription repository, APNs HTTP client.
+Current implementation:
+  backend/push-notification-dispatcher/internal/domain/domain.go
+  backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go
+  backend/push-notification-dispatcher/internal/adapter/postgres/subscriptions.go
+  backend/push-notification-dispatcher/internal/adapter/apns/client.go
+  backend/push-notification-dispatcher/main.go
+```
+
+> **Boundary rule:** `DispatchPushNotification` owns fan-out policy and depends
+> only on the subscription lookup and push delivery ports. API Gateway events,
+> environment variables, `pgx`, APNs endpoint construction, HTTP transport, and
+> response mapping stay in `main.go` or `internal/adapter/`.
 
 ---
 

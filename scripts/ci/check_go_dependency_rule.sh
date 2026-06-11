@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 backend_dir="$repo_root/backend"
 remediation="Use case packages must not import frameworks. Move framework usage to internal/adapter/. See docs/architecture/use-case-catalog.md."
+dispatcher_remediation="Push dispatcher main.go must compose the use case and adapters only. Keep device_subscriptions SQL and APNs HTTP transport in internal/adapter/."
 status=0
 
 is_standard_library_import() {
@@ -50,6 +51,32 @@ extract_imports() {
   ' "$1"
 }
 
+check_push_dispatcher_entrypoint() {
+  local file="$backend_dir/push-notification-dispatcher/main.go"
+  [[ -f "$file" ]] || return 0
+
+  local imports
+  imports="$(extract_imports "$file")"
+  if ! grep -qx 'epac/push-notification-dispatcher/internal/usecase' <<< "$imports"; then
+    printf '%s does not import the DispatchPushNotification use case. %s\n' "${file#"$repo_root"/}" "$dispatcher_remediation" >&2
+    status=1
+  fi
+
+  while IFS= read -r import_path; do
+    case "$import_path" in
+      github.com/jackc/pgx/v5|github.com/jackc/pgx/v5/*|net/http)
+        printf '%s imports forbidden adapter detail %s. %s\n' "${file#"$repo_root"/}" "$import_path" "$dispatcher_remediation" >&2
+        status=1
+        ;;
+    esac
+  done <<< "$imports"
+
+  if grep -qE 'device_subscriptions|/3/device' "$file"; then
+    printf '%s contains dispatcher adapter details. %s\n' "${file#"$repo_root"/}" "$dispatcher_remediation" >&2
+    status=1
+  fi
+}
+
 while IFS= read -r file; do
   relative="${file#"$backend_dir"/}"
   service="${relative%%/*}"
@@ -75,5 +102,7 @@ while IFS= read -r file; do
     status=1
   done < <(extract_imports "$file")
 done < <(find "$backend_dir" -path '*/internal/usecase/*.go' -type f | sort)
+
+check_push_dispatcher_entrypoint
 
 exit "$status"
