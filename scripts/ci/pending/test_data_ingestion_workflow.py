@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the master data-ingestion GitHub Actions workflow."""
+"""Pending contract test for the master data-ingestion GitHub Actions workflow."""
 
 from __future__ import annotations
 
