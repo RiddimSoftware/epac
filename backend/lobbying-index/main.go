@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,9 +20,7 @@ import (
 	subjects "epac/lobbying-index/internal/adapter/subjects"
 	"epac/lobbying-index/internal/domain"
 	"epac/lobbying-index/internal/usecase"
-	"epac/observability"
 
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -32,70 +29,7 @@ const (
 	defaultDBPath    = "/tmp/lobbying-index.sqlite"
 	defaultUserAgent = "epac-lobbying-index/1.0 (+https://riddimsoftware.com; contact: sunny@riddimsoftware.com)"
 
-	// Phase identifiers accepted through the Step Functions event payload or PHASE environment variable.
-	phaseIngestOCLData                 = "IngestOCLData"
-	phaseBuildMPLobbyingTables         = "BuildMPLobbyingTables"
-	phaseBuildOrganizationTables       = "BuildOrganizationTables"
-	phaseBuildBillContextTables        = "BuildBillContextTables"
-	phasePreBakeMinisterCommunications = "PreBakeMinisterCommunications"
-	phaseFinalize                      = "Finalize"
-	phaseAll                           = "all"
 )
-
-// phaseOrder is the linear pipeline order. Each phase reads the previous
-// phase's intermediate artifact and writes its own under <prefix>/tmp/.
-var phaseOrder = []string{
-	phaseIngestOCLData,
-	phaseBuildMPLobbyingTables,
-	phaseBuildOrganizationTables,
-	phaseBuildBillContextTables,
-	phasePreBakeMinisterCommunications,
-	phaseFinalize,
-}
-
-var knownPhases = append(append([]string{}, phaseOrder...), phaseAll)
-
-type PhaseEvent struct {
-	Phase string `json:"phase"`
-}
-
-// previousPhase returns the phase whose intermediate output feeds the given
-// phase. Returns empty string if the phase has no predecessor.
-func previousPhase(phase string) string {
-	for i, p := range phaseOrder {
-		if p == phase && i > 0 {
-			return phaseOrder[i-1]
-		}
-	}
-	return ""
-}
-
-// HandleRequest is the Lambda entrypoint. It is invoked once per Step Functions
-// state-machine phase; the event payload selects which phase runs, with PHASE
-// kept as a fallback for direct Lambda invocations.
-func HandleRequest(ctx context.Context, event PhaseEvent) error {
-	phase := strings.TrimSpace(event.Phase)
-	if phase == "" {
-		phase = strings.TrimSpace(os.Getenv("PHASE"))
-	}
-	if err := validatePhase(phase, phaseRunners(nil)); err != nil {
-		return err
-	}
-
-	cfg, err := loadRuntimeConfig(ctx)
-	if err != nil {
-		return err
-	}
-
-	logJSON(map[string]any{
-		"pipeline": "lobbying-index",
-		"event":    "phase_dispatch",
-		"phase":    phase,
-		"dbPath":   cfg.dbPath,
-	})
-
-	return dispatchPhase(ctx, phase, phaseRunners(cfg))
-}
 
 type runtimeConfig struct {
 	dbPath     string
@@ -130,161 +64,8 @@ func loadRuntimeConfig(ctx context.Context) (*runtimeConfig, error) {
 	}, nil
 }
 
-func phaseRunners(cfg *runtimeConfig) map[string]func(context.Context) error {
-	return map[string]func(context.Context) error{
-		phaseIngestOCLData: func(ctx context.Context) error {
-			return runIngestOCLData(ctx, cfg)
-		},
-		phaseBuildMPLobbyingTables: func(ctx context.Context) error {
-			return runBuildMPLobbyingTables(ctx, cfg)
-		},
-		phaseBuildOrganizationTables: func(ctx context.Context) error {
-			return runBuildOrganizationTables(ctx, cfg)
-		},
-		phaseBuildBillContextTables: func(ctx context.Context) error {
-			return runBuildBillContextTables(ctx, cfg)
-		},
-		phasePreBakeMinisterCommunications: func(ctx context.Context) error {
-			return runPreBakeMinisterCommunications(ctx, cfg)
-		},
-		phaseFinalize: func(ctx context.Context) error {
-			return runFinalize(ctx, cfg)
-		},
-		phaseAll: func(ctx context.Context) error {
-			return runAll(ctx, cfg)
-		},
-	}
-}
-
-func dispatchPhase(ctx context.Context, phase string, runners map[string]func(context.Context) error) error {
-	if err := validatePhase(phase, runners); err != nil {
-		return err
-	}
-	return runners[strings.TrimSpace(phase)](ctx)
-}
-
-func validatePhase(phase string, runners map[string]func(context.Context) error) error {
-	phase = strings.TrimSpace(phase)
-	if phase == "" {
-		return fmt.Errorf("PHASE is required; valid phases: %s", strings.Join(validPhaseNames(runners), ", "))
-	}
-	if runners[phase] == nil {
-		return fmt.Errorf("unknown PHASE %q; valid phases: %s", phase, strings.Join(validPhaseNames(runners), ", "))
-	}
-	return nil
-}
-
-func validPhaseNames(runners map[string]func(context.Context) error) []string {
-	names := make([]string, 0, len(runners))
-	for name := range runners {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-// downloadPriorPhase pulls the previous phase's intermediate working SQLite
-// to the local dbPath. Removes any stale local file first so the new
-// download starts from a clean slate.
-func (c *runtimeConfig) downloadPriorPhase(ctx context.Context, phase string) error {
-	prev := previousPhase(phase)
-	if prev == "" {
-		return nil
-	}
-	if err := os.Remove(c.dbPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove stale local db: %w", err)
-	}
-	hash, err := c.store.DownloadIntermediate(ctx, prev, c.dbPath)
-	if err != nil {
-		return fmt.Errorf("download prior phase %s: %w", prev, err)
-	}
-	logJSON(map[string]any{
-		"pipeline": "lobbying-index",
-		"event":    "intermediate_downloaded",
-		"phase":    prev,
-		"sha256":   hash,
-	})
-	return nil
-}
-
-// uploadPhaseOutput pushes the working SQLite at dbPath to the phase's
-// intermediate key for the next phase to consume.
-func (c *runtimeConfig) uploadPhaseOutput(ctx context.Context, phase string) error {
-	hash, size, err := c.store.UploadIntermediate(ctx, c.dbPath, phase)
-	if err != nil {
-		return fmt.Errorf("upload phase %s output: %w", phase, err)
-	}
-	logJSON(map[string]any{
-		"pipeline":   "lobbying-index",
-		"event":      "intermediate_uploaded",
-		"phase":      phase,
-		"sha256":     hash,
-		"size_bytes": size,
-	})
-	return nil
-}
-
-func runIngestOCLData(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseIngestOCLData); err != nil {
-		return err
-	}
-	if err := ingestOCLData(ctx, cfg); err != nil {
-		return err
-	}
-	return cfg.uploadPhaseOutput(ctx, phaseIngestOCLData)
-}
-
-func runBuildMPLobbyingTables(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseBuildMPLobbyingTables); err != nil {
-		return err
-	}
-	if err := buildMPLobbyingTables(ctx, cfg); err != nil {
-		return err
-	}
-	return cfg.uploadPhaseOutput(ctx, phaseBuildMPLobbyingTables)
-}
-
-func runBuildOrganizationTables(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseBuildOrganizationTables); err != nil {
-		return err
-	}
-	if err := buildOrganizationTables(ctx, cfg); err != nil {
-		return err
-	}
-	return cfg.uploadPhaseOutput(ctx, phaseBuildOrganizationTables)
-}
-
-func runBuildBillContextTables(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseBuildBillContextTables); err != nil {
-		return err
-	}
-	if err := buildBillContextTables(ctx, cfg); err != nil {
-		return err
-	}
-	return cfg.uploadPhaseOutput(ctx, phaseBuildBillContextTables)
-}
-
-func runPreBakeMinisterCommunications(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phasePreBakeMinisterCommunications); err != nil {
-		return err
-	}
-	if err := preBakeMinisterCommunications(ctx, cfg); err != nil {
-		return err
-	}
-	return cfg.uploadPhaseOutput(ctx, phasePreBakeMinisterCommunications)
-}
-
-func runFinalize(ctx context.Context, cfg *runtimeConfig) error {
-	if err := cfg.downloadPriorPhase(ctx, phaseFinalize); err != nil {
-		return err
-	}
-	return finalizeArtifact(ctx, cfg)
-}
-
-// runAll is a local-development-only PHASE=all escape hatch. Production
-// orchestration should invoke the named phases above through Step Functions.
-// It bypasses the intermediate-transfer round trips and publishes the same
-// final artifact + manifest the old HandleRequest did.
+// runAll bypasses the intermediate-transfer round trips and publishes the same
+// final artifact + manifest.
 func runAll(ctx context.Context, cfg *runtimeConfig) error {
 	if err := ingestOCLData(ctx, cfg); err != nil {
 		return err
@@ -573,5 +354,15 @@ func envInt(name string, fallback int) int {
 }
 
 func main() {
-	lambda.Start(observability.WrapEvent("lobbying-index", HandleRequest))
+	ctx := context.Background()
+	cfg, err := loadRuntimeConfig(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := runAll(ctx, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }
