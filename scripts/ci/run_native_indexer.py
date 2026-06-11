@@ -38,6 +38,26 @@ LOBBYING_MANIFEST_FORMAT = {
     "table_counts": "object[string,integer]",
 }
 
+BILLS_MANIFEST_FORMAT = {
+    "version": "string",
+    "built_at": "rfc3339",
+    "parliament_number": "integer",
+    "session_number": "integer",
+    "sqlite_key": "string",
+    "sqlite_size_bytes": "integer",
+    "sqlite_sha256": "sha256",
+    "table_counts": "object[string,integer]",
+}
+
+MEMBERS_MANIFEST_FORMAT = {
+    "version": "string",
+    "built_at": "rfc3339",
+    "sqlite_key": "string",
+    "sqlite_size_bytes": "integer",
+    "sqlite_sha256": "sha256",
+    "table_counts": "object[string,integer]",
+}
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -45,7 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "pipeline",
-        choices=("hansard-search-index", "lobbying-index"),
+        choices=(
+            "hansard-search-index",
+            "lobbying-index",
+            "bills-indexer",
+            "members-indexer",
+        ),
         help="Indexer pipeline to run.",
     )
     parser.add_argument(
@@ -105,23 +130,65 @@ def planned_payload(args: argparse.Namespace, summary_path: Path | None) -> dict
             ],
         }
 
+    if args.pipeline == "lobbying-index":
+        return {
+            "pipeline": args.pipeline,
+            "environment": args.environment,
+            "mode": "dry-run",
+            "status": "planned",
+            "summary_markdown_path": str(summary_path) if summary_path else None,
+            "manifest_format": LOBBYING_MANIFEST_FORMAT,
+            "parameters": {
+                "phase": "all",
+            },
+            "commands": [
+                {
+                    "working_directory": "backend/lobbying-index",
+                    "argv": ["go", "run", "."],
+                    "env": {
+                        "PHASE": "all",
+                    },
+                }
+            ],
+        }
+
+    if args.pipeline == "bills-indexer":
+        return {
+            "pipeline": args.pipeline,
+            "environment": args.environment,
+            "mode": "dry-run",
+            "status": "planned",
+            "summary_markdown_path": str(summary_path) if summary_path else None,
+            "manifest_format": BILLS_MANIFEST_FORMAT,
+            "parameters": {
+                "parliament_number": args.parliament_number,
+                "session_number": args.session_number,
+            },
+            "commands": [
+                {
+                    "working_directory": "backend/bills-indexer",
+                    "argv": ["go", "run", "."],
+                    "env": {
+                        "PARLIAMENT_NUMBER": str(args.parliament_number),
+                        "SESSION_NUMBER": str(args.session_number),
+                    },
+                }
+            ],
+        }
+
     return {
         "pipeline": args.pipeline,
         "environment": args.environment,
         "mode": "dry-run",
         "status": "planned",
         "summary_markdown_path": str(summary_path) if summary_path else None,
-        "manifest_format": LOBBYING_MANIFEST_FORMAT,
-        "parameters": {
-            "phase": "all",
-        },
+        "manifest_format": MEMBERS_MANIFEST_FORMAT,
+        "parameters": {},
         "commands": [
             {
-                "working_directory": "backend/lobbying-index",
+                "working_directory": "backend/members-indexer",
                 "argv": ["go", "run", "."],
-                "env": {
-                    "PHASE": "all",
-                },
+                "env": {},
             }
         ],
     }

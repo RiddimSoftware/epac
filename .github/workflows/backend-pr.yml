@@ -35,8 +35,10 @@ jobs:
           - member-content
           - member-lobbying
           - members
+          - members-indexer
           - sittings
           - bills
+          - bills-indexer
           - member-speeches
           - member-speeches-publisher
           - member-votes

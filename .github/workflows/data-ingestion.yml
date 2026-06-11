@@ -36,8 +36,18 @@ on:
         required: true
         type: boolean
         default: false
+      run_bills_indexer:
+        description: Run bills SQLite index ingestion
+        required: true
+        type: boolean
+        default: false
       run_members:
         description: Run members artifact ingestion
+        required: true
+        type: boolean
+        default: false
+      run_members_indexer:
+        description: Run members SQLite index ingestion
         required: true
         type: boolean
         default: false
@@ -77,7 +87,9 @@ jobs:
           RUN_SEARCH: ${{ inputs.run_search }}
           RUN_LOBBYING: ${{ inputs.run_lobbying }}
           RUN_BILLS: ${{ inputs.run_bills }}
+          RUN_BILLS_INDEXER: ${{ inputs.run_bills_indexer }}
           RUN_MEMBERS: ${{ inputs.run_members }}
+          RUN_MEMBERS_INDEXER: ${{ inputs.run_members_indexer }}
           RUN_VOTES: ${{ inputs.run_votes }}
         run: |
           set -euo pipefail
@@ -119,7 +131,9 @@ jobs:
             [ "$RUN_SEARCH" = "true" ] && add_ingestor "search" "Hansard search index" "hansard-search-index" "false"
             [ "$RUN_LOBBYING" = "true" ] && add_ingestor "lobbying" "Lobbying index" "lobbying-index" "false"
             [ "$RUN_BILLS" = "true" ] && add_ingestor "bills" "Bills artifacts" "bills-publisher" "false"
+            [ "$RUN_BILLS_INDEXER" = "true" ] && add_ingestor "bills-indexer" "Bills SQLite index" "bills-indexer" "false"
             [ "$RUN_MEMBERS" = "true" ] && add_ingestor "members" "Members artifacts" "members-publisher" "true"
+            [ "$RUN_MEMBERS_INDEXER" = "true" ] && add_ingestor "members-indexer" "Members SQLite index" "members-indexer" "false"
             [ "$RUN_VOTES" = "true" ] && add_ingestor "votes" "Member votes artifacts" "member-votes-publisher" "true"
           fi
 
@@ -153,6 +167,8 @@ jobs:
       EPAC_ARTIFACT_PREFIX_STAGING: ${{ vars.EPAC_ARTIFACT_PREFIX_STAGING }}
       EPAC_HANSARD_SEARCH_PREFIX: ${{ vars.EPAC_HANSARD_SEARCH_PREFIX || 'hansard-search/v1' }}
       LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
+      BILLS_INDEX_PREFIX: ${{ vars.EPAC_BILLS_INDEX_PREFIX || 'bills/v1' }}
+      MEMBERS_INDEX_PREFIX: ${{ vars.EPAC_MEMBERS_INDEX_PREFIX || 'members/v1' }}
       PARLIAMENT_NUMBER: ${{ inputs.parliament_number || vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
       SESSION_NUMBER: ${{ inputs.session_number || vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
       PARLIAMENT_NUM: ${{ inputs.parliament_number || vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
@@ -243,10 +259,16 @@ jobs:
               (cd backend/bills-publisher && go run . --output "$output_dir")
               aws s3 sync "$output_dir" "$(artifact_uri bills)"
               ;;
+            bills-indexer)
+              (cd backend/bills-indexer && DB_PATH="$RUNNER_TEMP/bills.db" go run .)
+              ;;
             members)
               output_dir="$RUNNER_TEMP/artifacts/members"
               (cd backend/members-publisher && go run . --output "$output_dir")
               aws s3 sync "$output_dir" "$(artifact_uri members)"
+              ;;
+            members-indexer)
+              (cd backend/members-indexer && DB_PATH="$RUNNER_TEMP/members.db" go run .)
               ;;
             votes)
               (cd backend/member-votes-publisher && go run .)

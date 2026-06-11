@@ -44,6 +44,32 @@ SCRIPT = REPO_ROOT / "scripts" / "ci" / "run_native_indexer.py"
                 "table_counts": "object[string,integer]",
             },
         ),
+        (
+            "bills-indexer",
+            ["--parliament-number", "45", "--session-number", "1"],
+            {
+                "version": "string",
+                "built_at": "rfc3339",
+                "parliament_number": "integer",
+                "session_number": "integer",
+                "sqlite_key": "string",
+                "sqlite_size_bytes": "integer",
+                "sqlite_sha256": "sha256",
+                "table_counts": "object[string,integer]",
+            },
+        ),
+        (
+            "members-indexer",
+            [],
+            {
+                "version": "string",
+                "built_at": "rfc3339",
+                "sqlite_key": "string",
+                "sqlite_size_bytes": "integer",
+                "sqlite_sha256": "sha256",
+                "table_counts": "object[string,integer]",
+            },
+        ),
     ],
 )
 def test_native_indexer_cli_dry_run_reports_expected_output_formats(

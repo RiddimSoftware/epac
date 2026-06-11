@@ -4,6 +4,7 @@ use (
 	./_shared
 	./_testdb
 	./bills
+	./bills-indexer
 	./bills-publisher
 	./calendar
 	./config
@@ -26,6 +27,7 @@ use (
 	./member-votes
 	./member-votes-publisher
 	./members
+	./members-indexer
 	./members-publisher
 	./observability
 	./on-this-day

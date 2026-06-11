@@ -16,7 +16,9 @@ EXPECTED_PIPELINE_TOGGLES = {
     "run_search",
     "run_lobbying",
     "run_bills",
+    "run_bills_indexer",
     "run_members",
+    "run_members_indexer",
     "run_votes",
 }
 
@@ -89,7 +91,15 @@ def test_data_ingestion_workflow_runs_selected_ingestors_with_matrix() -> None:
     plan = jobs.get("plan")
     assert isinstance(plan, dict), "workflow must build a selected-ingestor plan"
     plan_script = plan["steps"][0]["run"]
-    for ingestor in ["search", "lobbying", "bills", "members", "votes"]:
+    for ingestor in [
+        "search",
+        "lobbying",
+        "bills",
+        "bills-indexer",
+        "members",
+        "members-indexer",
+        "votes",
+    ]:
         assert f'"{ingestor}"' in plan_script
 
     ingest = jobs.get("ingest")
@@ -98,8 +108,15 @@ def test_data_ingestion_workflow_runs_selected_ingestors_with_matrix() -> None:
     assert isinstance(strategy, dict), "ingestion job must use a matrix strategy"
     assert "fromJson(needs.plan.outputs.matrix)" in strategy.get("matrix", "")
 
+    env = ingest.get("env")
+    assert isinstance(env, dict), "ingestion job must define shared env"
+    assert env["BILLS_INDEX_PREFIX"] == "${{ vars.EPAC_BILLS_INDEX_PREFIX || 'bills/v1' }}"
+    assert env["MEMBERS_INDEX_PREFIX"] == "${{ vars.EPAC_MEMBERS_INDEX_PREFIX || 'members/v1' }}"
+
     run_step = next(step for step in ingest["steps"] if step.get("name") == "Run ingestor")
     run_script = run_step["run"]
     assert "backend/hansard-search-index && go run ." in run_script
     assert "backend/lobbying-index && go run ." in run_script
     assert "aws s3 sync" in run_script
+    assert 'backend/bills-indexer && DB_PATH="$RUNNER_TEMP/bills.db" go run .' in run_script
+    assert 'backend/members-indexer && DB_PATH="$RUNNER_TEMP/members.db" go run .' in run_script
