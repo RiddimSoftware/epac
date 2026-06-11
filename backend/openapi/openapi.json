@@ -217,6 +217,52 @@
         }
       }
     },
+    "/api/v1/members/{id}": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "Get member profile",
+        "operationId": "getMemberProfile",
+        "parameters": [
+          { "$ref": "#/components/parameters/MemberId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "MP profile with attendance records when available",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MemberProfileResponse" },
+                "examples": {
+                  "member": {
+                    "value": {
+                      "member": {
+                        "id": "278707",
+                        "name": "Example MP",
+                        "riding": "Ottawa Centre",
+                        "province": "ON",
+                        "party": "Liberal",
+                        "source_url": "https://www.ourcommons.ca/members/en",
+                        "attendance": [
+                          {
+                            "sitting_date": "2026-06-01",
+                            "status": "present",
+                            "present": true,
+                            "source_url": "https://www.ourcommons.ca/attendance",
+                            "parliament": 45,
+                            "session": 1
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/api/v1/members/{id}/votes": {
       "get": {
         "tags": ["Members"],
@@ -713,6 +759,66 @@
               }
             }
           },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
+    "/api/v1/bills/{id}": {
+      "get": {
+        "tags": ["Bills"],
+        "summary": "Get bill depth",
+        "operationId": "getBillDepth",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Bill identifier from the list bills response.",
+            "schema": { "type": "string", "example": "C-1-45-1" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bill detail with versions and amendments when available",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillDepthResponse" },
+                "examples": {
+                  "bill": {
+                    "value": {
+                      "bill": {
+                        "id": "C-1-45-1",
+                        "number": "C-1",
+                        "title": "An Act respecting example data",
+                        "current_stage": "Second Reading",
+                        "introduced_on": "2026-04-27",
+                        "source_url": "https://www.parl.ca/legisinfo",
+                        "versions": [
+                          {
+                            "id": "C-1-v1",
+                            "label": "First reading",
+                            "published_on": "2026-04-27",
+                            "source_url": "https://www.parl.ca/version"
+                          }
+                        ],
+                        "amendments": [
+                          {
+                            "id": "C-1-a1",
+                            "number": "LIB-1",
+                            "status": "adopted",
+                            "stage": "Committee",
+                            "proposed_on": "2026-05-10",
+                            "source_url": "https://www.parl.ca/amendment"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
           "429": { "$ref": "#/components/responses/RateLimit" }
         }
       }
@@ -1827,6 +1933,13 @@
           "members": { "type": "array", "items": { "$ref": "#/components/schemas/Member" } }
         }
       },
+      "MemberProfileResponse": {
+        "type": "object",
+        "required": ["member"],
+        "properties": {
+          "member": { "$ref": "#/components/schemas/Member" }
+        }
+      },
       "Member": {
         "type": "object",
         "required": ["id", "name"],
@@ -1836,7 +1949,22 @@
           "riding": { "type": "string" },
           "province": { "type": "string" },
           "party": { "type": "string" },
-          "source_url": { "type": "string", "format": "uri" }
+          "source_url": { "type": "string", "format": "uri" },
+          "attendance": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MemberAttendanceRecord" }
+          }
+        }
+      },
+      "MemberAttendanceRecord": {
+        "type": "object",
+        "properties": {
+          "sitting_date": { "type": "string", "format": "date" },
+          "status": { "type": "string" },
+          "present": { "type": "boolean" },
+          "source_url": { "type": "string", "format": "uri" },
+          "parliament": { "type": "integer" },
+          "session": { "type": "integer" }
         }
       },
       "MPLobbyingExposureResponse": {
@@ -2248,6 +2376,13 @@
           "bills": { "type": "array", "items": { "$ref": "#/components/schemas/Bill" } }
         }
       },
+      "BillDepthResponse": {
+        "type": "object",
+        "required": ["bill"],
+        "properties": {
+          "bill": { "$ref": "#/components/schemas/Bill" }
+        }
+      },
       "Bill": {
         "type": "object",
         "required": ["id", "number", "title"],
@@ -2255,8 +2390,61 @@
           "id": { "type": "string" },
           "number": { "type": "string" },
           "title": { "type": "string" },
+          "sponsor_name": { "type": "string" },
+          "status": { "type": "string" },
           "current_stage": { "type": "string" },
           "introduced_on": { "type": "string", "format": "date" },
+          "source_url": { "type": "string", "format": "uri" },
+          "bill_type": { "type": "string" },
+          "parliament": { "type": "integer" },
+          "session": { "type": "integer" },
+          "legis_info_url": { "type": "string", "format": "uri" },
+          "stages": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillStage" }
+          },
+          "versions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillVersion" }
+          },
+          "amendments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillAmendment" }
+          }
+        }
+      },
+      "BillStage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "completed_date": { "type": "string", "format": "date" },
+          "is_completed": { "type": "boolean" }
+        }
+      },
+      "BillVersion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "title": { "type": "string" },
+          "stage": { "type": "string" },
+          "chamber": { "type": "string" },
+          "published_on": { "type": "string", "format": "date" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "BillAmendment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "number": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "stage": { "type": "string" },
+          "sponsor_name": { "type": "string" },
+          "proposed_on": { "type": "string", "format": "date" },
+          "text": { "type": "string" },
           "source_url": { "type": "string", "format": "uri" }
         }
       },

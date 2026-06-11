@@ -54,8 +54,8 @@
     {
       "name": "members",
       "deploy": {
-        "staging": false,
-        "production": false
+        "staging": true,
+        "production": true
       },
       "http": {
         "payload_format_version": "1.0",
@@ -64,12 +64,20 @@
             {
               "method": "GET",
               "path": "/api/v1/members"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}"
             }
           ],
           "production": [
             {
               "method": "GET",
               "path": "/api/v1/members"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/members/{id}"
             }
           ]
         }
@@ -130,8 +138,8 @@
     {
       "name": "bills",
       "deploy": {
-        "staging": false,
-        "production": false
+        "staging": true,
+        "production": true
       },
       "http": {
         "payload_format_version": "1.0",
@@ -140,12 +148,20 @@
             {
               "method": "GET",
               "path": "/api/v1/bills"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/bills/{id}"
             }
           ],
           "production": [
             {
               "method": "GET",
               "path": "/api/v1/bills"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/bills/{id}"
             }
           ]
         }

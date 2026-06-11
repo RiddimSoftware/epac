@@ -528,6 +528,8 @@ jobs:
           PARLIAMENT_NUMBER: ${{ vars.EPAC_HANSARD_PARLIAMENT_NUMBER || '45' }}
           SESSION_NUMBER: ${{ vars.EPAC_HANSARD_SESSION_NUMBER || '1' }}
           LOBBYING_INDEX_PREFIX: ${{ vars.EPAC_LOBBYING_INDEX_PREFIX || 'lobbying-index/v1' }}
+          BILLS_INDEX_PREFIX: ${{ vars.EPAC_BILLS_INDEX_PREFIX || 'bills/v1' }}
+          MEMBERS_INDEX_PREFIX: ${{ vars.EPAC_MEMBERS_INDEX_PREFIX || 'members/v1' }}
         run: |
           set -euo pipefail
 
@@ -549,7 +551,9 @@ jobs:
             --arg parliament_number "$PARLIAMENT_NUMBER" \
             --arg session_number "$SESSION_NUMBER" \
             --arg lobbying_index_prefix "$LOBBYING_INDEX_PREFIX" \
-            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end) + (if $service == "lobbying-index" or $service == "lobbying" then {LOBBYING_INDEX_PREFIX: $lobbying_index_prefix} else {} end))}')
+            --arg bills_index_prefix "$BILLS_INDEX_PREFIX" \
+            --arg members_index_prefix "$MEMBERS_INDEX_PREFIX" \
+            '{Variables: ((($current // {}) | del(.DATABASE_URL)) + {EPAC_ARTIFACT_BUCKET: $artifact_bucket} + (if $artifact_prefix != "" then {EPAC_ARTIFACT_PREFIX: $artifact_prefix} else {} end) + (if $service == "hansard-search-index" then {EPAC_HANSARD_SEARCH_PREFIX: $hansard_search_prefix, PARLIAMENT_NUMBER: $parliament_number, SESSION_NUMBER: $session_number} else {} end) + (if $service == "lobbying-index" or $service == "lobbying" then {LOBBYING_INDEX_PREFIX: $lobbying_index_prefix} else {} end) + (if $service == "bills" then {BILLS_INDEX_PREFIX: $bills_index_prefix} else {} end) + (if $service == "members" then {MEMBERS_INDEX_PREFIX: $members_index_prefix} else {} end))}')
 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \

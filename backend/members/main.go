@@ -1,233 +1,209 @@
-// members Lambda — GET /api/v1/members
+// members Lambda - GET /api/v1/members and GET /api/v1/members/{id}
 package main
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
-	"os"
 	"strings"
+	"sync"
 
+	s3adapter "epac/members/internal/adapter/s3"
+	sqliteadapter "epac/members/internal/adapter/sqlite"
+	"epac/members/internal/domain"
+	"epac/members/internal/usecase"
 	"epac/observability"
-	"epac/shared/artifacts"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	_ "modernc.org/sqlite"
 )
 
 const (
-	membersSQLiteArtifactKey = "members/v1/index.sqlite"
-	membersJSONArtifactKey   = "members/v1/all.json"
-	sqliteReadOnlyDSN        = "file:%s?mode=ro&_pragma=query_only(1)"
+	membersRetryAfter = "5"
+	sqliteReadOnlyDSN = "file:%s?mode=ro&_pragma=query_only(1)"
 )
 
-type Member struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Riding    string `json:"riding,omitempty"`
-	Province  string `json:"province,omitempty"`
-	Party     string `json:"party,omitempty"`
-	SourceURL string `json:"source_url,omitempty"`
-}
-
 type MembersResponse struct {
-	Members []Member `json:"members"`
+	Members []domain.Member `json:"members"`
 }
 
-var newArtifactStore = artifacts.NewFromEnv
+type MemberProfileResponse struct {
+	Member domain.Member `json:"member"`
+}
+
+type Member = domain.Member
+type AttendanceRecord = domain.AttendanceRecord
+
+type openMembersIndexFunc func(context.Context) (usecase.MembersIndex, error)
+type openDBFunc func(context.Context, string) (*sql.DB, error)
+type newMemberRepositoryFunc func(*sql.DB) usecase.MemberRepository
+
+type membersRuntime struct {
+	mu      sync.Mutex
+	open    openMembersIndexFunc
+	openDB  openDBFunc
+	newRepo newMemberRepositoryFunc
+	repo    usecase.MemberRepository
+}
+
+var memberData = newMembersRuntime(
+	openMembersIndexFromEnv,
+	openSQLiteReadOnly,
+	func(db *sql.DB) usecase.MemberRepository {
+		return sqliteadapter.New(db)
+	},
+)
+
+func newMembersRuntime(open openMembersIndexFunc, openDB openDBFunc, newRepo newMemberRepositoryFunc) *membersRuntime {
+	return &membersRuntime{open: open, openDB: openDB, newRepo: newRepo}
+}
+
+func (r *membersRuntime) repository(ctx context.Context) (usecase.MemberRepository, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.repo != nil {
+		return r.repo, nil
+	}
+	index, err := r.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	db, err := r.openDB(ctx, index.LocalPath)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite index: %w", err)
+	}
+	r.repo = r.newRepo(db)
+	return r.repo, nil
+}
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp, err := readMembers(ctx)
+	repo, err := memberData.repository(ctx)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if artifacts.IsNotFound(err) {
-			status = http.StatusNotFound
+		return mapInitializationError(err), nil
+	}
+
+	if id := memberIDFromRequest(req); id != "" {
+		member, err := usecase.NewGetMemberProfile(repo).Execute(ctx, id)
+		if err != nil {
+			return mapMemberError(err), nil
 		}
-		return jsonError(status, err.Error()), nil
+		return jsonResponse(http.StatusOK, MemberProfileResponse{Member: member}), nil
 	}
 
-	province := strings.TrimSpace(req.QueryStringParameters["province"])
-	party := strings.TrimSpace(req.QueryStringParameters["party"])
-	resp.Members = filterMembers(resp.Members, province, party)
-
-	body, err := json.Marshal(resp)
+	members, err := usecase.NewListMembers(repo).Execute(ctx, usecase.ListMembersInput{
+		Province: req.QueryStringParameters["province"],
+		Party:    req.QueryStringParameters["party"],
+	})
 	if err != nil {
-		return jsonError(http.StatusInternalServerError, "marshal error"), nil
+		slog.Error("list members request failed", "error", err)
+		return jsonError(http.StatusInternalServerError, "internal error"), nil
 	}
-	return jsonResponse(http.StatusOK, body), nil
+	return jsonResponse(http.StatusOK, MembersResponse{Members: members}), nil
 }
 
-func readMembers(ctx context.Context) (MembersResponse, error) {
-	store, err := newArtifactStore(ctx)
-	if err != nil {
-		return MembersResponse{}, err
-	}
-	data, err := store.Get(ctx, membersSQLiteArtifactKey)
-	if err != nil {
-		if artifacts.IsNotFound(err) {
-			return readMembersJSON(ctx, store)
+func memberIDFromRequest(req events.APIGatewayProxyRequest) string {
+	for _, key := range []string{"id", "member_id", "memberId"} {
+		if id := strings.TrimSpace(req.PathParameters[key]); id != "" {
+			return id
 		}
-		return MembersResponse{}, err
 	}
-	return readMembersSQLite(ctx, data)
-}
-
-func readMembersJSON(ctx context.Context, store artifacts.Store) (MembersResponse, error) {
-	data, err := store.Get(ctx, membersJSONArtifactKey)
-	if err != nil {
-		return MembersResponse{}, err
-	}
-	var resp MembersResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return MembersResponse{}, err
-	}
-	if resp.Members == nil {
-		resp.Members = []Member{}
-	}
-	return resp, nil
-}
-
-func readMembersSQLite(ctx context.Context, data []byte) (MembersResponse, error) {
-	db, cleanup, err := openSQLiteArtifact(data, "epac-members-*.sqlite")
-	if err != nil {
-		return MembersResponse{}, err
-	}
-	defer cleanup()
-
-	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, riding, province, party, source_url
-		FROM members
-		ORDER BY rowid`)
-	if err != nil {
-		return MembersResponse{}, fmt.Errorf("query members sqlite artifact: %w", err)
-	}
-	defer rows.Close()
-
-	members := make([]Member, 0)
-	for rows.Next() {
-		var member Member
-		if err := rows.Scan(&member.ID, &member.Name, &member.Riding, &member.Province, &member.Party, &member.SourceURL); err != nil {
-			return MembersResponse{}, fmt.Errorf("scan members sqlite artifact: %w", err)
+	path := strings.Trim(req.Path, "/")
+	for _, prefix := range []string{"api/v1/members/", "members/"} {
+		if strings.HasPrefix(path, prefix) {
+			rest := strings.TrimPrefix(path, prefix)
+			if rest == "" || strings.Contains(rest, "/") {
+				return ""
+			}
+			return strings.TrimSpace(rest)
 		}
-		members = append(members, member)
 	}
-	if err := rows.Err(); err != nil {
-		return MembersResponse{}, fmt.Errorf("iterate members sqlite artifact: %w", err)
-	}
-	if members == nil {
-		members = []Member{}
-	}
-	return MembersResponse{Members: members}, nil
+	return ""
 }
 
-func openSQLiteArtifact(data []byte, tempPattern string) (*sql.DB, func(), error) {
-	file, err := os.CreateTemp("", tempPattern)
+func openMembersIndexFromEnv(ctx context.Context) (usecase.MembersIndex, error) {
+	manifestLoader, err := s3adapter.NewManifestLoaderFromEnv(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create sqlite artifact temp file: %w", err)
+		return usecase.MembersIndex{}, err
 	}
-	path := file.Name()
-	cleanupFile := func() {
-		_ = os.Remove(path)
+	indexDownloader, err := s3adapter.NewIndexDownloaderFromEnv(ctx)
+	if err != nil {
+		return usecase.MembersIndex{}, err
 	}
-	if _, err := file.Write(data); err != nil {
-		file.Close()
-		cleanupFile()
-		return nil, nil, fmt.Errorf("write sqlite artifact temp file: %w", err)
-	}
-	if err := file.Close(); err != nil {
-		cleanupFile()
-		return nil, nil, fmt.Errorf("close sqlite artifact temp file: %w", err)
-	}
+	return usecase.NewOpenMembersIndex(manifestLoader, indexDownloader).Execute(ctx)
+}
 
+func openSQLiteReadOnly(ctx context.Context, path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", fmt.Sprintf(sqliteReadOnlyDSN, path))
 	if err != nil {
-		cleanupFile()
-		return nil, nil, fmt.Errorf("open sqlite artifact: %w", err)
+		return nil, err
 	}
-	cleanup := func() {
+	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
-		cleanupFile()
+		return nil, err
 	}
-	if err := db.Ping(); err != nil {
-		cleanup()
-		return nil, nil, fmt.Errorf("ping sqlite artifact: %w", err)
-	}
-	return db, cleanup, nil
+	return db, nil
 }
 
-func filterMembers(members []Member, province, party string) []Member {
-	if province == "" && party == "" {
-		return members
-	}
-	filtered := make([]Member, 0, len(members))
-	for _, member := range members {
-		if province != "" && !provinceMatches(member.Province, province) {
-			continue
-		}
-		if party != "" && !strings.EqualFold(member.Party, party) {
-			continue
-		}
-		filtered = append(filtered, member)
-	}
-	return filtered
-}
-
-func provinceMatches(memberProvince, filter string) bool {
-	if strings.EqualFold(memberProvince, filter) {
-		return true
-	}
-	return strings.EqualFold(memberProvince, provinceCode(filter))
-}
-
-func provinceCode(name string) string {
-	switch strings.ToLower(strings.TrimSpace(name)) {
-	case "alberta":
-		return "AB"
-	case "british columbia":
-		return "BC"
-	case "manitoba":
-		return "MB"
-	case "new brunswick":
-		return "NB"
-	case "newfoundland and labrador":
-		return "NL"
-	case "northwest territories":
-		return "NT"
-	case "nova scotia":
-		return "NS"
-	case "nunavut":
-		return "NU"
-	case "ontario":
-		return "ON"
-	case "prince edward island":
-		return "PE"
-	case "quebec":
-		return "QC"
-	case "saskatchewan":
-		return "SK"
-	case "yukon":
-		return "YT"
+func mapInitializationError(err error) events.APIGatewayProxyResponse {
+	switch {
+	case errors.Is(err, usecase.ErrManifestNotFound):
+		return jsonError(http.StatusNotFound, err.Error())
+	case errors.Is(err, usecase.ErrChecksumMismatch),
+		errors.Is(err, usecase.ErrSchemaMismatch):
+		return jsonError(http.StatusServiceUnavailable, err.Error(), map[string]string{"Retry-After": membersRetryAfter})
 	default:
-		return strings.TrimSpace(name)
+		slog.Error("members service initialization failed", "error", err)
+		return jsonError(http.StatusInternalServerError, "internal error")
 	}
 }
 
-func jsonResponse(status int, body []byte) events.APIGatewayProxyResponse {
+func mapMemberError(err error) events.APIGatewayProxyResponse {
+	if errors.Is(err, usecase.ErrMemberNotFound) {
+		return jsonError(http.StatusNotFound, "member not found")
+	}
+	slog.Error("get member profile request failed", "error", err)
+	return jsonError(http.StatusInternalServerError, "internal error")
+}
+
+func jsonResponse(status int, payload any, extraHeaders ...map[string]string) events.APIGatewayProxyResponse {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		slog.Error("marshal members response", "error", err)
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Headers:    map[string]string{"Content-Type": "application/json"},
+			Body:       `{"error":"internal error"}`,
+		}
+	}
+
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Cache-Control": "public, max-age=300",
+	}
+	if len(extraHeaders) > 0 {
+		for key, value := range extraHeaders[0] {
+			headers[key] = value
+		}
+	}
 	return events.APIGatewayProxyResponse{
 		StatusCode: status,
-		Headers: map[string]string{
-			"Content-Type":  "application/json",
-			"Cache-Control": "public, max-age=300",
-		},
-		Body: string(body),
+		Headers:    headers,
+		Body:       string(body),
 	}
 }
 
-func jsonError(status int, message string) events.APIGatewayProxyResponse {
-	body, _ := json.Marshal(map[string]string{"error": message})
-	return jsonResponse(status, body)
+func jsonError(status int, message string, extraHeaders ...map[string]string) events.APIGatewayProxyResponse {
+	headers := map[string]string(nil)
+	if len(extraHeaders) > 0 {
+		headers = extraHeaders[0]
+	}
+	return jsonResponse(status, map[string]string{"error": message}, headers)
 }
 
 func main() {
