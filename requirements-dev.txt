@@ -6,3 +6,6 @@ gherkin-official==39.0.0
 
 # Test runner for repo-local Python CI helper tests.
 pytest==9.0.3
+
+# YAML parser for GitHub Actions workflow contract tests.
+PyYAML==6.0.3
