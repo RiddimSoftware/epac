@@ -492,6 +492,42 @@ Current implementation:
 
 ---
 
+### TagPrivateMembersBill
+
+```
+Actor: System (Backend Ingest / iOS Service boundary)
+Goal: Distinguish and classify bills as Private Members' Bills or Government Bills based on their LEGISinfo document type metadata during ingestion or parsing.
+Inputs: LEGISinfo bill type string (`BillTypeEn` or `BillDocumentTypeNameEn`).
+Outputs: `Bill.type` value object (`government`, `privateMember`, `senatePublic`, `senatePrivate`).
+Entities / values: Bill, BillType.
+Ports: backend Go: `Fetcher`; iOS Swift: `BillsService`.
+Primary adapters: `backend/bills-indexer/internal/adapter/legisinfo/fetcher.go`, `ios/epac/Data/Adapters/BillsService.swift`.
+Current implementation:
+  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go
+  ios/epac/Data/Adapters/BillsService.swift
+```
+
+> **Boundary rule:** The raw LEGISinfo `BillTypeEn` or `BillDocumentTypeNameEn` strings must be mapped to the `BillType` value object at the ingestion/adapter boundary (e.g. `Fetcher` on the backend, `BillsService` on iOS). App use cases and models must only refer to the typed `BillType` value object.
+
+---
+
+### LoadSponsoredPMBs
+
+```
+Actor: User (iOS app, Member Profile)
+Goal: View the list of Private Members' Bills sponsored by a specific Member of Parliament.
+Inputs: ParliamentMember.
+Outputs: Sorted list of Private Members' Bills sponsored by the member, ordered by introduction date (newest first).
+Entities / values: ParliamentMember, Bill.
+Ports: iOS Swift: `BillRepository`.
+Primary adapters: SponsoredPMBsSection view, BillsService fetcher.
+Current implementation:
+  ios/epac/Views/Members/SponsoredPMBsSection.swift
+  ios/epac/Data/Adapters/BillsService.swift
+```
+
+---
+
 ### GetOnThisDay
 
 ```

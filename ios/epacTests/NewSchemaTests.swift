@@ -13,7 +13,7 @@ Date,Location,Total of Attendees,Purpose of Hospitality,Supplier,Amount,Total
         let parser = CSVParser(content: csvContent)
         let stream = HospitalityExpenditure.fromCSV(parser)
         let results = await stream.collect()
-        
+
         #expect(results.count == 2)
         #expect(results[0].supplier == "COSTCO WHOLESALE")
         #expect(results[0].total == 69.63)
@@ -31,7 +31,7 @@ Travel start date,Travel end date,Departure,Places Visited,Purpose of Travel,Tra
         let parser = CSVParser(content: csvContent)
         let stream = TravelClaim.fromCSV(parser)
         let results = await stream.collect()
-        
+
         #expect(results.count == 2)
         #expect(results[0].transportation == 470.75)
         #expect(results[1].total == 5005.07)

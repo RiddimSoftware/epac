@@ -34,7 +34,7 @@ struct MPLobbyingTabView: View {
 
     @State private var response: MPLobbyingExposureResponse = .empty
     @State private var selectedRange: MPLobbyingDateRange = .defaultRange
-    @State private var selectedSubject: String? = nil
+    @State private var selectedSubject: String?
     @State private var isLoading = false
     @State private var isLoadingMore = false
     @State private var isRetryDisabled = false

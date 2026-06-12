@@ -54,6 +54,11 @@ struct BillDetailView: View {
     var body: some View {
         List {
             billHeaderSection
+
+            if bill.type == .privateMember || bill.type == .senatePublic || bill.type == .senatePrivate {
+                pmbExplanationSection
+            }
+
             keyFactsSection
 
             // MARK: PBO independent cost analysis
@@ -231,9 +236,9 @@ struct BillDetailView: View {
     private var headerBadges: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .firstTextBaseline, spacing: BillDetailLayout.headerBadgeSpacing) {
-                if !bill.billType.shortName.isEmpty {
+                if !bill.type.shortName.isEmpty {
                     BillHeaderBadge(
-                        text: bill.billType.shortName,
+                        text: bill.type.shortName,
                         foreground: .white,
                         background: Color.accentColor.opacity(BillDetailLayout.accentBadgeOpacity)
                     )
@@ -245,9 +250,9 @@ struct BillDetailView: View {
                 )
             }
             VStack(alignment: .leading, spacing: BillDetailLayout.headerBadgeColumnSpacing) {
-                if !bill.billType.shortName.isEmpty {
+                if !bill.type.shortName.isEmpty {
                     BillHeaderBadge(
-                        text: bill.billType.shortName,
+                        text: bill.type.shortName,
                         foreground: .white,
                         background: Color.accentColor.opacity(BillDetailLayout.accentBadgeOpacity)
                     )
@@ -292,10 +297,10 @@ struct BillDetailView: View {
                         .explainerTip(for: bill.currentStage)
                 }
             }
-            if !bill.billType.displayName.isEmpty {
+            if !bill.type.displayName.isEmpty {
                 LabeledContent(NSLocalizedString("bills.detail.type", comment: "")) {
-                    Text(bill.billType.displayName)
-                        .explainerTip(for: bill.billType.displayName)
+                    Text(bill.type.displayName)
+                        .explainerTip(for: bill.type.displayName)
                 }
             }
             LabeledContent(
@@ -308,15 +313,35 @@ struct BillDetailView: View {
         }
     }
 
-    private var originatingChamberName: String? {
-        switch bill.billType {
-        case .houseGovernment, .privateMember:
-            return NSLocalizedString("bills.chamber.house", comment: "")
-        case .senateGovernment, .senatePublic, .senatePrivate:
-            return NSLocalizedString("bills.chamber.senate", comment: "")
-        case .unknown:
-            return nil
+    private var pmbExplanationSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                HStack(alignment: .top, spacing: EpacSpacing.s) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+
+                    VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
+                        Text(NSLocalizedString("bills.detail.pmb.title", comment: ""))
+                            .font(.subheadline.bold())
+
+                        Text(NSLocalizedString("bills.detail.pmb.explanation", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
         }
+    }
+
+    private var originatingChamberName: String? {
+        if bill.number.uppercased().hasPrefix("C-") {
+            return NSLocalizedString("bills.chamber.house", comment: "")
+        } else if bill.number.uppercased().hasPrefix("S-") {
+            return NSLocalizedString("bills.chamber.senate", comment: "")
+        }
+        return nil
     }
 
     @ViewBuilder
@@ -333,7 +358,7 @@ struct BillDetailView: View {
             bill.number,
             bill.title,
             bill.status.displayName,
-            bill.billType.displayName,
+            bill.type.displayName,
             bill.currentStage
         ]
         .filter { !$0.isEmpty }

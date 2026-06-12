@@ -3,14 +3,14 @@ import Foundation
 import Testing
 
 struct ExpenditureTests {
-	
+
 	@Test func parseSummaryExpenditures() async {
 		let url = Bundle(for: ForThisOnly.self).url(forResource: "MembersExpenditures.2026Q2",
 													withExtension: "csv")!
 		let parser = CSVParser(file: url)
 		let expenditures = SummaryExpenditure.fromCSV(parser, year: 2026, quarter: 2)
 		let list = await expenditures.collect()
-		
+
 		#expect(list.count == 459)
 
 		// "Block,  Kelly",Carlton Trail—Eagle Creek,Conservative,86859.81,20406.36,472.89,17820.61

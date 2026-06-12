@@ -14,7 +14,7 @@ struct BugTests {
 
         // Debugging output for all speeches to understand what's being parsed
         printAllSpeeches(in: bro)
-        
+
         let rubySpeech = rubySahotaSpeech(in: bro)
         if let rubySpeech {
             #expect(rubySpeech.messages[0].firstName == "Ruby")

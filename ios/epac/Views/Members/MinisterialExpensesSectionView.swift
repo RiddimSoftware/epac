@@ -35,8 +35,8 @@ struct MinisterialExpensesSectionView: View {
     // Most recent MP office expense for side-by-side comparison.
     @Query private var officeSummaries: [SummaryExpenditure]
     @State private var isExpanded = false
-    @State private var selectedQuarter: Int? = nil
-    @State private var selectedDepartment: String? = nil
+    @State private var selectedQuarter: Int?
+    @State private var selectedDepartment: String?
 
     init(ministerName: String, member: ParliamentMember) {
         self.ministerName = ministerName

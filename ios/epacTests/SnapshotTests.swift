@@ -124,7 +124,7 @@ final class SnapshotTests: XCTestCase {
             sponsorName: "Jane Smith", status: status, currentStage: stage,
             introducedDate: nil, stages: [],
             legisInfoURL: URL(string: "https://www.parl.ca/legisinfo/en/bill/44-1/c-50")!,
-            billType: .houseGovernment, parliament: 44, session: 1
+            type: .government, parliament: 44, session: 1
         )
     }
 

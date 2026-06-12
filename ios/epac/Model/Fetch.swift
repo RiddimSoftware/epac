@@ -131,7 +131,7 @@ actor Fetch: ModelActor, ObservableObject {
 			return try await sittingCalendar(year)
 		}
 	}
-	
+
 	func downloadSittingCalendar(_ year: Int) async throws {
 		Log.debug("Fetch.downloadSittingCalendar(year: \(year))")
 		let dates = try await downloadCalendar(year: year)
@@ -336,20 +336,20 @@ actor Fetch: ModelActor, ObservableObject {
 			}
 			throw NSError(domain: "Fetch", code: Constants.csvLinkNotFoundErrorCode, userInfo: [NSLocalizedDescriptionKey: "CSV link not found after checking \(allLinks.count) links"])
 		}
-		
+
 		Log.debug("Found CSV URL: \(csvURL.absoluteString)")
 		let (csvData, _) = try await networkService.data(from: csvURL)
 		Log.debug("Downloaded \(csvData.count) bytes of CSV data")
-		
+
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("expenditures-\(year)-Q\(quarter).csv")
 		try csvData.write(to: tempURL)
 		let expenditures = await parseSummaryExpenditures(from: tempURL, year: year, quarter: quarter)
-		
+
 		// Parse detailed links from HTML
 		let rows = doc.css("table tbody tr")
 		Log.debug("Found \(rows.count) rows in HTML table")
 		let existingExpenditures = try modelContext.fetch(FetchDescriptor<SummaryExpenditure>(predicate: #Predicate { $0.year == year && $0.quarter == quarter }))
-		
+
 		if !expenditures.isEmpty && !existingExpenditures.isEmpty {
 			Log.debug("Summary data already exists for \(year) Q\(quarter), skipping insertion but updating links.")
 		}
@@ -477,10 +477,10 @@ actor Fetch: ModelActor, ObservableObject {
 			Log.error("Expenditure not found for identifier")
 			return
 		}
-		
+
 		// If URLs are missing, we might need to re-fetch the summary HTML to get them
 		try await refreshDetailLinksIfMissing(for: expenditure)
-		
+
 		// Re-fetch to get updated URLs if they were just downloaded
 		guard let updatedExpenditure = modelContext.model(for: identifier) as? SummaryExpenditure else {
 			return
@@ -519,7 +519,7 @@ actor Fetch: ModelActor, ObservableObject {
 		Log.debug("Downloading detail from \(url.absoluteString)")
 		let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
 		let (data, _) = try await networkService.data(for: request)
-		
+
 		guard let htmlstring = String(data: data, encoding: .utf8),
 			  let doc = try? HTML(html: htmlstring, url: nil, encoding: .utf8) else {
 			Log.error("Failed to parse detail HTML from \(url.absoluteString)")
@@ -531,15 +531,15 @@ actor Fetch: ModelActor, ObservableObject {
 			Log.debug("HTML content of failing page: \n\(htmlstring)")
 			return
 		}
-		
+
 		Log.debug("Found detailed CSV URL: \(csvURL.absoluteString)")
 		let (csvData, _) = try await networkService.data(from: csvURL)
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("detail-\(UUID().uuidString).csv")
 		try csvData.write(to: tempURL)
-		
+
 		let parser = CSVParser(file: tempURL)
 		let count = await insertDetailRows(type: type, parser: parser, member: member)
-		
+
 		Log.debug("Inserted \(count) detailed items for \(type)")
 		try modelContext.save()
 		try? FileManager.default.removeItem(at: tempURL)
