@@ -10,7 +10,7 @@ import AppIntents
 import SwiftData
 import SwiftUI
 
-private enum MemberProfileLayout {
+enum MemberProfileLayout {
 	static let cardSpacing: CGFloat = 10
 	static let cardCornerRadius = EpacCornerRadius.m
 	static let copyDelayNanoseconds: UInt64 = 1_500_000_000
@@ -35,6 +35,10 @@ private enum MemberProfileLayout {
 	static let cabinetSpacing: CGFloat = 10
 	static let cabinetHeaderSpacing: CGFloat = 6
 	static let cabinetSourceSpacing = EpacSpacing.xs
+	static let biographyRowSpacing = EpacSpacing.xs
+	static let biographyGroupSpacing = EpacSpacing.s
+	static let biographyFooterSpacing = EpacSpacing.xs
+	static let biographyBillLimit = 3
 }
 
 struct MemberProfileView: View {
@@ -170,6 +174,8 @@ struct MemberProfileView: View {
 					.padding()
 					.background(Color(.secondarySystemBackground))
 					.cornerRadius(MemberProfileLayout.cardCornerRadius)
+
+					MemberBiographySection(member: member)
 
 					if let position = cabinetPosition {
 						NavigationLink(destination: ContractsView(initialDepartmentFilter: position.departmentKeyword)) {

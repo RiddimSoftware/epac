@@ -70,7 +70,7 @@ struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
+    @State private var statusFilter: BillStatus?
     @State private var typeFilter: BillTypeGroup?
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
@@ -80,18 +80,33 @@ struct BillsView: View {
     @Environment(NavigationRouter.self) private var router
     private let selection: Binding<Bill?>?
     private let billRepository: any BillRepository
+    private let billNumbersFilter: Set<String>
+    private let navigationTitleText: String
 
-    init(selection: Binding<Bill?>? = nil, billRepository: any BillRepository = LEGISinfoBillRepository()) {
+    init(
+        selection: Binding<Bill?>? = nil,
+        billRepository: any BillRepository = LEGISinfoBillRepository(),
+        billNumbersFilter: Set<String> = [],
+        navigationTitle: String? = nil
+    ) {
         self.selection = selection
         self.billRepository = billRepository
+        self.billNumbersFilter = Set(billNumbersFilter.map { $0.uppercased() })
+        self.navigationTitleText = navigationTitle ?? NSLocalizedString("bills.navTitle", comment: "")
+        _statusFilter = State(initialValue: billNumbersFilter.isEmpty ? BillsView.loadStatusFilter() : nil)
     }
 
     private var filtered: [Bill] {
-        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return bills.filter {
+            BillsSelection.matchesBillNumberFilter($0, billNumbersFilter: billNumbersFilter) &&
             (statusFilter == nil || $0.status == statusFilter) &&
             (typeFilter == nil || typeFilter!.matches($0)) &&
-            (q.isEmpty || $0.number.localizedCaseInsensitiveContains(q) || $0.title.localizedCaseInsensitiveContains(q))
+            (
+                query.isEmpty ||
+                $0.number.localizedCaseInsensitiveContains(query) ||
+                $0.title.localizedCaseInsensitiveContains(query)
+            )
         }
     }
 
@@ -111,9 +126,15 @@ struct BillsView: View {
                     icon: "exclamationmark.triangle",
                     title: NSLocalizedString("bills.error.title", comment: ""),
                     message: NSLocalizedString("bills.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                    action: EmptyStateAction(
+                        label: NSLocalizedString("Retry", comment: ""),
+                        isEnabled: !isRetryDisabled,
+                        handler: {
                         isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(BillsLayout.retryDelaySeconds)); isRetryDisabled = false }
+                        Task {
+                            try? await Task.sleep(for: .seconds(BillsLayout.retryDelaySeconds))
+                            isRetryDisabled = false
+                        }
                         Task { await load() }
                     })
                 )
@@ -144,8 +165,12 @@ struct BillsView: View {
                 }
             }
         }
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: NSLocalizedString("bills.search.prompt", comment: ""))
-        .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .automatic),
+            prompt: NSLocalizedString("bills.search.prompt", comment: "")
+        )
+        .navigationTitle(navigationTitleText)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -184,7 +209,7 @@ struct BillsView: View {
         .activitySheet($shareItems)
     }
 
-    private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }
+    private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil || !billNumbersFilter.isEmpty }
 
     @ViewBuilder
     private func billRow(for bill: Bill) -> some View {
@@ -324,6 +349,10 @@ enum BillTypeGroup: Equatable {
 }
 
 enum BillsSelection {
+    static func matchesBillNumberFilter(_ bill: Bill, billNumbersFilter: Set<String>) -> Bool {
+        billNumbersFilter.isEmpty || billNumbersFilter.contains(bill.number.uppercased())
+    }
+
     static func select(_ bill: Bill, selection: Binding<Bill?>) {
         selection.wrappedValue = bill
     }
