@@ -124,7 +124,9 @@ final class SnapshotTests: XCTestCase {
         snapshot(
             SenatorCard(senator: Self.senatorWithAppointment)
                 .frame(width: 375)
-                .padding(),
+                .padding()
+                .background(Color(.systemBackground))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading),
             name: "SenatorCard_appointment"
         )
     }

@@ -10,8 +10,6 @@
 //
 
 import Foundation
-import SwiftUI
-import UIKit
 
 struct Senator: Identifiable, Codable {
     let id: String
@@ -24,16 +22,6 @@ struct Senator: Identifiable, Codable {
     let senateURL: URL          // link to Senate profile page
     let appointedDate: Date?
     let appointment: SenateAppointment?
-
-    var caucusColor: Color {
-        switch caucus.uppercased() {
-        case "CPC", "CONS": return Color(UIColor.systemBlue)
-        case "PSG":         return Color(UIColor.systemRed)
-        case "ISG":         return Color(UIColor.systemTeal)
-        case "CSG":         return Color(UIColor.systemPurple)
-        default:            return Color(UIColor.systemGray)
-        }
-    }
 
     var appointmentDate: Date? {
         appointment?.date ?? appointedDate

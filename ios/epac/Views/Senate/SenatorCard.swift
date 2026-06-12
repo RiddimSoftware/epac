@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 private enum Layout {
     static let rowSpacing: CGFloat = 12
@@ -20,7 +21,7 @@ struct SenatorCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: Layout.rowSpacing) {
             Circle()
-                .fill(senator.caucusColor)
+                .fill(caucusColor)
                 .frame(width: Layout.caucusDotSize, height: Layout.caucusDotSize)
                 .padding(.top, EpacSpacing.xxs)
                 .accessibilityHidden(true)
@@ -69,6 +70,16 @@ struct SenatorCard: View {
             )
         }
         return String(format: NSLocalizedString("senate.card.appointedUnknownPM", comment: ""), formattedDate)
+    }
+
+    private var caucusColor: Color {
+        switch senator.caucus.uppercased() {
+        case "CPC", "CONS": return Color(UIColor.systemBlue)
+        case "PSG":         return Color(UIColor.systemRed)
+        case "ISG":         return Color(UIColor.systemTeal)
+        case "CSG":         return Color(UIColor.systemPurple)
+        default:            return Color(UIColor.systemGray)
+        }
     }
 
     private static let appointmentDateFormatter: DateFormatter = {
