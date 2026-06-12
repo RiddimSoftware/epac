@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-itunes-app" content="app-id=1224459142, app-argument=https://epac.riddimsoftware.com/app/?path=%2F">
+  <title>epac — Know what your government is actually doing | Canada Parliament App</title>
+  <meta name="description" content="epac is Canada's parliament app. Track your MP, follow bills from introduction to Royal Assent, see every vote, and hold your government accountable. Free on iPhone.">
+  <link rel="canonical" href="https://epac.riddimsoftware.com/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://epac.riddimsoftware.com/">
+  <meta property="og:title" content="epac — Canada's Parliament App">
+  <meta property="og:description" content="Know what your government is actually doing. Track your MP, follow bills, and hold Parliament accountable. Free on iPhone.">
+  <meta property="og:image" content="https://epac.riddimsoftware.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_CA">
+  <meta property="og:site_name" content="epac">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="epac — Canada's Parliament App">
+  <meta name="twitter:description" content="Know what your government is actually doing. Track your MP, follow bills, and hold Parliament accountable. Free on iPhone.">
+  <meta name="twitter:image" content="https://epac.riddimsoftware.com/og-image.png">
+
+  <!-- Structured data: MobileApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MobileApplication",
+    "name": "epac",
+    "description": "Know what your government is actually doing. Track your MP, follow bills, and hold Parliament accountable.",
+    "operatingSystem": "iOS",
+    "applicationCategory": "UtilitiesApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CAD" },
+    "url": "https://epac.riddimsoftware.com/",
+    "downloadUrl": "https://apps.apple.com/ca/app/epac/id1224459142",
+    "publisher": { "@type": "Organization", "name": "Riddim Software", "url": "https://riddimsoftware.com" }
+  }
+  </script>
+
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+  <link rel="preload" href="epac-icon-dark.png" as="image" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="epac-icon-light.png" as="image" media="(prefers-color-scheme: light)">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/cooper-hewitt" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #007aff;
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --card-bg: #f2f2f7;
+      --font-main: 'Inter', sans-serif;
+      --font-rounded: 'Outfit', sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0c;
+        --text: #ffffff;
+        --card-bg: #1c1c1e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    nav {
+      padding: 24px 6%;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-brand {
+      font-family: 'Cooper Hewitt', var(--font-rounded);
+      font-size: 2rem;
+      font-weight: 800;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-link {
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: var(--text);
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .nav-link:hover { opacity: 1; }
+
+    .nav-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .hero-content {
+      padding: 60px 6%;
+      max-width: 1300px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    h1 { 
+      font-family: var(--font-rounded); 
+      font-size: clamp(2.5rem, 7vw, 5rem); 
+      line-height: 1.1; 
+      margin-bottom: 24px; 
+      letter-spacing: -0.02em; 
+    }
+
+    .subtitle { 
+      font-size: clamp(1.1rem, 3vw, 1.5rem); 
+      opacity: 0.7; 
+      max-width: 700px; 
+      margin: 0 auto 60px; 
+    }
+
+    .logo-main {
+      height: 100px;
+      border-radius: 22px;
+      margin-bottom: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    /* Logo visibility based on theme */
+    .logo-light { display: none; }
+    .logo-dark { display: inline-block; }
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: inline-block; }
+      .logo-dark { display: none; }
+    }
+
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 30px;
+      margin-top: 60px;
+    }
+
+    .pillar-card {
+      background: var(--card-bg);
+      padding: 60px 40px;
+      border-radius: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .pillar-card:hover { transform: translateY(-12px); }
+    .pillar-card:hover .screenshot { transform: scale(1.1); }
+
+    .pillar-icon { font-size: 3.5rem; margin-bottom: 24px; }
+    
+    h2 { 
+      font-family: var(--font-rounded); 
+      font-size: 2.5rem; 
+      margin-bottom: 16px; 
+    }
+
+    .pillar-card p {
+      font-size: 1.1rem;
+      opacity: 0.8;
+      margin-bottom: 40px;
+      max-width: 300px;
+    }
+
+    .screenshot {
+      width: 240px;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+    }
+    .screenshot.active { transform: scale(1.1); }
+
+    .cta-footer {
+      padding: 100px 6%;
+      text-align: center;
+    }
+    .app-store-btn {
+      height: 72px;
+      transition: transform 0.3s ease;
+    }
+    .app-store-btn:hover { transform: scale(1.05); }
+
+    footer {
+      padding-bottom: 60px;
+      opacity: 0.4;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 20px 6%;
+      }
+      .nav-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+      .nav-link-desktop-only {
+        display: none;
+      }
+      .nav-left {
+        display: flex;
+        align-items: center;
+      }
+      .nav-brand {
+        font-size: 1.6rem;
+      }
+      .nav-left img {
+        height: 36px !important;
+      }
+      .hero-content { padding-top: 40px; }
+      .pillar-card { padding: 40px 20px; }
+      .screenshot { width: 200px; }
+    }
+
+    /* Features section */
+    .features-section { background: var(--card-bg); padding: 60px 0; margin-top: 60px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; text-align: left; }
+    .category-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; margin-bottom: 20px; }
+    .feature-list { display: flex; flex-direction: column; gap: 20px; }
+    .feature-item { display: flex; gap: 14px; align-items: flex-start; }
+    .fi { font-size: 1.4rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+    .feature-item strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
+    .feature-item p { font-size: 0.85rem; opacity: 0.65; line-height: 1.5; margin: 0; }
+  </style>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11533004287"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-11533004287');
+  </script>
+  <script defer src="/open-in-app.js"></script>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-left">
+      <span class="nav-brand">epac</span>
+    </div>
+    <div class="nav-right">
+      <a href="https://apps.apple.com/ca/app/epac/id1224459142?ct=epac-web-home&mt=8&utm_source=epac-web&utm_medium=homepage&utm_campaign=organic">
+        <img src="app-store.svg" alt="Download on the App Store" style="height: 44px;">
+      </a>
+      <a href="/mp/" class="nav-link">MPs</a>
+      <a href="/features.html" class="nav-link">Features</a>
+      <a href="/faq.html" class="nav-link">FAQ</a>
+      <a href="/educators.html" class="nav-link">Educators</a>
+      <a href="https://github.com/RiddimSoftware/epac" class="nav-link">Source Code</a> <!-- Force redeploy -->
+      <a href="/blog/" class="nav-link">Blog</a>
+      <a href="https://riddimsoftware.com" class="nav-link nav-link-desktop-only">Riddim Software</a>
+    </div>
+  </nav>
+
+  <main class="hero-content">
+    <div class="logo-container">
+      <img src="epac-icon-dark.png" alt="epac logo" class="logo-main logo-dark">
+      <img src="epac-icon-light.png" alt="epac logo" class="logo-main logo-light">
+    </div>
+    
+    <h1>Know what your government <br>is actually doing.</h1>
+    <p class="subtitle">Track your MP, follow bills, and hold Parliament accountable with Canada's essential civic engagement app.</p>
+    
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; align-items: center; opacity: 0.4; margin-bottom: 60px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 0 6%;">
+       <span>Parliament of Canada</span>
+       <span>Elections Canada</span>
+       <span>Statistics Canada</span>
+       <span>Lobbying Registry</span>
+       <span>CER</span>
+       <span>IRCC</span>
+       <span>Health Canada</span>
+    </div>
+    
+    <div class="pillars">
+      <div class="pillar-card">
+        <div class="pillar-icon">💬</div>
+        <h2>Debates</h2>
+        <p>Hansard, humanized. Every word spoken in the House, delivered in a group-chat format.</p>
+        <img src="ss-1.png" alt="Debate Screenshot" class="screenshot" loading="lazy">
+      </div>
+      
+      <div class="pillar-card">
+        <div class="pillar-icon">🗳️</div>
+        <h2>Voting</h2>
+        <p>See every vote. Track how your MP voted on every bill and motion, with official results.</p>
+        <img src="ss-2.png" alt="Voting Screenshot" class="screenshot" loading="lazy">
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-icon">🗺️</div>
+        <h2>My MP</h2>
+        <p>Your riding first. A personalized feed of votes, speeches, and spending for your representative.</p>
+        <img src="ss-3.png" alt="My MP Screenshot" class="screenshot" loading="lazy">
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-icon">📜</div>
+        <h2>Bills</h2>
+        <p>Track legislation. Follow any bill from first reading to Royal Assent with automatic notifications.</p>
+        <img src="ss-4.png" alt="Bills Screenshot" class="screenshot" loading="lazy">
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-icon">🤝</div>
+        <h2>Lobbying</h2>
+        <p>Who is meeting whom? Track lobbyist communications and registrations from the official registry.</p>
+        <img src="ss-5.png" alt="Lobbying Screenshot" class="screenshot" loading="lazy">
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-icon">📣</div>
+        <h2>Civic Action</h2>
+        <p>Have your say. Write to your MP or sign official e-petitions directly from the app.</p>
+        <img src="ss-6.png" alt="Civic Action Screenshot" class="screenshot" loading="lazy">
+      </div>
+    </div>
+  </main>
+
+  <section class="features-section">
+    <div class="hero-content" style="padding-top: 20px; padding-bottom: 20px;">
+      <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); margin-bottom: 12px; font-family: var(--font-rounded);">Everything Parliament. In your pocket.</h2>
+      <p class="subtitle" style="font-size: 1rem; margin-bottom: 48px;">epac brings together data from the Parliament of Canada, Elections Canada, Statistics Canada, the Commissioner of Lobbying, CER, IRCC, and over 15 other official sources.</p>
+      <div class="features-grid">
+
+        <div class="feature-category">
+          <div class="category-label">Know Your MP</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">🗳️</span><div><strong>Voting Record</strong><p>Every vote your MP has cast, with Yea/Nay results and the final outcome.</p></div></div>
+            <div class="feature-item"><span class="fi">💬</span><div><strong>Debate Activity</strong><p>How often your MP speaks in the House and on which subjects.</p></div></div>
+            <div class="feature-item"><span class="fi">💰</span><div><strong>MP Spending</strong><p>Quarterly travel, hospitality, and contract expenditures.</p></div></div>
+            <div class="feature-item"><span class="fi">🤝</span><div><strong>Lobbyist Connections</strong><p>Who is lobbying your MP — from the Commissioner of Lobbying registry.</p></div></div>
+            <div class="feature-item"><span class="fi">📬</span><div><strong>Contact Your MP</strong><p>Pre-written email templates tied to specific votes or debates.</p></div></div>
+            <div class="feature-item"><span class="fi">⚖️</span><div><strong>Party-Line Score</strong><p>How often your MP votes with their party vs. independently.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Follow What Matters</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">📜</span><div><strong>Bill Tracker</strong><p>Follow bills from introduction to Royal Assent, with vote and debate links.</p></div></div>
+            <div class="feature-item"><span class="fi">🔔</span><div><strong>Follow a Member</strong><p>Notifications when your MP votes, speaks, or has new expense data.</p></div></div>
+            <div class="feature-item"><span class="fi">🏷️</span><div><strong>Topic Following</strong><p>Subscribe to housing, healthcare, environment, and more.</p></div></div>
+            <div class="feature-item"><span class="fi">🗺️</span><div><strong>My MP</strong><p>Enter your postal code to get a personalized feed for your representative.</p></div></div>
+            <div class="feature-item"><span class="fi">🏠</span><div><strong>Personalized Home</strong><p>Today's activity from your MP, followed bills, topics, and recent debates.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Understand Parliament</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">🔍</span><div><strong>Hansard Search</strong><p>Search across all sittings for debates on any topic.</p></div></div>
+            <div class="feature-item"><span class="fi">📅</span><div><strong>Sitting Calendar</strong><p>See which days Parliament sits, with upcoming sittings highlighted.</p></div></div>
+            <div class="feature-item"><span class="fi">📋</span><div><strong>Order Paper</strong><p>What Parliament has scheduled before it sits — with official source link.</p></div></div>
+            <div class="feature-item"><span class="fi">📝</span><div><strong>e-Petitions</strong><p>Browse and track open petitions in the House of Commons.</p></div></div>
+            <div class="feature-item"><span class="fi">🔗</span><div><strong>Vote-Speech Links</strong><p>See which debates led to which votes — the context behind the decision.</p></div></div>
+          </div>
+        </div>
+
+        <div class="feature-category">
+          <div class="category-label">Accountability Data</div>
+          <div class="feature-list">
+            <div class="feature-item"><span class="fi">📊</span><div><strong>MP Expenditures</strong><p>Quarterly travel, hospitality, and contract spending for every MP.</p></div></div>
+            <div class="feature-item"><span class="fi">🗳️</span><div><strong>Electoral History</strong><p>Past election results for any riding, via Elections Canada.</p></div></div>
+            <div class="feature-item"><span class="fi">💸</span><div><strong>Political Donations</strong><p>Annual limits and party financial disclosures from Elections Canada.</p></div></div>
+            <div class="feature-item"><span class="fi">📈</span><div><strong>Riding Statistics</strong><p>2021 Census data and housing market links for your riding.</p></div></div>
+            <div class="feature-item"><span class="fi">🏛️</span><div><strong>Government Consultations</strong><p>Open federal consultation processes where you can have your say.</p></div></div>
+            <div class="feature-item"><span class="fi">📤</span><div><strong>Share Votes</strong><p>Fact-checkable links with verified source citations for any vote.</p></div></div>
+          </div>
+        </div>
+
+      </div>
+      <div style="text-align: center; margin-top: 40px;">
+        <a href="/features.html" style="font-size: 0.95rem; opacity: 0.6; text-decoration: none; color: inherit;">See all features →</a>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 80px 6%; background: var(--bg); border-top: 1px solid rgba(0,0,0,0.05);">
+    <div style="max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; text-align: center;">
+      <div>
+        <div style="font-family: var(--font-rounded); font-size: 3.5rem; font-weight: 900; color: var(--primary); line-height: 1;">338</div>
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; margin-top: 12px;">Federal Ridings</div>
+      </div>
+      <div>
+        <div style="font-family: var(--font-rounded); font-size: 3.5rem; font-weight: 900; color: var(--primary); line-height: 1;">15+</div>
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; margin-top: 12px;">Data Sources</div>
+      </div>
+      <div>
+        <div style="font-family: var(--font-rounded); font-size: 3.5rem; font-weight: 900; color: var(--primary); line-height: 1;">5k+</div>
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; margin-top: 12px;">Sitting Days Covered</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 60px 6%; max-width: 860px; margin: 0 auto;">
+    <h2 style="font-size: clamp(1.6rem, 3.5vw, 2.4rem); margin-bottom: 40px; font-family: var(--font-rounded);">Frequently Asked Questions</h2>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Is epac free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. epac is completely free with no in-app purchases or subscriptions." } },
+        { "@type": "Question", "name": "Does epac need an account?", "acceptedAnswer": { "@type": "Answer", "text": "No. epac requires no login, no email, and no account. Your preferences stay on your device." } },
+        { "@type": "Question", "name": "Where does epac's data come from?", "acceptedAnswer": { "@type": "Answer", "text": "All data comes from official Canadian government sources: Parliament of Canada, Elections Canada, Statistics Canada, the Commissioner of Lobbying, CER, IRCC, and Health Canada." } },
+        { "@type": "Question", "name": "How often is the data updated?", "acceptedAnswer": { "@type": "Answer", "text": "Hansard debates are updated the day after each sitting. Voting records are updated within hours of each vote. Expenditures are updated quarterly when Parliament publishes them." } },
+        { "@type": "Question", "name": "Does epac work in French?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. epac is fully localized in English and French (Canadian)." } }
+      ]
+    }
+    </script>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <details style="background: var(--card-bg); border-radius: 12px; padding: 20px 24px;">
+        <summary style="font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">Is epac free? <span>+</span></summary>
+        <p style="margin: 12px 0 0; opacity: 0.75; font-size: 0.95rem;">Yes. epac is completely free with no in-app purchases, subscriptions, or hidden costs.</p>
+      </details>
+      <details style="background: var(--card-bg); border-radius: 12px; padding: 20px 24px;">
+        <summary style="font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">Does epac need an account? <span>+</span></summary>
+        <p style="margin: 12px 0 0; opacity: 0.75; font-size: 0.95rem;">No. epac requires no login, no email address, and no account of any kind. Your followed MPs, bills, and topics stay on your device.</p>
+      </details>
+      <details style="background: var(--card-bg); border-radius: 12px; padding: 20px 24px;">
+        <summary style="font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">Where does the data come from? <span>+</span></summary>
+        <p style="margin: 12px 0 0; opacity: 0.75; font-size: 0.95rem;">All data comes exclusively from official Canadian government sources: Parliament of Canada (Hansard, votes, bills, expenditures), Elections Canada, Statistics Canada, the Commissioner of Lobbying, CER, IRCC, and Health Canada. No news sources, no AI-generated content.</p>
+      </details>
+      <details style="background: var(--card-bg); border-radius: 12px; padding: 20px 24px;">
+        <summary style="font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">How often is the data updated? <span>+</span></summary>
+        <p style="margin: 12px 0 0; opacity: 0.75; font-size: 0.95rem;">Hansard debates are updated the day after each sitting. Voting records are updated within hours of each vote. MP expenditure data is updated quarterly when Parliament publishes it.</p>
+      </details>
+      <details style="background: var(--card-bg); border-radius: 12px; padding: 20px 24px;">
+        <summary style="font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">Does epac work in French? <span>+</span></summary>
+        <p style="margin: 12px 0 0; opacity: 0.75; font-size: 0.95rem;">Yes. epac is fully localized in English and Canadian French. Switch your iPhone language to French and the entire app follows.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="cta-footer">
+    <a href="https://apps.apple.com/ca/app/epac/id1224459142?ct=epac-web-home&mt=8&utm_source=epac-web&utm_medium=homepage&utm_campaign=organic">
+      <img src="app-store.svg" alt="Download on the App Store" class="app-store-btn">
+    </a>
+  </section>
+
+  <section style="background:#f5f5f7;padding:2.5rem 1.5rem;text-align:center">
+    <p style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-bottom:.5rem">Newsletter</p>
+    <h2 style="margin:0 0 .5rem;font-size:1.4rem">Parliament Monthly</h2>
+    <p style="font-size:.95rem;color:#3d3d3f;max-width:400px;margin:0 auto 1.25rem">Five facts about what Parliament did this month. Free. Unsubscribe any time.</p>
+    <form action="mailto:epac@riddimsoftware.com?subject=Parliament%20Monthly%20signup" method="post" enctype="text/plain" style="display:flex;gap:.5rem;max-width:400px;margin:0 auto" novalidate>
+      <input type="email" name="EMAIL" placeholder="your@email.com" required
+             style="flex:1;padding:.75rem 1rem;border:1.5px solid #d2d2d7;border-radius:10px;font-size:.95rem;outline:none"
+             aria-label="Email address">
+      <input type="hidden" name="SOURCE" value="homepage-footer">
+      <button type="submit"
+              style="padding:.75rem 1.25rem;background:#0071e3;color:#fff;font-weight:600;border:none;border-radius:10px;cursor:pointer;white-space:nowrap">
+        Subscribe
+      </button>
+    </form>
+    <p style="font-size:.75rem;color:#6e6e73;margin-top:.6rem">No spam. No data sold. <a href="/subscribe.html" style="color:#0071e3">See what's included</a></p>
+  </section>
+
+  <footer>
+    <p>&copy; <a href="https://riddimsoftware.com" style="color: inherit; text-decoration: none;">Riddim Software</a>. Built for Canadians. &middot; <a href="/blog/" style="color: inherit; text-decoration: none;">Blog</a> &middot; <a href="/mp/" style="color: inherit; text-decoration: none;">MPs</a> &middot; <a href="/faq.html" style="color: inherit; text-decoration: none;">FAQ</a> &middot; <a href="/educators.html" style="color: inherit; text-decoration: none;">Educators</a> &middot; <a href="/subscribe.html" style="color: inherit; text-decoration: none;">Newsletter</a> &middot; <a href="/press.html" style="color: inherit; text-decoration: none;">Press</a> &middot; <a href="/privacy.html" style="color: inherit; text-decoration: none;">Privacy</a> &middot; <a href="https://bsky.app/profile/epac.bsky.social" style="color: inherit; text-decoration: none;">Bluesky</a> &middot; <a href="https://x.com/epac_ca" style="color: inherit; text-decoration: none;">X</a></p>
+  </footer>
+
+  <script>
+    const observerOptions = {
+      threshold: 0.6
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        } else {
+          entry.target.classList.remove('active');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.screenshot').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

@@ -13,11 +13,11 @@ class CommitteeDownloader {
     let hosturl: String = "https://www.ourcommons.ca"
     var listurl: String = "/Committees/<L>/List"
     var meetingsurl: String = "/Committees/<L>/<ABBR>/Meetings"
-    
+
     var language: String
     var committeeList: [Committee]?
     var evidenceList: [String: [CommitteeEvidence]] = [:]
-    
+
     init() {
         if Locale.current.identifier.contains("fr") {
             language = "F"
@@ -29,7 +29,7 @@ class CommitteeDownloader {
             meetingsurl = meetingsurl.replacingOccurrences(of: "<L>", with: "en")
         }
     }
-    
+
     func downloadEvidenceList(forCommittee acronym: String, completion: @escaping ([CommitteeEvidence]?) -> Void) {
         if let list = evidenceList[acronym] {
             Log.debug("Evidence list from memory")
@@ -83,7 +83,7 @@ class CommitteeDownloader {
 //            }
         }
     }
-    
+
     func downloadList(completion: @escaping ([Committee]?) -> Void) {
         if committeeList != nil {
             Log.debug("Committees from memory")

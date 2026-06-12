@@ -33,8 +33,8 @@ struct ContractsView: View {
     @State private var filterDepartment: String
     @State private var filterMinAmount: String = ""
     @State private var filterMaxAmount: String = ""
-    @State private var filterStartDate: Date? = nil
-    @State private var filterEndDate: Date? = nil
+    @State private var filterStartDate: Date?
+    @State private var filterEndDate: Date?
     @State private var filterContractType: String = ""
 
     private var hasActiveFilters: Bool {

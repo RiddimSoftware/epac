@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>epac Blog</title>
+    <link>https://epac.riddimsoftware.com/blog/</link>
+    <description>Civic explainers, app updates, and data spotlights from the epac team.</description>
+    <language>en-ca</language>
+    <atom:link href="https://epac.riddimsoftware.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>How to look up your MP's voting record</title>
+      <link>https://epac.riddimsoftware.com/blog/how-to-look-up-voting-record.html</link>
+      <description>Every recorded vote in the House of Commons is public record. Here is how to find how your MP voted on any bill.</description>
+      <pubDate>Mon, 27 Apr 2026 15:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/how-to-look-up-voting-record.html</guid>
+    </item>
+    <item>
+      <title>What is a federal riding?</title>
+      <link>https://epac.riddimsoftware.com/blog/what-is-a-federal-riding.html</link>
+      <description>Canada is divided into 338 federal electoral districts, each represented by one Member of Parliament. Here is how they work.</description>
+      <pubDate>Mon, 27 Apr 2026 14:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/what-is-a-federal-riding.html</guid>
+    </item>
+    <item>
+      <title>How to contact your MP during an election campaign</title>
+      <link>https://epac.riddimsoftware.com/blog/how-to-contact-your-mp.html</link>
+      <description>During a federal election, your MP is a candidate seeking re-election. Here is how to reach them and what to say.</description>
+      <pubDate>Mon, 27 Apr 2026 13:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/how-to-contact-your-mp.html</guid>
+    </item>
+    <item>
+      <title>What's in epac v1</title>
+      <link>https://epac.riddimsoftware.com/blog/epac-launch.html</link>
+      <description>A tour of what epac can do: Hansard debates, MP profiles, voting records, and more.</description>
+      <pubDate>Sun, 27 Apr 2026 12:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/epac-launch.html</guid>
+    </item>
+    <item>
+      <title>How epac tracks MP voting records</title>
+      <link>https://epac.riddimsoftware.com/blog/how-epac-tracks-voting-records.html</link>
+      <description>Every recorded vote is published by Parliament of Canada. Here is exactly how epac fetches and displays them.</description>
+      <pubDate>Sun, 27 Apr 2026 11:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/how-epac-tracks-voting-records.html</guid>
+    </item>
+    <item>
+      <title>What is Hansard?</title>
+      <link>https://epac.riddimsoftware.com/blog/what-is-hansard.html</link>
+      <description>The verbatim record of every word spoken in Canada's House of Commons — and why it matters.</description>
+      <pubDate>Sun, 27 Apr 2026 10:00:00 +0000</pubDate>
+      <guid>https://epac.riddimsoftware.com/blog/what-is-hansard.html</guid>
+    </item>
+  </channel>
+</rss>

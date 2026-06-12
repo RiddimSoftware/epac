@@ -21,7 +21,7 @@ struct ModelTests {
         #expect(Party.partyWithAbbreviation("Ind") == .independent)
         #expect(Party.partyWithAbbreviation("Unknown") == .independent)
     }
-    
+
     @Test func provinceMatching() {
         // Test accented characters matching in XMLBro.parseMembers context
         // This is indirectly tested by XMLBroTests.testParsingAcrossParliaments

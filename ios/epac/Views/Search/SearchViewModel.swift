@@ -89,7 +89,7 @@ class SearchViewModel {
         lastQuery = query ?? searchText
         rebuildResults()
     }
-    
+
     func resolveDebate(_ result: DebateResult, modelContext: ModelContext) -> (Hansard?, SubjectOfBusiness?) {
         let hansardDate = result.hansardDate
         let subjectID = result.subjectID
@@ -103,7 +103,7 @@ class SearchViewModel {
 
         let hansard = try? modelContext.fetch(hansardDescriptor).first
         let subject = try? modelContext.fetch(subjectDescriptor).first
-        
+
         return (hansard, subject)
     }
 

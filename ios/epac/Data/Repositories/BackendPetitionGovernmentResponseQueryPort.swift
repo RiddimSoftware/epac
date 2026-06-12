@@ -11,6 +11,7 @@ struct BackendPetitionGovernmentResponseQueryPort: PetitionGovernmentResponseQue
         static let requestTimeout: TimeInterval = 20
         static let successStatusLowerBound = 200
         static let successStatusUpperBound = 300
+        static let notFoundStatusCode = 404
         static let pathPrefix = "api/v1/petitions"
         static let pathSuffix = "response"
 
@@ -44,7 +45,7 @@ struct BackendPetitionGovernmentResponseQueryPort: PetitionGovernmentResponseQue
             throw URLError(.badServerResponse)
         }
 
-        if http.statusCode == 404 {
+        if http.statusCode == Constants.notFoundStatusCode {
             return nil
         }
 
@@ -55,20 +56,6 @@ struct BackendPetitionGovernmentResponseQueryPort: PetitionGovernmentResponseQue
         let dto = try decoder.decode(PetitionGovernmentResponseDTO.self, from: data)
         return dto.domain
     }
-
-    fileprivate static func parseDate(_ value: String?) -> Date? {
-        guard let value, !value.isEmpty else { return nil }
-        return dateFormatter.date(from: value)
-    }
-
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
 }
 
 private struct PetitionGovernmentResponseDTO: Decodable {
@@ -83,11 +70,25 @@ private struct PetitionGovernmentResponseDTO: Decodable {
     }
 
     var domain: PetitionGovernmentResponse {
-        let date = BackendPetitionGovernmentResponseQueryPort.parseDate(tabledOn) ?? Date()
+        let date = Self.parseDate(tabledOn) ?? Date()
         return PetitionGovernmentResponse(
             text: text,
             tabledOn: date,
             respondingMinister: respondingMinister
         )
     }
+
+    private static func parseDate(_ value: String?) -> Date? {
+        guard let value, !value.isEmpty else { return nil }
+        return dateFormatter.date(from: value)
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }

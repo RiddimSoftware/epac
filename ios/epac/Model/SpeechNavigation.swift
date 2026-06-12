@@ -61,7 +61,7 @@ class SubjectNavigator {
 	                })
 	                                self.navigators = speeches.map { SpeechNavigator($0) }
 	                        }
-	                
+
 	                        func next() -> SpeechMessage? {
 	                if let navigator {
 	                        if let message = navigator.next() {

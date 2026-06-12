@@ -83,16 +83,16 @@ extension SummaryExpenditure {
 						isHeader = false
 						continue
 					}
-					
+
 					if row.count < SummaryExpenditureCSVColumn.minimumCount {
 						Log.debug("Skipping row with only \(row.count) columns: \(row.joined(separator: "|"))")
 						continue
 					}
-					
+
 					let nameParts = row[SummaryExpenditureCSVColumn.fullName].components(separatedBy: ",")
 					let lastName = nameParts.first?.trimmingCharacters(in: .whitespaces) ?? ""
 					var firstName = nameParts.count > 1 ? nameParts[1].trimmingCharacters(in: .whitespaces) : ""
-					
+
 					let titles = ["Right Hon.", "Hon."]
 					for title in titles {
 						if firstName.hasPrefix(title) {
@@ -100,7 +100,7 @@ extension SummaryExpenditure {
 							break
 						}
 					}
-					
+
 					let expenditure = SummaryExpenditure(firstName: firstName,
 														 lastName: lastName,
 														 constituency: row[SummaryExpenditureCSVColumn.constituency],
@@ -152,7 +152,7 @@ extension TravelClaim {
 		return AsyncStream { continuation in
 			Task {
 				var claims: [String: TravelClaimData] = [:]
-				
+
 				var headerCount = TravelCSVColumn.headerRowCount
 				var schema = TravelCSVSchema.legacy
 				var rowCount = 0
@@ -162,7 +162,7 @@ extension TravelClaim {
 
 					updateTravelClaims(&claims, with: row, schema: schema, rowCount: &rowCount)
 				}
-				
+
 				yieldNonZeroTravelClaims(from: claims, to: continuation)
 				continuation.finish()
 			}
@@ -358,7 +358,7 @@ extension HospitalityExpenditure {
 						continue
 					}
 					if headerCount > 0 { headerCount -= 1; continue }
-					
+
 					if let item = hospitalityExpenditure(from: row, schema: schema) {
 						continuation.yield(item)
 					}
@@ -428,7 +428,7 @@ extension ContractExpenditure {
 				for await row in parser.parse() {
 					if headerCount > 0 { headerCount -= 1; continue }
 					guard row.count >= ContractCSVColumn.minimumCount else { continue }
-					
+
 					let item = ContractExpenditureData(
 						supplier: row[ContractCSVColumn.supplier],
 						details: row[ContractCSVColumn.details],

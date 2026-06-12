@@ -428,7 +428,7 @@ extension DateComponents {
 
 struct NonSittingDayView: View {
     let date: Date
-    
+
     var body: some View {
         VStack(spacing: SittingCalendarLayout.recessRootSpacing) {
             Image(systemName: "building.columns.fill")
@@ -436,27 +436,27 @@ struct NonSittingDayView: View {
                 .foregroundColor(.accentColor)
                 .padding(.top, SittingCalendarLayout.recessIconTopPadding)
                 .accessibilityHidden(true)
-            
+
             VStack(spacing: SittingCalendarLayout.recessDateSpacing) {
                 Text(date.formatted(date: .long, time: .omitted))
                     .font(.title3)
                     .fontWeight(.bold)
-                
+
                 Text("The House is not sitting today.")
                     .font(.headline)
                     .foregroundColor(.secondary)
             }
-            
+
             Divider()
                 .padding(.horizontal, SittingCalendarLayout.recessDividerHorizontalPadding)
-            
+
             VStack(alignment: .leading, spacing: SittingCalendarLayout.recessInfoSpacing) {
                 Label("Committee Meetings", systemImage: "person.3.fill")
                     .font(.headline)
                 Text("Committees often meet even when the House is not in session to study legislation and specific issues in depth.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+
                 Label("Historical Throwback", systemImage: "clock.arrow.circlepath")
                     .font(.headline)
                 Text("Did you know? The first session of Canada's 1st Parliament opened on November 6, 1867.")
@@ -464,7 +464,7 @@ struct NonSittingDayView: View {
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, SittingCalendarLayout.recessInfoHorizontalPadding)
-            
+
             Spacer()
         }
         .padding()

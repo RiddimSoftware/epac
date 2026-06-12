@@ -48,7 +48,6 @@ struct EPetition: Identifiable {
     }
 }
 
-
 enum PetitionStatus: String {
     case open = "Open"
     case closed = "Closed"

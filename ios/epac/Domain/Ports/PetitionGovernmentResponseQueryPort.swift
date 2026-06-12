@@ -2,7 +2,7 @@
 //  PetitionGovernmentResponseQueryPort.swift
 //  epac
 //
- 
+
 import Foundation
 
 @MainActor

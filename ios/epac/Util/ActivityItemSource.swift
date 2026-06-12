@@ -29,11 +29,11 @@ class ShareActivityItemSource: NSObject, UIActivityItemSource {
     func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
         let metadata = LPLinkMetadata()
         metadata.title = title
-        
+
         // Provide the bottom-leading square of the image for the preview thumbnail
         let previewImage = image.bottomLeadingSquare() ?? image
         metadata.imageProvider = NSItemProvider(object: previewImage)
-        
+
         if let url = url {
             metadata.url = url
             metadata.originalURL = url
@@ -45,19 +45,19 @@ class ShareActivityItemSource: NSObject, UIActivityItemSource {
 extension UIImage {
     func bottomLeadingSquare() -> UIImage? {
         let side = min(size.width, size.height)
-        
+
         // Use pixels for CGImage cropping
         let x = 0.0
         let y = (size.height - side) * scale
         let width = side * scale
         let height = side * scale
-        
+
         let cropRect = CGRect(x: x, y: y, width: width, height: height)
-        
+
         guard let cgImage = self.cgImage?.cropping(to: cropRect) else {
             return nil
         }
-        
+
         return UIImage(cgImage: cgImage, scale: scale, orientation: imageOrientation)
     }
 }
