@@ -1970,7 +1970,40 @@
           "summary": { "type": "string" },
           "preferred_language": { "type": "string" },
           "photo_url": { "type": "string", "format": "uri" },
-          "source_url": { "type": "string", "format": "uri" }
+          "source_url": { "type": "string", "format": "uri" },
+          "years_served": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ParliamentaryServicePeriod" }
+          },
+          "previous_roles": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ParliamentaryRole" }
+          },
+          "education": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "professional_background": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "ParliamentaryServicePeriod": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "from_date": { "type": "string", "format": "date" },
+          "to_date": { "type": "string", "format": "date" }
+        }
+      },
+      "ParliamentaryRole": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "organization": { "type": "string" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" }
         }
       },
       "MemberAttendanceRecord": {

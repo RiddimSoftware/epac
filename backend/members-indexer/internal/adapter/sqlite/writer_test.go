@@ -28,6 +28,17 @@ func TestWriterCreatesMembersRelationalSchema(t *testing.T) {
 			Summary:           "Jane Example - Member of Parliament",
 			PreferredLanguage: "English / French",
 			SourceURL:         "https://www.ourcommons.ca/Members/en/89156",
+			YearsServed: []domain.ServicePeriod{{
+				Label:    "Ottawa Centre, Ontario",
+				FromDate: "2025-04-28",
+			}},
+			PreviousRoles: []domain.ParliamentaryRole{{
+				Title:        "Member",
+				Organization: "Health",
+				StartDate:    "2025-06-13",
+			}},
+			Education:              []string{"University of Ottawa, MD"},
+			ProfessionalBackground: []string{"Family physician"},
 		},
 		Attendance: []domain.AttendanceRecord{{
 			ID: "vote-151", VoteNumber: "151", Subject: "Report stage", Ballot: "Yea", Result: "Agreed To",
@@ -54,6 +65,16 @@ func TestWriterCreatesMembersRelationalSchema(t *testing.T) {
 	}
 	if party != "Liberal" {
 		t.Fatalf("party = %q", party)
+	}
+	var yearsServedJSON, educationJSON string
+	if err := db.QueryRow("SELECT years_served_json, education_json FROM member_biographies WHERE member_id = ?", "89156").Scan(&yearsServedJSON, &educationJSON); err != nil {
+		t.Fatalf("query biography details: %v", err)
+	}
+	if yearsServedJSON != `[{"label":"Ottawa Centre, Ontario","from_date":"2025-04-28"}]` {
+		t.Fatalf("years served json = %q", yearsServedJSON)
+	}
+	if educationJSON != `["University of Ottawa, MD"]` {
+		t.Fatalf("education json = %q", educationJSON)
 	}
 }
 

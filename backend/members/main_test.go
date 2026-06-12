@@ -71,6 +71,18 @@ func TestHandleRequestGetsMemberProfile(t *testing.T) {
 	if body.Member.Biography == nil || body.Member.Biography.Summary != "Jane Example is a former physician." {
 		t.Fatalf("biography = %+v", body.Member.Biography)
 	}
+	if len(body.Member.Biography.YearsServed) != 1 || body.Member.Biography.YearsServed[0].Label != "Ottawa Centre, Ontario" {
+		t.Fatalf("years served = %+v", body.Member.Biography.YearsServed)
+	}
+	if len(body.Member.Biography.PreviousRoles) != 1 || body.Member.Biography.PreviousRoles[0].Organization != "Health" {
+		t.Fatalf("previous roles = %+v", body.Member.Biography.PreviousRoles)
+	}
+	if len(body.Member.Biography.Education) != 1 || body.Member.Biography.Education[0] != "University of Ottawa, MD" {
+		t.Fatalf("education = %+v", body.Member.Biography.Education)
+	}
+	if len(body.Member.Biography.ProfessionalBackground) != 1 || body.Member.Biography.ProfessionalBackground[0] != "Family physician" {
+		t.Fatalf("professional background = %+v", body.Member.Biography.ProfessionalBackground)
+	}
 	if len(body.Member.PMBSponsorships) != 1 || body.Member.PMBSponsorships[0].BillNumber != "C-234" {
 		t.Fatalf("pmb sponsorships = %+v", body.Member.PMBSponsorships)
 	}
@@ -164,7 +176,11 @@ func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
 		summary TEXT NOT NULL DEFAULT '',
 		preferred_language TEXT NOT NULL DEFAULT '',
 		photo_url TEXT NOT NULL DEFAULT '',
-		source_url TEXT NOT NULL DEFAULT ''
+		source_url TEXT NOT NULL DEFAULT '',
+		years_served_json TEXT NOT NULL DEFAULT '[]',
+		previous_roles_json TEXT NOT NULL DEFAULT '[]',
+		education_json TEXT NOT NULL DEFAULT '[]',
+		professional_background_json TEXT NOT NULL DEFAULT '[]'
 	)`); err != nil {
 		t.Fatalf("create member biographies table: %v", err)
 	}
@@ -193,8 +209,21 @@ func writeMemberSQLiteUnitFixture(t *testing.T, dir string, members []Member) {
 		t.Fatalf("insert attendance fixture: %v", err)
 	}
 	if _, err := db.Exec(`
-		INSERT INTO member_biographies (member_id, summary, preferred_language, photo_url, source_url)
-		VALUES ('2269', 'Jane Example is a former physician.', 'English', 'https://www.ourcommons.ca/photo.jpg', 'https://www.ourcommons.ca/Members/en/2269')`); err != nil {
+		INSERT INTO member_biographies (
+			member_id, summary, preferred_language, photo_url, source_url,
+			years_served_json, previous_roles_json, education_json, professional_background_json
+		)
+		VALUES (
+			'2269',
+			'Jane Example is a former physician.',
+			'English',
+			'https://www.ourcommons.ca/photo.jpg',
+			'https://www.ourcommons.ca/Members/en/2269',
+			'[{"label":"Ottawa Centre, Ontario","from_date":"2025-04-28"}]',
+			'[{"title":"Member","organization":"Health","start_date":"2025-06-01"}]',
+			'["University of Ottawa, MD"]',
+			'["Family physician"]'
+		)`); err != nil {
 		t.Fatalf("insert biography fixture: %v", err)
 	}
 	if _, err := db.Exec(`

@@ -21,10 +21,27 @@ type AttendanceRecord struct {
 }
 
 type Biography struct {
-	Summary           string `json:"summary,omitempty"`
-	PreferredLanguage string `json:"preferred_language,omitempty"`
-	PhotoURL          string `json:"photo_url,omitempty"`
-	SourceURL         string `json:"source_url,omitempty"`
+	Summary                string              `json:"summary,omitempty"`
+	PreferredLanguage      string              `json:"preferred_language,omitempty"`
+	PhotoURL               string              `json:"photo_url,omitempty"`
+	SourceURL              string              `json:"source_url,omitempty"`
+	YearsServed            []ServicePeriod     `json:"years_served,omitempty"`
+	PreviousRoles          []ParliamentaryRole `json:"previous_roles,omitempty"`
+	Education              []string            `json:"education,omitempty"`
+	ProfessionalBackground []string            `json:"professional_background,omitempty"`
+}
+
+type ServicePeriod struct {
+	Label    string `json:"label,omitempty"`
+	FromDate string `json:"from_date,omitempty"`
+	ToDate   string `json:"to_date,omitempty"`
+}
+
+type ParliamentaryRole struct {
+	Title        string `json:"title,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	StartDate    string `json:"start_date,omitempty"`
+	EndDate      string `json:"end_date,omitempty"`
 }
 
 type PMBSponsorship struct {

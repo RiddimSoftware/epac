@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -136,7 +137,7 @@ func (r *Repository) biography(ctx context.Context, memberID string) (*domain.Bi
 		return nil, nil
 	}
 	query := fmt.Sprintf(`
-		SELECT %s, %s, %s, %s
+		SELECT %s, %s, %s, %s, %s, %s, %s, %s
 		FROM member_biographies
 		WHERE %s = ?
 		LIMIT 1`,
@@ -144,22 +145,49 @@ func (r *Repository) biography(ctx context.Context, memberID string) (*domain.Bi
 		columnExpr(columns, "preferred_language"),
 		columnExpr(columns, "photo_url"),
 		columnExpr(columns, "source_url", "url"),
+		columnExpr(columns, "years_served_json"),
+		columnExpr(columns, "previous_roles_json"),
+		columnExpr(columns, "education_json"),
+		columnExpr(columns, "professional_background_json"),
 		memberIDColumn,
 	)
 	var summary, preferredLanguage, photoURL, sourceURL sql.NullString
-	err = r.db.QueryRowContext(ctx, query, memberID).Scan(&summary, &preferredLanguage, &photoURL, &sourceURL)
+	var yearsServedJSON, previousRolesJSON, educationJSON, professionalBackgroundJSON sql.NullString
+	err = r.db.QueryRowContext(ctx, query, memberID).Scan(
+		&summary,
+		&preferredLanguage,
+		&photoURL,
+		&sourceURL,
+		&yearsServedJSON,
+		&previousRolesJSON,
+		&educationJSON,
+		&professionalBackgroundJSON,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("query member biography sqlite artifact: %w", err)
 	}
-	return &domain.Biography{
+	biography := &domain.Biography{
 		Summary:           stringValue(summary),
 		PreferredLanguage: stringValue(preferredLanguage),
 		PhotoURL:          stringValue(photoURL),
 		SourceURL:         stringValue(sourceURL),
-	}, nil
+	}
+	if err := decodeJSONColumn(yearsServedJSON, &biography.YearsServed); err != nil {
+		return nil, fmt.Errorf("decode member biography years served: %w", err)
+	}
+	if err := decodeJSONColumn(previousRolesJSON, &biography.PreviousRoles); err != nil {
+		return nil, fmt.Errorf("decode member biography previous roles: %w", err)
+	}
+	if err := decodeJSONColumn(educationJSON, &biography.Education); err != nil {
+		return nil, fmt.Errorf("decode member biography education: %w", err)
+	}
+	if err := decodeJSONColumn(professionalBackgroundJSON, &biography.ProfessionalBackground); err != nil {
+		return nil, fmt.Errorf("decode member biography professional background: %w", err)
+	}
+	return biography, nil
 }
 
 func (r *Repository) pmbSponsorships(ctx context.Context, memberID string) ([]domain.PMBSponsorship, error) {
@@ -366,4 +394,11 @@ func intPtr(value sql.NullInt64) *int {
 	}
 	converted := int(value.Int64)
 	return &converted
+}
+
+func decodeJSONColumn[T any](value sql.NullString, target *T) error {
+	if !value.Valid || value.String == "" {
+		return nil
+	}
+	return json.Unmarshal([]byte(value.String), target)
 }
