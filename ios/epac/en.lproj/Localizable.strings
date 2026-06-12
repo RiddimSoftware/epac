@@ -250,6 +250,12 @@
 "petitions.noOpen.description" = "There are no open petitions right now. Tap below to see all petitions including closed ones.";
 "petitions.error.title" = "Couldn't Load Petitions";
 "petitions.error.description" = "Check your connection and try again.";
+"petitions.response.section" = "Official Government Response";
+"petitions.response.tabled" = "Tabled on %@";
+"petitions.response.minister" = "Responding Minister/Department";
+"petitions.response.awaiting" = "Awaiting government response";
+"petitions.response.notQualified" = "Did not qualify for a response";
+
 
 /* My MP activity section header */
 "myMP.activity.section" = "Recent Activity";

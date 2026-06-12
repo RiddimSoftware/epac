@@ -1,2 +1,0 @@
-# Python dependencies for S3-backed statistics artifact publishing.
-boto3>=1.34,<2

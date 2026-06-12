@@ -1132,4 +1132,82 @@ final class SnapshotTests: XCTestCase {
             name: "WitnessOrganizationContent_withLobbyingBadge"
         )
     }
+
+    // MARK: - Petitions Government Response
+
+    private struct SnapshotStubPetitionQueryPort: PetitionGovernmentResponseQueryPort {
+        let response: PetitionGovernmentResponse?
+        func fetchGovernmentResponse(for petitionID: String) async throws -> PetitionGovernmentResponse? {
+            response
+        }
+    }
+
+    func testPetitionDetailView_withResponse() {
+        let response = PetitionGovernmentResponse(
+            text: "This is the official government response to the petition. The government takes these matters seriously and is committed to implementing appropriate policies.",
+            tabledOn: Date(timeIntervalSince1970: 1_773_600_000),
+            respondingMinister: "Minister of Justice and Attorney General of Canada"
+        )
+        let petition = EPetition(
+            id: "e-4500",
+            subject: "Federal Funding for Civic Infrastructure",
+            keywords: ["Infrastructure", "Finance", "Cities"],
+            sponsorName: "Pierre Poilievre",
+            signatureCount: 1250,
+            deadline: nil,
+            status: .responseReceived,
+            petitionURL: URL(string: "https://petitions.ourcommons.ca/en/Petition/Details?Petition=e-4500")!,
+            governmentResponse: response
+        )
+        let port = SnapshotStubPetitionQueryPort(response: response)
+        snapshot(
+            NavigationStack {
+                PetitionDetailView(petition: petition, queryPort: port)
+            }
+            .frame(width: 375, height: 750),
+            name: "PetitionDetailView_withResponse"
+        )
+    }
+
+    func testPetitionDetailView_awaitingResponse() {
+        let petition = EPetition(
+            id: "e-4501",
+            subject: "Environmental Protections in Northern Canada",
+            keywords: ["Environment", "North", "Climate Change"],
+            sponsorName: "Elizabeth May",
+            signatureCount: 520,
+            deadline: Date(timeIntervalSince1970: 1_773_600_000),
+            status: .closed,
+            petitionURL: URL(string: "https://petitions.ourcommons.ca/en/Petition/Details?Petition=e-4501")!
+        )
+        let port = SnapshotStubPetitionQueryPort(response: nil)
+        snapshot(
+            NavigationStack {
+                PetitionDetailView(petition: petition, queryPort: port)
+            }
+            .frame(width: 375, height: 600),
+            name: "PetitionDetailView_awaitingResponse"
+        )
+    }
+
+    func testPetitionDetailView_notQualified() {
+        let petition = EPetition(
+            id: "e-4502",
+            subject: "Promotion of Amateur Sports Programs",
+            keywords: ["Sports", "Health", "Youth"],
+            sponsorName: "Jagmeet Singh",
+            signatureCount: 230,
+            deadline: Date(timeIntervalSince1970: 1_773_600_000),
+            status: .closed,
+            petitionURL: URL(string: "https://petitions.ourcommons.ca/en/Petition/Details?Petition=e-4502")!
+        )
+        let port = SnapshotStubPetitionQueryPort(response: nil)
+        snapshot(
+            NavigationStack {
+                PetitionDetailView(petition: petition, queryPort: port)
+            }
+            .frame(width: 375, height: 600),
+            name: "PetitionDetailView_notQualified"
+        )
+    }
 }

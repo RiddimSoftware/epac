@@ -8,6 +8,12 @@
 import Foundation
 import SwiftUI
 
+struct PetitionGovernmentResponse: Codable, Equatable {
+    let text: String
+    let tabledOn: Date
+    let respondingMinister: String?
+}
+
 struct EPetition: Identifiable {
     let id: String           // petition number, e.g. "e-7344"
     let subject: String      // category / topic (e.g. "Transportation")
@@ -17,7 +23,31 @@ struct EPetition: Identifiable {
     let deadline: Date?
     let status: PetitionStatus
     let petitionURL: URL     // official page on petitions.ourcommons.ca
+    let governmentResponse: PetitionGovernmentResponse?
+
+    init(
+        id: String,
+        subject: String,
+        keywords: [String],
+        sponsorName: String,
+        signatureCount: Int,
+        deadline: Date?,
+        status: PetitionStatus,
+        petitionURL: URL,
+        governmentResponse: PetitionGovernmentResponse? = nil
+    ) {
+        self.id = id
+        self.subject = subject
+        self.keywords = keywords
+        self.sponsorName = sponsorName
+        self.signatureCount = signatureCount
+        self.deadline = deadline
+        self.status = status
+        self.petitionURL = petitionURL
+        self.governmentResponse = governmentResponse
+    }
 }
+
 
 enum PetitionStatus: String {
     case open = "Open"

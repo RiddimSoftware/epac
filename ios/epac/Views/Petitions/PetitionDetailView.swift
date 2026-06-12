@@ -20,6 +20,19 @@ private enum PetitionDetailLayout {
 
 struct PetitionDetailView: View {
     let petition: EPetition
+    private let queryPort: any PetitionGovernmentResponseQueryPort
+
+    @State private var response: PetitionGovernmentResponse?
+    @State private var isLoading = false
+    @State private var loadFailed = false
+
+    init(
+        petition: EPetition,
+        queryPort: any PetitionGovernmentResponseQueryPort = BackendPetitionGovernmentResponseQueryPort()
+    ) {
+        self.petition = petition
+        self.queryPort = queryPort
+    }
 
     var body: some View {
         List {
@@ -84,6 +97,9 @@ struct PetitionDetailView: View {
                 }
             }
 
+            // MARK: - Government Response Section
+            responseSection
+
             // MARK: - Sign link
             Section {
                 Link(
@@ -100,6 +116,101 @@ struct PetitionDetailView: View {
         .adaptiveReadingWidth()
         .navigationTitle(petition.id)
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadResponse()
+        }
+    }
+
+    // MARK: - Government Response UI
+
+    @ViewBuilder
+    private var responseSection: some View {
+        if isLoading {
+            Section(NSLocalizedString("petitions.response.section", comment: "")) {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
+            }
+        } else if let response = response {
+            Section(NSLocalizedString("petitions.response.section", comment: "")) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    if let minister = response.respondingMinister, !minister.isEmpty {
+                        Text(NSLocalizedString("petitions.response.minister", comment: ""))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(minister)
+                            .font(.subheadline)
+                    }
+
+                    Text(String(format: NSLocalizedString("petitions.response.tabled", comment: ""), response.tabledOn.formatted(date: .abbreviated, time: .omitted)))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+                        .padding(.vertical, EpacSpacing.xxs)
+
+                    Text(response.text)
+                        .font(.body)
+                }
+            }
+        } else if loadFailed {
+            Section(NSLocalizedString("petitions.response.section", comment: "")) {
+                HStack {
+                    Text(NSLocalizedString("petitions.error.description", comment: ""))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(NSLocalizedString("Retry", comment: "")) {
+                        Task {
+                            await loadResponse()
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        } else {
+            // Check if it qualified
+            if petition.signatureCount >= 500 {
+                Section(NSLocalizedString("petitions.response.section", comment: "")) {
+                    HStack(spacing: EpacSpacing.xs) {
+                        Image(systemName: "clock.fill")
+                            .foregroundStyle(.orange)
+                        Text(NSLocalizedString("petitions.response.awaiting", comment: ""))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else if petition.status == .closed || petition.status == .certified || petition.status == .responseReceived {
+                // Closed or certified and did not reach 500 signatures: did not qualify
+                Section(NSLocalizedString("petitions.response.section", comment: "")) {
+                    HStack(spacing: EpacSpacing.xs) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                        Text(NSLocalizedString("petitions.response.notQualified", comment: ""))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadResponse() async {
+        if let existing = petition.governmentResponse {
+            self.response = existing
+            return
+        }
+        isLoading = true
+        loadFailed = false
+        defer { isLoading = false }
+        do {
+            let useCase = LoadPetitionGovernmentResponse(queryPort: queryPort)
+            self.response = try await useCase.execute(petitionID: petition.id)
+        } catch {
+            loadFailed = true
+        }
     }
 }
 

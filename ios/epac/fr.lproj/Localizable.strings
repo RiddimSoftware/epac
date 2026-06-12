@@ -252,6 +252,12 @@
 "petitions.noOpen.description" = "Il n'y a pas de pétitions ouvertes en ce moment. Appuyez ci-dessous pour voir toutes les pétitions.";
 "petitions.error.title" = "Impossible de charger les pétitions";
 "petitions.error.description" = "Vérifiez votre connexion et réessayez.";
+"petitions.response.section" = "Réponse officielle du gouvernement";
+"petitions.response.tabled" = "Déposée le %@";
+"petitions.response.minister" = "Ministre ou ministère répondant";
+"petitions.response.awaiting" = "En attente d'une réponse du gouvernement";
+"petitions.response.notQualified" = "N'a pas été admissible à une réponse";
+
 
 /* Section d'activité Mon député */
 "myMP.activity.section" = "Activité récente";
