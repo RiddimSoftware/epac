@@ -792,3 +792,5 @@
 "appStore.screenshot.contact.subjectLine" = "Projet de loi C-226 — 2e lecture";
 "appStore.screenshot.contact.body" = "J'écris au sujet du projet de loi C-226, Loi visant à établir un cadre national pour améliorer la transparence des prix alimentaires. Merci d'indiquer comment vous comptez voter et pourquoi.";
 "appStore.screenshot.contact.send" = "Envoyer";
+
+"notification.royalAssent.body" = "%@ a reçu la sanction royale aujourd'hui et est maintenant loi.";

@@ -790,3 +790,5 @@
 "appStore.screenshot.contact.subjectLine" = "Bill C-226 second reading";
 "appStore.screenshot.contact.body" = "I am writing about Bill C-226, An Act to establish a national framework to improve food price transparency. Please share how you plan to vote and why.";
 "appStore.screenshot.contact.send" = "Send";
+
+"notification.royalAssent.body" = "%@ received Royal Assent today and is now law.";

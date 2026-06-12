@@ -65,6 +65,12 @@ final class BillFollowStore {
             let statusChanged = bill.status.rawValue != state.lastKnownStatus
             let stageChanged = !bill.currentStage.isEmpty && bill.currentStage != state.lastKnownStage
             if statusChanged || stageChanged {
+                if statusChanged && bill.status == .royalAssent {
+                    Task {
+                        let useCase = NotifyFollowedBillRoyalAssent(notificationPort: LiveRoyalAssentNotificationAdapter())
+                        try? await useCase.execute(bill: bill)
+                    }
+                }
                 followed[bill.number] = BillFollowState(
                     lastKnownStatus: bill.status.rawValue,
                     lastKnownStage: bill.currentStage,

@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-struct TrackRoyalAssent {
+struct TrackRoyalAssent: RecentLawQueryPort {
     private static let recentWindowDays = 30
 
     private let repository: any BillRepository
