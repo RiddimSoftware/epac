@@ -252,6 +252,12 @@
 "petitions.noOpen.description" = "Il n'y a pas de pétitions ouvertes en ce moment. Appuyez ci-dessous pour voir toutes les pétitions.";
 "petitions.error.title" = "Impossible de charger les pétitions";
 "petitions.error.description" = "Vérifiez votre connexion et réessayez.";
+"petitions.response.section" = "Réponse officielle du gouvernement";
+"petitions.response.tabled" = "Déposée le %@";
+"petitions.response.minister" = "Ministre ou ministère répondant";
+"petitions.response.awaiting" = "En attente d'une réponse du gouvernement";
+"petitions.response.notQualified" = "N'a pas été admissible à une réponse";
+
 
 /* Section d'activité Mon député */
 "myMP.activity.section" = "Activité récente";
@@ -269,20 +275,11 @@
 "bill.status.royalAssent" = "Sanction royale";
 "bill.status.defeated" = "Rejeté";
 "bill.status.unknown" = "Inconnu";
-"bill.type.government" = "Projet de loi du gouvernement";
 "bill.type.houseGovernment" = "Projet de loi du gouvernement (Cdc)";
 "bill.type.privateMember" = "Projet de loi d'initiative parlementaire";
 "bill.type.senateGovernment" = "Projet de loi du gouvernement (Sénat)";
 "bill.type.senatePublic" = "Projet de loi d'intérêt public du Sénat";
 "bill.type.senatePrivate" = "Projet de loi d'intérêt privé (Sénat)";
-"bills.filter.tab.government" = "Gouvernement";
-"bills.filter.tab.pmb" = "IP";
-"bills.filter.tab.becameLaw" = "Sanctionné";
-"bills.detail.pmb.title" = "Projet de loi d'initiative parlementaire";
-"bills.detail.pmb.explanation" = "Il s'agit d'un projet de loi d'initiative parlementaire, présenté par un député d'arrière-ban et non par le gouvernement. Ces projets de loi sont tirés au sort pour le temps de débat et ont un parcours d'adoption beaucoup plus difficile, servant souvent à sensibiliser ou à signaler des priorités politiques plutôt qu'à devenir loi.";
-"member.sponsoredPMBs.title" = "Projets de loi d'initiative parl.";
-"member.sponsoredPMBs.more" = "%d autres projets de loi";
-"member.sponsoredPMBs.introduced" = "Présenté le %@";
 "bill.type.short.gov" = "Gouvernement";
 "bill.type.short.pmb" = "Initiative parlementaire";
 "bill.type.short.senate" = "Sénat";
@@ -357,7 +354,6 @@
 "bill.follow" = "Suivre";
 "bill.unfollow" = "Ne plus suivre";
 "bill.share" = "Partager";
-"bill.contextMenu.notifySettings" = "Paramètres de notification";
 
 /* Government consultations view */
 "consult.navTitle" = "Consultations";
@@ -407,12 +403,6 @@
 "home.debates.subtitle" = "Parcourez les séances précédentes";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
-"home.following" = "Abonnements";
-"home.following.bills" = "Projets de loi";
-"home.following.mps" = "Députés";
-"home.following.topics" = "Sujets";
-"home.following.bills.empty.message" = "Suivez des projets de loi pour recevoir des mises à jour en temps réel et des notifications sur leur parcours législatif.";
-"home.following.bills.empty.cta" = "Trouver un projet de loi";
 "home.followedBills" = "Projets de loi suivis";
 "home.followedTopics" = "Sujets suivis";
 "home.recentDebates" = "Récent au Hansard";
