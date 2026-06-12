@@ -221,7 +221,7 @@ struct SectionHeader: View {
     let isCollapsed: Bool
     let shareAction: () -> Void
     let tapAction: () -> Void
-    
+
     var body: some View {
         HStack {
             HStack {
@@ -229,15 +229,15 @@ struct SectionHeader: View {
                     .rotationEffect(.degrees(isCollapsed ? 0 : ExpenditureDetailLayout.expandedRotationDegrees))
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 (Text(title) + Text(" – Total: \(total.formatted(.currency(code: "CAD")))"))
                     .font(.headline)
-                
+
                 Spacer()
             }
             .contentShape(Rectangle())
             .onTapGesture(perform: tapAction)
-            
+
             Button(action: shareAction) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.caption)
@@ -256,7 +256,7 @@ struct ShareRow: View {
     let subtitle: String?
     let date: String?
     let amount: Double
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {
@@ -284,7 +284,7 @@ struct ShareRow: View {
 
 struct HospitalityRow: View {
     let item: HospitalityExpenditure
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {
@@ -295,11 +295,11 @@ struct HospitalityRow: View {
                 Text(item.total.formatted(.currency(code: "CAD")))
                     .font(.subheadline)
             }
-            
+
             Text(item.typeOfEvent.isEmpty ? item.purposeOfHospitality : "\(item.typeOfEvent): \(item.purposeOfHospitality)")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             HStack {
                 Text(item.date.formatted(date: .abbreviated, time: .omitted))
                 if item.totalOfAttendees > 0 {
@@ -316,7 +316,7 @@ struct HospitalityRow: View {
 
 struct ContractRow: View {
     let item: ContractExpenditure
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: ExpenditureDetailLayout.rowTextSpacing) {
             HStack {

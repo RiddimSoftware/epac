@@ -28,7 +28,7 @@ struct CSVParser {
 			continuation.finish()
 		}
 	}
-	
+
 	func parse() -> AsyncStream<[String]> {
 		AsyncStream { continuation in
 			Task {
@@ -45,7 +45,7 @@ struct CSVParser {
 		var fields: [String] = []
 		var currentField = ""
 		var insideQuotes = false
-		
+
 		let chars = Array(line)
 		var i = 0
 		while i < chars.count {

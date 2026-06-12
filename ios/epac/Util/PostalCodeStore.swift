@@ -31,15 +31,15 @@ final class PostalCodeStore {
     func set(postalCode: String, ridingName: String, memberName: String) {
         let defaults = UserDefaults.standard
         let trimmedPostalCode = postalCode.trimmingCharacters(in: .whitespaces)
-        
+
         defaults.set(trimmedPostalCode, forKey: postalCodeKey)
         defaults.set(ridingName, forKey: ridingNameKey)
-        
+
         // If no MP resolved yet, save the riding name as a placeholder so the
         // home feed shows something meaningful rather than the "Find Your MP" prompt.
         let finalMemberName = memberName.isEmpty ? ridingName : memberName
         defaults.set(finalMemberName, forKey: memberNameKey)
-        
+
         savedPostalCode = trimmedPostalCode
         savedRidingName = ridingName
         savedMemberName = finalMemberName
@@ -50,7 +50,7 @@ final class PostalCodeStore {
         defaults.removeObject(forKey: postalCodeKey)
         defaults.removeObject(forKey: ridingNameKey)
         defaults.removeObject(forKey: memberNameKey)
-        
+
         savedPostalCode = nil
         savedRidingName = nil
         savedMemberName = nil

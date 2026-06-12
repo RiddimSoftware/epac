@@ -52,7 +52,7 @@ struct XMLBroTests {
         #expect(speech2.messages[0].firstName == "Kyle")
         #expect(speech2.messages[0].lastName == "Seeback")
         #expect(speech2.messages[0].partyAbbreviation == "CPC")
-        
+
         let speech3 = speeches[2]
         #expect(speech3.messages[0].firstName == "")
         #expect(speech3.messages[0].lastName == "Speaker")
@@ -68,7 +68,7 @@ struct XMLBroTests {
             let xmlstring = try String(contentsOf: fixtureURL, encoding: .utf8)
             let bro = XMLBro(xml: xmlstring).parseXML()
             #expect(!bro.ordersOfBusiness.isEmpty)
-            
+
             // Verify that we found some speeches
             let allSpeeches = bro.ordersOfBusiness.flatMap { $0.subjects.flatMap { $0.speeches } }
             #expect(!allSpeeches.isEmpty)
@@ -104,7 +104,7 @@ struct XMLBroTests {
         #expect(speech.messages[0].content.contains("bold"))
         #expect(speech.messages[0].content.contains("italics"))
     }
-    
+
     @Test func testSplitAffiliation() async throws {
         let xml = """
         <Hansard id="789">
@@ -169,7 +169,7 @@ struct XMLBroTests {
         let xmlstring = try String(contentsOf: fixtureURL, encoding: .utf8)
         let members = XMLBro.parseMembers(xmlstring)
         #expect(!members.isEmpty)
-        
+
         // Ziad Aboultaif is the first one in the downloaded file
         if let ziad = members.first(where: { $0.firstName == "Ziad" && $0.lastName == "Aboultaif" }) {
             #expect(ziad.memberID == 89156)

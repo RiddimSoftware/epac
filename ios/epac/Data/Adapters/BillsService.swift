@@ -33,9 +33,9 @@ struct BillsService {
     private static let legisInfoBase = "https://www.parl.ca/legisinfo/en/bill"
     private static let houseChamberID = 1
     private static let billTypeMappings: [(needle: String, type: BillType)] = [
-        ("house government", .houseGovernment),
+        ("house government", .government),
         ("private member", .privateMember),
-        ("senate government", .senateGovernment),
+        ("senate government", .government),
         ("senate public", .senatePublic),
         ("senate private", .senatePrivate)
     ]
@@ -105,7 +105,7 @@ struct BillsService {
             introducedDate: introducedDate,
             stages: stages,
             legisInfoURL: legisURL,
-            billType: billType(from: raw),
+            type: billType(from: raw),
             parliament: parliament,
             session: session
         )

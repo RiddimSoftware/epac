@@ -239,7 +239,7 @@ enum SchemaV3: VersionedSchema {
 		var travelURL: String?
 		var hospitalityURL: String?
 		var contractsURL: String?
-		
+
 		@Relationship(deleteRule: .cascade) var travelClaims: [TravelClaim] = []
 		@Relationship(deleteRule: .cascade) var hospitalityDetails: [HospitalityExpenditure] = []
 		@Relationship(deleteRule: .cascade) var contractDetails: [ContractExpenditure] = []
@@ -1459,7 +1459,7 @@ enum SchemaV11: VersionedSchema {
 			SchemaV6.WrittenQuestion.self,
 			SchemaV7.FiscalMonitorEntry.self,
 			SchemaV8.CabinetPosition.self,
-			MinisterialExpenseRecord.self,
+			MinisterialExpenseRecord.self
 		]
 	}
 

@@ -9,11 +9,6 @@ enum PerfMeasurementGuard {
     struct Metric {
         let name: String
         let metric: any XCTMetric
-
-        init(name: String, metric: any XCTMetric) {
-            self.name = name
-            self.metric = metric
-        }
     }
 
     static func measure(

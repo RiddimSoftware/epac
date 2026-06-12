@@ -350,7 +350,7 @@ private extension View {
 struct ExpenditureRow: View {
     let expenditure: SummaryExpenditure
     let member: ParliamentMember?
-    
+
     var body: some View {
         HStack(spacing: ExpendituresLayout.rowSpacing) {
             ZStack(alignment: .bottomTrailing) {
@@ -367,7 +367,7 @@ struct ExpenditureRow: View {
                                 .foregroundColor(Color.party(expenditure.party))
                         )
                 }
-                
+
                 if let partyImage = expenditure.party.image {
                     Image(uiImage: partyImage)
                         .resizable()
@@ -380,7 +380,7 @@ struct ExpenditureRow: View {
                         .offset(x: ExpendituresLayout.partyBadgeOffset, y: ExpendituresLayout.partyBadgeOffset)
                 }
             }
-            
+
             VStack(alignment: .leading, spacing: ExpendituresLayout.primaryTextSpacing) {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .firstTextBaseline) {
@@ -393,12 +393,12 @@ struct ExpenditureRow: View {
                         expenditureTotal
                     }
                 }
-                
+
                 Text(expenditure.constituency)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 ViewThatFits(in: .horizontal) {
                     HStack {
                         expenditureMetric(label: "Travel", amount: expenditure.travel)

@@ -78,7 +78,7 @@ private enum BillsSelectionTestData {
             introducedDate: nil,
             stages: [],
             legisInfoURL: URL(string: "https://www.parl.ca/legisinfo/en/bill/45-1/c-50")!,
-            billType: .houseGovernment,
+            type: .government,
             parliament: parliament,
             session: session
         )

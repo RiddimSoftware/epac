@@ -55,7 +55,7 @@ struct GazetteServiceTests {
         #expect(entries[0].part == .partI)
         #expect(entries[1].title == "Part II Regulation")
         #expect(entries[1].part == .partII)
-        
+
         // Verify sorting (newest first)
         #expect(entries[0].publicationDate > entries[1].publicationDate)
     }

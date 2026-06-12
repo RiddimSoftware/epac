@@ -308,6 +308,9 @@ struct MemberProfileView: View {
 				.background(Color.appSurface)
 				.cornerRadius(MemberProfileLayout.cardCornerRadius)
 
+				// MARK: Sponsored PMBs
+				SponsoredPMBsSection(member: member)
+
 				// MARK: Written Questions
 				WrittenQuestionsSection(member: member)
 

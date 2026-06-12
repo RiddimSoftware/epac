@@ -23,7 +23,7 @@ struct Bill: Identifiable, Codable, Sendable {
     let introducedDate: Date?
     let stages: [BillStage]
     let legisInfoURL: URL
-    let billType: BillType
+    let type: BillType
     let parliament: Int
     let session: Int
 }
@@ -65,18 +65,16 @@ enum BillStatus: String, Codable, Equatable, Sendable {
 // MARK: - BillType
 
 enum BillType: String, Codable, Equatable, Sendable {
-    case houseGovernment   = "HouseGovernment"
-    case privateMember     = "PrivateMember"
-    case senateGovernment  = "SenateGovernment"
-    case senatePublic      = "SenatePublic"
-    case senatePrivate     = "SenatePrivate"
-    case unknown           = "Unknown"
+    case government        = "government"
+    case privateMember     = "privateMember"
+    case senatePublic      = "senatePublic"
+    case senatePrivate     = "senatePrivate"
+    case unknown           = "unknown"
 
     var displayName: String {
         switch self {
-        case .houseGovernment:  return NSLocalizedString("bill.type.houseGovernment", comment: "")
+        case .government:       return NSLocalizedString("bill.type.government", comment: "")
         case .privateMember:    return NSLocalizedString("bill.type.privateMember", comment: "")
-        case .senateGovernment: return NSLocalizedString("bill.type.senateGovernment", comment: "")
         case .senatePublic:     return NSLocalizedString("bill.type.senatePublic", comment: "")
         case .senatePrivate:    return NSLocalizedString("bill.type.senatePrivate", comment: "")
         case .unknown:          return ""
@@ -86,10 +84,9 @@ enum BillType: String, Codable, Equatable, Sendable {
     /// Short label for compact display.
     var shortName: String {
         switch self {
-        case .houseGovernment:  return NSLocalizedString("bill.type.short.gov", comment: "")
+        case .government:       return NSLocalizedString("bill.type.short.gov", comment: "")
         case .privateMember:    return NSLocalizedString("bill.type.short.pmb", comment: "")
-        case .senateGovernment,
-             .senatePublic,
+        case .senatePublic,
              .senatePrivate:    return NSLocalizedString("bill.type.short.senate", comment: "")
         case .unknown:          return ""
         }

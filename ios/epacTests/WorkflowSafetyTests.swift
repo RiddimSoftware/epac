@@ -19,7 +19,7 @@ struct WorkflowSafetyTests {
         let banned = [
             "\(botPrefix)_APP_ID",
             "\(botPrefix)_\(["PRIVATE", "KEY"].joined(separator: "_"))",
-            "actions/create-github-app-token",
+            "actions/create-github-app-token"
         ]
         for workflow in try prWorkflowFiles() {
             let source = try String(contentsOf: workflow, encoding: .utf8)

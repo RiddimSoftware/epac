@@ -9,13 +9,13 @@
 import Foundation
 
 class Disk {
-    
+
     func write(dateArray: [Date], key: String) {
-        
+
     }
-    
+
     func write(xml: String, key: String) {
-        
+
     }
-    
+
 }

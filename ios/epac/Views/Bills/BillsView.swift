@@ -70,8 +70,7 @@ struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var statusFilter: BillStatus? = BillsView.loadStatusFilter()
-    @State private var typeFilter: BillTypeGroup?
+    @State private var selectedTab: BillFilterTab = BillsView.loadSelectedTab()
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
@@ -88,103 +87,86 @@ struct BillsView: View {
 
     private var filtered: [Bill] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return bills.filter {
-            (statusFilter == nil || $0.status == statusFilter) &&
-            (typeFilter == nil || typeFilter!.matches($0)) &&
-            (q.isEmpty || $0.number.localizedCaseInsensitiveContains(q) || $0.title.localizedCaseInsensitiveContains(q))
+        return bills.filter { bill in
+            // Filter by tab
+            let matchesTab: Bool
+            switch selectedTab {
+            case .government:
+                matchesTab = bill.type == .government
+            case .pmb:
+                matchesTab = bill.type == .privateMember || bill.type == .senatePublic || bill.type == .senatePrivate
+            case .becameLaw:
+                matchesTab = bill.status == .royalAssent
+            }
+
+            guard matchesTab else { return false }
+
+            // Search text query
+            return q.isEmpty || bill.number.localizedCaseInsensitiveContains(q) || bill.title.localizedCaseInsensitiveContains(q)
         }
     }
 
     var body: some View {
-        Group {
-            if isLoading && bills.isEmpty {
-                List {
-                    ForEach(0..<BillsLayout.skeletonRows, id: \.self) { _ in
-                        BillRowSkeleton()
-                            .shimmer(when: true)
+        VStack(spacing: 0) {
+            Picker("Bill Type Group", selection: $selectedTab) {
+                ForEach(BillFilterTab.allCases) { tab in
+                    Text(tab.displayName).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemBackground))
+
+            Group {
+                if isLoading && bills.isEmpty {
+                    List {
+                        ForEach(0..<BillsLayout.skeletonRows, id: \.self) { _ in
+                            BillRowSkeleton()
+                                .shimmer(when: true)
+                        }
                     }
-                }
-                .listStyle(.plain)
-                .accessibilityLabel(NSLocalizedString("bills.loading", comment: ""))
-            } else if loadFailed && bills.isEmpty {
-                EmptyStateView(
-                    icon: "exclamationmark.triangle",
-                    title: NSLocalizedString("bills.error.title", comment: ""),
-                    message: NSLocalizedString("bills.error.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
-                        isRetryDisabled = true
-                        Task { try? await Task.sleep(for: .seconds(BillsLayout.retryDelaySeconds)); isRetryDisabled = false }
-                        Task { await load() }
-                    })
-                )
-            } else if filtered.isEmpty && filterIsActive {
-                EmptyStateView(
-                    icon: "line.3.horizontal.decrease.circle",
-                    title: NSLocalizedString("bills.noMatch.title", comment: ""),
-                    message: NSLocalizedString("bills.noMatch.description", comment: ""),
-                    action: EmptyStateAction(label: NSLocalizedString("bills.filter.all", comment: ""), handler: {
-                        statusFilter = nil; typeFilter = nil
-                    })
-                )
-            } else if filtered.isEmpty {
-                EmptyStateView(
-                    icon: "doc.text",
-                    title: NSLocalizedString("bills.empty.title", comment: ""),
-                    message: NSLocalizedString("bills.empty.description", comment: ""),
-                    action: nil
-                )
-            } else {
-                List(filtered) { bill in
-                    billRow(for: bill)
-                }
-                .listStyle(.plain)
-                .refreshable {
-                    bills = []
-                    await load()
+                    .listStyle(.plain)
+                    .accessibilityLabel(NSLocalizedString("bills.loading", comment: ""))
+                } else if loadFailed && bills.isEmpty {
+                    EmptyStateView(
+                        icon: "exclamationmark.triangle",
+                        title: NSLocalizedString("bills.error.title", comment: ""),
+                        message: NSLocalizedString("bills.error.description", comment: ""),
+                        action: EmptyStateAction(label: NSLocalizedString("Retry", comment: ""), isEnabled: !isRetryDisabled, handler: {
+                            isRetryDisabled = true
+                            Task { try? await Task.sleep(for: .seconds(BillsLayout.retryDelaySeconds)); isRetryDisabled = false }
+                            Task { await load() }
+                        })
+                    )
+                } else if filtered.isEmpty {
+                    EmptyStateView(
+                        icon: "doc.text",
+                        title: NSLocalizedString("bills.empty.title", comment: ""),
+                        message: NSLocalizedString("bills.empty.description", comment: ""),
+                        action: nil
+                    )
+                } else {
+                    List(filtered) { bill in
+                        billRow(for: bill)
+                    }
+                    .listStyle(.plain)
+                    .refreshable {
+                        bills = []
+                        await load()
+                    }
                 }
             }
         }
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: NSLocalizedString("bills.search.prompt", comment: ""))
         .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Section(NSLocalizedString("bills.filter.status", comment: "")) {
-                        filterButton(label: NSLocalizedString("bills.filter.all", comment: ""),
-                                     isActive: statusFilter == nil) { statusFilter = nil }
-                        filterButton(label: BillStatus.inProgress.displayName,
-                                     isActive: statusFilter == .inProgress) { statusFilter = .inProgress }
-                        filterButton(label: BillStatus.royalAssent.displayName,
-                                     isActive: statusFilter == .royalAssent) { statusFilter = .royalAssent }
-                        filterButton(label: BillStatus.defeated.displayName,
-                                     isActive: statusFilter == .defeated) { statusFilter = .defeated }
-                    }
-                    Section(NSLocalizedString("bills.filter.type", comment: "")) {
-                        filterButton(label: NSLocalizedString("bills.filter.all", comment: ""),
-                                     isActive: typeFilter == nil) { typeFilter = nil }
-                        filterButton(label: NSLocalizedString("bill.type.short.gov", comment: ""),
-                                     isActive: typeFilter == .government) { typeFilter = .government }
-                        filterButton(label: NSLocalizedString("bill.type.short.pmb", comment: ""),
-                                     isActive: typeFilter == .privateMember) { typeFilter = .privateMember }
-                        filterButton(label: NSLocalizedString("bill.type.short.senate", comment: ""),
-                                     isActive: typeFilter == .senate) { typeFilter = .senate }
-                    }
-                } label: {
-                    Label(NSLocalizedString("bills.filter", comment: ""),
-                          systemImage: filterIsActive
-                              ? "line.3.horizontal.decrease.circle.fill"
-                              : "line.3.horizontal.decrease.circle")
-                }
-                .accessibilityLabel(NSLocalizedString("bills.filter", comment: ""))
-            }
-        }
         .task { await load() }
-        .onChange(of: statusFilter) { saveStatusFilter() }
+        .onChange(of: selectedTab) { saveSelectedTab() }
         .activitySheet($shareItems)
     }
 
-    private var filterIsActive: Bool { statusFilter != nil || typeFilter != nil }
+    private var filterIsActive: Bool { false }
 
     @ViewBuilder
     private func billRow(for bill: Bill) -> some View {
@@ -246,28 +228,16 @@ struct BillsView: View {
 
     // MARK: - Filter persistence
 
-    private static let statusFilterKey = "bills.filter.status.persisted"
+    private static let selectedTabKey = "bills.tab.persisted"
 
-    private static func loadStatusFilter() -> BillStatus? {
-        guard let raw = UserDefaults.standard.string(forKey: statusFilterKey) else { return nil }
-        return BillStatus(rawValue: raw)
+    private static func loadSelectedTab() -> BillFilterTab {
+        guard let raw = UserDefaults.standard.string(forKey: selectedTabKey),
+              let tab = BillFilterTab(rawValue: raw) else { return .government }
+        return tab
     }
 
-    private func saveStatusFilter() {
-        if let status = statusFilter {
-            UserDefaults.standard.set(status.rawValue, forKey: Self.statusFilterKey)
-        } else {
-            UserDefaults.standard.removeObject(forKey: Self.statusFilterKey)
-        }
-    }
-
-    @ViewBuilder
-    private func filterButton(label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            Label(label, systemImage: isActive ? "checkmark.circle.fill" : "circle")
-        }
+    private func saveSelectedTab() {
+        UserDefaults.standard.set(selectedTab.rawValue, forKey: Self.selectedTabKey)
     }
 
     // MARK: - Data
@@ -307,18 +277,21 @@ struct BillsView: View {
 
 // MARK: - Filter group (collapses senate bill variants)
 
-enum BillTypeGroup: Equatable {
+enum BillFilterTab: String, CaseIterable, Identifiable {
     case government
-    case privateMember
-    case senate
+    case pmb
+    case becameLaw
 
-    func matches(_ bill: Bill) -> Bool {
+    var id: String { self.rawValue }
+
+    var displayName: String {
         switch self {
-        case .government:    return bill.billType == .houseGovernment
-        case .privateMember: return bill.billType == .privateMember
-        case .senate:        return bill.billType == .senateGovernment
-                                 || bill.billType == .senatePublic
-                                 || bill.billType == .senatePrivate
+        case .government:
+            return NSLocalizedString("bills.filter.tab.government", comment: "")
+        case .pmb:
+            return NSLocalizedString("bills.filter.tab.pmb", comment: "")
+        case .becameLaw:
+            return NSLocalizedString("bills.filter.tab.becameLaw", comment: "")
         }
     }
 }
@@ -418,8 +391,8 @@ struct BillRow: View {
 
     @ViewBuilder
     private var billTypeLabel: some View {
-        if !bill.billType.shortName.isEmpty {
-            Text(bill.billType.shortName)
+        if !bill.type.shortName.isEmpty {
+            Text(bill.type.shortName)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
