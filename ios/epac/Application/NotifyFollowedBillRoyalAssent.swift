@@ -19,7 +19,7 @@ struct NotifyFollowedBillRoyalAssent {
             format: NSLocalizedString("notification.royalAssent.body", comment: ""),
             bill.title
         )
-        let notification = Notification(title: title, body: body)
+        let notification = RoyalAssentNotification(title: title, body: body)
         try await notificationPort.sendNotification(notification)
     }
 }

@@ -11,7 +11,7 @@ final class NotifyFollowedBillRoyalAssentTests: XCTestCase {
     func testSendsNotificationWithFormattedBody() async throws {
         let port = MockRoyalAssentNotificationPort()
         let useCase = NotifyFollowedBillRoyalAssent(notificationPort: port)
-        
+
         let bill = Bill(
             id: "C-226",
             number: "C-226",
@@ -29,9 +29,9 @@ final class NotifyFollowedBillRoyalAssentTests: XCTestCase {
             parliament: 45,
             session: 1
         )
-        
+
         try await useCase.execute(bill: bill)
-        
+
         XCTAssertEqual(port.sentNotifications.count, 1)
         let sent = port.sentNotifications.first
         XCTAssertEqual(sent?.title, "C-226")
@@ -39,10 +39,11 @@ final class NotifyFollowedBillRoyalAssentTests: XCTestCase {
     }
 }
 
+@MainActor
 private final class MockRoyalAssentNotificationPort: RoyalAssentNotificationPort {
-    var sentNotifications: [epac.Notification] = []
-    
-    func sendNotification(_ notification: epac.Notification) async throws {
+    var sentNotifications: [RoyalAssentNotification] = []
+
+    func sendNotification(_ notification: RoyalAssentNotification) async throws {
         sentNotifications.append(notification)
     }
 }

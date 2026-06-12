@@ -7,5 +7,5 @@ import Foundation
 
 @MainActor
 protocol RoyalAssentNotificationPort: Sendable {
-    func sendNotification(_ notification: Notification) async throws
+    func sendNotification(_ notification: RoyalAssentNotification) async throws
 }
