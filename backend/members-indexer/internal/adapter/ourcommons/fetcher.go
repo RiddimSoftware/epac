@@ -154,6 +154,21 @@ func (f *Fetcher) enrichProfile(ctx context.Context, member *domain.Member) erro
 		PhotoURL:          resolveURL(base, firstMatch(body, photoPattern)),
 		SourceURL:         member.ProfileURL,
 	}
+	if rolesURL := firstMatch(body, allRolesPattern); rolesURL != "" {
+		resolvedRolesURL := resolveURL(base, rolesURL)
+		rolesBody, err := f.getBytes(ctx, resolvedRolesURL, "text/html")
+		if err == nil {
+			member.Biography.YearsServed = parseServicePeriods(rolesBody)
+			member.Biography.PreviousRoles = parseParliamentaryRoles(rolesBody)
+		} else if f.logger != nil {
+			f.logger(map[string]any{
+				"pipeline":  "members-indexer",
+				"event":     "roles_fetch_failed",
+				"member_id": member.ID,
+				"error":     err.Error(),
+			})
+		}
+	}
 	member.PMBSponsorships = append(member.PMBSponsorships, parseBillTable(body, base, member.ID, "ce-mip-bill-sponsored-table", "sponsored")...)
 	member.PMBSponsorships = append(member.PMBSponsorships, parseBillTable(body, base, member.ID, "ce-mip-bill-seconded-table", "jointly_seconded")...)
 	member.Attendance = parseVoteTable(body, base, member.ID)
@@ -279,6 +294,63 @@ func parseVoteTable(body []byte, base *url.URL, memberID string) []domain.Attend
 	return out
 }
 
+func parseServicePeriods(body []byte) []domain.ServicePeriod {
+	rows := rows(tableByID(body, "roles-mp"))
+	out := make([]domain.ServicePeriod, 0, len(rows))
+	for _, row := range rows {
+		cells := cells(row)
+		if len(cells) < 4 || strings.Contains(strings.ToLower(cells[0]), "constituency") {
+			continue
+		}
+		label := joinNonEmpty(cells[0], cells[1])
+		out = append(out, domain.ServicePeriod{
+			Label:    label,
+			FromDate: dateOnly(cells[2]),
+			ToDate:   dateOnly(cells[3]),
+		})
+	}
+	return out
+}
+
+func parseParliamentaryRoles(body []byte) []domain.ParliamentaryRole {
+	roles := make([]domain.ParliamentaryRole, 0)
+	roles = append(roles, parseRoleTable(body, "roles-committees")...)
+	roles = append(roles, parseRoleTable(body, "roles-iia")...)
+	return roles
+}
+
+func joinNonEmpty(parts ...string) string {
+	nonEmpty := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if cleaned := cleanText(part); cleaned != "" {
+			nonEmpty = append(nonEmpty, cleaned)
+		}
+	}
+	return strings.Join(nonEmpty, ", ")
+}
+
+func parseRoleTable(body []byte, tableID string) []domain.ParliamentaryRole {
+	tableRows := rows(tableByID(body, tableID))
+	out := make([]domain.ParliamentaryRole, 0, len(tableRows))
+	for _, row := range tableRows {
+		cells := cells(row)
+		if len(cells) < 5 || strings.Contains(strings.ToLower(cells[1]), "role") {
+			continue
+		}
+		role := domain.ParliamentaryRole{
+			Title:        cleanText(cells[1]),
+			Organization: cleanText(cells[2]),
+			StartDate:    dateOnly(cells[3]),
+			EndDate:      dateOnly(cells[4]),
+		}
+		if role.Title == "" && role.Organization == "" {
+			continue
+		}
+		out = append(out, role)
+	}
+	return out
+}
+
 func tableByID(body []byte, id string) string {
 	pattern := regexp.MustCompile(`(?is)<table[^>]*\bid=["']` + regexp.QuoteMeta(id) + `["'][^>]*>(.*?)</table>`)
 	return firstMatch(body, pattern)
@@ -343,7 +415,13 @@ func dateOnly(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02T15:04:05", "2006-01-02"} {
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02",
+		"Monday, January 2, 2006",
+	} {
 		if parsed, err := time.Parse(layout, raw); err == nil {
 			return parsed.Format("2006-01-02")
 		}
@@ -386,6 +464,7 @@ func stableID(parts ...string) string {
 var (
 	metaDescriptionPattern = regexp.MustCompile(`(?is)<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>`)
 	photoPattern           = regexp.MustCompile(`(?is)<img[^>]*class=["'][^"']*ce-mip-mp-picture[^"']*["'][^>]*src=["']([^"']+)["']`)
+	allRolesPattern        = regexp.MustCompile(`(?is)<a[^>]*href=["']([^"']*/roles)["'][^>]*>\s*View all roles`)
 	allVotesPattern        = regexp.MustCompile(`(?is)<a[^>]*href=["']([^"']*/votes)["'][^>]*>\s*All votes by`)
 	hrefPattern            = regexp.MustCompile(`(?is)href=["']([^"']+)["']`)
 	rowPattern             = regexp.MustCompile(`(?is)<tr[^>]*>(.*?)</tr>`)

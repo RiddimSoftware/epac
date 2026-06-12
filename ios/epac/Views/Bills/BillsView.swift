@@ -79,24 +79,41 @@ struct BillsView: View {
     @Environment(NavigationRouter.self) private var router
     private let selection: Binding<Bill?>?
     private let billRepository: any BillRepository
+    private let billNumbersFilter: Set<String>
+    private let navigationTitleText: String
 
-    init(selection: Binding<Bill?>? = nil, billRepository: any BillRepository = LEGISinfoBillRepository()) {
+    init(
+        selection: Binding<Bill?>? = nil,
+        billRepository: any BillRepository = LEGISinfoBillRepository(),
+        billNumbersFilter: Set<String> = [],
+        navigationTitle: String? = nil
+    ) {
         self.selection = selection
         self.billRepository = billRepository
+        self.billNumbersFilter = Set(billNumbersFilter.map { $0.uppercased() })
+        self.navigationTitleText = navigationTitle ?? NSLocalizedString("bills.navTitle", comment: "")
     }
 
     private var filtered: [Bill] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return bills.filter { bill in
+            guard BillsSelection.matchesBillNumberFilter(bill, billNumbersFilter: billNumbersFilter) else {
+                return false
+            }
+
             // Filter by tab
             let matchesTab: Bool
-            switch selectedTab {
-            case .government:
-                matchesTab = bill.type == .government
-            case .pmb:
-                matchesTab = bill.type == .privateMember || bill.type == .senatePublic || bill.type == .senatePrivate
-            case .becameLaw:
-                matchesTab = bill.status == .royalAssent
+            if billNumbersFilter.isEmpty {
+                switch selectedTab {
+                case .government:
+                    matchesTab = bill.type == .government
+                case .pmb:
+                    matchesTab = bill.type == .privateMember || bill.type == .senatePublic || bill.type == .senatePrivate
+                case .becameLaw:
+                    matchesTab = bill.status == .royalAssent
+                }
+            } else {
+                matchesTab = true
             }
 
             guard matchesTab else { return false }
@@ -108,15 +125,17 @@ struct BillsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Bill Type Group", selection: $selectedTab) {
-                ForEach(BillFilterTab.allCases) { tab in
-                    Text(tab.displayName).tag(tab)
+            if billNumbersFilter.isEmpty {
+                Picker("Bill Type Group", selection: $selectedTab) {
+                    ForEach(BillFilterTab.allCases) { tab in
+                        Text(tab.displayName).tag(tab)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color(.systemBackground))
 
             Group {
                 if isLoading && bills.isEmpty {
@@ -159,7 +178,7 @@ struct BillsView: View {
             }
         }
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: NSLocalizedString("bills.search.prompt", comment: ""))
-        .navigationTitle(NSLocalizedString("bills.navTitle", comment: ""))
+        .navigationTitle(navigationTitleText)
         .navigationBarTitleDisplayMode(.large)
         .task { await load() }
         .onChange(of: selectedTab) { saveSelectedTab() }
@@ -297,6 +316,10 @@ enum BillFilterTab: String, CaseIterable, Identifiable {
 }
 
 enum BillsSelection {
+    static func matchesBillNumberFilter(_ bill: Bill, billNumbersFilter: Set<String>) -> Bool {
+        billNumbersFilter.isEmpty || billNumbersFilter.contains(bill.number.uppercased())
+    }
+
     static func select(_ bill: Bill, selection: Binding<Bill?>) {
         selection.wrappedValue = bill
     }

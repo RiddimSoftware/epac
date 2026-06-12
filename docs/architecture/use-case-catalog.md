@@ -27,7 +27,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
 | `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
 | `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
-| `MemberBiography` | Backend-only biography details scraped from a member profile page, including preferred language and profile summary text. |
+| `MemberBiography` | Parliament.ca biography details for an MP profile, including service periods, roles, education, professional background, source URL, and summary text where available. |
 | `MemberAttendanceRecord` | Backend-only House vote/attendance row for an MP, with vote date, subject, result, and ballot where available. |
 | `PMBSponsorship` | Backend-only private member's bill sponsorship or seconding relationship for an MP. |
 | `ParliamentaryTopic` | A named theme (e.g., "Housing") with associated keyword matchers. |
@@ -379,10 +379,10 @@ Current implementation:
 
 ```
 Actor: User (iOS app, Members tab -> MP profile) / Backend API caller
-Goal: Load one member profile with attendance rows when the members SQLite artifact includes them.
+Goal: Load one member profile with attendance, biography, and private member's bill sponsorship rows when the members SQLite artifact includes them.
 Inputs: Member ID.
-Outputs: MemberProfileResponse with a ParliamentMember record and attendance records.
-Entities / values: ParliamentMember, MemberID.
+Outputs: MemberProfileResponse with a ParliamentMember record, attendance records, biography details, and PMB sponsorship records.
+Entities / values: ParliamentMember, MemberID, MemberBiography, PMBSponsorship.
 Ports: backend Go: `MemberRepository`.
 Primary adapters: members Lambda (GET /api/v1/members/{id}), SQLite query adapter, S3 manifest/index downloader.
 Current implementation:
@@ -394,6 +394,29 @@ Current implementation:
 ```
 
 > **Boundary note:** `GetMemberProfile` returns domain values only. Nullable SQL columns are converted inside the SQLite adapter and do not leak into the use case or domain types.
+
+---
+
+### LoadMPBiography
+
+```
+Actor: User (iOS app, Members tab -> MP profile)
+Goal: Display an MP's Parliament.ca biography details and link sponsored private member's bills to the Bills tracker.
+Inputs: Member ID.
+Outputs: MemberBiography with service periods, previous roles, education, professional background, sponsored bills, and official Parliament.ca profile URL.
+Entities / values: ParliamentMember, MemberID, MemberBiography, ParliamentaryServicePeriod, ParliamentaryRole, SponsoredBillReference.
+Ports: iOS Swift: `MPBiographyRepository`.
+Primary adapters: BackendMPBiographyRepository (GET /api/v1/members/{id}), MemberBiographySection, MemberBiographyCard, BillsView filtered by sponsored bill numbers.
+Current implementation:
+  ios/epac/Application/LoadMPBiography.swift
+  ios/epac/Domain/MPBiography.swift
+  ios/epac/Domain/Ports/MPBiographyRepository.swift
+  ios/epac/Data/Repositories/BackendMPBiographyRepository.swift
+  ios/epac/Views/Members/MemberProfileView.swift
+  ios/epac/Views/Bills/BillsView.swift
+```
+
+> **Boundary note:** `LoadMPBiography` consumes the backend JSON contract only. Parliament.ca HTML/XML parsing remains in backend ingestion adapters; iOS does not know the scraping source shape.
 
 ---
 

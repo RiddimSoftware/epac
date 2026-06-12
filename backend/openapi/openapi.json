@@ -1950,10 +1950,60 @@
           "province": { "type": "string" },
           "party": { "type": "string" },
           "source_url": { "type": "string", "format": "uri" },
+          "profile_url": { "type": "string", "format": "uri" },
+          "from_date": { "type": "string", "format": "date" },
+          "to_date": { "type": "string", "format": "date" },
+          "biography": { "$ref": "#/components/schemas/MemberBiography" },
           "attendance": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/MemberAttendanceRecord" }
+          },
+          "pmb_sponsorships": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PMBSponsorship" }
           }
+        }
+      },
+      "MemberBiography": {
+        "type": "object",
+        "properties": {
+          "summary": { "type": "string" },
+          "preferred_language": { "type": "string" },
+          "photo_url": { "type": "string", "format": "uri" },
+          "source_url": { "type": "string", "format": "uri" },
+          "years_served": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ParliamentaryServicePeriod" }
+          },
+          "previous_roles": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ParliamentaryRole" }
+          },
+          "education": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "professional_background": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "ParliamentaryServicePeriod": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "from_date": { "type": "string", "format": "date" },
+          "to_date": { "type": "string", "format": "date" }
+        }
+      },
+      "ParliamentaryRole": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "organization": { "type": "string" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" }
         }
       },
       "MemberAttendanceRecord": {
@@ -1965,6 +2015,16 @@
           "source_url": { "type": "string", "format": "uri" },
           "parliament": { "type": "integer" },
           "session": { "type": "integer" }
+        }
+      },
+      "PMBSponsorship": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "bill_number": { "type": "string" },
+          "title": { "type": "string" },
+          "relationship": { "type": "string" },
+          "legis_info_url": { "type": "string", "format": "uri" }
         }
       },
       "MPLobbyingExposureResponse": {

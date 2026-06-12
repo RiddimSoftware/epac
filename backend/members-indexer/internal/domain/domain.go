@@ -27,11 +27,28 @@ type Member struct {
 }
 
 type Biography struct {
-	MemberID          string
-	Summary           string
-	PreferredLanguage string
-	PhotoURL          string
-	SourceURL         string
+	MemberID               string
+	Summary                string
+	PreferredLanguage      string
+	PhotoURL               string
+	SourceURL              string
+	YearsServed            []ServicePeriod
+	PreviousRoles          []ParliamentaryRole
+	Education              []string
+	ProfessionalBackground []string
+}
+
+type ServicePeriod struct {
+	Label    string `json:"label,omitempty"`
+	FromDate string `json:"from_date,omitempty"`
+	ToDate   string `json:"to_date,omitempty"`
+}
+
+type ParliamentaryRole struct {
+	Title        string `json:"title,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	StartDate    string `json:"start_date,omitempty"`
+	EndDate      string `json:"end_date,omitempty"`
 }
 
 type AttendanceRecord struct {

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,18 +20,19 @@ func New(db *sql.DB) *Repository {
 }
 
 func (r *Repository) ListMembers(ctx context.Context) ([]domain.Member, error) {
-	return r.queryMembers(ctx, `
-		SELECT id, name, riding, province, party, source_url
-		FROM members
-		ORDER BY rowid`)
+	query, err := r.memberSelect(ctx, "", "ORDER BY rowid")
+	if err != nil {
+		return nil, err
+	}
+	return r.queryMembers(ctx, query)
 }
 
 func (r *Repository) GetMemberProfile(ctx context.Context, id string) (domain.Member, error) {
-	members, err := r.queryMembers(ctx, `
-		SELECT id, name, riding, province, party, source_url
-		FROM members
-		WHERE id = ?
-		LIMIT 1`, id)
+	query, err := r.memberSelect(ctx, "WHERE id = ?", "LIMIT 1")
+	if err != nil {
+		return domain.Member{}, err
+	}
+	members, err := r.queryMembers(ctx, query, id)
 	if err != nil {
 		return domain.Member{}, err
 	}
@@ -43,7 +45,44 @@ func (r *Repository) GetMemberProfile(ctx context.Context, id string) (domain.Me
 		return domain.Member{}, err
 	}
 	member.Attendance = attendance
+	biography, err := r.biography(ctx, member.ID)
+	if err != nil {
+		return domain.Member{}, err
+	}
+	member.Biography = biography
+	sponsorships, err := r.pmbSponsorships(ctx, member.ID)
+	if err != nil {
+		return domain.Member{}, err
+	}
+	member.PMBSponsorships = sponsorships
 	return member, nil
+}
+
+func (r *Repository) memberSelect(ctx context.Context, whereClause, orderClause string) (string, error) {
+	columns, ok, err := r.tableColumns(ctx, "members")
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", usecase.ErrMemberNotFound
+	}
+	return fmt.Sprintf(`
+		SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s
+		FROM members
+		%s
+		%s`,
+		columnExpr(columns, "id"),
+		columnExpr(columns, "name"),
+		columnExpr(columns, "riding"),
+		columnExpr(columns, "province"),
+		columnExpr(columns, "party"),
+		columnExpr(columns, "source_url", "url"),
+		columnExpr(columns, "profile_url"),
+		columnExpr(columns, "from_date"),
+		columnExpr(columns, "to_date"),
+		whereClause,
+		orderClause,
+	), nil
 }
 
 func (r *Repository) queryMembers(ctx context.Context, query string, args ...any) ([]domain.Member, error) {
@@ -56,14 +95,27 @@ func (r *Repository) queryMembers(ctx context.Context, query string, args ...any
 	members := make([]domain.Member, 0)
 	for rows.Next() {
 		var member domain.Member
-		var riding, province, party, sourceURL sql.NullString
-		if err := rows.Scan(&member.ID, &member.Name, &riding, &province, &party, &sourceURL); err != nil {
+		var riding, province, party, sourceURL, profileURL, fromDate, toDate sql.NullString
+		if err := rows.Scan(
+			&member.ID,
+			&member.Name,
+			&riding,
+			&province,
+			&party,
+			&sourceURL,
+			&profileURL,
+			&fromDate,
+			&toDate,
+		); err != nil {
 			return nil, fmt.Errorf("scan members sqlite artifact: %w", err)
 		}
 		member.Riding = stringValue(riding)
 		member.Province = stringValue(province)
 		member.Party = stringValue(party)
 		member.SourceURL = stringValue(sourceURL)
+		member.ProfileURL = stringValue(profileURL)
+		member.FromDate = stringValue(fromDate)
+		member.ToDate = stringValue(toDate)
 		members = append(members, member)
 	}
 	if err := rows.Err(); err != nil {
@@ -73,6 +125,117 @@ func (r *Repository) queryMembers(ctx context.Context, query string, args ...any
 		members = []domain.Member{}
 	}
 	return members, nil
+}
+
+func (r *Repository) biography(ctx context.Context, memberID string) (*domain.Biography, error) {
+	columns, ok, err := r.tableColumns(ctx, "member_biographies")
+	if err != nil || !ok {
+		return nil, err
+	}
+	memberIDColumn := firstColumn(columns, "member_id", "person_id")
+	if memberIDColumn == "" {
+		return nil, nil
+	}
+	query := fmt.Sprintf(`
+		SELECT %s, %s, %s, %s, %s, %s, %s, %s
+		FROM member_biographies
+		WHERE %s = ?
+		LIMIT 1`,
+		columnExpr(columns, "summary"),
+		columnExpr(columns, "preferred_language"),
+		columnExpr(columns, "photo_url"),
+		columnExpr(columns, "source_url", "url"),
+		columnExpr(columns, "years_served_json"),
+		columnExpr(columns, "previous_roles_json"),
+		columnExpr(columns, "education_json"),
+		columnExpr(columns, "professional_background_json"),
+		memberIDColumn,
+	)
+	var summary, preferredLanguage, photoURL, sourceURL sql.NullString
+	var yearsServedJSON, previousRolesJSON, educationJSON, professionalBackgroundJSON sql.NullString
+	err = r.db.QueryRowContext(ctx, query, memberID).Scan(
+		&summary,
+		&preferredLanguage,
+		&photoURL,
+		&sourceURL,
+		&yearsServedJSON,
+		&previousRolesJSON,
+		&educationJSON,
+		&professionalBackgroundJSON,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query member biography sqlite artifact: %w", err)
+	}
+	biography := &domain.Biography{
+		Summary:           stringValue(summary),
+		PreferredLanguage: stringValue(preferredLanguage),
+		PhotoURL:          stringValue(photoURL),
+		SourceURL:         stringValue(sourceURL),
+	}
+	if err := decodeJSONColumn(yearsServedJSON, &biography.YearsServed); err != nil {
+		return nil, fmt.Errorf("decode member biography years served: %w", err)
+	}
+	if err := decodeJSONColumn(previousRolesJSON, &biography.PreviousRoles); err != nil {
+		return nil, fmt.Errorf("decode member biography previous roles: %w", err)
+	}
+	if err := decodeJSONColumn(educationJSON, &biography.Education); err != nil {
+		return nil, fmt.Errorf("decode member biography education: %w", err)
+	}
+	if err := decodeJSONColumn(professionalBackgroundJSON, &biography.ProfessionalBackground); err != nil {
+		return nil, fmt.Errorf("decode member biography professional background: %w", err)
+	}
+	return biography, nil
+}
+
+func (r *Repository) pmbSponsorships(ctx context.Context, memberID string) ([]domain.PMBSponsorship, error) {
+	columns, ok, err := r.tableColumns(ctx, "pmb_sponsorships")
+	if err != nil || !ok {
+		return []domain.PMBSponsorship{}, err
+	}
+	memberIDColumn := firstColumn(columns, "member_id", "person_id")
+	if memberIDColumn == "" {
+		return []domain.PMBSponsorship{}, nil
+	}
+	query := fmt.Sprintf(`
+		SELECT %s, %s, %s, %s, %s
+		FROM pmb_sponsorships
+		WHERE %s = ?
+		ORDER BY %s`,
+		columnExpr(columns, "id"),
+		columnExpr(columns, "bill_number", "number"),
+		columnExpr(columns, "title"),
+		columnExpr(columns, "relationship"),
+		columnExpr(columns, "legis_info_url", "legisinfo_url", "url"),
+		memberIDColumn,
+		orderExpr(columns),
+	)
+	rows, err := r.db.QueryContext(ctx, query, memberID)
+	if err != nil {
+		return nil, fmt.Errorf("query PMB sponsorship sqlite artifact: %w", err)
+	}
+	defer rows.Close()
+
+	sponsorships := make([]domain.PMBSponsorship, 0)
+	for rows.Next() {
+		var sponsorship domain.PMBSponsorship
+		var id, billNumber, title, relationship, legisInfoURL sql.NullString
+		if err := rows.Scan(&id, &billNumber, &title, &relationship, &legisInfoURL); err != nil {
+			return nil, fmt.Errorf("scan PMB sponsorship sqlite artifact: %w", err)
+		}
+		sponsorship.ID = stringValue(id)
+		sponsorship.BillNumber = stringValue(billNumber)
+		sponsorship.Title = stringValue(title)
+		sponsorship.Relationship = stringValue(relationship)
+		sponsorship.LegisInfoURL = stringValue(legisInfoURL)
+		sponsorships = append(sponsorships, sponsorship)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate PMB sponsorship sqlite artifact: %w", err)
+	}
+	return sponsorships, nil
 }
 
 func (r *Repository) attendance(ctx context.Context, memberID string) ([]domain.AttendanceRecord, error) {
@@ -231,4 +394,11 @@ func intPtr(value sql.NullInt64) *int {
 	}
 	converted := int(value.Int64)
 	return &converted
+}
+
+func decodeJSONColumn[T any](value sql.NullString, target *T) error {
+	if !value.Valid || value.String == "" {
+		return nil
+	}
+	return json.Unmarshal([]byte(value.String), target)
 }

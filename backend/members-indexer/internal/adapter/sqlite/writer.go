@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -140,7 +141,11 @@ CREATE TABLE member_biographies (
     summary TEXT NOT NULL DEFAULT '',
     preferred_language TEXT NOT NULL DEFAULT '',
     photo_url TEXT NOT NULL DEFAULT '',
-    source_url TEXT NOT NULL DEFAULT ''
+    source_url TEXT NOT NULL DEFAULT '',
+    years_served_json TEXT NOT NULL DEFAULT '[]',
+    previous_roles_json TEXT NOT NULL DEFAULT '[]',
+    education_json TEXT NOT NULL DEFAULT '[]',
+    professional_background_json TEXT NOT NULL DEFAULT '[]'
 );
 CREATE TABLE attendance_records (
     member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -216,12 +221,21 @@ func insertChildren(ctx context.Context, tx *sql.Tx, member domain.Member, stats
 	if bio.MemberID == "" {
 		bio.MemberID = member.ID
 	}
-	if bio.SourceURL != "" || bio.Summary != "" || bio.PhotoURL != "" {
+	if biographyHasContent(bio) {
 		if _, err := tx.ExecContext(ctx, `
 INSERT OR REPLACE INTO member_biographies (
-    member_id, summary, preferred_language, photo_url, source_url
-) VALUES (?, ?, ?, ?, ?)`,
-			bio.MemberID, bio.Summary, bio.PreferredLanguage, bio.PhotoURL, bio.SourceURL); err != nil {
+    member_id, summary, preferred_language, photo_url, source_url,
+    years_served_json, previous_roles_json, education_json, professional_background_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			bio.MemberID,
+			bio.Summary,
+			bio.PreferredLanguage,
+			bio.PhotoURL,
+			bio.SourceURL,
+			mustJSON(bio.YearsServed),
+			mustJSON(bio.PreviousRoles),
+			mustJSON(bio.Education),
+			mustJSON(bio.ProfessionalBackground)); err != nil {
 			return fmt.Errorf("insert biography %s: %w", member.ID, err)
 		}
 		stats.BiographyCount++
@@ -248,6 +262,24 @@ INSERT OR REPLACE INTO pmb_sponsorships (
 		stats.SponsorshipCount++
 	}
 	return nil
+}
+
+func biographyHasContent(bio domain.Biography) bool {
+	return bio.SourceURL != "" ||
+		bio.Summary != "" ||
+		bio.PhotoURL != "" ||
+		len(bio.YearsServed) > 0 ||
+		len(bio.PreviousRoles) > 0 ||
+		len(bio.Education) > 0 ||
+		len(bio.ProfessionalBackground) > 0
+}
+
+func mustJSON[T any](value T) string {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return "[]"
+	}
+	return string(data)
 }
 
 func writeMeta(ctx context.Context, db *sql.DB, stats domain.Stats) error {
