@@ -61,6 +61,20 @@ struct MPBiographyRepositoryTests {
 		#expect(loaded == expected)
 	}
 
+	@Test func sourceOnlyBiographyDoesNotRenderAsContent() {
+		let biography = MemberBiography(
+			yearsServed: [],
+			previousRoles: [],
+			education: [],
+			professionalBackground: [],
+			sponsoredBills: [],
+			sourceURL: URL(string: "https://www.ourcommons.ca/Members/en/1"),
+			officialProfileURL: URL(string: "https://www.ourcommons.ca/Members/en/1")
+		)
+
+		#expect(!biography.hasDisplayContent)
+	}
+
 	private func makeHarness() throws -> MPBiographyNetworkHarness {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [MPBiographyMockURLProtocol.self]

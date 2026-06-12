@@ -19,9 +19,7 @@ struct MemberBiography: Equatable, Sendable {
 			!previousRoles.isEmpty ||
 			!education.isEmpty ||
 			!professionalBackground.isEmpty ||
-			!sponsoredBills.isEmpty ||
-			sourceURL != nil ||
-			officialProfileURL != nil
+			!sponsoredBills.isEmpty
 	}
 
 	func withFallbackServicePeriod(_ period: ParliamentaryServicePeriod?) -> MemberBiography {
