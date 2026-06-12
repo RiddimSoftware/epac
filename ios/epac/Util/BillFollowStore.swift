@@ -13,6 +13,7 @@ struct BillFollowState: Codable {
     var lastKnownStatus: String  // BillStatus.rawValue
     var lastKnownStage: String   // currentStage string
     var followedAt: Date
+    var hasUnreadUpdate: Bool?   // status changed since last viewed
 }
 
 @MainActor
@@ -21,12 +22,25 @@ final class BillFollowStore {
     static let shared = BillFollowStore()
 
     private let key = "epac.followedBills"
+    private let orderKey = "epac.followedBills.order"
     private(set) var followed: [String: BillFollowState] = [:]
+    private(set) var orderedBillNumbers: [String] = []
 
     private init() {
         if let data = UserDefaults.standard.data(forKey: key),
            let decoded = try? JSONDecoder().decode([String: BillFollowState].self, from: data) {
             followed = decoded
+        }
+        if let order = UserDefaults.standard.stringArray(forKey: orderKey) {
+            orderedBillNumbers = order.filter { followed[$0] != nil }
+            for billNum in followed.keys {
+                if !orderedBillNumbers.contains(billNum) {
+                    orderedBillNumbers.append(billNum)
+                }
+            }
+        } else {
+            orderedBillNumbers = followed.sorted { $0.value.followedAt > $1.value.followedAt }.map { $0.key }
+            saveOrder()
         }
     }
 
@@ -36,13 +50,20 @@ final class BillFollowStore {
         followed[bill.number] = BillFollowState(
             lastKnownStatus: bill.status.rawValue,
             lastKnownStage: bill.currentStage,
-            followedAt: Date()
+            followedAt: Date(),
+            hasUnreadUpdate: false
         )
+        if !orderedBillNumbers.contains(bill.number) {
+            orderedBillNumbers.insert(bill.number, at: 0)
+            saveOrder()
+        }
         save()
     }
 
     func unfollow(_ number: String) {
         followed.removeValue(forKey: number)
+        orderedBillNumbers.removeAll { $0 == number }
+        saveOrder()
         save()
     }
 
@@ -54,7 +75,23 @@ final class BillFollowStore {
 
     func unfollowAll() {
         followed.removeAll()
+        orderedBillNumbers.removeAll()
+        saveOrder()
         save()
+    }
+
+    func markAsRead(_ number: String) {
+        guard var state = followed[number] else { return }
+        if state.hasUnreadUpdate == true {
+            state.hasUnreadUpdate = false
+            followed[number] = state
+            save()
+        }
+    }
+
+    func moveFollowedBills(from source: IndexSet, to destination: Int) {
+        orderedBillNumbers.move(fromOffsets: source, toOffset: destination)
+        saveOrder()
     }
 
     /// Call after BillsService.fetchBills() to keep followed-bill state current.
@@ -68,7 +105,8 @@ final class BillFollowStore {
                 followed[bill.number] = BillFollowState(
                     lastKnownStatus: bill.status.rawValue,
                     lastKnownStage: bill.currentStage,
-                    followedAt: state.followedAt
+                    followedAt: state.followedAt,
+                    hasUnreadUpdate: statusChanged || (state.hasUnreadUpdate ?? false)
                 )
                 changed = true
             }
@@ -81,4 +119,9 @@ final class BillFollowStore {
             UserDefaults.standard.set(encoded, forKey: key)
         }
     }
+
+    private func saveOrder() {
+        UserDefaults.standard.set(orderedBillNumbers, forKey: orderKey)
+    }
 }
+

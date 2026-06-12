@@ -11,6 +11,7 @@
 //  5. Most recent debates (from latest Hansard in SwiftData)
 //
 
+import ActivityView
 import SwiftData
 import SwiftUI
 
@@ -27,6 +28,8 @@ private enum HomeFeedLayout {
     static let senatorDotSize = EpacSpacing.s
     static let senatorTextSpacing = EpacSpacing.xxs
     static let healthcarePreviewLimit = 2
+    static let reorderBillsThreshold = 5
+    static let unreadDotSize: CGFloat = 8
 }
 
 @MainActor
@@ -50,6 +53,10 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
+    @State private var followedBills: [FollowedBill] = []
+    @State private var showNotifySettingsAlert = false
+    @State private var selectedBillForNotify: FollowedBill?
+    @State private var shareItem: ActivityItem?
 
     var body: some View {
         NavigationStack {
@@ -57,12 +64,7 @@ struct HomeFeedView: View {
                 todaySection
                 electionCountdownSection
                 myMPSection
-                if !billStore.followedNumbers.isEmpty {
-                    followedBillsSection
-                }
-                if !topicStore.followedIDs.isEmpty {
-                    followedTopicsSection
-                }
+                followingSection
                 if !mySenators.isEmpty {
                     senatorsSection
                 }
@@ -140,6 +142,16 @@ struct HomeFeedView: View {
                 SettingsView()
             }
             .perfSignpostInterval(.homeFeedView)
+            .activitySheet($shareItem)
+            .alert(
+                NSLocalizedString("bill.contextMenu.notifySettings", comment: ""),
+                isPresented: $showNotifySettingsAlert,
+                presenting: selectedBillForNotify
+            ) { _ in
+                Button(NSLocalizedString("OK", comment: ""), role: .cancel) {}
+            } message: { bill in
+                Text(String(format: NSLocalizedString("Notification settings for Bill %@ will be added in a future update.", comment: ""), bill.number))
+            }
         }
     }
 
@@ -339,75 +351,173 @@ struct HomeFeedView: View {
         }
     }
 
-    // MARK: - Section 3: Followed bills
+    // MARK: - Section 3: Following
 
-    private var followedBillsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedBills", comment: "")).accessibilityAddTraits(.isHeader)) {
-            let sorted = billStore.followed.sorted { $0.value.followedAt > $1.value.followedAt }
-            ForEach(Array(sorted.prefix(HomeFeedLayout.followedBillsLimit)), id: \.key) { number, state in
-                HStack {
-                    Image(systemName: "doc.badge.clock.fill")
-                        .foregroundStyle(Color.epacBrand.accent)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: EpacSpacing.xs) {
-                        Text(number)
-                            .font(.epacSubheadline.weight(.semibold))
-                        Text(state.lastKnownStage)
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacText.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer()
-                }
-                .padding(.vertical, HomeFeedLayout.compactVerticalPadding)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Bill \(number), \(state.lastKnownStage), Followed")
-            }
-            HStack {
-                NavigationLink(destination: BillsView()) {
-                    Text(NSLocalizedString("home.seeAllBills", comment: ""))
-                        .font(.epacCaption)
-                        .foregroundStyle(Color.epacBrand.accent)
-                }
-                if billStore.followed.count > HomeFeedLayout.followedBillsLimit {
-                    Spacer()
-                    Button {
-                        billStore.unfollowAll()
-                    } label: {
-                        Text(NSLocalizedString("home.clearAllBills", comment: ""))
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacStatus.destructive)
-                    }
-                    .accessibilityLabel("Unfollow all bills")
-                }
+    private var followingSection: some View {
+        Section(header: Text(NSLocalizedString("home.following", comment: "")).accessibilityAddTraits(.isHeader)) {
+            billsGroup
+            if !topicStore.followedIDs.isEmpty {
+                topicsGroup
             }
         }
     }
 
-    // MARK: - Section 4: Followed topics
-
-    private var followedTopicsSection: some View {
-        Section(header: Text(NSLocalizedString("home.followedTopics", comment: "")).accessibilityAddTraits(.isHeader)) {
-            let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: EpacSpacing.s) {
-                    ForEach(followedTopics.prefix(HomeFeedLayout.followedTopicsLimit)) { topic in
-                        Text(topic.localizedName)
-                            .font(.epacCaption.weight(.medium))
-                            .foregroundStyle(Color.epacText.onAccent)
-                            .padding(.horizontal, EpacSpacing.s)
-                            .padding(.vertical, EpacSpacing.xs)
-                            .background(Color.epacBrand.accent)
-                            .clipShape(Capsule())
-                    }
-                }
-                .padding(.vertical, EpacSpacing.xs)
-            }
-            NavigationLink(destination: TopicsView()) {
-                Text(NSLocalizedString("home.manageTopics", comment: ""))
-                    .font(.epacCaption)
+    @ViewBuilder
+    private var billsGroup: some View {
+        HStack {
+            Text(NSLocalizedString("home.following.bills", comment: ""))
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            Spacer()
+            if followedBills.count > HomeFeedLayout.reorderBillsThreshold {
+                EditButton()
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.epacBrand.accent)
             }
+        }
+        .listRowSeparator(.hidden)
+
+        if followedBills.isEmpty {
+            VStack(alignment: .leading, spacing: EpacSpacing.s) {
+                Text(NSLocalizedString("home.following.bills.empty.message", comment: ""))
+                    .font(.subheadline)
+                    .foregroundStyle(Color.epacText.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    router.selectedTab = .search
+                } label: {
+                    Text(NSLocalizedString("home.following.bills.empty.cta", comment: ""))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.epacBrand.accent)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, EpacSpacing.xs)
+        } else {
+            ForEach(followedBills) { followed in
+                let billToUse = followed.bill ?? fallbackBill(for: followed)
+                NavigationLink(destination: BillDetailView(bill: billToUse)) {
+                    HStack(alignment: .center, spacing: EpacSpacing.s) {
+                        if followed.hasUnreadUpdate {
+                            Circle()
+                                .fill(Color.epacBrand.accent)
+                                .frame(width: HomeFeedLayout.unreadDotSize, height: HomeFeedLayout.unreadDotSize)
+                                .accessibilityLabel("Unread update")
+                        }
+                        VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
+                            HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.xs) {
+                                Text(followed.number)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color.epacText.primary)
+                                Text(followed.title)
+                                    .font(.caption)
+                                    .foregroundStyle(Color.epacText.secondary)
+                                    .lineLimit(1)
+                            }
+                            HStack(spacing: EpacSpacing.s) {
+                                BillStatusBadge(status: followed.status)
+                                Text(followed.lastUpdateTimestamp.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.epacText.tertiary)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, HomeFeedLayout.compactVerticalPadding)
+                    .contentShape(Rectangle())
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        billStore.unfollow(followed.number)
+                        Task { await loadFeed() }
+                    } label: {
+                        Label(NSLocalizedString("bill.unfollow", comment: ""), systemImage: "trash")
+                    }
+                }
+                .contextMenu {
+                    contextMenu(for: followed)
+                }
+            }
+            .onMove(perform: followedBills.count > HomeFeedLayout.reorderBillsThreshold ? { source, destination in
+                billStore.moveFollowedBills(from: source, to: destination)
+                Task { await loadFeed() }
+            } : nil)
+        }
+    }
+
+    @ViewBuilder
+    private var topicsGroup: some View {
+        HStack {
+            Text(NSLocalizedString("home.following.topics", comment: ""))
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            Spacer()
+        }
+        .listRowSeparator(.hidden)
+        .padding(.top, EpacSpacing.s)
+
+        let followedTopics = ParliamentaryTopic.all.filter { topicStore.isFollowing($0.id) }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: EpacSpacing.s) {
+                ForEach(followedTopics.prefix(HomeFeedLayout.followedTopicsLimit)) { topic in
+                    Text(topic.localizedName)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.epacText.onAccent)
+                        .padding(.horizontal, EpacSpacing.s)
+                        .padding(.vertical, EpacSpacing.xs)
+                        .background(Color.epacBrand.accent)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.vertical, EpacSpacing.xs)
+        }
+        NavigationLink(destination: TopicsView()) {
+            Text(NSLocalizedString("home.manageTopics", comment: ""))
+                .font(.caption)
+                .foregroundStyle(Color.epacBrand.accent)
+        }
+    }
+
+    private func fallbackBill(for followed: FollowedBill) -> Bill {
+        Bill(
+            id: followed.number,
+            number: followed.number,
+            title: followed.title,
+            sponsorName: "",
+            status: followed.status,
+            currentStage: followed.currentStage,
+            introducedDate: followed.lastUpdateTimestamp,
+            stages: [],
+            legisInfoURL: URL(string: "https://www.parl.ca")!,
+            type: .unknown,
+            parliament: 0,
+            session: 0
+        )
+    }
+
+    @ViewBuilder
+    private func contextMenu(for followed: FollowedBill) -> some View {
+        Button(role: .destructive) {
+            billStore.unfollow(followed.number)
+            Task { await loadFeed() }
+        } label: {
+            Label(NSLocalizedString("bill.unfollow", comment: ""), systemImage: "doc.badge.clock")
+        }
+
+        let billToUse = followed.bill ?? fallbackBill(for: followed)
+        Button {
+            shareItem = BillSharer.activityItem(for: billToUse)
+        } label: {
+            Label(NSLocalizedString("bill.share", comment: ""), systemImage: "square.and.arrow.up")
+        }
+
+        Button {
+            selectedBillForNotify = followed
+            showNotifySettingsAlert = true
+        } label: {
+            Label(NSLocalizedString("bill.contextMenu.notifySettings", comment: ""), systemImage: "bell")
         }
     }
 
@@ -756,6 +866,14 @@ struct HomeFeedView: View {
 
         self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
         self.mySenators = snapshot.civicContext.mySenators
+
+        let loadFollowed = LoadFollowedBills(
+            followedBillReadPort: FollowPreferenceAdapter(),
+            billStatusReadPort: LEGISinfoBillRepository()
+        )
+        if let result = try? await loadFollowed.execute() {
+            self.followedBills = result
+        }
     }
 
     private var hasPersonalizedContext: Bool {

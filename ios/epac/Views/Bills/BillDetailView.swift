@@ -191,6 +191,7 @@ struct BillDetailView: View {
         .task {
             await loadCrossReferences()
             await loadLobbyingContext()
+            BillFollowStore.shared.markAsRead(bill.number)
         }
         .activitySheet($shareItem)
     }

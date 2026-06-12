@@ -357,6 +357,7 @@
 "bill.follow" = "Suivre";
 "bill.unfollow" = "Ne plus suivre";
 "bill.share" = "Partager";
+"bill.contextMenu.notifySettings" = "Paramètres de notification";
 
 /* Government consultations view */
 "consult.navTitle" = "Consultations";
@@ -406,6 +407,12 @@
 "home.debates.subtitle" = "Parcourez les séances précédentes";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
+"home.following" = "Abonnements";
+"home.following.bills" = "Projets de loi";
+"home.following.mps" = "Députés";
+"home.following.topics" = "Sujets";
+"home.following.bills.empty.message" = "Suivez des projets de loi pour recevoir des mises à jour en temps réel et des notifications sur leur parcours législatif.";
+"home.following.bills.empty.cta" = "Trouver un projet de loi";
 "home.followedBills" = "Projets de loi suivis";
 "home.followedTopics" = "Sujets suivis";
 "home.recentDebates" = "Récent au Hansard";
