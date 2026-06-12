@@ -20,12 +20,32 @@ type AttendanceRecord struct {
 	Session     *int   `json:"session,omitempty"`
 }
 
+type Biography struct {
+	Summary           string `json:"summary,omitempty"`
+	PreferredLanguage string `json:"preferred_language,omitempty"`
+	PhotoURL          string `json:"photo_url,omitempty"`
+	SourceURL         string `json:"source_url,omitempty"`
+}
+
+type PMBSponsorship struct {
+	ID           string `json:"id,omitempty"`
+	BillNumber   string `json:"bill_number,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Relationship string `json:"relationship,omitempty"`
+	LegisInfoURL string `json:"legis_info_url,omitempty"`
+}
+
 type Member struct {
-	ID         string             `json:"id"`
-	Name       string             `json:"name"`
-	Riding     string             `json:"riding,omitempty"`
-	Province   string             `json:"province,omitempty"`
-	Party      string             `json:"party,omitempty"`
-	SourceURL  string             `json:"source_url,omitempty"`
-	Attendance []AttendanceRecord `json:"attendance,omitempty"`
+	ID              string             `json:"id"`
+	Name            string             `json:"name"`
+	Riding          string             `json:"riding,omitempty"`
+	Province        string             `json:"province,omitempty"`
+	Party           string             `json:"party,omitempty"`
+	SourceURL       string             `json:"source_url,omitempty"`
+	ProfileURL      string             `json:"profile_url,omitempty"`
+	FromDate        string             `json:"from_date,omitempty"`
+	ToDate          string             `json:"to_date,omitempty"`
+	Biography       *Biography         `json:"biography,omitempty"`
+	Attendance      []AttendanceRecord `json:"attendance,omitempty"`
+	PMBSponsorships []PMBSponsorship   `json:"pmb_sponsorships,omitempty"`
 }

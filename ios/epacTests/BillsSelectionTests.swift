@@ -58,6 +58,16 @@ struct BillsSelectionTests {
 
         #expect(router.selectedBill?.number == selected.number)
     }
+
+    @Test func billNumberFilterMatchesSponsoredBillsCaseInsensitively() {
+        let sponsored = BillsSelectionTestData.bill(number: "C-234")
+        let other = BillsSelectionTestData.bill(number: "C-50")
+        let filter: Set<String> = ["c-234".uppercased()]
+
+        #expect(BillsSelection.matchesBillNumberFilter(sponsored, billNumbersFilter: filter))
+        #expect(!BillsSelection.matchesBillNumberFilter(other, billNumbersFilter: filter))
+        #expect(BillsSelection.matchesBillNumberFilter(other, billNumbersFilter: []))
+    }
 }
 
 private enum BillsSelectionTestData {
