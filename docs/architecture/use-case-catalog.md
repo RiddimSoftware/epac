@@ -23,6 +23,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MemberID` | The stable source identifier used to address a ParliamentMember across backend artifacts. |
 | `ParliamentMember` | An elected Member of Parliament with riding, party, and contact info. |
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
+| `EPetition` | An e-petition submitted to the House of Commons with signatures, sponsor, deadline, and optional government response. |
+| `PetitionGovernmentResponse` | The government's official written response tabled in the House of Commons for a qualified petition. |
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
 | `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
@@ -145,6 +147,7 @@ to the issue that will build the missing artifact.
 | `DivisionsFetching` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/ourcommons/divisions_client.go`. | Fetch live parliamentary divisions from ourcommons.ca. |
 | `ArtifactRepository` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/artifacts/repository.go`. | Check existence and persist completed vote payload artifacts. |
 | `PushDispatching` | backend Go | outbound | Implemented: `backend/live-vote-poller/internal/usecase/poll_live_divisions.go`; adapter: `backend/live-vote-poller/internal/adapter/push/dispatcher.go`. | Forward concluded division payloads to the push-notification dispatcher. |
+| `PetitionGovernmentResponseQueryPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/PetitionGovernmentResponseQueryPort.swift`; adapter: `ios/epac/Data/Repositories/BackendPetitionGovernmentResponseQueryPort.swift`. | Load petition government responses from the backend endpoint. |
 
 ## Use Cases
 
@@ -1318,6 +1321,27 @@ Current implementation:
 ```
 
 > Boundary rule: The usecase checks sitting hours and division status independently of how AWS schedules the lambda or how HTTP requests are formed.
+
+---
+
+### LoadPetitionGovernmentResponse
+
+```
+Actor: User (iOS app, foreground)
+Goal: Surface the government's tabled written response for a petition in the detail view.
+Inputs: Petition ID.
+Outputs: PetitionGovernmentResponse value object (text, date tabled, responding minister) or nil.
+Entities / values: EPetition, PetitionGovernmentResponse.
+Ports: iOS Swift: `PetitionGovernmentResponseQueryPort`.
+Primary adapters: BackendPetitionGovernmentResponseQueryPort, PetitionDetailView.
+Current implementation:
+  ios/epac/Domain/Ports/PetitionGovernmentResponseQueryPort.swift
+  ios/epac/Domain/UseCases/LoadPetitionGovernmentResponse.swift
+  ios/epac/Data/Repositories/BackendPetitionGovernmentResponseQueryPort.swift
+  ios/epac/Views/Petitions/PetitionDetailView.swift
+```
+
+> Boundary rule: HTML/wire-format parsing of the petitions source lives only in the backend ingestion adapter; iOS consumes a typed JSON shape.
 
 ---
 
