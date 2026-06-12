@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-struct FollowPreferenceAdapter: FollowPreferenceReading {
+struct FollowPreferenceAdapter: FollowPreferenceReading, FollowedBillReadPort {
     func followedBillNumbers() -> [String] {
         Array(BillFollowStore.shared.followedNumbers)
     }
@@ -22,4 +22,19 @@ struct FollowPreferenceAdapter: FollowPreferenceReading {
     func savedMemberName() -> String? {
         PostalCodeStore.shared.savedMemberName
     }
+
+    func fetchFollowedBills() async throws -> [FollowedBillRecord] {
+        let store = BillFollowStore.shared
+        return store.orderedBillNumbers.compactMap { number in
+            guard let state = store.followed[number] else { return nil }
+            return FollowedBillRecord(
+                number: number,
+                lastKnownStatus: state.lastKnownStatus,
+                lastKnownStage: state.lastKnownStage,
+                followedAt: state.followedAt,
+                hasUnreadUpdate: state.hasUnreadUpdate ?? false
+            )
+        }
+    }
 }
+

@@ -6,8 +6,9 @@
 import Foundation
 
 @MainActor
-struct LEGISinfoBillRepository: BillRepository {
+struct LEGISinfoBillRepository: BillRepository, BillStatusReadPort {
     func fetchBills() async throws -> [Bill] {
         try await BillsService.fetchBills()
     }
 }
+

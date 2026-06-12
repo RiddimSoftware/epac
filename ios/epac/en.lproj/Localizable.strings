@@ -355,6 +355,7 @@
 "bill.follow" = "Follow";
 "bill.unfollow" = "Unfollow";
 "bill.share" = "Share";
+"bill.contextMenu.notifySettings" = "Notification Settings";
 
 /* Government consultations view */
 "consult.navTitle" = "Consultations";
@@ -404,6 +405,12 @@
 "home.debates.subtitle" = "Browse previous sittings";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
+"home.following" = "Following";
+"home.following.bills" = "Bills";
+"home.following.mps" = "Members of Parliament";
+"home.following.topics" = "Topics";
+"home.following.bills.empty.message" = "Follow bills to receive real-time status updates and notifications on their legislative progress.";
+"home.following.bills.empty.cta" = "Find a bill";
 "home.followedBills" = "Bills You Follow";
 "home.followedTopics" = "Topics You Follow";
 "home.recentDebates" = "Recent in Hansard";
