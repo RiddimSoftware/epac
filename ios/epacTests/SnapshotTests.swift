@@ -118,11 +118,22 @@ final class SnapshotTests: XCTestCase {
 
     // MARK: - BillRow
 
-    private static func makeBill(number: String, title: String, status: BillStatus, stage: String) -> Bill {
+    private static func makeBill(
+        number: String,
+        title: String,
+        status: BillStatus,
+        stage: String,
+        royalAssentDate: Date? = nil,
+        summary: String? = nil
+    ) -> Bill {
         Bill(
             id: number, number: number, title: title,
             sponsorName: "Jane Smith", status: status, currentStage: stage,
-            introducedDate: nil, stages: [],
+            introducedDate: nil,
+            royalAssentDate: royalAssentDate,
+            summary: summary,
+            sponsorProfileURL: URL(string: "https://www.ourcommons.ca/members/en/jane-smith(12345)"),
+            stages: [],
             legisInfoURL: URL(string: "https://www.parl.ca/legisinfo/en/bill/44-1/c-50")!,
             type: .government, parliament: 44, session: 1
         )
@@ -146,6 +157,30 @@ final class SnapshotTests: XCTestCase {
                 .frame(width: 375)
                 .padding(),
             name: "BillRow_royalAssent"
+        )
+    }
+
+    func testRecentlyBecameLawCard() {
+        let bill = Self.makeBill(
+            number: "C-12",
+            title: "Strengthening Canada's Immigration System and Borders Act",
+            status: .royalAssent,
+            stage: "Royal Assent",
+            royalAssentDate: Self.date("2026-06-10"),
+            summary: "An Act respecting certain measures relating to the security of Canada's borders and the integrity of the Canadian immigration system."
+        )
+
+        snapshot(
+            NavigationStack {
+                List {
+                    Section("Recently Became Law") {
+                        RecentlyBecameLawCard(bills: [bill])
+                    }
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 360),
+            name: "RecentlyBecameLawCard"
         )
     }
 

@@ -89,6 +89,7 @@ struct BillsService {
         let readingDates = billReadingDates(from: raw)
         let introducedDate = billIntroducedDate(from: readingDates)
         let stages = billStages(number: number, raw: raw, dates: readingDates)
+        let summary = billSummary(from: raw, selectedTitle: title)
 
         let currentStage = raw.LatestCompletedMajorStageEn ?? raw.CurrentStatusEn ?? ""
         let billSlug = "\(parliament)-\(session)/\(number.lowercased())"
@@ -103,6 +104,9 @@ struct BillsService {
             status: billStatus(from: raw),
             currentStage: currentStage,
             introducedDate: introducedDate,
+            royalAssentDate: readingDates.royalAssent,
+            summary: summary,
+            sponsorProfileURL: sponsorProfileURL(from: raw),
             stages: stages,
             legisInfoURL: legisURL,
             type: billType(from: raw),
@@ -121,6 +125,15 @@ struct BillsService {
         return nil
     }
 
+    private static func billSummary(from raw: LEGISinfoBill, selectedTitle: String) -> String? {
+        guard let longTitle = raw.LongTitleEn?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !longTitle.isEmpty,
+              longTitle != selectedTitle else {
+            return nil
+        }
+        return longTitle
+    }
+
     private static func billStatus(from raw: LEGISinfoBill) -> BillStatus {
         let statusLower = (raw.CurrentStatusEn ?? "").lowercased()
         if raw.ReceivedRoyalAssentDateTime != nil || statusLower.contains("royal assent") {
@@ -135,6 +148,11 @@ struct BillsService {
     private static func billType(from raw: LEGISinfoBill) -> BillType {
         let typeLower = (raw.BillTypeEn ?? "").lowercased()
         return billTypeMappings.first { typeLower.contains($0.needle) }?.type ?? .unknown
+    }
+
+    private static func sponsorProfileURL(from raw: LEGISinfoBill) -> URL? {
+        guard let sponsorID = raw.SponsorId, sponsorID > 0 else { return nil }
+        return URL(string: "https://www.ourcommons.ca/members/en/\(sponsorID)")
     }
 
     private static func billReadingDates(from raw: LEGISinfoBill) -> BillReadingDates {
@@ -225,6 +243,7 @@ private struct LEGISinfoBill: Decodable {
     let CurrentStatusEn: String?
     let BillTypeEn: String?
     let SponsorEn: String?
+    let SponsorId: Int?
     let OriginatingChamberId: Int?
     let ParliamentNumber: Int
     let SessionNumber: Int

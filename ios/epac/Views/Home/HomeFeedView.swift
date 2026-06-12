@@ -27,6 +27,7 @@ private enum HomeFeedLayout {
     static let senatorDotSize = EpacSpacing.s
     static let senatorTextSpacing = EpacSpacing.xxs
     static let healthcarePreviewLimit = 2
+    static let sponsorLineLimit = 2
 }
 
 @MainActor
@@ -50,6 +51,7 @@ struct HomeFeedView: View {
     @State private var provinceAbbrev: String = ""
     @State private var mySenators: [Senator] = []
     @State private var showRefreshToast = false
+    @State private var recentLawBills: [Bill] = []
 
     var body: some View {
         NavigationStack {
@@ -57,6 +59,9 @@ struct HomeFeedView: View {
                 todaySection
                 electionCountdownSection
                 myMPSection
+                if !recentLawBills.isEmpty {
+                    recentlyBecameLawSection
+                }
                 if !billStore.followedNumbers.isEmpty {
                     followedBillsSection
                 }
@@ -340,6 +345,20 @@ struct HomeFeedView: View {
     }
 
     // MARK: - Section 3: Followed bills
+
+    private var recentlyBecameLawSection: some View {
+        Section(header: Text(NSLocalizedString("home.recentlyBecameLaw", comment: "")).accessibilityAddTraits(.isHeader)) {
+            RecentlyBecameLawCard(
+                bills: recentLawBills,
+                sponsorMember: sponsorMember(for:)
+            )
+            NavigationLink(destination: BillsView(initialTab: .becameLaw)) {
+                Text(NSLocalizedString("home.seeLaws", comment: ""))
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacBrand.accent)
+            }
+        }
+    }
 
     private var followedBillsSection: some View {
         Section(header: Text(NSLocalizedString("home.followedBills", comment: "")).accessibilityAddTraits(.isHeader)) {
@@ -756,6 +775,32 @@ struct HomeFeedView: View {
 
         self.provinceAbbrev = snapshot.civicContext.provinceAbbrev
         self.mySenators = snapshot.civicContext.mySenators
+
+        self.recentLawBills = (try? await TrackRoyalAssent(repository: LEGISinfoBillRepository()).recentlyBecameLaw()) ?? []
+    }
+
+    private func sponsorMember(for bill: Bill) -> ParliamentMember? {
+        let sponsor = normalizedSponsorName(bill.sponsorName)
+        guard !sponsor.isEmpty,
+              let members = try? modelContext.fetch(FetchDescriptor<ParliamentMember>()) else {
+            return nil
+        }
+
+        return members.first { member in
+            let fullName = normalizedSponsorName(member.name)
+            return fullName == sponsor
+                || sponsor.contains(normalizedSponsorName(member.lastName))
+                    && sponsor.contains(normalizedSponsorName(member.firstName))
+        }
+    }
+
+    private func normalizedSponsorName(_ name: String) -> String {
+        name
+            .replacingOccurrences(of: "Hon. ", with: "")
+            .replacingOccurrences(of: "The Honourable ", with: "")
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var hasPersonalizedContext: Bool {
@@ -807,5 +852,121 @@ struct HomeFeedView: View {
 
     private func trackTodayCardTap(_ target: String) {
         Log.info("home.today.tap target=\(target)")
+    }
+}
+
+struct RecentlyBecameLawCard: View {
+    let bills: [Bill]
+    let sponsorMember: @MainActor (Bill) -> ParliamentMember?
+
+    init(
+        bills: [Bill],
+        sponsorMember: @escaping @MainActor (Bill) -> ParliamentMember? = { _ in nil }
+    ) {
+        self.bills = bills
+        self.sponsorMember = sponsorMember
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: EpacSpacing.m) {
+            ForEach(bills) { bill in
+                lawRow(for: bill)
+                if bill.id != bills.last?.id {
+                    Divider()
+                }
+            }
+        }
+        .padding(.vertical, EpacSpacing.xs)
+        .accessibilityIdentifier("home-recently-became-law-card")
+    }
+
+    private func lawRow(for bill: Bill) -> some View {
+        VStack(alignment: .leading, spacing: EpacSpacing.s) {
+            NavigationLink(destination: BillDetailView(bill: bill)) {
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    HStack(alignment: .firstTextBaseline, spacing: EpacSpacing.xs) {
+                        Text(bill.number)
+                            .font(.caption.monospacedDigit().weight(.bold))
+                            .foregroundStyle(Color.epacBrand.accent)
+                        Text(royalAssentDateLabel(for: bill))
+                            .font(.epacCaption)
+                            .foregroundStyle(Color.epacText.secondary)
+                    }
+                    Text(bill.title)
+                        .font(.epacSubheadline.weight(.semibold))
+                        .foregroundStyle(Color.epacText.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            if let summary = bill.summary, !summary.isEmpty {
+                Text(summary)
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacText.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: EpacSpacing.s) {
+                    sponsorLabel(for: bill)
+                    Spacer()
+                    legisInfoLink(for: bill)
+                }
+                VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                    sponsorLabel(for: bill)
+                    legisInfoLink(for: bill)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel(for: bill))
+    }
+
+    private func sponsorLabel(for bill: Bill) -> some View {
+        Group {
+            if let member = sponsorMember(bill) {
+                NavigationLink(destination: MemberProfileView(member: member)) {
+                    Label(member.name, systemImage: "person.crop.circle")
+                }
+            } else if let profileURL = bill.sponsorProfileURL {
+                Link(destination: profileURL) {
+                    Label(bill.sponsorName, systemImage: "person.crop.circle")
+                }
+            } else if !bill.sponsorName.isEmpty {
+                Label(bill.sponsorName, systemImage: "person.crop.circle")
+            }
+        }
+        .font(.epacCaption)
+        .foregroundStyle(Color.epacText.secondary)
+        .lineLimit(HomeFeedLayout.sponsorLineLimit)
+    }
+
+    private func legisInfoLink(for bill: Bill) -> some View {
+        Link(destination: bill.legisInfoURL) {
+            Label(NSLocalizedString("bills.detail.legisinfo", comment: ""), systemImage: "arrow.up.right.square")
+        }
+        .font(.epacCaption)
+        .foregroundStyle(Color.epacBrand.accent)
+    }
+
+    private func royalAssentDateLabel(for bill: Bill) -> String {
+        guard let date = bill.becameLawDate else {
+            return NSLocalizedString("bill.status.royalAssent", comment: "")
+        }
+        return String(
+            format: NSLocalizedString("home.recentlyBecameLaw.date", comment: ""),
+            date.formatted(date: .abbreviated, time: .omitted)
+        )
+    }
+
+    private func accessibilityLabel(for bill: Bill) -> String {
+        [
+            bill.number,
+            bill.title,
+            royalAssentDateLabel(for: bill),
+            bill.sponsorName
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: ", ")
     }
 }

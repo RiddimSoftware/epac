@@ -17,6 +17,7 @@ private enum BillsLayout {
     static let retryDelaySeconds: Int64 = 2
     static let rowSpacing = EpacSpacing.xs
     static let badgeRowSpacing: CGFloat = 6
+    static let segmentedControlVerticalPadding: CGFloat = 8
     static let rowVerticalPadding = EpacSpacing.xs
     static let newIndicatorFontSize: CGFloat = 6
     static let statusBadgeHorizontalPadding: CGFloat = 6
@@ -70,7 +71,7 @@ struct BillsView: View {
     @State private var bills: [Bill] = []
     @State private var isLoading = false
     @State private var loadFailed = false
-    @State private var selectedTab: BillFilterTab = BillsView.loadSelectedTab()
+    @State private var selectedTab: BillFilterTab
     @State private var billStore = BillFollowStore.shared
     @State private var searchText = ""
     @State private var shareItems: ActivityItem?
@@ -80,9 +81,14 @@ struct BillsView: View {
     private let selection: Binding<Bill?>?
     private let billRepository: any BillRepository
 
-    init(selection: Binding<Bill?>? = nil, billRepository: any BillRepository = LEGISinfoBillRepository()) {
+    init(
+        selection: Binding<Bill?>? = nil,
+        initialTab: BillFilterTab? = nil,
+        billRepository: any BillRepository = LEGISinfoBillRepository()
+    ) {
         self.selection = selection
         self.billRepository = billRepository
+        self._selectedTab = State(initialValue: initialTab ?? Self.loadSelectedTab())
     }
 
     private var filtered: [Bill] {
@@ -115,7 +121,7 @@ struct BillsView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, BillsLayout.segmentedControlVerticalPadding)
             .background(Color(.systemBackground))
 
             Group {

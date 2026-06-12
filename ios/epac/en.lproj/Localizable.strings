@@ -404,9 +404,12 @@
 "home.debates.subtitle" = "Browse previous sittings";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
+"home.recentlyBecameLaw" = "Recently Became Law";
+"home.recentlyBecameLaw.date" = "Royal Assent %@";
 "home.followedBills" = "Bills You Follow";
 "home.followedTopics" = "Topics You Follow";
 "home.recentDebates" = "Recent in Hansard";
+"home.seeLaws" = "See laws →";
 "home.seeAllBills" = "See all bills →";
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
