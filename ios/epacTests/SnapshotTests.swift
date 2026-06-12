@@ -79,6 +79,25 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    private static var senatorWithAppointment: Senator {
+        Senator(
+            id: "sample-senator-on",
+            firstName: "Jane",
+            lastName: "Senator",
+            province: "ON",
+            caucus: "ISG",
+            caucusFullName: "Independent Senators Group",
+            senateURL: URL(string: "https://sencanada.ca/en/senators/sample")!,
+            appointedDate: date("2024-12-19"),
+            appointment: SenateAppointment(
+                date: date("2024-12-19"),
+                appointingPrimeMinister: "Justin Trudeau",
+                province: "ON",
+                declaredAffiliation: "Independent Senators Group"
+            )
+        )
+    }
+
     // MARK: - MemberRow
 
     func testMemberRow_liberal() {
@@ -96,6 +115,17 @@ final class SnapshotTests: XCTestCase {
                 .frame(width: 375)
                 .padding(),
             name: "MemberRow_conservative"
+        )
+    }
+
+    // MARK: - SenatorCard
+
+    func testSenatorCard_appointment() {
+        snapshot(
+            SenatorCard(senator: Self.senatorWithAppointment)
+                .frame(width: 375)
+                .padding(),
+            name: "SenatorCard_appointment"
         )
     }
 

@@ -526,27 +526,7 @@ struct HomeFeedView: View {
     private var senatorsSection: some View {
         Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(mySenators.prefix(HomeFeedLayout.senatorsLimit)) { senator in
-                Link(destination: senator.senateURL) {
-                    HStack(spacing: HomeFeedLayout.senatorRowSpacing) {
-                        Circle()
-                            .fill(senator.caucusColor.opacity(HomeFeedLayout.senatorDotOpacity))
-                            .frame(width: HomeFeedLayout.senatorDotSize, height: HomeFeedLayout.senatorDotSize)
-                        VStack(alignment: .leading, spacing: HomeFeedLayout.senatorTextSpacing) {
-                            Text(senator.name)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            Text(senator.caucusFullName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        Image(systemName: "arrow.up.right.square")
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacText.tertiary)
-                    }
-                }
-                .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
+                SenatorCard(senator: senator)
             }
         }
     }

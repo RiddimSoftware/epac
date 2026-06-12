@@ -31,4 +31,12 @@ struct ModelTests {
         #expect(Province(rawValue: "Quebec") == .Quebec)
         #expect(Province(rawValue: "Saskatchewan") == .Saskatchewan)
     }
+
+    @Test func senateTopicAvailableForAppointmentNotifications() {
+        let senate = ParliamentaryTopic.all.first { $0.id == "senate" }
+
+        #expect(senate?.nameKey == "topic.senate")
+        #expect(senate?.keywords.contains("senator") == true)
+        #expect(ParliamentaryTopic.matching("The PM has appointed a new senator").map(\.id).contains("senate"))
+    }
 }

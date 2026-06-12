@@ -90,9 +90,50 @@ struct SenatorsService {
             let senateURL = URL(string: urlStr)
                 ?? URL(string: "https://sencanada.ca/en/senators/")!
 
-            var date: Date?
-            if let dateStr = item["StartDate"] as? String {
-                date = ISO8601DateFormatter().date(from: dateStr)
+            let appointmentPayload = item["appointment"] as? [String: Any] ?? item
+            let appointmentDateValue = stringValue(
+                forAnyKey: ["appointment_date", "appointed_date", "date", "StartDate"],
+                in: appointmentPayload
+            ) ?? stringValue(forAnyKey: ["appointment_date", "appointed_date", "StartDate"], in: item)
+            let date = parseDate(
+                appointmentDateValue
+            )
+            let primeMinisterKeys = [
+                "appointing_prime_minister",
+                "appointing_pm",
+                "appointed_by",
+                "prime_minister",
+                "prime_minister_name",
+                "PrimeMinisterName"
+            ]
+            let appointingPrimeMinister = stringValue(forAnyKey: primeMinisterKeys, in: appointmentPayload)
+                ?? stringValue(forAnyKey: primeMinisterKeys, in: item)
+            let sourceURLKeys = [
+                "source_url",
+                "orders_in_council_url",
+                "order_in_council_url",
+                "OrderInCouncilURL"
+            ]
+            let sourceURL = urlValue(forAnyKey: sourceURLKeys, in: appointmentPayload)
+                ?? urlValue(forAnyKey: sourceURLKeys, in: item)
+                ?? SenateAppointment.defaultSourceURL
+            let affiliationKeys = [
+                "declared_affiliation",
+                "affiliation",
+                "caucus_full_name",
+                "CaucusNameEn"
+            ]
+            let declaredAffiliation = stringValue(forAnyKey: affiliationKeys, in: appointmentPayload)
+                ?? stringValue(forAnyKey: affiliationKeys, in: item)
+                ?? caucusFull
+            let appointment = date.map {
+                SenateAppointment(
+                    date: $0,
+                    appointingPrimeMinister: appointingPrimeMinister,
+                    province: abbrev,
+                    declaredAffiliation: declaredAffiliation,
+                    sourceURL: sourceURL
+                )
             }
 
             return Senator(
@@ -103,7 +144,8 @@ struct SenatorsService {
                 caucus: caucus,
                 caucusFullName: caucusFull,
                 senateURL: senateURL,
-                appointedDate: date
+                appointedDate: date,
+                appointment: appointment
             )
         }
     }
@@ -160,7 +202,8 @@ struct SenatorsService {
             caucus: caucus,
             caucusFullName: caucus,
             senateURL: senateURL,
-            appointedDate: nil
+            appointedDate: nil,
+            appointment: nil
         )
     }
 
@@ -174,6 +217,38 @@ struct SenatorsService {
 
         return String(block[range])
     }
+
+    private static func stringValue(forAnyKey keys: [String], in item: [String: Any]) -> String? {
+        for key in keys {
+            if let value = item[key] as? String {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+            }
+        }
+        return nil
+    }
+
+    private static func urlValue(forAnyKey keys: [String], in item: [String: Any]) -> URL? {
+        guard let rawValue = stringValue(forAnyKey: keys, in: item) else { return nil }
+        return URL(string: rawValue)
+    }
+
+    private static func parseDate(_ rawValue: String?) -> Date? {
+        guard let rawValue else { return nil }
+        if let date = ISO8601DateFormatter().date(from: rawValue) {
+            return date
+        }
+        return dateOnlyFormatter.date(from: rawValue)
+    }
+
+    private static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     // MARK: - Province mapping
 

@@ -348,6 +348,7 @@
 "topic.childcare" = "Services de garde";
 "topic.energy" = "Énergie";
 "topic.naturalResources" = "Ressources naturelles";
+"topic.senate" = "Sénat";
 "topic.pharma" = "Produits pharmaceutiques";
 "topic.digital" = "Numérique et IA";
 "topic.labour" = "Travail";
@@ -464,7 +465,10 @@
 "senate.mySenators.title" = "Mes sénateurs";
 "senate.mySenators.empty" = "Aucun sénateur trouvé pour cette province.";
 "senate.card.name" = "Sénateur(trice) %@";
-"senate.card.accessibility" = "Sénateur(trice) %@, %@";
+"senate.card.appointed" = "Nommé(e) par %@ le %@";
+"senate.card.appointedUnknownPM" = "Nommé(e) le %@";
+"senate.card.source" = "Bureau du Conseil privé — décrets";
+"senate.card.accessibility" = "Sénateur(trice) %@, %@, %@";
 
 /* Assemblée législative de l'Ontario */
 "ontario.debates.navTitle" = "Débats de Queen's Park";

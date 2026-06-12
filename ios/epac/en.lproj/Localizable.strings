@@ -346,6 +346,7 @@
 "topic.childcare" = "Child Care";
 "topic.energy" = "Energy";
 "topic.naturalResources" = "Natural Resources";
+"topic.senate" = "Senate";
 "topic.pharma" = "Pharmaceuticals";
 "topic.digital" = "Digital & AI";
 "topic.labour" = "Labour";
@@ -462,7 +463,10 @@
 "senate.mySenators.title" = "My Senators";
 "senate.mySenators.empty" = "No senators found for this province.";
 "senate.card.name" = "Senator %@";
-"senate.card.accessibility" = "Senator %@, %@";
+"senate.card.appointed" = "Appointed by %@ on %@";
+"senate.card.appointedUnknownPM" = "Appointed on %@";
+"senate.card.source" = "Privy Council Office — Orders in Council";
+"senate.card.accessibility" = "Senator %@, %@, %@";
 
 /* Ontario Legislature */
 "ontario.debates.navTitle" = "Queen's Park Debates";

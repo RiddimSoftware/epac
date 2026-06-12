@@ -18,31 +18,63 @@ struct SenatorCard: View {
     let senator: Senator
 
     var body: some View {
-        Link(destination: senator.senateURL) {
-            HStack(spacing: Layout.rowSpacing) {
-                Circle()
-                    .fill(senator.caucusColor)
-                    .frame(width: Layout.caucusDotSize, height: Layout.caucusDotSize)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
-                    Text(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
-                        .font(.subheadline.weight(.semibold))
-                    Text(senator.caucusFullName)
+        HStack(alignment: .top, spacing: Layout.rowSpacing) {
+            Circle()
+                .fill(senator.caucusColor)
+                .frame(width: Layout.caucusDotSize, height: Layout.caucusDotSize)
+                .padding(.top, EpacSpacing.xxs)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
+                Text(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
+                    .font(.subheadline.weight(.semibold))
+                Text(senator.caucusFullName)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if let appointmentSummary {
+                    Text(appointmentSummary)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Link(destination: senator.appointmentSourceURL) {
+                        Label(NSLocalizedString("senate.card.source", comment: ""), systemImage: "doc.text")
+                            .font(.caption2)
+                    }
                 }
-                Spacer()
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Link(destination: senator.senateURL) {
                 Image(systemName: "arrow.up.right.square")
                     .foregroundStyle(.secondary)
                     .font(.caption)
-                    .accessibilityHidden(true)
             }
-            .padding(.vertical, EpacSpacing.xxs)
+            .accessibilityLabel(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
         }
+        .padding(.vertical, EpacSpacing.xxs)
         .foregroundStyle(.primary)
         .accessibilityLabel(
             String(format: NSLocalizedString("senate.card.accessibility", comment: ""),
-                   senator.name, senator.caucusFullName)
+                   senator.name, senator.caucusFullName, appointmentSummary ?? "")
         )
     }
+
+    private var appointmentSummary: String? {
+        guard let date = senator.appointmentDate else { return nil }
+        let formattedDate = Self.appointmentDateFormatter.string(from: date)
+        if let primeMinister = senator.appointment?.appointingPrimeMinister, !primeMinister.isEmpty {
+            return String(
+                format: NSLocalizedString("senate.card.appointed", comment: ""),
+                primeMinister,
+                formattedDate
+            )
+        }
+        return String(format: NSLocalizedString("senate.card.appointedUnknownPM", comment: ""), formattedDate)
+    }
+
+    private static let appointmentDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }
