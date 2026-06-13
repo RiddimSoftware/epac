@@ -1,0 +1,1334 @@
+{
+  "items": [
+    {
+      "PersonOfficialFirstName": "Charles S.",
+      "PersonOfficialLastName": "Adler",
+      "ProvinceNameEn": "Manitoba",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/adler-charles/",
+      "appointment": {
+        "appointment_date": "2024-08-16",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Mohammad Khair",
+      "PersonOfficialLastName": "Al Zaibak",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/al-zaibak-mohammad-khair/",
+      "appointment": {
+        "appointment_date": "2024-01-28",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Dawn",
+      "PersonOfficialLastName": "Anderson",
+      "ProvinceNameEn": "Northwest Territories",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/anderson-dawn/",
+      "appointment": {
+        "appointment_date": "2018-12-12",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Dawn",
+      "PersonOfficialLastName": "Arnold",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/arnold-dawn/",
+      "appointment": {
+        "appointment_date": "2025-03-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "David M.",
+      "PersonOfficialLastName": "Arnot",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/arnot-david/",
+      "appointment": {
+        "appointment_date": "2021-07-29",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Salma",
+      "PersonOfficialLastName": "Ataullahjan",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/ataullahjan-salma/",
+      "appointment": {
+        "appointment_date": "2010-07-09",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Réjean",
+      "PersonOfficialLastName": "Aucoin",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/aucoin-rejean/",
+      "appointment": {
+        "appointment_date": "2023-10-31",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Michèle",
+      "PersonOfficialLastName": "Audette",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/audette-michele/",
+      "appointment": {
+        "appointment_date": "2021-07-29",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Denise",
+      "PersonOfficialLastName": "Batters",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/batters-denise/",
+      "appointment": {
+        "appointment_date": "2013-01-25",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Wanda Thomas",
+      "PersonOfficialLastName": "Bernard",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/bernard-wanda-thomas/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Robert",
+      "PersonOfficialLastName": "Black",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/black-robert/",
+      "appointment": {
+        "appointment_date": "2018-02-15",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Peter M.",
+      "PersonOfficialLastName": "Boehm",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/boehm-peter/",
+      "appointment": {
+        "appointment_date": "2018-10-03",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Victor",
+      "PersonOfficialLastName": "Boudreau",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/boudreau-victor/",
+      "appointment": {
+        "appointment_date": "2024-06-28",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Yvonne",
+      "PersonOfficialLastName": "Boyer",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/boyer-yvonne/",
+      "appointment": {
+        "appointment_date": "2018-03-15",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Patrick",
+      "PersonOfficialLastName": "Brazeau",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "Non-affiliated",
+      "CaucusNameEn": "Non-affiliated",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/brazeau-patrick/",
+      "appointment": {
+        "appointment_date": "2009-01-08",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "Non-affiliated"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Sharon",
+      "PersonOfficialLastName": "Burey",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/burey-sharon/",
+      "appointment": {
+        "appointment_date": "2022-11-21",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Bev",
+      "PersonOfficialLastName": "Busson",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/busson-bev/",
+      "appointment": {
+        "appointment_date": "2018-09-24",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Andrew",
+      "PersonOfficialLastName": "Cardozo",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/cardozo-andrew/",
+      "appointment": {
+        "appointment_date": "2022-11-21",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Claude, P.C.",
+      "PersonOfficialLastName": "Carignan",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/carignan-claude/",
+      "appointment": {
+        "appointment_date": "2009-08-27",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Bernadette",
+      "PersonOfficialLastName": "Clement",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/clement-bernadette/",
+      "appointment": {
+        "appointment_date": "2021-06-22",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "René",
+      "PersonOfficialLastName": "Cormier",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/cormier-rene/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Mary",
+      "PersonOfficialLastName": "Coyle",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/coyle-mary/",
+      "appointment": {
+        "appointment_date": "2017-12-04",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Rodger",
+      "PersonOfficialLastName": "Cuzner",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/cuzner-rodger/",
+      "appointment": {
+        "appointment_date": "2023-10-31",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Pierre J.",
+      "PersonOfficialLastName": "Dalphond",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/dalphond-pierre/",
+      "appointment": {
+        "appointment_date": "2018-06-06",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Donna",
+      "PersonOfficialLastName": "Dasko",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/dasko-donna/",
+      "appointment": {
+        "appointment_date": "2018-06-06",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Colin",
+      "PersonOfficialLastName": "Deacon",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/deacon-colin/",
+      "appointment": {
+        "appointment_date": "2018-06-15",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Marty",
+      "PersonOfficialLastName": "Deacon",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/deacon-marty/",
+      "appointment": {
+        "appointment_date": "2018-02-15",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Tony",
+      "PersonOfficialLastName": "Dean",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/dean-tony/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Baltej S.",
+      "PersonOfficialLastName": "Dhillon",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/dhillon-baltej-s/",
+      "appointment": {
+        "appointment_date": "2025-02-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Percy E.",
+      "PersonOfficialLastName": "Downe",
+      "ProvinceNameEn": "Prince Edward Island",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/downe-percy-e/",
+      "appointment": {
+        "appointment_date": "2003-06-26",
+        "appointing_prime_minister": "Jean Chrétien",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Pat",
+      "PersonOfficialLastName": "Duncan",
+      "ProvinceNameEn": "Yukon",
+      "CaucusAbbreviationEn": "GRO",
+      "CaucusNameEn": "Government Representative's Office",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/duncan-pat/",
+      "appointment": {
+        "appointment_date": "2018-12-12",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "GRO"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Éric",
+      "PersonOfficialLastName": "Forest",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/forest-eric/",
+      "appointment": {
+        "appointment_date": "2016-11-21",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Brian",
+      "PersonOfficialLastName": "Francis",
+      "ProvinceNameEn": "Prince Edward Island",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/francis-brian/",
+      "appointment": {
+        "appointment_date": "2018-10-11",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Daryl S.",
+      "PersonOfficialLastName": "Fridhandler",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/fridhandler-daryl/",
+      "appointment": {
+        "appointment_date": "2024-08-30",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Raymonde",
+      "PersonOfficialLastName": "Gagné",
+      "ProvinceNameEn": "Manitoba",
+      "CaucusAbbreviationEn": "Non-affiliated",
+      "CaucusNameEn": "Non-affiliated",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/gagne-raymonde/",
+      "appointment": {
+        "appointment_date": "2016-04-01",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "Non-affiliated"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Rosa",
+      "PersonOfficialLastName": "Galvez",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/galvez-rosa/",
+      "appointment": {
+        "appointment_date": "2016-12-06",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Amina",
+      "PersonOfficialLastName": "Gerba",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/gerba-amina/",
+      "appointment": {
+        "appointment_date": "2021-07-29",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Clément",
+      "PersonOfficialLastName": "Gignac",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/gignac-clement/",
+      "appointment": {
+        "appointment_date": "2021-07-29",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Margo",
+      "PersonOfficialLastName": "Greenwood",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/greenwood-margo/",
+      "appointment": {
+        "appointment_date": "2022-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Peter, P.C.",
+      "PersonOfficialLastName": "Harder",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/harder-peter-pc/",
+      "appointment": {
+        "appointment_date": "2016-03-23",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Katherine",
+      "PersonOfficialLastName": "Hay",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/hay-katherine/",
+      "appointment": {
+        "appointment_date": "2025-03-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Martine",
+      "PersonOfficialLastName": "Hébert",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/hebert-martine/",
+      "appointment": {
+        "appointment_date": "2025-02-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Danièle",
+      "PersonOfficialLastName": "Henkel",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/henkel-daniele/",
+      "appointment": {
+        "appointment_date": "2025-02-14",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Leo",
+      "PersonOfficialLastName": "Housakos",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/housakos-leo/",
+      "appointment": {
+        "appointment_date": "2009-01-08",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Tony",
+      "PersonOfficialLastName": "Ince",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/ince-tony/",
+      "appointment": {
+        "appointment_date": "2025-03-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Nancy",
+      "PersonOfficialLastName": "Karetak-Lindell",
+      "ProvinceNameEn": "Nunavut",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/karetak-lindell-nancy/",
+      "appointment": {
+        "appointment_date": "2024-12-19",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Joan",
+      "PersonOfficialLastName": "Kingston",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/kingston-joan/",
+      "appointment": {
+        "appointment_date": "2023-10-31",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Marty",
+      "PersonOfficialLastName": "Klyne",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/klyne-marty/",
+      "appointment": {
+        "appointment_date": "2018-09-24",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Patti",
+      "PersonOfficialLastName": "LaBoucane-Benson",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "GRO",
+      "CaucusNameEn": "Government Representative's Office",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/laboucane-benson-patti/",
+      "appointment": {
+        "appointment_date": "2018-10-03",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "GRO"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Todd",
+      "PersonOfficialLastName": "Lewis",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/lewis-todd/",
+      "appointment": {
+        "appointment_date": "2025-02-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Tony",
+      "PersonOfficialLastName": "Loffreda",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/loffreda-tony/",
+      "appointment": {
+        "appointment_date": "2019-07-22",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Jane",
+      "PersonOfficialLastName": "MacAdam",
+      "ProvinceNameEn": "Prince Edward Island",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/macadam-jane/",
+      "appointment": {
+        "appointment_date": "2023-05-03",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Michael L.",
+      "PersonOfficialLastName": "MacDonald",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/macdonald-michael-l/",
+      "appointment": {
+        "appointment_date": "2009-01-02",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Fabian",
+      "PersonOfficialLastName": "Manning",
+      "ProvinceNameEn": "Newfoundland and Labrador",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/manning-fabian/",
+      "appointment": {
+        "appointment_date": "2011-05-25",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Yonah",
+      "PersonOfficialLastName": "Martin",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/martin-yonah/",
+      "appointment": {
+        "appointment_date": "2009-01-02",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Marnie",
+      "PersonOfficialLastName": "McBean",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/mcbean-marnie/",
+      "appointment": {
+        "appointment_date": "2023-12-20",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Mary Jane",
+      "PersonOfficialLastName": "McCallum",
+      "ProvinceNameEn": "Manitoba",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/mccallum-mary-jane/",
+      "appointment": {
+        "appointment_date": "2017-12-04",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "John M.",
+      "PersonOfficialLastName": "McNair",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/mcnair-john-m/",
+      "appointment": {
+        "appointment_date": "2023-10-31",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Marilou",
+      "PersonOfficialLastName": "McPhedran",
+      "ProvinceNameEn": "Manitoba",
+      "CaucusAbbreviationEn": "Non-affiliated",
+      "CaucusNameEn": "Non-affiliated",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/mcphedran-marilou/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "Non-affiliated"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Julie",
+      "PersonOfficialLastName": "Miville-Dechêne",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/miville-dechene-julie/",
+      "appointment": {
+        "appointment_date": "2018-06-20",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Farah",
+      "PersonOfficialLastName": "Mohamed",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/mohamed-farah/",
+      "appointment": {
+        "appointment_date": "2025-03-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Lucie",
+      "PersonOfficialLastName": "Moncion",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/moncion-lucie/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Rosemary",
+      "PersonOfficialLastName": "Moodie",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/moodie-rosemary/",
+      "appointment": {
+        "appointment_date": "2018-12-12",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Pierre, P.C.",
+      "PersonOfficialLastName": "Moreau",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "GRO",
+      "CaucusNameEn": "Government Representative's Office",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/moreau-pierre/",
+      "appointment": {
+        "appointment_date": "2024-09-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "GRO"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Tracy",
+      "PersonOfficialLastName": "Muggli",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/muggli-tracy/",
+      "appointment": {
+        "appointment_date": "2024-08-16",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Flordeliz (Gigi)",
+      "PersonOfficialLastName": "Osler",
+      "ProvinceNameEn": "Manitoba",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/osler-flordeliz/",
+      "appointment": {
+        "appointment_date": "2022-09-26",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Manuelle",
+      "PersonOfficialLastName": "Oudar",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/oudar-manuelle/",
+      "appointment": {
+        "appointment_date": "2024-02-13",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Kim",
+      "PersonOfficialLastName": "Pate",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/pate-kim/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Rebecca",
+      "PersonOfficialLastName": "Patterson",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/patterson-rebecca/",
+      "appointment": {
+        "appointment_date": "2022-11-21",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Chantal",
+      "PersonOfficialLastName": "Petitclerc",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/petitclerc-chantal/",
+      "appointment": {
+        "appointment_date": "2016-04-01",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Iris G.",
+      "PersonOfficialLastName": "Petten",
+      "ProvinceNameEn": "Newfoundland and Labrador",
+      "CaucusAbbreviationEn": "GRO",
+      "CaucusNameEn": "Government Representative's Office",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/petten-iris/",
+      "appointment": {
+        "appointment_date": "2023-05-03",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "GRO"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Rose-May",
+      "PersonOfficialLastName": "Poirier",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/poirier-rose-may/",
+      "appointment": {
+        "appointment_date": "2010-02-28",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Paul (PJ)",
+      "PersonOfficialLastName": "Prosper",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/prosper-paul/",
+      "appointment": {
+        "appointment_date": "2023-07-06",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Sandra",
+      "PersonOfficialLastName": "Pupatello",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "GRO",
+      "CaucusNameEn": "Government Representative's Office",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/pupatello-sandra/",
+      "appointment": {
+        "appointment_date": "2025-03-07",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "GRO"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Jim",
+      "PersonOfficialLastName": "Quinn",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/quinn-jim/",
+      "appointment": {
+        "appointment_date": "2021-06-22",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Mohamed-Iqbal",
+      "PersonOfficialLastName": "Ravalia",
+      "ProvinceNameEn": "Newfoundland and Labrador",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/ravalia-mohamed-iqbal/",
+      "appointment": {
+        "appointment_date": "2018-06-01",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Pierrette",
+      "PersonOfficialLastName": "Ringuette",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/ringuette-pierrette/",
+      "appointment": {
+        "appointment_date": "2002-12-12",
+        "appointing_prime_minister": "Jean Chrétien",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Mary",
+      "PersonOfficialLastName": "Robinson",
+      "ProvinceNameEn": "Prince Edward Island",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/robinson-mary/",
+      "appointment": {
+        "appointment_date": "2024-01-22",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Krista",
+      "PersonOfficialLastName": "Ross",
+      "ProvinceNameEn": "New Brunswick",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/ross-krista-ann/",
+      "appointment": {
+        "appointment_date": "2023-10-31",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Raymonde",
+      "PersonOfficialLastName": "Saint-Germain",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/saint-germain-raymonde/",
+      "appointment": {
+        "appointment_date": "2016-11-25",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Paulette",
+      "PersonOfficialLastName": "Senior",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/senior-paulette/",
+      "appointment": {
+        "appointment_date": "2023-12-20",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Paula",
+      "PersonOfficialLastName": "Simons",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/simons-paula/",
+      "appointment": {
+        "appointment_date": "2018-10-03",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Karen",
+      "PersonOfficialLastName": "Sorensen",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/sorensen-karen/",
+      "appointment": {
+        "appointment_date": "2021-07-29",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Allister",
+      "PersonOfficialLastName": "Surette",
+      "ProvinceNameEn": "Nova Scotia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/surette-allister/",
+      "appointment": {
+        "appointment_date": "2024-12-19",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Scott",
+      "PersonOfficialLastName": "Tannas",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/tannas-scott/",
+      "appointment": {
+        "appointment_date": "2013-03-25",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Toni",
+      "PersonOfficialLastName": "Varone",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/varone-toni/",
+      "appointment": {
+        "appointment_date": "2023-12-20",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Josée, P.C.",
+      "PersonOfficialLastName": "Verner",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/verner-josee/",
+      "appointment": {
+        "appointment_date": "2011-06-13",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Pamela",
+      "PersonOfficialLastName": "Wallin",
+      "ProvinceNameEn": "Saskatchewan",
+      "CaucusAbbreviationEn": "CSG",
+      "CaucusNameEn": "Canadian Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/wallin-pamela/",
+      "appointment": {
+        "appointment_date": "2009-01-02",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "David M.",
+      "PersonOfficialLastName": "Wells",
+      "ProvinceNameEn": "Newfoundland and Labrador",
+      "CaucusAbbreviationEn": "CPC",
+      "CaucusNameEn": "Conservative Party of Canada",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/wells-david-m/",
+      "appointment": {
+        "appointment_date": "2013-01-25",
+        "appointing_prime_minister": "Stephen Harper",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "CPC"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Kristopher",
+      "PersonOfficialLastName": "Wells",
+      "ProvinceNameEn": "Alberta",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/wells-kristopher/",
+      "appointment": {
+        "appointment_date": "2024-08-30",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Judy A.",
+      "PersonOfficialLastName": "White",
+      "ProvinceNameEn": "Newfoundland and Labrador",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/white-judy/",
+      "appointment": {
+        "appointment_date": "2023-07-06",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Duncan",
+      "PersonOfficialLastName": "Wilson",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "PSG",
+      "CaucusNameEn": "Progressive Senate Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/wilson-duncan/",
+      "appointment": {
+        "appointment_date": "2025-02-28",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "PSG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Yuen Pau",
+      "PersonOfficialLastName": "Woo",
+      "ProvinceNameEn": "British Columbia",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/woo-yuen-pau/",
+      "appointment": {
+        "appointment_date": "2016-11-10",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Suze",
+      "PersonOfficialLastName": "Youance",
+      "ProvinceNameEn": "Quebec",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/youance-suze/",
+      "appointment": {
+        "appointment_date": "2024-09-25",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    },
+    {
+      "PersonOfficialFirstName": "Hassan",
+      "PersonOfficialLastName": "Yussuff",
+      "ProvinceNameEn": "Ontario",
+      "CaucusAbbreviationEn": "ISG",
+      "CaucusNameEn": "Independent Senators Group",
+      "PersonPageUrl": "https://sencanada.ca/en/senators/yussuff-hassan/",
+      "appointment": {
+        "appointment_date": "2021-06-22",
+        "appointing_prime_minister": "Justin Trudeau",
+        "source_url": "https://pco-bcp.gc.ca/oic-ddc",
+        "declared_affiliation": "ISG"
+      }
+    }
+  ]
+}
