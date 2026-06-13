@@ -39,4 +39,38 @@ struct ModelTests {
         #expect(senate?.keywords.contains("senator") == true)
         #expect(ParliamentaryTopic.matching("The PM has appointed a new senator").map(\.id).contains("senate"))
     }
+
+    @Test func senatorOpenAPIParserIncludesAppointmentFacts() throws {
+        let payload = """
+        {
+          "items": [
+            {
+              "PersonOfficialFirstName": "Jane",
+              "PersonOfficialLastName": "Senator",
+              "ProvinceName": "Ontario",
+              "CaucusAbbreviationEn": "ISG",
+              "CaucusNameEn": "Independent Senators Group",
+              "PersonPageUrl": "https://sencanada.ca/en/senators/jane-senator",
+              "appointment": {
+                "appointment_date": "2024-12-19",
+                "appointing_prime_minister": "Justin Trudeau",
+                "declared_affiliation": "Independent Senators Group",
+                "orders_in_council_url": "https://pco-bcp.gc.ca/oic-ddc.asp?lang=eng&Page=secretariats&txtOICID=2024-1300"
+              }
+            }
+          ]
+        }
+        """.data(using: .utf8)
+        let data = try #require(payload)
+
+        let senator = try #require(SenatorsService.parseOpenAPISenators(from: data)?.first)
+        let appointment = try #require(senator.appointment)
+
+        #expect(senator.province == "ON")
+        #expect(appointment.appointingPrimeMinister == "Justin Trudeau")
+        #expect(appointment.declaredAffiliation == "Independent Senators Group")
+        #expect(appointment.province == "ON")
+        #expect(appointment.sourceURL.absoluteString.contains("pco-bcp.gc.ca/oic-ddc.asp"))
+        #expect(senator.appointmentDate == appointment.date)
+    }
 }

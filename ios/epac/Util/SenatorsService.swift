@@ -63,10 +63,14 @@ struct SenatorsService {
 
         guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
-              Constants.successStatusCodes.contains(http.statusCode),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = json["items"] as? [[String: Any]] else { return nil }
+              Constants.successStatusCodes.contains(http.statusCode) else { return nil }
 
+        return parseOpenAPISenators(from: data)
+    }
+
+    static func parseOpenAPISenators(from data: Data) -> [Senator]? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let items = json["items"] as? [[String: Any]] else { return nil }
         return items.compactMap { item -> Senator? in
             guard let fn = item["PersonOfficialFirstName"] as? String,
                   let ln = item["PersonOfficialLastName"] as? String else { return nil }
