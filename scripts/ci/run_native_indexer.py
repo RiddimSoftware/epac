@@ -58,6 +58,15 @@ MEMBERS_MANIFEST_FORMAT = {
     "table_counts": "object[string,integer]",
 }
 
+SENATORS_MANIFEST_FORMAT = {
+    "version": "string",
+    "built_at": "rfc3339",
+    "senator_count": "integer",
+    "sqlite_key": "string",
+    "sqlite_size_bytes": "integer",
+    "sqlite_sha256": "sha256",
+}
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -70,6 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
             "lobbying-index",
             "bills-indexer",
             "members-indexer",
+            "senators-indexer",
         ),
         help="Indexer pipeline to run.",
     )
@@ -172,6 +182,24 @@ def planned_payload(args: argparse.Namespace, summary_path: Path | None) -> dict
                         "PARLIAMENT_NUMBER": str(args.parliament_number),
                         "SESSION_NUMBER": str(args.session_number),
                     },
+                }
+            ],
+        }
+
+    if args.pipeline == "senators-indexer":
+        return {
+            "pipeline": args.pipeline,
+            "environment": args.environment,
+            "mode": "dry-run",
+            "status": "planned",
+            "summary_markdown_path": str(summary_path) if summary_path else None,
+            "manifest_format": SENATORS_MANIFEST_FORMAT,
+            "parameters": {},
+            "commands": [
+                {
+                    "working_directory": "backend/senators",
+                    "argv": ["python3", "../../scripts/artifacts/fetch_senators.py", "--output", "../../build/artifacts/senators/v1/all.json"],
+                    "env": {},
                 }
             ],
         }

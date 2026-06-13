@@ -39,6 +39,7 @@ ARTIFACT_CONTRACTS: dict[str, ArtifactContract] = {
     "members": ArtifactContract(("MEMBERS_INDEX_PREFIX", "EPAC_MEMBERS_INDEX_PREFIX"), "members/v1"),
     "hansard-search": ArtifactContract(("EPAC_HANSARD_SEARCH_PREFIX",), "hansard-search/v1"),
     "lobbying": ArtifactContract(("LOBBYING_INDEX_PREFIX",), "lobbying-index/v1", require_prefix_env=True),
+    "senators": ArtifactContract(("EPAC_SENATORS_PREFIX",), "senators/v1", required_files=("all.json",)),
 }
 
 

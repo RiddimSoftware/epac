@@ -468,6 +468,8 @@
 "senate.card.source" = "Privy Council Office — Orders in Council";
 "senate.card.accessibility" = "Senator %@, %@";
 "senate.card.accessibilityWithAppointment" = "Senator %@, %@, %@";
+"senate.notification.title" = "New Senate Appointment";
+"senate.notification.body" = "%@ has been appointed to the Senate for %@ by %@.";
 
 /* Ontario Legislature */
 "ontario.debates.navTitle" = "Queen's Park Debates";

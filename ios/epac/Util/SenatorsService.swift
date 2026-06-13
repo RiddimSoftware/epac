@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import UserNotifications
 
 struct SenatorsService {
     private static let cacheKey      = "epac.senators.cache"
@@ -35,17 +36,24 @@ struct SenatorsService {
     static func fetchSenators() async -> [Senator] {
         if let cached = loadFromCache() { return cached }
 
+        let previousSenators = loadFromCacheBypassingTTL() ?? []
+
+        var freshSenators: [Senator] = []
         if let senators = await fetchFromOpenAPI(), !senators.isEmpty {
-            saveToCache(senators)
-            return senators
+            freshSenators = senators
+        } else if let senators = await fetchFromXML(), !senators.isEmpty {
+            freshSenators = senators
         }
 
-        if let senators = await fetchFromXML(), !senators.isEmpty {
-            saveToCache(senators)
-            return senators
+        if !freshSenators.isEmpty {
+            saveToCache(freshSenators)
+            if await TopicFollowStore.shared.isFollowing("senate") && !previousSenators.isEmpty {
+                notifyNewAppointments(fresh: freshSenators, previous: previousSenators)
+            }
+            return freshSenators
         }
 
-        return []
+        return previousSenators.isEmpty ? [] : previousSenators
     }
 
     static func senators(for province: String, from senators: [Senator]) -> [Senator] {
@@ -57,9 +65,7 @@ struct SenatorsService {
     // MARK: - OurCommons open API (primary)
 
     private static func fetchFromOpenAPI() async -> [Senator]? {
-        guard let url = URL(string:
-            "https://api.openparliament.ca/ocd/members/?parliament=45&chamber=Senate&pageSize=200&format=json"
-        ) else { return nil }
+        let url = BackendConfig.shared.baseURL.appendingPathComponent("api/v1/senators")
 
         guard let (data, response) = try? await NetworkService.shared.data(from: url),
               let http = response as? HTTPURLResponse,
@@ -306,5 +312,44 @@ struct SenatorsService {
         guard let data = try? JSONEncoder().encode(senators) else { return }
         UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimestampKey)
+    }
+
+    private static func loadFromCacheBypassingTTL() -> [Senator]? {
+        guard
+            let data = UserDefaults.standard.data(forKey: cacheKey),
+            let senators = try? JSONDecoder().decode([Senator].self, from: data)
+        else { return nil }
+        return senators
+    }
+
+    private static func notifyNewAppointments(fresh: [Senator], previous: [Senator]) {
+        let previousIDs = Set(previous.map { $0.id })
+        let newAppointments = fresh.filter { !previousIDs.contains($0.id) }
+        for senator in newAppointments {
+            triggerNotification(for: senator)
+        }
+    }
+
+    private static func triggerNotification(for senator: Senator) {
+        let content = UNMutableNotificationContent()
+        content.title = NSLocalizedString("senate.notification.title", comment: "")
+        let bodyFormat = NSLocalizedString("senate.notification.body", comment: "")
+        let pm = senator.appointment?.appointingPrimeMinister ?? ""
+        content.body = String(format: bodyFormat, senator.name, senator.province, pm)
+        content.sound = UNNotificationSound.default
+
+        let request = UNNotificationRequest(
+            identifier: "epac.senator-appointment.\(senator.id)",
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                Log.error("Failed to post senator appointment notification: \(error)")
+            } else {
+                Log.debug("Posted senator appointment notification for \(senator.name)")
+            }
+        }
     }
 }

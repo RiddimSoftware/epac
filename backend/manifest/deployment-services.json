@@ -868,6 +868,40 @@
           "artifact": false
         }
       }
+    },
+    {
+      "name": "senators",
+      "deploy": {
+        "staging": true,
+        "production": true
+      },
+      "http": {
+        "payload_format_version": "1.0",
+        "routes": {
+          "staging": [
+            {
+              "method": "GET",
+              "path": "/api/v1/senators"
+            }
+          ],
+          "production": [
+            {
+              "method": "GET",
+              "path": "/api/v1/senators"
+            }
+          ]
+        }
+      },
+      "sync": {
+        "staging": {
+          "database": false,
+          "artifact": true
+        },
+        "production": {
+          "database": false,
+          "artifact": true
+        }
+      }
     }
   ]
 }

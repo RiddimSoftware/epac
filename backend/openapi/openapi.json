@@ -169,6 +169,24 @@
         }
       }
     },
+    "/api/v1/senators": {
+      "get": {
+        "tags": ["Senators"],
+        "summary": "List senators of Canada",
+        "operationId": "listSenators",
+        "responses": {
+          "200": {
+            "description": "Senator list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SenatorsResponse" }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
     "/api/v1/members": {
       "get": {
         "tags": ["Members"],
@@ -1923,6 +1941,36 @@
           "member_id": { "type": "string" },
           "subject_title": { "type": "string" },
           "content": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "SenatorsResponse": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/OpenAPISenator" } }
+        }
+      },
+      "OpenAPISenator": {
+        "type": "object",
+        "required": ["PersonOfficialFirstName", "PersonOfficialLastName", "ProvinceNameEn"],
+        "properties": {
+          "PersonOfficialFirstName": { "type": "string" },
+          "PersonOfficialLastName": { "type": "string" },
+          "ProvinceNameEn": { "type": "string" },
+          "CaucusAbbreviationEn": { "type": "string" },
+          "CaucusNameEn": { "type": "string" },
+          "PersonPageUrl": { "type": "string", "format": "uri" },
+          "appointment": { "$ref": "#/components/schemas/OpenAPISenateAppointment" }
+        }
+      },
+      "OpenAPISenateAppointment": {
+        "type": "object",
+        "required": ["appointment_date", "declared_affiliation", "source_url"],
+        "properties": {
+          "appointment_date": { "type": "string", "format": "date" },
+          "appointing_prime_minister": { "type": "string" },
+          "declared_affiliation": { "type": "string" },
           "source_url": { "type": "string", "format": "uri" }
         }
       },

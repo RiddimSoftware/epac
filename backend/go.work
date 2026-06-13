@@ -34,6 +34,7 @@ use (
 	./openapi
 	./push-notification-dispatcher
 	./riding-boundary
+	./senators
 	./sittings
 	./sittings-publisher
 	./telemetry

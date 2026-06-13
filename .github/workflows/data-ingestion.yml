@@ -66,6 +66,11 @@ on:
         required: true
         type: boolean
         default: false
+      run_senators_indexer:
+        description: 'Senators: fetch and generate senators JSON -> S3'
+        required: true
+        type: boolean
+        default: false
       parliament_number:
         description: Optional parliament number override for search, lobbying, and bills
         required: false
@@ -101,6 +106,7 @@ jobs:
           RUN_MEMBERS: ${{ inputs.run_members }}
           RUN_MEMBERS_INDEXER: ${{ inputs.run_members_indexer }}
           RUN_VOTES: ${{ inputs.run_votes }}
+          RUN_SENATORS_INDEXER: ${{ inputs.run_senators_indexer }}
         run: |
           set -euo pipefail
 
@@ -129,6 +135,7 @@ jobs:
             case "$EVENT_SCHEDULE" in
               "0 12 * * *"|"0 3 * * *")
                 add_ingestor "search" "Hansard search index" "hansard-search-index" "false"
+                add_ingestor "senators-indexer" "Senators indexer" "senators-indexer" "false"
                 ;;
               "0 12 * * 1"|"0 12 1 */3 *")
                 add_ingestor "lobbying" "Lobbying index" "lobbying-index" "false"
@@ -145,6 +152,7 @@ jobs:
             [ "$RUN_MEMBERS" = "true" ] && add_ingestor "members" "Members artifacts" "members-publisher" "true"
             [ "$RUN_MEMBERS_INDEXER" = "true" ] && add_ingestor "members-indexer" "Members SQLite index" "members-indexer" "false"
             [ "$RUN_VOTES" = "true" ] && add_ingestor "votes" "Member votes artifacts" "member-votes-publisher" "true"
+            [ "$RUN_SENATORS_INDEXER" = "true" ] && add_ingestor "senators-indexer" "Senators indexer" "senators-indexer" "false"
           fi
 
           if [ "$(jq 'length' <<< "$items")" -gt 0 ]; then
@@ -282,6 +290,11 @@ jobs:
               ;;
             votes)
               (cd backend/member-votes-publisher && go run .)
+              ;;
+            senators-indexer)
+              output_dir="$RUNNER_TEMP/artifacts/senators"
+              python3 scripts/artifacts/fetch_senators.py --output "$output_dir/v1/all.json"
+              aws s3 sync "$output_dir" "$(artifact_uri senators)"
               ;;
             *)
               echo "Unknown ingestor: $INGESTOR"

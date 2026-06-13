@@ -470,6 +470,8 @@
 "senate.card.source" = "Bureau du Conseil privé — décrets";
 "senate.card.accessibility" = "Sénateur(trice) %@, %@";
 "senate.card.accessibilityWithAppointment" = "Sénateur(trice) %@, %@, %@";
+"senate.notification.title" = "Nouvelle nomination au Sénat";
+"senate.notification.body" = "%@ a été nommé(e) au Sénat pour %@ par %@.";
 
 /* Assemblée législative de l'Ontario */
 "ontario.debates.navTitle" = "Débats de Queen's Park";
