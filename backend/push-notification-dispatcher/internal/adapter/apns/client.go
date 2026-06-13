@@ -3,6 +3,7 @@ package apns
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -33,8 +34,8 @@ func NewClientWithHTTPClient(baseURL string, httpClient *http.Client) *Client {
 	return &Client{baseURL: strings.TrimRight(baseURL, "/"), httpClient: httpClient}
 }
 
-func (c *Client) Deliver(ctx context.Context, subscription domain.DeviceSubscription, payload domain.PushNotificationPayload) error {
-	body, err := payload.JSON()
+func (c *Client) Deliver(ctx context.Context, subscription domain.DeviceSubscription, notification domain.LiveVoteNotification) error {
+	body, err := encodePayload(notification)
 	if err != nil {
 		return err
 	}
@@ -55,6 +56,42 @@ func (c *Client) Deliver(ctx context.Context, subscription domain.DeviceSubscrip
 		return fmt.Errorf("apns returned status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+type apnsPayload struct {
+	Aps        apnsAps `json:"aps"`
+	DivisionID int     `json:"division_id"`
+	Parliament int     `json:"parliament"`
+	Session    int     `json:"session"`
+	Result     string  `json:"result"`
+	Status     string  `json:"status"`
+}
+
+type apnsAps struct {
+	Alert apnsAlert `json:"alert"`
+}
+
+type apnsAlert struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
+func encodePayload(notification domain.LiveVoteNotification) ([]byte, error) {
+	if !notification.Valid() {
+		return nil, domain.ErrInvalidPushNotificationPayload
+	}
+
+	return json.Marshal(apnsPayload{
+		Aps: apnsAps{Alert: apnsAlert{
+			Title: notification.Title,
+			Body:  notification.Body,
+		}},
+		DivisionID: notification.DivisionID,
+		Parliament: notification.Parliament,
+		Session:    notification.Session,
+		Result:     notification.Result,
+		Status:     notification.Status,
+	})
 }
 
 func (c *Client) endpoint(token domain.DeviceToken) string {

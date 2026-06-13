@@ -51,7 +51,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `MPLobbyingCohortComparison` | Party and national cohort comparison metrics for an MP exposure summary. |
 | `LobbyingCohortAverage` | Build-time party or national average communication count for a parliament. |
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
-| `PushNotificationPayload` | Backend-only internal push payload, currently carrying concluded live-vote division fields plus the original JSON document delivered to APNs. |
+| `PushNotificationPayload` | Backend-only internal push payload carrying required live-vote division fields and the compacted original JSON document. |
+| `LiveVoteNotification` | Backend-only display-ready push notification value with neutral title/body copy and source division identifiers for APNs delivery. |
 | `DispatchResult` | Backend-only push dispatch outcome counts for subscription fan-out, successful deliveries, and failed delivery attempts. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -838,7 +839,7 @@ Actor: Backend API caller (live-vote-poller Lambda)
 Goal: Fan out an internal push notification payload to registered device subscriptions.
 Inputs: PushNotificationPayload.
 Outputs: DispatchResult with subscription, delivered, and failed-delivery counts.
-Entities / values: PushNotificationPayload, DeviceSubscription, DispatchResult.
+Entities / values: PushNotificationPayload, LiveVoteNotification, DeviceSubscription, DispatchResult.
 Ports: backend Go: `DeviceSubscriptionRepository`, `PushNotificationClient`.
 Primary adapters: push-notification-dispatcher Lambda, Postgres/pgx device subscription repository, APNs HTTP client.
 Current implementation:
