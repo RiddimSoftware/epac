@@ -1,3 +1,0 @@
-# All paths route to a single repo-scoped team. Team membership is managed
-# in GitHub org settings, not in this file.
-*  @RiddimSoftware/epac-maintainers
