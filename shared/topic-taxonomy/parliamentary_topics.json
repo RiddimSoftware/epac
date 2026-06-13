@@ -250,6 +250,20 @@
       ]
     },
     {
+      "id": "senate",
+      "name_key": "topic.senate",
+      "backend_name": "Senate",
+      "keywords": [
+        "senate",
+        "senator",
+        "senators",
+        "upper chamber",
+        "sénat",
+        "sénateur",
+        "sénatrice"
+      ]
+    },
+    {
       "id": "pharma",
       "name_key": "topic.pharma",
       "backend_name": "Pharmaceuticals",

@@ -23,10 +23,6 @@ private enum HomeFeedLayout {
     static let compactVerticalPadding = EpacSpacing.xxs
     static let followedTopicsLimit = 6
     static let senatorsLimit = 3
-    static let senatorRowSpacing: CGFloat = 10
-    static let senatorDotOpacity = EpacOpacity.tintStrong
-    static let senatorDotSize = EpacSpacing.s
-    static let senatorTextSpacing = EpacSpacing.xxs
     static let healthcarePreviewLimit = 2
     static let reorderBillsThreshold = 5
     static let unreadDotSize: CGFloat = 8
@@ -526,27 +522,7 @@ struct HomeFeedView: View {
     private var senatorsSection: some View {
         Section(header: Text(NSLocalizedString("senate.mySenators.title", comment: "")).accessibilityAddTraits(.isHeader)) {
             ForEach(mySenators.prefix(HomeFeedLayout.senatorsLimit)) { senator in
-                Link(destination: senator.senateURL) {
-                    HStack(spacing: HomeFeedLayout.senatorRowSpacing) {
-                        Circle()
-                            .fill(senator.caucusColor.opacity(HomeFeedLayout.senatorDotOpacity))
-                            .frame(width: HomeFeedLayout.senatorDotSize, height: HomeFeedLayout.senatorDotSize)
-                        VStack(alignment: .leading, spacing: HomeFeedLayout.senatorTextSpacing) {
-                            Text(senator.name)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            Text(senator.caucusFullName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        Image(systemName: "arrow.up.right.square")
-                            .font(.epacCaption)
-                            .foregroundStyle(Color.epacText.tertiary)
-                    }
-                }
-                .accessibilityLabel("\(senator.name), \(senator.caucusFullName)")
+                SenatorCard(senator: senator)
             }
         }
     }

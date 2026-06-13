@@ -22,6 +22,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `RecordedVote` | A House of Commons division record with date, bill reference, result, and member ballot. |
 | `MemberID` | The stable source identifier used to address a ParliamentMember across backend artifacts. |
 | `ParliamentMember` | An elected Member of Parliament with riding, party, and contact info. |
+| `Senator` | An appointed Senator with province, declared caucus affiliation, Senate profile URL, and appointment facts when available. |
+| `SenateAppointment` | Appointment facts for a Senator: date, appointing prime minister, represented province, declared affiliation, and Privy Council Office source URL. |
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
 | `EPetition` | An e-petition submitted to the House of Commons with signatures, sponsor, deadline, and optional government response. |
 | `PetitionGovernmentResponse` | The government's official written response tabled in the House of Commons for a qualified petition. |
@@ -95,6 +97,7 @@ to the issue that will build the missing artifact.
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
 | `TopicPreferenceStore` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/TopicPreferenceStore.swift`; adapter: `ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift`. | Read and persist followed topic IDs as a Domain-layer port. |
+| `SenatorAppointmentQueryPort` | iOS Swift | outbound | Implemented by existing `HomeFeedRepository.fetchSenators(for:)`; adapter: `ios/epac/Data/Repositories/HomeFeedSwiftDataRepository.swift` using `ios/epac/Util/SenatorsService.swift`. | Load province-filtered senator appointment context for Home and My MP surfaces. |
 | `DeviceSubscriptionRepository` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/postgres/subscriptions.go`. | List device subscriptions eligible for the current internal notification fan-out. |
 | `PushNotificationClient` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/apns/client.go`. | Deliver a typed push payload to a subscribed device through APNs. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
@@ -782,6 +785,51 @@ Current implementation:
 ```
 
 > **Adapter note:** EPAC-1916 introduces the config artifact as `config/v1/app.json`. Environment-specific config should be isolated by the deployment's artifact bucket or prefix rather than by changing the API response shape.
+
+---
+
+### TrackSenateAppointments
+
+```
+Actor: Backend ingestion job / iOS app
+Goal: Keep current Senator rows associated with appointment date, appointing prime minister, province, declared affiliation, and Orders in Council source.
+Inputs: Senator roster/appointment payload from backend or existing Senate roster adapter.
+Outputs: Senator values with optional SenateAppointment facts.
+Entities / values: Senator, SenateAppointment.
+Ports: iOS Swift: `SenatorAppointmentQueryPort`.
+Primary adapters: SenatorsService, HomeFeedSwiftDataRepository, SenatorCard, MyMPView, HomeFeedView.
+Current implementation:
+  ios/epac/Model/Senator.swift
+  ios/epac/Util/SenatorsService.swift
+  ios/epac/Data/Repositories/HomeFeedSwiftDataRepository.swift
+  ios/epac/Views/Senate/SenatorCard.swift
+  ios/epac/Views/MyMP/MyMPView.swift
+  ios/epac/Views/Home/HomeFeedView.swift
+```
+
+> **Boundary note:** iOS decodes typed appointment fields when the roster payload includes them and does not scrape PCO or Senate HTML. Backend ingestion/parsing remains outside the iOS adapter.
+
+---
+
+### LoadAppointingPM
+
+```
+Actor: User (iOS app, Home / My MP)
+Goal: See which prime minister appointed each province Senator and when, with their declared affiliation and PCO Orders in Council citation.
+Inputs: User's saved MP province.
+Outputs: Province-filtered Senator cards with appointment summary and source link.
+Entities / values: Senator, SenateAppointment.
+Ports: iOS Swift: `SenatorAppointmentQueryPort`.
+Primary adapters: LoadHomeFeed, HomeFeedSwiftDataRepository, SenatorCard, MyMPView, HomeFeedView.
+Current implementation:
+  ios/epac/Domain/UseCases/LoadHomeFeed.swift
+  ios/epac/Data/Repositories/HomeFeedSwiftDataRepository.swift
+  ios/epac/Views/Senate/SenatorCard.swift
+  ios/epac/Views/MyMP/MyMPView.swift
+  ios/epac/Views/Home/HomeFeedView.swift
+```
+
+> **Notification note:** Senate appointment notification eligibility uses the canonical `senate` topic ID added to `shared/topic-taxonomy/parliamentary_topics.json`; existing topic-follow storage carries that ID through device preferences.
 
 ---
 

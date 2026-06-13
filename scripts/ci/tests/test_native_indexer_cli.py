@@ -70,6 +70,18 @@ SCRIPT = REPO_ROOT / "scripts" / "ci" / "run_native_indexer.py"
                 "table_counts": "object[string,integer]",
             },
         ),
+        (
+            "senators-indexer",
+            [],
+            {
+                "version": "string",
+                "built_at": "rfc3339",
+                "senator_count": "integer",
+                "sqlite_key": "string",
+                "sqlite_size_bytes": "integer",
+                "sqlite_sha256": "sha256",
+            },
+        ),
     ],
 )
 def test_native_indexer_cli_dry_run_reports_expected_output_formats(

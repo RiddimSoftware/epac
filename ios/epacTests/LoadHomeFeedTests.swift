@@ -79,6 +79,57 @@ final class LoadHomeFeedTests: XCTestCase {
         XCTAssertEqual(snapshot.latestSpeechHighlight?.memberName, "Jane Smith")
         XCTAssertEqual(snapshot.latestSpeechHighlight?.subjectTitle, "Budget Debate")
     }
+
+    func testLoadHomeFeedIncludesProvinceSenateAppointments() async throws {
+        let clock = MockClock(date: Date())
+        let repository = MockHomeFeedRepository()
+        let followPrefs = MockFollowPreferenceReading(savedMemberName: "Jane Smith")
+        let appointmentDate = try XCTUnwrap(Self.dateFormatter.date(from: "2024-12-19"))
+        let appointment = SenateAppointment(
+            date: appointmentDate,
+            appointingPrimeMinister: "Justin Trudeau",
+            province: "ON",
+            declaredAffiliation: "Independent Senators Group"
+        )
+        repository.membersToReturn = [
+            HomeFollowedMember(memberID: 42, name: "Jane Smith", lastName: "Smith", provinceCode: "ON")
+        ]
+        repository.senatorsToReturn = [
+            Senator(
+                id: "test-senator-on",
+                firstName: "Jane",
+                lastName: "Senator",
+                province: "ON",
+                caucus: "ISG",
+                caucusFullName: "Independent Senators Group",
+                senateURL: URL(string: "https://sencanada.ca/en/senators/test")!,
+                appointedDate: appointmentDate,
+                appointment: appointment
+            )
+        ]
+
+        let useCase = LoadHomeFeed(
+            repository: repository,
+            followPreferenceReading: followPrefs,
+            clock: clock
+        )
+
+        let snapshot = await useCase.execute()
+
+        XCTAssertEqual(snapshot.civicContext.provinceAbbrev, "ON")
+        XCTAssertEqual(snapshot.civicContext.mySenators.count, 1)
+        XCTAssertEqual(snapshot.civicContext.mySenators.first?.appointment?.appointingPrimeMinister, "Justin Trudeau")
+        XCTAssertEqual(snapshot.civicContext.mySenators.first?.appointment?.declaredAffiliation, "Independent Senators Group")
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }
 
 // MARK: - Mocks
@@ -95,6 +146,7 @@ class MockHomeFeedRepository: HomeFeedRepository {
     var hansardsToReturn: [HomeHansardRecord] = []
     var voteToReturn: HomeVoteRecord?
     var memberVoteToReturn: HomeMemberVoteRecord?
+    var senatorsToReturn: [Senator] = []
 
     func fetchSittingDates() async throws -> [Date] { [] }
     func fetchAllMembers() async throws -> [HomeFollowedMember] { membersToReturn }
@@ -103,7 +155,7 @@ class MockHomeFeedRepository: HomeFeedRepository {
     func fetchHansards(between start: Date, and end: Date) async throws -> [HomeHansardRecord] { [] }
     func fetchLatestVote() async throws -> HomeVoteRecord? { voteToReturn }
     func fetchMemberVote(memberID: Int, voteID: Int) async throws -> HomeMemberVoteRecord? { memberVoteToReturn }
-    func fetchSenators(for provinceAbbrev: String) async throws -> [Senator] { [] }
+    func fetchSenators(for provinceAbbrev: String) async throws -> [Senator] { senatorsToReturn }
 }
 
 @MainActor
