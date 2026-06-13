@@ -1277,4 +1277,67 @@ final class SnapshotTests: XCTestCase {
             name: "PetitionDetailView_notQualified"
         )
     }
+
+    // MARK: - MP Attendance record card (EPAC-897)
+
+    @MainActor
+    func testMPAttendanceCard_standard() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        let swornInDate = formatter.date(from: "2021-11-22")!
+
+        let attendance = MPAttendance(
+            record: AttendanceRecord(
+                totalDivisions: 100,
+                yea: 75,
+                nay: 10,
+                paired: 10,
+                denominatorStartDate: swornInDate
+            ),
+            comparison: AttendanceComparison(
+                party: .liberal,
+                nationalAverageRate: 0.88,
+                partyAverageRate: 0.91,
+                nationalSampleSize: 338,
+                partySampleSize: 156
+            )
+        )
+
+        snapshot(
+            AttendanceRecordCard(
+                member: Self.member(party: .liberal),
+                attendance: attendance
+            )
+            .padding()
+            .background(Color.appBackground)
+            .frame(width: 375),
+            name: "MPAttendanceCard_standard"
+        )
+    }
+
+    @MainActor
+    func testMPAttendanceCard_noDateNoComparison() {
+        let attendance = MPAttendance(
+            record: AttendanceRecord(
+                totalDivisions: 50,
+                yea: 40,
+                nay: 5,
+                paired: 0,
+                denominatorStartDate: nil
+            ),
+            comparison: nil
+        )
+
+        snapshot(
+            AttendanceRecordCard(
+                member: Self.member(party: .conservative),
+                attendance: attendance
+            )
+            .padding()
+            .background(Color.appBackground)
+            .frame(width: 375),
+            name: "MPAttendanceCard_noDateNoComparison"
+        )
+    }
 }

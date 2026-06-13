@@ -1445,6 +1445,28 @@ Current implementation:
 
 ---
 
+### LoadMPAttendance
+
+```
+Actor: User (iOS app, foreground)
+Goal: Compute an MP's attendance record (attendance rate, breakdown) and compare it against national/party baselines.
+Inputs: Member ID.
+Outputs: MPAttendance value object containing an AttendanceRecord and optional AttendanceComparison.
+Entities / values: ParliamentMember, AttendanceRecord, AttendanceComparison, MPAttendance.
+Ports: iOS Swift: `MPAttendanceQueryPort`.
+Primary adapters: SwiftDataMPAttendanceAdapter, MemberAttendanceSection, AttendanceRecordCard.
+Current implementation:
+  ios/epac/Domain/Ports/MPAttendanceQueryPort.swift
+  ios/epac/Domain/MPAttendance.swift
+  ios/epac/Application/LoadMPAttendance.swift
+  ios/epac/Data/Adapters/SwiftDataMPAttendanceAdapter.swift
+  ios/epac/Views/Members/MemberAttendanceSection.swift
+```
+
+> Boundary rule: The use case and domain types must not import SwiftData, SwiftUI, or UIKit. The adapter handles raw SwiftData tally querying; presentation policy (paired absences are handled distinctly from unexplained ones) lives in the use case.
+
+---
+
 ## Boundary Check
 
 Run locally to verify inward files do not import framework types:
