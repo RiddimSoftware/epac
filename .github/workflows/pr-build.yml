@@ -105,6 +105,9 @@ jobs:
       - name: Run members-indexer tests
         working-directory: backend/members-indexer
         run: go test ./...
+      - name: Run push-notification-dispatcher tests
+        working-directory: backend/push-notification-dispatcher
+        run: go test ./...
 
   python-ci-tests:
     name: Python CI Tooling Tests

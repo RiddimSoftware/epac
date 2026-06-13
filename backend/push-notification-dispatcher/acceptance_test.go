@@ -28,29 +28,45 @@ import (
 
 type apnsStub struct {
 	mu   sync.Mutex
-	hits []map[string]any
+	hits []apnsHit
+	errs []error
+}
+
+type apnsHit struct {
+	Aps struct {
+		Alert struct {
+			Title string `json:"title"`
+			Body  string `json:"body"`
+		} `json:"alert"`
+	} `json:"aps"`
+	DivisionID int `json:"division_id"`
 }
 
 func (s *apnsStub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	r.Body.Close()
 
-	var payload map[string]any
-	_ = json.Unmarshal(body, &payload)
-
 	s.mu.Lock()
-	s.hits = append(s.hits, payload)
-	s.mu.Unlock()
+	defer s.mu.Unlock()
+
+	var payload apnsHit
+	if err := json.Unmarshal(body, &payload); err != nil {
+		s.errs = append(s.errs, err)
+	} else {
+		s.hits = append(s.hits, payload)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *apnsStub) snapshot() []map[string]any {
+func (s *apnsStub) snapshot() ([]apnsHit, []error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]map[string]any, len(s.hits))
+	out := make([]apnsHit, len(s.hits))
 	copy(out, s.hits)
-	return out
+	errs := make([]error, len(s.errs))
+	copy(errs, s.errs)
+	return out, errs
 }
 
 func TestAcceptancePushNotificationDispatcherCallsAPNsThroughCompositionRoot(t *testing.T) {
@@ -93,8 +109,21 @@ func TestAcceptancePushNotificationDispatcherCallsAPNsThroughCompositionRoot(t *
 		t.Errorf("expected status 202, got %d. body=%v", resp.StatusCode, resp.Body)
 	}
 
-	hits := apns.snapshot()
+	hits, errs := apns.snapshot()
+	if len(errs) != 0 {
+		t.Fatalf("apns payload decode errors = %v, want none", errs)
+	}
 	if len(hits) != 1 {
 		t.Fatalf("apns hit count = %d, want 1", len(hits))
+	}
+	alert := hits[0].Aps.Alert
+	if alert.Title != "Vote result posted" {
+		t.Fatalf("aps.alert.title = %q, want Vote result posted", alert.Title)
+	}
+	if alert.Body != "Division 42 result: carried." {
+		t.Fatalf("aps.alert.body = %q, want Division 42 result: carried.", alert.Body)
+	}
+	if hits[0].DivisionID != 42 {
+		t.Fatalf("division_id = %v, want 42", hits[0].DivisionID)
 	}
 }

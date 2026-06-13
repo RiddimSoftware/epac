@@ -14,7 +14,7 @@ type DeviceSubscriptionRepository interface {
 }
 
 type PushNotificationClient interface {
-	Deliver(ctx context.Context, subscription domain.DeviceSubscription, payload domain.PushNotificationPayload) error
+	Deliver(ctx context.Context, subscription domain.DeviceSubscription, notification domain.LiveVoteNotification) error
 }
 
 type DispatchPushNotification struct {
@@ -27,7 +27,8 @@ func NewDispatchPushNotification(subscriptions DeviceSubscriptionRepository, cli
 }
 
 func (u *DispatchPushNotification) Execute(ctx context.Context, payload domain.PushNotificationPayload) (domain.DispatchResult, error) {
-	if !payload.Valid() {
+	notification, err := domain.NewLiveVoteNotification(payload)
+	if err != nil {
 		return domain.DispatchResult{}, ErrInvalidPayload
 	}
 
@@ -38,7 +39,7 @@ func (u *DispatchPushNotification) Execute(ctx context.Context, payload domain.P
 
 	result := domain.DispatchResult{Subscriptions: len(subscriptions)}
 	for _, subscription := range subscriptions {
-		if err := u.client.Deliver(ctx, subscription, payload); err != nil {
+		if err := u.client.Deliver(ctx, subscription, notification); err != nil {
 			result.Failed++
 			continue
 		}

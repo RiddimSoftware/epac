@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -40,18 +41,23 @@ func ParsePushNotificationPayload(raw []byte) (PushNotificationPayload, error) {
 		return PushNotificationPayload{}, ErrInvalidPushNotificationPayload
 	}
 
-	return PushNotificationPayload{
+	payload := PushNotificationPayload{
 		DivisionID:  fields.DivisionID,
 		Parliament:  fields.Parliament,
 		Session:     fields.Session,
-		Result:      fields.Result,
-		Status:      fields.Status,
+		Result:      strings.TrimSpace(fields.Result),
+		Status:      strings.TrimSpace(fields.Status),
 		rawDocument: append(json.RawMessage(nil), compacted.Bytes()...),
-	}, nil
+	}
+	if !payload.Valid() {
+		return PushNotificationPayload{}, ErrInvalidPushNotificationPayload
+	}
+
+	return payload, nil
 }
 
 func (p PushNotificationPayload) Valid() bool {
-	return len(p.rawDocument) > 0
+	return len(p.rawDocument) > 0 && p.hasRequiredFields()
 }
 
 func (p PushNotificationPayload) JSON() ([]byte, error) {
@@ -59,6 +65,56 @@ func (p PushNotificationPayload) JSON() ([]byte, error) {
 		return nil, ErrInvalidPushNotificationPayload
 	}
 	return append([]byte(nil), p.rawDocument...), nil
+}
+
+func (p PushNotificationPayload) hasRequiredFields() bool {
+	return p.DivisionID > 0 &&
+		p.Parliament > 0 &&
+		p.Session > 0 &&
+		strings.TrimSpace(p.Result) != "" &&
+		strings.TrimSpace(p.Status) != ""
+}
+
+type LiveVoteNotification struct {
+	Title      string
+	Body       string
+	DivisionID int
+	Parliament int
+	Session    int
+	Result     string
+	Status     string
+}
+
+func NewLiveVoteNotification(payload PushNotificationPayload) (LiveVoteNotification, error) {
+	if !payload.Valid() {
+		return LiveVoteNotification{}, ErrInvalidPushNotificationPayload
+	}
+
+	notification := LiveVoteNotification{
+		Title:      "Vote status updated",
+		Body:       fmt.Sprintf("Division %d status: %s.", payload.DivisionID, payload.Status),
+		DivisionID: payload.DivisionID,
+		Parliament: payload.Parliament,
+		Session:    payload.Session,
+		Result:     payload.Result,
+		Status:     payload.Status,
+	}
+	if strings.EqualFold(payload.Status, "concluded") {
+		notification.Title = "Vote result posted"
+		notification.Body = fmt.Sprintf("Division %d result: %s.", payload.DivisionID, payload.Result)
+	}
+
+	return notification, nil
+}
+
+func (n LiveVoteNotification) Valid() bool {
+	return strings.TrimSpace(n.Title) != "" &&
+		strings.TrimSpace(n.Body) != "" &&
+		n.DivisionID > 0 &&
+		n.Parliament > 0 &&
+		n.Session > 0 &&
+		strings.TrimSpace(n.Result) != "" &&
+		strings.TrimSpace(n.Status) != ""
 }
 
 type DeviceToken string

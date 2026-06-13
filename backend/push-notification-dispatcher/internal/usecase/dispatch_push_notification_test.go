@@ -20,12 +20,14 @@ func (r *fakeSubscriptionRepository) ListDeviceSubscriptions(context.Context) ([
 }
 
 type fakePushClient struct {
-	delivered []domain.DeviceSubscription
-	failToken string
+	delivered     []domain.DeviceSubscription
+	notifications []domain.LiveVoteNotification
+	failToken     string
 }
 
-func (c *fakePushClient) Deliver(_ context.Context, subscription domain.DeviceSubscription, _ domain.PushNotificationPayload) error {
+func (c *fakePushClient) Deliver(_ context.Context, subscription domain.DeviceSubscription, notification domain.LiveVoteNotification) error {
 	c.delivered = append(c.delivered, subscription)
+	c.notifications = append(c.notifications, notification)
 	if subscription.Token.String() == c.failToken {
 		return errors.New("apns rejected request")
 	}
@@ -83,6 +85,17 @@ func TestDispatchDeliversToMultipleSubscriptions(t *testing.T) {
 	}
 	if len(client.delivered) != 2 {
 		t.Fatalf("client delivered %d notifications, want 2", len(client.delivered))
+	}
+	for i, notification := range client.notifications {
+		if notification.Title != "Vote result posted" {
+			t.Fatalf("notification %d title = %q, want Vote result posted", i, notification.Title)
+		}
+		if notification.Body != "Division 42 result: carried." {
+			t.Fatalf("notification %d body = %q, want Division 42 result: carried.", i, notification.Body)
+		}
+		if notification.DivisionID != 42 || notification.Parliament != 45 || notification.Session != 1 {
+			t.Fatalf("notification %d source identifiers = division %d parliament %d session %d, want 42/45/1", i, notification.DivisionID, notification.Parliament, notification.Session)
+		}
 	}
 }
 
