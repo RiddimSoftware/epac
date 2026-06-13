@@ -28,7 +28,7 @@ struct SenatorCard: View {
             VStack(alignment: .leading, spacing: EpacSpacing.xxs) {
                 Text(String(format: NSLocalizedString("senate.card.name", comment: ""), senator.name))
                     .font(.subheadline.weight(.semibold))
-                Text(senator.caucusFullName)
+                Text(declaredAffiliation)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 if let appointmentSummary {
@@ -53,10 +53,11 @@ struct SenatorCard: View {
         }
         .padding(.vertical, EpacSpacing.xxs)
         .foregroundStyle(.primary)
-        .accessibilityLabel(
-            String(format: NSLocalizedString("senate.card.accessibility", comment: ""),
-                   senator.name, senator.caucusFullName, appointmentSummary ?? "")
-        )
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private var declaredAffiliation: String {
+        senator.appointment?.declaredAffiliation ?? senator.caucusFullName
     }
 
     private var appointmentSummary: String? {
@@ -80,6 +81,22 @@ struct SenatorCard: View {
         case "CSG":         return Color(UIColor.systemPurple)
         default:            return Color(UIColor.systemGray)
         }
+    }
+
+    private var accessibilitySummary: String {
+        if let appointmentSummary {
+            return String(
+                format: NSLocalizedString("senate.card.accessibilityWithAppointment", comment: ""),
+                senator.name,
+                declaredAffiliation,
+                appointmentSummary
+            )
+        }
+        return String(
+            format: NSLocalizedString("senate.card.accessibility", comment: ""),
+            senator.name,
+            declaredAffiliation
+        )
     }
 
     private static let appointmentDateFormatter: DateFormatter = {

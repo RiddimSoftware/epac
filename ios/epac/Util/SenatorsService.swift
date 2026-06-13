@@ -92,26 +92,38 @@ struct SenatorsService {
 
             let appointmentPayload = item["appointment"] as? [String: Any] ?? item
             let appointmentDateValue = stringValue(
-                forAnyKey: ["appointment_date", "appointed_date", "date", "StartDate"],
+                forAnyKey: ["appointment_date", "appointmentDate", "appointed_date", "appointedDate", "date", "StartDate"],
                 in: appointmentPayload
-            ) ?? stringValue(forAnyKey: ["appointment_date", "appointed_date", "StartDate"], in: item)
-            let date = parseDate(
-                appointmentDateValue
+            ) ?? stringValue(
+                forAnyKey: ["appointment_date", "appointmentDate", "appointed_date", "appointedDate", "StartDate"],
+                in: item
             )
+            let date = parseDate(appointmentDateValue)
             let primeMinisterKeys = [
                 "appointing_prime_minister",
+                "appointingPrimeMinister",
                 "appointing_pm",
+                "appointingPM",
                 "appointed_by",
+                "appointedBy",
                 "prime_minister",
+                "primeMinister",
                 "prime_minister_name",
+                "primeMinisterName",
                 "PrimeMinisterName"
             ]
             let appointingPrimeMinister = stringValue(forAnyKey: primeMinisterKeys, in: appointmentPayload)
                 ?? stringValue(forAnyKey: primeMinisterKeys, in: item)
             let sourceURLKeys = [
                 "source_url",
+                "sourceURL",
+                "sourceUrl",
                 "orders_in_council_url",
+                "ordersInCouncilURL",
+                "ordersInCouncilUrl",
                 "order_in_council_url",
+                "orderInCouncilURL",
+                "orderInCouncilUrl",
                 "OrderInCouncilURL"
             ]
             let sourceURL = urlValue(forAnyKey: sourceURLKeys, in: appointmentPayload)
@@ -119,8 +131,10 @@ struct SenatorsService {
                 ?? SenateAppointment.defaultSourceURL
             let affiliationKeys = [
                 "declared_affiliation",
+                "declaredAffiliation",
                 "affiliation",
                 "caucus_full_name",
+                "caucusFullName",
                 "CaucusNameEn"
             ]
             let declaredAffiliation = stringValue(forAnyKey: affiliationKeys, in: appointmentPayload)

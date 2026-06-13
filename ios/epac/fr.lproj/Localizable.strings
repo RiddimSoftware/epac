@@ -468,7 +468,8 @@
 "senate.card.appointed" = "Nommé(e) par %@ le %@";
 "senate.card.appointedUnknownPM" = "Nommé(e) le %@";
 "senate.card.source" = "Bureau du Conseil privé — décrets";
-"senate.card.accessibility" = "Sénateur(trice) %@, %@, %@";
+"senate.card.accessibility" = "Sénateur(trice) %@, %@";
+"senate.card.accessibilityWithAppointment" = "Sénateur(trice) %@, %@, %@";
 
 /* Assemblée législative de l'Ontario */
 "ontario.debates.navTitle" = "Débats de Queen's Park";
