@@ -157,6 +157,8 @@ struct MemberProfileView: View {
 
 					PartyLineScoreView(member: member)
 
+					MemberAttendanceSection(member: member)
+
 					VStack(alignment: .leading, spacing: MemberProfileLayout.cardSpacing) {
 						NavigationLink(destination: partyDestination(for: member.party)) {
 							HStack(spacing: 0) {
