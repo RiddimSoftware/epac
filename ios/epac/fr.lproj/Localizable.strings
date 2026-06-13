@@ -403,9 +403,12 @@
 "home.debates.subtitle" = "Parcourez les séances précédentes";
 "home.myMP.activityCount" = "%d activités récentes";
 "home.myMP.notSet" = "Entrez votre code postal pour suivre votre député";
+"home.recentlyBecameLaw" = "Devenus lois récemment";
+"home.recentlyBecameLaw.date" = "Sanction royale %@";
 "home.followedBills" = "Projets de loi suivis";
 "home.followedTopics" = "Sujets suivis";
 "home.recentDebates" = "Récent au Hansard";
+"home.seeLaws" = "Voir les lois →";
 "home.seeAllBills" = "Voir tous les projets →";
 "home.clearAllBills" = "Tout effacer";
 "home.manageTopics" = "Gérer les sujets →";
@@ -786,3 +789,5 @@
 "appStore.screenshot.contact.subjectLine" = "Projet de loi C-226 — 2e lecture";
 "appStore.screenshot.contact.body" = "J'écris au sujet du projet de loi C-226, Loi visant à établir un cadre national pour améliorer la transparence des prix alimentaires. Merci d'indiquer comment vous comptez voter et pourquoi.";
 "appStore.screenshot.contact.send" = "Envoyer";
+
+"notification.royalAssent.body" = "%@ a reçu la sanction royale aujourd'hui et est maintenant loi.";

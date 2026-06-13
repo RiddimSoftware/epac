@@ -21,11 +21,18 @@ struct Bill: Identifiable, Codable, Sendable {
     let status: BillStatus
     let currentStage: String
     let introducedDate: Date?
+    let royalAssentDate: Date?
+    let summary: String?
+    let sponsorProfileURL: URL?
     let stages: [BillStage]
     let legisInfoURL: URL
     let type: BillType
     let parliament: Int
     let session: Int
+
+    var becameLawDate: Date? {
+        royalAssentDate ?? stages.first { $0.name.localizedCaseInsensitiveContains("royal assent") }?.completedDate
+    }
 }
 
 // MARK: - BillStage
@@ -58,12 +65,27 @@ enum BillStatus: String, Codable, Equatable, Sendable {
 
     init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
-        self = BillStatus(rawValue: raw) ?? .unknown
+        if let exact = BillStatus(rawValue: raw) {
+            self = exact
+            return
+        }
+
+        let normalized = raw.lowercased()
+        if normalized.contains("royal assent") || normalized.contains("royalassent") {
+            self = .royalAssent
+        } else if normalized.contains("defeat") {
+            self = .defeated
+        } else if normalized.isEmpty {
+            self = .unknown
+        } else {
+            self = .inProgress
+        }
     }
 }
 
 // MARK: - BillType
 
+// swiftlint:disable redundant_string_enum_value
 enum BillType: String, Codable, Equatable, Sendable {
     case government        = "government"
     case privateMember     = "privateMember"
@@ -94,6 +116,23 @@ enum BillType: String, Codable, Equatable, Sendable {
 
     init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
-        self = BillType(rawValue: raw) ?? .unknown
+        if let exact = BillType(rawValue: raw) {
+            self = exact
+            return
+        }
+
+        let normalized = raw.lowercased()
+        if normalized.contains("private member") {
+            self = .privateMember
+        } else if normalized.contains("senate private") {
+            self = .senatePrivate
+        } else if normalized.contains("senate public") {
+            self = .senatePublic
+        } else if normalized.contains("government") {
+            self = .government
+        } else {
+            self = .unknown
+        }
     }
 }
+// swiftlint:enable redundant_string_enum_value

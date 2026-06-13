@@ -25,7 +25,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `Sitting` | A House sitting date with Parliament/session metadata and source URL. |
 | `EPetition` | An e-petition submitted to the House of Commons with signatures, sponsor, deadline, and optional government response. |
 | `PetitionGovernmentResponse` | The government's official written response tabled in the House of Commons for a qualified petition. |
-| `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, and LEGISinfo source URL. |
+| `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, Royal Assent date when available, and LEGISinfo source URL. |
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
 | `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
 | `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
@@ -53,6 +53,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `DeviceSubscription` | An APNs token plus the topic/bill/member preferences registered for that device. |
 | `PushNotificationPayload` | Backend-only internal push payload carrying required live-vote division fields and the compacted original JSON document. |
 | `LiveVoteNotification` | Backend-only display-ready push notification value with neutral title/body copy and source division identifiers for APNs delivery. |
+| `RoyalAssentNotification` | iOS notification content value used when a followed bill transitions to Royal Assent during app or background refresh. |
 | `DispatchResult` | Backend-only push dispatch outcome counts for subscription fan-out, successful deliveries, and failed delivery attempts. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -92,11 +93,13 @@ to the issue that will build the missing artifact.
 | `SittingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/SittingRepository.swift`; adapter: `ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift`. | List sitting dates and load transcripts for a sitting date. |
 | `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
 | `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
+| `RecentLawQueryPort` | iOS Swift | outbound | Implemented by `ios/epac/Application/TrackRoyalAssent.swift`; adapter input is `BillRepository`. | Query current-session bills that received Royal Assent within the recent-law window. |
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
 | `TopicPreferenceStore` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/TopicPreferenceStore.swift`; adapter: `ios/epac/Data/Adapters/TopicFollowStoreAdapter.swift`. | Read and persist followed topic IDs as a Domain-layer port. |
 | `DeviceSubscriptionRepository` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/postgres/subscriptions.go`. | List device subscriptions eligible for the current internal notification fan-out. |
 | `PushNotificationClient` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/apns/client.go`. | Deliver a typed push payload to a subscribed device through APNs. |
+| `RoyalAssentNotificationPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/RoyalAssentNotificationPort.swift`; adapter: `ios/epac/Data/Adapters/LiveRoyalAssentNotificationAdapter.swift`. | Schedule notification content when a followed bill is observed to have received Royal Assent. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
 | `HansardSearchRepository` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/search_hansard.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefts5/repository.go`. | Query the verified SQLite FTS5 Hansard search index. |
 | `ManifestLoader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/s3manifest/manifest_loader.go`. | Load the current Hansard search-index manifest. |
@@ -494,6 +497,54 @@ Current implementation:
 ```
 
 > **Adapter note:** EPAC-2260 moves the backend API path from `bills/v1/all.json` to the manifest-selected SQLite artifact in S3. The backend list use case depends on `BillRepository`; AWS, local `/tmp` files, and `database/sql` stay in adapters.
+
+---
+
+### TrackRoyalAssent
+
+```
+Actor: User (iOS app, Home feed / Bills tab)
+Goal: Surface current-session bills that recently became law through Royal Assent.
+Inputs: Current date, current-session bill records.
+Outputs: Bills with Royal Assent in the last 30 days, sorted most recent first.
+Entities / values: Bill.
+Ports: iOS Swift: `RecentLawQueryPort`, `BillRepository`, `Clock`.
+Primary adapters: HomeFeedView RecentlyBecameLawCard, BillsView Became Law filter, LEGISinfoBillRepository wrapping BillsService.
+Current implementation:
+  ios/epac/Application/TrackRoyalAssent.swift
+  ios/epac/Domain/Ports/RecentLawQueryPort.swift
+  ios/epac/Domain/Ports/BillRepository.swift
+  ios/epac/Data/Adapters/LEGISinfoBillRepository.swift
+  ios/epac/Data/Adapters/BillsService.swift
+  ios/epac/Views/Home/HomeFeedView.swift
+  ios/epac/Views/Bills/BillsView.swift
+```
+
+> **Boundary note:** The use case filters typed `Bill` values only. LEGISinfo field names, date parsing, sponsor profile URL construction, and source-link construction remain inside `BillsService`.
+
+---
+
+### NotifyFollowedBillRoyalAssent
+
+```
+Actor: iOS background refresh / User foreground bill refresh
+Goal: Notify the user when a bill they follow is observed transitioning to Royal Assent.
+Inputs: Followed bill state, freshly fetched bill records.
+Outputs: Notification content for the followed bill and updated last-known follow state.
+Entities / values: Bill, BillFollowState, RoyalAssentNotification.
+Ports: iOS Swift: `RoyalAssentNotificationPort`, `BillRepository`.
+Primary adapters: BillFollowStore, LiveRoyalAssentNotificationAdapter, BackgroundRefreshManager, BillsView refresh path.
+Current implementation:
+  ios/epac/Application/NotifyFollowedBillRoyalAssent.swift
+  ios/epac/Domain/Entities/RoyalAssentNotification.swift
+  ios/epac/Domain/Ports/RoyalAssentNotificationPort.swift
+  ios/epac/Data/Adapters/LiveRoyalAssentNotificationAdapter.swift
+  ios/epac/Util/BillFollowStore.swift
+  ios/epac/Util/BackgroundRefreshManager.swift
+  ios/epac/Model/Fetch.swift
+```
+
+> **Boundary note:** UserNotifications is adapter detail. The use case formats typed notification content and does not import APNs or `UNUserNotificationCenter`; iOS background wake timing remains governed by BGAppRefresh.
 
 ---
 
@@ -964,7 +1015,7 @@ Current implementation:
 
 > Retired in EPAC-1921. The backend `live-status` Lambda and `/api/v1/live` route are removed from desired state. The historical architecture note remains in `docs/architecture/live-status-backend-epac165.md`.
 
---- 
+---
 
 ### Lobbying-index builder boundary
 
