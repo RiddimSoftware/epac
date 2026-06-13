@@ -23,10 +23,6 @@ private enum HomeFeedLayout {
     static let compactVerticalPadding = EpacSpacing.xxs
     static let followedTopicsLimit = 6
     static let senatorsLimit = 3
-    static let senatorRowSpacing: CGFloat = 10
-    static let senatorDotOpacity = EpacOpacity.tintStrong
-    static let senatorDotSize = EpacSpacing.s
-    static let senatorTextSpacing = EpacSpacing.xxs
     static let healthcarePreviewLimit = 2
     static let reorderBillsThreshold = 5
     static let unreadDotSize: CGFloat = 8
