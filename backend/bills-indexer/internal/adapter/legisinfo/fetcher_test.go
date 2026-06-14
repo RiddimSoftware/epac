@@ -111,6 +111,17 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 		case "/DocumentViewer/en/45-1/bill/C-2/first-reading":
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-2/C-2_1/C-2_E.xml">XML</a><a href="/Content/Bills/451/Government/C-2/C-2_1/C-2_1.PDF">PDF</a>`))
+		case "/Content/Bills/451/Government/C-2/C-2_1/C-2_E.xml":
+			w.Header().Set("Content-Type", "application/xml")
+			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="utf-8"?>
+<Bill>
+  <Body>
+    <Section>
+      <Label>1</Label>
+      <Text>Verbatim clause text of section 1.</Text>
+    </Section>
+  </Body>
+</Bill>`))
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.String())
 		}

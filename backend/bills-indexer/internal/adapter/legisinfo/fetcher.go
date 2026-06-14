@@ -1,8 +1,12 @@
 package legisinfo
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
@@ -170,6 +174,21 @@ func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, nu
 		xmlURL, pdfURL := f.fetchDocumentLinks(ctx, htmlURL)
 		version.XMLURL = xmlURL
 		version.PDFURL = pdfURL
+
+		if xmlURL != "" {
+			xmlData, err := f.getBytes(ctx, xmlURL, "text/xml")
+			if err == nil {
+				hash := computeSHA256(xmlData)
+				version.TextHash = &hash
+				version.TextSourceURL = &xmlURL
+
+				sections, err := parseBillXML(xmlData)
+				if err == nil {
+					version.Sections = sections
+				}
+			}
+		}
+
 		versions = append(versions, version)
 	}
 	return versions
@@ -613,11 +632,36 @@ func buildDiffs(number string, versions []domain.BillVersion, detailURL string) 
 	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].SortOrder < ordered[j].SortOrder })
 	diffs := make([]domain.BillDiff, 0, len(ordered)-1)
 	for i := 1; i < len(ordered); i++ {
+		fromVer := ordered[i-1]
+		toVer := ordered[i]
+		diffID := stableID("diff", number, fromVer.ID, toVer.ID)
+
+		var clauseDiffs []domain.BillClauseDiff
+		if len(fromVer.Sections) > 0 && len(toVer.Sections) > 0 {
+			rawDiffs := DiffClauses(fromVer.Sections, toVer.Sections)
+			clauseDiffs = make([]domain.BillClauseDiff, 0, len(rawDiffs))
+			for idx, rd := range rawDiffs {
+				clauseID := stableID("clause", number, diffID, rd.Label)
+				if rd.Label == "" {
+					clauseID = stableID("clause", number, diffID, strconv.Itoa(idx))
+				}
+				clauseDiffs = append(clauseDiffs, domain.BillClauseDiff{
+					ID:               clauseID,
+					Label:            rd.Label,
+					ChangeType:       rd.ChangeType,
+					FromText:         rd.FromText,
+					ToText:           rd.ToText,
+					HansardAnchorURL: nil,
+				})
+			}
+		}
+
 		diffs = append(diffs, domain.BillDiff{
-			ID:            stableID("diff", number, ordered[i-1].ID, ordered[i].ID),
-			FromVersionID: ordered[i-1].ID,
-			ToVersionID:   ordered[i].ID,
+			ID:            diffID,
+			FromVersionID: fromVer.ID,
+			ToVersionID:   toVer.ID,
 			SourceURL:     detailURL,
+			Clauses:       clauseDiffs,
 		})
 	}
 	return diffs
@@ -753,3 +797,140 @@ var (
 	nonSlugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 	hrefPattern    = regexp.MustCompile(`(?i)href=["']([^"']+)["']`)
 )
+
+func computeSHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
+}
+
+func parseBillXML(xmlData []byte) ([]domain.VersionSection, error) {
+	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
+	var sections []domain.VersionSection
+	var currentSec *domain.VersionSection
+	var inLabel bool
+	var labelDepth int
+	var secDepth int
+
+	for {
+		t, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		switch se := t.(type) {
+		case xml.StartElement:
+			if se.Name.Local == "Section" {
+				currentSec = &domain.VersionSection{}
+				secDepth = 1
+			} else if currentSec != nil {
+				secDepth++
+				if se.Name.Local == "Label" && secDepth == 2 {
+					inLabel = true
+					labelDepth = secDepth
+				}
+			}
+		case xml.EndElement:
+			if currentSec != nil {
+				if se.Name.Local == "Section" && secDepth == 1 {
+					currentSec.Label = strings.TrimSpace(currentSec.Label)
+					currentSec.Text = cleanSectionText(currentSec.Text)
+					sections = append(sections, *currentSec)
+					currentSec = nil
+				} else {
+					if inLabel && secDepth == labelDepth {
+						inLabel = false
+					}
+					secDepth--
+				}
+			}
+		case xml.CharData:
+			if currentSec != nil {
+				str := string(se)
+				if inLabel {
+					currentSec.Label += str
+				} else {
+					currentSec.Text += str
+				}
+			}
+		}
+	}
+	return sections, nil
+}
+
+func cleanSectionText(s string) string {
+	words := strings.Fields(s)
+	return strings.Join(words, " ")
+}
+
+func DiffClauses(fromClauses, toClauses []domain.VersionSection) []domain.BillClauseDiff {
+	n := len(fromClauses)
+	m := len(toClauses)
+
+	dp := make([][]int, n+1)
+	for i := range dp {
+		dp[i] = make([]int, m+1)
+	}
+
+	for i := 1; i <= n; i++ {
+		for j := 1; j <= m; j++ {
+			if fromClauses[i-1].Label != "" && fromClauses[i-1].Label == toClauses[j-1].Label {
+				dp[i][j] = dp[i-1][j-1] + 1
+			} else {
+				dp[i][j] = maxInt(dp[i-1][j], dp[i][j-1])
+			}
+		}
+	}
+
+	var diffs []domain.BillClauseDiff
+	i, j := n, m
+	for i > 0 || j > 0 {
+		if i > 0 && j > 0 && fromClauses[i-1].Label != "" && fromClauses[i-1].Label == toClauses[j-1].Label {
+			fc := fromClauses[i-1]
+			tc := toClauses[j-1]
+			changeType := "unchanged"
+			if fc.Text != tc.Text {
+				changeType = "modified"
+			}
+			diffs = append(diffs, domain.BillClauseDiff{
+				Label:      fc.Label,
+				ChangeType: changeType,
+				FromText:   fc.Text,
+				ToText:     tc.Text,
+			})
+			i--
+			j--
+		} else if j > 0 && (i == 0 || dp[i][j-1] >= dp[i-1][j]) {
+			tc := toClauses[j-1]
+			diffs = append(diffs, domain.BillClauseDiff{
+				Label:      tc.Label,
+				ChangeType: "added",
+				ToText:     tc.Text,
+			})
+			j--
+		} else {
+			fc := fromClauses[i-1]
+			diffs = append(diffs, domain.BillClauseDiff{
+				Label:      fc.Label,
+				ChangeType: "removed",
+				FromText:   fc.Text,
+			})
+			i--
+		}
+	}
+
+	for k := 0; k < len(diffs)/2; k++ {
+		diffs[k], diffs[len(diffs)-1-k] = diffs[len(diffs)-1-k], diffs[k]
+	}
+
+	return diffs
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}

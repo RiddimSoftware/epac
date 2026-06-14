@@ -109,6 +109,7 @@ func (w *Writer) Write(ctx context.Context, dbPath string, batch domain.Batch) (
 }
 
 const schemaSQL = `
+DROP TABLE IF EXISTS bill_clause_diffs;
 DROP TABLE IF EXISTS pbo_costings;
 DROP TABLE IF EXISTS bill_amendments;
 DROP TABLE IF EXISTS bill_diffs;
@@ -211,6 +212,8 @@ CREATE TABLE bill_versions (
     published_date TEXT,
     source TEXT NOT NULL DEFAULT '',
     sort_order INTEGER NOT NULL DEFAULT 0,
+    text_hash TEXT,
+    text_source_url TEXT,
     PRIMARY KEY (bill_id, id)
 );
 CREATE TABLE bill_diffs (
@@ -220,6 +223,19 @@ CREATE TABLE bill_diffs (
     to_version_id TEXT NOT NULL,
     source_url TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (bill_id, id)
+);
+CREATE TABLE bill_clause_diffs (
+    bill_id TEXT NOT NULL,
+    diff_id TEXT NOT NULL,
+    id TEXT NOT NULL,
+    label TEXT,
+    change_type TEXT NOT NULL,
+    from_text TEXT,
+    to_text TEXT,
+    hansard_anchor_url TEXT,
+    sort_order INTEGER NOT NULL,
+    PRIMARY KEY (bill_id, diff_id, id),
+    FOREIGN KEY (bill_id, diff_id) REFERENCES bill_diffs(bill_id, id) ON DELETE CASCADE
 );
 CREATE TABLE bill_amendments (
     bill_id TEXT NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
@@ -384,10 +400,11 @@ INSERT OR REPLACE INTO bill_committee_meetings (
 		if _, err := tx.ExecContext(ctx, `
 INSERT OR REPLACE INTO bill_versions (
     bill_id, id, publication_id, stage, stage_slug, html_url, xml_url, pdf_url,
-    published_date, source, sort_order
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    published_date, source, sort_order, text_hash, text_source_url
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			bill.ID, version.ID, version.PublicationID, version.Stage, version.StageSlug, version.HTMLURL, version.XMLURL,
-			version.PDFURL, emptyToNil(version.PublishedDate), version.Source, version.SortOrder); err != nil {
+			version.PDFURL, emptyToNil(version.PublishedDate), version.Source, version.SortOrder,
+			emptyToNil(derefString(version.TextHash)), emptyToNil(derefString(version.TextSourceURL))); err != nil {
 			return fmt.Errorf("insert bill version %s/%s: %w", bill.Number, version.ID, err)
 		}
 		stats.VersionCount++
@@ -400,6 +417,17 @@ VALUES (?, ?, ?, ?, ?)`,
 			return fmt.Errorf("insert bill diff %s/%s: %w", bill.Number, diff.ID, err)
 		}
 		stats.DiffCount++
+
+		for idx, clause := range diff.Clauses {
+			if _, err := tx.ExecContext(ctx, `
+INSERT OR REPLACE INTO bill_clause_diffs (
+    bill_id, diff_id, id, label, change_type, from_text, to_text, hansard_anchor_url, sort_order
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				bill.ID, diff.ID, clause.ID, emptyToNil(clause.Label), clause.ChangeType,
+				emptyToNil(clause.FromText), emptyToNil(clause.ToText), clause.HansardAnchorURL, idx+1); err != nil {
+				return fmt.Errorf("insert bill clause diff %s/%s/%s: %w", bill.Number, diff.ID, clause.ID, err)
+			}
+		}
 	}
 	for _, amendment := range bill.Amendments {
 		if _, err := tx.ExecContext(ctx, `
@@ -468,6 +496,7 @@ func countTables(ctx context.Context, db *sql.DB) (map[string]int, error) {
 		"bill_committee_meetings",
 		"bill_versions",
 		"bill_diffs",
+		"bill_clause_diffs",
 		"bill_amendments",
 		"pbo_costings",
 		"bill_related_links",
@@ -532,4 +561,11 @@ func removeSQLiteFiles(path string) error {
 		return fmt.Errorf("remove existing sqlite file %s: %w", path+suffix, err)
 	}
 	return nil
+}
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

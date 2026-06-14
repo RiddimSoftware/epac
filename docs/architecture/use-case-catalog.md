@@ -334,6 +334,38 @@ Current implementation:
 
 ---
 
+### IngestBillVersionText
+
+```
+Actor: System (Backend Ingest / SQLite Writer boundary)
+Goal: Fetch and extract the text content and clauses of a bill version from its LEGISinfo XML URL, compute its stable hash, and associate it with the bill version metadata.
+Inputs: XML URL of the bill version.
+Outputs: Extracted list of clauses (VersionSection) and stable SHA256 text hash.
+Entities / values: BillVersion, VersionSection.
+Ports: backend Go: `BillSource`.
+Primary adapters: LEGISinfo/parl.ca XML crawler/parser.
+```
+
+> **Boundary rule:** XML retrieving, parsing, and clause extraction must stay entirely inside the backend indexer. Downstream iOS apps or APIs only consume the structured metadata and stable hash.
+
+---
+
+### ComputeBillVersionDiff
+
+```
+Actor: System (Backend Ingest / SQLite Writer boundary)
+Goal: Compute clause-level differences (additions, deletions, modifications, and unchanged clauses) between two consecutive version records of a bill using an alignment algorithm on their clauses.
+Inputs: "Before" version clauses, "After" version clauses.
+Outputs: Ordered list of clause-level differences (BillClauseDiff) with stable IDs.
+Entities / values: BillDiff, BillClauseDiff.
+Ports: backend Go: `BillSource`.
+Primary adapters: Backend indexer diffing logic.
+```
+
+> **Boundary rule:** The clause-aware diff algorithm is a use-case policy executed during ingestion. Only the computed diff rows are persisted in the database to be served to downstream clients.
+
+---
+
 ### IngestMembers
 
 ```
