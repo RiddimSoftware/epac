@@ -26,6 +26,23 @@ OPENAPI_MANIFEST_TAG_CONTRACTS = {
 }
 
 
+def supports_color() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR") or os.environ.get("GITHUB_ACTIONS") == "true":
+        return True
+    return sys.stdout.isatty()
+
+
+class Color:
+    GREEN = "\033[92m" if supports_color() else ""
+    RED = "\033[91m" if supports_color() else ""
+    YELLOW = "\033[93m" if supports_color() else ""
+    CYAN = "\033[96m" if supports_color() else ""
+    BOLD = "\033[1m" if supports_color() else ""
+    RESET = "\033[0m" if supports_color() else ""
+
+
 class DeploymentCheckError(Exception):
     """Raised when an AWS read fails unexpectedly."""
 
@@ -445,7 +462,17 @@ def write_summary(env_name: str, phase: str, failures: list[str], checked: list[
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as handle:
             handle.write("\n".join(lines) + "\n")
-    print("\n".join(lines))
+
+    print(f"{Color.BOLD}Backend manifest deployment check ({env_name}, {phase}):{Color.RESET}")
+    for service in checked:
+        is_failed = service.name in failed_services
+        result_str = f"{Color.RED}FAIL{Color.RESET}" if is_failed else f"{Color.GREEN}PASS{Color.RESET}"
+        print(f"  [{result_str}] {service.name}")
+    if failures:
+        print()
+        print(f"{Color.BOLD}{Color.RED}Failures:{Color.RESET}")
+        for failure in failures:
+            print(f"  - {Color.RED}{failure}{Color.RESET}")
 
 
 def main() -> int:
@@ -470,7 +497,7 @@ def main() -> int:
         service_filter=service_filter,
     )
     if not services:
-        print(f"No {args.environment} {args.scope} services selected.")
+        print(f"{Color.YELLOW}No {args.environment} {args.scope} services selected.{Color.RESET}")
         return 0
 
     failures = check_openapi_manifest_consistency(manifest, openapi, args.environment, service_filter)
