@@ -1,15 +1,14 @@
 import Foundation
 
-/// A bill's committee study stage: which committee is studying (or studied) the
-/// bill, when the study began and finished, and the committee meetings tied to
-/// that study.
+/// A bill's committee study stage: which committee is studying the bill, when
+/// the study began and finished, and the committee meetings tied to that study.
 ///
 /// All values originate from the backend committee-stage endpoint, which aligns
 /// LEGISinfo "in committee" status with the parl.ca committee schedule. The
 /// boundary rule for this feature is that "hide the panel when the bill is not
-/// before a committee" is a UI decision: the use case returns `nil` when there
-/// is no committee stage, and this entity simply carries whatever the backend
-/// reports. The view decides what to render.
+/// currently before a committee" is a UI decision: the use case returns `nil`
+/// when there is no active committee-stage payload, and this entity simply
+/// carries whatever the backend reports. The view decides what to render.
 struct BillCommitteeStage: Equatable, Sendable {
     /// The committee studying the bill. Carries enough to link to the committee
     /// meetings surface (EPAC-411) and to the committee's page.

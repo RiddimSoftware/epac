@@ -29,12 +29,15 @@ struct BillDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     private let loadBillLobbyingContext: LoadBillLobbyingContext
+    private let loadBillCommitteeStage: LoadBillCommitteeStage
     private let autoloadLobbyingContext: Bool
+    private let autoloadCommitteeStage: Bool
 
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
     @State private var lobbyingContext: BillLobbyingContext?
+    @State private var committeeStage: BillCommitteeStage?
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
     @State private var sponsorMember: ParliamentMember?
@@ -44,11 +47,17 @@ struct BillDetailView: View {
         loadBillLobbyingContext: LoadBillLobbyingContext = LoadBillLobbyingContext(
             repository: BackendBillLobbyingContextRepository()
         ),
-        autoloadLobbyingContext: Bool = true
+        loadBillCommitteeStage: LoadBillCommitteeStage = LoadBillCommitteeStage(
+            repository: BackendBillCommitteeStageRepository()
+        ),
+        autoloadLobbyingContext: Bool = true,
+        autoloadCommitteeStage: Bool = true
     ) {
         self.bill = bill
         self.loadBillLobbyingContext = loadBillLobbyingContext
+        self.loadBillCommitteeStage = loadBillCommitteeStage
         self.autoloadLobbyingContext = autoloadLobbyingContext
+        self.autoloadCommitteeStage = autoloadCommitteeStage
     }
 
     var body: some View {
@@ -63,6 +72,11 @@ struct BillDetailView: View {
 
             // MARK: PBO independent cost analysis
             PBOCostCard(bill: bill)
+
+            // MARK: Committee study stage
+            if let committeeStage {
+                BillInCommitteePanel(stage: committeeStage)
+            }
 
             // MARK: Pre-vote lobbying context
             if let lobbyingContext {
@@ -190,6 +204,7 @@ struct BillDetailView: View {
         }
         .task {
             await loadCrossReferences()
+            await loadCommitteeStage()
             await loadLobbyingContext()
             BillFollowStore.shared.markAsRead(bill.number)
         }
@@ -423,6 +438,17 @@ struct BillDetailView: View {
             lobbyingContext = context.hasCommunications ? context : nil
         } catch {
             lobbyingContext = nil
+        }
+    }
+
+    @MainActor
+    private func loadCommitteeStage() async {
+        guard autoloadCommitteeStage else { return }
+
+        do {
+            committeeStage = try await loadBillCommitteeStage.execute(billID: bill.id)
+        } catch {
+            committeeStage = nil
         }
     }
 }

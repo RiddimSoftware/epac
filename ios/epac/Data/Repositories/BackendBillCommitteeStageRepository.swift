@@ -2,11 +2,12 @@ import Foundation
 
 /// Loads a bill's committee study stage from the epac backend.
 ///
-/// Contract — `GET /api/v1/bills/{id}/committee-stage`:
+/// Contract - `GET /api/v1/bills/{id}/committee-stage`:
 /// - `200`: committee-stage JSON (see `BillCommitteeStageResponse`). The backend
 ///   has already aligned the LEGISinfo "in committee" status with the parl.ca
 ///   committee schedule, so the iOS side only decodes and renders.
-/// - `204` / `404`: the bill is not before a committee → `nil` (panel hidden).
+/// - `204` / `404`: the bill is not currently before a committee, so the panel
+///   is hidden.
 ///
 /// The iOS layer never parses LEGISinfo or parl.ca wire formats directly; this
 /// typed JSON shape is the boundary between backend and app.
@@ -47,8 +48,8 @@ struct BackendBillCommitteeStageRepository: BillCommitteeStageRepository {
         return try decoder.decode(BillCommitteeStageResponse.self, from: data).domain
     }
 
-    /// Returns the response bytes for a 2xx, or `nil` for `204`/`404` (the bill
-    /// has no committee stage). Throws for any other status.
+    /// Returns the response bytes for a 2xx, or `nil` for `204`/`404`.
+    /// Throws for any other status.
     private func get(path: String) async throws -> Data? {
         let url = baseURL.appending(path: path)
         var request = URLRequest(url: url, timeoutInterval: Constants.requestTimeout)

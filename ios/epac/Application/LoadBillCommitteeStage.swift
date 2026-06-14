@@ -2,8 +2,8 @@
 ///
 /// Surfaces the committee currently studying the bill, with study dates,
 /// upcoming meetings, and past meetings with witness counts. Returns `nil` when
-/// the bill is not before a committee; the "In committee" panel hides itself in
-/// that case (a UI-layer policy, per the feature's boundary rule).
+/// the bill is not currently before a committee; the "In committee" panel hides
+/// itself in that case (a UI-layer policy, per the feature's boundary rule).
 struct LoadBillCommitteeStage: Sendable {
     let repository: any BillCommitteeStageRepository
 
