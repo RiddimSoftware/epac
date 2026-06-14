@@ -182,6 +182,7 @@ def test_full_mode_bill_diff_fixtures_use_backfilled_current_parliament_ids():
 
 
 def test_write_summary_writes_to_github_step_summary(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("NO_COLOR", "1")
     smoke = load_smoke_module()
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))

@@ -270,6 +270,7 @@ def test_route_payload_mismatch_is_reported():
 
 
 def test_write_summary_writes_to_github_step_summary(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("NO_COLOR", "1")
     checker = load_module()
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
