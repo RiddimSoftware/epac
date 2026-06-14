@@ -221,6 +221,29 @@
 "partyLine.info.body" = "Ce score indique à quelle fréquence ce député a voté de la même façon que la majorité de son caucus lors des votes enregistrés. Les votes jumelés et les absences sont exclus. Un score élevé signifie que le député suit presque toujours la ligne du parti; un score faible indique une indépendance. Le score est calculé à partir des dossiers de vote publiés par le Parlement du Canada.";
 "partyLine.info.done" = "Terminé";
 
+/* MP attendance record (EPAC-897) */
+"attendance.title" = "Registre des présences";
+"attendance.infoButton" = "À propos de ce registre";
+"attendance.rate" = "Présent(e) %d%% du temps";
+"attendance.denominator.sinceDate" = "%1$d de %2$d votes depuis le %3$@";
+"attendance.denominator.noDate" = "%1$d de %2$d votes enregistrés";
+"attendance.percent" = "%d%%";
+"attendance.legend.yea" = "Pour";
+"attendance.legend.nay" = "Contre";
+"attendance.legend.paired" = "Jumelé";
+"attendance.legend.absent" = "Absent";
+"attendance.bar.accessibility" = "%1$d Pour, %2$d Contre, %3$d Jumelé, %4$d Absent de %5$d votes";
+"attendance.paired.note" = "Comprend %d absences jumelées — ententes préalables avec un député de l'opposition, ce qui diffère d'un vote manqué.";
+"attendance.comparison.title" = "Comparaison";
+"attendance.comparison.national" = "Moyenne nationale";
+"attendance.comparison.party" = "Caucus %@";
+"attendance.comparison.method" = "Les moyennes couvrent les députés ayant au moins %1$d votes enregistrés (%2$d à l'échelle nationale).";
+"attendance.source.prefix" = "Source :";
+"attendance.source.title" = "API ouverte de Parlement.ca — Votes enregistrés";
+"attendance.info.title" = "À propos des présences";
+"attendance.info.body" = "Ce registre indique à quelle fréquence ce député a été présent lors des votes enregistrés. « Présent » compte chaque vote où le député a exprimé un vote Pour ou Contre. Une absence jumelée est une entente préalable avec un député de l'opposition pour s'abstenir tous deux d'un vote, de sorte que le résultat n'est pas affecté; elle est indiquée séparément et n'est pas traitée de la même manière qu'un simple vote manqué. Les votes tenus avant que le député ne prête serment ne sont jamais comptés. Les chiffres sont calculés à partir des votes enregistrés publiés par le Parlement du Canada.";
+"attendance.info.done" = "Terminé";
+
 /* Contact MP */
 "contact.writeToMP" = "Écrire à mon député";
 

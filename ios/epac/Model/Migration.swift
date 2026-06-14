@@ -18,7 +18,7 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
     // non-optional `contactFetched: Bool`. SwiftData can't infer a default for
     // non-optional properties during lightweight migration, so didMigrate sets
     // it explicitly on all pre-existing records.
-	static let migrateV3toV4 = MigrationStage.custom(
+	nonisolated(unsafe) static let migrateV3toV4 = MigrationStage.custom(
 		fromVersion: SchemaV3.self,
 		toVersion: SchemaV4.self,
 		willMigrate: nil,
@@ -33,28 +33,28 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 
     // Lightweight stage: V5 adds RecordedVote and MemberVote. Adding new model
     // types with no removal or rename is always a safe lightweight migration.
-	static let migrateV4toV5 = MigrationStage.lightweight(
+	nonisolated(unsafe) static let migrateV4toV5 = MigrationStage.lightweight(
 		fromVersion: SchemaV4.self,
 		toVersion: SchemaV5.self
 	)
 
     // Lightweight stage: V6 adds WrittenQuestion. Pure new table, no existing
     // model changes.
-	static let migrateV5toV6 = MigrationStage.lightweight(
+	nonisolated(unsafe) static let migrateV5toV6 = MigrationStage.lightweight(
 		fromVersion: SchemaV5.self,
 		toVersion: SchemaV6.self
 	)
 
     // Lightweight stage: V7 adds FiscalMonitorEntry. Pure new table, no
     // existing model changes.
-	static let migrateV6toV7 = MigrationStage.lightweight(
+	nonisolated(unsafe) static let migrateV6toV7 = MigrationStage.lightweight(
 		fromVersion: SchemaV6.self,
 		toVersion: SchemaV7.self
 	)
 
     // Lightweight stage: V8 adds CabinetPosition. Pure new table, no
     // existing model changes.
-	static let migrateV7toV8 = MigrationStage.lightweight(
+	nonisolated(unsafe) static let migrateV7toV8 = MigrationStage.lightweight(
 		fromVersion: SchemaV7.self,
 		toVersion: SchemaV8.self
 	)
@@ -62,7 +62,7 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 	// Custom stage: V9 makes ParliamentMember jurisdiction-aware and switches
 	// uniqueness to a stored directoryKey so federal and provincial members can
 	// coexist without name collisions.
-	static let migrateV8toV9 = MigrationStage.custom(
+	nonisolated(unsafe) static let migrateV8toV9 = MigrationStage.custom(
 		fromVersion: SchemaV8.self,
 		toVersion: SchemaV9.self,
 		willMigrate: nil,
@@ -80,7 +80,7 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 	)
 
 	// Custom stage: V10 adds jurisdiction string to RecordedVote and MemberVote.
-	static let migrateV9toV10 = MigrationStage.custom(
+	nonisolated(unsafe) static let migrateV9toV10 = MigrationStage.custom(
 		fromVersion: SchemaV9.self,
 		toVersion: SchemaV10.self,
 		willMigrate: nil,
@@ -99,7 +99,7 @@ enum EpacMigrationPlan: SchemaMigrationPlan {
 
 	// Lightweight stage: V11 adds MinisterialExpenseRecord. Pure new table, no
 	// existing model changes. Data is re-seeded from the bundled JSON on next launch.
-	static let migrateV10toV11 = MigrationStage.lightweight(
+	nonisolated(unsafe) static let migrateV10toV11 = MigrationStage.lightweight(
 		fromVersion: SchemaV10.self,
 		toVersion: SchemaV11.self
 	)

@@ -219,6 +219,29 @@
 "partyLine.info.body" = "This score shows how often this MP voted the same way as the majority of their party caucus on recorded votes. Paired votes and absences are excluded. A higher score means the MP almost always follows the party whip; a lower score signals independence. The score is computed from vote records published by the Parliament of Canada.";
 "partyLine.info.done" = "Done";
 
+/* MP attendance record (EPAC-897) */
+"attendance.title" = "Attendance record";
+"attendance.infoButton" = "About this record";
+"attendance.rate" = "Present %d%% of the time";
+"attendance.denominator.sinceDate" = "%1$d of %2$d divisions since %3$@";
+"attendance.denominator.noDate" = "%1$d of %2$d recorded divisions";
+"attendance.percent" = "%d%%";
+"attendance.legend.yea" = "Yea";
+"attendance.legend.nay" = "Nay";
+"attendance.legend.paired" = "Paired";
+"attendance.legend.absent" = "Absent";
+"attendance.bar.accessibility" = "%1$d Yea, %2$d Nay, %3$d Paired, %4$d Absent of %5$d divisions";
+"attendance.paired.note" = "Includes %d paired absences — pre-arranged with an opposing member, not the same as missing a vote.";
+"attendance.comparison.title" = "How this compares";
+"attendance.comparison.national" = "National average";
+"attendance.comparison.party" = "%@ caucus";
+"attendance.comparison.method" = "Averages cover MPs with at least %1$d recorded divisions (%2$d nationally).";
+"attendance.source.prefix" = "Source:";
+"attendance.source.title" = "Parliament.ca open API — Recorded Votes";
+"attendance.info.title" = "About Attendance";
+"attendance.info.body" = "This shows how often this MP was present to vote on recorded divisions. \"Present\" counts every division where the MP cast a recorded Yea or Nay. A paired absence is a pre-arranged agreement with an opposing member to both sit out a vote so the result is unaffected; it is shown separately and is not treated the same as simply missing a vote. Divisions held before the MP was sworn in are never counted, so newer and by-election members are judged only on their own time in office. Figures are computed from recorded votes published by the Parliament of Canada.";
+"attendance.info.done" = "Done";
+
 /* Contact MP */
 "contact.writeToMP" = "Write to MP";
 
