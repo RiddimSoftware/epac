@@ -18,14 +18,20 @@ type BillStage struct {
 	IsCompleted   bool    `json:"is_completed"`
 }
 
+// BillVersion is the served shape of a bill publication. Its fields are
+// single-sourced from the bills-indexer SQLite artifact (the producer): the
+// indexer's bill_versions table only carries a publication stage name and a
+// canonical viewer URL per version, so the served contract exposes exactly
+// those. Label and Stage both carry the LEGISinfo publication-type name (the
+// indexer has no separate label column); SourceURL is the indexer's html_url.
+// The artifact schema is locked by the producer-to-consumer seam test
+// (TestBillsArtifactSeam in backend/bills). See
+// docs/architecture/bills-artifact-contract-epac2304.md.
 type BillVersion struct {
-	ID          string  `json:"id,omitempty"`
-	Label       string  `json:"label,omitempty"`
-	Title       string  `json:"title,omitempty"`
-	Stage       string  `json:"stage,omitempty"`
-	Chamber     string  `json:"chamber,omitempty"`
-	PublishedOn *string `json:"published_on,omitempty"`
-	SourceURL   string  `json:"source_url,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Label     string `json:"label,omitempty"`
+	Stage     string `json:"stage,omitempty"`
+	SourceURL string `json:"source_url,omitempty"`
 }
 
 type BillAmendment struct {

@@ -75,7 +75,8 @@ func TestHandleRequestGetsBillDepth(t *testing.T) {
 	if len(body.Bill.Versions) != 1 || body.Bill.Versions[0].Label != "First reading" {
 		t.Fatalf("versions = %+v", body.Bill.Versions)
 	}
-	if len(body.Bill.Amendments) != 1 || body.Bill.Amendments[0].Number != "NDP-1" {
+	if len(body.Bill.Amendments) != 1 || body.Bill.Amendments[0].ID != "C-2260-a1" ||
+		body.Bill.Amendments[0].SourceURL != "https://www.parl.ca/amendment" {
 		t.Fatalf("amendments = %+v", body.Bill.Amendments)
 	}
 }
@@ -382,16 +383,15 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 	)`); err != nil {
 		t.Fatalf("create stages table: %v", err)
 	}
+	// Mirror the columns the bills-indexer actually writes (see the producer
+	// schema and the artifact seam test): per version, a stage name and an
+	// html_url. The serving repo reads only these for the version contract.
 	if _, err := db.Exec(`CREATE TABLE bill_versions (
 		bill_id TEXT NOT NULL,
 		id TEXT NOT NULL,
-		label TEXT NOT NULL,
-		title TEXT NOT NULL DEFAULT '',
 		stage TEXT NOT NULL DEFAULT '',
-		chamber TEXT NOT NULL DEFAULT '',
-		published_on TEXT,
-		source_url TEXT NOT NULL DEFAULT '',
-		sort_order INTEGER NOT NULL
+		html_url TEXT NOT NULL DEFAULT '',
+		sort_order INTEGER NOT NULL DEFAULT 0
 	)`); err != nil {
 		t.Fatalf("create bill versions table: %v", err)
 	}
@@ -419,18 +419,17 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 	)`); err != nil {
 		t.Fatalf("create bill clause diffs table: %v", err)
 	}
+	// Mirror the bills-indexer's bill_amendments columns. The serving repo reads
+	// only id and source_url onto the served amendment today (the other served
+	// fields have no producer column); see billAmendments.
 	if _, err := db.Exec(`CREATE TABLE bill_amendments (
 		bill_id TEXT NOT NULL,
 		id TEXT NOT NULL,
-		number TEXT NOT NULL,
-		title TEXT NOT NULL DEFAULT '',
-		status TEXT NOT NULL DEFAULT '',
-		stage TEXT NOT NULL DEFAULT '',
-		sponsor_name TEXT NOT NULL DEFAULT '',
-		proposed_on TEXT,
-		text TEXT NOT NULL DEFAULT '',
-		source_url TEXT NOT NULL DEFAULT '',
-		sort_order INTEGER NOT NULL
+		event_id TEXT NOT NULL DEFAULT '',
+		stage_name TEXT NOT NULL DEFAULT '',
+		amendment_note_id TEXT NOT NULL DEFAULT '',
+		amendment_count INTEGER NOT NULL DEFAULT 0,
+		source_url TEXT NOT NULL DEFAULT ''
 	)`); err != nil {
 		t.Fatalf("create bill amendments table: %v", err)
 	}
@@ -483,20 +482,20 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 		t.Fatalf("insert stage fixture: %v", err)
 	}
 	if _, err := db.Exec(`
-		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
-		VALUES ('C-2260', 'C-2260-v1', 'First reading', 'Depth Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/version', 1)`); err != nil {
+		INSERT INTO bill_versions (bill_id, id, stage, html_url, sort_order)
+		VALUES ('C-2260', 'C-2260-v1', 'First reading', 'https://www.parl.ca/version', 1)`); err != nil {
 		t.Fatalf("insert version fixture: %v", err)
 	}
 	if _, err := db.Exec(`
-		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
-		VALUES ('C-1', 'C-1-v1', 'First reading', 'One Version Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/c1/v1', 1)`); err != nil {
+		INSERT INTO bill_versions (bill_id, id, stage, html_url, sort_order)
+		VALUES ('C-1', 'C-1-v1', 'First reading', 'https://www.parl.ca/c1/v1', 1)`); err != nil {
 		t.Fatalf("insert one-version fixture: %v", err)
 	}
 	if _, err := db.Exec(`
-		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
+		INSERT INTO bill_versions (bill_id, id, stage, html_url, sort_order)
 		VALUES
-			('C-2287', 'C-2287-v1', 'First reading', 'Diff Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/c2287/v1', 1),
-			('C-2287', 'C-2287-v2', 'Third reading', 'Diff Act third reading', 'House Third Reading', 'House', '2026-06-10', 'https://www.parl.ca/c2287/v2', 2)`); err != nil {
+			('C-2287', 'C-2287-v1', 'First reading', 'https://www.parl.ca/c2287/v1', 1),
+			('C-2287', 'C-2287-v2', 'Third reading', 'https://www.parl.ca/c2287/v2', 2)`); err != nil {
 		t.Fatalf("insert diff versions fixture: %v", err)
 	}
 	if _, err := db.Exec(`
@@ -513,8 +512,8 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 		t.Fatalf("insert clause diff fixture: %v", err)
 	}
 	if _, err := db.Exec(`
-		INSERT INTO bill_amendments (bill_id, id, number, title, status, stage, sponsor_name, proposed_on, text, source_url, sort_order)
-		VALUES ('C-2260', 'C-2260-a1', 'NDP-1', 'Add review clause', 'adopted', 'Committee', 'Jane Example', '2026-06-02', 'Clause 2 is amended...', 'https://www.parl.ca/amendment', 1)`); err != nil {
+		INSERT INTO bill_amendments (bill_id, id, event_id, stage_name, amendment_note_id, amendment_count, source_url)
+		VALUES ('C-2260', 'C-2260-a1', 'event-1', 'Consideration in committee', 'note-1', 3, 'https://www.parl.ca/amendment')`); err != nil {
 		t.Fatalf("insert amendment fixture: %v", err)
 	}
 	if _, err := db.Exec(`
