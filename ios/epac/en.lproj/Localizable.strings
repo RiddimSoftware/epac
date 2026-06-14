@@ -337,6 +337,17 @@
 "billCommittee.witness.none" = "No witnesses recorded";
 "billCommittee.witness.singular" = "1 witness";
 "billCommittee.witness.plural" = "%d witnesses";
+"billAmendments.title" = "Amendments";
+"billAmendments.empty" = "No amendments tabled yet.";
+"billAmendments.status.passed" = "Passed";
+"billAmendments.status.defeated" = "Defeated";
+"billAmendments.status.withdrawn" = "Withdrawn";
+"billAmendments.status.unknown" = "Status unknown";
+"billAmendments.status.accessibility" = "Status: %@";
+"billAmendments.source" = "View on parl.ca";
+"billAmendments.text.unavailable" = "Amendment text not yet published.";
+"billAmendments.tap.reveal" = "Tap to reveal amendment text";
+"billAmendments.tap.hide" = "Tap to hide amendment text";
 "bills.chamber.house" = "House of Commons";
 "bills.chamber.senate" = "Senate";
 "bills.stage.houseFirst" = "House — First Reading";

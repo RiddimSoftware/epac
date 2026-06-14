@@ -339,6 +339,17 @@
 "billCommittee.witness.none" = "Aucun témoin consigné";
 "billCommittee.witness.singular" = "1 témoin";
 "billCommittee.witness.plural" = "%d témoins";
+"billAmendments.title" = "Amendements";
+"billAmendments.empty" = "Aucun amendement déposé pour l'instant.";
+"billAmendments.status.passed" = "Adopté";
+"billAmendments.status.defeated" = "Rejeté";
+"billAmendments.status.withdrawn" = "Retiré";
+"billAmendments.status.unknown" = "Statut inconnu";
+"billAmendments.status.accessibility" = "Statut : %@";
+"billAmendments.source" = "Consulter sur parl.ca";
+"billAmendments.text.unavailable" = "Texte de l'amendement non encore publié.";
+"billAmendments.tap.reveal" = "Toucher pour afficher le texte de l'amendement";
+"billAmendments.tap.hide" = "Toucher pour masquer le texte de l'amendement";
 "bills.chamber.house" = "Chambre des communes";
 "bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";
