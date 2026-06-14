@@ -1,4 +1,4 @@
-package legisinfo
+package usecase
 
 import (
 	"reflect"
@@ -6,50 +6,6 @@ import (
 
 	"epac/bills-indexer/internal/domain"
 )
-
-func TestParseBillXML(t *testing.T) {
-	xmlData := []byte(`<?xml version="1.0" encoding="utf-8"?>
-<Bill>
-  <Body>
-    <Heading level="1"><TitleText>Some Heading</TitleText></Heading>
-    <Section type="amending">
-      <Label>1</Label>
-      <Text>This is clause one text with a newline
-      and extra  spaces.</Text>
-      <AmendedText>
-        <Subparagraph>
-          <Label>(a)</Label>
-          <Text>Subparagraph text</Text>
-        </Subparagraph>
-      </AmendedText>
-    </Section>
-    <Section>
-      <Label>2</Label>
-      <Text>This is clause two text.</Text>
-    </Section>
-  </Body>
-</Bill>`)
-
-	expected := []domain.VersionSection{
-		{
-			Label: "1",
-			Text:  "This is clause one text with a newline and extra spaces. (a) Subparagraph text",
-		},
-		{
-			Label: "2",
-			Text:  "This is clause two text.",
-		},
-	}
-
-	sections, err := parseBillXML(xmlData)
-	if err != nil {
-		t.Fatalf("parseBillXML: %v", err)
-	}
-
-	if !reflect.DeepEqual(sections, expected) {
-		t.Errorf("parsed sections mismatch.\nExpected: %+v\nGot:      %+v", expected, sections)
-	}
-}
 
 func TestDiffClauses(t *testing.T) {
 	from := []domain.VersionSection{
@@ -98,7 +54,7 @@ func TestDiffClauses(t *testing.T) {
 	}
 }
 
-func TestBuildDiffsCases(t *testing.T) {
+func TestComputeBillVersionDiffCases(t *testing.T) {
 	// Case 1: Multi-version bill with text available
 	v1 := domain.BillVersion{
 		ID:        "v1",
@@ -119,7 +75,7 @@ func TestBuildDiffsCases(t *testing.T) {
 		TextSourceURL: ptrString("https://example.test/xml2"),
 	}
 
-	diffs := buildDiffs("C-2", []domain.BillVersion{v1, v2}, "https://example.test/bill")
+	diffs := ComputeBillVersionDiff("C-2", []domain.BillVersion{v1, v2}, "https://example.test/bill")
 	if len(diffs) != 1 {
 		t.Fatalf("expected 1 diff, got %d", len(diffs))
 	}
@@ -131,7 +87,7 @@ func TestBuildDiffsCases(t *testing.T) {
 	}
 
 	// Case 2: One-version bill -> no diff records should be built
-	diffsOne := buildDiffs("C-2", []domain.BillVersion{v1}, "https://example.test/bill")
+	diffsOne := ComputeBillVersionDiff("C-2", []domain.BillVersion{v1}, "https://example.test/bill")
 	if len(diffsOne) != 0 {
 		t.Errorf("expected 0 diffs for single version, got %d", len(diffsOne))
 	}
@@ -149,7 +105,7 @@ func TestBuildDiffsCases(t *testing.T) {
 		TextHash:      nil,
 		TextSourceURL: nil,
 	}
-	diffsMissing := buildDiffs("C-2", []domain.BillVersion{v1Missing, v2Missing}, "https://example.test/bill")
+	diffsMissing := ComputeBillVersionDiff("C-2", []domain.BillVersion{v1Missing, v2Missing}, "https://example.test/bill")
 	if len(diffsMissing) != 1 {
 		t.Fatalf("expected 1 diff, got %d", len(diffsMissing))
 	}
