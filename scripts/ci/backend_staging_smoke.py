@@ -45,6 +45,23 @@ C10_BILL_ID = "C-10"
 C10_FIRST_READING_VERSION_ID = "c-10-13610716-first-reading"
 
 
+def supports_color() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR") or os.environ.get("GITHUB_ACTIONS") == "true":
+        return True
+    return sys.stdout.isatty()
+
+
+class Color:
+    GREEN = "\033[92m" if supports_color() else ""
+    RED = "\033[91m" if supports_color() else ""
+    YELLOW = "\033[93m" if supports_color() else ""
+    CYAN = "\033[96m" if supports_color() else ""
+    BOLD = "\033[1m" if supports_color() else ""
+    RESET = "\033[0m" if supports_color() else ""
+
+
 class SmokeFailure(Exception):
     """Raised when an endpoint response does not match its smoke contract."""
 
@@ -830,7 +847,23 @@ def write_summary(
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as handle:
             handle.write("\n".join(lines) + "\n")
-    print("\n".join(lines))
+
+    failures = sum(1 for _, passed, _ in results if not passed)
+    print()
+    print(f"{Color.BOLD}Backend {environment} smoke tests summary:{Color.RESET}")
+    print(f"  Base URL: {base_url}")
+    print(f"  Checks: {len(results)} active, {len(skipped)} skipped")
+    
+    passed_count = len(results) - failures
+    print(f"  Passed: {Color.GREEN if passed_count > 0 else ''}{passed_count}{Color.RESET}")
+    print(f"  Failed: {Color.RED if failures > 0 else ''}{failures}{Color.RESET}")
+    
+    if failures > 0:
+        print()
+        print(f"{Color.BOLD}{Color.RED}Failed checks:{Color.RESET}")
+        for check, passed, evidence in results:
+            if not passed:
+                print(f"  - {Color.RED}{check.name}{Color.RESET}: {evidence}")
 
 
 def list_checks() -> None:
@@ -883,13 +916,13 @@ def main() -> int:
     skipped_checks = [c for c in mode_checks if c.service is not None and c.service not in deployed_services]
 
     if not active_checks:
-        print("No active staging smoke checks remain after service filtering.", file=sys.stderr)
+        print(f"{Color.RED}Error: No active staging smoke checks remain after service filtering.{Color.RESET}", file=sys.stderr)
         return 1
 
     if skipped_checks:
         skipped_names = ", ".join(c.name for c in skipped_checks)
         print(
-            f"Skipping {len(skipped_checks)} check(s) for services not deployed to {args.environment}: {skipped_names}",
+            f"{Color.YELLOW}Skipping {len(skipped_checks)} check(s) for services not deployed to {args.environment}:{Color.RESET} {skipped_names}",
             file=sys.stderr,
         )
 
@@ -901,10 +934,10 @@ def main() -> int:
         passed, evidence = run_check(check, base_url)
         results.append((check, passed, evidence))
         if passed:
-            print(f"PASS {check.name}: {evidence}")
+            print(f"{Color.GREEN}PASS{Color.RESET} {check.name}: {evidence}")
         else:
             failures += 1
-            print(f"FAIL {check.name}: {evidence}", file=sys.stderr)
+            print(f"{Color.RED}FAIL{Color.RESET} {check.name}: {evidence}", file=sys.stderr)
 
     write_summary(base_url, args.environment, results, skipped_checks)
     return 1 if failures else 0

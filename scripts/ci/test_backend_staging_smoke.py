@@ -179,3 +179,42 @@ def test_full_mode_bill_diff_fixtures_use_backfilled_current_parliament_ids():
         "to": "c-10-13610716-first-reading",
     }
     assert not one_version.expect_json
+
+
+def test_write_summary_writes_to_github_step_summary(tmp_path, monkeypatch, capsys):
+    smoke = load_smoke_module()
+    summary_file = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
+
+    check = smoke.SmokeCheck(
+        name="test:check",
+        method="GET",
+        path="/test",
+        query={},
+        expected_statuses={200},
+        validator=lambda status, payload: None,
+        deterministic_note="Deterministic check.",
+        fixture_note="No fixture required."
+    )
+
+    smoke.write_summary(
+        base_url="https://api.test",
+        environment="staging",
+        results=[(check, True, "HTTP 200")],
+        skipped=[]
+    )
+
+    # Verify file was written
+    assert summary_file.exists()
+    content = summary_file.read_text(encoding="utf-8")
+    assert "## Backend staging smoke tests" in content
+    assert "| test:check | PASS | HTTP 200 |" in content
+
+    # Verify clean console stdout was printed
+    captured = capsys.readouterr()
+    assert "Backend staging smoke tests summary:" in captured.out
+    assert "Base URL: https://api.test" in captured.out
+    assert "Passed: 1" in captured.out
+    assert "Failed: 0" in captured.out
+    # Raw markdown table should NOT be in console stdout
+    assert "| Endpoint | Result | Evidence |" not in captured.out

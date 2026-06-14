@@ -267,3 +267,37 @@ def test_route_payload_mismatch_is_reported():
     )
 
     assert failures == ["bills: route GET /api/v1/bills payload format 2.0, want 1.0"]
+
+
+def test_write_summary_writes_to_github_step_summary(tmp_path, monkeypatch, capsys):
+    checker = load_module()
+    summary_file = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
+
+    service = checker.ServiceContract(
+        name="bills",
+        routes=(checker.RouteContract("GET", "/api/v1/bills", "1.0"),),
+        artifact=checker.ARTIFACT_CONTRACTS["bills"],
+    )
+
+    checker.write_summary(
+        env_name="staging",
+        phase="ready",
+        failures=["bills: missing prefix env"],
+        checked=[service]
+    )
+
+    # Verify file was written
+    assert summary_file.exists()
+    content = summary_file.read_text(encoding="utf-8")
+    assert "## Backend manifest deployment check (staging, ready)" in content
+    assert "| bills | FAIL |" in content
+
+    # Verify clean console stdout was printed
+    captured = capsys.readouterr()
+    assert "Backend manifest deployment check (staging, ready):" in captured.out
+    assert "[FAIL] bills" in captured.out
+    assert "Failures:" in captured.out
+    assert "- bills: missing prefix env" in captured.out
+    # Raw markdown table should NOT be in console stdout
+    assert "| Service | Result |" not in captured.out
