@@ -30,14 +30,17 @@ struct BillDetailView: View {
 
     private let loadBillLobbyingContext: LoadBillLobbyingContext
     private let loadBillCommitteeStage: LoadBillCommitteeStage
+    private let loadBillAmendments: LoadBillAmendments
     private let autoloadLobbyingContext: Bool
     private let autoloadCommitteeStage: Bool
+    private let autoloadAmendments: Bool
 
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
     @State private var matchingDebates: [SubjectOfBusiness] = []
     @State private var lobbyingContext: BillLobbyingContext?
     @State private var committeeStage: BillCommitteeStage?
+    @State private var amendments: [BillAmendment]?
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
     @State private var sponsorMember: ParliamentMember?
@@ -50,14 +53,20 @@ struct BillDetailView: View {
         loadBillCommitteeStage: LoadBillCommitteeStage = LoadBillCommitteeStage(
             repository: BackendBillCommitteeStageRepository()
         ),
+        loadBillAmendments: LoadBillAmendments = LoadBillAmendments(
+            repository: BackendBillAmendmentsRepository()
+        ),
         autoloadLobbyingContext: Bool = true,
-        autoloadCommitteeStage: Bool = true
+        autoloadCommitteeStage: Bool = true,
+        autoloadAmendments: Bool = true
     ) {
         self.bill = bill
         self.loadBillLobbyingContext = loadBillLobbyingContext
         self.loadBillCommitteeStage = loadBillCommitteeStage
+        self.loadBillAmendments = loadBillAmendments
         self.autoloadLobbyingContext = autoloadLobbyingContext
         self.autoloadCommitteeStage = autoloadCommitteeStage
+        self.autoloadAmendments = autoloadAmendments
     }
 
     var body: some View {
@@ -76,6 +85,11 @@ struct BillDetailView: View {
             // MARK: Committee study stage
             if let committeeStage {
                 BillInCommitteePanel(stage: committeeStage)
+            }
+
+            // MARK: Amendments tabled against this bill
+            if let amendments {
+                BillAmendmentsPanel(amendments: amendments)
             }
 
             // MARK: Pre-vote lobbying context
@@ -205,6 +219,7 @@ struct BillDetailView: View {
         .task {
             await loadCrossReferences()
             await loadCommitteeStage()
+            await loadAmendments()
             await loadLobbyingContext()
             BillFollowStore.shared.markAsRead(bill.number)
         }
@@ -449,6 +464,17 @@ struct BillDetailView: View {
             committeeStage = try await loadBillCommitteeStage.execute(billID: bill.id)
         } catch {
             committeeStage = nil
+        }
+    }
+
+    @MainActor
+    private func loadAmendments() async {
+        guard autoloadAmendments else { return }
+
+        do {
+            amendments = try await loadBillAmendments.execute(billID: bill.id)
+        } catch {
+            amendments = nil
         }
     }
 }

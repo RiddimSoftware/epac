@@ -268,6 +268,73 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Bill amendments panel (EPAC-965)
+
+    func testBillAmendmentsPanel_passed() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillAmendmentsPanel(amendments: [Self.amendmentPassed])
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 360),
+            name: "BillAmendmentsPanel_passed"
+        )
+    }
+
+    func testBillAmendmentsPanel_defeated() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillAmendmentsPanel(amendments: [Self.amendmentDefeated])
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 360),
+            name: "BillAmendmentsPanel_defeated"
+        )
+    }
+
+    func testBillAmendmentsPanel_withdrawn() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillAmendmentsPanel(amendments: [Self.amendmentWithdrawn])
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 360),
+            name: "BillAmendmentsPanel_withdrawn"
+        )
+    }
+
+    func testBillAmendmentsPanel_multipleBySameMP() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillAmendmentsPanel(amendments: Self.amendmentsMultipleBySameMP)
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 540),
+            name: "BillAmendmentsPanel_multipleBySameMP"
+        )
+    }
+
+    func testBillAmendmentsPanel_empty() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillAmendmentsPanel(amendments: [])
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 280),
+            name: "BillAmendmentsPanel_empty"
+        )
+    }
+
     // MARK: - EmptyStateView
 
     func testEmptyStateView_noAction() {
@@ -812,6 +879,84 @@ final class SnapshotTests: XCTestCase {
             ]
         )
     }
+
+    private static let amendmentPassed = BillAmendment(
+        id: "C-8-a-1",
+        number: "LIB-1",
+        title: "Clause 5 — replace subsection (2)",
+        sponsorName: "Hon. Member A",
+        proposedOn: date("2026-06-04"),
+        stage: "Committee",
+        status: .passed,
+        statusLabel: "adopted",
+        text: "That Bill C-8, in Clause 5, be amended by replacing line 10 on page 3 with the following: the Minister shall publish quarterly progress reports.",
+        sourceURL: URL(string: "https://www.parl.ca/legisinfo/amendment/1")
+    )
+
+    private static let amendmentDefeated = BillAmendment(
+        id: "C-8-a-2",
+        number: "CPC-2",
+        title: "Clause 7 — delete",
+        sponsorName: "Hon. Member B",
+        proposedOn: date("2026-06-05"),
+        stage: "Committee",
+        status: .defeated,
+        statusLabel: "negatived",
+        text: "That Bill C-8, Clause 7, be deleted.",
+        sourceURL: URL(string: "https://www.parl.ca/legisinfo/amendment/2")
+    )
+
+    private static let amendmentWithdrawn = BillAmendment(
+        id: "C-8-a-3",
+        number: "NDP-3",
+        title: nil,
+        sponsorName: "Hon. Member C",
+        proposedOn: date("2026-06-08"),
+        stage: "Report Stage",
+        status: .withdrawn,
+        statusLabel: "withdrawn",
+        text: "That Bill C-8 be amended at Report Stage by adding the following after line 12 on page 5: ...",
+        sourceURL: nil
+    )
+
+    private static let amendmentsMultipleBySameMP: [BillAmendment] = [
+        BillAmendment(
+            id: "C-8-a-4",
+            number: "LIB-4",
+            title: "Clause 3 — add subsection (3.1)",
+            sponsorName: "Hon. Member A",
+            proposedOn: date("2026-06-04"),
+            stage: "Committee",
+            status: .passed,
+            statusLabel: "adopted",
+            text: "That Bill C-8, in Clause 3, be amended by adding the following after line 22 on page 2: (3.1) The Minister shall report annually to Parliament.",
+            sourceURL: URL(string: "https://www.parl.ca/legisinfo/amendment/4")
+        ),
+        BillAmendment(
+            id: "C-8-a-5",
+            number: "LIB-5",
+            title: "Clause 9 — clarify scope",
+            sponsorName: "Hon. Member A",
+            proposedOn: date("2026-06-05"),
+            stage: "Committee",
+            status: .defeated,
+            statusLabel: "negatived",
+            text: "That Bill C-8, in Clause 9, be amended by replacing line 4 on page 7 with the following: ...",
+            sourceURL: URL(string: "https://www.parl.ca/legisinfo/amendment/5")
+        ),
+        BillAmendment(
+            id: "C-8-a-6",
+            number: "LIB-6",
+            title: nil,
+            sponsorName: "Hon. Member A",
+            proposedOn: date("2026-06-09"),
+            stage: "Report Stage",
+            status: .withdrawn,
+            statusLabel: "withdrawn",
+            text: "That Bill C-8 be amended at Report Stage by deleting Clause 14.",
+            sourceURL: nil
+        )
+    ]
 
     private static func date(_ rawValue: String) -> Date {
         dateFormatter.date(from: rawValue) ?? Date(timeIntervalSince1970: 0)
