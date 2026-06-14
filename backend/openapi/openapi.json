@@ -970,7 +970,8 @@
               }
             }
           },
-          "204": { "description": "Backend has no diff available for the requested version pair (text missing or diff job not run yet)." },
+          "204": { "description": "Backend has no diff available for the requested version pair (one-version bill, text missing, unknown version pair, or diff job not run yet)." },
+          "400": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" },
           "429": { "$ref": "#/components/responses/RateLimit" },
           "500": { "$ref": "#/components/responses/Error" },

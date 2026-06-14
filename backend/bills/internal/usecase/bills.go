@@ -13,6 +13,7 @@ type BillRepository interface {
 	ListBills(ctx context.Context) ([]domain.Bill, error)
 	GetBillDepth(ctx context.Context, id string) (domain.Bill, error)
 	GetBillCommitteeStage(ctx context.Context, id string) (*domain.BillCommitteeStage, error)
+	GetBillVersionDiff(ctx context.Context, id, fromVersionID, toVersionID string) (*domain.BillVersionDiff, error)
 }
 
 type ListBillsInput struct {
@@ -66,6 +67,44 @@ func (u *GetBillCommitteeStage) Execute(ctx context.Context, id string) (*domain
 		return nil, ErrBillNotFound
 	}
 	return u.repo.GetBillCommitteeStage(ctx, id)
+}
+
+type LoadBillVersionDiffInput struct {
+	BillID        string
+	FromVersionID string
+	ToVersionID   string
+}
+
+type LoadBillVersionDiff struct {
+	repo BillRepository
+}
+
+func NewLoadBillVersionDiff(repo BillRepository) *LoadBillVersionDiff {
+	return &LoadBillVersionDiff{repo: repo}
+}
+
+func (u *LoadBillVersionDiff) Execute(ctx context.Context, input LoadBillVersionDiffInput) (*domain.BillVersionDiff, error) {
+	billID := strings.TrimSpace(input.BillID)
+	if billID == "" {
+		return nil, ErrBillNotFound
+	}
+	fromVersionID := strings.TrimSpace(input.FromVersionID)
+	if fromVersionID == "" {
+		return nil, ErrDiffMissingFrom
+	}
+	toVersionID := strings.TrimSpace(input.ToVersionID)
+	if toVersionID == "" {
+		return nil, ErrDiffMissingTo
+	}
+
+	diff, err := u.repo.GetBillVersionDiff(ctx, billID, fromVersionID, toVersionID)
+	if err != nil || diff == nil {
+		return diff, err
+	}
+	if len(diff.Clauses) == 0 {
+		return nil, nil
+	}
+	return diff, nil
 }
 
 var normalizeRe = regexp.MustCompile(`[^a-z0-9]+`)

@@ -12,6 +12,8 @@ var (
 	ErrChecksumMismatch = errors.New("bills index checksum mismatch")
 	ErrSchemaMismatch   = errors.New("bills index schema version mismatch")
 	ErrBillNotFound     = errors.New("bill not found")
+	ErrDiffMissingFrom  = errors.New("missing required from version id")
+	ErrDiffMissingTo    = errors.New("missing required to version id")
 )
 
 type ManifestLoader interface {
