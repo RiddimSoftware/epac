@@ -437,31 +437,20 @@ func (r *Repository) billStages(ctx context.Context, billID string) ([]domain.Bi
 	return stages, nil
 }
 
+// billVersions reads the version rows the bills-indexer writes. The producer's
+// bill_versions table is the locked contract (see the seam test): per version
+// it stores a stage name and a canonical viewer URL (html_url), so we read
+// those with fixed SQL rather than probing for columns the indexer never
+// writes. Label and Stage both carry the stage name; SourceURL is html_url.
 func (r *Repository) billVersions(ctx context.Context, billID string) ([]domain.BillVersion, error) {
-	columns, ok, err := r.tableColumns(ctx, "bill_versions")
-	if err != nil || !ok {
+	if ok, err := r.tableExists(ctx, "bill_versions"); err != nil || !ok {
 		return []domain.BillVersion{}, err
 	}
-	billIDColumn := firstColumn(columns, "bill_id", "legisinfo_id")
-	if billIDColumn == "" {
-		return []domain.BillVersion{}, nil
-	}
-	query := fmt.Sprintf(`
-		SELECT %s, %s, %s, %s, %s, %s, %s
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, stage, html_url
 		FROM bill_versions
-		WHERE %s = ?
-		ORDER BY %s`,
-		columnExpr(columns, "id", "version_id"),
-		columnExpr(columns, "label", "version_label", "name", "stage"),
-		columnExpr(columns, "title"),
-		columnExpr(columns, "stage"),
-		columnExpr(columns, "chamber"),
-		columnExpr(columns, "published_on", "published_date", "version_date", "date"),
-		columnExpr(columns, "source_url", "html_url", "url", "text_source_url", "xml_url", "pdf_url"),
-		billIDColumn,
-		orderExpr(columns),
-	)
-	rows, err := r.db.QueryContext(ctx, query, billID)
+		WHERE bill_id = ?
+		ORDER BY sort_order, rowid`, billID)
 	if err != nil {
 		return nil, fmt.Errorf("query bill versions sqlite artifact: %w", err)
 	}
@@ -469,18 +458,10 @@ func (r *Repository) billVersions(ctx context.Context, billID string) ([]domain.
 
 	versions := make([]domain.BillVersion, 0)
 	for rows.Next() {
-		var version domain.BillVersion
-		var id, label, title, stage, chamber, publishedOn, sourceURL sql.NullString
-		if err := rows.Scan(&id, &label, &title, &stage, &chamber, &publishedOn, &sourceURL); err != nil {
-			return nil, fmt.Errorf("scan bill versions sqlite artifact: %w", err)
+		version, err := scanBillVersion(rows)
+		if err != nil {
+			return nil, err
 		}
-		version.ID = stringValue(id)
-		version.Label = stringValue(label)
-		version.Title = stringValue(title)
-		version.Stage = stringValue(stage)
-		version.Chamber = stringValue(chamber)
-		version.PublishedOn = stringPtr(publishedOn)
-		version.SourceURL = stringValue(sourceURL)
 		versions = append(versions, version)
 	}
 	if err := rows.Err(); err != nil {
@@ -490,56 +471,44 @@ func (r *Repository) billVersions(ctx context.Context, billID string) ([]domain.
 }
 
 func (r *Repository) billVersionByID(ctx context.Context, billID, versionID string) (domain.BillVersion, bool, error) {
-	columns, ok, err := r.tableColumns(ctx, "bill_versions")
-	if err != nil || !ok {
+	if ok, err := r.tableExists(ctx, "bill_versions"); err != nil || !ok {
 		return domain.BillVersion{}, false, err
 	}
-	billIDColumn := firstColumn(columns, "bill_id", "legisinfo_id")
-	versionIDColumn := firstColumn(columns, "id", "version_id")
-	if billIDColumn == "" || versionIDColumn == "" {
-		return domain.BillVersion{}, false, nil
-	}
-	query := fmt.Sprintf(`
-		SELECT %s, %s, %s, %s, %s, %s, %s
+	version, err := scanBillVersion(r.db.QueryRowContext(ctx, `
+		SELECT id, stage, html_url
 		FROM bill_versions
-		WHERE %s = ? AND %s = ?
-		LIMIT 1`,
-		columnExpr(columns, "id", "version_id"),
-		columnExpr(columns, "label", "version_label", "name", "stage"),
-		columnExpr(columns, "title"),
-		columnExpr(columns, "stage"),
-		columnExpr(columns, "chamber"),
-		columnExpr(columns, "published_on", "published_date", "version_date", "date"),
-		columnExpr(columns, "source_url", "html_url", "url", "text_source_url", "xml_url", "pdf_url"),
-		billIDColumn,
-		versionIDColumn,
-	)
-
-	var version domain.BillVersion
-	var id, label, title, stage, chamber, publishedOn, sourceURL sql.NullString
-	err = r.db.QueryRowContext(ctx, query, billID, versionID).Scan(
-		&id,
-		&label,
-		&title,
-		&stage,
-		&chamber,
-		&publishedOn,
-		&sourceURL,
-	)
+		WHERE bill_id = ? AND id = ?
+		LIMIT 1`, billID, versionID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.BillVersion{}, false, nil
 	}
 	if err != nil {
-		return domain.BillVersion{}, false, fmt.Errorf("query bill version sqlite artifact: %w", err)
+		return domain.BillVersion{}, false, err
 	}
-	version.ID = stringValue(id)
-	version.Label = stringValue(label)
-	version.Title = stringValue(title)
-	version.Stage = stringValue(stage)
-	version.Chamber = stringValue(chamber)
-	version.PublishedOn = stringPtr(publishedOn)
-	version.SourceURL = stringValue(sourceURL)
 	return version, true, nil
+}
+
+// rowScanner is satisfied by both *sql.Rows and *sql.Row so scanBillVersion can
+// serve list and single-row reads from the same fixed projection.
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+// scanBillVersion maps the producer's (id, stage, html_url) projection to the
+// served BillVersion. The indexer has no separate version label or title, so
+// Label and Stage both carry the publication stage name; SourceURL is the
+// indexer's html_url. These are the only version fields the producer writes.
+func scanBillVersion(scanner rowScanner) (domain.BillVersion, error) {
+	var id, stage, htmlURL sql.NullString
+	if err := scanner.Scan(&id, &stage, &htmlURL); err != nil {
+		return domain.BillVersion{}, fmt.Errorf("scan bill version sqlite artifact: %w", err)
+	}
+	return domain.BillVersion{
+		ID:        stringValue(id),
+		Label:     stringValue(stage),
+		Stage:     stringValue(stage),
+		SourceURL: stringValue(htmlURL),
+	}, nil
 }
 
 func (r *Repository) billClauseDiffs(ctx context.Context, billID, diffID string) ([]domain.BillClauseDiff, error) {
@@ -574,33 +543,24 @@ func (r *Repository) billClauseDiffs(ctx context.Context, billID, diffID string)
 	return clauses, nil
 }
 
+// billAmendments reads the amendment rows the bills-indexer writes. The
+// producer's bill_amendments table only carries an id and a source_url that map
+// onto the served BillAmendment, so we read those with fixed SQL. The remaining
+// served fields (number, title, status, stage, sponsor_name, proposed_on, text)
+// have no producer column and are intentionally left empty — matching what
+// production already returns. Trimming or enriching those served fields is a
+// separate contract decision (out of scope for the version contract this seam
+// locks); see the "Known limitation" section in
+// docs/architecture/bills-artifact-contract-epac2304.md.
 func (r *Repository) billAmendments(ctx context.Context, billID string) ([]domain.BillAmendment, error) {
-	columns, ok, err := r.tableColumns(ctx, "bill_amendments")
-	if err != nil || !ok {
+	if ok, err := r.tableExists(ctx, "bill_amendments"); err != nil || !ok {
 		return []domain.BillAmendment{}, err
 	}
-	billIDColumn := firstColumn(columns, "bill_id", "legisinfo_id")
-	if billIDColumn == "" {
-		return []domain.BillAmendment{}, nil
-	}
-	query := fmt.Sprintf(`
-		SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, source_url
 		FROM bill_amendments
-		WHERE %s = ?
-		ORDER BY %s`,
-		columnExpr(columns, "id", "amendment_id"),
-		columnExpr(columns, "number", "amendment_number"),
-		columnExpr(columns, "title"),
-		columnExpr(columns, "status"),
-		columnExpr(columns, "stage"),
-		columnExpr(columns, "sponsor_name", "sponsor"),
-		columnExpr(columns, "proposed_on", "date"),
-		columnExpr(columns, "text", "summary"),
-		columnExpr(columns, "source_url", "url"),
-		billIDColumn,
-		orderExpr(columns),
-	)
-	rows, err := r.db.QueryContext(ctx, query, billID)
+		WHERE bill_id = ?
+		ORDER BY rowid`, billID)
 	if err != nil {
 		return nil, fmt.Errorf("query bill amendments sqlite artifact: %w", err)
 	}
@@ -609,18 +569,11 @@ func (r *Repository) billAmendments(ctx context.Context, billID string) ([]domai
 	amendments := make([]domain.BillAmendment, 0)
 	for rows.Next() {
 		var amendment domain.BillAmendment
-		var id, number, title, status, stage, sponsorName, proposedOn, text, sourceURL sql.NullString
-		if err := rows.Scan(&id, &number, &title, &status, &stage, &sponsorName, &proposedOn, &text, &sourceURL); err != nil {
+		var id, sourceURL sql.NullString
+		if err := rows.Scan(&id, &sourceURL); err != nil {
 			return nil, fmt.Errorf("scan bill amendments sqlite artifact: %w", err)
 		}
 		amendment.ID = stringValue(id)
-		amendment.Number = stringValue(number)
-		amendment.Title = stringValue(title)
-		amendment.Status = stringValue(status)
-		amendment.Stage = stringValue(stage)
-		amendment.SponsorName = stringValue(sponsorName)
-		amendment.ProposedOn = stringPtr(proposedOn)
-		amendment.Text = stringValue(text)
 		amendment.SourceURL = stringValue(sourceURL)
 		amendments = append(amendments, amendment)
 	}
@@ -640,58 +593,6 @@ func (r *Repository) tableExists(ctx context.Context, table string) (bool, error
 		return false, fmt.Errorf("find sqlite table %s: %w", table, err)
 	}
 	return true, nil
-}
-
-func (r *Repository) tableColumns(ctx context.Context, table string) (map[string]bool, bool, error) {
-	if ok, err := r.tableExists(ctx, table); err != nil || !ok {
-		return nil, false, err
-	}
-	rows, err := r.db.QueryContext(ctx, "PRAGMA table_info("+table+")")
-	if err != nil {
-		return nil, false, fmt.Errorf("read sqlite table info %s: %w", table, err)
-	}
-	defer rows.Close()
-
-	columns := map[string]bool{}
-	for rows.Next() {
-		var cid int
-		var name, columnType string
-		var notNull, pk int
-		var defaultValue any
-		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
-			return nil, false, fmt.Errorf("scan sqlite table info %s: %w", table, err)
-		}
-		columns[name] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, false, fmt.Errorf("iterate sqlite table info %s: %w", table, err)
-	}
-	return columns, true, nil
-}
-
-func columnExpr(columns map[string]bool, candidates ...string) string {
-	for _, candidate := range candidates {
-		if columns[candidate] {
-			return candidate
-		}
-	}
-	return "NULL"
-}
-
-func firstColumn(columns map[string]bool, candidates ...string) string {
-	for _, candidate := range candidates {
-		if columns[candidate] {
-			return candidate
-		}
-	}
-	return ""
-}
-
-func orderExpr(columns map[string]bool) string {
-	if columns["sort_order"] {
-		return "sort_order, rowid"
-	}
-	return "rowid"
 }
 
 func stringValue(value sql.NullString) string {

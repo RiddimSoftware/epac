@@ -26,9 +26,8 @@ func TestRepositoryGetBillVersionDiffMapsCurrentArtifactSchema(t *testing.T) {
 	if diff.From.ID != "v1" || diff.From.Label != "First Reading" || diff.From.Stage != "First Reading" {
 		t.Fatalf("from version = %+v", diff.From)
 	}
-	if diff.From.PublishedOn == nil || *diff.From.PublishedOn != "2026-06-01" {
-		t.Fatalf("from published_on = %+v", diff.From.PublishedOn)
-	}
+	// Label mirrors the stage name (the producer has no separate label column),
+	// and SourceURL is read from the producer's html_url column.
 	if diff.From.SourceURL != "https://www.parl.ca/v1" {
 		t.Fatalf("from source_url = %q", diff.From.SourceURL)
 	}

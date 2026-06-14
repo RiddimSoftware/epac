@@ -39,6 +39,9 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	if fixturePath := strings.TrimSpace(os.Getenv("BILLS_FIXTURE_BATCH")); fixturePath != "" {
+		return runFromFixture(ctx, fixturePath)
+	}
 	session, err := sessionFromEnv()
 	if err != nil {
 		return err
@@ -66,7 +69,7 @@ func run(ctx context.Context) error {
 	)
 	writer := sqliteadapter.NewWriter(sqliteadapter.WithLogger(logger))
 	store := s3adapter.NewStore(awss3.NewFromConfig(awsCfg), bucket, prefix, s3adapter.WithLogger(logger))
-	
+
 	dbPath := firstEnvDefault(defaultDBPath, "DB_PATH", "BILLS_DB_PATH")
 	return runPipeline(ctx, session, prefix, bucket, source, writer, store, store, dbPath)
 }
@@ -105,6 +108,37 @@ func runPipeline(
 		"sqlite_size_bytes": out.Manifest.SQLiteSizeBytes,
 		"sqlite_sha256":     out.Manifest.SQLiteSHA256,
 		"table_counts":      out.Manifest.TableCounts,
+	})
+	return nil
+}
+
+// runFromFixture builds the SQLite artifact from a local JSON batch instead of
+// fetching from LEGISinfo and uploading to S3. The bills serving module's
+// producer-to-consumer seam test (EPAC-2304) sets BILLS_FIXTURE_BATCH and
+// DB_PATH to drive the real writer, then reads the on-disk artifact back with
+// the serving repository so SQLite schema drift fails at build time. The
+// deployed pipeline never sets BILLS_FIXTURE_BATCH.
+func runFromFixture(ctx context.Context, fixturePath string) error {
+	data, err := os.ReadFile(fixturePath)
+	if err != nil {
+		return fmt.Errorf("read fixture batch: %w", err)
+	}
+	var batch domain.Batch
+	if err := json.Unmarshal(data, &batch); err != nil {
+		return fmt.Errorf("decode fixture batch: %w", err)
+	}
+	dbPath := firstEnvDefault(defaultDBPath, "DB_PATH", "BILLS_DB_PATH")
+	writer := sqliteadapter.NewWriter(sqliteadapter.WithLogger(func(payload map[string]any) { logJSON(payload) }))
+	stats, err := writer.Write(ctx, dbPath, batch)
+	if err != nil {
+		return fmt.Errorf("write fixture artifact: %w", err)
+	}
+	logJSON(map[string]any{
+		"pipeline":     "bills-indexer",
+		"event":        "fixture_artifact_written",
+		"db_path":      dbPath,
+		"bill_count":   stats.BillCount,
+		"table_counts": stats.TableCounts,
 	})
 	return nil
 }

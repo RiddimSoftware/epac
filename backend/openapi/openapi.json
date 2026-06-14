@@ -815,7 +815,7 @@
                           {
                             "id": "C-1-v1",
                             "label": "First reading",
-                            "published_on": "2026-04-27",
+                            "stage": "First reading",
                             "source_url": "https://www.parl.ca/version"
                           }
                         ],
@@ -942,17 +942,15 @@
                     "value": {
                       "from": {
                         "id": "C-8-v1",
-                        "label": "First reading",
+                        "label": "First Reading",
                         "stage": "First Reading",
-                        "chamber": "House of Commons",
-                        "published_on": "2026-04-27"
+                        "source_url": "https://www.parl.ca/DocumentViewer/en/45-1/bill/C-8/first-reading"
                       },
                       "to": {
                         "id": "C-8-v3",
-                        "label": "As passed by the House",
+                        "label": "Third Reading",
                         "stage": "Third Reading",
-                        "chamber": "House of Commons",
-                        "published_on": "2026-06-04"
+                        "source_url": "https://www.parl.ca/DocumentViewer/en/45-1/bill/C-8/third-reading"
                       },
                       "clauses": [
                         {
@@ -2708,13 +2706,11 @@
       },
       "BillVersion": {
         "type": "object",
+        "description": "A bill publication as served from the bills SQLite artifact. The bills-indexer only records a publication stage name and a canonical viewer URL per version, so label and stage both carry the LEGISinfo publication-type name and source_url is that viewer URL. The producer-to-consumer seam test locks this field set.",
         "properties": {
           "id": { "type": "string" },
           "label": { "type": "string" },
-          "title": { "type": "string" },
           "stage": { "type": "string" },
-          "chamber": { "type": "string" },
-          "published_on": { "type": "string", "format": "date" },
           "source_url": { "type": "string", "format": "uri" }
         }
       },

@@ -102,6 +102,9 @@ jobs:
       - name: Run bills-indexer tests
         working-directory: backend/bills-indexer
         run: go test ./...
+      - name: Run bills tests
+        working-directory: backend/bills
+        run: go test ./...
       - name: Run members-indexer tests
         working-directory: backend/members-indexer
         run: go test ./...
