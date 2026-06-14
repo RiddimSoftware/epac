@@ -1499,8 +1499,8 @@ Current implementation:
 
 ```
 Actor: System (cron scheduler)
-Goal: Fetch active parliamentary divisions, identify concluded votes, save them as artifacts, and dispatch a push notification payload.
-Inputs: Current time (to verify sitting hours).
+Goal: Fetch active parliamentary divisions during sitting hours, identify concluded votes, save them as artifacts, and dispatch a push notification payload within the EPAC-801 SLO (≤ 3 min from upstream availability to ingestion, ≤ 5 min from ingestion to followed-bill push).
+Inputs: Current time (to verify sitting hours and select polling cadence).
 Outputs: Concluded division artifacts written to storage, push notifications dispatched.
 Entities / values: Division.
 Ports: backend Go: `DivisionsFetching`, `ArtifactRepository`, `PushDispatching`, `Clock`.
@@ -1513,7 +1513,7 @@ Current implementation:
   backend/live-vote-poller/internal/adapter/push/dispatcher.go
 ```
 
-> Boundary rule: The usecase checks sitting hours and division status independently of how AWS schedules the lambda or how HTTP requests are formed.
+> Boundary rule: The usecase checks sitting hours and division status independently of how AWS schedules the lambda or how HTTP requests are formed. Polling cadence is a use-case-layer policy — sitting + division-in-progress ⇒ 30 s, sitting only ⇒ 2 min, otherwise ⇒ hourly — surfaced to the scheduler adapter through the sitting-hours gate (see [docs/research/divisions-polling-timing.md](../research/divisions-polling-timing.md)). HTTP, S3, and APNs wire formats remain confined to adapters.
 
 ---
 
