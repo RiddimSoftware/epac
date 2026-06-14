@@ -96,8 +96,8 @@ def test_bill_diff_full_validator_requires_seeded_payload():
     smoke.validate_bill_diff_payload(
         200,
         {
-            "from": {"id": "C-8-v1"},
-            "to": {"id": "C-8-v3"},
+            "from": {"id": smoke.C11_FIRST_READING_VERSION_ID},
+            "to": {"id": smoke.C11_COMMITTEE_VERSION_ID},
             "clauses": [{"id": "clause-1"}],
         },
     )
@@ -105,8 +105,23 @@ def test_bill_diff_full_validator_requires_seeded_payload():
     with pytest.raises(smoke.SmokeFailure, match="clauses must not be empty"):
         smoke.validate_bill_diff_payload(
             200,
-            {"from": {"id": "C-8-v1"}, "to": {"id": "C-8-v3"}, "clauses": []},
+            {
+                "from": {"id": smoke.C11_FIRST_READING_VERSION_ID},
+                "to": {"id": smoke.C11_COMMITTEE_VERSION_ID},
+                "clauses": [],
+            },
         )
+
+
+def test_bill_diff_unavailable_validator_requires_empty_204():
+    smoke = load_smoke_module()
+
+    smoke.validate_bill_diff_unavailable(204, b"")
+
+    with pytest.raises(smoke.SmokeFailure, match="expected HTTP 204"):
+        smoke.validate_bill_diff_unavailable(200, b"")
+    with pytest.raises(smoke.SmokeFailure, match="body must be empty"):
+        smoke.validate_bill_diff_unavailable(204, b"{}")
 
 
 def test_bill_diff_unknown_validator_accepts_service_owned_404():
@@ -140,4 +155,27 @@ def test_full_only_bill_diff_check_is_skipped_in_contract_mode():
     assert "bills:diff-route" in contract_checks
     assert "bills:diff-unknown" in contract_checks
     assert "bills:diff-full" not in contract_checks
+    assert "bills:diff-one-version" not in contract_checks
     assert "bills:diff-full" in full_checks
+    assert "bills:diff-one-version" in full_checks
+
+
+def test_full_mode_bill_diff_fixtures_use_backfilled_current_parliament_ids():
+    smoke = load_smoke_module()
+
+    checks = {check.name: check for check in smoke.CHECKS}
+
+    diff_full = checks["bills:diff-full"]
+    assert diff_full.path == "/api/v1/bills/C-11/diff"
+    assert diff_full.query == {
+        "from": "c-11-13615955-first-reading",
+        "to": "c-11-13896514-as-amended-by-committee",
+    }
+
+    one_version = checks["bills:diff-one-version"]
+    assert one_version.path == "/api/v1/bills/C-10/diff"
+    assert one_version.query == {
+        "from": "c-10-13610716-first-reading",
+        "to": "c-10-13610716-first-reading",
+    }
+    assert not one_version.expect_json

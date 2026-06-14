@@ -38,6 +38,11 @@ DEFAULT_BASE_URLS = {
 }
 TIMEOUT_SECONDS = 20
 RETRIES = 3
+C11_BILL_ID = "C-11"
+C11_FIRST_READING_VERSION_ID = "c-11-13615955-first-reading"
+C11_COMMITTEE_VERSION_ID = "c-11-13896514-as-amended-by-committee"
+C10_BILL_ID = "C-10"
+C10_FIRST_READING_VERSION_ID = "c-10-13610716-first-reading"
 
 
 class SmokeFailure(Exception):
@@ -150,6 +155,13 @@ def validate_bill_diff_payload(status: int, payload: Any) -> None:
         if not isinstance(version, dict) or not isinstance(version.get("id"), str) or not version["id"]:
             raise SmokeFailure(f"bills:diff-full: {key} version must include a non-empty id")
     require_non_empty_list(body, "bills:diff-full", "clauses")
+
+
+def validate_bill_diff_unavailable(status: int, payload: Any) -> None:
+    if status != 204:
+        raise SmokeFailure(f"bills:diff-one-version: expected HTTP 204 unavailable diff, got {status}")
+    if payload != b"":
+        raise SmokeFailure("bills:diff-one-version: 204 response body must be empty")
 
 
 def validate_bill_diff_unknown(status: int, payload: Any) -> None:
@@ -373,13 +385,26 @@ CHECKS = [
     SmokeCheck(
         name="bills:diff-full",
         method="GET",
-        path="/api/v1/bills/C-8/diff",
-        query={"from": "C-8-v1", "to": "C-8-v3"},
-        expected_statuses={200, 404},
+        path=f"/api/v1/bills/{C11_BILL_ID}/diff",
+        query={"from": C11_FIRST_READING_VERSION_ID, "to": C11_COMMITTEE_VERSION_ID},
+        expected_statuses={200},
         validator=validate_bill_diff_payload,
         service="bills",
         deterministic_note="Full-mode check asserts a seeded current-Parliament multi-version bill returns a concrete diff payload.",
-        fixture_note="Requires C-8 diff data to be backfilled in the selected environment; skipped unless --mode full is used.",
+        fixture_note="Requires C-11 diff data to be backfilled in the selected environment; skipped unless --mode full is used.",
+        full_only=True,
+    ),
+    SmokeCheck(
+        name="bills:diff-one-version",
+        method="GET",
+        path=f"/api/v1/bills/{C10_BILL_ID}/diff",
+        query={"from": C10_FIRST_READING_VERSION_ID, "to": C10_FIRST_READING_VERSION_ID},
+        expected_statuses={204},
+        validator=validate_bill_diff_unavailable,
+        service="bills",
+        deterministic_note="Full-mode negative check asserts a real one-version bill returns the documented unavailable diff response.",
+        fixture_note="Requires C-10 version metadata to be backfilled in the selected environment; skipped unless --mode full is used.",
+        expect_json=False,
         full_only=True,
     ),
     SmokeCheck(
