@@ -160,3 +160,47 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 		t.Fatalf("committee meetings = %#v", stage.Meetings)
 	}
 }
+
+func TestConstructURL(t *testing.T) {
+	t.Run("XML construction", func(t *testing.T) {
+		first := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_1/C-11_E.xml"
+		want := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_2/C-11_E.xml"
+		got := constructXMLURL(first, 2)
+		if got != want {
+			t.Errorf("constructXMLURL = %q, want %q", got, want)
+		}
+
+		// Empty URL returns empty
+		if constructXMLURL("", 2) != "" {
+			t.Error("constructXMLURL with empty string should return empty string")
+		}
+
+		// If no _1/ exists, returns first URL unchanged
+		noMatch := "https://www.parl.ca/other/url.xml"
+		if constructXMLURL(noMatch, 2) != noMatch {
+			t.Errorf("constructXMLURL without matching prefix should return input unchanged")
+		}
+	})
+
+	t.Run("PDF construction", func(t *testing.T) {
+		first := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_1/C-11_1.PDF"
+		want := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_2/C-11_2.PDF"
+		got := constructPDFURL(first, 2)
+		if got != want {
+			t.Errorf("constructPDFURL = %q, want %q", got, want)
+		}
+
+		firstLower := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_1/C-11_1.pdf"
+		wantLower := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_2/C-11_2.pdf"
+		gotLower := constructPDFURL(firstLower, 2)
+		if gotLower != wantLower {
+			t.Errorf("constructPDFURL lower = %q, want %q", gotLower, wantLower)
+		}
+
+		// Empty URL returns empty
+		if constructPDFURL("", 2) != "" {
+			t.Error("constructPDFURL with empty string should return empty string")
+		}
+	})
+}
+
