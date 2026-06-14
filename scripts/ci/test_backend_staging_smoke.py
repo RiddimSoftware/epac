@@ -79,3 +79,42 @@ def test_bills_and_members_validators_require_non_empty_lists():
         smoke.validate_bills(200, {"bills": []})
     with pytest.raises(smoke.SmokeFailure, match="members must not be empty"):
         smoke.validate_members(200, {"members": []})
+
+
+def test_bill_diff_route_validator_distinguishes_api_gateway_404():
+    smoke = load_smoke_module()
+
+    smoke.validate_bill_diff_route(400, {"error": "missing required query parameters: from, to"})
+
+    with pytest.raises(smoke.SmokeFailure, match="API Gateway returned Not Found"):
+        smoke.validate_bill_diff_route(404, {"message": "Not Found"})
+
+
+def test_bill_diff_full_validator_requires_seeded_payload():
+    smoke = load_smoke_module()
+
+    smoke.validate_bill_diff_payload(
+        200,
+        {
+            "from": {"id": "C-8-v1"},
+            "to": {"id": "C-8-v3"},
+            "clauses": [{"id": "clause-1"}],
+        },
+    )
+
+    with pytest.raises(smoke.SmokeFailure, match="clauses must not be empty"):
+        smoke.validate_bill_diff_payload(
+            200,
+            {"from": {"id": "C-8-v1"}, "to": {"id": "C-8-v3"}, "clauses": []},
+        )
+
+
+def test_full_only_bill_diff_check_is_skipped_in_contract_mode():
+    smoke = load_smoke_module()
+
+    contract_checks = [check.name for check in smoke.CHECKS if not check.full_only]
+    full_checks = [check.name for check in smoke.CHECKS]
+
+    assert "bills:diff-route" in contract_checks
+    assert "bills:diff-full" not in contract_checks
+    assert "bills:diff-full" in full_checks

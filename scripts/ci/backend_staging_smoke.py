@@ -63,6 +63,9 @@ class SmokeCheck:
     # of which services are deployed. Set to a service name to skip automatically
     # when that service has deploy.<environment>=false in the manifest.
     service: str | None = None
+    # Full checks require known seeded/backfilled data and are skipped in the
+    # default contract mode.
+    full_only: bool = False
 
     def url(self, base_url: str) -> str:
         base = base_url.rstrip("/")
@@ -108,6 +111,45 @@ def validate_bills(_: int, payload: Any) -> None:
     body = require_dict(payload, "bills")
     require_keys(body, "bills", {"bills"})
     require_non_empty_list(body, "bills", "bills")
+
+
+def is_api_gateway_not_found(status: int, payload: Any) -> bool:
+    return (
+        status == 404
+        and isinstance(payload, dict)
+        and payload.get("message") == "Not Found"
+        and "error" not in payload
+    )
+
+
+def validate_bill_diff_route(status: int, payload: Any) -> None:
+    body = require_dict(payload, "bills:diff-route")
+    if is_api_gateway_not_found(status, body):
+        raise SmokeFailure("bills:diff-route: API Gateway returned Not Found; route is missing or unsynced")
+    if status != 400:
+        raise SmokeFailure(f"bills:diff-route: expected service-owned HTTP 400 for missing from/to, got {status}")
+    if "error" not in body:
+        raise SmokeFailure("bills:diff-route: service-owned 400 response missing error key")
+    error_text = str(body["error"]).lower()
+    for required in ("from", "to"):
+        if required not in error_text:
+            raise SmokeFailure(
+                f"bills:diff-route: error body does not mention missing {required!r}: {body['error']}"
+            )
+
+
+def validate_bill_diff_payload(status: int, payload: Any) -> None:
+    body = require_dict(payload, "bills:diff-full")
+    if is_api_gateway_not_found(status, body):
+        raise SmokeFailure("bills:diff-full: API Gateway returned Not Found; route is missing or unsynced")
+    if status != 200:
+        raise SmokeFailure(f"bills:diff-full: expected HTTP 200 seeded diff payload, got {status}")
+    require_keys(body, "bills:diff-full", {"from", "to", "clauses"})
+    for key in ("from", "to"):
+        version = body[key]
+        if not isinstance(version, dict) or not isinstance(version.get("id"), str) or not version["id"]:
+            raise SmokeFailure(f"bills:diff-full: {key} version must include a non-empty id")
+    require_non_empty_list(body, "bills:diff-full", "clauses")
 
 
 def validate_members(_: int, payload: Any) -> None:
@@ -290,6 +332,29 @@ CHECKS = [
         service="bills",
         deterministic_note="Contract check verifies the bills list endpoint is backed by a non-empty published artifact.",
         fixture_note="No fixture required; the current Parliament bills dataset should not be empty after ingestion.",
+    ),
+    SmokeCheck(
+        name="bills:diff-route",
+        method="GET",
+        path="/api/v1/bills/C-8/diff",
+        query={},
+        expected_statuses={400, 404},
+        validator=validate_bill_diff_route,
+        service="bills",
+        deterministic_note="Route-reachability check omits from/to so the bills service returns its own HTTP 400 before diff data is required.",
+        fixture_note="No backfilled diff fixture required; API Gateway 404 is treated as a route exposure failure.",
+    ),
+    SmokeCheck(
+        name="bills:diff-full",
+        method="GET",
+        path="/api/v1/bills/C-8/diff",
+        query={"from": "C-8-v1", "to": "C-8-v3"},
+        expected_statuses={200, 404},
+        validator=validate_bill_diff_payload,
+        service="bills",
+        deterministic_note="Full-mode check asserts a seeded current-Parliament multi-version bill returns a concrete diff payload.",
+        fixture_note="Requires C-8 diff data to be backfilled in the selected environment; skipped unless --mode full is used.",
+        full_only=True,
     ),
     SmokeCheck(
         name="members:list",
@@ -721,7 +786,8 @@ def list_checks() -> None:
     for check in CHECKS:
         query = f"?{urllib.parse.urlencode(check.query)}" if check.query else ""
         svc = f" [{check.service}]" if check.service else " [always]"
-        print(f"{check.method} {check.path}{query} - {check.name}{svc}")
+        mode = " [full]" if check.full_only else ""
+        print(f"{check.method} {check.path}{query} - {check.name}{svc}{mode}")
 
 
 def main() -> int:
@@ -743,6 +809,12 @@ def main() -> int:
         default=os.environ.get("EPAC_BACKEND_SMOKE_SERVICES", os.environ.get("EPAC_STAGING_SMOKE_SERVICES", "")),
         help="JSON array or comma-separated service names to smoke. Defaults to manifest services with deploy.<environment>=true.",
     )
+    parser.add_argument(
+        "--mode",
+        choices=("contract", "full"),
+        default=os.environ.get("EPAC_BACKEND_SMOKE_MODE", "contract"),
+        help="contract runs fixture-light checks; full also runs seeded/backfilled data assertions.",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -755,8 +827,9 @@ def main() -> int:
     if service_filter is not None:
         deployed_services &= service_filter
 
-    active_checks = [c for c in CHECKS if c.service is None or c.service in deployed_services]
-    skipped_checks = [c for c in CHECKS if c.service is not None and c.service not in deployed_services]
+    mode_checks = [c for c in CHECKS if args.mode == "full" or not c.full_only]
+    active_checks = [c for c in mode_checks if c.service is None or c.service in deployed_services]
+    skipped_checks = [c for c in mode_checks if c.service is not None and c.service not in deployed_services]
 
     if not active_checks:
         print("No active staging smoke checks remain after service filtering.", file=sys.stderr)

@@ -20,6 +20,10 @@ from typing import Any
 
 DEFAULT_REGION = "us-east-1"
 DEFAULT_ARTIFACT_BUCKET = "epac-artifacts-227530433709"
+OPENAPI_HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options"}
+OPENAPI_MANIFEST_TAG_CONTRACTS = {
+    "bills": "Bills",
+}
 
 
 class DeploymentCheckError(Exception):
@@ -137,6 +141,60 @@ def repo_root() -> Path:
 def load_manifest(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def load_openapi(path: Path) -> dict[str, Any]:
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def check_openapi_manifest_consistency(
+    manifest: dict[str, Any],
+    openapi: dict[str, Any],
+    env_name: str,
+    service_filter: set[str] | None = None,
+) -> list[str]:
+    failures: list[str] = []
+    for service_name, openapi_tag in OPENAPI_MANIFEST_TAG_CONTRACTS.items():
+        if service_filter is not None and service_name not in service_filter:
+            continue
+        service = next((item for item in manifest.get("services", []) if item.get("name") == service_name), None)
+        if service is None or service.get("deploy", {}).get(env_name) is not True:
+            continue
+
+        documented_routes = openapi_routes_for_exclusive_tag(openapi, openapi_tag)
+        manifest_routes = {
+            (str(route.get("method", "")).upper(), str(route.get("path", "")))
+            for route in service.get("http", {}).get("routes", {}).get(env_name, [])
+        }
+
+        for method, path in sorted(documented_routes - manifest_routes):
+            failures.append(
+                f"{service_name}: OpenAPI {method} {path} is missing from {env_name} deployment manifest"
+            )
+        for method, path in sorted(manifest_routes - documented_routes):
+            failures.append(
+                f"{service_name}: manifest route {method} {path} is not documented by OpenAPI {openapi_tag} service contract"
+            )
+    return failures
+
+
+def openapi_routes_for_exclusive_tag(openapi: dict[str, Any], tag: str) -> set[tuple[str, str]]:
+    routes: set[tuple[str, str]] = set()
+    paths = openapi.get("paths", {})
+    if not isinstance(paths, dict):
+        return routes
+    for path, operations in paths.items():
+        if not isinstance(path, str) or not isinstance(operations, dict):
+            continue
+        for method, operation in operations.items():
+            method_name = str(method).lower()
+            if method_name not in OPENAPI_HTTP_METHODS or not isinstance(operation, dict):
+                continue
+            tags = operation.get("tags", [])
+            if isinstance(tags, list) and set(tags) == {tag}:
+                routes.add((method_name.upper(), path))
+    return routes
 
 
 def select_s3_http_services(
@@ -396,6 +454,7 @@ def main() -> int:
     parser.add_argument("--api-id", required=True)
     parser.add_argument("--artifact-bucket", default=os.environ.get("EPAC_ARTIFACT_BUCKET", DEFAULT_ARTIFACT_BUCKET))
     parser.add_argument("--manifest", type=Path, default=repo_root() / "backend" / "manifest" / "deployment-services.json")
+    parser.add_argument("--openapi", type=Path, default=repo_root() / "backend" / "openapi" / "openapi.json")
     parser.add_argument("--phase", choices=("topology", "ready"), default="ready")
     parser.add_argument("--scope", choices=("s3-http",), default="s3-http")
     parser.add_argument("--services", default=os.environ.get("EPAC_BACKEND_MANIFEST_SERVICES", "all"))
@@ -403,14 +462,23 @@ def main() -> int:
     args = parser.parse_args()
 
     manifest = load_manifest(args.manifest)
+    openapi = load_openapi(args.openapi)
+    service_filter = parse_service_filter(args.services)
     services = select_s3_http_services(
         manifest,
         args.environment,
-        service_filter=parse_service_filter(args.services),
+        service_filter=service_filter,
     )
     if not services:
         print(f"No {args.environment} {args.scope} services selected.")
         return 0
+
+    failures = check_openapi_manifest_consistency(manifest, openapi, args.environment, service_filter)
+    if failures:
+        write_summary(args.environment, args.phase, failures, services)
+        for failure in failures:
+            print(f"::error::{failure}", file=sys.stderr)
+        return 1
 
     aws = AwsClient(args.region)
     routes = aws.routes(args.api_id)
