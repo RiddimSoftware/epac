@@ -71,19 +71,18 @@ func sha256hex(data []byte) string {
 
 func TestIndexDownloader_HappyPath(t *testing.T) {
 	_, content := createTestDB(t, "v1")
+	localPath := filepath.Join(t.TempDir(), "index.sqlite")
 
 	expectedHash := sha256hex(content)
 	mock := &mockS3Downloader{body: content}
 
-	// Override localIndexPath to write to a temp location.
-	// The downloader writes to /tmp/index.sqlite; in tests we accept this.
-	d := &IndexDownloader{s3: mock, bucket: "test-bucket"}
+	d := &IndexDownloader{s3: mock, bucket: "test-bucket", localPath: localPath}
 	got, err := d.Download(context.Background(), "some/key", expectedHash)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != localIndexPath {
-		t.Errorf("want %q, got %q", localIndexPath, got)
+	if got != localPath {
+		t.Errorf("want %q, got %q", localPath, got)
 	}
 }
 
@@ -91,7 +90,7 @@ func TestIndexDownloader_ChecksumMismatch(t *testing.T) {
 	_, content := createTestDB(t, "v1")
 
 	mock := &mockS3Downloader{body: content}
-	d := &IndexDownloader{s3: mock, bucket: "test-bucket"}
+	d := &IndexDownloader{s3: mock, bucket: "test-bucket", localPath: filepath.Join(t.TempDir(), "index.sqlite")}
 
 	_, err := d.Download(context.Background(), "some/key", "deadbeef")
 	if !errors.Is(err, usecase.ErrChecksumMismatch) {
@@ -104,7 +103,7 @@ func TestIndexDownloader_SchemaMismatch(t *testing.T) {
 
 	expectedHash := sha256hex(content)
 	mock := &mockS3Downloader{body: content}
-	d := &IndexDownloader{s3: mock, bucket: "test-bucket"}
+	d := &IndexDownloader{s3: mock, bucket: "test-bucket", localPath: filepath.Join(t.TempDir(), "index.sqlite")}
 
 	_, err := d.Download(context.Background(), "some/key", expectedHash)
 	if !errors.Is(err, usecase.ErrSchemaMismatch) {
