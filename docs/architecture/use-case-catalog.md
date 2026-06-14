@@ -32,7 +32,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `BillCommitteeMeeting` | A committee meeting tied to a bill study, including meeting number, date, optional evidence URL, and witness count. |
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
 | `BillAmendment` | House or committee amendment record associated with a bill and chamber stage, with number, sponsor name, status, stage, verbatim amendment text, and source link. Surfaced on the iOS bill page via `LoadBillAmendments`. |
-| `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
+| `PBOCosting` | Parliamentary Budget Officer independent costing note linked to a bill, with verbatim headline figure (5-year cost in millions), methodology category, publication date, report PDF URL, and optional summary text. Surfaced on the iOS bill page via `LoadPBOCosting`. |
 | `ParliamentaryCommittee` | A House or Senate committee reference with acronym, name, chamber code, and authoritative source URL. |
 | `MemberBiography` | Parliament.ca biography details for an MP profile, including service periods, roles, education, professional background, source URL, and summary text where available. |
 | `MemberAttendanceRecord` | Backend-only House vote/attendance row for an MP, with vote date, subject, result, and ballot where available. |
@@ -102,6 +102,7 @@ to the issue that will build the missing artifact.
 | `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
 | `BillCommitteeStageRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillCommitteeStageRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift`. | Load the committee currently studying a bill, including study dates and meeting rows. |
 | `BillAmendmentsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillAmendmentsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillAmendmentsRepository.swift`. | Load amendments tabled against a bill (number, mover, stage, status, verbatim text) from the backend bill-depth endpoint. |
+| `PBOCostingQueryPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/PBOCostingQueryPort.swift`; adapter: `ios/epac/Data/Repositories/BackendPBOCostingRepository.swift`. | Load Parliamentary Budget Officer costing notes linked to a bill from the backend `GET /pbo/by-bill/{legisinfo_id}` endpoint; `nil` when no PBO link record exists. |
 | `RecentLawQueryPort` | iOS Swift | outbound | Implemented by `ios/epac/Application/TrackRoyalAssent.swift`; adapter input is `BillRepository`. | Query current-session bills that received Royal Assent within the recent-law window. |
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
@@ -663,6 +664,29 @@ Current implementation:
 ```
 
 > **Boundary rule:** Amendment text is rendered verbatim on the bill page — no paraphrasing, no summarization. iOS decodes only the backend's typed JSON; LEGISinfo and committee-minute parsing remain backend responsibilities. The bill page hides the panel when the use case returns `nil`, and renders an empty-state row when it returns an empty array.
+
+---
+
+### LoadPBOCosting
+
+```
+Actor: User (iOS app, bill detail)
+Goal: See the Parliamentary Budget Officer's independent costing for a bill — verbatim headline figure (5-year cost in millions), methodology category, publication date, and a link out to the full PBO report PDF — with an in-app reader for the summary card and older linked notes.
+Inputs: LEGISinfo bill ID.
+Outputs: Optional PBOCostingResult; nil when the backend has no PBO link record for the bill (render no panel at all), otherwise the latest note as the primary panel content with any older linked notes preserved for the reader.
+Entities / values: Bill, PBOCosting, PBOCostingResult.
+Ports: iOS Swift: `PBOCostingQueryPort`.
+Primary adapters: BackendPBOCostingRepository (GET /pbo/by-bill/{legisinfo_id}), BillDetailView, PBOCostingPanel, PBOCostingReaderView.
+Current implementation:
+  ios/epac/Application/LoadPBOCosting.swift
+  ios/epac/Domain/Entities/PBOCosting.swift
+  ios/epac/Domain/Ports/PBOCostingQueryPort.swift
+  ios/epac/Data/Repositories/BackendPBOCostingRepository.swift
+  ios/epac/Views/Bills/PBOCostCard.swift
+  ios/epac/Views/Bills/BillDetailView.swift
+```
+
+> **Boundary rule:** "Render nothing when absent" is a UI-layer policy — the use case returns `nil`/empty and the view decides to show no panel, with no fallback prose. PBO figures and summary text are rendered verbatim from the backend's typed JSON; PBO publication indexing and LEGISinfo bill linking remain backend responsibilities, and iOS never scrapes PBO pages on device. When several notes are linked, the latest by publication date wins the panel and the others stay reachable in the reader.
 
 ---
 

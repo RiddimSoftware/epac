@@ -335,6 +335,76 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Bill PBO costing panel (EPAC-1006)
+
+    func testPBOCostingPanel_present() {
+        snapshot(
+            NavigationStack {
+                List {
+                    PBOCostingPanel(result: Self.pboCostingResultSingle)
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 360),
+            name: "PBOCostingPanel_present"
+        )
+    }
+
+    func testPBOCostingPanel_presentNoFigure() {
+        snapshot(
+            NavigationStack {
+                List {
+                    PBOCostingPanel(result: Self.pboCostingResultNoFigure)
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 320),
+            name: "PBOCostingPanel_presentNoFigure"
+        )
+    }
+
+    func testPBOCostingPanel_multipleNotes() {
+        snapshot(
+            NavigationStack {
+                List {
+                    PBOCostingPanel(result: Self.pboCostingResultMultiple)
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 420),
+            name: "PBOCostingPanel_multipleNotes"
+        )
+    }
+
+    // Absent: the panel must render nothing — no section chrome appears between
+    // the two sentinel sections.
+    func testPBOCostingPanel_absent() {
+        snapshot(
+            NavigationStack {
+                List {
+                    Section("Key facts") {
+                        Text("Sponsor, stage, and status row")
+                    }
+                    PBOCostingPanel(result: nil)
+                    Section("Committee study") {
+                        Text("Committee stage row")
+                    }
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 320),
+            name: "PBOCostingPanel_absent"
+        )
+    }
+
+    func testPBOCostingReader_multipleNotes() {
+        snapshot(
+            PBOCostingReaderView(result: Self.pboCostingResultMultiple)
+                .frame(width: 375, height: 640),
+            name: "PBOCostingReader_multipleNotes"
+        )
+    }
+
     // MARK: - EmptyStateView
 
     func testEmptyStateView_noAction() {
@@ -973,6 +1043,66 @@ final class SnapshotTests: XCTestCase {
             sourceURL: nil
         )
     ]
+
+    // MARK: - PBO costing fixtures (EPAC-1006)
+
+    private static let pboCostingLatest = PBOCosting(
+        id: "PBO-2026-014",
+        title: "Cost Estimate — Bill C-8: An Act to establish a national school food program",
+        headlineFigureMillions: "1,240",
+        methodologyCategory: "legislative-cost",
+        publishedAt: date("2026-05-20"),
+        reportURL: URL(string: "https://www.pbo-dpb.ca/en/publications/RP-2627-014-S")!,
+        sourceURL: URL(string: "https://www.pbo-dpb.ca/en/publications/RP-2627-014-S"),
+        summaryText: "The Parliamentary Budget Officer estimates the five-year cost of Bill C-8 "
+            + "at $1,240 million, assuming program uptake consistent with existing provincial data."
+    )
+
+    private static let pboCostingPriorYear = PBOCosting(
+        id: "PBO-2025-188",
+        title: "Cost Estimate — Bill C-8 (prior session)",
+        headlineFigureMillions: "1,100",
+        methodologyCategory: "fiscal-update",
+        publishedAt: date("2025-11-12"),
+        reportURL: URL(string: "https://www.pbo-dpb.ca/en/publications/RP-2526-188-S")!,
+        sourceURL: nil,
+        summaryText: nil
+    )
+
+    private static let pboCostingPlatform = PBOCosting(
+        id: "PBO-2025-061",
+        title: "Election platform costing — school food program",
+        headlineFigureMillions: "1,050",
+        methodologyCategory: "election-platform",
+        publishedAt: date("2025-09-03"),
+        reportURL: URL(string: "https://www.pbo-dpb.ca/en/publications/RP-2526-061-S")!,
+        sourceURL: nil,
+        summaryText: nil
+    )
+
+    private static let pboCostingResultSingle = PBOCostingResult(
+        latest: pboCostingLatest,
+        otherReports: []
+    )
+
+    private static let pboCostingResultNoFigure = PBOCostingResult(
+        latest: PBOCosting(
+            id: "PBO-2026-099",
+            title: "Costing note — Bill C-8 (figure pending in report)",
+            headlineFigureMillions: nil,
+            methodologyCategory: "program-evaluation",
+            publishedAt: date("2026-06-01"),
+            reportURL: URL(string: "https://www.pbo-dpb.ca/en/publications/RP-2627-099-S")!,
+            sourceURL: nil,
+            summaryText: "The detailed five-year figure is published in the full report."
+        ),
+        otherReports: []
+    )
+
+    private static let pboCostingResultMultiple = PBOCostingResult(
+        latest: pboCostingLatest,
+        otherReports: [pboCostingPriorYear, pboCostingPlatform]
+    )
 
     private static func date(_ rawValue: String) -> Date {
         dateFormatter.date(from: rawValue) ?? Date(timeIntervalSince1970: 0)

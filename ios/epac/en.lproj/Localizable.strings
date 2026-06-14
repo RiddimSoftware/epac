@@ -11,6 +11,7 @@
 "accountability.donations" = "Political Donations";
 "accountability.projectCosts" = "Project Cost Lifecycle";
 "common.ok" = "OK";
+"common.done" = "Done";
 
 /* Search view */
 "Search debates" = "Search debates";
@@ -475,12 +476,20 @@
 "cihi.contextCard.title" = "Health wait times in your province (%@)";
 
 /* PBO independent cost analysis */
-"pbo.sectionTitle" = "Independent Cost Analysis (PBO)";
-"pbo.estimate.pbo" = "PBO estimate:";
-"pbo.estimate.government" = "Government estimate:";
-"pbo.estimatesDiffer" = "Estimates differ by more than 10%";
-"pbo.viewReport" = "View full PBO report →";
-"pbo.viewReport.accessibility" = "View full PBO report for %@";
+"pbo.costing.sectionTitle" = "Independent costing — Parliamentary Budget Officer";
+"pbo.costing.headlineLabel" = "5-year cost, millions";
+"pbo.costing.headlineAccessibility" = "5-year cost, millions: %@";
+"pbo.costing.viewFullReport" = "View full report";
+"pbo.costing.openReaderHint" = "Opens the PBO summary card.";
+"pbo.costing.readerTitle" = "PBO costing";
+"pbo.costing.readerSummary" = "Summary card";
+"pbo.costing.openPDFInSafari" = "Open PDF in Safari";
+"pbo.costing.otherReports" = "%d other PBO note(s)";
+"pbo.costing.otherReportsTitle" = "Other PBO notes";
+"pbo.methodology.legislativeCost" = "Legislative cost";
+"pbo.methodology.fiscalUpdate" = "Fiscal update";
+"pbo.methodology.electionPlatform" = "Election platform";
+"pbo.methodology.programEvaluation" = "Program evaluation";
 
 /* Election resources view (EPAC-78) */
 "election.navTitle" = "Election Resources";
