@@ -6,8 +6,8 @@
 //
 
 @testable import epac
-import Testing
 import Foundation
+import Testing
 
 @MainActor
 struct LoadMPAttendanceTests {

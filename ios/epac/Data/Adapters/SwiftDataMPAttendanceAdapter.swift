@@ -100,12 +100,7 @@ struct SwiftDataMPAttendanceAdapter: MPAttendanceQueryPort {
 			// whose division isn't in the local store (e.g. a prior parliament)
 			// is skipped so it can't outweigh the denominator.
 			guard let date = divisionDates[vote.voteID], isEligible(date, since: start) else { continue }
-			switch vote.recordedVote.lowercased() {
-			case "yea": yea += 1
-			case "nay": nay += 1
-			case "paired": paired += 1
-			default: break  // "Absent" / other — folded into derived absences
-			}
+			incrementTally(vote: vote, yea: &yea, nay: &nay, paired: &paired)
 		}
 		// The denominator is the eligible-division count, but never fewer than
 		// this member's own recorded participations (a safety floor).
@@ -119,6 +114,15 @@ struct SwiftDataMPAttendanceAdapter: MPAttendanceQueryPort {
 			totalDivisions: total,
 			denominatorStartDate: start
 		)
+	}
+
+	private func incrementTally(vote: MemberVote, yea: inout Int, nay: inout Int, paired: inout Int) {
+		switch vote.recordedVote.lowercased() {
+		case "yea": yea += 1
+		case "nay": nay += 1
+		case "paired": paired += 1
+		default: break  // "Absent" / other — folded into derived absences
+		}
 	}
 
 	// MARK: - Division universe

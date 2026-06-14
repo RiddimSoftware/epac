@@ -656,6 +656,8 @@ struct CabinetPositionSection: View {
 /// tabled witness invitations. Best-effort: hidden when attribution data
 /// is unavailable (tabling member is not consistently present in committee records).
 private struct MemberCommitteeWitnessesSection: View {
+	private static let maxOrganizations = 5
+
 	let member: ParliamentMember
 	@State private var organizations: [WitnessOrganization] = []
 
@@ -663,7 +665,7 @@ private struct MemberCommitteeWitnessesSection: View {
 		Group {
 			if !organizations.isEmpty {
 				DisclosureGroup {
-					ForEach(organizations.prefix(5)) { org in
+					ForEach(organizations.prefix(Self.maxOrganizations)) { org in
 						NavigationLink(
 							destination: WitnessOrganizationView(
 								organizationName: org.displayName,
