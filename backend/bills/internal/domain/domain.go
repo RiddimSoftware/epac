@@ -40,6 +40,21 @@ type BillAmendment struct {
 	SourceURL   string  `json:"source_url,omitempty"`
 }
 
+type BillClauseDiff struct {
+	ID               string  `json:"id,omitempty"`
+	Label            string  `json:"label,omitempty"`
+	ChangeType       string  `json:"change_type"`
+	FromText         string  `json:"from_text"`
+	ToText           string  `json:"to_text"`
+	HansardAnchorURL *string `json:"hansard_anchor_url,omitempty"`
+}
+
+type BillVersionDiff struct {
+	From    BillVersion      `json:"from"`
+	To      BillVersion      `json:"to"`
+	Clauses []BillClauseDiff `json:"clauses"`
+}
+
 type ParliamentaryCommittee struct {
 	Code    string `json:"code"`
 	Name    string `json:"name"`

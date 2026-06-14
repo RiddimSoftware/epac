@@ -118,6 +118,143 @@ func TestHandleRequestGetsBillCommitteeStage(t *testing.T) {
 	}
 }
 
+func TestHandleRequestGetsBillVersionDiff(t *testing.T) {
+	dir := t.TempDir()
+	p45 := 45
+	writeBillSQLiteUnitFixture(t, dir, []Bill{
+		{ID: "C-2287", Number: "C-2287", Title: "Diff Act", Status: "InProgress", CurrentStage: "Third Reading", Parliament: &p45},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path:                  "/api/v1/bills/C-2287/diff",
+		QueryStringParameters: map[string]string{"from": "C-2287-v1", "to": "C-2287-v2"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+	var body BillVersionDiff
+	if err := json.Unmarshal([]byte(resp.Body), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.From.ID != "C-2287-v1" || body.To.ID != "C-2287-v2" {
+		t.Fatalf("versions = %+v -> %+v", body.From, body.To)
+	}
+	if len(body.Clauses) != 2 {
+		t.Fatalf("clauses = %+v", body.Clauses)
+	}
+	if body.Clauses[0].ID != "C-2287-clause-1" || body.Clauses[0].ChangeType != "added" || body.Clauses[0].FromText != "" {
+		t.Fatalf("first clause = %+v", body.Clauses[0])
+	}
+	if body.Clauses[1].ID != "C-2287-clause-2" || body.Clauses[1].HansardAnchorURL == nil || *body.Clauses[1].HansardAnchorURL != "https://www.ourcommons.ca/hansard#clause-2" {
+		t.Fatalf("second clause = %+v", body.Clauses[1])
+	}
+}
+
+func TestHandleRequestBillVersionDiffMissingQueryReturns400(t *testing.T) {
+	tests := []struct {
+		name  string
+		query map[string]string
+		body  string
+	}{
+		{
+			name: "both missing",
+			body: `{"error":"missing required query parameters: from, to"}`,
+		},
+		{
+			name:  "from missing",
+			query: map[string]string{"to": "C-2287-v2"},
+			body:  `{"error":"missing required query parameter: from"}`,
+		},
+		{
+			name:  "to missing",
+			query: map[string]string{"from": "C-2287-v1"},
+			body:  `{"error":"missing required query parameter: to"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+				Path:                  "/api/v1/bills/C-2287/diff",
+				QueryStringParameters: tt.query,
+			})
+			if err != nil {
+				t.Fatalf("HandleRequest error: %v", err)
+			}
+			if resp.StatusCode != 400 {
+				t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+			}
+			if resp.Body != tt.body {
+				t.Fatalf("body = %s", resp.Body)
+			}
+		})
+	}
+}
+
+func TestHandleRequestBillVersionDiffUnknownBillReturns404(t *testing.T) {
+	dir := t.TempDir()
+	p45 := 45
+	writeBillSQLiteUnitFixture(t, dir, []Bill{
+		{ID: "C-2287", Number: "C-2287", Title: "Diff Act", Status: "InProgress", Parliament: &p45},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path:                  "/api/v1/bills/C-404/diff",
+		QueryStringParameters: map[string]string{"from": "v1", "to": "v2"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 404 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+}
+
+func TestHandleRequestBillVersionDiffUnknownVersionsReturnsNoContent(t *testing.T) {
+	dir := t.TempDir()
+	p45 := 45
+	writeBillSQLiteUnitFixture(t, dir, []Bill{
+		{ID: "C-2287", Number: "C-2287", Title: "Diff Act", Status: "InProgress", Parliament: &p45},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path:                  "/api/v1/bills/C-2287/diff",
+		QueryStringParameters: map[string]string{"from": "missing", "to": "C-2287-v2"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 204 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+}
+
+func TestHandleRequestBillVersionDiffOneVersionBillReturnsNoContent(t *testing.T) {
+	dir := t.TempDir()
+	p45 := 45
+	writeBillSQLiteUnitFixture(t, dir, []Bill{
+		{ID: "C-1", Number: "C-1", Title: "One Version Act", Status: "InProgress", Parliament: &p45},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path:                  "/api/v1/bills/C-1/diff",
+		QueryStringParameters: map[string]string{"from": "C-1-v1", "to": "C-1-v2"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 204 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+}
+
 func TestHandleRequestReturnsNoContentWhenBillHasNoCommitteeStage(t *testing.T) {
 	dir := t.TempDir()
 	p45 := 45
@@ -238,6 +375,30 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 	)`); err != nil {
 		t.Fatalf("create bill versions table: %v", err)
 	}
+	if _, err := db.Exec(`CREATE TABLE bill_diffs (
+		bill_id TEXT NOT NULL,
+		id TEXT NOT NULL,
+		from_version_id TEXT NOT NULL,
+		to_version_id TEXT NOT NULL,
+		source_url TEXT NOT NULL DEFAULT '',
+		PRIMARY KEY (bill_id, id)
+	)`); err != nil {
+		t.Fatalf("create bill diffs table: %v", err)
+	}
+	if _, err := db.Exec(`CREATE TABLE bill_clause_diffs (
+		bill_id TEXT NOT NULL,
+		diff_id TEXT NOT NULL,
+		id TEXT NOT NULL,
+		label TEXT,
+		change_type TEXT NOT NULL,
+		from_text TEXT,
+		to_text TEXT,
+		hansard_anchor_url TEXT,
+		sort_order INTEGER NOT NULL,
+		PRIMARY KEY (bill_id, diff_id, id)
+	)`); err != nil {
+		t.Fatalf("create bill clause diffs table: %v", err)
+	}
 	if _, err := db.Exec(`CREATE TABLE bill_amendments (
 		bill_id TEXT NOT NULL,
 		id TEXT NOT NULL,
@@ -305,6 +466,31 @@ func writeBillSQLiteUnitFixture(t *testing.T, dir string, bills []Bill) {
 		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
 		VALUES ('C-2260', 'C-2260-v1', 'First reading', 'Depth Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/version', 1)`); err != nil {
 		t.Fatalf("insert version fixture: %v", err)
+	}
+	if _, err := db.Exec(`
+		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
+		VALUES ('C-1', 'C-1-v1', 'First reading', 'One Version Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/c1/v1', 1)`); err != nil {
+		t.Fatalf("insert one-version fixture: %v", err)
+	}
+	if _, err := db.Exec(`
+		INSERT INTO bill_versions (bill_id, id, label, title, stage, chamber, published_on, source_url, sort_order)
+		VALUES
+			('C-2287', 'C-2287-v1', 'First reading', 'Diff Act first reading', 'House First Reading', 'House', '2026-06-01', 'https://www.parl.ca/c2287/v1', 1),
+			('C-2287', 'C-2287-v2', 'Third reading', 'Diff Act third reading', 'House Third Reading', 'House', '2026-06-10', 'https://www.parl.ca/c2287/v2', 2)`); err != nil {
+		t.Fatalf("insert diff versions fixture: %v", err)
+	}
+	if _, err := db.Exec(`
+		INSERT INTO bill_diffs (bill_id, id, from_version_id, to_version_id, source_url)
+		VALUES ('C-2287', 'C-2287-diff-v1-v2', 'C-2287-v1', 'C-2287-v2', 'https://www.parl.ca/c2287/diff')`); err != nil {
+		t.Fatalf("insert diff fixture: %v", err)
+	}
+	if _, err := db.Exec(`
+		INSERT INTO bill_clause_diffs (
+			bill_id, diff_id, id, label, change_type, from_text, to_text, hansard_anchor_url, sort_order
+		) VALUES
+			('C-2287', 'C-2287-diff-v1-v2', 'C-2287-clause-2', 'Clause 2', 'modified', 'Old clause 2', 'New clause 2', 'https://www.ourcommons.ca/hansard#clause-2', 2),
+			('C-2287', 'C-2287-diff-v1-v2', 'C-2287-clause-1', 'Clause 1', 'added', NULL, 'New clause 1', NULL, 1)`); err != nil {
+		t.Fatalf("insert clause diff fixture: %v", err)
 	}
 	if _, err := db.Exec(`
 		INSERT INTO bill_amendments (bill_id, id, number, title, status, stage, sponsor_name, proposed_on, text, source_url, sort_order)

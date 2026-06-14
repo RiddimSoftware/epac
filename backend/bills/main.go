@@ -1,5 +1,5 @@
-// bills Lambda - GET /api/v1/bills, GET /api/v1/bills/{id}, and
-// GET /api/v1/bills/{id}/committee-stage
+// bills Lambda - GET /api/v1/bills, GET /api/v1/bills/{id},
+// GET /api/v1/bills/{id}/diff, and GET /api/v1/bills/{id}/committee-stage
 package main
 
 import (
@@ -40,6 +40,8 @@ type BillDepthResponse struct {
 type Bill = domain.Bill
 type BillStage = domain.BillStage
 type BillVersion = domain.BillVersion
+type BillVersionDiff = domain.BillVersionDiff
+type BillClauseDiff = domain.BillClauseDiff
 type BillAmendment = domain.BillAmendment
 type BillCommitteeStage = domain.BillCommitteeStage
 
@@ -87,6 +89,29 @@ func (r *billsRuntime) repository(ctx context.Context) (usecase.BillRepository, 
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	if id := billVersionDiffIDFromRequest(req); id != "" {
+		fromVersionID, toVersionID, message := billVersionDiffQueryFromRequest(req)
+		if message != "" {
+			return jsonError(http.StatusBadRequest, message), nil
+		}
+		repo, err := billData.repository(ctx)
+		if err != nil {
+			return mapInitializationError(err), nil
+		}
+		diff, err := usecase.NewLoadBillVersionDiff(repo).Execute(ctx, usecase.LoadBillVersionDiffInput{
+			BillID:        id,
+			FromVersionID: fromVersionID,
+			ToVersionID:   toVersionID,
+		})
+		if err != nil {
+			return mapBillVersionDiffError(err), nil
+		}
+		if diff == nil {
+			return noContentResponse(), nil
+		}
+		return jsonResponse(http.StatusOK, diff), nil
+	}
+
 	repo, err := billData.repository(ctx)
 	if err != nil {
 		return mapInitializationError(err), nil
@@ -139,6 +164,50 @@ func billIDFromRequest(req events.APIGatewayProxyRequest) string {
 		}
 	}
 	return ""
+}
+
+func billVersionDiffIDFromRequest(req events.APIGatewayProxyRequest) string {
+	path := strings.Trim(req.Path, "/")
+	for _, prefix := range []string{"api/v1/bills/", "bills/"} {
+		if strings.HasPrefix(path, prefix) {
+			rest := strings.TrimPrefix(path, prefix)
+			if !strings.HasSuffix(rest, "/diff") {
+				return ""
+			}
+			id := strings.TrimSuffix(rest, "/diff")
+			if id == "" || strings.Contains(id, "/") {
+				return ""
+			}
+			return strings.TrimSpace(id)
+		}
+	}
+	if strings.Contains(req.Resource, "/diff") {
+		for _, key := range []string{"id", "bill_id", "legisinfo_id"} {
+			if id := strings.TrimSpace(req.PathParameters[key]); id != "" {
+				return id
+			}
+		}
+	}
+	return ""
+}
+
+func billVersionDiffQueryFromRequest(req events.APIGatewayProxyRequest) (string, string, string) {
+	fromVersionID := strings.TrimSpace(req.QueryStringParameters["from"])
+	toVersionID := strings.TrimSpace(req.QueryStringParameters["to"])
+	missing := make([]string, 0, 2)
+	if fromVersionID == "" {
+		missing = append(missing, "from")
+	}
+	if toVersionID == "" {
+		missing = append(missing, "to")
+	}
+	if len(missing) == 1 {
+		return "", "", "missing required query parameter: " + missing[0]
+	}
+	if len(missing) > 1 {
+		return "", "", "missing required query parameters: " + strings.Join(missing, ", ")
+	}
+	return fromVersionID, toVersionID, ""
 }
 
 func billCommitteeStageIDFromRequest(req events.APIGatewayProxyRequest) string {
@@ -209,6 +278,20 @@ func mapBillError(err error) events.APIGatewayProxyResponse {
 	}
 	slog.Error("get bill depth request failed", "error", err)
 	return jsonError(http.StatusInternalServerError, "internal error")
+}
+
+func mapBillVersionDiffError(err error) events.APIGatewayProxyResponse {
+	switch {
+	case errors.Is(err, usecase.ErrDiffMissingFrom):
+		return jsonError(http.StatusBadRequest, "missing required query parameter: from")
+	case errors.Is(err, usecase.ErrDiffMissingTo):
+		return jsonError(http.StatusBadRequest, "missing required query parameter: to")
+	case errors.Is(err, usecase.ErrBillNotFound):
+		return jsonError(http.StatusNotFound, "bill not found")
+	default:
+		slog.Error("load bill version diff request failed", "error", err)
+		return jsonError(http.StatusInternalServerError, "internal error")
+	}
 }
 
 func jsonResponse(status int, payload any, extraHeaders ...map[string]string) events.APIGatewayProxyResponse {

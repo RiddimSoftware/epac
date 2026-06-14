@@ -169,6 +169,50 @@ func (r *Repository) GetBillCommitteeStage(ctx context.Context, id string) (*dom
 	}, nil
 }
 
+func (r *Repository) GetBillVersionDiff(ctx context.Context, id, fromVersionID, toVersionID string) (*domain.BillVersionDiff, error) {
+	billID, err := r.lookupBillID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ok, err := r.tableExists(ctx, "bill_diffs"); err != nil || !ok {
+		return nil, err
+	}
+	if ok, err := r.tableExists(ctx, "bill_clause_diffs"); err != nil || !ok {
+		return nil, err
+	}
+
+	var diffID string
+	err = r.db.QueryRowContext(ctx, `
+		SELECT id
+		FROM bill_diffs
+		WHERE bill_id = ? AND from_version_id = ? AND to_version_id = ?
+		LIMIT 1`, billID, fromVersionID, toVersionID).Scan(&diffID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query bill diff sqlite artifact: %w", err)
+	}
+
+	fromVersion, ok, err := r.billVersionByID(ctx, billID, fromVersionID)
+	if err != nil || !ok {
+		return nil, err
+	}
+	toVersion, ok, err := r.billVersionByID(ctx, billID, toVersionID)
+	if err != nil || !ok {
+		return nil, err
+	}
+	clauses, err := r.billClauseDiffs(ctx, billID, diffID)
+	if err != nil {
+		return nil, err
+	}
+	return &domain.BillVersionDiff{
+		From:    fromVersion,
+		To:      toVersion,
+		Clauses: clauses,
+	}, nil
+}
+
 func (r *Repository) queryBills(ctx context.Context, query string, args ...any) ([]domain.Bill, error) {
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -396,12 +440,12 @@ func (r *Repository) billVersions(ctx context.Context, billID string) ([]domain.
 		WHERE %s = ?
 		ORDER BY %s`,
 		columnExpr(columns, "id", "version_id"),
-		columnExpr(columns, "label", "version_label", "name"),
+		columnExpr(columns, "label", "version_label", "name", "stage"),
 		columnExpr(columns, "title"),
 		columnExpr(columns, "stage"),
 		columnExpr(columns, "chamber"),
-		columnExpr(columns, "published_on", "version_date", "date"),
-		columnExpr(columns, "source_url", "url"),
+		columnExpr(columns, "published_on", "published_date", "version_date", "date"),
+		columnExpr(columns, "source_url", "html_url", "url", "text_source_url", "xml_url", "pdf_url"),
 		billIDColumn,
 		orderExpr(columns),
 	)
@@ -431,6 +475,91 @@ func (r *Repository) billVersions(ctx context.Context, billID string) ([]domain.
 		return nil, fmt.Errorf("iterate bill versions sqlite artifact: %w", err)
 	}
 	return versions, nil
+}
+
+func (r *Repository) billVersionByID(ctx context.Context, billID, versionID string) (domain.BillVersion, bool, error) {
+	columns, ok, err := r.tableColumns(ctx, "bill_versions")
+	if err != nil || !ok {
+		return domain.BillVersion{}, false, err
+	}
+	billIDColumn := firstColumn(columns, "bill_id", "legisinfo_id")
+	versionIDColumn := firstColumn(columns, "id", "version_id")
+	if billIDColumn == "" || versionIDColumn == "" {
+		return domain.BillVersion{}, false, nil
+	}
+	query := fmt.Sprintf(`
+		SELECT %s, %s, %s, %s, %s, %s, %s
+		FROM bill_versions
+		WHERE %s = ? AND %s = ?
+		LIMIT 1`,
+		columnExpr(columns, "id", "version_id"),
+		columnExpr(columns, "label", "version_label", "name", "stage"),
+		columnExpr(columns, "title"),
+		columnExpr(columns, "stage"),
+		columnExpr(columns, "chamber"),
+		columnExpr(columns, "published_on", "published_date", "version_date", "date"),
+		columnExpr(columns, "source_url", "html_url", "url", "text_source_url", "xml_url", "pdf_url"),
+		billIDColumn,
+		versionIDColumn,
+	)
+
+	var version domain.BillVersion
+	var id, label, title, stage, chamber, publishedOn, sourceURL sql.NullString
+	err = r.db.QueryRowContext(ctx, query, billID, versionID).Scan(
+		&id,
+		&label,
+		&title,
+		&stage,
+		&chamber,
+		&publishedOn,
+		&sourceURL,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.BillVersion{}, false, nil
+	}
+	if err != nil {
+		return domain.BillVersion{}, false, fmt.Errorf("query bill version sqlite artifact: %w", err)
+	}
+	version.ID = stringValue(id)
+	version.Label = stringValue(label)
+	version.Title = stringValue(title)
+	version.Stage = stringValue(stage)
+	version.Chamber = stringValue(chamber)
+	version.PublishedOn = stringPtr(publishedOn)
+	version.SourceURL = stringValue(sourceURL)
+	return version, true, nil
+}
+
+func (r *Repository) billClauseDiffs(ctx context.Context, billID, diffID string) ([]domain.BillClauseDiff, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, label, change_type, from_text, to_text, hansard_anchor_url
+		FROM bill_clause_diffs
+		WHERE bill_id = ? AND diff_id = ?
+		ORDER BY sort_order, rowid`, billID, diffID)
+	if err != nil {
+		return nil, fmt.Errorf("query bill clause diffs sqlite artifact: %w", err)
+	}
+	defer rows.Close()
+
+	clauses := make([]domain.BillClauseDiff, 0)
+	for rows.Next() {
+		var clause domain.BillClauseDiff
+		var id, label, changeType, fromText, toText, hansardAnchorURL sql.NullString
+		if err := rows.Scan(&id, &label, &changeType, &fromText, &toText, &hansardAnchorURL); err != nil {
+			return nil, fmt.Errorf("scan bill clause diffs sqlite artifact: %w", err)
+		}
+		clause.ID = stringValue(id)
+		clause.Label = stringValue(label)
+		clause.ChangeType = stringValue(changeType)
+		clause.FromText = stringValue(fromText)
+		clause.ToText = stringValue(toText)
+		clause.HansardAnchorURL = stringPtr(hansardAnchorURL)
+		clauses = append(clauses, clause)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate bill clause diffs sqlite artifact: %w", err)
+	}
+	return clauses, nil
 }
 
 func (r *Repository) billAmendments(ctx context.Context, billID string) ([]domain.BillAmendment, error) {

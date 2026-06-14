@@ -101,7 +101,7 @@ to the issue that will build the missing artifact.
 | `MemberRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/MemberRepository.swift`; adapter: `ios/epac/Data/Adapters/RidingLookupMemberRepository.swift`. | Resolve member-related lookups, starting with riding lookup by postal code for FindMyMP. |
 | `SittingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/SittingRepository.swift`; adapter: `ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift`. | List sitting dates and load transcripts for a sitting date. |
 | `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
-| `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
+| `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills, load bill-depth rows, load committee-stage rows, and load bill version diffs from the verified bills SQLite artifact. |
 | `BillCommitteeStageRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillCommitteeStageRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift`. | Load the committee currently studying a bill, including study dates and meeting rows. |
 | `BillAmendmentsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillAmendmentsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillAmendmentsRepository.swift`. | Load amendments tabled against a bill (number, mover, stage, status, verbatim text) from the backend bill-depth endpoint. |
 | `BillVersionsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillVersionsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillVersionsRepository.swift`. | Load the published versions of a bill (label, stage, chamber, publication date, source URL) from the backend bill-depth endpoint. |
@@ -752,14 +752,18 @@ Current implementation:
 ### LoadBillVersionDiff
 
 ```
-Actor: User (iOS app, bill diff viewer)
+Actor: User (iOS app, bill diff viewer) / Backend API caller
 Goal: See what changed at the clause level between two published versions of a bill (additions, deletions, modifications) with the verbatim before/after clause text, and follow the change back to the chamber speech that introduced it when known.
 Inputs: LEGISinfo bill ID, "before" version ID, "after" version ID.
-Outputs: Optional BillVersionDiff; nil when the backend cannot produce a diff for the requested version pair (either version is missing text, or the diff job has not run yet) — the diff viewer renders an unavailable state.
+Outputs: Optional BillVersionDiff; nil when the backend cannot produce a diff for the requested version pair (one-version bill, unknown version pair, either version is missing text, or the diff job has not run yet) — the diff viewer renders an unavailable state.
 Entities / values: Bill, BillVersion, BillVersionDiff, BillClauseDiff, BillClauseChangeType.
-Ports: iOS Swift: `BillVersionDiffRepository`.
-Primary adapters: BackendBillVersionDiffRepository (GET /api/v1/bills/{id}/diff?from=…&to=…), BillVersionsDiffView.
+Ports: iOS Swift: `BillVersionDiffRepository`; backend Go: `BillRepository.GetBillVersionDiff`.
+Primary adapters: BackendBillVersionDiffRepository (GET /api/v1/bills/{id}/diff?from=…&to=…), backend bills Lambda handler, backend bills SQLite repository, BillVersionsDiffView.
 Current implementation:
+  backend/bills/main.go
+  backend/bills/internal/usecase/bills.go
+  backend/bills/internal/domain/domain.go
+  backend/bills/internal/adapter/sqlite/repository.go
   ios/epac/Application/LoadBillVersionDiff.swift
   ios/epac/Domain/Entities/BillVersionDiff.swift
   ios/epac/Domain/Ports/BillVersionDiffRepository.swift
