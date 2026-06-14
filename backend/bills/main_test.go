@@ -215,7 +215,7 @@ func TestHandleRequestBillVersionDiffUnknownBillReturns404(t *testing.T) {
 	}
 }
 
-func TestHandleRequestBillVersionDiffUnknownVersionsReturnsNoContent(t *testing.T) {
+func TestHandleRequestBillVersionDiffUnknownVersionsReturns404(t *testing.T) {
 	dir := t.TempDir()
 	p45 := 45
 	writeBillSQLiteUnitFixture(t, dir, []Bill{
@@ -230,12 +230,12 @@ func TestHandleRequestBillVersionDiffUnknownVersionsReturnsNoContent(t *testing.
 	if err != nil {
 		t.Fatalf("HandleRequest error: %v", err)
 	}
-	if resp.StatusCode != 204 {
+	if resp.StatusCode != 404 {
 		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
 	}
 }
 
-func TestHandleRequestBillVersionDiffOneVersionBillReturnsNoContent(t *testing.T) {
+func TestHandleRequestBillVersionDiffOneVersionBillReturns404(t *testing.T) {
 	dir := t.TempDir()
 	p45 := 45
 	writeBillSQLiteUnitFixture(t, dir, []Bill{
@@ -246,6 +246,26 @@ func TestHandleRequestBillVersionDiffOneVersionBillReturnsNoContent(t *testing.T
 	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
 		Path:                  "/api/v1/bills/C-1/diff",
 		QueryStringParameters: map[string]string{"from": "C-1-v1", "to": "C-1-v2"},
+	})
+	if err != nil {
+		t.Fatalf("HandleRequest error: %v", err)
+	}
+	if resp.StatusCode != 404 {
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, resp.Body)
+	}
+}
+
+func TestHandleRequestBillVersionDiffVersionsExistButNoDiffReturns204(t *testing.T) {
+	dir := t.TempDir()
+	p45 := 45
+	writeBillSQLiteUnitFixture(t, dir, []Bill{
+		{ID: "C-2287", Number: "C-2287", Title: "Diff Act", Status: "InProgress", Parliament: &p45},
+	})
+	withLocalIndex(t, dir)
+
+	resp, err := HandleRequest(context.Background(), events.APIGatewayProxyRequest{
+		Path:                  "/api/v1/bills/C-2287/diff",
+		QueryStringParameters: map[string]string{"from": "C-2287-v2", "to": "C-2287-v1"},
 	})
 	if err != nil {
 		t.Fatalf("HandleRequest error: %v", err)
