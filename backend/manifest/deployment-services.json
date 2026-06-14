@@ -156,6 +156,10 @@
             {
               "method": "GET",
               "path": "/api/v1/bills/{id}/committee-stage"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/bills/{id}/diff"
             }
           ],
           "production": [
@@ -170,6 +174,10 @@
             {
               "method": "GET",
               "path": "/api/v1/bills/{id}/committee-stage"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/bills/{id}/diff"
             }
           ]
         }

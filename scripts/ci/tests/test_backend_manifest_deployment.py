@@ -102,6 +102,75 @@ def test_unknown_s3_http_service_requires_an_explicit_contract():
         checker.select_s3_http_services(manifest, "staging")
 
 
+def test_openapi_manifest_consistency_requires_documented_bills_diff_route():
+    checker = load_module()
+    openapi = {
+        "paths": {
+            "/api/v1/bills": {"get": {"tags": ["Bills"]}},
+            "/api/v1/bills/{id}": {"get": {"tags": ["Bills"]}},
+            "/api/v1/bills/{id}/committee-stage": {"get": {"tags": ["Bills"]}},
+            "/api/v1/bills/{id}/diff": {"get": {"tags": ["Bills"]}},
+            "/api/v1/bills/{legisinfo_id}/lobbying-context": {"get": {"tags": ["Bills", "Lobbying"]}},
+        }
+    }
+    manifest = {
+        "services": [
+            {
+                "name": "bills",
+                "deploy": {"staging": True},
+                "http": {
+                    "routes": {
+                        "staging": [
+                            {"method": "GET", "path": "/api/v1/bills"},
+                            {"method": "GET", "path": "/api/v1/bills/{id}"},
+                            {"method": "GET", "path": "/api/v1/bills/{id}/committee-stage"},
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+
+    failures = checker.check_openapi_manifest_consistency(manifest, openapi, "staging")
+
+    assert failures == [
+        "bills: OpenAPI GET /api/v1/bills/{id}/diff is missing from staging deployment manifest"
+    ]
+
+
+def test_openapi_manifest_consistency_reports_method_or_path_drift():
+    checker = load_module()
+    openapi = {
+        "paths": {
+            "/api/v1/bills": {"get": {"tags": ["Bills"]}},
+            "/api/v1/bills/{id}": {"get": {"tags": ["Bills"]}},
+        }
+    }
+    manifest = {
+        "services": [
+            {
+                "name": "bills",
+                "deploy": {"production": True},
+                "http": {
+                    "routes": {
+                        "production": [
+                            {"method": "GET", "path": "/api/v1/bills"},
+                            {"method": "POST", "path": "/api/v1/bills/{id}"},
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+
+    failures = checker.check_openapi_manifest_consistency(manifest, openapi, "production")
+
+    assert failures == [
+        "bills: OpenAPI GET /api/v1/bills/{id} is missing from production deployment manifest",
+        "bills: manifest route POST /api/v1/bills/{id} is not documented by OpenAPI Bills service contract",
+    ]
+
+
 def test_policy_allows_api_gateway_when_source_arn_matches_api_id():
     checker = load_module()
     policy = {
