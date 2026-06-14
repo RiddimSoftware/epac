@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"epac/backend/live-vote-poller/internal/usecase"
+	"epac/live-vote-poller/internal/usecase"
 )
 
 type DivisionsClient struct {
