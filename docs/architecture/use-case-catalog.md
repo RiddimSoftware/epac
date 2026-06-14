@@ -344,25 +344,33 @@ Outputs: Extracted list of clauses (VersionSection) and stable SHA256 text hash.
 Entities / values: BillVersion, VersionSection.
 Ports: backend Go: `BillSource`.
 Primary adapters: LEGISinfo/parl.ca XML crawler/parser.
+Current implementation:
+  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go (enrichVersions: fetch XML + computeSHA256 hash; fetchDocumentLinks; parseBillXML: clause extraction)
+  backend/bills-indexer/internal/domain/domain.go (BillVersion, VersionSection)
 ```
 
-> **Boundary rule:** XML retrieving, parsing, and clause extraction must stay entirely inside the backend indexer. Downstream iOS apps or APIs only consume the structured metadata and stable hash.
+> **Boundary rule:** XML retrieving, parsing, and clause extraction must stay entirely inside the backend indexer's LEGISinfo adapter (it is the source-format work behind `BillSource`). Downstream iOS apps or APIs only consume the structured metadata and stable hash.
 
 ---
 
 ### ComputeBillVersionDiff
 
 ```
-Actor: System (Backend Ingest / SQLite Writer boundary)
-Goal: Compute clause-level differences (additions, deletions, modifications, and unchanged clauses) between two consecutive version records of a bill using an alignment algorithm on their clauses.
-Inputs: "Before" version clauses, "After" version clauses.
-Outputs: Ordered list of clause-level differences (BillClauseDiff) with stable IDs.
-Entities / values: BillDiff, BillClauseDiff.
-Ports: backend Go: `BillSource`.
-Primary adapters: Backend indexer diffing logic.
+Actor: System (Backend Ingest, bills-indexer use-case layer)
+Goal: Compute clause-level differences (additions, deletions, modifications, and unchanged clauses) between each consecutive pair of a bill's version records using LCS alignment on their parsed clauses.
+Inputs: A bill's ordered BillVersion records with parsed VersionSection clauses (plus the bill number and source URL used to mint stable IDs).
+Outputs: Ordered list of version-to-version BillDiff records, each carrying clause-level BillClauseDiff rows with stable IDs.
+Entities / values: BillVersion, VersionSection, BillDiff, BillClauseDiff.
+Ports: none — the diff policy is pure domain→domain; parsed clauses arrive upstream through the `BillSource` adapter (fetch + parse).
+Primary adapters: none for the diff itself; the LEGISinfo fetcher supplies the parsed VersionSection clauses the policy consumes.
+Current implementation:
+  backend/bills-indexer/internal/usecase/compute_bill_version_diff.go (ComputeBillVersionDiff, DiffClauses)
+  backend/bills-indexer/internal/usecase/usecase.go (IngestBills.Execute composes the diff over the fetched batch)
+  backend/bills-indexer/internal/domain/domain.go (BillVersion, VersionSection, BillDiff, BillClauseDiff)
+  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go (parseBillXML supplies VersionSection clauses; the diff policy no longer lives here)
 ```
 
-> **Boundary rule:** The clause-aware diff algorithm is a use-case policy executed during ingestion. Only the computed diff rows are persisted in the database to be served to downstream clients.
+> **Boundary rule:** The clause-aware diff algorithm is a use-case policy executed during ingestion. It lives in `backend/bills-indexer/internal/usecase/`, which imports only the standard library plus the local `domain` package (no `net/http`, `encoding/xml`, or adapter imports). The LEGISinfo adapter only fetches and parses version text into `VersionSection`s; `IngestBills.Execute` then composes the diff over the parsed batch. Only the computed diff rows are persisted in the database to be served to downstream clients.
 
 ---
 

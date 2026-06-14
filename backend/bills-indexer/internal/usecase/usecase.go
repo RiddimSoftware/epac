@@ -115,6 +115,13 @@ func (u *IngestBills) Execute(ctx context.Context, input Input) (Output, error) 
 	if err != nil {
 		return Output{}, fmt.Errorf("fetch bills: %w", err)
 	}
+	// Diff computation is application policy, not source-format work: the source
+	// adapter fetches and parses version text into sections, then this use case
+	// composes the clause-aware diffs over the parsed batch.
+	for i := range batch.Bills {
+		bill := &batch.Bills[i]
+		bill.Diffs = ComputeBillVersionDiff(bill.Number, bill.Versions, bill.SourceURL)
+	}
 	stats, err := u.writer.Write(ctx, u.dbPath, batch)
 	if err != nil {
 		return Output{}, fmt.Errorf("write bills sqlite: %w", err)
