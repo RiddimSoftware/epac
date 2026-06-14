@@ -253,6 +253,21 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Bill committee stage (EPAC-964)
+
+    func testBillInCommitteePanel_populated() {
+        snapshot(
+            NavigationStack {
+                List {
+                    BillInCommitteePanel(stage: Self.billCommitteeStage)
+                }
+                .listStyle(.insetGrouped)
+            }
+            .frame(width: 375, height: 540),
+            name: "BillInCommitteePanel_populated"
+        )
+    }
+
     // MARK: - EmptyStateView
 
     func testEmptyStateView_noAction() {
@@ -756,6 +771,45 @@ final class SnapshotTests: XCTestCase {
                 BillLobbyingOrganization(name: "Northern Transit Coalition", communicationCount: 1)
             ],
             sourceURL: CabinetLobbyingSource.url
+        )
+    }
+
+    private static var billCommitteeStage: BillCommitteeStage {
+        BillCommitteeStage(
+            committee: ParliamentaryCommittee(
+                id: "FINA",
+                acronym: "FINA",
+                name: "Standing Committee on Finance",
+                chamberCode: "HOC",
+                committeeURL: URL(string: "https://www.ourcommons.ca/Committees/en/FINA")!
+            ),
+            studiedSince: date("2026-06-03"),
+            studyCompletedAt: date("2026-06-12"),
+            upcomingMeetings: [
+                BillCommitteeMeeting(
+                    id: "FINA-45-1-42",
+                    meetingNumber: 42,
+                    date: date("2026-06-18"),
+                    witnessCount: 0,
+                    evidenceURL: nil
+                )
+            ],
+            pastMeetings: [
+                BillCommitteeMeeting(
+                    id: "FINA-45-1-41",
+                    meetingNumber: 41,
+                    date: date("2026-06-11"),
+                    witnessCount: 7,
+                    evidenceURL: URL(string: "https://www.ourcommons.ca/DocumentViewer/en/45-1/FINA/meeting-41/evidence")
+                ),
+                BillCommitteeMeeting(
+                    id: "FINA-45-1-40",
+                    meetingNumber: 40,
+                    date: date("2026-06-09"),
+                    witnessCount: 1,
+                    evidenceURL: URL(string: "https://www.ourcommons.ca/DocumentViewer/en/45-1/FINA/meeting-40/evidence")
+                )
+            ]
         )
     }
 

@@ -40,6 +40,29 @@ type BillAmendment struct {
 	SourceURL   string  `json:"source_url,omitempty"`
 }
 
+type ParliamentaryCommittee struct {
+	Code    string `json:"code"`
+	Name    string `json:"name"`
+	Chamber string `json:"chamber,omitempty"`
+	URL     string `json:"url"`
+}
+
+type BillCommitteeMeeting struct {
+	ID            string  `json:"id"`
+	MeetingNumber int     `json:"meeting_number"`
+	Date          *string `json:"date,omitempty"`
+	WitnessCount  *int    `json:"witness_count,omitempty"`
+	EvidenceURL   *string `json:"evidence_url,omitempty"`
+}
+
+type BillCommitteeStage struct {
+	Committee        ParliamentaryCommittee `json:"committee"`
+	StudiedSince     *string                `json:"studied_since,omitempty"`
+	StudyCompletedAt *string                `json:"study_completed_at,omitempty"`
+	UpcomingMeetings []BillCommitteeMeeting `json:"upcoming_meetings"`
+	PastMeetings     []BillCommitteeMeeting `json:"past_meetings"`
+}
+
 type Bill struct {
 	ID           string          `json:"id"`
 	Number       string          `json:"number"`

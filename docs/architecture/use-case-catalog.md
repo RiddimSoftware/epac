@@ -28,9 +28,12 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `EPetition` | An e-petition submitted to the House of Commons with signatures, sponsor, deadline, and optional government response. |
 | `PetitionGovernmentResponse` | The government's official written response tabled in the House of Commons for a qualified petition. |
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, Royal Assent date when available, and LEGISinfo source URL. |
+| `BillCommitteeStage` | A bill's active committee study stage, carrying the committee, study dates, upcoming meetings, and past meetings. |
+| `BillCommitteeMeeting` | A committee meeting tied to a bill study, including meeting number, date, optional evidence URL, and witness count. |
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
 | `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
 | `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
+| `ParliamentaryCommittee` | A House or Senate committee reference with acronym, name, chamber code, and authoritative source URL. |
 | `MemberBiography` | Parliament.ca biography details for an MP profile, including service periods, roles, education, professional background, source URL, and summary text where available. |
 | `MemberAttendanceRecord` | Backend-only House vote/attendance row for an MP, with vote date, subject, result, and ballot where available. |
 | `PMBSponsorship` | Backend-only private member's bill sponsorship or seconding relationship for an MP. |
@@ -95,6 +98,7 @@ to the issue that will build the missing artifact.
 | `SittingRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/SittingRepository.swift`; adapter: `ios/epac/Data/Adapters/HansardSittingRepositoryAdapter.swift`. | List sitting dates and load transcripts for a sitting date. |
 | `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
 | `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
+| `BillCommitteeStageRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillCommitteeStageRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift`. | Load the committee currently studying a bill, including study dates and meeting rows. |
 | `RecentLawQueryPort` | iOS Swift | outbound | Implemented by `ios/epac/Application/TrackRoyalAssent.swift`; adapter input is `BillRepository`. | Query current-session bills that received Royal Assent within the recent-law window. |
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
@@ -570,6 +574,29 @@ Current implementation:
 ```
 
 > **Boundary note:** `GetBillDepth` returns domain values only. SQLite nulls and optional table/column handling are adapter concerns.
+
+---
+
+### LoadBillCommitteeStage
+
+```
+Actor: User (iOS app, bill detail)
+Goal: See the committee currently studying a bill, with study dates, upcoming meetings, and past meetings with witness counts when available.
+Inputs: LEGISinfo bill ID.
+Outputs: Optional BillCommitteeStage; nil when the backend reports no current committee stage.
+Entities / values: Bill, BillCommitteeStage, BillCommitteeMeeting, ParliamentaryCommittee.
+Ports: iOS Swift: `BillCommitteeStageRepository`.
+Primary adapters: BackendBillCommitteeStageRepository (GET /api/v1/bills/{id}/committee-stage), BillDetailView, BillInCommitteePanel, CommitteeMeetingsView.
+Current implementation:
+  ios/epac/Application/LoadBillCommitteeStage.swift
+  ios/epac/Domain/Entities/BillCommitteeStage.swift
+  ios/epac/Domain/Ports/BillCommitteeStageRepository.swift
+  ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift
+  ios/epac/Views/Bills/BillInCommitteePanel.swift
+  ios/epac/Views/Bills/BillDetailView.swift
+```
+
+> **Boundary rule:** iOS decodes only the backend's typed committee-stage JSON. LEGISinfo and parl.ca committee schedule parsing remain backend responsibilities, and the bill page hides the panel when the use case returns `nil`.
 
 ---
 

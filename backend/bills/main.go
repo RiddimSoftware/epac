@@ -1,4 +1,5 @@
-// bills Lambda - GET /api/v1/bills and GET /api/v1/bills/{id}
+// bills Lambda - GET /api/v1/bills, GET /api/v1/bills/{id}, and
+// GET /api/v1/bills/{id}/committee-stage
 package main
 
 import (
@@ -40,6 +41,7 @@ type Bill = domain.Bill
 type BillStage = domain.BillStage
 type BillVersion = domain.BillVersion
 type BillAmendment = domain.BillAmendment
+type BillCommitteeStage = domain.BillCommitteeStage
 
 type openBillsIndexFunc func(context.Context) (usecase.BillsIndex, error)
 type openDBFunc func(context.Context, string) (*sql.DB, error)
@@ -90,6 +92,17 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		return mapInitializationError(err), nil
 	}
 
+	if id := billCommitteeStageIDFromRequest(req); id != "" {
+		stage, err := usecase.NewGetBillCommitteeStage(repo).Execute(ctx, id)
+		if err != nil {
+			return mapBillError(err), nil
+		}
+		if stage == nil {
+			return noContentResponse(), nil
+		}
+		return jsonResponse(http.StatusOK, stage), nil
+	}
+
 	if id := billIDFromRequest(req); id != "" {
 		bill, err := usecase.NewGetBillDepth(repo).Execute(ctx, id)
 		if err != nil {
@@ -123,6 +136,31 @@ func billIDFromRequest(req events.APIGatewayProxyRequest) string {
 				return ""
 			}
 			return strings.TrimSpace(rest)
+		}
+	}
+	return ""
+}
+
+func billCommitteeStageIDFromRequest(req events.APIGatewayProxyRequest) string {
+	path := strings.Trim(req.Path, "/")
+	for _, prefix := range []string{"api/v1/bills/", "bills/"} {
+		if strings.HasPrefix(path, prefix) {
+			rest := strings.TrimPrefix(path, prefix)
+			if !strings.HasSuffix(rest, "/committee-stage") {
+				return ""
+			}
+			id := strings.TrimSuffix(rest, "/committee-stage")
+			if id == "" || strings.Contains(id, "/") {
+				return ""
+			}
+			return strings.TrimSpace(id)
+		}
+	}
+	if strings.Contains(req.Resource, "/committee-stage") {
+		for _, key := range []string{"id", "bill_id", "legisinfo_id"} {
+			if id := strings.TrimSpace(req.PathParameters[key]); id != "" {
+				return id
+			}
 		}
 	}
 	return ""
@@ -197,6 +235,15 @@ func jsonResponse(status int, payload any, extraHeaders ...map[string]string) ev
 		StatusCode: status,
 		Headers:    headers,
 		Body:       string(body),
+	}
+}
+
+func noContentResponse() events.APIGatewayProxyResponse {
+	return events.APIGatewayProxyResponse{
+		StatusCode: http.StatusNoContent,
+		Headers: map[string]string{
+			"Cache-Control": "public, max-age=300",
+		},
 	}
 }
 

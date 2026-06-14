@@ -12,6 +12,7 @@ import (
 type BillRepository interface {
 	ListBills(ctx context.Context) ([]domain.Bill, error)
 	GetBillDepth(ctx context.Context, id string) (domain.Bill, error)
+	GetBillCommitteeStage(ctx context.Context, id string) (*domain.BillCommitteeStage, error)
 }
 
 type ListBillsInput struct {
@@ -49,6 +50,22 @@ func (u *GetBillDepth) Execute(ctx context.Context, id string) (domain.Bill, err
 		return domain.Bill{}, ErrBillNotFound
 	}
 	return u.repo.GetBillDepth(ctx, id)
+}
+
+type GetBillCommitteeStage struct {
+	repo BillRepository
+}
+
+func NewGetBillCommitteeStage(repo BillRepository) *GetBillCommitteeStage {
+	return &GetBillCommitteeStage{repo: repo}
+}
+
+func (u *GetBillCommitteeStage) Execute(ctx context.Context, id string) (*domain.BillCommitteeStage, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, ErrBillNotFound
+	}
+	return u.repo.GetBillCommitteeStage(ctx, id)
 }
 
 var normalizeRe = regexp.MustCompile(`[^a-z0-9]+`)

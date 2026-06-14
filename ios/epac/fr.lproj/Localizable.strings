@@ -329,6 +329,16 @@
 "bills.detail.originatingChamber" = "Chambre d'origine";
 "billLobbying.title" = "Contexte de lobbying";
 "billLobbying.summary" = "%d communications aux députés et aux ministres à propos de ce sujet dans l'année précédant ce vote.";
+"billCommittee.title" = "En comité";
+"billCommittee.upcoming" = "Réunions à venir";
+"billCommittee.past" = "Réunions passées";
+"billCommittee.source" = "Source du comité sur parl.ca";
+"billCommittee.studiedSince" = "À l'étude depuis le %@";
+"billCommittee.studyCompleted" = "Étude terminée le %@";
+"billCommittee.meeting.number" = "Réunion %d";
+"billCommittee.witness.none" = "Aucun témoin consigné";
+"billCommittee.witness.singular" = "1 témoin";
+"billCommittee.witness.plural" = "%d témoins";
 "bills.chamber.house" = "Chambre des communes";
 "bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";

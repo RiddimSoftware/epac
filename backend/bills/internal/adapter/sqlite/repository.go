@@ -5,17 +5,37 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
 
 	"epac/bills/internal/domain"
 	"epac/bills/internal/usecase"
 )
 
 type Repository struct {
-	db *sql.DB
+	db  *sql.DB
+	now func() time.Time
 }
 
-func New(db *sql.DB) *Repository {
-	return &Repository{db: db}
+type Option func(*Repository)
+
+func WithNow(now func() time.Time) Option {
+	return func(r *Repository) {
+		if now != nil {
+			r.now = now
+		}
+	}
+}
+
+func New(db *sql.DB, opts ...Option) *Repository {
+	r := &Repository{
+		db:  db,
+		now: func() time.Time { return time.Now().UTC() },
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 func (r *Repository) ListBills(ctx context.Context) ([]domain.Bill, error) {
@@ -87,6 +107,68 @@ func (r *Repository) GetBillDepth(ctx context.Context, id string) (domain.Bill, 
 	return bill, nil
 }
 
+func (r *Repository) GetBillCommitteeStage(ctx context.Context, id string) (*domain.BillCommitteeStage, error) {
+	billID, err := r.lookupBillID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ok, err := r.tableExists(ctx, "bill_committee_stages"); err != nil || !ok {
+		return nil, err
+	}
+
+	var stageRow billCommitteeStageRow
+	var studiedSince, studyCompletedAt sql.NullString
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			id,
+			committee_acronym,
+			committee_name,
+			committee_chamber,
+			committee_url,
+			studied_since,
+			study_completed_at
+		FROM bill_committee_stages
+		WHERE bill_id = ?
+		ORDER BY
+			CASE WHEN study_completed_at IS NULL THEN 0 ELSE 1 END,
+			sort_order DESC,
+			rowid DESC
+		LIMIT 1`, billID).Scan(
+		&stageRow.id,
+		&stageRow.committeeAcronym,
+		&stageRow.committeeName,
+		&stageRow.committeeChamber,
+		&stageRow.committeeURL,
+		&studiedSince,
+		&studyCompletedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query bill committee stage sqlite artifact: %w", err)
+	}
+
+	meetings, err := r.billCommitteeMeetings(ctx, billID, stageRow.id)
+	if err != nil {
+		return nil, err
+	}
+	upcoming, past := r.splitCommitteeMeetings(meetings)
+
+	return &domain.BillCommitteeStage{
+		Committee: domain.ParliamentaryCommittee{
+			Code:    stageRow.committeeAcronym,
+			Name:    stageRow.committeeName,
+			Chamber: stageRow.committeeChamber,
+			URL:     stageRow.committeeURL,
+		},
+		StudiedSince:     stringPtr(studiedSince),
+		StudyCompletedAt: stringPtr(studyCompletedAt),
+		UpcomingMeetings: upcoming,
+		PastMeetings:     past,
+	}, nil
+}
+
 func (r *Repository) queryBills(ctx context.Context, query string, args ...any) ([]domain.Bill, error) {
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -135,6 +217,90 @@ func (r *Repository) queryBills(ctx context.Context, query string, args ...any) 
 		bills = []domain.Bill{}
 	}
 	return bills, nil
+}
+
+func (r *Repository) lookupBillID(ctx context.Context, id string) (string, error) {
+	var billID string
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id
+		FROM bills
+		WHERE id = ? OR number = ?
+		LIMIT 1`, id, id).Scan(&billID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", usecase.ErrBillNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("lookup bill sqlite artifact: %w", err)
+	}
+	return billID, nil
+}
+
+func (r *Repository) billCommitteeMeetings(ctx context.Context, billID, stageID string) ([]domain.BillCommitteeMeeting, error) {
+	if ok, err := r.tableExists(ctx, "bill_committee_meetings"); err != nil || !ok {
+		return []domain.BillCommitteeMeeting{}, err
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, meeting_number, meeting_date, witness_count, evidence_url
+		FROM bill_committee_meetings
+		WHERE bill_id = ? AND stage_id = ?
+		ORDER BY sort_order, rowid`, billID, stageID)
+	if err != nil {
+		return nil, fmt.Errorf("query bill committee meetings sqlite artifact: %w", err)
+	}
+	defer rows.Close()
+
+	meetings := make([]domain.BillCommitteeMeeting, 0)
+	for rows.Next() {
+		var meeting domain.BillCommitteeMeeting
+		var date, evidenceURL sql.NullString
+		var witnessCount sql.NullInt64
+		if err := rows.Scan(&meeting.ID, &meeting.MeetingNumber, &date, &witnessCount, &evidenceURL); err != nil {
+			return nil, fmt.Errorf("scan bill committee meetings sqlite artifact: %w", err)
+		}
+		meeting.Date = stringPtr(date)
+		meeting.WitnessCount = intPtr(witnessCount)
+		meeting.EvidenceURL = stringPtr(evidenceURL)
+		meetings = append(meetings, meeting)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate bill committee meetings sqlite artifact: %w", err)
+	}
+	return meetings, nil
+}
+
+func (r *Repository) splitCommitteeMeetings(meetings []domain.BillCommitteeMeeting) ([]domain.BillCommitteeMeeting, []domain.BillCommitteeMeeting) {
+	today := r.now().UTC().Format("2006-01-02")
+	upcoming := make([]domain.BillCommitteeMeeting, 0)
+	past := make([]domain.BillCommitteeMeeting, 0)
+	for _, meeting := range meetings {
+		if meeting.Date != nil && *meeting.Date >= today {
+			upcoming = append(upcoming, meeting)
+			continue
+		}
+		past = append(past, meeting)
+	}
+	sort.SliceStable(upcoming, func(i, j int) bool {
+		return dateValue(upcoming[i].Date) < dateValue(upcoming[j].Date)
+	})
+	sort.SliceStable(past, func(i, j int) bool {
+		return dateValue(past[i].Date) > dateValue(past[j].Date)
+	})
+	return upcoming, past
+}
+
+func dateValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+type billCommitteeStageRow struct {
+	id               string
+	committeeAcronym string
+	committeeName    string
+	committeeChamber string
+	committeeURL     string
 }
 
 func (r *Repository) attachStages(ctx context.Context, bills []domain.Bill) error {

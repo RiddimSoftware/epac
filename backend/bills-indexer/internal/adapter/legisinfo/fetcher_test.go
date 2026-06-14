@@ -45,6 +45,8 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 					"BillStageId":60029,
 					"BillStageNameEn":"First reading",
 					"ChamberOrganizationId":1,
+					"ParliamentNumber":45,
+					"SessionNumber":1,
 					"StateNameEn":"Completed",
 					"StateAsOfDate":"2025-06-03T10:02:53.767",
 					"SignificantEvents":[{
@@ -52,6 +54,51 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 						"EventNameEn":"Introduction and first reading",
 						"EventDateTime":"2025-06-03T00:00:00",
 						"AmendmentNoteId":777
+					}]
+				},{
+					"BillStageId":60030,
+					"BillStageNameEn":"Second reading",
+					"ChamberOrganizationId":1,
+					"ParliamentNumber":45,
+					"SessionNumber":1,
+					"StateNameEn":"Completed",
+					"StateAsOfDate":"2025-10-03T10:55:04",
+					"Committee":{
+						"CommitteeOrganizationId":30576,
+						"CommitteeNameEn":"Standing Committee on Public Safety and National Security",
+						"CommitteeAcronym":"SECU",
+						"IsHouseOfCommonsCommittee":true
+					},
+					"SignificantEvents":[{
+						"EventTypeId":60121,
+						"EventNameEn":"Second reading and referral to committee",
+						"EventDateTime":"2025-10-03T00:00:00"
+					}]
+				},{
+					"BillStageId":60049,
+					"BillStageNameEn":"Consideration in committee",
+					"ChamberOrganizationId":1,
+					"ParliamentNumber":45,
+					"SessionNumber":1,
+					"StateNameEn":"Completed",
+					"StateAsOfDate":"2026-03-11T12:40:09.547",
+					"Committee":{
+						"CommitteeOrganizationId":30576,
+						"CommitteeNameEn":"Standing Committee on Public Safety and National Security",
+						"CommitteeAcronym":"SECU",
+						"IsHouseOfCommonsCommittee":true
+					},
+					"CommitteeMeetings":[{
+						"CommitteeOrganizationId":30576,
+						"CommitteeNameEn":"Standing Committee on Public Safety and National Security",
+						"CommitteeAcronym":"SECU",
+						"Number":"9",
+						"Date":"2025-10-28T00:00:00"
+					}],
+					"SignificantEvents":[{
+						"EventTypeId":60124,
+						"EventNameEn":"Committee report presented with amendments",
+						"EventDateTime":"2026-03-11T00:00:00"
 					}]
 				}],"SenateBillStages":[]},
 				"Publications":[{"PublicationId":13545752,"PublicationTypeNameEn":"First Reading"}],
@@ -79,7 +126,7 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 		t.Fatalf("bills len = %d", len(batch.Bills))
 	}
 	bill := batch.Bills[0]
-	if bill.Title != "Border bill detail" || len(bill.Stages) != 1 || len(bill.Events) != 1 {
+	if bill.Title != "Border bill detail" || len(bill.Stages) != 3 || len(bill.Events) != 3 {
 		t.Fatalf("bill = %#v", bill)
 	}
 	if len(bill.Versions) != 1 || bill.Versions[0].XMLURL == "" || bill.Versions[0].PDFURL == "" {
@@ -90,5 +137,15 @@ func TestFetcherBuildsRelationalBillRecordsFromLegisInfoExports(t *testing.T) {
 	}
 	if len(bill.PBOCostings) != 1 {
 		t.Fatalf("pbo costings = %#v", bill.PBOCostings)
+	}
+	if len(bill.CommitteeStages) != 1 {
+		t.Fatalf("committee stages = %#v", bill.CommitteeStages)
+	}
+	stage := bill.CommitteeStages[0]
+	if stage.CommitteeAcronym != "SECU" || stage.StudiedSince != "2025-10-03" || stage.StudyCompletedAt != "2026-03-11" {
+		t.Fatalf("committee stage = %#v", stage)
+	}
+	if len(stage.Meetings) != 1 || stage.Meetings[0].MeetingNumber != 9 || stage.Meetings[0].EvidenceURL == "" {
+		t.Fatalf("committee meetings = %#v", stage.Meetings)
 	}
 }
