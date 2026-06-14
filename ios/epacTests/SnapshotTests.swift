@@ -1132,4 +1132,17 @@ final class SnapshotTests: XCTestCase {
             name: "WitnessOrganizationContent_withLobbyingBadge"
         )
     }
+
+    // MARK: - NotificationsSettingsView
+
+    func testNotificationsSettingsView() {
+        snapshot(
+            NavigationStack {
+                NotificationsSettingsView()
+            }
+            .frame(width: 375, height: 600),
+            name: "NotificationsSettingsView"
+        )
+    }
 }
+

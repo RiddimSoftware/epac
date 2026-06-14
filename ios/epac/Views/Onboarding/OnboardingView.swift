@@ -53,6 +53,7 @@ struct OnboardingView: View {
     @State private var page = OnboardingLayout.welcomePage
     @State private var postalCodeVM = PostalCodeViewModel()
     @State private var selectedTopics: Set<String> = []
+    @State private var dailyDigestOptIn = false
     @Environment(\.modelContext) private var modelContext
 
     private let totalPages = OnboardingLayout.totalPages
@@ -370,6 +371,19 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, EpacSpacing.l)
                 .padding(.vertical, EpacSpacing.l)
+
+                Divider()
+                    .padding(.horizontal, EpacSpacing.l)
+                    .padding(.vertical, EpacSpacing.m)
+
+                Toggle(isOn: $dailyDigestOptIn) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(NSLocalizedString("onboarding.topics.dailyDigest", comment: ""))
+                            .font(.epacBody.weight(.medium))
+                    }
+                }
+                .tint(Color.epacBrand.accent)
+                .padding(.horizontal, EpacSpacing.l + 4)
                 .padding(.bottom, OnboardingLayout.topicsGridBottomPadding)
             }
 
@@ -402,6 +416,7 @@ struct OnboardingView: View {
 
     private func complete() {
         Log.info("onboarding.completed")
+        UserDefaults.standard.set(dailyDigestOptIn, forKey: "epac.notifications.dailyDigestEnabled")
         UserDefaults.standard.set(true, forKey: "epac.onboarding.completed")
         onComplete()
     }

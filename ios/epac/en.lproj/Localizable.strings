@@ -549,6 +549,8 @@
 "onboarding.topics.title" = "What matters to you?";
 "onboarding.topics.subtitle" = "Follow up to 4 topics to personalize your Home feed.";
 "onboarding.topics.follow" = "Follow %d topic(s) →";
+"onboarding.topics.dailyDigest" = "Daily Parliament summary (sitting days only)";
+
 
 "onboarding.promise.title" = "You're set up";
 "onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
@@ -596,6 +598,11 @@
 "settings.followed.bills" = "Followed Bills";
 "settings.followed.members" = "Followed MPs";
 "settings.followed.topics" = "Followed Topics";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.dailyDigest" = "Daily Parliament summary";
+"settings.notifications.dailyDigest.description" = "Get a concise overview of what happened in the House of Commons each sitting day when Hansard is published.";
+
 
 "settings.privacy.title" = "Data & Privacy";
 "settings.privacy.policy" = "Privacy Policy";

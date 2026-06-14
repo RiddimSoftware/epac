@@ -551,6 +551,8 @@
 "onboarding.topics.title" = "Ce qui vous importe";
 "onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets pour personnaliser votre accueil.";
 "onboarding.topics.follow" = "Suivre %d sujet(s) →";
+"onboarding.topics.dailyDigest" = "Sommaire quotidien du Parlement (jours de séance uniquement)";
+
 
 "onboarding.promise.title" = "Vous êtes prêt";
 "onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
@@ -598,6 +600,11 @@
 "settings.followed.bills" = "Projets de loi suivis";
 "settings.followed.members" = "Députés suivis";
 "settings.followed.topics" = "Sujets suivis";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.dailyDigest" = "Sommaire quotidien du Parlement";
+"settings.notifications.dailyDigest.description" = "Obtenez un aperçu concis de ce qui s'est passé à la Chambre des communes chaque jour de séance lorsque le Hansard est publié.";
+
 
 "settings.privacy.title" = "Données et confidentialité";
 "settings.privacy.policy" = "Politique de confidentialité";

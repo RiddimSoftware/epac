@@ -74,6 +74,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `CommunicationCount` | Current-vs-prior Parliament communication count pair used for organization profile trend display. |
 | `ParliamentSession` | Date-window value defining a Parliament/session boundary for trend aggregation. |
 | `CohortComparison` | Backend-only MP lobbying comparison values: MP total, party average, national average, and ratios. |
+| `DailyDigest` | Value object containing date, subject count, attendance estimate, top subjects, and vote summary for a sitting day's push digest. |
+| `User` | Representation of the user profile/preferences, carrying the `dailyDigestOptIn` flag. |
 
 ## Ports
 
@@ -100,6 +102,10 @@ to the issue that will build the missing artifact.
 | `IndexDownloader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefile/index_downloader.go`. | Download and verify the current Hansard search SQLite artifact. |
 | `SubjectsRepository` | backend Go | outbound | Implemented: `backend/hansard-subjects-index/application/usecase.go`; adapter: `backend/hansard-subjects-index/repository/postgres.go`. | Read Hansard subject records for artifact generation. |
 | `Clock` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/Ports.swift`; conformer: `SystemClock`. | Provide the current timestamp for iOS use cases. |
+| `HansardReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/HansardReadPort.swift` | Port to fetch Hansard statistics and confirm sitting days. |
+| `VoteReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/VoteReadPort.swift` | Port to fetch division attendance and vote summaries. |
+| `DigestNotificationPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/DigestNotificationPort.swift` | Port to send daily digest push notifications. |
+| `UserPreferenceReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/UserPreferenceReadPort.swift`; adapter: `ios/epac/Data/Adapters/UserPreferenceAdapter.swift` | Port to load user preferences for daily digest opt-in. |
 | `Clock` | backend Go | outbound | Implemented: `backend/daily-fetch/internal/usecase/usecase.go`, `backend/hansard-subjects-index/application/usecase.go`; conformers include `systemClock` and `SystemClock`. | Provide the current timestamp for backend scheduling and cache-freshness checks. |
 | `ArtifactStore` | backend Go | outbound | Implemented: `backend/manifest/manifest.go`; adapter: `backend/manifest/s3.go`. | List artifact keys, read object metadata, and write manifest.json back to object storage. |
 | `EstimatesReader` | backend Go | outbound | Implemented: `backend/estimates/internal/usecase/usecase.go`; adapters include `backend/estimates/internal/adapter/artifacts/artifacts.go` and `backend/estimates/internal/adapter/postgres/postgres.go`. | Fetch published Main Estimates rows by fiscal year, organization, or full artifact export. |
@@ -850,6 +856,33 @@ Current implementation:
 > only on the subscription lookup and push delivery ports. API Gateway events,
 > environment variables, `pgx`, APNs endpoint construction, HTTP transport, and
 > response mapping stay in `main.go` or `internal/adapter/`.
+
+---
+
+### SendDailyParliamentDigest
+
+```
+Actor: Scheduler adapter (sitting-day cron)
+Goal: On confirmed sitting days, compose a daily summary from today's Hansard + vote records and deliver as a push notification to opted-in users.
+Inputs: Expose timing window (startHour, endHour) as parameters, today's date.
+Outputs: Push notification delivered to opted-in devices.
+Entities / values: DailyDigest, User.
+Ports: HansardReadPort, VoteReadPort, DigestNotificationPort, UserPreferenceReadPort.
+Primary adapters: Hansard and votes data stores, APNs client, cron scheduler, SwiftUI onboarding Screen 4 toggle + Settings → Notifications row (iOS).
+Current implementation:
+  ios/epac/Domain/Entities/DailyDigest.swift
+  ios/epac/Domain/Entities/User.swift
+  ios/epac/Domain/Ports/HansardReadPort.swift
+  ios/epac/Domain/Ports/VoteReadPort.swift
+  ios/epac/Domain/Ports/DigestNotificationPort.swift
+  ios/epac/Domain/Ports/UserPreferenceReadPort.swift
+  ios/epac/Domain/UseCases/SendDailyParliamentDigest.swift
+  ios/epac/Data/Adapters/UserPreferenceAdapter.swift
+  ios/epac/Views/Onboarding/OnboardingView.swift
+  ios/epac/Views/Settings/NotificationsSettingsView.swift
+```
+
+> **Boundary rule:** Notification timing policy (never before 5 PM, never after 11 PM, sitting-day only) is a use-case-layer decision; the scheduler must expose the timing window as parameters to the execute function.
 
 ---
 
