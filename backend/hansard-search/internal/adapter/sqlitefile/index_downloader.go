@@ -31,8 +31,9 @@ type s3Downloader interface {
 
 // IndexDownloader downloads and validates the hansard SQLite search index from S3.
 type IndexDownloader struct {
-	s3     s3Downloader
-	bucket string
+	s3        s3Downloader
+	bucket    string
+	localPath string
 }
 
 // NewIndexDownloaderFromEnv constructs an IndexDownloader from environment variables.
@@ -51,7 +52,7 @@ func NewIndexDownloaderFromEnv(ctx context.Context) (*IndexDownloader, error) {
 
 // NewIndexDownloader constructs an IndexDownloader from explicit dependencies (for testing).
 func NewIndexDownloader(s3Client s3Downloader, bucket string) *IndexDownloader {
-	return &IndexDownloader{s3: s3Client, bucket: bucket}
+	return &IndexDownloader{s3: s3Client, bucket: bucket, localPath: localIndexPath}
 }
 
 // Download fetches s3://bucket/sqliteKey to /tmp/index.sqlite using streaming I/O,
@@ -67,7 +68,7 @@ func (d *IndexDownloader) Download(ctx context.Context, sqliteKey, expectedSHA25
 	}
 	defer out.Body.Close()
 
-	f, err := os.Create(localIndexPath)
+	f, err := os.Create(d.localPath)
 	if err != nil {
 		return "", fmt.Errorf("create local index file: %w", err)
 	}
@@ -86,11 +87,11 @@ func (d *IndexDownloader) Download(ctx context.Context, sqliteKey, expectedSHA25
 		return "", usecase.ErrChecksumMismatch
 	}
 
-	if err := verifySchemaVersion(localIndexPath); err != nil {
+	if err := verifySchemaVersion(d.localPath); err != nil {
 		return "", err
 	}
 
-	return localIndexPath, nil
+	return d.localPath, nil
 }
 
 func verifySchemaVersion(path string) error {
