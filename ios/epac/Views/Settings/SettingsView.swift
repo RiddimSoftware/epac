@@ -21,6 +21,7 @@ struct SettingsView: View {
                 accountSection
                 appearanceSection
                 languageSection
+                notificationsSection
                 followsSection
                 dataPrivacySection
                 aboutSection
@@ -139,6 +140,19 @@ struct SettingsView: View {
                 NSLocalizedString("settings.language.preference", comment: ""),
                 value: NSLocalizedString("settings.language.system", comment: "")
             )
+        }
+    }
+
+    // MARK: - Notifications
+
+    private var notificationsSection: some View {
+        Section(NSLocalizedString("settings.notifications.title", comment: "")) {
+            NavigationLink(destination: NotificationsSettingsView()) {
+                Label(
+                    NSLocalizedString("settings.notifications.manage", comment: ""),
+                    systemImage: "bell.badge"
+                )
+            }
         }
     }
 

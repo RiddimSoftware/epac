@@ -154,6 +154,7 @@ actor Fetch: ModelActor, ObservableObject {
 		try? await downloadFiscalMonitorEntries()
 		try? loadCabinetPositions()
 		try? loadMinisterialExpenses()
+		try? await downloadHansard(Date())
 		if let bills = try? await BillsService.fetchBills() {
 			await BillFollowStore.shared.updateStoredState(in: bills)
 		}

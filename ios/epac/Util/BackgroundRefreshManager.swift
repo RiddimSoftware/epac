@@ -41,6 +41,7 @@ final class BackgroundRefreshManager {
         let refreshTask = Task {
             let fetch = Fetch(modelContainer: container)
             await fetch.backgroundRefresh()
+            await sendDailyDigestIfEligible(container: container)
             Log.debug("BackgroundRefreshManager: refresh complete")
         }
 
@@ -51,6 +52,22 @@ final class BackgroundRefreshManager {
         Task {
             await refreshTask.value
             task.setTaskCompleted(success: !refreshTask.isCancelled)
+        }
+    }
+
+    func sendDailyDigestIfEligible(container: ModelContainer) async {
+        let context = ModelContext(container)
+        let useCase = SendDailyParliamentDigest(
+            hansardReadPort: SwiftDataHansardReadAdapter(modelContext: context),
+            voteReadPort: SwiftDataVoteReadAdapter(modelContext: context),
+            digestNotificationPort: LiveDigestNotificationAdapter(),
+            userPreferenceReadPort: UserPreferenceAdapter(),
+            deliveryRecordPort: UserDefaultsDigestDeliveryRecordAdapter()
+        )
+        do {
+            try await useCase.execute()
+        } catch {
+            Log.warning("Daily digest use case failed: \(error.localizedDescription)")
         }
     }
 }
