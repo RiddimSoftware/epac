@@ -154,6 +154,9 @@ actor Fetch: ModelActor, ObservableObject {
 		try? await downloadFiscalMonitorEntries()
 		try? loadCabinetPositions()
 		try? loadMinisterialExpenses()
+		if let bills = try? await BillsService.fetchBills() {
+			await BillFollowStore.shared.updateStoredState(in: bills)
+		}
 	}
 
 	func hansard(_ date: Date) async throws -> PersistentIdentifier {

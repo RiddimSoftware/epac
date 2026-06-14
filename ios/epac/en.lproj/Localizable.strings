@@ -402,9 +402,12 @@
 "home.debates.subtitle" = "Browse previous sittings";
 "home.myMP.activityCount" = "%d recent activities";
 "home.myMP.notSet" = "Set your postal code to track your MP";
+"home.recentlyBecameLaw" = "Recently Became Law";
+"home.recentlyBecameLaw.date" = "Royal Assent %@";
 "home.followedBills" = "Bills You Follow";
 "home.followedTopics" = "Topics You Follow";
 "home.recentDebates" = "Recent in Hansard";
+"home.seeLaws" = "See laws →";
 "home.seeAllBills" = "See all bills →";
 "home.clearAllBills" = "Clear All";
 "home.manageTopics" = "Manage topics →";
@@ -791,3 +794,5 @@
 "appStore.screenshot.contact.subjectLine" = "Bill C-226 second reading";
 "appStore.screenshot.contact.body" = "I am writing about Bill C-226, An Act to establish a national framework to improve food price transparency. Please share how you plan to vote and why.";
 "appStore.screenshot.contact.send" = "Send";
+
+"notification.royalAssent.body" = "%@ received Royal Assent today and is now law.";
