@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"epac/backend/live-vote-poller/internal/adapter/artifacts"
-	"epac/backend/live-vote-poller/internal/adapter/ourcommons"
-	"epac/backend/live-vote-poller/internal/adapter/push"
-	"epac/backend/live-vote-poller/internal/usecase"
+	"epac/live-vote-poller/internal/adapter/artifacts"
+	"epac/live-vote-poller/internal/adapter/ourcommons"
+	"epac/live-vote-poller/internal/adapter/push"
+	"epac/live-vote-poller/internal/usecase"
 	"epac/observability"
 
 	"github.com/aws/aws-lambda-go/lambda"
