@@ -87,6 +87,11 @@ type BillCommitteeMeeting struct {
 	SortOrder     int
 }
 
+type VersionSection struct {
+	Label string
+	Text  string
+}
+
 type BillVersion struct {
 	ID            string
 	PublicationID string
@@ -98,6 +103,18 @@ type BillVersion struct {
 	PublishedDate string
 	Source        string
 	SortOrder     int
+	TextHash      *string
+	TextSourceURL *string
+	Sections      []VersionSection
+}
+
+type BillClauseDiff struct {
+	ID               string
+	Label            string
+	ChangeType       string // "added", "removed", "modified", "unchanged"
+	FromText         string
+	ToText           string
+	HansardAnchorURL *string
 }
 
 type BillDiff struct {
@@ -105,6 +122,7 @@ type BillDiff struct {
 	FromVersionID string
 	ToVersionID   string
 	SourceURL     string
+	Clauses       []BillClauseDiff
 }
 
 type Amendment struct {

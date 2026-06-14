@@ -31,6 +31,13 @@ func TestWriterCreatesBillsRelationalSchema(t *testing.T) {
 		Events: []domain.BillEvent{{ID: "event-1", StageID: "60029", Name: "Introduction"}},
 		Versions: []domain.BillVersion{{
 			ID: "v1", Stage: "First Reading", HTMLURL: "https://example.test/html", XMLURL: "https://example.test/xml", SortOrder: 1,
+			TextHash: ptrString("abc123hash"), TextSourceURL: ptrString("https://example.test/xml"),
+		}},
+		Diffs: []domain.BillDiff{{
+			ID: "diff-1", FromVersionID: "v1", ToVersionID: "v2", SourceURL: "https://example.test/diff",
+			Clauses: []domain.BillClauseDiff{{
+				ID: "clause-1", Label: "1", ChangeType: "modified", FromText: "Old text", ToText: "New text", HansardAnchorURL: ptrString("https://hansard.test/anchor"),
+			}},
 		}},
 		Amendments:  []domain.Amendment{{ID: "a1", EventID: "event-1", AmendmentCount: 1}},
 		PBOCostings: []domain.PBOCosting{{ID: "p1", Title: "PBO costing", URL: "https://pbo.test"}},
@@ -59,7 +66,7 @@ func TestWriterCreatesBillsRelationalSchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Write: %v", err)
 	}
-	if stats.TableCounts["bills"] != 1 || stats.TableCounts["bill_versions"] != 1 || stats.TableCounts["pbo_costings"] != 1 {
+	if stats.TableCounts["bills"] != 1 || stats.TableCounts["bill_versions"] != 1 || stats.TableCounts["pbo_costings"] != 1 || stats.TableCounts["bill_clause_diffs"] != 1 {
 		t.Fatalf("table counts = %#v", stats.TableCounts)
 	}
 
@@ -89,10 +96,30 @@ func TestWriterCreatesBillsRelationalSchema(t *testing.T) {
 	if meetingNumber != 42 {
 		t.Fatalf("meeting number = %d", meetingNumber)
 	}
+
+	var textHash, textSourceURL string
+	if err := db.QueryRow("SELECT text_hash, text_source_url FROM bill_versions WHERE bill_id = ? AND id = ?", "13543613", "v1").Scan(&textHash, &textSourceURL); err != nil {
+		t.Fatalf("query bill version text info: %v", err)
+	}
+	if textHash != "abc123hash" || textSourceURL != "https://example.test/xml" {
+		t.Fatalf("text_hash = %q, text_source_url = %q", textHash, textSourceURL)
+	}
+
+	var changeType, fromText, toText, hansardAnchor string
+	if err := db.QueryRow("SELECT change_type, from_text, to_text, hansard_anchor_url FROM bill_clause_diffs WHERE bill_id = ? AND diff_id = ? AND id = ?", "13543613", "diff-1", "clause-1").Scan(&changeType, &fromText, &toText, &hansardAnchor); err != nil {
+		t.Fatalf("query bill clause diff: %v", err)
+	}
+	if changeType != "modified" || fromText != "Old text" || toText != "New text" || hansardAnchor != "https://hansard.test/anchor" {
+		t.Fatalf("clause diff fields mismatch: %q, %q, %q, %q", changeType, fromText, toText, hansardAnchor)
+	}
 }
 
 type fixedClock struct{}
 
 func (fixedClock) Now() time.Time {
 	return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+}
+
+func ptrString(s string) *string {
+	return &s
 }
