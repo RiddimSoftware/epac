@@ -902,6 +902,82 @@
         }
       }
     },
+    "/api/v1/bills/{id}/diff": {
+      "get": {
+        "tags": ["Bills"],
+        "summary": "Get bill version diff",
+        "description": "Returns a clause-aware diff between two published versions of a bill. The backend computes the structured diff against the ingested LEGISinfo version text; the iOS surface only renders the result and never parses LEGISinfo wire formats.",
+        "operationId": "getBillVersionDiff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Bill identifier from the list bills response.",
+            "schema": { "type": "string", "example": "C-8" }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "Identifier of the \"before\" version, as published in the bill depth response's versions list.",
+            "schema": { "type": "string", "example": "C-8-v1" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Identifier of the \"after\" version, as published in the bill depth response's versions list.",
+            "schema": { "type": "string", "example": "C-8-v3" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structured clause-level diff between the two versions.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillVersionDiff" },
+                "examples": {
+                  "diff": {
+                    "value": {
+                      "from": {
+                        "id": "C-8-v1",
+                        "label": "First reading",
+                        "stage": "First Reading",
+                        "chamber": "House of Commons",
+                        "published_on": "2026-04-27"
+                      },
+                      "to": {
+                        "id": "C-8-v3",
+                        "label": "As passed by the House",
+                        "stage": "Third Reading",
+                        "chamber": "House of Commons",
+                        "published_on": "2026-06-04"
+                      },
+                      "clauses": [
+                        {
+                          "id": "clause-3",
+                          "label": "Clause 3",
+                          "change_type": "added",
+                          "from_text": "",
+                          "to_text": "The Minister shall publish quarterly progress reports to Parliament.",
+                          "hansard_anchor_url": "https://www.ourcommons.ca/DocumentViewer/en/45-1/house/sitting-42/hansard#clause-3"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": { "description": "Backend has no diff available for the requested version pair (text missing or diff job not run yet)." },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/bills/{legisinfo_id}/lobbying-context": {
       "get": {
         "tags": ["Bills", "Lobbying"],
@@ -2639,6 +2715,44 @@
           "chamber": { "type": "string" },
           "published_on": { "type": "string", "format": "date" },
           "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "BillVersionDiff": {
+        "type": "object",
+        "required": ["from", "to", "clauses"],
+        "properties": {
+          "from": { "$ref": "#/components/schemas/BillVersion" },
+          "to": { "$ref": "#/components/schemas/BillVersion" },
+          "clauses": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillClauseDiff" }
+          }
+        }
+      },
+      "BillClauseDiff": {
+        "type": "object",
+        "required": ["change_type"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "change_type": {
+            "type": "string",
+            "enum": ["added", "removed", "modified", "unchanged"],
+            "description": "Kind of change the clause represents. Synonyms ('inserted', 'deleted', 'replaced', 'context', etc.) are normalised by the iOS adapter."
+          },
+          "from_text": {
+            "type": "string",
+            "description": "Verbatim clause text from the 'before' version. Empty for purely added clauses."
+          },
+          "to_text": {
+            "type": "string",
+            "description": "Verbatim clause text from the 'after' version. Empty for purely removed clauses."
+          },
+          "hansard_anchor_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Hansard anchor for the chamber speech that introduced the change, when known."
+          }
         }
       },
       "BillAmendment": {

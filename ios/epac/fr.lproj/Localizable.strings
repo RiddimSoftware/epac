@@ -355,6 +355,31 @@
 "billAmendments.openSource" = "Ouvrir sur parl.ca";
 "billAmendments.expand" = "Afficher le texte de l'amendement";
 "billAmendments.collapse" = "Masquer le texte de l'amendement";
+
+/* Visionneuse de différences entre versions (EPAC-962) */
+"billDiff.entry" = "Comparer les versions";
+"billDiff.close" = "Fermer";
+"billDiff.compare.title" = "Comparer";
+"billDiff.from" = "De";
+"billDiff.to" = "À";
+"billDiff.changes.title" = "Modifications";
+"billDiff.noChanges" = "Aucune modification au niveau des articles entre ces deux versions.";
+"billDiff.error" = "Impossible de charger la comparaison pour les versions sélectionnées. Essayez une autre paire ou réessayez plus tard.";
+"billDiff.source" = "Source : texte des projets de loi publié sur LEGISinfo (parl.ca)";
+"billDiff.empty.title" = "Une seule version publiée";
+"billDiff.empty.body" = "Le Parlement n'a publié qu'une seule version de ce projet de loi pour l'instant. Dès qu'une deuxième version sera publiée, vous pourrez les comparer ici.";
+"billDiff.mode.picker" = "Mode d'affichage";
+"billDiff.mode.inline" = "En ligne";
+"billDiff.mode.sideBySide" = "Côte à côte";
+"billDiff.column.before" = "Avant";
+"billDiff.column.after" = "Après";
+"billDiff.column.absent" = "Absent";
+"billDiff.changeType.added" = "Ajouté";
+"billDiff.changeType.removed" = "Retiré";
+"billDiff.changeType.modified" = "Modifié";
+"billDiff.changeType.unchanged" = "Inchangé";
+"billDiff.clausePlaceholder" = "Article";
+"billDiff.openHansard" = "Ouvrir le discours dans le Hansard";
 "bills.chamber.house" = "Chambre des communes";
 "bills.chamber.senate" = "Sénat";
 "bills.stage.houseFirst" = "Chambre — Première lecture";

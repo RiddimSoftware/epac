@@ -32,10 +32,13 @@ struct BillDetailView: View {
     private let loadBillCommitteeStage: LoadBillCommitteeStage
     private let loadBillAmendments: LoadBillAmendments
     private let loadPBOCosting: LoadPBOCosting
+    private let loadBillVersions: LoadBillVersions
+    private let loadBillVersionDiff: LoadBillVersionDiff
     private let autoloadLobbyingContext: Bool
     private let autoloadCommitteeStage: Bool
     private let autoloadAmendments: Bool
     private let autoloadPBOCosting: Bool
+    private let autoloadVersions: Bool
 
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
@@ -44,6 +47,8 @@ struct BillDetailView: View {
     @State private var committeeStage: BillCommitteeStage?
     @State private var amendments: [BillAmendment]?
     @State private var pboCosting: PBOCostingResult?
+    @State private var versions: [BillVersion]?
+    @State private var isShowingDiffSheet = false
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
     @State private var sponsorMember: ParliamentMember?
@@ -62,20 +67,30 @@ struct BillDetailView: View {
         loadPBOCosting: LoadPBOCosting = LoadPBOCosting(
             queryPort: BackendPBOCostingRepository()
         ),
+        loadBillVersions: LoadBillVersions = LoadBillVersions(
+            repository: BackendBillVersionsRepository()
+        ),
+        loadBillVersionDiff: LoadBillVersionDiff = LoadBillVersionDiff(
+            repository: BackendBillVersionDiffRepository()
+        ),
         autoloadLobbyingContext: Bool = true,
         autoloadCommitteeStage: Bool = true,
         autoloadAmendments: Bool = true,
-        autoloadPBOCosting: Bool = true
+        autoloadPBOCosting: Bool = true,
+        autoloadVersions: Bool = true
     ) {
         self.bill = bill
         self.loadBillLobbyingContext = loadBillLobbyingContext
         self.loadBillCommitteeStage = loadBillCommitteeStage
         self.loadBillAmendments = loadBillAmendments
         self.loadPBOCosting = loadPBOCosting
+        self.loadBillVersions = loadBillVersions
+        self.loadBillVersionDiff = loadBillVersionDiff
         self.autoloadLobbyingContext = autoloadLobbyingContext
         self.autoloadCommitteeStage = autoloadCommitteeStage
         self.autoloadAmendments = autoloadAmendments
         self.autoloadPBOCosting = autoloadPBOCosting
+        self.autoloadVersions = autoloadVersions
     }
 
     var body: some View {
@@ -181,6 +196,18 @@ struct BillDetailView: View {
                     myMP: myMP,
                     template: ContactMyMP.billTemplate(bill: bill)
                 )
+                if let versions, !versions.isEmpty {
+                    Button {
+                        isShowingDiffSheet = true
+                    } label: {
+                        Label(
+                            NSLocalizedString("billDiff.entry", comment: ""),
+                            systemImage: "doc.on.doc"
+                        )
+                    }
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier("bill-detail-compare-versions")
+                }
                 Link(NSLocalizedString("bills.detail.legisinfo", comment: ""),
                      destination: bill.legisInfoURL)
                     .foregroundStyle(Color.accentColor)
@@ -231,9 +258,18 @@ struct BillDetailView: View {
             await loadCommitteeStage()
             await loadAmendments()
             await loadLobbyingContext()
+            await loadVersions()
             BillFollowStore.shared.markAsRead(bill.number)
         }
         .activitySheet($shareItem)
+        .sheet(isPresented: $isShowingDiffSheet) {
+            BillVersionsDiffView(
+                billNumber: bill.number,
+                billID: bill.id,
+                versions: versions ?? [],
+                loadBillVersionDiff: loadBillVersionDiff
+            )
+        }
     }
 
     private var billHeaderSection: some View {
@@ -496,6 +532,17 @@ struct BillDetailView: View {
             pboCosting = try await loadPBOCosting.execute(billID: bill.id)
         } catch {
             pboCosting = nil
+        }
+    }
+
+    @MainActor
+    private func loadVersions() async {
+        guard autoloadVersions else { return }
+
+        do {
+            versions = try await loadBillVersions.execute(billID: bill.id)
+        } catch {
+            versions = nil
         }
     }
 }
