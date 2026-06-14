@@ -334,9 +334,14 @@ CHECKS = [
         fixture_note="No fixture required; the current Parliament bills dataset should not be empty after ingestion.",
     ),
     SmokeCheck(
+        # Diff smoke target: C-11, staging bill id 13608745 (current Parliament,
+        # multiple versions). The depth/diff routes resolve by numeric id, not by
+        # bill number. If coverage shifts and C-11 is no longer a valid multi-version
+        # example, rediscover a replacement from GET /api/v1/bills and update both
+        # diff checks plus docs/backend/bill-diff-staging-coverage.md.
         name="bills:diff-route",
         method="GET",
-        path="/api/v1/bills/C-8/diff",
+        path="/api/v1/bills/13608745/diff",
         query={},
         expected_statuses={400, 404},
         validator=validate_bill_diff_route,
@@ -347,13 +352,20 @@ CHECKS = [
     SmokeCheck(
         name="bills:diff-full",
         method="GET",
-        path="/api/v1/bills/C-8/diff",
-        query={"from": "C-8-v1", "to": "C-8-v3"},
+        path="/api/v1/bills/13608745/diff",
+        query={
+            "from": "c-11-13615955-first-reading",
+            "to": "c-11-13896514-as-amended-by-committee",
+        },
         expected_statuses={200, 404},
         validator=validate_bill_diff_payload,
         service="bills",
         deterministic_note="Full-mode check asserts a seeded current-Parliament multi-version bill returns a concrete diff payload.",
-        fixture_note="Requires C-8 diff data to be backfilled in the selected environment; skipped unless --mode full is used.",
+        fixture_note="Requires C-11 (13608745) clause-level diff data in the selected "
+        "environment. As of 2026-06-14 the bills indexer emits diff headers but no "
+        "bill_clause_diffs, so this returns 204 and full mode stays red until that "
+        "producer gap is fixed; see docs/backend/bill-diff-staging-coverage.md. "
+        "Skipped unless --mode full is used.",
         full_only=True,
     ),
     SmokeCheck(

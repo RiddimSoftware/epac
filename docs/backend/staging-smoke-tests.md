@@ -27,6 +27,7 @@ non-empty; fixture-dependent endpoints still accept empty result sets.
 | --- | --- | --- |
 | `GET /health` | Accepts `ok` or `degraded` `HealthResponse` JSON and fails DB/Lambda error bodies. | Seed/schedule pipeline health rows before requiring `ok`. |
 | `GET /api/v1/bills` | Verifies the bills envelope and requires a non-empty `bills` list from the published artifact. | No fixture required; the canonical bills artifact should not be empty after ingestion. |
+| `GET /api/v1/bills/{id}/diff` | Route check (`bills:diff-route`) asserts the service-owned HTTP 400 when `from`/`to` are missing — no diff data needed. Full mode (`--mode full`, `bills:diff-full`) asserts the seeded multi-version bill C-11 (`13608745`) returns 200 with a non-empty `clauses` array. | Full mode needs clause-level diff data from the bills indexer; see `docs/backend/bill-diff-staging-coverage.md`. As of 2026-06-14 the indexer emits diff headers but no `bill_clause_diffs`, so full mode stays red until that producer gap is fixed. |
 | `GET /api/v1/members` | Verifies the members envelope and requires a non-empty `members` list from the published artifact. | No fixture required; the canonical members artifact should not be empty after ingestion. |
 | `GET /api/v1/members/0/speeches` | Verifies pagination, stats, and speech-list contract with an empty-safe member id. | Seed a known MP and speech before asserting content. |
 | `GET /api/v1/members/0/votes` | Verifies pagination and vote-list contract with an empty-safe member id. | Seed member vote artifacts before asserting content. |
