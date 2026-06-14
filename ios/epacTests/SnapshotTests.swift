@@ -335,6 +335,64 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Bill versions diff viewer (EPAC-962)
+
+    func testBillVersionsDiff_inline() {
+        snapshot(
+            NavigationStack {
+                BillVersionsDiffContent(
+                    diff: Self.billDiffPopulated,
+                    viewMode: .inline
+                )
+            }
+            .frame(width: 375, height: 720),
+            name: "BillVersionsDiff_inline"
+        )
+    }
+
+    func testBillVersionsDiff_sideBySide() {
+        snapshot(
+            NavigationStack {
+                BillVersionsDiffContent(
+                    diff: Self.billDiffPopulated,
+                    viewMode: .sideBySide
+                )
+            }
+            .frame(width: 375, height: 720),
+            name: "BillVersionsDiff_sideBySide"
+        )
+    }
+
+    func testBillVersionsDiff_noChanges() {
+        snapshot(
+            NavigationStack {
+                BillVersionsDiffContent(
+                    diff: BillVersionDiff(
+                        fromVersion: Self.billVersionV1,
+                        toVersion: Self.billVersionV3,
+                        clauseDiffs: []
+                    ),
+                    viewMode: .inline
+                )
+            }
+            .frame(width: 375, height: 320),
+            name: "BillVersionsDiff_noChanges"
+        )
+    }
+
+    func testBillVersionsDiff_emptyOnlyOneVersion() {
+        snapshot(
+            BillVersionsDiffView(
+                billNumber: "C-8",
+                billID: "C-8-45-1",
+                versions: [Self.billVersionV1],
+                loadBillVersionDiff: Self.stubLoadBillVersionDiff
+            )
+            .frame(width: 375, height: 480),
+            name: "BillVersionsDiff_emptyOnlyOneVersion"
+        )
+    }
+
     // MARK: - Bill PBO costing panel (EPAC-1006)
 
     func testPBOCostingPanel_present() {
@@ -1044,6 +1102,71 @@ final class SnapshotTests: XCTestCase {
         )
     ]
 
+    // MARK: - Bill versions diff fixtures (EPAC-962)
+
+    private static let billVersionV1 = BillVersion(
+        id: "C-8-v1",
+        label: "First reading",
+        title: nil,
+        stage: "First Reading",
+        chamber: "House of Commons",
+        publishedOn: date("2026-04-27"),
+        sourceURL: URL(string: "https://www.parl.ca/legisinfo/bill/C-8/v1")
+    )
+
+    private static let billVersionV3 = BillVersion(
+        id: "C-8-v3",
+        label: "As passed by the House",
+        title: nil,
+        stage: "Third Reading",
+        chamber: "House of Commons",
+        publishedOn: date("2026-06-04"),
+        sourceURL: URL(string: "https://www.parl.ca/legisinfo/bill/C-8/v3")
+    )
+
+    private static let billDiffPopulated = BillVersionDiff(
+        fromVersion: billVersionV1,
+        toVersion: billVersionV3,
+        clauseDiffs: [
+            BillClauseDiff(
+                id: "clause-1",
+                label: "Clause 1",
+                changeType: .unchanged,
+                fromText: "This Act may be cited as the National School Food Program Act.",
+                toText: "This Act may be cited as the National School Food Program Act.",
+                hansardAnchorURL: nil
+            ),
+            BillClauseDiff(
+                id: "clause-3",
+                label: "Clause 3",
+                changeType: .added,
+                fromText: "",
+                toText: "The Minister shall publish quarterly progress reports to Parliament on the implementation of the program.",
+                hansardAnchorURL: URL(string: "https://www.ourcommons.ca/DocumentViewer/en/45-1/house/sitting-42/hansard#clause-3")
+            ),
+            BillClauseDiff(
+                id: "clause-5",
+                label: "Clause 5",
+                changeType: .modified,
+                fromText: "The Minister shall report annually on the program.",
+                toText: "The Minister shall report quarterly on the program.",
+                hansardAnchorURL: nil
+            ),
+            BillClauseDiff(
+                id: "clause-7",
+                label: "Clause 7",
+                changeType: .removed,
+                fromText: "Section 12 of the Act is repealed effective on Royal Assent.",
+                toText: "",
+                hansardAnchorURL: nil
+            )
+        ]
+    )
+
+    private static let stubLoadBillVersionDiff = LoadBillVersionDiff(
+        repository: StubBillVersionDiffRepository()
+    )
+
     // MARK: - PBO costing fixtures (EPAC-1006)
 
     private static let pboCostingLatest = PBOCosting(
@@ -1684,5 +1807,15 @@ final class SnapshotTests: XCTestCase {
             .frame(width: 375),
             name: "MPAttendanceCard_noDateNoComparison"
         )
+    }
+}
+
+private struct StubBillVersionDiffRepository: BillVersionDiffRepository {
+    func loadBillVersionDiff(
+        billID: String,
+        fromVersionID: String,
+        toVersionID: String
+    ) async throws -> BillVersionDiff? {
+        nil
     }
 }

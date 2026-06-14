@@ -30,7 +30,9 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `Bill` | A Parliament of Canada bill with number, title, stage, sponsor, Royal Assent date when available, and LEGISinfo source URL. |
 | `BillCommitteeStage` | A bill's active committee study stage, carrying the committee, study dates, upcoming meetings, and past meetings. |
 | `BillCommitteeMeeting` | A committee meeting tied to a bill study, including meeting number, date, optional evidence URL, and witness count. |
-| `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
+| `BillVersion` | A published version of a bill (e.g. "First reading", "As passed by the House") with label, stage, chamber, publication date, and source URL. Surfaced on the iOS bill page via `LoadBillVersions` to drive the "Compare versions" picker. |
+| `BillVersionDiff` | A clause-level diff between two published bill versions, carrying the `fromVersion`/`toVersion` metadata and an ordered list of `BillClauseDiff` entries. Surfaced on the iOS diff viewer via `LoadBillVersionDiff`. |
+| `BillClauseDiff` | One clause within a `BillVersionDiff`: label, change type (added/removed/modified/unchanged), verbatim before/after text, and optional Hansard anchor for the chamber speech that introduced the change. |
 | `BillAmendment` | House or committee amendment record associated with a bill and chamber stage, with number, sponsor name, status, stage, verbatim amendment text, and source link. Surfaced on the iOS bill page via `LoadBillAmendments`. |
 | `PBOCosting` | Parliamentary Budget Officer independent costing note linked to a bill, with verbatim headline figure (5-year cost in millions), methodology category, publication date, report PDF URL, and optional summary text. Surfaced on the iOS bill page via `LoadPBOCosting`. |
 | `ParliamentaryCommittee` | A House or Senate committee reference with acronym, name, chamber code, and authoritative source URL. |
@@ -102,6 +104,8 @@ to the issue that will build the missing artifact.
 | `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
 | `BillCommitteeStageRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillCommitteeStageRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift`. | Load the committee currently studying a bill, including study dates and meeting rows. |
 | `BillAmendmentsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillAmendmentsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillAmendmentsRepository.swift`. | Load amendments tabled against a bill (number, mover, stage, status, verbatim text) from the backend bill-depth endpoint. |
+| `BillVersionsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillVersionsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillVersionsRepository.swift`. | Load the published versions of a bill (label, stage, chamber, publication date, source URL) from the backend bill-depth endpoint. |
+| `BillVersionDiffRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillVersionDiffRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillVersionDiffRepository.swift`. | Load a clause-level diff between two published bill versions from the backend `GET /api/v1/bills/{id}/diff?from=…&to=…` endpoint. |
 | `PBOCostingQueryPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/PBOCostingQueryPort.swift`; adapter: `ios/epac/Data/Repositories/BackendPBOCostingRepository.swift`. | Load Parliamentary Budget Officer costing notes linked to a bill from the backend `GET /pbo/by-bill/{legisinfo_id}` endpoint; `nil` when no PBO link record exists. |
 | `RecentLawQueryPort` | iOS Swift | outbound | Implemented by `ios/epac/Application/TrackRoyalAssent.swift`; adapter input is `BillRepository`. | Query current-session bills that received Royal Assent within the recent-law window. |
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
@@ -687,6 +691,51 @@ Current implementation:
 ```
 
 > **Boundary rule:** "Render nothing when absent" is a UI-layer policy — the use case returns `nil`/empty and the view decides to show no panel, with no fallback prose. PBO figures and summary text are rendered verbatim from the backend's typed JSON; PBO publication indexing and LEGISinfo bill linking remain backend responsibilities, and iOS never scrapes PBO pages on device. When several notes are linked, the latest by publication date wins the panel and the others stay reachable in the reader.
+
+---
+
+### LoadBillVersions
+
+```
+Actor: User (iOS app, bill detail)
+Goal: Pick which two published versions of a bill to compare in the diff viewer (e.g. "First reading" vs. "As passed by the House").
+Inputs: LEGISinfo bill ID.
+Outputs: Optional [BillVersion]; nil when the backend has no versions record for the bill (hide the "Compare versions" entry point), empty array when the bill is tracked but no version text has been ingested yet (same UI treatment), single-element array when only one version exists (the diff viewer renders an empty state), multi-element array otherwise.
+Entities / values: Bill, BillVersion.
+Ports: iOS Swift: `BillVersionsRepository`.
+Primary adapters: BackendBillVersionsRepository (GET /api/v1/bills/{id}), BillDetailView, BillVersionsDiffView.
+Current implementation:
+  ios/epac/Application/LoadBillVersions.swift
+  ios/epac/Domain/Entities/BillVersion.swift
+  ios/epac/Domain/Ports/BillVersionsRepository.swift
+  ios/epac/Data/Repositories/BackendBillVersionsRepository.swift
+  ios/epac/Views/Bills/BillVersionsDiffView.swift
+  ios/epac/Views/Bills/BillDetailView.swift
+```
+
+> **Boundary rule:** Version metadata is reproduced verbatim from the backend's typed JSON. The iOS layer never parses LEGISinfo or parl.ca HTML/XML wire formats; published-version ingestion is a backend responsibility. The bill page hides the "Compare versions" entry point when the use case returns `nil` or an empty array, and the diff viewer renders an empty state when only one version has been published.
+
+---
+
+### LoadBillVersionDiff
+
+```
+Actor: User (iOS app, bill diff viewer)
+Goal: See what changed at the clause level between two published versions of a bill (additions, deletions, modifications) with the verbatim before/after clause text, and follow the change back to the chamber speech that introduced it when known.
+Inputs: LEGISinfo bill ID, "before" version ID, "after" version ID.
+Outputs: Optional BillVersionDiff; nil when the backend cannot produce a diff for the requested version pair (either version is missing text, or the diff job has not run yet) — the diff viewer renders an unavailable state.
+Entities / values: Bill, BillVersion, BillVersionDiff, BillClauseDiff, BillClauseChangeType.
+Ports: iOS Swift: `BillVersionDiffRepository`.
+Primary adapters: BackendBillVersionDiffRepository (GET /api/v1/bills/{id}/diff?from=…&to=…), BillVersionsDiffView.
+Current implementation:
+  ios/epac/Application/LoadBillVersionDiff.swift
+  ios/epac/Domain/Entities/BillVersionDiff.swift
+  ios/epac/Domain/Ports/BillVersionDiffRepository.swift
+  ios/epac/Data/Repositories/BackendBillVersionDiffRepository.swift
+  ios/epac/Views/Bills/BillVersionsDiffView.swift
+```
+
+> **Boundary rule:** The clause-aware diff algorithm lives in the backend — respecting clause/sub-clause structure is a use-case policy enforced on the backend side; iOS only renders the structured result. Clause text is rendered verbatim; the diff viewer never paraphrases or summarises the change with generated text. Hansard anchors are surfaced when the backend has them and omitted otherwise — the view does not invent them.
 
 ---
 

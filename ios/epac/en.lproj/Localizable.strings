@@ -353,6 +353,31 @@
 "billAmendments.openSource" = "Open on parl.ca";
 "billAmendments.expand" = "Show amendment text";
 "billAmendments.collapse" = "Hide amendment text";
+
+/* Bill versions diff viewer (EPAC-962) */
+"billDiff.entry" = "Compare versions";
+"billDiff.close" = "Close";
+"billDiff.compare.title" = "Compare";
+"billDiff.from" = "From";
+"billDiff.to" = "To";
+"billDiff.changes.title" = "Changes";
+"billDiff.noChanges" = "No clause-level changes between these two versions.";
+"billDiff.error" = "Couldn't load the diff for the selected versions. Try a different pair or try again later.";
+"billDiff.source" = "Source: LEGISinfo published bill text on parl.ca";
+"billDiff.empty.title" = "Only one version published";
+"billDiff.empty.body" = "Parliament has only published one version of this bill so far. Once a second version is published, you'll be able to compare them here.";
+"billDiff.mode.picker" = "View mode";
+"billDiff.mode.inline" = "Inline";
+"billDiff.mode.sideBySide" = "Side by side";
+"billDiff.column.before" = "Before";
+"billDiff.column.after" = "After";
+"billDiff.column.absent" = "Not present";
+"billDiff.changeType.added" = "Added";
+"billDiff.changeType.removed" = "Removed";
+"billDiff.changeType.modified" = "Modified";
+"billDiff.changeType.unchanged" = "Unchanged";
+"billDiff.clausePlaceholder" = "Clause";
+"billDiff.openHansard" = "Open chamber speech in Hansard";
 "bills.chamber.house" = "House of Commons";
 "bills.chamber.senate" = "Senate";
 "bills.stage.houseFirst" = "House — First Reading";
