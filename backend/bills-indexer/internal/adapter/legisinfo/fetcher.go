@@ -158,6 +158,7 @@ func (f *Fetcher) fetchDetail(ctx context.Context, session domain.Session, numbe
 
 func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, number string, pubs []publicationJSON) []domain.BillVersion {
 	versions := make([]domain.BillVersion, 0, len(pubs))
+	var firstXMLURL, firstPDFURL string
 	for i, pub := range pubs {
 		stage := firstNonEmpty(pub.PublicationTypeNameEn, pub.PublicationTypeName)
 		slug := publicationSlug(stage)
@@ -171,7 +172,21 @@ func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, nu
 			Source:        "LEGISinfo publication",
 			SortOrder:     i + 1,
 		}
-		xmlURL, pdfURL := f.fetchDocumentLinks(ctx, htmlURL)
+
+		var xmlURL, pdfURL string
+		if firstXMLURL == "" {
+			xmlURL, pdfURL = f.fetchDocumentLinks(ctx, htmlURL)
+			if xmlURL != "" {
+				firstXMLURL = xmlURL
+			}
+			if pdfURL != "" {
+				firstPDFURL = pdfURL
+			}
+		} else {
+			xmlURL = constructXMLURL(firstXMLURL, i+1)
+			pdfURL = constructPDFURL(firstPDFURL, i+1)
+		}
+
 		version.XMLURL = xmlURL
 		version.PDFURL = pdfURL
 
@@ -193,6 +208,25 @@ func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, nu
 	}
 	return versions
 }
+
+func constructXMLURL(firstURL string, sortOrder int) string {
+	if firstURL == "" {
+		return ""
+	}
+	return strings.Replace(firstURL, "_1/", fmt.Sprintf("_%d/", sortOrder), 1)
+}
+
+func constructPDFURL(firstURL string, sortOrder int) string {
+	if firstURL == "" {
+		return ""
+	}
+	res := strings.Replace(firstURL, "_1/", fmt.Sprintf("_%d/", sortOrder), 1)
+	res = strings.Replace(res, "_1.PDF", fmt.Sprintf("_%d.PDF", sortOrder), 1)
+	res = strings.Replace(res, "_1.pdf", fmt.Sprintf("_%d.pdf", sortOrder), 1)
+	res = strings.Replace(res, "_1.Pdf", fmt.Sprintf("_%d.Pdf", sortOrder), 1)
+	return res
+}
+
 
 func (f *Fetcher) fetchDocumentLinks(ctx context.Context, pageURL string) (string, string) {
 	body, err := f.getBytes(ctx, pageURL, "text/html")
