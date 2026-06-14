@@ -31,7 +31,7 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `BillCommitteeStage` | A bill's active committee study stage, carrying the committee, study dates, upcoming meetings, and past meetings. |
 | `BillCommitteeMeeting` | A committee meeting tied to a bill study, including meeting number, date, optional evidence URL, and witness count. |
 | `BillVersion` | Backend-only bill publication/version row with source links for text, PDF, and XML artifacts. |
-| `BillAmendment` | Backend-only House or committee amendment record associated with a bill and chamber stage. |
+| `BillAmendment` | House or committee amendment record associated with a bill and chamber stage, with number, sponsor name, status, stage, verbatim amendment text, and source link. Surfaced on the iOS bill page via `LoadBillAmendments`. |
 | `PBOCosting` | Backend-only Parliamentary Budget Officer costing link associated with a bill. |
 | `ParliamentaryCommittee` | A House or Senate committee reference with acronym, name, chamber code, and authoritative source URL. |
 | `MemberBiography` | Parliament.ca biography details for an MP profile, including service periods, roles, education, professional background, source URL, and summary text where available. |
@@ -99,6 +99,7 @@ to the issue that will build the missing artifact.
 | `BillRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillRepository.swift`; adapter: `ios/epac/Data/Adapters/LEGISinfoBillRepository.swift`. | List current-session bills. |
 | `BillRepository` | backend Go | outbound | Implemented: `backend/bills/internal/usecase/bills.go`; adapter: `backend/bills/internal/adapter/sqlite/repository.go`. | List bills and load bill-depth rows from the verified bills SQLite artifact. |
 | `BillCommitteeStageRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillCommitteeStageRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillCommitteeStageRepository.swift`. | Load the committee currently studying a bill, including study dates and meeting rows. |
+| `BillAmendmentsRepository` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/BillAmendmentsRepository.swift`; adapter: `ios/epac/Data/Repositories/BackendBillAmendmentsRepository.swift`. | Load amendments tabled against a bill (number, mover, stage, status, verbatim text) from the backend bill-depth endpoint. |
 | `RecentLawQueryPort` | iOS Swift | outbound | Implemented by `ios/epac/Application/TrackRoyalAssent.swift`; adapter input is `BillRepository`. | Query current-session bills that received Royal Assent within the recent-law window. |
 | `MemberRepository` | backend Go | outbound | Implemented: `backend/members/internal/usecase/members.go`; adapter: `backend/members/internal/adapter/sqlite/repository.go`. | List members and load member-profile attendance rows from the verified members SQLite artifact. |
 | `MemberContentRepository` | backend Go | outbound | Implemented: `backend/member-speeches/internal/usecase/usecase.go` with adapter `backend/member-speeches/internal/adapter/artifact/artifact.go`; `backend/member-votes/main.go` has a local vote-feed interface implemented by `S3ArtifactMemberContentRepository`. | Load per-member append-only content feeds such as speeches and recorded votes. There is no iOS Swift protocol with this name today. |
@@ -597,6 +598,29 @@ Current implementation:
 ```
 
 > **Boundary rule:** iOS decodes only the backend's typed committee-stage JSON. LEGISinfo and parl.ca committee schedule parsing remain backend responsibilities, and the bill page hides the panel when the use case returns `nil`.
+
+---
+
+### LoadBillAmendments
+
+```
+Actor: User (iOS app, bill detail)
+Goal: See the amendments tabled against a bill — number, mover, stage, disposition (passed / defeated / withdrawn), and the full authoritative amendment text rendered verbatim.
+Inputs: LEGISinfo bill ID.
+Outputs: Optional [BillAmendment]; nil when the backend has no amendments record for the bill (hide panel), empty array when the bill is tracked but no amendments tabled yet (show empty-state row), non-empty array otherwise.
+Entities / values: Bill, BillAmendment, BillAmendmentStatus.
+Ports: iOS Swift: `BillAmendmentsRepository`.
+Primary adapters: BackendBillAmendmentsRepository (GET /api/v1/bills/{id}), BillDetailView, BillAmendmentsPanel.
+Current implementation:
+  ios/epac/Application/LoadBillAmendments.swift
+  ios/epac/Domain/Entities/BillAmendment.swift
+  ios/epac/Domain/Ports/BillAmendmentsRepository.swift
+  ios/epac/Data/Repositories/BackendBillAmendmentsRepository.swift
+  ios/epac/Views/Bills/BillAmendmentsPanel.swift
+  ios/epac/Views/Bills/BillDetailView.swift
+```
+
+> **Boundary rule:** Amendment text is rendered verbatim on the bill page — no paraphrasing, no summarization. iOS decodes only the backend's typed JSON; LEGISinfo and committee-minute parsing remain backend responsibilities. The bill page hides the panel when the use case returns `nil`, and renders an empty-state row when it returns an empty array.
 
 ---
 
