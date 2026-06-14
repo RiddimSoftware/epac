@@ -581,12 +581,12 @@ Current implementation:
 
 ```
 Actor: User (iOS app, bill detail)
-Goal: See the committee currently studying a bill, with study dates, upcoming meetings, and past meetings with witness counts.
+Goal: See the committee currently studying a bill, with study dates, upcoming meetings, and past meetings with witness counts when available.
 Inputs: LEGISinfo bill ID.
 Outputs: Optional BillCommitteeStage; nil when the backend reports no current committee stage.
 Entities / values: Bill, BillCommitteeStage, BillCommitteeMeeting, ParliamentaryCommittee.
 Ports: iOS Swift: `BillCommitteeStageRepository`.
-Primary adapters: BackendBillCommitteeStageRepository (GET /api/v1/bills/{legisinfo_id}/committee-stage), BillDetailView, BillInCommitteePanel, CommitteeMeetingsView.
+Primary adapters: BackendBillCommitteeStageRepository (GET /api/v1/bills/{id}/committee-stage), BillDetailView, BillInCommitteePanel, CommitteeMeetingsView.
 Current implementation:
   ios/epac/Application/LoadBillCommitteeStage.swift
   ios/epac/Domain/Entities/BillCommitteeStage.swift

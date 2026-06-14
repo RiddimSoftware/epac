@@ -57,7 +57,7 @@ struct BillCommitteeStageRepositoryTests {
         #expect(firstPastMeeting.witnessCount == 7)
         #expect(firstPastMeeting.evidenceURL?.absoluteString == "https://www.ourcommons.ca/DocumentViewer/en/45-1/FINA/meeting-41/evidence")
         #expect(secondPastMeeting.meetingNumber == 40)
-        #expect(secondPastMeeting.witnessCount == 0)
+        #expect(secondPastMeeting.witnessCount == nil)
     }
 
     @Test func billCommitteeStageReturnsNilOnNoContent() async throws {

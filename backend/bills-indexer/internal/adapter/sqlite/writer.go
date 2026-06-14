@@ -113,6 +113,8 @@ DROP TABLE IF EXISTS pbo_costings;
 DROP TABLE IF EXISTS bill_amendments;
 DROP TABLE IF EXISTS bill_diffs;
 DROP TABLE IF EXISTS bill_versions;
+DROP TABLE IF EXISTS bill_committee_meetings;
+DROP TABLE IF EXISTS bill_committee_stages;
 DROP TABLE IF EXISTS bill_events;
 DROP TABLE IF EXISTS bill_related_links;
 DROP TABLE IF EXISTS bill_stages;
@@ -167,6 +169,36 @@ CREATE TABLE bill_events (
     PRIMARY KEY (bill_id, id)
 );
 CREATE INDEX idx_bill_events_bill_stage ON bill_events(bill_id, stage_id);
+CREATE TABLE bill_committee_stages (
+    bill_id TEXT NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
+    id TEXT NOT NULL,
+    stage_id TEXT NOT NULL DEFAULT '',
+    stage_name TEXT NOT NULL DEFAULT '',
+    chamber TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL DEFAULT '',
+    committee_id TEXT NOT NULL DEFAULT '',
+    committee_acronym TEXT NOT NULL DEFAULT '',
+    committee_name TEXT NOT NULL DEFAULT '',
+    committee_chamber TEXT NOT NULL DEFAULT '',
+    committee_url TEXT NOT NULL DEFAULT '',
+    studied_since TEXT,
+    study_completed_at TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (bill_id, id)
+);
+CREATE INDEX idx_bill_committee_stages_bill ON bill_committee_stages(bill_id, sort_order);
+CREATE TABLE bill_committee_meetings (
+    bill_id TEXT NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
+    stage_id TEXT NOT NULL,
+    id TEXT NOT NULL,
+    meeting_number INTEGER NOT NULL DEFAULT 0,
+    meeting_date TEXT,
+    evidence_url TEXT,
+    witness_count INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (bill_id, stage_id, id)
+);
+CREATE INDEX idx_bill_committee_meetings_stage ON bill_committee_meetings(bill_id, stage_id, sort_order);
 CREATE TABLE bill_versions (
     bill_id TEXT NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
     id TEXT NOT NULL,
@@ -304,6 +336,50 @@ INSERT OR REPLACE INTO bill_events (
 		}
 		stats.EventCount++
 	}
+	for _, stage := range bill.CommitteeStages {
+		if _, err := tx.ExecContext(ctx, `
+INSERT OR REPLACE INTO bill_committee_stages (
+    bill_id, id, stage_id, stage_name, chamber, state, committee_id,
+    committee_acronym, committee_name, committee_chamber, committee_url,
+    studied_since, study_completed_at, sort_order
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			bill.ID,
+			stage.ID,
+			stage.StageID,
+			stage.StageName,
+			stage.Chamber,
+			stage.State,
+			stage.CommitteeID,
+			stage.CommitteeAcronym,
+			stage.CommitteeName,
+			stage.CommitteeChamber,
+			stage.CommitteeURL,
+			emptyToNil(stage.StudiedSince),
+			emptyToNil(stage.StudyCompletedAt),
+			stage.SortOrder,
+		); err != nil {
+			return fmt.Errorf("insert bill committee stage %s/%s: %w", bill.Number, stage.ID, err)
+		}
+		stats.CommitteeStageCount++
+		for _, meeting := range stage.Meetings {
+			if _, err := tx.ExecContext(ctx, `
+INSERT OR REPLACE INTO bill_committee_meetings (
+    bill_id, stage_id, id, meeting_number, meeting_date, evidence_url, witness_count, sort_order
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				bill.ID,
+				stage.ID,
+				meeting.ID,
+				meeting.MeetingNumber,
+				emptyToNil(meeting.Date),
+				emptyToNil(meeting.EvidenceURL),
+				intPtrValue(meeting.WitnessCount),
+				meeting.SortOrder,
+			); err != nil {
+				return fmt.Errorf("insert bill committee meeting %s/%s: %w", bill.Number, meeting.ID, err)
+			}
+			stats.CommitteeMeetingCount++
+		}
+	}
 	for _, version := range bill.Versions {
 		if _, err := tx.ExecContext(ctx, `
 INSERT OR REPLACE INTO bill_versions (
@@ -388,6 +464,8 @@ func countTables(ctx context.Context, db *sql.DB) (map[string]int, error) {
 		"bills",
 		"bill_stages",
 		"bill_events",
+		"bill_committee_stages",
+		"bill_committee_meetings",
 		"bill_versions",
 		"bill_diffs",
 		"bill_amendments",
@@ -436,6 +514,13 @@ func boolInt(value bool) int {
 		return 1
 	}
 	return 0
+}
+
+func intPtrValue(value *int) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }
 
 func removeSQLiteFiles(path string) error {

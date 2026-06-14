@@ -10,9 +10,9 @@ private enum BillInCommitteePanelLayout {
 ///
 /// Shows the committee studying the bill (linking to its meetings surface,
 /// EPAC-411), when the study began and finished, the upcoming meetings (each
-/// linking to the same committee surface), and the past meetings with their
-/// witness counts. The parent only renders this panel when a committee stage
-/// exists, so the panel assumes it has something to show.
+/// linking to the same committee surface), and the past meetings with witness
+/// counts when available. The parent only renders this panel when a committee
+/// stage exists, so the panel assumes it has something to show.
 struct BillInCommitteePanel: View {
     let stage: BillCommitteeStage
 
@@ -67,7 +67,7 @@ struct BillInCommitteePanel: View {
                 if let since = stage.studiedSince {
                     Text(String(
                         format: NSLocalizedString("billCommittee.studiedSince", comment: ""),
-                        since.formatted(date: .abbreviated, time: .omitted)
+                        since.billCommitteeDateText
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -76,7 +76,7 @@ struct BillInCommitteePanel: View {
                 if let completed = stage.studyCompletedAt {
                     Text(String(
                         format: NSLocalizedString("billCommittee.studyCompleted", comment: ""),
-                        completed.formatted(date: .abbreviated, time: .omitted)
+                        completed.billCommitteeDateText
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -96,7 +96,8 @@ struct BillInCommitteePanel: View {
 }
 
 /// One meeting row inside the "In committee" panel. Upcoming meetings show the
-/// number and date; past meetings additionally show the witness count.
+/// number and date; past meetings additionally show a witness count when the
+/// backend has one.
 private struct BillCommitteeMeetingRow: View {
     let meeting: BillCommitteeMeeting
     let showsWitnessCount: Bool
@@ -110,13 +111,13 @@ private struct BillCommitteeMeetingRow: View {
                 ))
                 .font(.subheadline.monospacedDigit())
                 if let date = meeting.date {
-                    Text(date.formatted(date: .abbreviated, time: .omitted))
+                    Text(date.billCommitteeDateText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: EpacSpacing.s)
-            if showsWitnessCount {
+            if showsWitnessCount, let witnessCountText {
                 Text(witnessCountText)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -127,14 +128,17 @@ private struct BillCommitteeMeetingRow: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
-    private var witnessCountText: String {
-        switch meeting.witnessCount {
+    private var witnessCountText: String? {
+        guard let witnessCount = meeting.witnessCount else {
+            return nil
+        }
+        switch witnessCount {
         case 0:
             return NSLocalizedString("billCommittee.witness.none", comment: "")
         case 1:
             return NSLocalizedString("billCommittee.witness.singular", comment: "")
         default:
-            return String(format: NSLocalizedString("billCommittee.witness.plural", comment: ""), meeting.witnessCount)
+            return String(format: NSLocalizedString("billCommittee.witness.plural", comment: ""), witnessCount)
         }
     }
 
@@ -144,11 +148,23 @@ private struct BillCommitteeMeetingRow: View {
             meeting.meetingNumber
         )]
         if let date = meeting.date {
-            parts.append(date.formatted(date: .abbreviated, time: .omitted))
+            parts.append(date.billCommitteeDateText)
         }
-        if showsWitnessCount {
+        if showsWitnessCount, let witnessCountText {
             parts.append(witnessCountText)
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+private extension Date {
+    var billCommitteeDateText: String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = .current
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: self)
     }
 }

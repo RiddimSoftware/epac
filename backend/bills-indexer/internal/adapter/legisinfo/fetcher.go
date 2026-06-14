@@ -282,15 +282,20 @@ type stagesJSON struct {
 }
 
 type stageJSON struct {
-	BillStageID             int         `json:"BillStageId"`
-	BillStageNameEn         string      `json:"BillStageNameEn"`
-	BillStageName           string      `json:"BillStageName"`
-	ChamberOrganizationID   int         `json:"ChamberOrganizationId"`
-	StateNameEn             string      `json:"StateNameEn"`
-	StateName               string      `json:"StateName"`
-	StateAsOfDate           string      `json:"StateAsOfDate"`
-	SignificantEvents       []eventJSON `json:"SignificantEvents"`
-	LastStageEventStartDate string      `json:"LastStageEventStartDateTime"`
+	BillStageID                      int                    `json:"BillStageId"`
+	BillStageNameEn                  string                 `json:"BillStageNameEn"`
+	BillStageName                    string                 `json:"BillStageName"`
+	ChamberOrganizationID            int                    `json:"ChamberOrganizationId"`
+	ParliamentNumber                 int                    `json:"ParliamentNumber"`
+	SessionNumber                    int                    `json:"SessionNumber"`
+	StateNameEn                      string                 `json:"StateNameEn"`
+	StateName                        string                 `json:"StateName"`
+	StateAsOfDate                    string                 `json:"StateAsOfDate"`
+	Committee                        *committeeJSON         `json:"Committee"`
+	CommitteeMeetings                []committeeMeetingJSON `json:"CommitteeMeetings"`
+	SignificantEvents                []eventJSON            `json:"SignificantEvents"`
+	LastStageEventStartDate          string                 `json:"LastStageEventStartDateTime"`
+	ContainsReferralToCommitteeEvent bool                   `json:"ContainsReferralToCommitteeEvent"`
 }
 
 type eventJSON struct {
@@ -301,6 +306,25 @@ type eventJSON struct {
 	MeetingNumber      string `json:"MeetingNumber"`
 	AmendmentNoteID    any    `json:"AmendmentNoteId"`
 	NumberOfAmendments int    `json:"NumberOfAmendments"`
+}
+
+type committeeJSON struct {
+	CommitteeOrganizationID   int    `json:"CommitteeOrganizationId"`
+	CommitteeNameEn           string `json:"CommitteeNameEn"`
+	CommitteeName             string `json:"CommitteeName"`
+	CommitteeAcronym          string `json:"CommitteeAcronym"`
+	IsHouseOfCommonsCommittee bool   `json:"IsHouseOfCommonsCommittee"`
+	IsSenateCommittee         bool   `json:"IsSenateCommittee"`
+	IsJointCommittee          bool   `json:"IsJointCommittee"`
+}
+
+type committeeMeetingJSON struct {
+	CommitteeOrganizationID int    `json:"CommitteeOrganizationId"`
+	CommitteeNameEn         string `json:"CommitteeNameEn"`
+	CommitteeName           string `json:"CommitteeName"`
+	CommitteeAcronym        string `json:"CommitteeAcronym"`
+	Number                  string `json:"Number"`
+	Date                    string `json:"Date"`
 }
 
 type publicationJSON struct {
@@ -340,6 +364,7 @@ func (d billDetailJSON) toDomain(baseURL string, list billListJSON) domain.Bill 
 		Versions:     d.versions,
 	}
 	bill.Stages, bill.Events, bill.Amendments = d.extractStagesAndEvents()
+	bill.CommitteeStages = d.extractCommitteeStages(baseURL)
 	bill.RelatedLinks, bill.PBOCostings = d.extractReferences(baseURL)
 	bill.Diffs = buildDiffs(number, bill.Versions, d.detailURL)
 	if len(bill.Amendments) == 0 && d.LatestBillEventNumberOfAmendments > 0 {
@@ -405,6 +430,148 @@ func (d billDetailJSON) extractStagesAndEvents() ([]domain.BillStage, []domain.B
 		}
 	}
 	return stages, events, amendments
+}
+
+func (d billDetailJSON) extractCommitteeStages(baseURL string) []domain.BillCommitteeStage {
+	all := append([]stageJSON{}, d.BillStages.HouseBillStages...)
+	all = append(all, d.BillStages.SenateBillStages...)
+	stages := make([]domain.BillCommitteeStage, 0)
+	for i, stage := range all {
+		if !isCommitteeStage(stage) {
+			continue
+		}
+		committee := stage.Committee
+		if committee == nil && len(stage.CommitteeMeetings) > 0 {
+			meeting := stage.CommitteeMeetings[0]
+			committee = &committeeJSON{
+				CommitteeOrganizationID: meeting.CommitteeOrganizationID,
+				CommitteeNameEn:         meeting.CommitteeNameEn,
+				CommitteeName:           meeting.CommitteeName,
+				CommitteeAcronym:        meeting.CommitteeAcronym,
+			}
+		}
+		if committee == nil || strings.TrimSpace(committee.CommitteeAcronym) == "" {
+			continue
+		}
+
+		stageID := strconv.Itoa(stage.BillStageID)
+		stageName := firstNonEmpty(stage.BillStageNameEn, stage.BillStageName)
+		chamber := chamberName(stage.ChamberOrganizationID)
+		committeeChamber := committeeChamberCode(stage.ChamberOrganizationID, committee)
+		completed := strings.EqualFold(firstNonEmpty(stage.StateNameEn, stage.StateName), "Completed")
+		completedAt := ""
+		if completed {
+			completedAt = firstNonEmpty(dateOnly(stage.StateAsOfDate), dateOnly(stage.LastStageEventStartDate))
+		}
+		meetings := committeeMeetingsForStage(d.NumberCode, stage, committeeChamber)
+		stages = append(stages, domain.BillCommitteeStage{
+			ID:               stableID(d.NumberCode, "committee", stageID, committee.CommitteeAcronym),
+			StageID:          stageID,
+			StageName:        stageName,
+			Chamber:          chamber,
+			State:            firstNonEmpty(stage.StateNameEn, stage.StateName),
+			CommitteeID:      strconv.Itoa(committee.CommitteeOrganizationID),
+			CommitteeAcronym: strings.TrimSpace(committee.CommitteeAcronym),
+			CommitteeName:    firstNonEmpty(committee.CommitteeNameEn, committee.CommitteeName),
+			CommitteeChamber: committeeChamber,
+			CommitteeURL:     committeeURL(committee.CommitteeAcronym, committeeChamber),
+			StudiedSince:     firstNonEmpty(referralDateForCommittee(all[:i], committee.CommitteeAcronym), earliestMeetingDate(meetings)),
+			StudyCompletedAt: completedAt,
+			Meetings:         meetings,
+			SortOrder:        i + 1,
+		})
+	}
+	return stages
+}
+
+func isCommitteeStage(stage stageJSON) bool {
+	stageName := strings.ToLower(firstNonEmpty(stage.BillStageNameEn, stage.BillStageName))
+	return strings.Contains(stageName, "committee") || len(stage.CommitteeMeetings) > 0
+}
+
+func committeeMeetingsForStage(number string, stage stageJSON, chamberCode string) []domain.BillCommitteeMeeting {
+	meetings := make([]domain.BillCommitteeMeeting, 0, len(stage.CommitteeMeetings))
+	for i, meeting := range stage.CommitteeMeetings {
+		meetingNumber, _ := strconv.Atoi(strings.TrimSpace(meeting.Number))
+		acronym := strings.TrimSpace(meeting.CommitteeAcronym)
+		date := dateOnly(meeting.Date)
+		meetings = append(meetings, domain.BillCommitteeMeeting{
+			ID:            stableID(number, acronym, meeting.Number, date),
+			MeetingNumber: meetingNumber,
+			Date:          date,
+			EvidenceURL:   evidenceURL(stage.ParliamentNumber, stage.SessionNumber, acronym, meetingNumber, chamberCode),
+			SortOrder:     i + 1,
+		})
+	}
+	return meetings
+}
+
+func referralDateForCommittee(stages []stageJSON, acronym string) string {
+	acronym = strings.TrimSpace(acronym)
+	for i := len(stages) - 1; i >= 0; i-- {
+		stage := stages[i]
+		if stage.Committee == nil || !strings.EqualFold(strings.TrimSpace(stage.Committee.CommitteeAcronym), acronym) {
+			continue
+		}
+		for j := len(stage.SignificantEvents) - 1; j >= 0; j-- {
+			event := stage.SignificantEvents[j]
+			name := strings.ToLower(firstNonEmpty(event.EventNameEn, event.EventName))
+			if strings.Contains(name, "referral to committee") || strings.Contains(name, "renvoi en comité") {
+				return dateOnly(event.EventDateTime)
+			}
+		}
+		if stage.ContainsReferralToCommitteeEvent {
+			return firstNonEmpty(dateOnly(stage.LastStageEventStartDate), dateOnly(stage.StateAsOfDate))
+		}
+	}
+	return ""
+}
+
+func earliestMeetingDate(meetings []domain.BillCommitteeMeeting) string {
+	earliest := ""
+	for _, meeting := range meetings {
+		if meeting.Date == "" {
+			continue
+		}
+		if earliest == "" || meeting.Date < earliest {
+			earliest = meeting.Date
+		}
+	}
+	return earliest
+}
+
+func committeeChamberCode(chamberOrganizationID int, committee *committeeJSON) string {
+	if chamberOrganizationID == 2 || committee.IsSenateCommittee {
+		return "SEN"
+	}
+	if committee.IsJointCommittee {
+		return "JOINT"
+	}
+	return "HOC"
+}
+
+func committeeURL(acronym, chamberCode string) string {
+	acronym = strings.TrimSpace(acronym)
+	if acronym == "" {
+		return ""
+	}
+	if chamberCode == "SEN" {
+		return fmt.Sprintf("https://sencanada.ca/en/committees/%s/", strings.ToLower(acronym))
+	}
+	return fmt.Sprintf("https://www.ourcommons.ca/Committees/en/%s", acronym)
+}
+
+func evidenceURL(parliament, session int, acronym string, meetingNumber int, chamberCode string) string {
+	if chamberCode != "HOC" || parliament == 0 || session == 0 || strings.TrimSpace(acronym) == "" || meetingNumber == 0 {
+		return ""
+	}
+	return fmt.Sprintf(
+		"https://www.ourcommons.ca/DocumentViewer/en/%d-%d/%s/meeting-%d/evidence",
+		parliament,
+		session,
+		acronym,
+		meetingNumber,
+	)
 }
 
 func (d billDetailJSON) extractReferences(baseURL string) ([]domain.RelatedLink, []domain.PBOCosting) {

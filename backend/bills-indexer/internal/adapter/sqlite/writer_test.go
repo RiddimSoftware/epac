@@ -34,6 +34,27 @@ func TestWriterCreatesBillsRelationalSchema(t *testing.T) {
 		}},
 		Amendments:  []domain.Amendment{{ID: "a1", EventID: "event-1", AmendmentCount: 1}},
 		PBOCostings: []domain.PBOCosting{{ID: "p1", Title: "PBO costing", URL: "https://pbo.test"}},
+		CommitteeStages: []domain.BillCommitteeStage{{
+			ID:               "committee-1",
+			StageID:          "60049",
+			StageName:        "Consideration in committee",
+			Chamber:          "House of Commons",
+			State:            "In progress",
+			CommitteeID:      "30576",
+			CommitteeAcronym: "SECU",
+			CommitteeName:    "Standing Committee on Public Safety and National Security",
+			CommitteeChamber: "HOC",
+			CommitteeURL:     "https://www.ourcommons.ca/Committees/en/SECU",
+			StudiedSince:     "2026-06-03",
+			Meetings: []domain.BillCommitteeMeeting{{
+				ID:            "meeting-1",
+				MeetingNumber: 42,
+				Date:          "2026-06-18",
+				EvidenceURL:   "https://www.ourcommons.ca/DocumentViewer/en/45-1/SECU/meeting-42/evidence",
+				SortOrder:     1,
+			}},
+			SortOrder: 3,
+		}},
 	}}})
 	if err != nil {
 		t.Fatalf("Write: %v", err)
@@ -53,6 +74,20 @@ func TestWriterCreatesBillsRelationalSchema(t *testing.T) {
 	}
 	if stageName != "First reading" {
 		t.Fatalf("stage name = %q", stageName)
+	}
+	var committeeAcronym string
+	if err := db.QueryRow("SELECT committee_acronym FROM bill_committee_stages WHERE bill_id = ?", "13543613").Scan(&committeeAcronym); err != nil {
+		t.Fatalf("query committee stage: %v", err)
+	}
+	if committeeAcronym != "SECU" {
+		t.Fatalf("committee acronym = %q", committeeAcronym)
+	}
+	var meetingNumber int
+	if err := db.QueryRow("SELECT meeting_number FROM bill_committee_meetings WHERE bill_id = ?", "13543613").Scan(&meetingNumber); err != nil {
+		t.Fatalf("query committee meeting: %v", err)
+	}
+	if meetingNumber != 42 {
+		t.Fatalf("meeting number = %d", meetingNumber)
 	}
 }
 

@@ -841,6 +841,67 @@
         }
       }
     },
+    "/api/v1/bills/{id}/committee-stage": {
+      "get": {
+        "tags": ["Bills"],
+        "summary": "Load bill committee stage",
+        "description": "Returns the committee study stage currently associated with a bill, including the studying committee and meeting rows sourced from LEGISinfo.",
+        "operationId": "loadBillCommitteeStage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Bill identifier or bill number.",
+            "schema": { "type": "string", "example": "C-8" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bill committee study stage",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillCommitteeStage" },
+                "examples": {
+                  "committeeStage": {
+                    "value": {
+                      "committee": {
+                        "code": "SECU",
+                        "name": "Standing Committee on Public Safety and National Security",
+                        "chamber": "HOC",
+                        "url": "https://www.ourcommons.ca/Committees/en/SECU"
+                      },
+                      "studied_since": "2025-10-03",
+                      "study_completed_at": "2026-03-11",
+                      "upcoming_meetings": [
+                        {
+                          "id": "c-8-secu-42-2026-06-18",
+                          "meeting_number": 42,
+                          "date": "2026-06-18"
+                        }
+                      ],
+                      "past_meetings": [
+                        {
+                          "id": "c-8-secu-41-2026-06-11",
+                          "meeting_number": 41,
+                          "date": "2026-06-11",
+                          "evidence_url": "https://www.ourcommons.ca/DocumentViewer/en/45-1/SECU/meeting-41/evidence"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": { "description": "Bill has no committee-stage data." },
+          "404": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/RateLimit" },
+          "500": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/api/v1/bills/{legisinfo_id}/lobbying-context": {
       "get": {
         "tags": ["Bills", "Lobbying"],
@@ -2489,6 +2550,44 @@
         "required": ["bill"],
         "properties": {
           "bill": { "$ref": "#/components/schemas/Bill" }
+        }
+      },
+      "BillCommitteeStage": {
+        "type": "object",
+        "required": ["committee", "upcoming_meetings", "past_meetings"],
+        "properties": {
+          "committee": { "$ref": "#/components/schemas/ParliamentaryCommittee" },
+          "studied_since": { "type": "string", "format": "date" },
+          "study_completed_at": { "type": "string", "format": "date" },
+          "upcoming_meetings": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillCommitteeMeeting" }
+          },
+          "past_meetings": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillCommitteeMeeting" }
+          }
+        }
+      },
+      "ParliamentaryCommittee": {
+        "type": "object",
+        "required": ["code", "name", "url"],
+        "properties": {
+          "code": { "type": "string", "example": "SECU" },
+          "name": { "type": "string" },
+          "chamber": { "type": "string", "example": "HOC" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      },
+      "BillCommitteeMeeting": {
+        "type": "object",
+        "required": ["id", "meeting_number"],
+        "properties": {
+          "id": { "type": "string" },
+          "meeting_number": { "type": "integer", "minimum": 0 },
+          "date": { "type": "string", "format": "date" },
+          "witness_count": { "type": "integer", "minimum": 0 },
+          "evidence_url": { "type": "string", "format": "uri" }
         }
       },
       "Bill": {

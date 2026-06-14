@@ -24,8 +24,7 @@ struct BillCommitteeStage: Equatable, Sendable {
     /// Scheduled meetings still to come, ordered by the backend (soonest first).
     let upcomingMeetings: [BillCommitteeMeeting]
 
-    /// Meetings already held, ordered by the backend (most recent first), each
-    /// carrying the number of witnesses the backend recorded.
+    /// Meetings already held, ordered by the backend (most recent first).
     let pastMeetings: [BillCommitteeMeeting]
 
     /// True once the committee has finished studying the bill.
@@ -44,9 +43,9 @@ struct BillCommitteeMeeting: Identifiable, Equatable, Sendable {
     /// When the meeting took place or is scheduled, if known.
     let date: Date?
 
-    /// Number of witnesses recorded for the meeting (0 when none, or when a
-    /// scheduled meeting has no witness list yet).
-    let witnessCount: Int
+    /// Number of witnesses recorded for the meeting, when the backend has a
+    /// source-backed count.
+    let witnessCount: Int?
 
     /// Link to the meeting's evidence/transcript on parl.ca, when published.
     let evidenceURL: URL?

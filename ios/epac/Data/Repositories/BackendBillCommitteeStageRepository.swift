@@ -140,7 +140,7 @@ private struct MeetingDTO: Decodable {
     let id: String
     let meetingNumber: Int
     let date: String?
-    let witnessCount: Int
+    let witnessCount: Int?
     let evidenceURL: URL?
 
     enum CodingKeys: String, CodingKey {
@@ -156,7 +156,7 @@ private struct MeetingDTO: Decodable {
         id = try container.decode(String.self, forKey: .id)
         meetingNumber = try container.decode(Int.self, forKey: .meetingNumber)
         date = try container.decodeIfPresent(String.self, forKey: .date)
-        witnessCount = try container.decodeIfPresent(Int.self, forKey: .witnessCount) ?? 0
+        witnessCount = try container.decodeIfPresent(Int.self, forKey: .witnessCount)
         evidenceURL = try container.decodeIfPresent(URL.self, forKey: .evidenceURL)
     }
 

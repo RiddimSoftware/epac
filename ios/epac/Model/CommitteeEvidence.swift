@@ -11,7 +11,7 @@
 
 import Foundation
 
-struct ParliamentaryCommittee: Identifiable, Codable, Sendable {
+struct ParliamentaryCommittee: Identifiable, Codable, Equatable, Sendable {
     let id: String
     let acronym: String           // e.g. "FINA"
     let name: String              // e.g. "Standing Committee on Finance"

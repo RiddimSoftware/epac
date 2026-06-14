@@ -14,28 +14,29 @@ type Batch struct {
 }
 
 type Bill struct {
-	ID           string
-	Number       string
-	Title        string
-	ShortTitle   string
-	SponsorID    string
-	SponsorName  string
-	Status       string
-	CurrentStage string
-	IntroducedOn string
-	SourceURL    string
-	BillType     string
-	Parliament   int
-	Session      int
-	LegisInfoURL string
-	Stages       []BillStage
-	Events       []BillEvent
-	Versions     []BillVersion
-	Diffs        []BillDiff
-	Amendments   []Amendment
-	PBOCostings  []PBOCosting
-	RelatedLinks []RelatedLink
-	RawJSON      string
+	ID              string
+	Number          string
+	Title           string
+	ShortTitle      string
+	SponsorID       string
+	SponsorName     string
+	Status          string
+	CurrentStage    string
+	IntroducedOn    string
+	SourceURL       string
+	BillType        string
+	Parliament      int
+	Session         int
+	LegisInfoURL    string
+	Stages          []BillStage
+	Events          []BillEvent
+	Versions        []BillVersion
+	Diffs           []BillDiff
+	Amendments      []Amendment
+	PBOCostings     []PBOCosting
+	RelatedLinks    []RelatedLink
+	CommitteeStages []BillCommitteeStage
+	RawJSON         string
 }
 
 type BillStage struct {
@@ -58,6 +59,32 @@ type BillEvent struct {
 	MeetingNumber   string
 	AmendmentCount  int
 	AmendmentNoteID string
+}
+
+type BillCommitteeStage struct {
+	ID               string
+	StageID          string
+	StageName        string
+	Chamber          string
+	State            string
+	CommitteeID      string
+	CommitteeAcronym string
+	CommitteeName    string
+	CommitteeChamber string
+	CommitteeURL     string
+	StudiedSince     string
+	StudyCompletedAt string
+	Meetings         []BillCommitteeMeeting
+	SortOrder        int
+}
+
+type BillCommitteeMeeting struct {
+	ID            string
+	MeetingNumber int
+	Date          string
+	EvidenceURL   string
+	WitnessCount  *int
+	SortOrder     int
 }
 
 type BillVersion struct {
@@ -106,18 +133,20 @@ type RelatedLink struct {
 }
 
 type Stats struct {
-	BuiltAt          time.Time
-	Parliament       int
-	Session          int
-	BillCount        int
-	StageCount       int
-	EventCount       int
-	VersionCount     int
-	DiffCount        int
-	AmendmentCount   int
-	PBOCostingCount  int
-	RelatedLinkCount int
-	TableCounts      map[string]int
+	BuiltAt               time.Time
+	Parliament            int
+	Session               int
+	BillCount             int
+	StageCount            int
+	EventCount            int
+	VersionCount          int
+	DiffCount             int
+	AmendmentCount        int
+	PBOCostingCount       int
+	RelatedLinkCount      int
+	CommitteeStageCount   int
+	CommitteeMeetingCount int
+	TableCounts           map[string]int
 }
 
 type Manifest struct {
