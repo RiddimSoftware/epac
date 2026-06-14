@@ -152,6 +152,21 @@ def validate_bill_diff_payload(status: int, payload: Any) -> None:
     require_non_empty_list(body, "bills:diff-full", "clauses")
 
 
+def validate_bill_diff_unknown(status: int, payload: Any) -> None:
+    body = require_dict(payload, "bills:diff-unknown")
+    if is_api_gateway_not_found(status, body):
+        raise SmokeFailure("bills:diff-unknown: API Gateway returned Not Found; route is missing or unsynced")
+    if "error" not in body:
+        raise SmokeFailure(
+            "bills:diff-unknown: expected service-owned error body (key 'error'), got keys: "
+            + (", ".join(sorted(body)) or "none")
+        )
+    if status == 404 and "not found" not in str(body["error"]).lower():
+        raise SmokeFailure(
+            f"bills:diff-unknown: 404 body is not a documented not-found message: {body['error']}"
+        )
+
+
 def validate_members(_: int, payload: Any) -> None:
     body = require_dict(payload, "members")
     require_keys(body, "members", {"members"})
@@ -343,6 +358,17 @@ CHECKS = [
         service="bills",
         deterministic_note="Route-reachability check omits from/to so the bills service returns its own HTTP 400 before diff data is required.",
         fixture_note="No backfilled diff fixture required; API Gateway 404 is treated as a route exposure failure.",
+    ),
+    SmokeCheck(
+        name="bills:diff-unknown",
+        method="GET",
+        path="/api/v1/bills/ZZ-9999/diff",
+        query={"from": "v1", "to": "v2"},
+        expected_statuses={404, 503},
+        validator=validate_bill_diff_unknown,
+        service="bills",
+        deterministic_note="Negative check — an unknown bill id with from/to set drives the bills service's own application-level 404 ('bill not found'), proving the route reaches the Lambda and is distinguished from an API Gateway route-missing 404.",
+        fixture_note="No backfilled diff data required; an unknown bill returns 404 before any version/diff lookup. HTTP 503 is tolerated while the bills index warms.",
     ),
     SmokeCheck(
         name="bills:diff-full",

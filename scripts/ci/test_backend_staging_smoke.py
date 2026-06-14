@@ -109,6 +109,28 @@ def test_bill_diff_full_validator_requires_seeded_payload():
         )
 
 
+def test_bill_diff_unknown_validator_accepts_service_owned_404():
+    smoke = load_smoke_module()
+
+    smoke.validate_bill_diff_unknown(404, {"error": "bill not found"})
+    smoke.validate_bill_diff_unknown(404, {"error": "version not found"})
+    # The bills index can still be warming; a service-owned 503 proves route reachability.
+    smoke.validate_bill_diff_unknown(503, {"error": "bills index checksum mismatch"})
+
+
+def test_bill_diff_unknown_validator_rejects_api_gateway_404():
+    smoke = load_smoke_module()
+
+    with pytest.raises(smoke.SmokeFailure, match="API Gateway returned Not Found"):
+        smoke.validate_bill_diff_unknown(404, {"message": "Not Found"})
+
+    with pytest.raises(smoke.SmokeFailure, match="service-owned error body"):
+        smoke.validate_bill_diff_unknown(404, {})
+
+    with pytest.raises(smoke.SmokeFailure, match="not a documented not-found message"):
+        smoke.validate_bill_diff_unknown(404, {"error": "internal error"})
+
+
 def test_full_only_bill_diff_check_is_skipped_in_contract_mode():
     smoke = load_smoke_module()
 
@@ -116,5 +138,6 @@ def test_full_only_bill_diff_check_is_skipped_in_contract_mode():
     full_checks = [check.name for check in smoke.CHECKS]
 
     assert "bills:diff-route" in contract_checks
+    assert "bills:diff-unknown" in contract_checks
     assert "bills:diff-full" not in contract_checks
     assert "bills:diff-full" in full_checks
