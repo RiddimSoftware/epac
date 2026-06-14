@@ -31,9 +31,11 @@ struct BillDetailView: View {
     private let loadBillLobbyingContext: LoadBillLobbyingContext
     private let loadBillCommitteeStage: LoadBillCommitteeStage
     private let loadBillAmendments: LoadBillAmendments
+    private let loadPBOCosting: LoadPBOCosting
     private let autoloadLobbyingContext: Bool
     private let autoloadCommitteeStage: Bool
     private let autoloadAmendments: Bool
+    private let autoloadPBOCosting: Bool
 
     @State private var billStore = BillFollowStore.shared
     @State private var matchingVotes: [RecordedVote] = []
@@ -41,6 +43,7 @@ struct BillDetailView: View {
     @State private var lobbyingContext: BillLobbyingContext?
     @State private var committeeStage: BillCommitteeStage?
     @State private var amendments: [BillAmendment]?
+    @State private var pboCosting: PBOCostingResult?
     @State private var shareItem: ActivityItem?
     @State private var myMP: ParliamentMember?
     @State private var sponsorMember: ParliamentMember?
@@ -56,17 +59,23 @@ struct BillDetailView: View {
         loadBillAmendments: LoadBillAmendments = LoadBillAmendments(
             repository: BackendBillAmendmentsRepository()
         ),
+        loadPBOCosting: LoadPBOCosting = LoadPBOCosting(
+            queryPort: BackendPBOCostingRepository()
+        ),
         autoloadLobbyingContext: Bool = true,
         autoloadCommitteeStage: Bool = true,
-        autoloadAmendments: Bool = true
+        autoloadAmendments: Bool = true,
+        autoloadPBOCosting: Bool = true
     ) {
         self.bill = bill
         self.loadBillLobbyingContext = loadBillLobbyingContext
         self.loadBillCommitteeStage = loadBillCommitteeStage
         self.loadBillAmendments = loadBillAmendments
+        self.loadPBOCosting = loadPBOCosting
         self.autoloadLobbyingContext = autoloadLobbyingContext
         self.autoloadCommitteeStage = autoloadCommitteeStage
         self.autoloadAmendments = autoloadAmendments
+        self.autoloadPBOCosting = autoloadPBOCosting
     }
 
     var body: some View {
@@ -80,7 +89,7 @@ struct BillDetailView: View {
             keyFactsSection
 
             // MARK: PBO independent cost analysis
-            PBOCostCard(bill: bill)
+            PBOCostingPanel(result: pboCosting)
 
             // MARK: Committee study stage
             if let committeeStage {
@@ -218,6 +227,7 @@ struct BillDetailView: View {
         }
         .task {
             await loadCrossReferences()
+            await loadPBOCostingResult()
             await loadCommitteeStage()
             await loadAmendments()
             await loadLobbyingContext()
@@ -475,6 +485,17 @@ struct BillDetailView: View {
             amendments = try await loadBillAmendments.execute(billID: bill.id)
         } catch {
             amendments = nil
+        }
+    }
+
+    @MainActor
+    private func loadPBOCostingResult() async {
+        guard autoloadPBOCosting else { return }
+
+        do {
+            pboCosting = try await loadPBOCosting.execute(billID: bill.id)
+        } catch {
+            pboCosting = nil
         }
     }
 }

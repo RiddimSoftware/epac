@@ -11,6 +11,7 @@
 "accountability.donations" = "Dons politiques";
 "accountability.projectCosts" = "Coût des projets";
 "common.ok" = "OK";
+"common.done" = "Terminé";
 
 /* Search view */
 "Search debates" = "Rechercher des débats";
@@ -477,12 +478,20 @@
 "cihi.contextCard.title" = "Temps d'attente en santé dans votre province (%@)";
 
 /* Analyse de coût indépendante du DPB */
-"pbo.sectionTitle" = "Analyse de coût indépendante (DPB)";
-"pbo.estimate.pbo" = "Estimation du DPB :";
-"pbo.estimate.government" = "Estimation du gouvernement :";
-"pbo.estimatesDiffer" = "Les estimations diffèrent de plus de 10 %";
-"pbo.viewReport" = "Voir le rapport complet du DPB →";
-"pbo.viewReport.accessibility" = "Voir le rapport complet du DPB pour %@";
+"pbo.costing.sectionTitle" = "Évaluation indépendante des coûts — Directeur parlementaire du budget";
+"pbo.costing.headlineLabel" = "Coût sur 5 ans, en millions";
+"pbo.costing.headlineAccessibility" = "Coût sur 5 ans, en millions : %@";
+"pbo.costing.viewFullReport" = "Voir le rapport complet";
+"pbo.costing.openReaderHint" = "Ouvre la fiche sommaire du DPB.";
+"pbo.costing.readerTitle" = "Évaluation du DPB";
+"pbo.costing.readerSummary" = "Fiche sommaire";
+"pbo.costing.openPDFInSafari" = "Ouvrir le PDF dans Safari";
+"pbo.costing.otherReports" = "%d autre(s) note(s) du DPB";
+"pbo.costing.otherReportsTitle" = "Autres notes du DPB";
+"pbo.methodology.legislativeCost" = "Coût législatif";
+"pbo.methodology.fiscalUpdate" = "Mise à jour financière";
+"pbo.methodology.electionPlatform" = "Plateforme électorale";
+"pbo.methodology.programEvaluation" = "Évaluation de programme";
 
 /* Ressources électorales (EPAC-78) */
 "election.navTitle" = "Ressources électorales";
