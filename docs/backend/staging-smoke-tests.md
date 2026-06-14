@@ -27,6 +27,10 @@ non-empty; fixture-dependent endpoints still accept empty result sets.
 | --- | --- | --- |
 | `GET /health` | Accepts `ok` or `degraded` `HealthResponse` JSON and fails DB/Lambda error bodies. | Seed/schedule pipeline health rows before requiring `ok`. |
 | `GET /api/v1/bills` | Verifies the bills envelope and requires a non-empty `bills` list from the published artifact. | No fixture required; the canonical bills artifact should not be empty after ingestion. |
+| `GET /api/v1/bills/C-8/diff` without query params | Verifies the diff route reaches the bills Lambda by expecting the service-owned missing-parameter `400`. | No diff fixture required. |
+| `GET /api/v1/bills/ZZ-9999/diff?from=v1&to=v2` | Verifies unknown bills return the service-owned application `404`, not an API Gateway route-missing `404`. | No diff fixture required. |
+| `GET /api/v1/bills/C-11/diff?from=c-11-13615955-first-reading&to=c-11-13896514-as-amended-by-committee` | Full-mode only. Verifies a current-Parliament multi-version bill returns `200` with a non-empty `clauses` array. | Run the bills indexer/backfill before using `--mode full`. |
+| `GET /api/v1/bills/C-10/diff?from=c-10-13610716-first-reading&to=c-10-13610716-first-reading` | Full-mode only. Verifies a real one-version bill returns the documented unavailable `204` empty response. | Run the bills indexer/backfill before using `--mode full`. |
 | `GET /api/v1/members` | Verifies the members envelope and requires a non-empty `members` list from the published artifact. | No fixture required; the canonical members artifact should not be empty after ingestion. |
 | `GET /api/v1/members/0/speeches` | Verifies pagination, stats, and speech-list contract with an empty-safe member id. | Seed a known MP and speech before asserting content. |
 | `GET /api/v1/members/0/votes` | Verifies pagination and vote-list contract with an empty-safe member id. | Seed member vote artifacts before asserting content. |
