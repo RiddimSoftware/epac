@@ -21,6 +21,12 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: '5'
+  AWS_CLI_CONNECT_TIMEOUT: '10'
+  AWS_CLI_READ_TIMEOUT: '60'
+
 jobs:
   prepare:
     name: Resolve backend service manifest
