@@ -14,6 +14,7 @@ var (
 	ErrBillNotFound     = errors.New("bill not found")
 	ErrDiffMissingFrom  = errors.New("missing required from version id")
 	ErrDiffMissingTo    = errors.New("missing required to version id")
+	ErrVersionNotFound  = errors.New("version not found")
 )
 
 type ManifestLoader interface {

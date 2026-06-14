@@ -174,11 +174,31 @@ func (r *Repository) GetBillVersionDiff(ctx context.Context, id, fromVersionID, 
 	if err != nil {
 		return nil, err
 	}
+
+	if ok, err := r.tableExists(ctx, "bill_versions"); err != nil || !ok {
+		return nil, err
+	}
 	if ok, err := r.tableExists(ctx, "bill_diffs"); err != nil || !ok {
 		return nil, err
 	}
 	if ok, err := r.tableExists(ctx, "bill_clause_diffs"); err != nil || !ok {
 		return nil, err
+	}
+
+	fromVersion, ok, err := r.billVersionByID(ctx, billID, fromVersionID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, usecase.ErrVersionNotFound
+	}
+
+	toVersion, ok, err := r.billVersionByID(ctx, billID, toVersionID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, usecase.ErrVersionNotFound
 	}
 
 	var diffID string
@@ -194,14 +214,6 @@ func (r *Repository) GetBillVersionDiff(ctx context.Context, id, fromVersionID, 
 		return nil, fmt.Errorf("query bill diff sqlite artifact: %w", err)
 	}
 
-	fromVersion, ok, err := r.billVersionByID(ctx, billID, fromVersionID)
-	if err != nil || !ok {
-		return nil, err
-	}
-	toVersion, ok, err := r.billVersionByID(ctx, billID, toVersionID)
-	if err != nil || !ok {
-		return nil, err
-	}
 	clauses, err := r.billClauseDiffs(ctx, billID, diffID)
 	if err != nil {
 		return nil, err

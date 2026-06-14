@@ -46,12 +46,26 @@ func TestRepositoryGetBillVersionDiffMapsCurrentArtifactSchema(t *testing.T) {
 	}
 }
 
-func TestRepositoryGetBillVersionDiffReturnsNilForUnknownVersionPair(t *testing.T) {
+func TestRepositoryGetBillVersionDiffReturnsVersionNotFoundForUnknownVersionPair(t *testing.T) {
 	db := openDiffFixtureDB(t)
 	defer db.Close()
 	repo := New(db)
 
 	diff, err := repo.GetBillVersionDiff(context.Background(), "C-2", "v1", "missing")
+	if !errors.Is(err, usecase.ErrVersionNotFound) {
+		t.Fatalf("error = %v, want ErrVersionNotFound", err)
+	}
+	if diff != nil {
+		t.Fatalf("diff = %+v, want nil", diff)
+	}
+}
+
+func TestRepositoryGetBillVersionDiffReturnsNilWhenVersionsExistButNoDiff(t *testing.T) {
+	db := openDiffFixtureDB(t)
+	defer db.Close()
+	repo := New(db)
+
+	diff, err := repo.GetBillVersionDiff(context.Background(), "C-2", "v2", "v1")
 	if err != nil {
 		t.Fatalf("GetBillVersionDiff error: %v", err)
 	}

@@ -288,6 +288,8 @@ func mapBillVersionDiffError(err error) events.APIGatewayProxyResponse {
 		return jsonError(http.StatusBadRequest, "missing required query parameter: to")
 	case errors.Is(err, usecase.ErrBillNotFound):
 		return jsonError(http.StatusNotFound, "bill not found")
+	case errors.Is(err, usecase.ErrVersionNotFound):
+		return jsonError(http.StatusNotFound, "version not found")
 	default:
 		slog.Error("load bill version diff request failed", "error", err)
 		return jsonError(http.StatusInternalServerError, "internal error")
