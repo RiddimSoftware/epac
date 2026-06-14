@@ -9,6 +9,7 @@ import BackgroundTasks
 import SwiftData
 import SwiftUI
 import UIKit
+import UserNotifications
 
 enum AppRuntime {
 	static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
@@ -46,7 +47,7 @@ private enum UITestFreshState {
 }
 
 @MainActor
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 	/// Injected by ContentView once it has created the router.
 	var router: NavigationRouter? {
 		didSet {
@@ -58,6 +59,32 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 	}
 
 	var coldLaunchAction: QuickAction?
+
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		didReceive response: UNNotificationResponse,
+		withCompletionHandler completionHandler: @escaping () -> Void
+	) {
+		let userInfo = response.notification.request.content.userInfo
+		let kind = userInfo[DailyDigestNotificationPayload.userInfoKindKey] as? String
+		let dateString = userInfo[DailyDigestNotificationPayload.userInfoDateKey] as? String
+		if kind == DailyDigestNotificationPayload.userInfoKindValue,
+		   let dateString,
+		   let url = URL(string: "cabinetdoor://sitting/\(dateString)") {
+			Task { @MainActor in
+				await UIApplication.shared.open(url)
+			}
+		}
+		completionHandler()
+	}
+
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		willPresent notification: UNNotification,
+		withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+	) {
+		completionHandler([.banner, .sound, .badge])
+	}
 }
 
 @main
@@ -175,6 +202,9 @@ struct epacApp: App {
 				BackgroundRefreshManager.shared.modelContainer = sharedModelContainer
 				ReviewRequestManager.shared.recordAppOpen()
 				BackgroundRefreshManager.shared.scheduleRefresh()
+				Task { @MainActor in
+					await BackgroundRefreshManager.shared.sendDailyDigestIfEligible(container: sharedModelContainer)
+				}
 			}
 		}
 		#if targetEnvironment(macCatalyst)

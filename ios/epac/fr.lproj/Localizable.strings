@@ -599,6 +599,8 @@
 "onboarding.topics.title" = "Ce qui vous importe";
 "onboarding.topics.subtitle" = "Suivez jusqu'à 4 sujets pour personnaliser votre accueil.";
 "onboarding.topics.follow" = "Suivre %d sujet(s) →";
+"onboarding.topics.dailyDigest" = "Sommaire quotidien du Parlement";
+"onboarding.topics.dailyDigest.description" = "Jours de séance seulement. Un résumé factuel des débats et des votes lorsque le hansard est publié, à partir du dossier officiel.";
 
 "onboarding.promise.title" = "Vous êtes prêt";
 "onboarding.promise.subtitle" = "Le Parlement siège. Voici ce que vous obtiendrez.";
@@ -646,6 +648,19 @@
 "settings.followed.bills" = "Projets de loi suivis";
 "settings.followed.members" = "Députés suivis";
 "settings.followed.topics" = "Sujets suivis";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.manage" = "Gérer les notifications";
+"settings.notifications.dailyDigest" = "Sommaire quotidien du Parlement";
+"settings.notifications.dailyDigest.description" = "Un résumé factuel des débats et des votes chaque jour de séance lorsque le hansard est publié. Désactivé par défaut.";
+
+/* Notification Sommaire quotidien (EPAC-917) */
+"dailyDigest.notification.title" = "Le Parlement a siégé aujourd'hui · %@";
+"dailyDigest.notification.debates" = "%d débats";
+"dailyDigest.notification.attendance" = "%d %% des députés présents";
+"dailyDigest.notification.vote.line" = "1 vote enregistré : %1$@ %2$@ %3$d–%4$d";
+"dailyDigest.notification.vote.passed" = "adopté";
+"dailyDigest.notification.vote.defeated" = "rejeté";
 
 "settings.privacy.title" = "Données et confidentialité";
 "settings.privacy.policy" = "Politique de confidentialité";

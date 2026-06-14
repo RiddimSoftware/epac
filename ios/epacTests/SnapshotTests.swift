@@ -436,6 +436,22 @@ final class SnapshotTests: XCTestCase {
         )
     }
 
+    // MARK: - Daily Parliament digest notifications (EPAC-917)
+
+    @MainActor
+    func testNotificationsSettings_dailyDigest() {
+        UserDefaults.standard.removeObject(forKey: UserPreferenceAdapter.dailyDigestEnabledKey)
+        defer { UserDefaults.standard.removeObject(forKey: UserPreferenceAdapter.dailyDigestEnabledKey) }
+
+        snapshot(
+            NavigationStack {
+                NotificationsSettingsView()
+            }
+            .frame(width: 375, height: 320),
+            name: "NotificationsSettings_dailyDigest"
+        )
+    }
+
     // MARK: - Design system tokens (EPAC-440)
 
     func testDesignSystem_colorTokens() {

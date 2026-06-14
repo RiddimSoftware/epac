@@ -597,6 +597,8 @@
 "onboarding.topics.title" = "What matters to you?";
 "onboarding.topics.subtitle" = "Follow up to 4 topics to personalize your Home feed.";
 "onboarding.topics.follow" = "Follow %d topic(s) →";
+"onboarding.topics.dailyDigest" = "Daily Parliament summary";
+"onboarding.topics.dailyDigest.description" = "Sitting days only. A short factual recap of debates and votes when Hansard is published, drawn from the official record.";
 
 "onboarding.promise.title" = "You're set up";
 "onboarding.promise.subtitle" = "Parliament is in session. Here's what you'll get.";
@@ -644,6 +646,19 @@
 "settings.followed.bills" = "Followed Bills";
 "settings.followed.members" = "Followed MPs";
 "settings.followed.topics" = "Followed Topics";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.manage" = "Manage notifications";
+"settings.notifications.dailyDigest" = "Daily Parliament summary";
+"settings.notifications.dailyDigest.description" = "A concise factual recap of debates and votes on each sitting day when Hansard is published. Off by default.";
+
+/* Daily Parliament digest notification (EPAC-917) */
+"dailyDigest.notification.title" = "Parliament sat today · %@";
+"dailyDigest.notification.debates" = "%d debates";
+"dailyDigest.notification.attendance" = "%d%% of MPs present";
+"dailyDigest.notification.vote.line" = "1 recorded vote: %1$@ %2$@ %3$d–%4$d";
+"dailyDigest.notification.vote.passed" = "passed";
+"dailyDigest.notification.vote.defeated" = "defeated";
 
 "settings.privacy.title" = "Data & Privacy";
 "settings.privacy.policy" = "Privacy Policy";

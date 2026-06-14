@@ -53,6 +53,7 @@ struct OnboardingView: View {
     @State private var page = OnboardingLayout.welcomePage
     @State private var postalCodeVM = PostalCodeViewModel()
     @State private var selectedTopics: Set<String> = []
+    @State private var dailyDigestOptIn = false
     @Environment(\.modelContext) private var modelContext
 
     private let totalPages = OnboardingLayout.totalPages
@@ -370,7 +371,10 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, EpacSpacing.l)
                 .padding(.vertical, EpacSpacing.l)
-                .padding(.bottom, OnboardingLayout.topicsGridBottomPadding)
+
+                dailyDigestOptInRow
+                    .padding(.horizontal, EpacSpacing.l)
+                    .padding(.bottom, OnboardingLayout.topicsGridBottomPadding)
             }
 
             ContinueButton(label: selectedTopics.isEmpty
@@ -379,15 +383,29 @@ struct OnboardingView: View {
                                     selectedTopics.count)) {
                 if !selectedTopics.isEmpty {
                     FollowTopic.live().execute(topicIDs: selectedTopics)
-                    Log.info("onboarding.step.3.completed topicsFollowed=\(selectedTopics.count)")
+                    Log.info("onboarding.step.3.completed topicsFollowed=\(selectedTopics.count) dailyDigest=\(dailyDigestOptIn)")
                 } else {
-                    Log.info("onboarding.step.3.skipped")
+                    Log.info("onboarding.step.3.skipped dailyDigest=\(dailyDigestOptIn)")
                 }
                 advance()
             }
             .padding(.horizontal, EpacSpacing.l)
             .padding(.bottom, OnboardingLayout.primaryBottomPadding)
         }
+    }
+
+    private var dailyDigestOptInRow: some View {
+        Toggle(isOn: $dailyDigestOptIn) {
+            VStack(alignment: .leading, spacing: EpacSpacing.xs) {
+                Text(NSLocalizedString("onboarding.topics.dailyDigest", comment: ""))
+                    .font(.epacBody.weight(.medium))
+                Text(NSLocalizedString("onboarding.topics.dailyDigest.description", comment: ""))
+                    .font(.epacCaption)
+                    .foregroundStyle(Color.epacText.secondary)
+            }
+        }
+        .tint(Color.epacBrand.accent)
+        .accessibilityIdentifier("onboarding.topics.dailyDigest.toggle")
     }
 
     // MARK: - Navigation helpers
@@ -401,8 +419,10 @@ struct OnboardingView: View {
     }
 
     private func complete() {
-        Log.info("onboarding.completed")
-        UserDefaults.standard.set(true, forKey: "epac.onboarding.completed")
+        Log.info("onboarding.completed dailyDigest=\(dailyDigestOptIn)")
+        let defaults = UserDefaults.standard
+        defaults.set(dailyDigestOptIn, forKey: UserPreferenceAdapter.dailyDigestEnabledKey)
+        defaults.set(true, forKey: "epac.onboarding.completed")
         onComplete()
     }
 }

@@ -59,6 +59,8 @@ For the Clean Architecture shape this catalog assumes, see [`docs/architecture/`
 | `PushNotificationPayload` | Backend-only internal push payload carrying required live-vote division fields and the compacted original JSON document. |
 | `LiveVoteNotification` | Backend-only display-ready push notification value with neutral title/body copy and source division identifiers for APNs delivery. |
 | `RoyalAssentNotification` | iOS notification content value used when a followed bill transitions to Royal Assent during app or background refresh. |
+| `DailyDigest` | A factual once-per-sitting-day summary composed from official Hansard subjects and recorded-division results: date, subject count, attendance estimate, top three subjects, and one optional vote summary. |
+| `NotificationPreferences` | The local user's notification preferences value object; epac has no account system, so this carries opt-in flags persisted to UserDefaults. Named `NotificationPreferences` rather than `User` because the chat dependency owns that name in the same module. |
 | `DispatchResult` | Backend-only push dispatch outcome counts for subscription fan-out, successful deliveries, and failed delivery attempts. |
 | `LiveParliamentStatus` | A snapshot of whether the House is currently sitting, what business is in progress, and whether a division is active. |
 | `OnThisDayItem` | A backend-only historical Parliament moment for the same calendar day in prior years. |
@@ -108,6 +110,11 @@ to the issue that will build the missing artifact.
 | `DeviceSubscriptionRepository` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/postgres/subscriptions.go`. | List device subscriptions eligible for the current internal notification fan-out. |
 | `PushNotificationClient` | backend Go | outbound | Implemented: `backend/push-notification-dispatcher/internal/usecase/dispatch_push_notification.go`; adapter: `backend/push-notification-dispatcher/internal/adapter/apns/client.go`. | Deliver a typed push payload to a subscribed device through APNs. |
 | `RoyalAssentNotificationPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/RoyalAssentNotificationPort.swift`; adapter: `ios/epac/Data/Adapters/LiveRoyalAssentNotificationAdapter.swift`. | Schedule notification content when a followed bill is observed to have received Royal Assent. |
+| `HansardReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/HansardReadPort.swift`; adapter: `ios/epac/Data/Adapters/SwiftDataHansardReadAdapter.swift`. | Read sitting-day, subject count, and top subjects for the daily Parliament digest composition. |
+| `VoteReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/VoteReadPort.swift`; adapter: `ios/epac/Data/Adapters/SwiftDataVoteReadAdapter.swift`. | Read attendance estimate and the day's recorded vote summary for the daily Parliament digest composition. |
+| `DigestNotificationPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/DigestNotificationPort.swift`; adapter: `ios/epac/Data/Adapters/LiveDigestNotificationAdapter.swift`. | Deliver a composed `DailyDigest` to the user as a notification (UNUserNotificationCenter is adapter detail). |
+| `UserPreferenceReadPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/UserPreferenceReadPort.swift`; adapter: `ios/epac/Data/Adapters/UserPreferenceAdapter.swift`. | Read the local user's notification preferences (UserDefaults is adapter detail). |
+| `DigestDeliveryRecordPort` | iOS Swift | outbound | Implemented: `ios/epac/Domain/Ports/DigestDeliveryRecordPort.swift`; adapter: `ios/epac/Data/Adapters/UserDefaultsDigestDeliveryRecordAdapter.swift`. | Track whether the daily digest was already delivered on a calendar day so repeated background-refresh wakes inside the digest window don't fire it twice. |
 | `HansardSearchProviding` | iOS Swift | outbound | Implemented: `ios/epac/Util/HansardSearchService.swift`; conformer: `BackendHansardSearchService`. | Search Hansard through the backend search endpoint from iOS presentation code. |
 | `HansardSearchRepository` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/search_hansard.go`; adapter: `backend/hansard-search/internal/adapter/sqlitefts5/repository.go`. | Query the verified SQLite FTS5 Hansard search index. |
 | `ManifestLoader` | backend Go | outbound | Implemented: `backend/hansard-search/internal/usecase/open_search_index.go`; adapter: `backend/hansard-search/internal/adapter/s3manifest/manifest_loader.go`. | Load the current Hansard search-index manifest. |
@@ -553,6 +560,41 @@ Current implementation:
 ```
 
 > **Boundary note:** UserNotifications is adapter detail. The use case formats typed notification content and does not import APNs or `UNUserNotificationCenter`; iOS background wake timing remains governed by BGAppRefresh.
+
+---
+
+### SendDailyParliamentDigest
+
+```
+Actor: iOS background refresh after Hansard ingestion (BGAppRefreshTask), scenePhase .active
+Goal: Once per confirmed sitting day, deliver a concise factual digest of the day's debates, attendance, and recorded votes to users who opted in.
+Inputs: Today's date, user notification preferences, today's Hansard subjects, today's recorded-division results, last delivery day.
+Outputs: A delivered notification (title + body) composed from the official record only; tap deep-links to today's sitting in the Debates calendar.
+Entities / values: DailyDigest, DailyDigest.VoteSummary, NotificationPreferences.
+Ports: iOS Swift: `HansardReadPort`, `VoteReadPort`, `DigestNotificationPort`, `UserPreferenceReadPort`, `DigestDeliveryRecordPort`.
+Primary adapters: SwiftDataHansardReadAdapter, SwiftDataVoteReadAdapter, UserPreferenceAdapter (UserDefaults), LiveDigestNotificationAdapter (UNUserNotificationCenter), UserDefaultsDigestDeliveryRecordAdapter, BackgroundRefreshManager.
+Policy boundary: Timing window (default 17:00–23:00 local), sitting-day check, and once-per-day dedupe are use-case policy, not scheduler detail; the start/end hours are parameters of `execute(...)`.
+Current implementation:
+  ios/epac/Application/SendDailyParliamentDigest.swift
+  ios/epac/Domain/Entities/DailyDigest.swift
+  ios/epac/Domain/Entities/NotificationPreferences.swift
+  ios/epac/Domain/Ports/HansardReadPort.swift
+  ios/epac/Domain/Ports/VoteReadPort.swift
+  ios/epac/Domain/Ports/DigestNotificationPort.swift
+  ios/epac/Domain/Ports/UserPreferenceReadPort.swift
+  ios/epac/Domain/Ports/DigestDeliveryRecordPort.swift
+  ios/epac/Domain/DailyDigestFormatter.swift
+  ios/epac/Data/Adapters/SwiftDataHansardReadAdapter.swift
+  ios/epac/Data/Adapters/SwiftDataVoteReadAdapter.swift
+  ios/epac/Data/Adapters/UserPreferenceAdapter.swift
+  ios/epac/Data/Adapters/UserDefaultsDigestDeliveryRecordAdapter.swift
+  ios/epac/Data/Adapters/LiveDigestNotificationAdapter.swift
+  ios/epac/Util/BackgroundRefreshManager.swift (composition root: wires use case after Hansard refresh)
+  ios/epac/Views/Onboarding/OnboardingView.swift (Screen 4 opt-in toggle)
+  ios/epac/Views/Settings/NotificationsSettingsView.swift (Settings opt-in row)
+```
+
+> **Boundary note:** UNUserNotificationCenter, UserDefaults, and SwiftData are adapter detail. The use case never imports `UserNotifications`, `SwiftData`, or any UI framework; all displayed text is composed from the typed `DailyDigest` value object by a framework-free formatter, with verbatim authoritative content (no LLM-generated text). Adapters resolve the timing trigger (background refresh or scheduled wake) without leaking scheduler types into the use case.
 
 ---
 

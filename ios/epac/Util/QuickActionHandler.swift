@@ -13,6 +13,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 @MainActor
 extension AppDelegate {
@@ -20,6 +21,7 @@ extension AppDelegate {
 		_ application: UIApplication,
 		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 	) -> Bool {
+		UNUserNotificationCenter.current().delegate = self
 		if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem,
 		   let action = QuickAction(rawValue: shortcutItem.type) {
 			// Router not wired yet; stash for delivery once ContentView appears.
