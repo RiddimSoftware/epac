@@ -235,6 +235,15 @@ struct BillVersionsDiffView: View {
             diff = nil
             return
         }
+        let sorted = Self.sortVersions(versions)
+        if let fromIndex = sorted.firstIndex(where: { $0.id == fromVersionID }),
+           let toIndex = sorted.firstIndex(where: { $0.id == toVersionID }),
+           fromIndex > toIndex {
+            let temp = fromVersionID
+            fromVersionID = toVersionID
+            toVersionID = temp
+            return
+        }
         isLoading = true
         loadFailed = false
         defer { isLoading = false }

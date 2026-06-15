@@ -100,6 +100,62 @@ func TestLoadBillVersionDiffMapsEmptyClauseDiffToUnavailable(t *testing.T) {
 	}
 }
 
+func TestLoadBillVersionDiffReturns204ForSameVersion(t *testing.T) {
+	repo := &fakeBillRepository{}
+	diff, err := NewLoadBillVersionDiff(repo).Execute(context.Background(), LoadBillVersionDiffInput{
+		BillID:        "C-2",
+		FromVersionID: "v1",
+		ToVersionID:   "v1",
+	})
+	if err != nil {
+		t.Fatalf("Execute error: %v", err)
+	}
+	if diff != nil {
+		t.Fatalf("expected nil diff for same version comparison, got %+v", diff)
+	}
+	if repo.called {
+		t.Fatal("repository should not be called for same version comparison")
+	}
+}
+
+func TestLoadBillVersionDiffReturnsEmptyClausesForIdenticalText(t *testing.T) {
+	repo := &fakeBillRepository{
+		diff: &domain.BillVersionDiff{
+			From: domain.BillVersion{ID: "v1"},
+			To:   domain.BillVersion{ID: "v2"},
+			Clauses: []domain.BillClauseDiff{
+				{
+					ID:         "c1",
+					ChangeType: "unchanged",
+					FromText:   "Same",
+					ToText:     "Same",
+				},
+				{
+					ID:         "c2",
+					ChangeType: "unchanged",
+					FromText:   "Also Same",
+					ToText:     "Also Same",
+				},
+			},
+		},
+	}
+
+	diff, err := NewLoadBillVersionDiff(repo).Execute(context.Background(), LoadBillVersionDiffInput{
+		BillID:        "C-2",
+		FromVersionID: "v1",
+		ToVersionID:   "v2",
+	})
+	if err != nil {
+		t.Fatalf("Execute error: %v", err)
+	}
+	if diff == nil {
+		t.Fatal("expected non-nil diff for identical versions")
+	}
+	if len(diff.Clauses) != 0 {
+		t.Fatalf("expected empty clauses slice, got %d clauses: %+v", len(diff.Clauses), diff.Clauses)
+	}
+}
+
 type fakeBillRepository struct {
 	diff          *domain.BillVersionDiff
 	err           error

@@ -97,6 +97,10 @@ func (u *LoadBillVersionDiff) Execute(ctx context.Context, input LoadBillVersion
 		return nil, ErrDiffMissingTo
 	}
 
+	if fromVersionID == toVersionID {
+		return nil, nil
+	}
+
 	diff, err := u.repo.GetBillVersionDiff(ctx, billID, fromVersionID, toVersionID)
 	if err != nil || diff == nil {
 		return diff, err
@@ -104,6 +108,20 @@ func (u *LoadBillVersionDiff) Execute(ctx context.Context, input LoadBillVersion
 	if len(diff.Clauses) == 0 {
 		return nil, nil
 	}
+
+	// Check if all clauses are unchanged. If they are, return the diff but with
+	// an empty clauses slice so the client receives HTTP 200 with an empty clauses array.
+	allUnchanged := true
+	for _, c := range diff.Clauses {
+		if c.ChangeType != "unchanged" {
+			allUnchanged = false
+			break
+		}
+	}
+	if allUnchanged {
+		diff.Clauses = []domain.BillClauseDiff{}
+	}
+
 	return diff, nil
 }
 
