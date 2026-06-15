@@ -157,6 +157,8 @@ func (f *Fetcher) fetchDetail(ctx context.Context, session domain.Session, numbe
 
 func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, number string, pubs []publicationJSON) []domain.BillVersion {
 	versions := make([]domain.BillVersion, 0, len(pubs))
+	// firstXMLURL / firstPDFURL hold the first version's resolved links (the "_1" base)
+	// so later stages that expose no link of their own can derive a sibling candidate.
 	var firstXMLURL, firstPDFURL string
 	for i, pub := range pubs {
 		stage := firstNonEmpty(pub.PublicationTypeNameEn, pub.PublicationTypeName)
@@ -172,40 +174,72 @@ func (f *Fetcher) enrichVersions(ctx context.Context, session domain.Session, nu
 			SortOrder:     i + 1,
 		}
 
-		var xmlURL, pdfURL string
-		if firstXMLURL == "" {
-			xmlURL, pdfURL = f.fetchDocumentLinks(ctx, htmlURL)
-			if xmlURL != "" {
-				firstXMLURL = xmlURL
-			}
-			if pdfURL != "" {
-				firstPDFURL = pdfURL
-			}
-		} else {
-			xmlURL = constructXMLURL(firstXMLURL, i+1)
-			pdfURL = constructPDFURL(firstPDFURL, i+1)
+		// Read this stage's own DocumentViewer page first: it links to the correct
+		// document version regardless of where the stage falls in the publication list.
+		directXML, directPDF := f.fetchDocumentLinks(ctx, htmlURL)
+
+		// PDF: prefer this stage's own anchor, else derive a sibling from the first stage's.
+		version.PDFURL = firstNonEmpty(directPDF, constructPDFURL(firstPDFURL, i+1))
+
+		// XML: try candidates in order of trust and persist only one that fetches as
+		// bill XML, so a guessed sibling that 404s or returns a non-bill page is dropped.
+		xmlURL, xmlData := f.resolveVersionXML(ctx, number, directXML, directPDF, firstXMLURL, i+1)
+		version.XMLURL = xmlURL
+
+		if firstXMLURL == "" && xmlURL != "" {
+			firstXMLURL = xmlURL
+		}
+		if firstPDFURL == "" && version.PDFURL != "" {
+			firstPDFURL = version.PDFURL
 		}
 
-		version.XMLURL = xmlURL
-		version.PDFURL = pdfURL
-
-		if xmlURL != "" {
-			xmlData, err := f.getBytes(ctx, xmlURL, "text/xml")
-			if err == nil {
-				hash := computeSHA256(xmlData)
-				version.TextHash = &hash
-				version.TextSourceURL = &xmlURL
-
-				sections, err := parseBillXML(xmlData)
-				if err == nil {
-					version.Sections = sections
-				}
+		if len(xmlData) > 0 {
+			hash := computeSHA256(xmlData)
+			version.TextHash = &hash
+			source := xmlURL
+			version.TextSourceURL = &source
+			if sections, err := parseBillXML(xmlData); err == nil {
+				version.Sections = sections
 			}
 		}
 
 		versions = append(versions, version)
 	}
 	return versions
+}
+
+// resolveVersionXML returns the authoritative XML URL for one publication along with the
+// fetched payload (reused by the caller to hash and parse, avoiding a second request).
+// Candidates are tried most-trusted first:
+//  1. the .xml anchor on the stage's own DocumentViewer page,
+//  2. the XML sibling that lives beside the stage's own PDF anchor (same version directory),
+//  3. a sort-order sibling derived from the first stage's resolved XML URL.
+//
+// Steps 1 and 2 come from this stage's own page, so they are always correctly attributed.
+// Step 3 is a best-effort guess that assumes parl.ca's document number tracks the
+// publication order; it only fires when the page exposes no links of its own. A candidate
+// wins only when it returns a 2xx bill-XML payload, so derived guesses that 404 or return a
+// non-bill page are never persisted as xml_url.
+func (f *Fetcher) resolveVersionXML(ctx context.Context, number, directXML, directPDF, firstXMLURL string, sortOrder int) (string, []byte) {
+	sortOrderSibling := constructXMLURL(firstXMLURL, sortOrder)
+	if sortOrderSibling == firstXMLURL {
+		// No version substitution happened (e.g. the base URL is not a "_1" directory),
+		// so the candidate is just the base version again — never reuse it for another stage.
+		sortOrderSibling = ""
+	}
+	candidates := dedupeNonEmpty(
+		directXML,
+		xmlSiblingFromPDF(directPDF, number),
+		sortOrderSibling,
+	)
+	for _, candidate := range candidates {
+		data, err := f.getBytes(ctx, candidate, "text/xml")
+		if err != nil || !looksLikeBillXML(data) {
+			continue
+		}
+		return candidate, data
+	}
+	return "", nil
 }
 
 func constructXMLURL(firstURL string, sortOrder int) string {
@@ -226,6 +260,64 @@ func constructPDFURL(firstURL string, sortOrder int) string {
 	return res
 }
 
+// xmlSiblingFromPDF derives the bill XML URL that lives in the same parl.ca version
+// directory as a PDF anchor. parl.ca keeps both files in a per-version folder (for
+// example .../C-11/C-11_3/C-11_3.PDF beside .../C-11/C-11_3/C-11_E.xml), so the PDF's
+// directory pins the correct version even when sort-order derivation would not. Returns
+// empty unless the input is a real .pdf path and the bill number is known.
+func xmlSiblingFromPDF(pdfURL, number string) string {
+	pdfURL = strings.TrimSpace(pdfURL)
+	number = strings.TrimSpace(number)
+	if pdfURL == "" || number == "" {
+		return ""
+	}
+	if !strings.HasSuffix(lowerURLPath(pdfURL), ".pdf") {
+		return ""
+	}
+	idx := strings.LastIndex(pdfURL, "/")
+	if idx < 0 {
+		return ""
+	}
+	return pdfURL[:idx+1] + number + "_E.xml"
+}
+
+// dedupeNonEmpty returns the inputs with blanks dropped and duplicates removed, preserving
+// first-seen order so the most-trusted candidate stays first.
+func dedupeNonEmpty(values ...string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
+}
+
+// looksLikeBillXML reports whether data parses as XML whose root element is <Bill>, the
+// parl.ca legislative document root. It rejects empty bodies, HTML soft-error pages, and
+// unrelated XML, so only genuine bill payloads are accepted as a version's source text.
+func looksLikeBillXML(data []byte) bool {
+	if len(bytes.TrimSpace(data)) == 0 {
+		return false
+	}
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return false
+		}
+		if start, ok := tok.(xml.StartElement); ok {
+			return strings.EqualFold(start.Name.Local, "Bill")
+		}
+	}
+}
 
 func (f *Fetcher) fetchDocumentLinks(ctx context.Context, pageURL string) (string, string) {
 	body, err := f.getBytes(ctx, pageURL, "text/html")
