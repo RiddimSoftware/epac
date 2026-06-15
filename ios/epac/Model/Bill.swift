@@ -14,8 +14,8 @@ import SwiftUI
 // MARK: - Bill
 
 struct Bill: Identifiable, Codable, Sendable {
-    let id: String          // bill number e.g. "C-50", "S-12"
-    let number: String      // same as id
+    let id: String          // numeric LEGISinfo id e.g. "13608745"; backend bill-depth key
+    let number: String      // display bill number e.g. "C-50", "S-12"
     let title: String
     let sponsorName: String
     let status: BillStatus
