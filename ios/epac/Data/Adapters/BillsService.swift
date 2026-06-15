@@ -96,8 +96,21 @@ struct BillsService {
         guard let legisURL = URL(string: "\(legisInfoBase)/\(billSlug)")
             ?? URL(string: legisInfoBase) else { return nil }
 
+        // Backend bill-depth routes (versions, diff, committee, amendments,
+        // lobbying, PBO) are keyed by the numeric LEGISinfo id, not the display
+        // bill number. Carry that id in Bill.id so those calls resolve; keep
+        // Bill.number as the display value. Fall back to the number only when
+        // LEGISinfo omits a usable id, which leaves backend depth unavailable
+        // rather than mis-keyed.
+        let legisInfoID: String
+        if let billID = raw.BillId, billID > 0 {
+            legisInfoID = String(billID)
+        } else {
+            legisInfoID = number
+        }
+
         return Bill(
-            id: number,
+            id: legisInfoID,
             number: number,
             title: title,
             sponsorName: raw.SponsorEn ?? "",
@@ -236,6 +249,7 @@ private struct BillStageSpec {
 /// Mirrors the JSON object returned by the LEGISinfo bills endpoint.
 /// Only the fields we use are decoded; unknown fields are ignored.
 private struct LEGISinfoBill: Decodable {
+    let BillId: Int?
     let BillNumberFormatted: String
     let LongTitleEn: String?
     let ShortTitleEn: String?
