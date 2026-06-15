@@ -357,9 +357,9 @@ Current implementation:
 
 ```
 Actor: System (Backend Ingest, bills-indexer use-case layer)
-Goal: Compute clause-level differences (additions, deletions, modifications, and unchanged clauses) between each consecutive pair of a bill's version records using LCS alignment on their parsed clauses.
+Goal: Compute clause-level differences (additions, deletions, modifications, and unchanged clauses) for every valid ordered version pair of a bill — every (from, to) with from.SortOrder < to.SortOrder where both versions have parsed clause text — using LCS alignment on their parsed clauses, so the iOS diff viewer can compare any two published versions a user picks (not just consecutive ones).
 Inputs: A bill's ordered BillVersion records with parsed VersionSection clauses (plus the bill number and source URL used to mint stable IDs).
-Outputs: Ordered list of version-to-version BillDiff records, each carrying clause-level BillClauseDiff rows with stable IDs.
+Outputs: Ordered list of version-to-version BillDiff records, each carrying clause-level BillClauseDiff rows with stable IDs. Adjacent-pair BillDiff records are always emitted (with empty Clauses when text is missing on either side) for backward compatibility with existing smoke/evidence tests; non-adjacent pairs are emitted only when both versions have parsed clause text and therefore always carry clause-level rows.
 Entities / values: BillVersion, VersionSection, BillDiff, BillClauseDiff.
 Ports: none — the diff policy is pure domain→domain; parsed clauses arrive upstream through the `BillSource` adapter (fetch + parse).
 Primary adapters: none for the diff itself; the LEGISinfo fetcher supplies the parsed VersionSection clauses the policy consumes.
@@ -371,6 +371,8 @@ Current implementation:
 ```
 
 > **Boundary rule:** The clause-aware diff algorithm is a use-case policy executed during ingestion. It lives in `backend/bills-indexer/internal/usecase/`, which imports only the standard library plus the local `domain` package (no `net/http`, `encoding/xml`, or adapter imports). The LEGISinfo adapter only fetches and parses version text into `VersionSection`s; `IngestBills.Execute` then composes the diff over the parsed batch. Only the computed diff rows are persisted in the database to be served to downstream clients.
+
+> **Pair selection rule:** Versions are sorted by `SortOrder`. For each ordered pair `(i, j)` with `i < j`, a `BillDiff` is emitted when either (a) the pair is adjacent (`j == i+1`), which preserves the original consecutive-pair artifacts that existing smoke and evidence tests rely on even when one or both versions lack parsed clause text, or (b) both versions have parsed clause text, in which case LCS-aligned `BillClauseDiff` rows are populated. Non-adjacent pairs where either side is missing text are skipped so iOS only offers comparable pairs in the picker (see `LoadBillVersionDiff`).
 
 ---
 
@@ -763,7 +765,9 @@ Current implementation:
 Actor: User (iOS app, bill diff viewer) / Backend API caller
 Goal: See what changed at the clause level between two published versions of a bill (additions, deletions, modifications) with the verbatim before/after clause text, and follow the change back to the chamber speech that introduced it when known.
 Inputs: LEGISinfo bill ID, "before" version ID, "after" version ID.
-Outputs: Optional BillVersionDiff; nil when the backend cannot produce a diff for the requested version pair (one-version bill, unknown version pair, either version is missing text, or the diff job has not run yet) — the diff viewer renders an unavailable state.
+Outputs: Optional BillVersionDiff. Two distinct cases:
+  - Comparable pair with no clause-level change — the backend returns a `BillVersionDiff` with an empty `Clauses` array (HTTP 200, `clauses: []`), which iOS renders as "no clause-level differences between these versions." This happens when the persisted diff exists and every clause is `unchanged`.
+  - Unavailable — the use case returns `nil` (HTTP 404 from the handler). This covers identical from/to IDs, one-version bills, unknown or non-comparable version pairs (e.g. either side missing parsed text under the pair-selection rule in `ComputeBillVersionDiff`), and the diff job not yet having produced a row. iOS renders an unavailable state.
 Entities / values: Bill, BillVersion, BillVersionDiff, BillClauseDiff, BillClauseChangeType.
 Ports: iOS Swift: `BillVersionDiffRepository`; backend Go: `BillRepository.GetBillVersionDiff`.
 Primary adapters: BackendBillVersionDiffRepository (GET /api/v1/bills/{id}/diff?from=…&to=…), backend bills Lambda handler, backend bills SQLite repository, BillVersionsDiffView.
