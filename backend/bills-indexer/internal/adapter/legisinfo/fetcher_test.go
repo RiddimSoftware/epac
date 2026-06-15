@@ -2,8 +2,10 @@ package legisinfo
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"epac/bills-indexer/internal/domain"
@@ -204,3 +206,277 @@ func TestConstructURL(t *testing.T) {
 	})
 }
 
+func billXMLBody(label, text string) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="utf-8"?>
+<Bill><Body><Section><Label>%s</Label><Text>%s</Text></Section></Body></Bill>`, label, text)
+}
+
+func assertVersionXML(t *testing.T, v domain.BillVersion, xmlSuffix, sectionLabel string) {
+	t.Helper()
+	if !strings.HasSuffix(v.XMLURL, xmlSuffix) {
+		t.Errorf("version %q XMLURL = %q, want suffix %q", v.StageSlug, v.XMLURL, xmlSuffix)
+	}
+	if v.TextHash == nil || *v.TextHash == "" {
+		t.Errorf("version %q TextHash not set", v.StageSlug)
+	}
+	if v.TextSourceURL == nil || !strings.HasSuffix(*v.TextSourceURL, xmlSuffix) {
+		t.Errorf("version %q TextSourceURL = %v, want suffix %q", v.StageSlug, v.TextSourceURL, xmlSuffix)
+	}
+	if len(v.Sections) != 1 || v.Sections[0].Label != sectionLabel {
+		t.Errorf("version %q Sections = %#v, want one section labeled %q", v.StageSlug, v.Sections, sectionLabel)
+	}
+}
+
+// TestEnrichVersionsResolvesDirectAndPDFSiblingXMLLinks covers the discovery happy paths:
+// stages that expose a direct .xml anchor stay populated and stable, and an intermediate
+// stage that exposes only a PDF anchor recovers its XML from the sibling beside that PDF —
+// at the document directory the page actually links, not the sort-order guess.
+func TestEnrichVersionsResolvesDirectAndPDFSiblingXMLLinks(t *testing.T) {
+	const xmlType = "application/xml"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/DocumentViewer/en/45-1/bill/C-9/first-reading":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml">XML</a><a href="/Content/Bills/451/Government/C-9/C-9_1/C-9_1.PDF">PDF</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml":
+			w.Header().Set("Content-Type", xmlType)
+			_, _ = w.Write([]byte(billXMLBody("1", "First reading clause.")))
+
+		// Intermediate stage: only a PDF anchor, at a non-sort-order directory (C-9_3).
+		case "/DocumentViewer/en/45-1/bill/C-9/as-amended-by-committee":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_3/C-9_3.PDF">PDF</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_3/C-9_E.xml":
+			w.Header().Set("Content-Type", xmlType)
+			_, _ = w.Write([]byte(billXMLBody("2", "Amended clause.")))
+
+		// Royal assent: both anchors directly, at C-9_4.
+		case "/DocumentViewer/en/45-1/bill/C-9/royal-assent":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_4/C-9_E.xml">XML</a><a href="/Content/Bills/451/Government/C-9/C-9_4/C-9_4.PDF">PDF</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_4/C-9_E.xml":
+			w.Header().Set("Content-Type", xmlType)
+			_, _ = w.Write([]byte(billXMLBody("3", "Royal assent clause.")))
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	fetcher := NewFetcher(WithBaseURL(server.URL), WithHTTPClient(server.Client()))
+	pubs := []publicationJSON{
+		{PublicationID: 1001, PublicationTypeNameEn: "First Reading"},
+		{PublicationID: 1002, PublicationTypeNameEn: "As Amended by Committee"},
+		{PublicationID: 1003, PublicationTypeNameEn: "Royal Assent"},
+	}
+	versions := fetcher.enrichVersions(context.Background(), domain.Session{ParliamentNumber: 45, SessionNumber: 1}, "C-9", pubs)
+	if len(versions) != 3 {
+		t.Fatalf("versions len = %d, want 3", len(versions))
+	}
+
+	assertVersionXML(t, versions[0], "/C-9_1/C-9_E.xml", "1")
+	if !strings.HasSuffix(versions[0].PDFURL, "/C-9_1/C-9_1.PDF") {
+		t.Errorf("first-reading PDFURL = %q", versions[0].PDFURL)
+	}
+
+	assertVersionXML(t, versions[1], "/C-9_3/C-9_E.xml", "2")
+	if !strings.HasSuffix(versions[1].PDFURL, "/C-9_3/C-9_3.PDF") {
+		t.Errorf("as-amended PDFURL = %q", versions[1].PDFURL)
+	}
+
+	assertVersionXML(t, versions[2], "/C-9_4/C-9_E.xml", "3")
+}
+
+// TestEnrichVersionsDerivesSortOrderSiblingWhenPageHasNoLinks covers the last-resort path:
+// a stage whose DocumentViewer page renders its links client-side (no .xml/.pdf anchors)
+// still resolves through the predictable sort-order sibling derived from the first stage.
+func TestEnrichVersionsDerivesSortOrderSiblingWhenPageHasNoLinks(t *testing.T) {
+	const xmlType = "application/xml"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/DocumentViewer/en/45-1/bill/C-9/first-reading":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml">XML</a><a href="/Content/Bills/451/Government/C-9/C-9_1/C-9_1.PDF">PDF</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml":
+			w.Header().Set("Content-Type", xmlType)
+			_, _ = w.Write([]byte(billXMLBody("1", "First reading clause.")))
+
+		case "/DocumentViewer/en/45-1/bill/C-9/as-passed-by-the-house-of-commons":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<div id="viewer">loaded by script</div>`))
+		case "/Content/Bills/451/Government/C-9/C-9_2/C-9_E.xml":
+			w.Header().Set("Content-Type", xmlType)
+			_, _ = w.Write([]byte(billXMLBody("2", "As passed clause.")))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	fetcher := NewFetcher(WithBaseURL(server.URL), WithHTTPClient(server.Client()))
+	pubs := []publicationJSON{
+		{PublicationID: 2001, PublicationTypeNameEn: "First Reading"},
+		{PublicationID: 2002, PublicationTypeNameEn: "As Passed by the House of Commons"},
+	}
+	versions := fetcher.enrichVersions(context.Background(), domain.Session{ParliamentNumber: 45, SessionNumber: 1}, "C-9", pubs)
+	if len(versions) != 2 {
+		t.Fatalf("versions len = %d, want 2", len(versions))
+	}
+	assertVersionXML(t, versions[0], "/C-9_1/C-9_E.xml", "1")
+	assertVersionXML(t, versions[1], "/C-9_2/C-9_E.xml", "2")
+}
+
+// TestEnrichVersionsDropsUnvalidatedXMLCandidates covers acceptance: a derived candidate
+// that returns an HTTP 200 HTML soft-error, or 404s, is never persisted as xml_url and
+// leaves the version carrying no text.
+func TestEnrichVersionsDropsUnvalidatedXMLCandidates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/DocumentViewer/en/45-1/bill/C-9/first-reading":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml">XML</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_1/C-9_E.xml":
+			w.Header().Set("Content-Type", "application/xml")
+			_, _ = w.Write([]byte(billXMLBody("1", "First reading clause.")))
+
+		// Sort-order sibling exists (C-9_2) but returns an HTTP 200 HTML soft-error page.
+		case "/DocumentViewer/en/45-1/bill/C-9/as-amended-by-committee":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<div>no document links here</div>`))
+		case "/Content/Bills/451/Government/C-9/C-9_2/C-9_E.xml":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<html><body>Document not found</body></html>`))
+
+		// Sort-order sibling (C-9_3) is not served at all, i.e. 404s.
+		case "/DocumentViewer/en/45-1/bill/C-9/as-passed-by-the-senate":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<div>still nothing</div>`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	fetcher := NewFetcher(WithBaseURL(server.URL), WithHTTPClient(server.Client()))
+	pubs := []publicationJSON{
+		{PublicationID: 3001, PublicationTypeNameEn: "First Reading"},
+		{PublicationID: 3002, PublicationTypeNameEn: "As Amended by Committee"},
+		{PublicationID: 3003, PublicationTypeNameEn: "As Passed by the Senate"},
+	}
+	versions := fetcher.enrichVersions(context.Background(), domain.Session{ParliamentNumber: 45, SessionNumber: 1}, "C-9", pubs)
+	if len(versions) != 3 {
+		t.Fatalf("versions len = %d, want 3", len(versions))
+	}
+	assertVersionXML(t, versions[0], "/C-9_1/C-9_E.xml", "1")
+
+	if versions[1].XMLURL != "" {
+		t.Errorf("soft-error stage XMLURL = %q, want empty", versions[1].XMLURL)
+	}
+	if versions[1].TextHash != nil || len(versions[1].Sections) != 0 {
+		t.Errorf("soft-error stage should carry no text: hash=%v sections=%#v", versions[1].TextHash, versions[1].Sections)
+	}
+	if versions[2].XMLURL != "" {
+		t.Errorf("missing-source stage XMLURL = %q, want empty", versions[2].XMLURL)
+	}
+	if versions[2].TextHash != nil || len(versions[2].Sections) != 0 {
+		t.Errorf("missing-source stage should carry no text: hash=%v sections=%#v", versions[2].TextHash, versions[2].Sections)
+	}
+}
+
+// TestEnrichVersionsDoesNotReuseBaseXMLForLaterStages guards the sort-order fallback: when
+// the first resolved XML is not a "_1" directory, a later stage with no links of its own
+// must be left empty rather than re-pointed at an earlier stage's document.
+func TestEnrichVersionsDoesNotReuseBaseXMLForLaterStages(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		// First-reading page renders client-side: no anchors, and no first-reading XML exists.
+		case "/DocumentViewer/en/45-1/bill/C-9/first-reading":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<div>loaded by script</div>`))
+
+		// As amended exposes a direct anchor at a non-"_1" directory (C-9_3).
+		case "/DocumentViewer/en/45-1/bill/C-9/as-amended-by-committee":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<a href="/Content/Bills/451/Government/C-9/C-9_3/C-9_E.xml">XML</a>`))
+		case "/Content/Bills/451/Government/C-9/C-9_3/C-9_E.xml":
+			w.Header().Set("Content-Type", "application/xml")
+			_, _ = w.Write([]byte(billXMLBody("3", "Amended clause.")))
+
+		// As passed renders client-side too: no anchors of its own.
+		case "/DocumentViewer/en/45-1/bill/C-9/as-passed-by-the-house-of-commons":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<div>loaded by script</div>`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	fetcher := NewFetcher(WithBaseURL(server.URL), WithHTTPClient(server.Client()))
+	pubs := []publicationJSON{
+		{PublicationID: 4001, PublicationTypeNameEn: "First Reading"},
+		{PublicationID: 4002, PublicationTypeNameEn: "As Amended by Committee"},
+		{PublicationID: 4003, PublicationTypeNameEn: "As Passed by the House of Commons"},
+	}
+	versions := fetcher.enrichVersions(context.Background(), domain.Session{ParliamentNumber: 45, SessionNumber: 1}, "C-9", pubs)
+	if len(versions) != 3 {
+		t.Fatalf("versions len = %d, want 3", len(versions))
+	}
+	if versions[0].XMLURL != "" {
+		t.Errorf("first-reading XMLURL = %q, want empty", versions[0].XMLURL)
+	}
+	assertVersionXML(t, versions[1], "/C-9_3/C-9_E.xml", "3")
+	if versions[2].XMLURL != "" {
+		t.Errorf("as-passed XMLURL = %q, want empty (must not reuse the as-amended document)", versions[2].XMLURL)
+	}
+}
+
+func TestLooksLikeBillXML(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"bill with prolog", `<?xml version="1.0"?><Bill><Body/></Bill>`, true},
+		{"bill with namespace", `<Bill xmlns="http://parl.ca/schema"><Body/></Bill>`, true},
+		{"leading whitespace", "\n\t  <Bill></Bill>", true},
+		{"html soft error", `<html><body>Not found</body></html>`, false},
+		{"doctype html", `<!DOCTYPE html><html></html>`, false},
+		{"unrelated xml", `<Document><Section/></Document>`, false},
+		{"empty", "", false},
+		{"whitespace only", "   \n  ", false},
+		{"plain text", `Document not found`, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := looksLikeBillXML([]byte(tc.body)); got != tc.want {
+				t.Errorf("looksLikeBillXML(%q) = %v, want %v", tc.body, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestXMLSiblingFromPDF(t *testing.T) {
+	got := xmlSiblingFromPDF("https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_3/C-11_3.PDF", "C-11")
+	want := "https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_3/C-11_E.xml"
+	if got != want {
+		t.Errorf("xmlSiblingFromPDF = %q, want %q", got, want)
+	}
+	if s := xmlSiblingFromPDF("https://www.parl.ca/Content/Bills/451/Government/C-11/C-11_3/C-11_E.xml", "C-11"); s != "" {
+		t.Errorf("xmlSiblingFromPDF on non-pdf input = %q, want empty", s)
+	}
+	if s := xmlSiblingFromPDF("", "C-11"); s != "" {
+		t.Errorf("xmlSiblingFromPDF empty url = %q, want empty", s)
+	}
+	if s := xmlSiblingFromPDF("https://www.parl.ca/x/C-11_3.PDF", ""); s != "" {
+		t.Errorf("xmlSiblingFromPDF empty number = %q, want empty", s)
+	}
+}
+
+func TestDedupeNonEmpty(t *testing.T) {
+	got := strings.Join(dedupeNonEmpty("a", "", "  ", "b", "a", "c", "b"), ",")
+	if got != "a,b,c" {
+		t.Errorf("dedupeNonEmpty = %q, want %q", got, "a,b,c")
+	}
+}

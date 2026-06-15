@@ -345,7 +345,7 @@ Entities / values: BillVersion, VersionSection.
 Ports: backend Go: `BillSource`.
 Primary adapters: LEGISinfo/parl.ca XML crawler/parser.
 Current implementation:
-  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go (enrichVersions: fetch XML + computeSHA256 hash; fetchDocumentLinks; parseBillXML: clause extraction)
+  backend/bills-indexer/internal/adapter/legisinfo/fetcher.go (enrichVersions: per-stage document-link discovery + computeSHA256 hash; fetchDocumentLinks; resolveVersionXML: validated XML candidate chain — direct anchor, then PDF-directory sibling, then sort-order sibling, accepting only a fetched bill-XML payload; parseBillXML: clause extraction)
   backend/bills-indexer/internal/domain/domain.go (BillVersion, VersionSection)
 ```
 
