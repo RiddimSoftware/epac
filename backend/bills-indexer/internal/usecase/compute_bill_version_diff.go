@@ -27,39 +27,52 @@ func ComputeBillVersionDiff(number string, versions []domain.BillVersion, detail
 	}
 	ordered := append([]domain.BillVersion(nil), versions...)
 	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].SortOrder < ordered[j].SortOrder })
-	diffs := make([]domain.BillDiff, 0, len(ordered)-1)
-	for i := 1; i < len(ordered); i++ {
-		fromVer := ordered[i-1]
-		toVer := ordered[i]
-		diffID := stableID("diff", number, fromVer.ID, toVer.ID)
+	n := len(ordered)
+	diffs := make([]domain.BillDiff, 0, n*(n-1)/2)
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			fromVer := ordered[i]
+			toVer := ordered[j]
 
-		var clauseDiffs []domain.BillClauseDiff
-		if len(fromVer.Sections) > 0 && len(toVer.Sections) > 0 {
-			rawDiffs := DiffClauses(fromVer.Sections, toVer.Sections)
-			clauseDiffs = make([]domain.BillClauseDiff, 0, len(rawDiffs))
-			for idx, rd := range rawDiffs {
-				clauseID := stableID("clause", number, diffID, rd.Label)
-				if rd.Label == "" {
-					clauseID = stableID("clause", number, diffID, strconv.Itoa(idx))
-				}
-				clauseDiffs = append(clauseDiffs, domain.BillClauseDiff{
-					ID:               clauseID,
-					Label:            rd.Label,
-					ChangeType:       rd.ChangeType,
-					FromText:         rd.FromText,
-					ToText:           rd.ToText,
-					HansardAnchorURL: nil,
-				})
+			// We only emit a diff artifact if:
+			// 1. It is an adjacent pair (to keep compatibility and stability for existing smoke tests), OR
+			// 2. Both versions have clause text (len(Sections) > 0).
+			isAdjacent := (j == i + 1)
+			hasTextBothSides := (len(fromVer.Sections) > 0 && len(toVer.Sections) > 0)
+			if !isAdjacent && !hasTextBothSides {
+				continue
 			}
-		}
 
-		diffs = append(diffs, domain.BillDiff{
-			ID:            diffID,
-			FromVersionID: fromVer.ID,
-			ToVersionID:   toVer.ID,
-			SourceURL:     detailURL,
-			Clauses:       clauseDiffs,
-		})
+			diffID := stableID("diff", number, fromVer.ID, toVer.ID)
+
+			var clauseDiffs []domain.BillClauseDiff
+			if len(fromVer.Sections) > 0 && len(toVer.Sections) > 0 {
+				rawDiffs := DiffClauses(fromVer.Sections, toVer.Sections)
+				clauseDiffs = make([]domain.BillClauseDiff, 0, len(rawDiffs))
+				for idx, rd := range rawDiffs {
+					clauseID := stableID("clause", number, diffID, rd.Label)
+					if rd.Label == "" {
+						clauseID = stableID("clause", number, diffID, strconv.Itoa(idx))
+					}
+					clauseDiffs = append(clauseDiffs, domain.BillClauseDiff{
+						ID:               clauseID,
+						Label:            rd.Label,
+						ChangeType:       rd.ChangeType,
+						FromText:         rd.FromText,
+						ToText:           rd.ToText,
+						HansardAnchorURL: nil,
+					})
+				}
+			}
+
+			diffs = append(diffs, domain.BillDiff{
+				ID:            diffID,
+				FromVersionID: fromVer.ID,
+				ToVersionID:   toVer.ID,
+				SourceURL:     detailURL,
+				Clauses:       clauseDiffs,
+			})
+		}
 	}
 	return diffs
 }
