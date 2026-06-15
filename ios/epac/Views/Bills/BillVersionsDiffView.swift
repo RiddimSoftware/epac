@@ -60,6 +60,18 @@ struct BillVersionsDiffView: View {
     @State private var isLoading = false
     @State private var loadFailed = false
 
+    /// `true` once the user changes either picker. Until then the viewer
+    /// auto-selects a servable pair; afterwards it loads exactly what the user
+    /// chose so the auto-selection never overrides a manual choice.
+    @State private var hasUserSelected = false
+
+    /// Bumped only by a manual picker change. The load task is keyed on this, so
+    /// the auto-selection (which sets `toVersionID` programmatically) does not
+    /// re-fire the task and cause a redundant reload.
+    @State private var reloadToken = 0
+
+    private let selectionPolicy = BillVersionDiffSelectionPolicy()
+
     @Environment(\.dismiss) private var dismiss
 
     init(
@@ -75,9 +87,9 @@ struct BillVersionsDiffView: View {
         self.versions = versions
         self.loadBillVersionDiff = loadBillVersionDiff
 
-        let sorted = Self.sortVersions(versions)
-        self._fromVersionID = State(initialValue: sorted.first?.id ?? "")
-        self._toVersionID = State(initialValue: sorted.last?.id ?? "")
+        let defaultPair = BillVersionDiffSelectionPolicy.defaultPair(for: versions)
+        self._fromVersionID = State(initialValue: defaultPair.fromVersionID)
+        self._toVersionID = State(initialValue: defaultPair.toVersionID)
     }
 
     var body: some View {
@@ -117,24 +129,48 @@ struct BillVersionsDiffView: View {
                 sourceSection
             }
             .listStyle(.insetGrouped)
-            .task(id: diffTaskKey) { await loadDiff() }
+            .task(id: reloadToken) { await loadDiff() }
         }
     }
 
-    private var diffTaskKey: String {
-        "\(fromVersionID)::\(toVersionID)"
+    /// Picker binding that records a manual selection and triggers a reload.
+    /// Programmatic changes (the auto-selection) set `fromVersionID`/
+    /// `toVersionID` directly and never run through these setters, so they
+    /// neither mark the selection manual nor bump the reload token.
+    private var fromSelection: Binding<String> {
+        Binding(
+            get: { fromVersionID },
+            set: { newValue in
+                guard newValue != fromVersionID else { return }
+                fromVersionID = newValue
+                hasUserSelected = true
+                reloadToken += 1
+            }
+        )
+    }
+
+    private var toSelection: Binding<String> {
+        Binding(
+            get: { toVersionID },
+            set: { newValue in
+                guard newValue != toVersionID else { return }
+                toVersionID = newValue
+                hasUserSelected = true
+                reloadToken += 1
+            }
+        )
     }
 
     private var versionPickersSection: some View {
         Section(NSLocalizedString("billDiff.compare.title", comment: "")) {
-            Picker(NSLocalizedString("billDiff.from", comment: ""), selection: $fromVersionID) {
+            Picker(NSLocalizedString("billDiff.from", comment: ""), selection: fromSelection) {
                 ForEach(versions) { version in
                     Text(displayLabel(for: version)).tag(version.id)
                 }
             }
             .accessibilityIdentifier("bill-diff-from-picker")
 
-            Picker(NSLocalizedString("billDiff.to", comment: ""), selection: $toVersionID) {
+            Picker(NSLocalizedString("billDiff.to", comment: ""), selection: toSelection) {
                 ForEach(versions) { version in
                     Text(displayLabel(for: version)).tag(version.id)
                 }
@@ -231,48 +267,48 @@ struct BillVersionsDiffView: View {
 
     @MainActor
     private func loadDiff() async {
-        guard !fromVersionID.isEmpty, !toVersionID.isEmpty else {
-            diff = nil
-            return
+        // Until the user touches a picker, auto-select a servable pair; after a
+        // manual change, load exactly the chosen pair.
+        let intent: BillVersionDiffSelectionPolicy.Intent = hasUserSelected
+            ? .explicit(fromVersionID: fromVersionID, toVersionID: toVersionID)
+            : .auto
+
+        // Capture the Sendable dependencies so the probe closure stays free of
+        // view/main-actor state.
+        let billID = self.billID
+        let loadBillVersionDiff = self.loadBillVersionDiff
+        let probe: BillVersionDiffSelectionPolicy.Probe = { fromID, toID in
+            do {
+                return try await loadBillVersionDiff.execute(
+                    billID: billID,
+                    fromVersionID: fromID,
+                    toVersionID: toID
+                )
+            } catch {
+                // Treat transport failures like an unavailable pair: the viewer
+                // falls back to its unavailable state rather than crashing.
+                return nil
+            }
         }
-        let sorted = Self.sortVersions(versions)
-        if let fromIndex = sorted.firstIndex(where: { $0.id == fromVersionID }),
-           let toIndex = sorted.firstIndex(where: { $0.id == toVersionID }),
-           fromIndex > toIndex {
-            let temp = fromVersionID
-            fromVersionID = toVersionID
-            toVersionID = temp
-            return
-        }
+
         isLoading = true
         loadFailed = false
         defer { isLoading = false }
-        do {
-            diff = try await loadBillVersionDiff.execute(
-                billID: billID,
-                fromVersionID: fromVersionID,
-                toVersionID: toVersionID
-            )
-            loadFailed = diff == nil
-        } catch {
-            diff = nil
-            loadFailed = true
-        }
-    }
 
-    private static func sortVersions(_ versions: [BillVersion]) -> [BillVersion] {
-        versions.sorted { lhs, rhs in
-            switch (lhs.publishedOn, rhs.publishedOn) {
-            case let (l?, r?):
-                return l < r
-            case (nil, _?):
-                return true
-            case (_?, nil):
-                return false
-            case (nil, nil):
-                return lhs.label < rhs.label
-            }
-        }
+        let resolution = await selectionPolicy.resolve(
+            intent: intent,
+            versions: versions,
+            probe: probe
+        )
+
+        // A newer manual selection may have superseded this load; discard the
+        // stale result rather than overwriting the current pair.
+        guard !Task.isCancelled else { return }
+
+        fromVersionID = resolution.fromVersionID
+        toVersionID = resolution.toVersionID
+        diff = resolution.diff
+        loadFailed = resolution.diff == nil
     }
 }
 
